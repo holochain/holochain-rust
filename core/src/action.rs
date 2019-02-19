@@ -15,11 +15,11 @@ use holochain_core_types::{
     dna::Dna,
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
-    json::JsonString,
     link::Link,
     crud_status::CrudStatus,
     validation::ValidationPackage,
 };
+use holochain_net::p2p_config::P2pConfig;
 use holochain_net_connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
@@ -104,6 +104,9 @@ pub enum Action {
     //action for updating crudstatus
     CrudStatus((EntryWithHeader,CrudStatus)),
 
+    //Removes a link for the local DHT
+    RemoveLink(Link),
+
     // ----------------
     // Network actions:
     // ----------------
@@ -180,14 +183,14 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
-    /// execute a function in a zome WASM
-    ExecuteZomeFunction(ZomeFnCall),
+    /// Gets dispatched when a zome function call starts.
+    /// There is no reducer for this action so this does not change state
+    /// (hence "Signal").
+    /// Is received as signal in the nodejs waiter to attach wait conditions.
+    SignalZomeFunctionCall(ZomeFnCall),
 
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
-
-    /// Execute a zome function call called by another zome function
-    Call(ZomeFnCall),
 
     /// A validation result is returned from a local callback execution
     /// Key is an unique id of the calling context
@@ -259,9 +262,9 @@ pub struct DirectMessageData {
 /// Everything the network needs to initialize
 #[derive(Clone, PartialEq, Debug)]
 pub struct NetworkSettings {
-    /// JSON config that gets passed to [P2pNetwork](struct.P2pNetwork.html)
+    /// P2pConfig that gets passed to [P2pNetwork](struct.P2pNetwork.html)
     /// determines how to connect to the network module.
-    pub config: JsonString,
+    pub p2p_config: P2pConfig,
 
     /// DNA address is needed so the network module knows which network to
     /// connect us to.

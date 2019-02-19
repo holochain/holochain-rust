@@ -153,6 +153,30 @@ fn handle_link_two_entries() -> ZomeApiResult<()> {
     hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")
 }
 
+fn handle_remove_link() -> ZomeApiResult<()> {
+    let entry_1 = Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry1".into(),
+        }
+        .into(),
+    );
+    hdk::commit_entry(&entry_1)?;
+
+    let entry_2 = Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry2".into(),
+        }
+        .into(),
+    );
+
+    hdk::commit_entry(&entry_2)?;
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")?;
+    hdk::remove_link(&entry_1.address(), &entry_2.address(), "test-tag")
+
+}
+
 /// Commit 3 entries
 /// Commit a "test-tag" link from entry1 to entry2
 /// Commit a "test-tag" link from entry1 to entry3
@@ -575,6 +599,12 @@ define_zome! {
             handler: handle_link_two_entries
         }
 
+        remove_link: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_remove_link
+        }
+
         links_roundtrip_create: {
             inputs: | |,
             outputs: |result: ZomeApiResult<Address>|,
@@ -666,5 +696,5 @@ define_zome! {
         }
     ]
 
-    capabilities: {}
+    traits: {}
 }

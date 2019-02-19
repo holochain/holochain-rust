@@ -4,8 +4,6 @@ target
 **/*.sock
 package-lock.json
 **/*.rs.bk
-**/Cargo.lock
-Cargo.lock
 net_ipc/tests/node-p2p-ipc
 build_docs_key
 *.orig

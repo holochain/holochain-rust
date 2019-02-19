@@ -24,6 +24,7 @@ use hdk::{
 use blog::Env;
 
 define_zome! {
+
     entries: [
         post::definition()
     ]
@@ -64,6 +65,24 @@ define_zome! {
             handler: blog::handle_create_post
         }
 
+        delete_post: {
+            inputs: |content: String|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_delete_post
+        }
+
+        delete_entry_post: {
+            inputs: |post_address: Address|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: blog::handle_delete_entry_post
+        }
+
+        update_post: {
+            inputs: |post_address: Address, new_content: String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: blog::handle_update_post
+        }
+
         posts_by_agent: {
             inputs: |agent: Address|,
             outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
@@ -94,6 +113,7 @@ define_zome! {
             handler: blog::handle_my_posts_as_commited
         }
 
+
         recommend_post: {
             inputs: |post_address: Address, agent_address: Address|,
             outputs: |result: ZomeApiResult<()>|,
@@ -107,8 +127,8 @@ define_zome! {
         }
     ]
 
-    capabilities: {
-        public (Public) [show_env, check_sum, get_sources, post_address, create_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
+    traits: {
+        hc_public [show_env, check_sum, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
     }
 
 }

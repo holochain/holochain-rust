@@ -56,6 +56,10 @@ pub fn validate_entry<'a>(
             // LinkAdd can always be validated
         }
 
+        EntryType::LinkRemove => {
+            // LinkAdd can always be validated
+        }
+
         EntryType::Deletion => {
             // FIXME
         }

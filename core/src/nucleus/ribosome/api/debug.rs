@@ -6,9 +6,12 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     let payload = runtime.load_json_string_from_args(args);
 
-    runtime.context.log(format!("debug/dna: '{}'", payload));
+    zome_call_data
+        .context
+        .log(format!("debug/dna: '{}'", payload));
 
     ribosome_success!()
 }

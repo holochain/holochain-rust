@@ -19,7 +19,9 @@ fn get_entry(address: &Address, context: &Arc<Context>) -> Result<Entry, Holocha
         .read()
         .unwrap()
         .fetch(address)?
-        .ok_or(HolochainError::ErrorGeneric("Entry not found".to_string()))?;
+        .ok_or(HolochainError::ErrorGeneric(
+            "Entry not found when trying to build validation package".to_string(),
+        ))?;
 
     Entry::try_from(raw)
 }

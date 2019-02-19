@@ -10,10 +10,11 @@ extern crate boolinator;
 extern crate holochain_core_types_derive;
 
 use boolinator::Boolinator;
-use hdk::holochain_core_types::dna::entry_types::Sharing;
-use hdk::holochain_core_types::json::JsonString;
-use hdk::holochain_core_types::json::RawString;
-use hdk::holochain_core_types::error::HolochainError;
+use hdk::holochain_core_types::{
+    dna::entry_types::Sharing,
+    error::HolochainError,
+    json::{JsonString, RawString},
+};
 
 #[derive(Serialize, Deserialize, DefaultJson, Debug)]
 struct TestEntryType {
@@ -110,7 +111,9 @@ define_zome! {
         }
     ]
 
-    capabilities: {}
+    traits: {}
 }
 
-fn test_handler() -> u32 {0}
+fn test_handler() -> u32 {
+    0
+}

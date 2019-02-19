@@ -10,7 +10,7 @@ const agentTash = Config.agent("tash")
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceTash = Config.instance(agentTash, dna)
 
-const scenario = new Scenario([instanceAlice, instanceTash])
+const scenario = new Scenario([instanceAlice, instanceTash], { debugLog: true })
 
 scenario.runTape('calling get_links before link_entries makes no difference', async (t, {alice}) => {
 

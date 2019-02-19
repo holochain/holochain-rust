@@ -11,6 +11,7 @@ pub mod init_globals;
 pub mod link_entries;
 pub mod query;
 pub mod remove_entry;
+pub mod remove_link;
 pub mod send;
 pub mod sleep;
 pub mod update_entry;
@@ -21,12 +22,13 @@ use crate::nucleus::ribosome::{
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
         get_links::invoke_get_links, init_globals::invoke_init_globals,
         link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
-        send::invoke_send, sleep::invoke_sleep, update_entry::invoke_update_entry,
+        remove_link::invoke_remove_link, send::invoke_send, sleep::invoke_sleep,
+        update_entry::invoke_update_entry,
     },
     runtime::Runtime,
     Defn,
 };
-use holochain_core_types::dna::capabilities::ReservedCapabilityNames;
+
 use num_traits::FromPrimitive;
 use std::str::FromStr;
 
@@ -90,6 +92,7 @@ pub enum ZomeApiFunction {
 
     Send,
     Sleep,
+    RemoveLink,
 }
 
 impl Defn for ZomeApiFunction {
@@ -110,6 +113,7 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::EntryAddress => "hc_entry_address",
             ZomeApiFunction::Send => "hc_send",
             ZomeApiFunction::Sleep => "hc_sleep",
+            ZomeApiFunction::RemoveLink => "hc_remove_link",
         }
     }
 
@@ -121,13 +125,6 @@ impl Defn for ZomeApiFunction {
 
     fn from_index(i: usize) -> Self {
         FromPrimitive::from_usize(i).unwrap_or(ZomeApiFunction::MissingNo)
-    }
-
-    fn capability(&self) -> ReservedCapabilityNames {
-        // Zome API Functions are not part of any zome and capability
-        // @TODO architecture issue?
-        // @see https://github.com/holochain/holochain-rust/issues/299
-        unreachable!();
     }
 }
 
@@ -149,6 +146,7 @@ impl FromStr for ZomeApiFunction {
             "hc_entry_address" => Ok(ZomeApiFunction::EntryAddress),
             "hc_send" => Ok(ZomeApiFunction::Send),
             "hc_sleep" => Ok(ZomeApiFunction::Sleep),
+            "hc_remove_link" => Ok(ZomeApiFunction::RemoveLink),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -182,6 +180,7 @@ impl ZomeApiFunction {
             ZomeApiFunction::EntryAddress => invoke_entry_address,
             ZomeApiFunction::Send => invoke_send,
             ZomeApiFunction::Sleep => invoke_sleep,
+            ZomeApiFunction::RemoveLink => invoke_remove_link,
         }
     }
 }
@@ -197,7 +196,7 @@ pub mod tests {
         context::Context,
         instance::{tests::test_instance_and_context, Instance},
         nucleus::{
-            ribosome::{self, Defn},
+            ribosome::{self, runtime::WasmCallData, Defn},
             tests::{test_capability_call, test_capability_name},
             ZomeFnCall,
         },
@@ -331,7 +330,7 @@ pub mod tests {
     )
 
     (func
-        (export "__list_capabilities")
+        (export "__list_traits")
         (param $allocation i64)
         (result i64)
 
@@ -340,10 +339,10 @@ pub mod tests {
 
     (func
         (export "__list_functions")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
     )
 )
                 "#,
@@ -386,11 +385,9 @@ pub mod tests {
             test_parameters(),
         );
         ribosome::run_dna(
-            &dna_name,
-            context,
             wasm.clone(),
-            &zome_call,
             Some(args_bytes),
+            WasmCallData::new_zome_call(context, dna_name.to_string(), zome_call),
         )
         .expect("test should be callable")
     }
@@ -438,6 +435,7 @@ pub mod tests {
             ("hc_entry_address", ZomeApiFunction::EntryAddress),
             ("hc_send", ZomeApiFunction::Send),
             ("hc_sleep", ZomeApiFunction::Sleep),
+            ("hc_remove_link", ZomeApiFunction::RemoveLink),
         ] {
             assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
         }
@@ -468,6 +466,7 @@ pub mod tests {
             (ZomeApiFunction::EntryAddress, "hc_entry_address"),
             (ZomeApiFunction::Send, "hc_send"),
             (ZomeApiFunction::Sleep, "hc_sleep"),
+            (ZomeApiFunction::RemoveLink, "hc_remove_link"),
         ] {
             assert_eq!(output, input.as_str());
         }
@@ -489,6 +488,7 @@ pub mod tests {
             ("hc_entry_address", 12),
             ("hc_send", 13),
             ("hc_sleep", 14),
+            ("hc_remove_link", 15),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -510,6 +510,7 @@ pub mod tests {
             (12, ZomeApiFunction::EntryAddress),
             (13, ZomeApiFunction::Send),
             (14, ZomeApiFunction::Sleep),
+            (15, ZomeApiFunction::RemoveLink),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

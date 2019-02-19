@@ -17,6 +17,7 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
     link::Link,
+    crud_status::CrudStatus,
     validation::ValidationPackage,
 };
 use holochain_net_connection::json_protocol::{
@@ -99,6 +100,9 @@ pub enum Action {
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.
     AddLink(Link),
+
+    //action for updating crudstatus
+    CrudStatus(EntryWithHeader,CrudStatus),
 
     // ----------------
     // Network actions:

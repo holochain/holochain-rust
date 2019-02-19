@@ -103,6 +103,7 @@ impl Entry {
             Entry::ChainMigrate(_) => EntryType::ChainMigrate,
             Entry::CapToken(_) => EntryType::CapToken,
             Entry::CapTokenGrant(_) => EntryType::CapTokenGrant,
+
         }
     }
 }

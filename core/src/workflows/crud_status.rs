@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    dht::{actions::hold::hold_entry,dht_store::DhtStore},
+    dht::{actions::crud_status::crud_status as init_crud_future,dht_store::DhtStore},
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
@@ -19,39 +19,30 @@ use std::sync::Arc;
 
 pub async fn crud_status_workflow<'a>(
     entry_with_header: &'a EntryWithHeader,
-    context: &'a Context,
+    context: &'a Arc<Context>,
     crud_status :CrudStatus
 ) -> Result<(), HolochainError> {
+
+
     let EntryWithHeader { entry, header } = &entry_with_header;
-    let state = context.state().ok_or(HolochainError::ErrorGeneric("Could not get state".to_string()))?;
-    let store = state.clone().dht();
-    match crud_status
-    {
-        CrudStatus::Live => {
-            store_entry(&entry,&store)
-        },
-        CrudStatus::Modified => {
-            unimplemented!("MODIFIED NOT IMPLEMENTED")
-        },
-        CrudStatus::Deleted => {
-            unimplemented!("DELETED NOT IMPLEMENTED")
-        },
-        _ =>
-        {
-            Err(HolochainError::ErrorGeneric("Crud Status Variant unimplemented".to_string()))
-        }
-    }
 
-}
+     // 1. Get validation package from source
+    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
+    let validation_package = maybe_validation_package
+        .ok_or("Could not get validation package from source".to_string())?;
 
-fn store_entry(entry:&Entry,dht_store : &DhtStore) ->Result<(),HolochainError>
-{
-    let live_status = create_crud_status_eav(&entry.address(), CrudStatus::Live)?;
-    let store = dht_store.meta_storage().clone();
-    let mut meta_storage = store.try_write().map_err(|err|{
-        HolochainError::ErrorGeneric("THREAD PROBLEM : Could not get lock from meta storage".to_string())
-    })?;
-    meta_storage.add_eavi(&live_status)?;
-    Ok(())
+    // 2. Create validation data struct
+    let validation_data = ValidationData {
+        package: validation_package,
+        lifecycle: EntryLifecycle::Dht,
+        action: EntryAction::Create,
+    };
+
+    // 3. Validate the entry
+    await!(validate_entry(entry.clone(), validation_data, &context))?;
+
+    // 4. If valid store the entry in the local DHT shard
+    await!(init_crud_future(entry_with_header.clone(), context.clone(),crud_status.clone()))
+
 }
 

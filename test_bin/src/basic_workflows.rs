@@ -173,6 +173,8 @@ pub fn setup_two_nodes(
     let _msg_count = alex.listen(100);
     let _msg_count = billy.listen(100);
 
+    log_i!("setup_two_nodes() COMPLETE \n\n\n");
+
     // Done
     Ok(())
 }

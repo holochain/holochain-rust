@@ -807,7 +807,7 @@ impl InMemoryServer {
             self.priv_send_one_with_cell_id(
                 &cell_id,
                 JsonProtocol::HandleFetchEntry(FetchEntryData {
-                    requester_agent_id: "__publish".to_string(),
+                    requester_agent_id: String::new(),
                     request_id,
                     dna_address: msg.dna_address.clone(),
                     entry_address,
@@ -880,7 +880,7 @@ impl InMemoryServer {
             // send request for that meta_key
             let request_id = self.priv_create_request_with_cell_id(&cell_id);
             let fetch_meta = FetchMetaData {
-                requester_agent_id: "__publish".to_string(),
+                requester_agent_id: String::new(),
                 request_id,
                 dna_address: msg.dna_address.clone(),
                 entry_address: meta_tuple.0,

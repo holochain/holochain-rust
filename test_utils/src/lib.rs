@@ -1,9 +1,8 @@
-extern crate holochain_cas_implementations;
+#![warn(unused_extern_crates)]
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
-extern crate serde_json;
 extern crate tempfile;
 extern crate wabt;
 

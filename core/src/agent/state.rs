@@ -285,9 +285,9 @@ pub mod tests {
         AgentState, AgentStateSnapshot,
     };
     use crate::{
-        context::mock_signer,
         action::tests::test_action_wrapper_commit,
         agent::chain_store::tests::test_chain_store,
+        context::mock_signer,
         instance::tests::{test_context, test_context_with_state},
         state::State,
     };

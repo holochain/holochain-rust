@@ -177,7 +177,7 @@ pub mod tests {
     pub fn test_build_server() {
         let test_bundle_config = UiBundleConfiguration {
             id: "bundle id".to_string(),
-            root_dir: "".to_string(),
+            root_dir: "test-static-server".to_string(),
             hash: None,
         };
 
@@ -203,12 +203,18 @@ pub mod tests {
         assert_eq!(static_server.start(), Ok(()));
         assert_eq!(static_server.running, true);
 
+        let get_root_result: String = 
+            reqwest::get("http://localhost:3000/")
+                .expect("Could not make request to /")
+                .text()
+                .expect("Response body is not valid text");
+        assert_eq!(get_root_result, "test_success");
+
         let get_result: serde_json::Value =
             reqwest::get("http://localhost:3000/_dna_connections.json")
-                .expect("Could not make request")
+                .expect("Could not make request to _dna_connections")
                 .json()
                 .expect("response body is not valid json");
-
         assert_eq!(get_result, json!({ "dna_interface": test_dna_interface }));
 
         assert_eq!(static_server.stop(), Ok(()));

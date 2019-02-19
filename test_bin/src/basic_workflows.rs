@@ -231,7 +231,6 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     // Setup
     println!("Testing: meta_test()");
     setup_two_nodes(alex, billy, can_connect)?;
-    log_i!("setup_two_nodes COMPLETE");
 
     // Send data & metadata on same address
     confirm_published_data(alex, billy, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1)?;
@@ -304,7 +303,6 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
     // Setup
     println!("Testing: dht_test()");
     setup_two_nodes(alex, billy, can_connect)?;
-    log_i!("setup_two_nodes COMPLETE");
 
     // Alex publish data on the network
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
@@ -370,7 +368,6 @@ pub fn untrack_alex_test(
     // Setup
     println!("Testing: untrack_alex_test()");
     setup_two_nodes(alex, billy, can_connect)?;
-    log_i!("setup_two_nodes COMPLETE");
 
     // Send Untrack
     alex.send(
@@ -405,7 +402,6 @@ pub fn untrack_billy_test(
     // Setup
     println!("Testing: untrack_billy_test()");
     setup_two_nodes(alex, billy, can_connect)?;
-    log_i!("setup_two_nodes COMPLETE");
 
     // Send Untrack
     billy
@@ -445,7 +441,6 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
     // Setup
     println!("Testing: untrack_billy_test()");
     setup_two_nodes(alex, billy, can_connect)?;
-    log_i!("setup_two_nodes COMPLETE");
 
     // Billy untracks DNA
     billy

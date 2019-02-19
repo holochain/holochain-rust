@@ -231,10 +231,7 @@ pub struct FetchMetaResultData {
     pub provider_agent_id: String,
     #[serde(rename = "entryAddress")]
     pub entry_address: Address,
-
     pub attribute: String,
-    // TODO: change params
-    // pub params: Vec<String>,
 
     // // List of (hash, content) pairs.
     // single string or list of hashs

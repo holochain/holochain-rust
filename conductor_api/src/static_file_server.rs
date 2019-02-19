@@ -203,11 +203,10 @@ pub mod tests {
         assert_eq!(static_server.start(), Ok(()));
         assert_eq!(static_server.running, true);
 
-        let get_root_result: String = 
-            reqwest::get("http://localhost:3000/")
-                .expect("Could not make request to /")
-                .text()
-                .expect("Response body is not valid text");
+        let get_root_result: String = reqwest::get("http://localhost:3000/")
+            .expect("Could not make request to /")
+            .text()
+            .expect("Response body is not valid text");
         assert_eq!(get_root_result, "test_success");
 
         let get_result: serde_json::Value =

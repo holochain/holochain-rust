@@ -1,4 +1,3 @@
-extern crate serde_json;
 use crate::{
     context::Context,
     nucleus::{

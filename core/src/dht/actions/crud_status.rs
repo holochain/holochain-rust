@@ -23,7 +23,7 @@ pub fn crud_status(
     crud_status : CrudStatus
 ) -> CrudStatusFuture {
     let action_wrapper =
-        ActionWrapper::new(Action::CrudStatus(entry_wh, crud_status));
+        ActionWrapper::new(Action::CrudStatus((entry_wh, crud_status)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     CrudStatusFuture {
         context: context.clone(),

@@ -50,9 +50,35 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
         Action::UpdateEntry(_) => Some(reduce_update_entry),
         Action::RemoveEntry(_) => Some(reduce_remove_entry),
         Action::AddLink(_) => Some(reduce_add_link),
+        Action::CrudStatus(_) =>Some(reduce_crud_status),
         _ => None,
     }
 }
+
+pub(crate) fn reduce_crud_status(context: Arc<Context>,
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper) -> Option<DhtStore>
+    {
+        let action = action_wrapper.action();
+        let (action,crud_status) = unwrap_to!(action => Action::CrudStatus);
+        match crud_status
+        {
+            CrudStatus::Live => {
+                unimplemented!("have not implemented for live yet")
+            },
+            CrudStatus::Modified => {
+                unimplemented!("have not implemented for Modified yet")
+            },
+            CrudStatus::Deleted => {
+                unimplemented!("have not implemented for deleted yet")
+            },
+            _ => 
+            {
+                None
+            }
+
+        }
+    }
 
 pub(crate) fn reduce_hold_entry(
     context: Arc<Context>,

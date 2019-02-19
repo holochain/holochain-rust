@@ -102,7 +102,7 @@ pub enum Action {
     AddLink(Link),
 
     //action for updating crudstatus
-    CrudStatus(EntryWithHeader,CrudStatus),
+    CrudStatus((EntryWithHeader,CrudStatus)),
 
     // ----------------
     // Network actions:

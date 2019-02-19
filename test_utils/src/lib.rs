@@ -185,10 +185,11 @@ pub fn test_context_and_logger_with_network_name(
     (
         Arc::new({
             let mut builder = ContextBuilder::new()
-                .with_agent(agent)
+                .with_agent(agent.clone())
                 .with_logger(logger.clone())
                 .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
-                .expect("Tempdir must be accessible");
+                .expect("Tempdir must be accessible")
+                .with_conductor_api(mock_signing::mock_conductor_api(agent));
             if let Some(network_name) = network_name {
                 let config = P2pConfig::new_with_memory_backend(network_name);
                 builder = builder.with_p2p_config(config);

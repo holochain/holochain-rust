@@ -51,10 +51,7 @@ pub mod tests {
     use crate::{
         agent::actions::commit::commit_entry,
         context::Context,
-        instance::{
-            tests::{test_context_and_logger, test_instance},
-            Instance,
-        },
+        instance::{tests::test_instance_and_context, Instance},
         nucleus::{
             ribosome::{
                 api::{tests::*, ZomeApiFunction},
@@ -119,11 +116,7 @@ pub mod tests {
         );
 
         let netname = Some("create_test_instance");
-        let instance = test_instance(dna, netname).expect("Could not create test instance");
-
-        let (context, _) = test_context_and_logger("joan", netname);
-        let initialized_context = instance.initialize_context(context);
-        (instance, initialized_context)
+        test_instance_and_context(dna, netname).expect("Could not create test instance")
     }
 
     #[test]

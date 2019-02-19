@@ -23,12 +23,11 @@ fn confirm_published_data(
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     // #fulldht
     assert!(result_a.is_some());
-        log_i!("got HandleStoreEntry on node A: {:?}", result_a);
+    log_i!("got HandleStoreEntry on node A: {:?}", result_a);
 
     let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-assert!(result_b.is_some());
-        log_i!("got HandleStoreEntry on node B: {:?}", result_b);
-
+    assert!(result_b.is_some());
+    log_i!("got HandleStoreEntry on node B: {:?}", result_b);
 
     let fetch_data = billy.request_entry(address.clone());
 

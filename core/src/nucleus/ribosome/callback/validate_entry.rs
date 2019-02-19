@@ -4,7 +4,7 @@ use crate::{
     nucleus::{
         ribosome::{
             self,
-            callback::{links_utils, make_internal_capability_call, CallbackResult},
+            callback::{links_utils, make_internal_capability_request, CallbackResult},
             runtime::WasmCallData,
         },
         ZomeFnCall,
@@ -117,7 +117,7 @@ fn validate_link_entry(
 
     let call = ZomeFnCall::new(
         &link_definition_path.zome_name,
-        make_internal_capability_call(
+        make_internal_capability_request(
             context.clone(),
             "__hdk_validate_link",
             params.clone().into(),
@@ -185,7 +185,11 @@ fn build_validation_call(
 
     Ok(ZomeFnCall::new(
         &zome_name,
-        make_internal_capability_call(context, "__hdk_validate_app_entry", params.clone().into()),
+        make_internal_capability_request(
+            context,
+            "__hdk_validate_app_entry",
+            params.clone().into(),
+        ),
         "__hdk_validate_app_entry",
         params,
     ))

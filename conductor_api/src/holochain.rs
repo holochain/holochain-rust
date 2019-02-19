@@ -644,7 +644,7 @@ mod tests {
         hc.start().expect("couldn't start");
         hc.call(
             "test_zome",
-            example_capability_call(),
+            example_capability_request(),
             "commit_test",
             r#"{}"#,
         )

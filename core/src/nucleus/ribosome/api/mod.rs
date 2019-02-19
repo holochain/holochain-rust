@@ -196,7 +196,7 @@ pub mod tests {
         instance::{tests::test_instance_and_context, Instance},
         nucleus::{
             ribosome::{self, runtime::WasmCallData, Defn},
-            tests::test_capability_call,
+            tests::test_capability_request,
             ZomeFnCall,
         },
     };
@@ -379,7 +379,7 @@ pub mod tests {
     ) -> JsonString {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
-            test_capability_call(context.clone(), &test_function_name(), test_parameters()),
+            test_capability_request(context.clone(), &test_function_name(), test_parameters()),
             &test_function_name(),
             test_parameters(),
         );

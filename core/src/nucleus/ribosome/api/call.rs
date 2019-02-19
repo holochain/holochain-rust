@@ -240,7 +240,7 @@ pub mod tests {
         let expected = Ok(Err(HolochainError::Dna(DnaError::ZomeNotFound(
             r#"Zome 'test_zome' not found"#.to_string(),
         ))));
-        test_reduce_call(&test_setup, dummy_capability_call(), expected);
+        test_reduce_call(&test_setup, dummy_capability_request(), expected);
     }
 
     fn setup_dna_for_test(make_public: bool) -> Dna {
@@ -318,11 +318,12 @@ pub mod tests {
         test_reduce_call(&test_setup, cap_request.clone(), expected_failure.clone());
 
         // make the call with an valid capability call from self
-        let cap_request = test_agent_capability_call(test_setup.context.clone(), "test", "{}");
+        let cap_request = test_agent_capability_request(test_setup.context.clone(), "test", "{}");
         test_reduce_call(&test_setup, cap_request, success_expected());
 
         // make the call with an invalid valid capability call from self
-        let cap_request = test_agent_capability_call(test_setup.context.clone(), "some_fn", "{}");
+        let cap_request =
+            test_agent_capability_request(test_setup.context.clone(), "some_fn", "{}");
         test_reduce_call(&test_setup, cap_request, expected_failure);
 
         // make the call with an valid capability call from a different sources
@@ -404,7 +405,7 @@ pub mod tests {
         let context = test_setup.context;
 
         // non existent functions should fail
-        let zome_call = ZomeFnCall::new("test_zome", dummy_capability_call(), "foo_func", "{}");
+        let zome_call = ZomeFnCall::new("test_zome", dummy_capability_request(), "foo_func", "{}");
         let result = validate_call(context.clone(), &zome_call);
         assert_eq!(
             result,
@@ -414,7 +415,7 @@ pub mod tests {
         );
 
         // non existent zomes should fial
-        let zome_call = ZomeFnCall::new("foo_zome", dummy_capability_call(), "test", "{}");
+        let zome_call = ZomeFnCall::new("foo_zome", dummy_capability_request(), "test", "{}");
         let result = validate_call(context.clone(), &zome_call);
         assert_eq!(
             result,
@@ -431,7 +432,7 @@ pub mod tests {
         let context = test_setup.context;
 
         // non public call should fail
-        let zome_call = ZomeFnCall::new("test_zome", dummy_capability_call(), "test", "{}");
+        let zome_call = ZomeFnCall::new("test_zome", dummy_capability_request(), "test", "{}");
         let result = validate_call(context.clone(), &zome_call);
         assert_eq!(result, Err(HolochainError::CapabilityCheckFailed));
 

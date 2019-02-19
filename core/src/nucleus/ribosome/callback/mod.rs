@@ -191,7 +191,7 @@ pub(crate) fn run_callback(
     }
 }
 
-pub fn make_internal_capability_call(
+pub fn make_internal_capability_request(
     context: Arc<Context>,
     function: &str,
     parameters: JsonString,
@@ -213,7 +213,7 @@ pub fn call(
 ) -> CallbackResult {
     let zome_call = ZomeFnCall::new(
         zome,
-        make_internal_capability_call(context.clone(), function.as_str(), params.into()),
+        make_internal_capability_request(context.clone(), function.as_str(), params.into()),
         &function.as_str().to_string(),
         params.clone(),
     );

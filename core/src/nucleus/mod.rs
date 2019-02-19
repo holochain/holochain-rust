@@ -126,7 +126,7 @@ pub mod tests {
     }
 
     /// test capability call
-    pub fn test_capability_call<J: Into<JsonString>>(
+    pub fn test_capability_request<J: Into<JsonString>>(
         context: Arc<Context>,
         function: &str,
         parameters: J,
@@ -141,7 +141,7 @@ pub mod tests {
     }
 
     /// test self agent capability call
-    pub fn test_agent_capability_call<J: Into<JsonString>>(
+    pub fn test_agent_capability_request<J: Into<JsonString>>(
         context: Arc<Context>,
         function: &str,
         parameters: J,
@@ -155,7 +155,7 @@ pub mod tests {
         )
     }
     /// dummy capability call
-    pub fn dummy_capability_call() -> CapabilityRequest {
+    pub fn dummy_capability_request() -> CapabilityRequest {
         CapabilityRequest::new(
             dummy_capability_token(),
             Address::from("test caller"),
@@ -182,7 +182,7 @@ pub mod tests {
     pub fn test_zome_call() -> ZomeFnCall {
         ZomeFnCall::new(
             &test_zome(),
-            dummy_capability_call(),
+            dummy_capability_request(),
             &test_function(),
             test_parameters(),
         )
@@ -266,7 +266,12 @@ pub mod tests {
         let mut instance = Instance::new(test_context("janet", netname));
         let context = instance.initialize_without_dna(test_context("jane", netname));
 
-        let call = ZomeFnCall::new("test_zome", dummy_capability_call(), "public_test_fn", "{}");
+        let call = ZomeFnCall::new(
+            "test_zome",
+            dummy_capability_request(),
+            "public_test_fn",
+            "{}",
+        );
         let result = context.block_on(call_zome_function(call, &context));
 
         match result {
@@ -283,7 +288,7 @@ pub mod tests {
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         // Create zome function call:
-        let call = ZomeFnCall::new("test_zome", dummy_capability_call(), "xxx", "{}");
+        let call = ZomeFnCall::new("test_zome", dummy_capability_request(), "xxx", "{}");
 
         let result = context.block_on(call_zome_function(call, &context));
 
@@ -303,7 +308,7 @@ pub mod tests {
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         // Create bad zome function call
-        let call = ZomeFnCall::new("xxx", dummy_capability_call(), "public_test_fn", "{}");
+        let call = ZomeFnCall::new("xxx", dummy_capability_request(), "public_test_fn", "{}");
 
         let result = context.block_on(call_zome_function(call, &context));
 
@@ -314,7 +319,7 @@ pub mod tests {
 
         /*
         convert when we actually have capabilities on a chain
-                let mut cap_call = test_capability_call();
+                let mut cap_call = test_capability_request();
                 cap_call.cap_name = "xxx".to_string();
 
                 // Create bad capability function call
@@ -334,11 +339,11 @@ pub mod tests {
 
     #[test]
     fn test_zomefncall_same_as() {
-        let base = ZomeFnCall::new("yoyo", dummy_capability_call(), "fufu", "papa");
-        let copy = ZomeFnCall::new("yoyo", dummy_capability_call(), "fufu", "papa");
-        let same = ZomeFnCall::new("yoyo", dummy_capability_call(), "fufu", "papa1");
-        let diff1 = ZomeFnCall::new("yoyo1", dummy_capability_call(), "fufu", "papa");
-        let diff2 = ZomeFnCall::new("yoyo", dummy_capability_call(), "fufu3", "papa");
+        let base = ZomeFnCall::new("yoyo", dummy_capability_request(), "fufu", "papa");
+        let copy = ZomeFnCall::new("yoyo", dummy_capability_request(), "fufu", "papa");
+        let same = ZomeFnCall::new("yoyo", dummy_capability_request(), "fufu", "papa1");
+        let diff1 = ZomeFnCall::new("yoyo1", dummy_capability_request(), "fufu", "papa");
+        let diff2 = ZomeFnCall::new("yoyo", dummy_capability_request(), "fufu3", "papa");
 
         assert_ne!(base, copy);
         assert!(base.same_fn_as(&copy));

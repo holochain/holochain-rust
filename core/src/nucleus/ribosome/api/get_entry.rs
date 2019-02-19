@@ -49,7 +49,7 @@ pub mod tests {
                 },
                 runtime::WasmCallData,
             },
-            tests::test_capability_call,
+            tests::test_capability_request,
             ZomeFnCall,
         },
     };
@@ -210,7 +210,7 @@ pub mod tests {
 
         let commit_call = ZomeFnCall::new(
             &test_zome_name(),
-            test_capability_call(context.clone(), "commit_dispatch", test_parameters()),
+            test_capability_request(context.clone(), "commit_dispatch", test_parameters()),
             "commit_dispatch",
             test_parameters(),
         );
@@ -232,7 +232,7 @@ pub mod tests {
 
         let get_call = ZomeFnCall::new(
             &test_zome_name(),
-            test_capability_call(context.clone(), "get_dispatch", test_parameters()),
+            test_capability_request(context.clone(), "get_dispatch", test_parameters()),
             "get_dispatch",
             test_parameters(),
         );
@@ -286,7 +286,7 @@ pub mod tests {
         //
         // let get_call = ZomeFnCall::new(
         //     &test_zome_name(),
-        //     test_capability_call(),
+        //     test_capability_request(),
         //     "get_dispatch",
         //     test_parameters(),
         // );

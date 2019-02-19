@@ -3,7 +3,9 @@ use crate::{
     nucleus::{
         ribosome::{
             self,
-            callback::{make_internal_capability_call, Callback, CallbackParams, CallbackResult},
+            callback::{
+                make_internal_capability_request, Callback, CallbackParams, CallbackResult,
+            },
             runtime::WasmCallData,
             Defn,
         },
@@ -29,7 +31,7 @@ pub fn receive(
 
     let zome_call = ZomeFnCall::new(
         zome,
-        make_internal_capability_call(
+        make_internal_capability_request(
             context.clone(),
             Callback::Receive.as_str(),
             parameters.clone().into(),

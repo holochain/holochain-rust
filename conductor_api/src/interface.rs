@@ -1,3 +1,4 @@
+use base64;
 use holochain_core::state::State;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use holochain_dpki::keypair::{Keypair, SIGNATURESIZE};

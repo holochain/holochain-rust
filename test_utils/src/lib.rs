@@ -23,7 +23,6 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::AgentId,
     cas::content::Address,
     dna::{
         capabilities::CapabilityCall,
@@ -247,12 +246,13 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn create_test_context(agent_name: &str) -> Arc<Context> {
-    let agent = AgentId::generate_fake(agent_name);
+    let agent = mock_signing::registered_test_agent(agent_name);
     Arc::new(
         ContextBuilder::new()
-            .with_agent(agent)
+            .with_agent(agent.clone())
             .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
             .expect("Tempdir must be accessible")
+            .with_conductor_api(mock_signing::mock_conductor_api(agent))
             .spawn(),
     )
 }

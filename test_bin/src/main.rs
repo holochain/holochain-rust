@@ -1,4 +1,5 @@
 #![feature(try_from)]
+#![warn(unused_extern_crates)]
 
 extern crate holochain_core_types;
 #[macro_use]
@@ -6,7 +7,6 @@ extern crate holochain_net;
 extern crate holochain_net_connection;
 #[macro_use]
 extern crate serde_json;
-extern crate tempfile;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]

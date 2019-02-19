@@ -1,5 +1,3 @@
-extern crate futures;
-extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper, NetworkSettings},
     context::{get_dna_and_agent, Context},

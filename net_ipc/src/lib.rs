@@ -7,16 +7,13 @@
 //! `tcp://` for other operating systems.
 //!
 //! The main export you should care about is ZmqIpcClient.
-
+//!
+#![warn(unused_extern_crates)]
 #[macro_use]
 extern crate failure;
 extern crate holochain_net_connection;
 #[macro_use]
 extern crate lazy_static;
-extern crate regex;
-extern crate rmp_serde;
-extern crate serde;
-extern crate serde_bytes;
 extern crate snowflake;
 extern crate zmq;
 

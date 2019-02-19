@@ -64,13 +64,13 @@ pub(crate) fn reduce_crud_status(context: Arc<Context>,
         match crud_status
         {
             CrudStatus::Live => {
-                reduce_store_live_crud(context,old_store,&entry_with_header.entry)
+                reduce_crud(context,old_store,&entry_with_header.entry,crud_status)
             },
             CrudStatus::Modified => {
-                unimplemented!("have not implemented for Modified yet")
+                reduce_crud(context,old_store,&entry_with_header.entry,crud_status)
             },
             CrudStatus::Deleted => {
-                unimplemented!("have not implemented for deleted yet")
+                reduce_crud(context,old_store,&entry_with_header.entry,crud_status)
             },
             _ => 
             {
@@ -96,9 +96,9 @@ pub(crate) fn reduce_hold_entry(
         _ => unreachable!(),
     }
 }
-fn reduce_store_live_crud(context: Arc<Context>,
+fn reduce_crud(context: Arc<Context>,
     old_store: &DhtStore,
-    entry: &Entry) -> Option<DhtStore>
+    entry: &Entry,crud_status: &CrudStatus) -> Option<DhtStore>
     {
            let new_store = (*old_store).clone();
            let content_storage = &new_store.content_storage().clone();
@@ -106,7 +106,7 @@ fn reduce_store_live_crud(context: Arc<Context>,
            if res.is_some()
             {
                 let meta_storage = &new_store.meta_storage().clone();
-                create_crud_status_eav(&entry.address(), CrudStatus::Live)
+                create_crud_status_eav(&entry.address(), *crud_status)
                     .map(|status_eav| {
                         let meta_res = (*meta_storage.write().unwrap()).add_eavi(&status_eav);
                         meta_res
@@ -133,6 +133,9 @@ fn reduce_store_live_crud(context: Arc<Context>,
                 None
            }
     }
+
+
+
 fn reduce_store_entry_common(
     context: Arc<Context>,
     old_store: &DhtStore,
@@ -143,24 +146,7 @@ fn reduce_store_entry_common(
     let content_storage = &new_store.content_storage().clone();
     let res = (*content_storage.write().unwrap()).add(entry).ok();
     if res.is_some() {
-        let meta_storage = &new_store.meta_storage().clone();
-        create_crud_status_eav(&entry.address(), CrudStatus::Live)
-            .map(|status_eav| {
-                let meta_res = (*meta_storage.write().unwrap()).add_eavi(&status_eav);
-                meta_res
-                    .map(|_| Some(new_store))
-                    .map_err(|err| {
-                        context.log(format!(
-                            "err/dht: reduce_hold_entry: meta_storage write failed!: {:?}",
-                            err
-                        ));
-                        None::<DhtStore>
-                    })
-                    .ok()
-                    .unwrap_or(None)
-            })
-            .ok()
-            .unwrap_or(None)
+        Some(new_store)
     } else {
         context.log(format!(
             "err/dht: dht::reduce_hold_entry() FAILED {:?}",
@@ -223,48 +209,28 @@ pub(crate) fn reduce_update_entry(
     let latest_old_address = old_address;
     let meta_storage = &new_store.meta_storage().clone();
     let closure_store = new_store.clone();
-    let new_status_eav_option = create_crud_status_eav(latest_old_address, CrudStatus::Modified)
-        .map(|new_status_eav| {
-            let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav);
-            res.map(|_| None)
-                .map_err(|err| {
-                    closure_store
-                        .clone()
-                        .actions_mut()
-                        .insert(action_wrapper.clone(), Err(err));
-                    Some(closure_store.clone())
+    create_crud_link_eav(latest_old_address, new_address)
+        .map(|crud_link_eav| {
+            let res = (*meta_storage.write().unwrap()).add_eavi(&crud_link_eav);
+            let res_option = res.clone().ok();
+            res_option
+                .and_then(|_| {
+                    new_store.actions_mut().insert(
+                        action_wrapper.clone(),
+                        res.clone().map(|_| new_address.clone()),
+                    );
+                    Some(new_store.clone())
                 })
-                .ok()
-                .unwrap_or(Some(closure_store.clone()))
+                .or_else(|| {
+                    new_store
+                        .actions_mut()
+                        .insert(action_wrapper.clone(), Err(res.err().unwrap()));
+                    Some(new_store.clone())
+                })
         })
         .ok()
-        .unwrap_or(None);
-    if new_status_eav_option.is_some() {
-        new_status_eav_option
-    } else {
-        // Update crud-link
-        create_crud_link_eav(latest_old_address, new_address)
-            .map(|crud_link_eav| {
-                let res = (*meta_storage.write().unwrap()).add_eavi(&crud_link_eav);
-                let res_option = res.clone().ok();
-                res_option
-                    .and_then(|_| {
-                        new_store.actions_mut().insert(
-                            action_wrapper.clone(),
-                            res.clone().map(|_| new_address.clone()),
-                        );
-                        Some(new_store.clone())
-                    })
-                    .or_else(|| {
-                        new_store
-                            .actions_mut()
-                            .insert(action_wrapper.clone(), Err(res.err().unwrap()));
-                        Some(new_store.clone())
-                    })
-            })
-            .ok()
-            .unwrap_or(None)
-    }
+        .unwrap_or(None)
+    
 }
 
 pub(crate) fn reduce_remove_entry(
@@ -332,19 +298,6 @@ fn reduce_remove_entry_inner(
         return Err(HolochainError::ErrorGeneric(String::from(
             "entry_status != CrudStatus::Live",
         )));
-    }
-    // Update crud-status
-    let result = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted);
-    if result.is_err() {
-        return Err(HolochainError::ErrorGeneric(String::from(
-            "Could not create eav",
-        )));
-    }
-    let new_status_eav = result.expect("should unwrap eav");
-    let meta_storage = &new_store.meta_storage().clone();
-    let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav);
-    if let Err(err) = res {
-        return Err(err);
     }
     // Update crud-link
     let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)

@@ -5,6 +5,7 @@ use crate::{
     context::Context,
     dht::dht_store::DhtStore,
     network::entry_with_header::EntryWithHeader,
+    workflows::author_entry::author_entry
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -87,11 +88,10 @@ fn reduce_store_entry_common(
     let res = (*content_storage.write().unwrap()).add(entry).ok();
     if res.is_some() {
         let meta_storage = &new_store.meta_storage().clone();
-        create_crud_status_eav(&entry.address(), CrudStatus::Live)
-            .map(|status_eav| {
-                let meta_res = (*meta_storage.write().unwrap()).add_eavi(&status_eav);
-                meta_res
-                    .map(|_| Some(new_store))
+        println!("entry {:?}",entry.clone());
+        context
+            .block_on(author_entry(&entry, None, &context))
+            .map(|_| Some(new_store))
                     .map_err(|err| {
                         context.log(format!(
                             "err/dht: reduce_hold_entry: meta_storage write failed!: {:?}",
@@ -101,9 +101,7 @@ fn reduce_store_entry_common(
                     })
                     .ok()
                     .unwrap_or(None)
-            })
-            .ok()
-            .unwrap_or(None)
+
     } else {
         context.log(format!(
             "err/dht: dht::reduce_hold_entry() FAILED {:?}",
@@ -191,10 +189,12 @@ pub(crate) fn reduce_remove_link(
 
 //
 pub(crate) fn reduce_update_entry(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
+
+
     // Setup
     let action = action_wrapper.action();
     let (old_address, new_address) = unwrap_to!(action => Action::UpdateEntry);
@@ -203,22 +203,29 @@ pub(crate) fn reduce_update_entry(
     let latest_old_address = old_address;
     let meta_storage = &new_store.meta_storage().clone();
     let closure_store = new_store.clone();
-    let new_status_eav_option = create_crud_status_eav(latest_old_address, CrudStatus::Modified)
-        .map(|new_status_eav| {
-            let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav);
-            res.map(|_| None)
-                .map_err(|err| {
+
+    // pre-condition: Must already have entry in local content_storage
+    let content_storage = &new_store.content_storage().clone();
+    let maybe_json_entry = content_storage
+        .read()
+        .unwrap()
+        .fetch(latest_old_address)
+        .unwrap();
+    let json_entry = maybe_json_entry.expect("Could not parse json entry");
+
+    let entry = Entry::try_from(json_entry).expect("Stored content should be a valid entry.");
+    let new_status_eav_option = context
+            .block_on(author_entry(&entry, None, &context))
+            .map(|_| None)
+            .map_err(|err| {
                     closure_store
                         .clone()
                         .actions_mut()
                         .insert(action_wrapper.clone(), Err(err));
                     Some(closure_store.clone())
                 })
-                .ok()
-                .unwrap_or(Some(closure_store.clone()))
-        })
-        .ok()
-        .unwrap_or(None);
+            .ok()
+            .unwrap_or(Some(closure_store.clone()));
     if new_status_eav_option.is_some() {
         new_status_eav_option
     } else {
@@ -265,7 +272,7 @@ pub(crate) fn reduce_remove_entry(
 
 //
 fn reduce_remove_entry_inner(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     new_store: &mut DhtStore,
     latest_deleted_address: &Address,
     deletion_address: &Address,
@@ -314,15 +321,8 @@ fn reduce_remove_entry_inner(
         )));
     }
     // Update crud-status
-    let result = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted);
-    if result.is_err() {
-        return Err(HolochainError::ErrorGeneric(String::from(
-            "Could not create eav",
-        )));
-    }
-    let new_status_eav = result.expect("should unwrap eav");
-    let meta_storage = &new_store.meta_storage().clone();
-    let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav);
+    let res = context
+            .block_on(author_entry(&entry, None, &context));
     if let Err(err) = res {
         return Err(err);
     }
@@ -343,7 +343,7 @@ pub mod tests {
             dht_reducers::{reduce, reduce_hold_entry},
             dht_store::DhtStore,
         },
-        instance::tests::test_context,
+        instance::tests::{test_context,test_instance_and_context_by_name},
         network::entry_with_header::EntryWithHeader,
         state::test_store,
     };
@@ -358,10 +358,15 @@ pub mod tests {
         convert::TryFrom,
         sync::{Arc, RwLock},
     };
+    use test_utils::create_test_dna_with_wat;
 
     #[test]
     fn reduce_hold_entry_test() {
-        let context = test_context("bob", None);
+        let netname = Some("reduce_hold_entry_test");
+        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        dna.uuid = netname.unwrap().to_string();
+        let (_, context) =
+            test_instance_and_context_by_name(dna.clone(), "alex", netname).unwrap();
         let store = test_store(context.clone());
 
         // test_entry is not sys so should do nothing

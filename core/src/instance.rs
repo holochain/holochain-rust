@@ -731,7 +731,7 @@ pub mod tests {
         let commit_agent_action = ActionWrapper::new(Action::Commit((agent_entry.clone(), None)));
 
         // Set up instance and process the action
-        let instance = Instance::new(test_context("jason", netname));
+        let instance = Instance::new(context.clone());
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);

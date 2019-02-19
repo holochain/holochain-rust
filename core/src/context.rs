@@ -61,6 +61,11 @@ impl Context {
         100
     }
 
+    // test_check_conductor_api() is used to inject a conductor_api with a working
+    // mock of agent/sign to be used in tests.
+    // There are two different implementations of this function below which get pulled
+    // in depending on if "test" is in the build config, or not.
+    // This allows unit tests of core to not have to deal with a conductor_api.
     #[cfg(not(test))]
     fn test_check_conductor_api(
         conductor_api: Option<Arc<RwLock<IoHandler>>>,

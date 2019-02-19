@@ -60,11 +60,11 @@ pub(crate) fn reduce_crud_status(context: Arc<Context>,
     action_wrapper: &ActionWrapper) -> Option<DhtStore>
     {
         let action = action_wrapper.action();
-        let (action,crud_status) = unwrap_to!(action => Action::CrudStatus);
+        let (entry_with_header,crud_status) = unwrap_to!(action => Action::CrudStatus);
         match crud_status
         {
             CrudStatus::Live => {
-                unimplemented!("have not implemented for live yet")
+                reduce_store_live_crud(context,old_store,&entry_with_header.entry)
             },
             CrudStatus::Modified => {
                 unimplemented!("have not implemented for Modified yet")
@@ -96,7 +96,43 @@ pub(crate) fn reduce_hold_entry(
         _ => unreachable!(),
     }
 }
-
+fn reduce_store_live_crud(context: Arc<Context>,
+    old_store: &DhtStore,
+    entry: &Entry) -> Option<DhtStore>
+    {
+           let new_store = (*old_store).clone();
+           let content_storage = &new_store.content_storage().clone();
+           let res = (*content_storage.write().unwrap()).contains(&entry.address()).ok();
+           if res.is_some()
+            {
+                let meta_storage = &new_store.meta_storage().clone();
+                create_crud_status_eav(&entry.address(), CrudStatus::Live)
+                    .map(|status_eav| {
+                        let meta_res = (*meta_storage.write().unwrap()).add_eavi(&status_eav);
+                        meta_res
+                            .map(|_| Some(new_store))
+                            .map_err(|err| {
+                                context.log(format!(
+                                    "err/dht: reduce_hold_entry: meta_storage write failed!: {:?}",
+                                    err
+                                ));
+                                None::<DhtStore>
+                            })
+                            .ok()
+                            .unwrap_or(None)
+                    })
+                    .ok()
+                    .unwrap_or(None)
+           }
+           else 
+           {
+                        context.log(format!(
+                    "err/dht: dht::reduce_hold_entry() FAILED {:?}",
+                    res
+                ));
+                None
+           }
+    }
 fn reduce_store_entry_common(
     context: Arc<Context>,
     old_store: &DhtStore,
@@ -107,7 +143,24 @@ fn reduce_store_entry_common(
     let content_storage = &new_store.content_storage().clone();
     let res = (*content_storage.write().unwrap()).add(entry).ok();
     if res.is_some() {
-        Some(new_store)
+        let meta_storage = &new_store.meta_storage().clone();
+        create_crud_status_eav(&entry.address(), CrudStatus::Live)
+            .map(|status_eav| {
+                let meta_res = (*meta_storage.write().unwrap()).add_eavi(&status_eav);
+                meta_res
+                    .map(|_| Some(new_store))
+                    .map_err(|err| {
+                        context.log(format!(
+                            "err/dht: reduce_hold_entry: meta_storage write failed!: {:?}",
+                            err
+                        ));
+                        None::<DhtStore>
+                    })
+                    .ok()
+                    .unwrap_or(None)
+            })
+            .ok()
+            .unwrap_or(None)
     } else {
         context.log(format!(
             "err/dht: dht::reduce_hold_entry() FAILED {:?}",

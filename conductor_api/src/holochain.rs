@@ -94,6 +94,7 @@ impl Holochain {
     ) -> HolochainResult<Self> {
         let name = dna.name.clone();
         let result = instance.initialize(Some(dna), context.clone());
+
         match result {
             Ok(new_context) => {
                 context.log(format!("debug/conductor: {} instantiated", name));
@@ -173,21 +174,19 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
-    extern crate holochain_cas_implementations;
-
     use super::*;
+    extern crate tempfile;
+    use self::tempfile::tempdir;
     use context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::ribosome::{callback::Callback, Defn},
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna, json::RawString};
     use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
-    use tempfile::tempdir;
     use test_utils::{
         create_test_defs_with_fn_name, create_test_dna_with_defs, create_test_dna_with_wat,
         create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
@@ -272,7 +271,7 @@ mod tests {
     fn fails_instantiate_if_genesis_fails() {
         let dna = create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
+            "test_cap",
             Some(
                 r#"
             (module

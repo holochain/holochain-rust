@@ -6,13 +6,7 @@ pub mod ribosome;
 pub mod state;
 
 use holochain_core_types::{
-    cas::content::Address,
-    dna::{
-        capabilities::{CapabilityCall, CapabilityType},
-        Dna,
-    },
-    error::{HcResult, HolochainError},
-    json::JsonString,
+    cas::content::Address, dna::capabilities::CapabilityCall, error::HcResult, json::JsonString,
 };
 use snowflake;
 
@@ -65,29 +59,8 @@ impl ZomeFnCall {
 
 pub type ZomeFnResult = HcResult<JsonString>;
 
-// Helper function for finding out if a given function call is public
-fn is_fn_public(dna: &Dna, zome_call: &ZomeFnCall) -> Result<bool, HolochainError> {
-    let zome = dna
-        .get_zome(&zome_call.zome_name)
-        .map_err(|e| HolochainError::Dna(e))?;
-    match zome.capabilities.iter().find(|(_, cap)| {
-        cap.cap_type == CapabilityType::Public && cap.functions.contains(&zome_call.fn_name)
-    }) {
-        Some(_) => Ok(true),
-        None => Ok(false),
-    }
-    // Lookup for capability token or capability with function in it
-    // panic!("not implemented");
-    /*    let res = dna.get_capability_with_zome_name(&zome_call.zome_name, &zome_call.cap_name());
-    match res {
-        Err(e) => Err(HolochainError::Dna(e)),
-        Ok(cap) => Ok(cap.cap_type == CapabilityType::Public),
-    }*/
-}
-
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
     use super::*;
     use crate::{
         instance::{
@@ -100,9 +73,10 @@ pub mod tests {
         },
     };
     use holochain_core_types::dna::capabilities::CapabilityCall;
+    use test_utils;
 
     use holochain_core_types::{
-        error::DnaError,
+        error::{DnaError, HolochainError},
         json::{JsonString, RawString},
     };
 
@@ -306,38 +280,5 @@ pub mod tests {
         assert!(base.same_fn_as(&same));
         assert!(!base.same_fn_as(&diff1));
         assert!(!base.same_fn_as(&diff2));
-    }
-
-    #[test]
-    fn test_is_fn_public() {
-        let test_zome_name = &test_zome();
-
-        let mut dna = test_utils::create_test_dna_with_wat(test_zome_name, "test_cap", None);
-        let mut call = test_zome_call();
-        call.fn_name = String::from("public_test_fn");
-        let result = is_fn_public(&dna, &call);
-        assert!(result.unwrap());
-
-        call.zome_name = String::from("foo zome");
-        let result = is_fn_public(&dna, &call);
-        assert_eq!(
-            format!("{:?}", result),
-            "Err(Dna(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\")))"
-        );
-
-        dna.zomes
-            .get_mut(test_zome_name)
-            .unwrap()
-            .add_fn_declaration(String::from("non_pub_fn"), vec![], vec![]);
-
-        let call = ZomeFnCall::new(
-            test_zome_name,
-            Some(CapabilityCall::new(test_capability_token(), None)),
-            "non_pub_fn",
-            test_parameters(),
-        );
-
-        let result = is_fn_public(&dna, &call);
-        assert!(!result.unwrap());
     }
 }

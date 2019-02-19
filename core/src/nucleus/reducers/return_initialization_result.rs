@@ -31,8 +31,6 @@ pub fn reduce_return_initialization_result(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-
     use super::*;
     use crate::{
         action::ActionWrapper,

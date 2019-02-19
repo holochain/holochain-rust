@@ -35,9 +35,6 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-    extern crate wabt;
-
     use crate::nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,

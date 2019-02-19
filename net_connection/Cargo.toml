@@ -1,14 +1,12 @@
 [package]
 name = "holochain_net_connection"
-version = "0.1.0"
+version = "0.0.4-alpha"
 authors = ["neonphog <neonphog@gmail.com>"]
 
 [dependencies]
-byteorder = "1"
 failure = "0.1.3"
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
-rmp = "0.8"
 rmp-serde = "0.13.7"
 serde_bytes = "0.10.4"
 serde = "1.0"

@@ -2,7 +2,7 @@
 //! or more generally for making rust code that the Ribosome can run.
 //! Must not have any dependency with any other Holochain crates.
 #![feature(try_from)]
-extern crate serde;
+#![warn(unused_extern_crates)]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;

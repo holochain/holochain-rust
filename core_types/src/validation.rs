@@ -2,7 +2,6 @@
 //! of data that is used for validation of chain modifying
 //! agent actions between Holochain and Zomes.
 
-extern crate serde_json;
 use crate::{
     cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
     json::JsonString,

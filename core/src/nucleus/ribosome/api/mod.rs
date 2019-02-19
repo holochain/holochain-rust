@@ -28,7 +28,7 @@ use crate::nucleus::ribosome::{
     runtime::Runtime,
     Defn,
 };
-use holochain_core_types::dna::capabilities::ReservedCapabilityNames;
+
 use num_traits::FromPrimitive;
 use std::str::FromStr;
 
@@ -126,13 +126,6 @@ impl Defn for ZomeApiFunction {
     fn from_index(i: usize) -> Self {
         FromPrimitive::from_usize(i).unwrap_or(ZomeApiFunction::MissingNo)
     }
-
-    fn capability(&self) -> ReservedCapabilityNames {
-        // Zome API Functions are not part of any zome and capability
-        // @TODO architecture issue?
-        // @see https://github.com/holochain/holochain-rust/issues/299
-        unreachable!();
-    }
 }
 
 impl FromStr for ZomeApiFunction {
@@ -194,10 +187,7 @@ impl ZomeApiFunction {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate wabt;
     use self::wabt::Wat2Wasm;
-    use holochain_core_types::json::JsonString;
-    extern crate test_utils;
     use super::ZomeApiFunction;
     use crate::{
         context::Context,
@@ -208,7 +198,10 @@ pub mod tests {
             ZomeFnCall,
         },
     };
+    use holochain_core_types::json::JsonString;
     use std::{str::FromStr, sync::Arc};
+    use test_utils;
+    use wabt;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument
@@ -337,7 +330,7 @@ pub mod tests {
     )
 
     (func
-        (export "__list_capabilities")
+        (export "__list_traits")
         (param $allocation i64)
         (result i64)
 
@@ -346,10 +339,10 @@ pub mod tests {
 
     (func
         (export "__list_functions")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
     )
 )
                 "#,

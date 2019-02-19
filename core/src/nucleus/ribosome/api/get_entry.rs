@@ -35,8 +35,8 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-    extern crate wabt;
+    use test_utils;
+    use wabt;
 
     use self::wabt::Wat2Wasm;
     use crate::{
@@ -165,7 +165,7 @@ pub mod tests {
     )
 
     (func
-        (export "__list_capabilities")
+        (export "__list_traits")
         (param $allocation i64)
         (result i64)
 
@@ -174,10 +174,10 @@ pub mod tests {
 
     (func
         (export "__list_functions")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
     )
 )
                 "#,

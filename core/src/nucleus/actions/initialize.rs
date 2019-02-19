@@ -1,4 +1,3 @@
-extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
     agent::actions::commit::commit_entry,
@@ -78,8 +77,6 @@ pub async fn initialize_application(
             .expect("Action channel not usable in initialize_application()");
         return Err(HolochainError::new("error committing Agent"));
     }
-
-    // TODO: Question: genesis is called AFTER dna and agent entries committed??
 
     // map genesis across every zome
     let results: Vec<_> = dna

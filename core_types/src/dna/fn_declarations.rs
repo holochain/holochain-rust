@@ -1,7 +1,5 @@
 //! File holding all the structs for handling function declarations defined in DNA.
 
-use crate::dna::capabilities::CapabilityType;
-
 /// Represents the type declaration for zome function parameter
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct FnParameter {
@@ -48,13 +46,26 @@ impl FnDeclaration {
     }
 }
 
+/// Represents a group of named functions in the Zomes's "traits" array
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+pub struct TraitFns {
+    /// "functions" array
+    #[serde(default)]
+    pub functions: Vec<String>,
+}
+
+impl TraitFns {
+    /// TraitFns Constructor
+    pub fn new() -> Self {
+        TraitFns {
+            functions: Vec::new(),
+        }
+    }
+}
+
 /// Represents an trait definition for bridging
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Trait {
-    /// capability type enum
-    #[serde(rename = "type")]
-    pub cap_type: CapabilityType,
-
     /// "functions" array
     #[serde(default)]
     pub functions: Vec<FnDeclaration>,
@@ -62,9 +73,8 @@ pub struct Trait {
 
 impl Trait {
     /// Trait Constructor
-    pub fn new(cap_type: CapabilityType) -> Self {
+    pub fn new() -> Self {
         Trait {
-            cap_type,
             functions: Vec::new(),
         }
     }
@@ -73,13 +83,25 @@ impl Trait {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::dna::capabilities::CapabilityType;
+
+    #[test]
+    fn test_trait_fns_build_and_compare() {
+        let fixture: TraitFns = serde_json::from_str(
+            r#"{
+                "functions": ["test"]
+            }"#,
+        )
+        .unwrap();
+
+        let mut trait_fns = TraitFns::new();
+        trait_fns.functions.push(String::from("test"));
+        assert_eq!(fixture, trait_fns);
+    }
 
     #[test]
     fn test_trait_build_and_compare() {
         let fixture: Trait = serde_json::from_str(
             r#"{
-                "type": "transferable",
                 "functions": [
                     {
                         "name": "test",
@@ -101,7 +123,7 @@ mod tests {
         )
         .unwrap();
 
-        let mut trt = Trait::new(CapabilityType::Transferable);
+        let mut trt = Trait::new();
         let mut fn_dec = FnDeclaration::new();
         fn_dec.name = String::from("test");
         let input = FnParameter::new("post", "string");

@@ -5,7 +5,6 @@ use crate::{
     nucleus::{
         actions::get_entry::get_entry_from_agent_chain,
         ribosome::{self, capabilities::CapabilityRequest, WasmCallData},
-        state::NucleusState,
         ZomeFnCall, ZomeFnResult,
     },
 };
@@ -71,12 +70,7 @@ pub async fn call_zome_function(
     // so that it drops the lock and frees the state for mutation.
     // If we would leak (and move) the lock into the Ribosome thread below, it would lead to a
     // dead-lock since the existence of this read-lock prevents the redux loop from writing to
-    // the state..
-
-    let state = context.state().ok_or(HolochainError::ErrorGeneric(
-        "Context not initialized".to_string(),
-    ))?;
-    let nucleus_state = state.nucleus();
+    // the state
 
     context.log(format!(
         "debug/reduce/call_zome_fn: Validating call: {:?}",
@@ -84,7 +78,7 @@ pub async fn call_zome_function(
     ));
 
     // 1. Validate the call (a number of things could go wrong)
-    let (dna_name, wasm) = validate_call(context.clone(), &nucleus_state, &zome_call)?;
+    let (dna_name, wasm) = validate_call(context.clone(), &zome_call)?;
 
     context.log(format!(
         "debug/reduce/call_zome_fn: executing call: {:?}",
@@ -134,11 +128,18 @@ pub async fn call_zome_function(
 /// validates that a given zome function call specifies a correct zome function and capability grant
 pub fn validate_call(
     context: Arc<Context>,
-    state: &NucleusState,
     fn_call: &ZomeFnCall,
 ) -> Result<(String, DnaWasm), HolochainError> {
+    let state = context.state().ok_or(HolochainError::ErrorGeneric(
+        "Context not initialized".to_string(),
+    ))?;
+
+    let nucleus_state = state.nucleus();
+
     // make sure the dna, zome and function exists and return pretty errors if they don't
-    let dna = state.dna().ok_or_else(|| HolochainError::DnaMissing)?;
+    let dna = nucleus_state
+        .dna()
+        .ok_or_else(|| HolochainError::DnaMissing)?;
     let zome = dna
         .get_zome(&fn_call.zome_name)
         .map_err(|e| HolochainError::Dna(e))?;

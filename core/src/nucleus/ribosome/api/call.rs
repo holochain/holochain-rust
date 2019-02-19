@@ -266,13 +266,13 @@ pub mod tests {
     }
 
     // success to test_reduce_call is when the function gets called which shows up as an
-    // argument deserialization error because we are reusing the wasm from test_zome_ap_function
+    // argument deserialization error because we are reusing the wasm from test_zome_api_function
     // which just passes the function parameter through to "invoke_call" which expects a
     // ZomeFnCallArgs struct which the test "{}" is not!
     // TODO: fix this bit of crazyness
     fn success_expected() -> Result<Result<JsonString, HolochainError>, RecvTimeoutError> {
         Ok(Err(HolochainError::RibosomeFailed(
-            "Argument deserialization failed".to_string(),
+            "Zome function failure: Argument deserialization failed".to_string(),
         )))
     }
 
@@ -402,11 +402,10 @@ pub mod tests {
         let dna = setup_dna_for_test(true);
         let test_setup = setup_test(dna);
         let context = test_setup.context;
-        let state = context.state().unwrap().nucleus();
 
         // non existent functions should fail
         let zome_call = ZomeFnCall::new("test_zome", dummy_capability_call(), "foo_func", "{}");
-        let result = validate_call(context.clone(), &state, &zome_call);
+        let result = validate_call(context.clone(), &zome_call);
         assert_eq!(
             result,
             Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(
@@ -416,7 +415,7 @@ pub mod tests {
 
         // non existent zomes should fial
         let zome_call = ZomeFnCall::new("foo_zome", dummy_capability_call(), "test", "{}");
-        let result = validate_call(context.clone(), &state, &zome_call);
+        let result = validate_call(context.clone(), &zome_call);
         assert_eq!(
             result,
             Err(HolochainError::Dna(DnaError::ZomeNotFound(String::from(
@@ -430,11 +429,10 @@ pub mod tests {
         let dna = setup_dna_for_test(false);
         let test_setup = setup_test(dna);
         let context = test_setup.context;
-        let state = context.state().unwrap().nucleus();
 
         // non public call should fail
         let zome_call = ZomeFnCall::new("test_zome", dummy_capability_call(), "test", "{}");
-        let result = validate_call(context.clone(), &state, &zome_call);
+        let result = validate_call(context.clone(), &zome_call);
         assert_eq!(result, Err(HolochainError::CapabilityCheckFailed));
 
         // if the agent doesn't correctly sign the call it should fail
@@ -451,7 +449,7 @@ pub mod tests {
             "{}",
         );
 
-        let result = validate_call(context.clone(), &state, &zome_call);
+        let result = validate_call(context.clone(), &zome_call);
         assert_eq!(result, Err(HolochainError::CapabilityCheckFailed));
 
         // should work with correctly signed cap_request
@@ -467,7 +465,7 @@ pub mod tests {
             "test",
             "{}",
         );
-        let result = validate_call(context.clone(), &state, &zome_call);
+        let result = validate_call(context.clone(), &zome_call);
         assert!(result.is_ok());
     }
 

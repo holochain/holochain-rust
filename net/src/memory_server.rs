@@ -18,13 +18,10 @@ use std::{
     convert::TryFrom,
     sync::{mpsc, Mutex, RwLock},
 };
+use crate::memory_book::*;
 
-type BucketId = String;
 type RequestId = String;
 
-/// Type for holding list of addresses per dna+agent_id
-/// i.e. map of bucket_id -> addresses
-type AddressBook = HashMap<BucketId, Vec<Address>>;
 
 /// Type for holding a map of 'network_name -> InMemoryServer'
 type InMemoryServerMap = HashMap<String, Mutex<InMemoryServer>>;
@@ -35,80 +32,6 @@ lazy_static! {
         RwLock::new(HashMap::new());
 }
 
-/// return a BucketId out of a dna_address and agent_id
-fn into_bucket_id(dna_address: &Address, agent_id: &str) -> BucketId {
-    format!("{}::{}", dna_address, agent_id)
-}
-
-/// return a unique identifier out of an entry_address and attribute
-fn into_meta_id(meta_tuple: &MetaTuple) -> Address {
-    HashString::from(format!(
-        "{}||{}||{}",
-        meta_tuple.0, meta_tuple.1, meta_tuple.2
-    ))
-}
-
-/// unmerge meta_id into a tuple
-fn _undo_meta_id(meta_id: &Address) -> MetaTuple {
-    let meta_str = String::from(meta_id.clone());
-    let vec: Vec<&str> = meta_str.split("||").collect();
-    assert_eq!(vec.len(), 3);
-    // Convert & return
-    (
-        HashString::from(vec[0]),
-        vec[1].to_string(),
-        serde_json::from_str(vec[2]).expect("metaId not holding valid json content"),
-    )
-}
-
-/// Tells if metaId is of given entry and attribute
-fn _metaId_is(metaId: &Address, entry_address: Address, attribute: String) -> bool {
-    let meta_tuple = _undo_meta_id(metaId);
-    return meta_tuple.0 == entry_address && meta_tuple.1 == attribute;
-}
-
-/// Add an address to a book
-fn bookkeep_address_with_bucket(book: &mut AddressBook, bucket_id: BucketId, address: &Address) {
-    // Append to existing address list if there is one
-    {
-        let maybe_vec_address = book.get_mut(&bucket_id);
-        if let Some(vec_address) = maybe_vec_address {
-            vec_address.push(address.clone());
-            return;
-        }
-    } // unborrow book
-      // None: Create and add a new address list
-    let vec = vec![address.clone()];
-    book.insert(bucket_id, vec);
-}
-
-/// Add an address to a book (sugar)
-fn bookkeep_address(
-    book: &mut AddressBook,
-    dna_address: &Address,
-    agent_id: &str,
-    address: &Address,
-) {
-    let bucket_id = into_bucket_id(dna_address, agent_id);
-    bookkeep_address_with_bucket(book, bucket_id, address);
-}
-
-/// Remove an address from a book
-/// Return true if address exists and has been successfully removed.
-fn _unbookkeep_address(
-    book: &mut AddressBook,
-    dna_address: &Address,
-    agent_id: &str,
-    address: &Address,
-) -> bool {
-    let bucket_id = into_bucket_id(dna_address, agent_id);
-    let maybe_vec_address = book.get_mut(&bucket_id);
-    if let Some(vec_address) = maybe_vec_address {
-        let result = vec_address.remove_item(address);
-        return result.is_some();
-    }
-    false
-}
 
 /// a global server for routing messages between agents in-memory
 pub(crate) struct InMemoryServer {
@@ -122,13 +45,9 @@ pub(crate) struct InMemoryServer {
     client_count: usize,
 
     // published data book: bucket_id -> entry_addresses
-    published_entry_book: AddressBook,
+    published_book: AddressBook,
     // stored data book: bucket_id -> entry_addresses
-    stored_entry_book: AddressBook,
-    // published meta data book: bucket_id -> MetaIds
-    published_meta_book: AddressBook,
-    // stored meta data book: bucket_id -> MetaIds
-    stored_meta_book: AddressBook,
+    stored_book: AddressBook,
 
     // Keep track of which DNAs are tracked... String should be BucketId
     trackdna_book: HashSet<BucketId>,
@@ -229,10 +148,8 @@ impl InMemoryServer {
             senders_by_dna: HashMap::new(),
             client_count: 0,
             request_book: HashMap::new(),
-            published_entry_book: HashMap::new(),
-            stored_entry_book: HashMap::new(),
-            published_meta_book: HashMap::new(),
-            stored_meta_book: HashMap::new(),
+            published_book: HashMap::new(),
+            stored_book: HashMap::new(),
             request_count: 0,
             trackdna_book: HashSet::new(),
             log: TweetProxy::new("memory_server"),
@@ -621,9 +538,10 @@ impl InMemoryServer {
         }
         // all good, book-keep publish
         bookkeep_address(
-            &mut self.published_entry_book,
+            &mut self.published_book,
             &msg.dna_address,
             &msg.provider_agent_id,
+            &msg.entry_address,
             &msg.entry_address,
         );
         // fully connected DHT, so have everyone store it.
@@ -651,12 +569,9 @@ impl InMemoryServer {
             Entry::Occupied(e) => {
                 for (agent_id, sender) in e.get() {
                     let bucket_id = into_bucket_id(&msg.dna_address, agent_id);
-                    let published = self.published_entry_book.get(&bucket_id);
-                    let stored = self.stored_entry_book.get(&bucket_id);
-                    let has_entry = (published.is_some()
-                        && published.unwrap().contains(&msg.entry_address))
-                        || (stored.is_some() && stored.unwrap().contains(&msg.entry_address));
-                    if has_entry {
+                    let has_published = self.published_book.has_bookkept(&bucket_id, &msg.entry_address, &msg.entry_address);
+                    let has_stored = self.stored_book.has_bookkept(&bucket_id, &msg.entry_address, &msg.entry_address);
+                    if has_published || has_stored {
                         self.log.d(&format!(
                             "<<<< '{}' sending to ({}): {:?}",
                             self.name.clone(),
@@ -747,6 +662,7 @@ impl InMemoryServer {
                 &mut self.published_meta_book,
                 &msg.dna_address,
                 &msg.provider_agent_id,
+                &msg.entry_address,
                 &meta_id,
             );
         }
@@ -771,57 +687,33 @@ impl InMemoryServer {
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             // Relay fetchMeta to first agent tracking this DNA
             Entry::Occupied(mut e) => {
-                if !e.get().is_empty() {
-                    let (_k, r) = &e
-                        .get_mut()
-                        .iter()
-                        .next()
-                        .expect("senders_by_dna.entry does not hold any value");
-                    r.send(JsonProtocol::HandleFetchMeta(msg.clone()).into())?;
+//                if !e.get().is_empty() {
+//                    let (_k, r) = &e
+//                        .get_mut()
+//                        .iter()
+//                        .next()
+//                        .expect("senders_by_dna.entry does not hold any value");
+//                    r.send(JsonProtocol::HandleFetchMeta(msg.clone()).into())?;
+//                    return Ok(());
+//                }
+//            }
+            for (agent_id, sender) in e.get() {
+                let bucket_id = into_bucket_id(&msg.dna_address, agent_id);
+                let has_published = self.published_book.has_bookkept(&bucket_id, &msg.entry_address, &msg.entry_address);
+                let has_stored = self.stored_book.has_bookkept(&bucket_id, &msg.entry_address, &msg.entry_address);
+                if has_published || has_stored {
+                    self.log.d(&format!(
+                        "<<<< '{}' sending to ({}): {:?}",
+                        self.name.clone(),
+                        agent_id,
+                        msg.clone()
+                    ));
+                    let msg: Protocol = JsonProtocol::HandleFetchMeta(msg.clone()).into();
+                    sender.send(msg)?;
                     return Ok(());
                 }
             }
-            // TODO: Once linking meta is properly implemented in Core
-            // Relay fetchMeta to first agent known to hold that attribute
-            //            Entry::Occupied(e) => {
-            //                for (agent_id, sender) in e.get() {
-            //                    let bucket_id = into_bucket_id(&msg.dna_address, agent_id);
-            //                    let published = self.published_meta_book.get(&bucket_id);
-            //                    let stored = self.stored_meta_book.get(&bucket_id);
-            //                    let has_attribute = (published.is_some()
-            //                        && published
-            //                            .unwrap()
-            //                            .iter()
-            //                            .find(|metaId| {
-            //                                metaId_is(metaId, msg.entry_address.clone(), msg.attribute.clone())
-            //                            })
-            //                            .is_some())
-            //                        || (stored.is_some()
-            //                            && stored
-            //                                .unwrap()
-            //                                .iter()
-            //                                .find(|metaId| {
-            //                                    metaId_is(
-            //                                        metaId,
-            //                                        msg.entry_address.clone(),
-            //                                        msg.attribute.clone(),
-            //                                    )
-            //                                })
-            //                                .is_some());
-            //
-            //                    if has_attribute {
-            //                        self.log.d(&format!(
-            //                            "<<<< '{}' sending to ({}): {:?}",
-            //                            self.name.clone(),
-            //                            agent_id,
-            //                            msg.clone()
-            //                        ));
-            //                        let msg: Protocol = JsonProtocol::HandleFetchMeta(msg.clone()).into();
-            //                        sender.send(msg)?;
-            //                        return Ok(());
-            //                    }
-            //                }
-            //            }
+        }
             _ => (),
         };
         // No node found, send an empty FetchMetaResultData
@@ -932,12 +824,8 @@ impl InMemoryServer {
         ));
         // Compare with already published list
         // For each data not already published, request it and publish it ourselves.
-        let known_published_list = match self.published_entry_book.get(&bucket_id) {
-            Some(list) => list.clone(),
-            None => Vec::new(),
-        };
         for entry_address in msg.entry_address_list.clone() {
-            if known_published_list.contains(&entry_address) {
+            if self.published_book.has_entry(&bucket_id, entry_address) {
                 continue;
             }
             let request_id = self.priv_create_request_with_bucket(&bucket_id);
@@ -966,18 +854,15 @@ impl InMemoryServer {
         ));
         // Compare with current stored_data_book
         // For each data not already holding, add it to stored_data_book?
-        let known_stored_list = match self.stored_entry_book.get(&bucket_id) {
-            Some(list) => list.clone(),
-            None => Vec::new(),
-        };
-        for data_address in msg.entry_address_list.clone() {
-            if known_stored_list.contains(&data_address) {
+        for entry_address in msg.entry_address_list.clone() {
+            if self.stored_book.has_entry(&bucket_id, entry_address) {
                 continue;
             }
             bookkeep_address_with_bucket(
-                &mut self.stored_entry_book,
+                &mut self.stored_book,
                 bucket_id.clone(),
-                &data_address,
+                &entry_address,
+                &entry_address,
             );
         }
     }
@@ -997,28 +882,28 @@ impl InMemoryServer {
         ));
         // Compare with already published list
         // For each metadata not already published, request it and publish it ourselves.
-        let known_published_meta_list = match self.published_meta_book.get(&bucket_id) {
-            Some(list) => list.clone(),
+        let known_published_map = match self.published_book.get(&bucket_id) {
+            Some(map) => map.clone(),
             None => Vec::new(),
         };
         self.log.t(&format!(
             "known_published_meta_list = {:?}",
-            known_published_meta_list
+            known_published_map
         ));
 
-        let mut request_meta_key = Vec::new();
+        let mut requested_meta_key = Vec::new();
         for meta_tuple in msg.meta_list.clone() {
             let meta_id = into_meta_id(&meta_tuple);
             // dont send request for a known meta
-            if known_published_meta_list.contains(&meta_id) {
+            if self.published_book.has_entry(&bucket_id, entry_address, meta_id) {
                 continue;
             }
             // dont send same request twice
             let meta_key = (meta_tuple.0.clone(), meta_tuple.1.clone());
-            if request_meta_key.contains(&meta_key) {
+            if requested_meta_key.contains(&meta_key) {
                 continue;
             }
-            request_meta_key.push(meta_key);
+            requested_meta_key.push(meta_key);
             // send request for that meta_key
             let request_id = self.priv_create_request_with_bucket(&bucket_id);
             let fetch_meta = FetchMetaData {
@@ -1047,16 +932,17 @@ impl InMemoryServer {
         ));
         // Compare with current stored_meta_book
         // For each data not already holding, add it to stored_meta_book?
-        let known_stored_meta_list = match self.stored_meta_book.get(&bucket_id) {
-            Some(list) => list.clone(),
-            None => Vec::new(),
-        };
         for meta_tuple in msg.meta_list.clone() {
             let meta_id = into_meta_id(&meta_tuple);
-            if known_stored_meta_list.contains(&meta_id) {
+            if self.published_book.has_bookkept(&bucket_id, entry_address, meta_id) {
                 continue;
             }
-            bookkeep_address_with_bucket(&mut self.stored_meta_book, bucket_id.clone(), &meta_id);
+            bookkeep_address_with_bucket(
+                &mut self.stored_meta_book,
+                bucket_id.clone(),
+                &meta_tuple.0,
+                &meta_id,
+            );
         }
     }
 }

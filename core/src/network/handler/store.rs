@@ -4,6 +4,7 @@ use crate::{
     workflows::{
         hold_entry::hold_entry_workflow, hold_link::hold_link_workflow,
         remove_link::remove_link_workflow,
+        crud_status::crud_status_workflow
     },
 };
 use holochain_core_types::crud_status::{LINK_NAME, STATUS_NAME,CrudStatus};

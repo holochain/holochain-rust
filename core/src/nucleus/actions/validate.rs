@@ -12,6 +12,7 @@ use futures::{
 };
 use holochain_core_types::{
     cas::content::AddressableContent,
+    chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     hash::HashString,
@@ -124,6 +125,11 @@ fn validate_provenances(validation_data: &ValidationData) -> Result<(), Holochai
     Ok(())
 }
 
+fn validate_header_address(entry: &Entry, header: &ChainHeader) -> Result<(), HolochainError> {
+    (entry.address() == *header.entry_address())
+        .ok_or(HolochainError::ValidationFailed("Wrong header for entry".to_string()))
+}
+
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
 /// be called from zome api functions and other contexts that don't care about implementation details.
@@ -138,6 +144,7 @@ pub async fn validate_entry(
     let address = entry.address();
 
     check_entry_type(entry.entry_type(), context)?;
+    validate_header_address(&entry, &validation_data.package.chain_header)?;
     validate_provenances(&validation_data)?;
     spawn_validation_ribosome(id.clone(), entry, validation_data, context.clone());
 

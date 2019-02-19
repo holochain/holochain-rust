@@ -7,13 +7,13 @@ use super::check_init;
 use crate::error::SodiumError;
 
 /// a trait for structures that can be used as a backing store for SecBuf
-pub trait Bufferable {
+pub trait Bufferable: Send {
     fn new(s: usize) -> Box<Bufferable>
     where
-        Self: Sized;
+        Self: Sized + Send;
     fn from_string(s: String) -> Box<Bufferable>
     where
-        Self: Sized;
+        Self: Sized + Send;
     fn len(&self) -> usize;
     fn readable(&mut self);
     fn writable(&mut self);
@@ -63,6 +63,8 @@ struct SodiumBuf {
     z: *mut c_void,
     s: usize,
 }
+
+unsafe impl Send for SodiumBuf {}
 
 impl Bufferable for SodiumBuf {
     /// warning: funky sizes may result in mis-alignment

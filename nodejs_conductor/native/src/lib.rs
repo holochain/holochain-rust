@@ -14,6 +14,8 @@ extern crate holochain_core_types;
 extern crate holochain_net;
 extern crate holochain_node_test_waiter;
 extern crate tempfile;
+extern crate holochain_dpki;
+extern crate holochain_sodium;
 
 mod config;
 pub mod js_test_conductor;

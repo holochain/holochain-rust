@@ -25,7 +25,6 @@
 ///
 /// # Example
 /// ```rust
-/// #![feature(try_from)]
 /// extern crate clap;
 /// extern crate holochain_conductor_api;
 /// extern crate holochain_core_types;
@@ -37,7 +36,7 @@
 ///     conductor::Conductor,
 /// };
 /// use holochain_core_types::error::HolochainError;
-/// use std::{convert::TryFrom, fs::File, io::prelude::*, path::PathBuf};
+/// use std::{fs::File, io::prelude::*, path::PathBuf};
 /// use structopt::StructOpt;
 ///
 /// #[derive(StructOpt, Debug)]
@@ -78,7 +77,9 @@
 ///     config
 ///         .check_consistency()
 ///         .map_err(|string| HolochainError::ConfigError(string))?;
-///     Conductor::try_from(&config)
+///     let mut conductor = Conductor::from_config(config);
+///     conductor.load_config()?;
+///     Ok(conductor)
 /// }
 ///
 /// fn load_config_file(path: &String) -> Result<Configuration, HolochainError> {
@@ -92,10 +93,13 @@ extern crate futures;
 extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_dpki;
 extern crate holochain_net;
 extern crate holochain_net_connection;
 extern crate holochain_net_ipc;
+extern crate holochain_sodium;
 
+extern crate base64;
 extern crate chrono;
 extern crate serde;
 extern crate tempfile;
@@ -132,6 +136,7 @@ extern crate tokio;
 #[macro_use]
 extern crate pretty_assertions;
 extern crate fs_extra;
+extern crate rpassword;
 
 pub mod conductor;
 pub mod config;

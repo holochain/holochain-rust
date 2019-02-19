@@ -923,6 +923,7 @@ dependencies = [
 name = "holochain_conductor_api"
 version = "0.0.4-alpha"
 dependencies = [
+ "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "boolinator 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.32.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -940,9 +941,11 @@ dependencies = [
  "holochain_cas_implementations 0.0.4-alpha",
  "holochain_core 0.0.4-alpha",
  "holochain_core_types 0.0.4-alpha",
+ "holochain_dpki 0.0.4-alpha",
  "holochain_net 0.0.4-alpha",
  "holochain_net_connection 0.0.4-alpha",
  "holochain_net_ipc 0.0.4-alpha",
+ "holochain_sodium 0.0.4-alpha",
  "holochain_wasm_utils 0.0.4-alpha",
  "hyper 0.12.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper-staticfile 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -989,8 +992,10 @@ dependencies = [
  "holochain_common 0.0.4-alpha",
  "holochain_core_types 0.0.4-alpha",
  "holochain_core_types_derive 0.0.4-alpha",
+ "holochain_dpki 0.0.4-alpha",
  "holochain_net 0.0.4-alpha",
  "holochain_net_connection 0.0.4-alpha",
+ "holochain_sodium 0.0.4-alpha",
  "holochain_wasm_utils 0.0.4-alpha",
  "jsonrpc-lite 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-ws-server 10.1.0 (git+https://github.com/paritytech/jsonrpc)",

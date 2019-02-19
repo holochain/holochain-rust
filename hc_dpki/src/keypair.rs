@@ -13,7 +13,8 @@ pub struct Keypair {
     pub enc_priv: SecBuf,
 }
 
-pub const SEEDSIZE: usize = 32 as usize;
+pub const SEEDSIZE: usize = 32;
+pub const SIGNATURESIZE: usize = 64;
 
 const BUNDLE_DATA_LEN_MISALIGN: usize = 1 // version byte
     + sign::PUBLICKEYBYTES
@@ -46,7 +47,7 @@ impl Keypair {
     /// get the keypair identifier string
     ///
     /// @return {string}
-    pub fn get_id(&mut self) -> String {
+    pub fn get_id(&self) -> String {
         return self.pub_keys.clone();
     }
 
@@ -112,7 +113,7 @@ impl Keypair {
         let data: bundle::ReturnBundleData = json::decode(&bundle_string).unwrap();
         let mut decrypted_data = SecBuf::with_secure(BUNDLE_DATA_LEN);
         util::pw_dec(&data, passphrase, &mut decrypted_data, config)?;
-        let mut sign_priv = SecBuf::with_secure(64);
+        let mut sign_priv = SecBuf::with_secure(SIGNATURESIZE);
         let mut enc_priv = SecBuf::with_secure(32);
 
         let pub_keys = {
@@ -358,7 +359,7 @@ mod tests {
     fn it_should_get_id() {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed);
-        let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
+        let keypair = Keypair::new_from_seed(&mut seed).unwrap();
 
         let pk: String = keypair.get_id();
         println!("pk: {:?}", pk);
@@ -376,13 +377,33 @@ mod tests {
         let mut message = SecBuf::with_insecure(16);
         random_secbuf(&mut message);
 
-        let mut message_signed = SecBuf::with_insecure(64);
+        let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
 
         keypair.sign(&mut message, &mut message_signed).unwrap();
 
         let check: i32 =
             Keypair::verify(keypair.pub_keys, &mut message_signed, &mut message).unwrap();
         assert_eq!(0, check);
+    }
+
+    #[test]
+    fn it_should_invalidate_altered_message() {
+        let mut seed = SecBuf::with_insecure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
+
+        let mut message = SecBuf::with_insecure(16);
+        random_secbuf(&mut message);
+
+        let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
+
+        keypair.sign(&mut message, &mut message_signed).unwrap();
+
+        random_secbuf(&mut message);
+
+        let check: i32 =
+            Keypair::verify(keypair.pub_keys, &mut message_signed, &mut message).unwrap();
+        assert_ne!(0, check);
     }
 
     // #[test]

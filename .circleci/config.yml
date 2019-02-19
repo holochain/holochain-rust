@@ -6,6 +6,7 @@ jobs:
  build:
   docker:
    - image: holochain/holochain-rust:circle.zz.end
+  resource_class: medium+
   steps:
    - checkout
    - run: nix-shell --run hc-test
@@ -20,7 +21,7 @@ jobs:
  app-spec-tests:
   docker:
    - image: holochain/holochain-rust:circle.zz.end
-  resource_class: medium+
+  resource_class: large
   steps:
    - checkout
 

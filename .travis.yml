@@ -312,12 +312,11 @@ jobs:
       before_cache:
         - rm -rf $HOME/.cargo/registry/index
 
-# temporarily turned off so CI is green on deploy
-#    - name: cold os x
-#      os: osx
-#      script:
-#       - . ./scripts/install/auto.sh
-#       - make test
+    #- name: cold os x
+    #  os: osx
+    #  script:
+    #    - . ./scripts/install/auto.sh
+    #    - make test
 
     # holochain-cli releases section
     - name: "CLI DEPLOY - 64 bit Linux"

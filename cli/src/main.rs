@@ -149,6 +149,7 @@ enum Cli {
 }
 
 fn main() {
+    holochain_sodium::check_init();
     run().unwrap_or_else(|err| {
         eprintln!("{}", err);
 

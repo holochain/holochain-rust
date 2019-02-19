@@ -13,3 +13,9 @@ impl From<&'static str> for Signature {
         Signature(s.to_owned())
     }
 }
+
+impl From<String> for Signature {
+    fn from(s: String) -> Signature {
+        Signature(s.to_owned())
+    }
+}

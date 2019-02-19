@@ -8,7 +8,7 @@ exclude = ["artifacts.json", "index.node"]
 
 [lib]
 name = "holochain_node"
-# crate-type = ["dylib"]
+crate-type = ["dylib"]
 
 [build-dependencies]
 neon-build = "0.2.0"

@@ -43,9 +43,14 @@ pub fn js_make_config(mut cx: FunctionContext) -> JsResult<JsValue> {
     let logger = if opts.debug_log {
         Default::default()
     } else {
+        // creates a logger which just mutes all
+        let mut rules = LogRules::new();
+        rules
+            .add_rule("^*", true, None)
+            .expect("rule is valid");
         LoggerConfiguration {
-            logger_type: "simple".into(),
-            rules: LogRules::new(),
+            logger_type: "debug".into(),
+            rules,
         }
     };
     let config = make_config(instances, logger);

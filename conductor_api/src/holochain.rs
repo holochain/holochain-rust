@@ -94,6 +94,7 @@ impl Holochain {
     ) -> HolochainResult<Self> {
         let name = dna.name.clone();
         let result = instance.initialize(Some(dna), context.clone());
+
         match result {
             Ok(new_context) => {
                 context.log(format!("debug/conductor: {} instantiated", name));

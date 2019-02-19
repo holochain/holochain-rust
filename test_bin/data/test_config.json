@@ -1,9 +1,9 @@
 {
   "N3H_PATH": "C:\\github\\n3h",
   "modes": {
-    "IN_MEMORY": false,
+    "IN_MEMORY": true,
     "IPC_MOCK": true,
-    "HACK_MODE": false
+    "HACK_MODE": true
   },
   "suites": {
     "BASIC_WORKFLOWS": true,

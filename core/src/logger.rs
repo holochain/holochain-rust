@@ -44,6 +44,8 @@ pub struct TestLogger {
 
 impl Logger for TestLogger {
     fn log(&mut self, msg: String) {
+        // Debugging code (do not remove)
+        // println!("{}", msg);
         self.log.push(msg);
     }
     fn dump(&self) -> String {

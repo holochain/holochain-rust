@@ -8,23 +8,25 @@ jobs:
    - image: holochain/holochain-rust:circle.zz.end
   steps:
    - checkout
-
-   - run: nix-shell --run hc-fmt-check
    - run: nix-shell --run hc-test
 
- integration-tests:
+ fmt:
   docker:
    - image: holochain/holochain-rust:circle.zz.end
+  steps:
+   - checkout
+   - run: nix-shell --run hc-fmt-check
+
+ app-spec-tests:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  resource_class: medium+
   steps:
    - checkout
 
    - run:
        name: install cli
        command: nix-shell --run hc-install-cli
-
-   - run:
-      name: test cli
-      command: nix-shell --run hc-test-cli
 
    - run:
        name: install node conductor
@@ -37,6 +39,20 @@ jobs:
    - run:
        name: nodejs conductor tests
        command: nix-shell --run hc-test-node-conductor
+
+ cli-tests:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  steps:
+   - checkout
+
+   - run:
+       name: install cli
+       command: nix-shell --run hc-install-cli
+
+   - run:
+      name: test cli
+      command: nix-shell --run hc-test-cli
 
  # https://circleci.com/docs/2.0/building-docker-images/
  docker.start:
@@ -72,8 +88,9 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end .
+   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end -t holochain/holochain-rust:develop .
    - run: docker push holochain/holochain-rust:circle.zz.end
+   - run: docker push holochain/holochain-rust:develop
 
  cold.ubuntu:
   docker:
@@ -88,7 +105,9 @@ workflows:
  tests:
   jobs:
    - build
-   - integration-tests
+   - fmt
+   - app-spec-tests
+   - cli-tests
 
  cold:
   jobs:

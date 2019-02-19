@@ -19,6 +19,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
     timeout: &'a Timeout,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. Try to get the entry locally (i.e. local DHT shard)
+
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
     if maybe_entry_with_meta.is_some() {

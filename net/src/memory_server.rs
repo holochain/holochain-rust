@@ -5,12 +5,12 @@
 #![allow(non_snake_case)]
 
 use crate::{error::NetworkError, tweetlog::*};
-use holochain_core_types::{cas::content::Address, hash::HashString};
+use holochain_core_types::{cas::content::Address};
 use holochain_net_connection::{
     json_protocol::{
         DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
         FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-        MessageData, MetaListData, MetaTuple, PeerData,
+        MessageData, MetaListData, PeerData,
     },
     protocol::Protocol,
     NetResult,
@@ -83,6 +83,16 @@ impl InMemoryServer {
         self.request_book
             .insert(req_id.clone(), cell_id.to_string());
         req_id
+    }
+
+    /// Check if its our own request and return CellId
+    fn priv_check_request(&self, request_id: &RequestId) -> Option<&CellId> {
+        self.log.t(&format!(
+            "---- priv_check_request('{}') in {:?} ?",
+            request_id,
+            self.request_book.clone(),
+        ));
+        self.request_book.get(&request_id.clone())
     }
 
     /// Send all Get*Lists requests to agent
@@ -253,14 +263,16 @@ impl InMemoryServer {
                     return Ok(());
                 }
                 // Check if its a response to our own request
-                let maybe_cell_id = self.priv_check_request(&msg.request_id);
-                if let Some(_) = maybe_cell_id {
-                    self.log.d(&format!(
-                        "---- '{}' internal request failed: {:?}",
-                        self.name.clone(),
-                        msg.clone(),
-                    ));
-                    return Ok(());
+                {
+                    let maybe_cell_id = self.priv_check_request(&msg.request_id);
+                    if let Some(_) = maybe_cell_id {
+                        self.log.d(&format!(
+                            "---- '{}' internal request failed: {:?}",
+                            self.name.clone(),
+                            msg.clone(),
+                        ));
+                        return Ok(());
+                    }
                 }
                 // If not, relay the FailureResult message to receipient
                 self.priv_send_one(
@@ -750,7 +762,7 @@ impl InMemoryServer {
                 msg.attribute.clone(),
                 meta_content.clone(),
             ));
-            if book_has(&self.published_book, cell_id, &msg.entry_address, &meta_id) {
+            if book_has(&self.published_book, cell_id.clone(), &msg.entry_address, &meta_id) {
                 continue;
             }
             self.log.t(&format!("Publishing missing Meta: {}", meta_content.clone()));
@@ -766,16 +778,6 @@ impl InMemoryServer {
         Ok(())
     }
 
-    /// Check if its our own request and return CellId
-    fn priv_check_request(&mut self, request_id: &RequestId) -> Option<&CellId> {
-        self.log.t(&format!(
-            "---- priv_check_request('{}') in {:?} ?",
-            request_id,
-            self.request_book.clone(),
-        ));
-        self.request_book.get(&request_id.clone())
-    }
-
     /// Received response from our request for the 'publish_list'
     /// For each data not already published, request it in order to publish it ourselves.
     fn priv_serve_HandleGetPublishingEntryListResult(
@@ -784,7 +786,8 @@ impl InMemoryServer {
     ) -> NetResult<()> {
         let cell_id = self
             .priv_check_request(&msg.request_id)
-            .expect("Not our request");
+            .expect("Not our request")
+            .to_string();
         self.log.d(&format!(
             "---- HandleGetPublishingDataListResult: cell_id = '{}'",
             cell_id,
@@ -792,7 +795,7 @@ impl InMemoryServer {
         // Compare with already published list
         // For each data not already published, request it and publish it ourselves.
         for entry_address in msg.entry_address_list.clone() {
-            if book_has_entry(&self.published_book, cell_id.to_string(), &entry_address) {
+            if book_has_entry(&self.published_book, cell_id.clone(), &entry_address) {
                 continue;
             }
             let request_id = self.priv_create_request_with_cell_id(&cell_id);
@@ -814,7 +817,8 @@ impl InMemoryServer {
     fn priv_serve_HandleGetHoldingEntryListResult(&mut self, msg: &EntryListData) {
         let cell_id = self
             .priv_check_request(&msg.request_id)
-            .expect("Not our request");
+            .expect("Not our request")
+            .to_string();
         self.log.d(&format!(
             "---- HandleGetHoldingEntryListResult: cell_id = '{}'",
             cell_id,
@@ -822,7 +826,7 @@ impl InMemoryServer {
         // Compare with current stored_book
         // For each data not already holding, add it to stored_data_book?
         for entry_address in msg.entry_address_list.clone() {
-            if book_has_entry(&self.stored_book, cell_id.to_string(), &entry_address) {
+            if book_has_entry(&self.stored_book, cell_id.clone(), &entry_address) {
                 continue;
             }
             bookkeep_with_cell_id(
@@ -842,7 +846,8 @@ impl InMemoryServer {
     ) -> NetResult<()> {
         let cell_id = self
             .priv_check_request(&msg.request_id)
-            .expect("Not our request");
+            .expect("Not our request")
+            .to_string();
         self.log.d(&format!(
             "---- HandleGetPublishingMetaListResult: cell_id = '{}'",
             cell_id,
@@ -853,7 +858,7 @@ impl InMemoryServer {
         for meta_tuple in msg.meta_list.clone() {
             let meta_id = into_meta_id(&meta_tuple);
             // dont send request for a known meta
-            if book_has(&self.published_book, cell_id.to_string(), &meta_tuple.0, &meta_id) {
+            if book_has(&self.published_book, cell_id.clone(), &meta_tuple.0, &meta_id) {
                 continue;
             }
             // dont send same request twice
@@ -883,7 +888,8 @@ impl InMemoryServer {
     fn priv_serve_HandleGetHoldingMetaListResult(&mut self, msg: &MetaListData) {
         let cell_id = self
             .priv_check_request(&msg.request_id)
-            .expect("Not our request");
+            .expect("Not our request")
+            .to_string();
         self.log.d(&format!(
             "---- HandleGetHoldingMetaListResult: cell_id = '{}'",
             cell_id,
@@ -892,7 +898,7 @@ impl InMemoryServer {
         // For each data not already holding, add it to stored_meta_book?
         for meta_tuple in msg.meta_list.clone() {
             let meta_id = into_meta_id(&meta_tuple);
-            if book_has(&self.stored_book, cell_id.to_string(), &meta_tuple.0, &meta_id) {
+            if book_has(&self.stored_book, cell_id.clone(), &meta_tuple.0, &meta_id) {
                 continue;
             }
             bookkeep_with_cell_id(

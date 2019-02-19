@@ -4,9 +4,7 @@ use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net_connection::json_protocol::MetaTuple;
 
 use std::{
-    collections::{hash_map::Entry, HashMap, HashSet},
-    convert::TryFrom,
-    sync::{mpsc, Mutex, RwLock},
+    collections::{HashMap, HashSet},
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -47,8 +45,8 @@ pub(crate) fn _undo_meta_id(meta_id: &MetaId) -> MetaTuple {
 }
 
 /// Tells if metaId is of given entry and attribute
-pub(crate) fn _metaId_is(metaId: &MetaId, entry_address: Address, attribute: String) -> bool {
-    let meta_tuple = _undo_meta_id(metaId);
+pub(crate) fn _meta_id_is(meta_id: &MetaId, entry_address: Address, attribute: String) -> bool {
+    let meta_tuple = _undo_meta_id(meta_id);
     return meta_tuple.0 == entry_address && meta_tuple.1 == attribute;
 }
 
@@ -77,17 +75,17 @@ pub(crate) fn bookkeep_with_cell_id(
     {
         let maybe_entry_book = cell_book.get_mut(&cell_id);
         if let Some(entry_book) = maybe_entry_book {
-            let maybe_set = entry_book.get_mut(&base_address);
-            match maybe_set {
-                Some(meta_set) => {
-                    meta_set.insert( data_address.clone());
-                },
-                None => {
-                    let mut meta_set = HashSet::new();
-                    meta_set.insert( data_address.clone());
-                    entry_book.insert(base_address.clone(), meta_set.clone());
-                },
-            };
+            // Append to existing address list if there is one
+            {
+                let maybe_meta_set = entry_book.get_mut(&base_address);
+                if let Some(meta_set) = maybe_meta_set {
+                    meta_set.insert(data_address.clone());
+                    return;
+                }
+            }
+            let mut meta_set = HashSet::new();
+            meta_set.insert( data_address.clone());
+            entry_book.insert(base_address.clone(), meta_set.clone());
             return;
         }
     } // unborrow book

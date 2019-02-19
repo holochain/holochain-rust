@@ -21,13 +21,14 @@ fn confirm_published_data(
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    if result_a.is_some() {
+    // #fulldht
+    assert!(result_a.is_some());
         log_i!("got HandleStoreEntry on node A: {:?}", result_a);
-    }
+
     let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    if result_a.is_some() {
+assert!(result_b.is_some());
         log_i!("got HandleStoreEntry on node B: {:?}", result_b);
-    }
+
 
     let fetch_data = billy.request_entry(address.clone());
 
@@ -57,13 +58,12 @@ fn confirm_published_metadata(
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
-    if result_a.is_some() {
-        log_i!("got HandleStoreMeta on node A: {:?}", result_a);
-    }
+    // #fulldht
+    assert!(result_a.is_some());
+    log_i!("got HandleStoreMeta on node A: {:?}", result_a);
     let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
-    if result_a.is_some() {
-        log_i!("got HandleStoreMeta on node B: {:?}", result_b);
-    }
+    assert!(result_b.is_some());
+    log_i!("got HandleStoreMeta on node B: {:?}", result_b);
 
     // Billy asks for that metadata on the network.
     let fetch_meta = billy.request_meta(address.clone(), META_LINK_ATTRIBUTE.to_string());
@@ -267,13 +267,13 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     // wait for gossip
     // Check if billy is asked to store it
     let result = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    if result.is_some() {
-        log_i!("Billy got HandleStoreEntry: {:?}", result);
-    }
+    // #fulldht
+    assert!(result.is_some());
+    log_i!("Billy got HandleStoreEntry: {:?}", result);
+
     let result = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
-    if result.is_some() {
-        log_i!("Billy got HandleStoreEntry: {:?}", result);
-    }
+    assert!(result.is_some());
+    log_i!("Billy got HandleStoreEntry: {:?}", result);
 
     // Billy sends FetchEntry message
     let fetch_data = billy.request_entry(ENTRY_ADDRESS_3.clone());
@@ -309,13 +309,13 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    if result_a.is_some() {
-        log_i!("got HandleStoreEntry on node A: {:?}", result_a);
-    }
+    // #fulldht
+    assert!(result_a.is_some());
+    log_i!("got HandleStoreEntry on node A: {:?}", result_a);
+
     let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    if result_a.is_some() {
-        log_i!("got HandleStoreEntry on node B: {:?}", result_b);
-    }
+    assert!(result_b.is_some());
+    log_i!("got HandleStoreEntry on node B: {:?}", result_b);
 
     // Billy asks for that data
     let fetch_data = billy.request_entry(ENTRY_ADDRESS_1.clone());

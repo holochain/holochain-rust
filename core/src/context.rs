@@ -80,9 +80,7 @@ impl Context {
         agent_id: AgentId,
     ) -> Arc<RwLock<IoHandler>> {
         conductor_api
-            .or(Some(Arc::new(RwLock::new(mock_conductor_api(
-                agent_id,
-            )))))
+            .or(Some(Arc::new(RwLock::new(mock_conductor_api(agent_id)))))
             .unwrap()
     }
 

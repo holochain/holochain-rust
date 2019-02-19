@@ -1,11 +1,8 @@
-
 use holochain_core_types::{cas::content::Address, hash::HashString};
 
 use holochain_net_connection::json_protocol::MetaTuple;
 
-use std::{
-    collections::{HashMap, HashSet},
-};
+use std::collections::{HashMap, HashSet};
 
 //--------------------------------------------------------------------------------------------------
 // Ids
@@ -69,7 +66,7 @@ pub(crate) fn bookkeep_with_cell_id(
     cell_book: &mut CellBook,
     cell_id: CellId,
     base_address: &Address,
-    data_address: &Address
+    data_address: &Address,
 ) {
     // Append to existing address list if there is one
     {
@@ -84,19 +81,18 @@ pub(crate) fn bookkeep_with_cell_id(
                 }
             }
             let mut meta_set = HashSet::new();
-            meta_set.insert( data_address.clone());
+            meta_set.insert(data_address.clone());
             entry_book.insert(base_address.clone(), meta_set.clone());
             return;
         }
     } // unborrow book
-    // None: Create and add a new EntryBook
+      // None: Create and add a new EntryBook
     let mut entry_book = EntryBook::new();
     let mut meta_set = HashSet::new();
-    meta_set.insert( data_address.clone());
+    meta_set.insert(data_address.clone());
     entry_book.insert(base_address.clone(), meta_set);
     cell_book.insert(cell_id, entry_book);
 }
-
 
 /// Add an address to a book (sugar)
 pub(crate) fn bookkeep(

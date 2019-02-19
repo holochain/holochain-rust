@@ -4,8 +4,8 @@
 
 #![allow(non_snake_case)]
 
-use crate::{error::NetworkError, tweetlog::*};
-use holochain_core_types::{cas::content::Address};
+use crate::{error::NetworkError, memory_book::*, tweetlog::*};
+use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     json_protocol::{
         DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
@@ -20,10 +20,8 @@ use std::{
     convert::TryFrom,
     sync::{mpsc, Mutex, RwLock},
 };
-use crate::memory_book::*;
 
 type RequestId = String;
-
 
 /// Type for holding a map of 'network_name -> InMemoryServer'
 type InMemoryServerMap = HashMap<String, Mutex<InMemoryServer>>;
@@ -33,7 +31,6 @@ lazy_static! {
     pub(crate) static ref MEMORY_SERVER_MAP: RwLock<InMemoryServerMap> =
         RwLock::new(HashMap::new());
 }
-
 
 /// a global server for routing messages between nodes in-memory
 pub(crate) struct InMemoryServer {
@@ -762,10 +759,18 @@ impl InMemoryServer {
                 msg.attribute.clone(),
                 meta_content.clone(),
             ));
-            if book_has(&self.published_book, cell_id.clone(), &msg.entry_address, &meta_id) {
+            if book_has(
+                &self.published_book,
+                cell_id.clone(),
+                &msg.entry_address,
+                &meta_id,
+            ) {
                 continue;
             }
-            self.log.t(&format!("Publishing missing Meta: {}", meta_content.clone()));
+            self.log.t(&format!(
+                "Publishing missing Meta: {}",
+                meta_content.clone()
+            ));
             let meta_data = DhtMetaData {
                 dna_address: msg.dna_address.clone(),
                 provider_agent_id: msg.provider_agent_id.clone(),
@@ -858,7 +863,12 @@ impl InMemoryServer {
         for meta_tuple in msg.meta_list.clone() {
             let meta_id = into_meta_id(&meta_tuple);
             // dont send request for a known meta
-            if book_has(&self.published_book, cell_id.clone(), &meta_tuple.0, &meta_id) {
+            if book_has(
+                &self.published_book,
+                cell_id.clone(),
+                &meta_tuple.0,
+                &meta_id,
+            ) {
                 continue;
             }
             // dont send same request twice

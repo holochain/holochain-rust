@@ -126,8 +126,9 @@ fn validate_provenances(validation_data: &ValidationData) -> Result<(), Holochai
 }
 
 fn validate_header_address(entry: &Entry, header: &ChainHeader) -> Result<(), HolochainError> {
-    (entry.address() == *header.entry_address())
-        .ok_or(HolochainError::ValidationFailed("Wrong header for entry".to_string()))
+    (entry.address() == *header.entry_address()).ok_or(HolochainError::ValidationFailed(
+        "Wrong header for entry".to_string(),
+    ))
 }
 
 /// ValidateEntry Action Creator

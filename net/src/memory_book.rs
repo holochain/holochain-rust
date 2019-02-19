@@ -119,7 +119,7 @@ pub fn book_has(
     }
     let entry_book = maybe_entry_book.unwrap();
     let maybe_meta_set = entry_book.get(base_address);
-    if let None = maybe_meta_set {
+    if maybe_meta_set.is_none() {
         return false;
     }
     let meta_set = maybe_meta_set.unwrap();

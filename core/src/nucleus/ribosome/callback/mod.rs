@@ -223,14 +223,14 @@ pub fn call(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-    extern crate wabt;
     use self::wabt::Wat2Wasm;
     use crate::{
         instance::{tests::test_instance, Instance},
         nucleus::ribosome::{callback::Callback, Defn},
     };
     use std::str::FromStr;
+    use test_utils;
+    use wabt;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument

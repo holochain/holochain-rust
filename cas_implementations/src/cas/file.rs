@@ -84,7 +84,6 @@ impl ContentAddressableStorage for FilesystemStorage {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate serde_test;
     extern crate tempfile;
 
     use self::tempfile::{tempdir, TempDir};

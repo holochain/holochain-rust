@@ -695,6 +695,7 @@ impl Logger for NullLogger {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    extern crate tempfile;
     use crate::config::load_configuration;
     use holochain_core::{action::Action, signal::signal_channel};
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
@@ -705,7 +706,8 @@ pub mod tests {
         fs::{File, OpenOptions},
         io::Write,
     };
-    use tempfile::tempdir;
+
+    use self::tempfile::tempdir;
     use test_utils::*;
 
     pub fn test_dna_loader() -> DnaLoader {

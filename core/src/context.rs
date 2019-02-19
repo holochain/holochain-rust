@@ -312,14 +312,13 @@ pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-    extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;
     use std::sync::{Arc, Mutex, RwLock};
+    use tempfile;
 
     #[test]
     fn default_buffer_size_test() {

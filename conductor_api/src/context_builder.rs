@@ -145,6 +145,8 @@ impl ContextBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    extern crate tempfile;
+    use self::tempfile::tempdir;
     use holochain_net::p2p_config::P2pBackendKind;
     use tempfile::tempdir;
     use test_utils::mock_signing::mock_conductor_api;

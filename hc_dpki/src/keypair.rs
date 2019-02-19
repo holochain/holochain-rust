@@ -47,7 +47,7 @@ impl Keypair {
     /// get the keypair identifier string
     ///
     /// @return {string}
-    pub fn get_id(&mut self) -> String {
+    pub fn get_id(&self) -> String {
         return self.pub_keys.clone();
     }
 
@@ -359,7 +359,7 @@ mod tests {
     fn it_should_get_id() {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed);
-        let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
+        let keypair = Keypair::new_from_seed(&mut seed).unwrap();
 
         let pk: String = keypair.get_id();
         println!("pk: {:?}", pk);

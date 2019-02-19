@@ -35,7 +35,9 @@ holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
 holochain_cas_implementations = { path = "../cas_implementations" }
+holochain_dpki = { path = "../hc_dpki" }
 holochain_net_connection = { path = "../net_connection" }
+holochain_sodium = { path = "../sodium" }
 base64 = "0.10"
 boolinator = "2.4.0"
 jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }

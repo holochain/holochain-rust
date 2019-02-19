@@ -1,5 +1,6 @@
 use holochain_core::{
-    nucleus::actions::call_zome_function::make_cap_request_for_call, state::State,
+    context::mock_signer, nucleus::actions::call_zome_function::make_cap_request_for_call,
+    state::State,
 };
 use holochain_core_types::cas::content::Address;
 use Holochain;
@@ -87,6 +88,7 @@ impl ConductorApiBuilder {
 
     /// Finish the building and retrieve the populated handler
     pub fn spawn(mut self) -> IoHandler {
+        self.with_mock_signing_callback();
         self.setup_info_api();
         *self.io
     }
@@ -754,6 +756,14 @@ impl ConductorApiBuilder {
         });
 
         self
+    }
+
+    pub fn with_mock_signing_callback(&mut self) {
+        self.io.add_method("agent/sign", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+            Ok(json!({"payload": payload, "signature": mock_signer(payload)}))
+        });
     }
 }
 

@@ -134,6 +134,8 @@ pub fn hold_entry_list_test(
         // billy might receive HandleDhtStore
         let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))), 2000);
     }
+    log_i!("has_received: {:?}", has_received);
+
     // Have billy request that data
     billy.request_entry(ENTRY_ADDRESS_1.clone());
     // Alex or billy might receive HandleFetchEntry request as this moment

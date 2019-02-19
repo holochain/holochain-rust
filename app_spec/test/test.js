@@ -12,9 +12,9 @@ const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 const instanceCarol = Config.instance(agentCarol, dna)
 
-const scenario1 = new Scenario([instanceAlice])
-const scenario2 = new Scenario([instanceAlice, instanceBob])
-const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol])
+const scenario1 = new Scenario([instanceAlice], { debugLog: true })
+const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
+const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
 scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
@@ -160,7 +160,7 @@ scenario1.runTape('update_post', async (t, { alice }) => {
   const error = JSON.parse(result.Err.Internal)
   t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
   t.ok(error.file)
-  t.equal(error.line, "94")
+  t.ok(error.line)
 })
 
 scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
@@ -175,7 +175,7 @@ scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
    const error = JSON.parse(result_bob_delete.Err.Internal)
    t.deepEqual(error.kind, { ErrorGeneric: "Target for link not found" })
    t.ok(error.file)
-   t.equal(error.line, "94")
+   t.ok(error.line)
   
   })
 
@@ -194,7 +194,7 @@ scenario1.runTape('post max content size 280 characters', async (t, { alice }) =
 
   t.ok(inner.file)
   t.deepEqual(inner.kind, { "ValidationFailed": "Content too long" })
-  t.equals(inner.line, "94")
+  t.ok(inner.line)
 })
 
 scenario1.runTape('posts_by_agent', async (t, { alice }) => {

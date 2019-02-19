@@ -118,8 +118,7 @@ console.log(dnaConfig)
 
 Consumes an array of configured instances and produces an object which is a fully valid Conductor configuration. It can be passed into the Conductor constructor, which is covered in the next articles.
 
-> The return value of this function comes from the Rust <> Nodejs bindings, and contains all the right values,
-but those values are not visible when using `console.log` on the result.
+> This function is mostly useful in conjunction with [manually instantiating a Conductor](./managing_the_conductor.md#instantiating-a-conductor).
 
 ___
 **Name** instancesArray
@@ -133,11 +132,9 @@ ___
 
 **Type** `object`
 
-**Description** *conductorOptions.debugLog* `boolean` Which logger type to use. There are two options:
-- debugLog = true: Use the "debug" logger. This one has nicer, colorful output.
-- debugLog = false: Use the "simple" logger. This one has less interesting output, but can be silenced with the env variable `HC_SIMPLE_LOGGER_MUTE=1`
+**Description** *conductorOptions.debugLog* `boolean` Enables debug logging. The logger produces nice, colorful output of the internal workings of Holochain.
 
-**Default** `{ debugLog: true }`
+**Default** `{ debugLog: false }`
 ___
 
 #### Example
@@ -153,11 +150,11 @@ const conductorConfig = Config.conductor([instanceConfig])
 const agentConfig = Config.agent('alice')
 const dnaConfig = Config.dna('path/to/bundle.json')
 const instanceConfig = Config.instance(agentConfig, dnaConfig)
-const conductorConfig = Config.conductor([instanceConfig], { debugLog: false })
+const conductorConfig = Config.conductor([instanceConfig], { debugLog: true })
 ```
 
 
-## Full Multi Instance Example
+## Multiple Instances Example
 
 ```javascript
 const { Config } = require('@holochain/holochain-nodejs')

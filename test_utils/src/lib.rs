@@ -1,17 +1,8 @@
 #![warn(unused_extern_crates)]
-extern crate holochain_conductor_api;
-extern crate holochain_core;
-extern crate holochain_core_types;
-extern crate holochain_dpki;
-extern crate holochain_net;
-extern crate holochain_sodium;
-extern crate jsonrpc_ws_server;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate serde_json;
-extern crate tempfile;
-extern crate wabt;
 
 pub mod mock_signing;
 

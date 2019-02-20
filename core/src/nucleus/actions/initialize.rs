@@ -51,7 +51,7 @@ const INITIALIZATION_TIMEOUT: u64 = 60;
 
 /// Initialize Chain, Action Creator
 /// This is the high-level initialization function that wraps the whole process of initializing an
-/// instance. It creates both InitApplication and ReturnInitializationResult actions asynchronously.
+/// instance. It creates both InitializeChain and ReturnInitializationResult actions asynchronously.
 ///
 /// Returns a future that resolves to an Ok(NucleusStatus) or an Err(String) which carries either
 /// the Dna error or errors from the genesis callback.
@@ -67,7 +67,7 @@ pub async fn initialize_chain(
         ));
     }
 
-    let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
+    let action_wrapper = ActionWrapper::new(Action::InitializeChain(dna.clone()));
     dispatch_action_and_wait(context.clone(), action_wrapper.clone());
 
     let context_clone = context.clone();

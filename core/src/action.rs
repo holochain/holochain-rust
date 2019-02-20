@@ -172,11 +172,11 @@ pub enum Action {
     // ----------------
     // Nucleus actions:
     // ----------------
-    /// initialize an application from a Dna
+    /// initialize a chain from Dna
     /// not the same as genesis
     /// may call genesis internally
-    InitApplication(Dna),
-    /// return the result of an InitApplication action
+    InitializeChain(Dna),
+    /// return the result of an InitializeChain action
     /// the result is Some arbitrary string
     ReturnInitializationResult(Result<Initialization, String>),
 

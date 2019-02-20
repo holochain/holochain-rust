@@ -26,7 +26,7 @@ pub fn reduce_init_application(
         }
         NucleusStatus::New | NucleusStatus::InitializationFailed(_) => {
             let ia_action = action_wrapper.action();
-            let dna = unwrap_to!(ia_action => Action::InitApplication);
+            let dna = unwrap_to!(ia_action => Action::InitializeChain);
             // Update status
             state.status = NucleusStatus::Initializing;
             // Set DNA
@@ -53,7 +53,7 @@ pub mod tests {
     /// smoke test the init of a nucleus reduction
     fn can_reduce_initialize_action() {
         let dna = Dna::new();
-        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
+        let action_wrapper = ActionWrapper::new(Action::InitializeChain(dna.clone()));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);

@@ -969,7 +969,7 @@ pub mod tests {
         let _conductor = test_conductor_with_signals(signal_tx);
 
         test_utils::expect_action(&signal_rx, |action| match action {
-            Action::InitApplication(_) => true,
+            Action::InitializeChain(_) => true,
             _ => false,
         })
         .unwrap();

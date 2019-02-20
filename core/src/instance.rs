@@ -484,12 +484,12 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::InitApplication(_) => true,
+                Action::InitializeChain(_) => true,
                 _ => false,
             })
             .is_none()
         {
-            println!("Waiting for InitApplication");
+            println!("Waiting for InitializeChain");
             sleep(Duration::from_millis(10))
         }
 
@@ -601,7 +601,7 @@ pub mod tests {
 
         let dna = Dna::new();
 
-        let action = ActionWrapper::new(Action::InitApplication(dna.clone()));
+        let action = ActionWrapper::new(Action::InitializeChain(dna.clone()));
         let context = instance.inner_setup(test_context("jane", netname));
 
         // the initial state is not intialized

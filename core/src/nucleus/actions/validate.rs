@@ -115,9 +115,11 @@ fn validate_provenances(validation_data: &ValidationData) -> Result<(), Holochai
                 SecBuf::with_insecure_from_string(header.entry_address().to_string());
             let result = Keypair::verify(author.to_string(), &mut signature_buf, &mut message_buf)?;
 
-            (result == 0).ok_or(HolochainError::ValidationFailed(
-                format!("Signature for {} invalid",author),
-            ))
+            (result == 0).ok_or(HolochainError::ValidationFailed(format!(
+                "Signature of entry {} from author {} invalid",
+                header.entry_address(),
+                author,
+            )))
         })
         .collect::<Result<Vec<()>, HolochainError>>()?;
     Ok(())

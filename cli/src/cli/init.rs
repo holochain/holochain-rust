@@ -1,12 +1,13 @@
 use crate::{
     cli::{
-        package::{DEFAULT_BUNDLE_FILE_NAME, GITIGNORE_FILE_NAME, IGNORE_FILE_NAME},
+        package::{GITIGNORE_FILE_NAME, IGNORE_FILE_NAME},
         test::{DIST_DIR_NAME, TEST_DIR_NAME},
     },
     config_files::App as AppConfig,
     error::DefaultResult,
 };
 use colored::*;
+use holochain_common::paths::DNA_EXTENSION;
 use serde_json;
 use std::{
     fs::{self, File, OpenOptions},
@@ -75,7 +76,7 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
     let ignores = [
         &DIST_DIR_NAME,
         &TEST_DIR_NAME,
-        &DEFAULT_BUNDLE_FILE_NAME,
+        format!("*.{}", DNA_EXTENSION).as_str(),
         "README.md",
     ]
     .join("\n");

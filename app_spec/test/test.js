@@ -2,7 +2,7 @@ const path = require('path')
 const { Config, Conductor, Scenario } = require('../../nodejs_conductor')
 Scenario.setTape(require('tape'))
 
-const dnaPath = path.join(__dirname, "../dist/app_spec.hcpkg")
+const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
 const dna = Config.dna(dnaPath, 'app-spec')
 const agentAlice = Config.agent("alice")
 const agentBob = Config.agent("bob")
@@ -86,12 +86,12 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
     { "content": "Posty", "in_reply_to": "" }
   )
 
-  
+
   const bob_create_post_result = await bob.callSync("blog", "posts_by_agent",
     { "agent": alice.agentId }
   )
 
- 
+
 
    t.ok(bob_create_post_result.Ok)
    t.equal(bob_create_post_result.Ok.addresses.length, 1);
@@ -100,13 +100,13 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
     await alice.callSync("blog", "delete_post",
     { "content": "Posty", "in_reply_to": "" }
   )
- 
+
   // get posts by bob
   const bob_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent":alice.agentId })
 
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
-  
+
   })
 
   scenario1.runTape('delete_entry_post', async (t, { alice }) => {
@@ -114,17 +114,17 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
     const in_reply_to = null
     const params = { content, in_reply_to }
     const createResult = alice.call("blog", "create_post", params)
-  
+
     t.ok(createResult.Ok)
-  
+
     const deletionParams = { post_address: createResult.Ok }
     const deletionResult = alice.call("blog", "delete_entry_post", deletionParams)
-  
+
     t.equals(deletionResult.Ok, null)
-  
+
     const paramsGet = { post_address: createResult.Ok }
     const result = alice.call("blog", "get_post", paramsGet)
-  
+
     t.equals(result.Ok, null)
   })
 
@@ -168,7 +168,7 @@ scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
   const result_bob_delete = await bob.callSync("blog", "delete_post",
     { "content": "Bad"}
   )
-  
+
    // bad in_reply_to is an error condition
    t.ok(result_bob_delete.Err)
    t.notOk(result_bob_delete.Ok)

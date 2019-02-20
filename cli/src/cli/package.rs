@@ -20,8 +20,6 @@ pub const IGNORE_FILE_NAME: &str = ".hcignore";
 
 pub const WASM_FILE_EXTENSION: &str = "wasm";
 
-pub const DEFAULT_BUNDLE_FILE_NAME: &str = "bundle.json";
-
 pub const META_FILE_ID: &str = "file";
 pub const META_DIR_ID: &str = "dir";
 pub const META_BIN_ID: &str = "bin";
@@ -41,7 +39,7 @@ impl Packager {
         Packager { strip_meta }
     }
 
-    pub fn package(strip_meta: bool, output: Option<PathBuf>) -> DefaultResult<()> {
+    pub fn package(strip_meta: bool, output: PathBuf) -> DefaultResult<()> {
         // First, check whether they have `cargo` installed, since it will be needed for packaging
         // TODO: in the future, don't check for this here, since other build tools and languages
         // could be used
@@ -58,8 +56,6 @@ impl Packager {
             return Ok(());
         }
 
-        let output = output.unwrap_or_else(|| PathBuf::from(DEFAULT_BUNDLE_FILE_NAME));
-
         Packager::new(strip_meta).run(&output)
     }
 
@@ -71,7 +67,11 @@ impl Packager {
         serde_json::to_writer_pretty(&out_file, &Value::from(dir_obj_bundle))?;
 
         // CLI feedback
-        println!("{} bundle file at {:?}", "Created".green().bold(), output);
+        println!(
+            "{} dna package file at {:?}",
+            "Created".green().bold(),
+            output
+        );
 
         Ok(())
     }
@@ -209,7 +209,7 @@ impl Packager {
     }
 }
 
-pub fn package(strip_meta: bool, output: Option<PathBuf>) -> DefaultResult<()> {
+pub fn package(strip_meta: bool, output: PathBuf) -> DefaultResult<()> {
     Packager::package(strip_meta, output)
 }
 
@@ -301,7 +301,7 @@ mod tests {
 
     #[test]
     fn package_and_unpack_isolated() {
-        const DEFAULT_BUNDLE_FILE_NAME: &str = "bundle.json";
+        const TEST_DNA_FILE_NAME: &str = "test.dna.json";
 
         fn package(shared_file_path: &PathBuf) {
             let temp_space = gen_dir();
@@ -313,7 +313,7 @@ mod tests {
                 .assert()
                 .success();
 
-            let bundle_file_path = shared_file_path.join(DEFAULT_BUNDLE_FILE_NAME);
+            let bundle_file_path = shared_file_path.join(TEST_DNA_FILE_NAME);
 
             Command::main_binary()
                 .unwrap()
@@ -332,7 +332,7 @@ mod tests {
                 .current_dir(&shared_file_path)
                 .args(&[
                     "unpack",
-                    DEFAULT_BUNDLE_FILE_NAME,
+                    TEST_DNA_FILE_NAME,
                     temp_dir_path.to_str().unwrap(),
                 ])
                 .assert()
@@ -351,7 +351,7 @@ mod tests {
     #[test]
     /// A test ensuring that packaging and unpacking a project results in the very same project
     fn package_reverse() {
-        const DEFAULT_BUNDLE_FILE_NAME: &str = "bundle.json";
+        const TEST_DNA_FILE_NAME: &str = "test.dna.json";
 
         const SOURCE_DIR_NAME: &str = "source_app";
         const DEST_DIR_NAME: &str = "dest_app";
@@ -370,7 +370,7 @@ mod tests {
             .assert()
             .success();
 
-        let bundle_file_path = root_path.join(DEFAULT_BUNDLE_FILE_NAME);
+        let bundle_file_path = root_path.join(TEST_DNA_FILE_NAME);
 
         Command::main_binary()
             .unwrap()

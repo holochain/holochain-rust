@@ -9,6 +9,7 @@ use crate::{
     Holochain,
 };
 use boolinator::Boolinator;
+use holochain_common::paths::DNA_EXTENSION;
 use holochain_core::{
     logger::{ChannelLogger, Logger},
     signal::Signal,
@@ -652,7 +653,7 @@ impl Conductor {
 
     pub fn save_dna(&self, dna: &Dna) -> Result<PathBuf, HolochainError> {
         let mut file_path = self.dna_dir_path().join(dna.address().to_string());
-        file_path.set_extension("hcpkg");
+        file_path.set_extension(DNA_EXTENSION);
         fs::create_dir_all(&self.dna_dir_path())?;
         self.save_dna_to(dna, file_path)
     }
@@ -763,7 +764,7 @@ pub mod tests {
 
     [[dnas]]
     id = "test-dna"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
 
     [[dnas]]
@@ -1153,7 +1154,7 @@ pub mod tests {
 
                 [[dnas]]
                 id = "test-dna"
-                file = "app_spec.hcpkg"
+                file = "app_spec.dna.json"
                 hash = "Qm328wyq38924y"
 
                 [[instances]]

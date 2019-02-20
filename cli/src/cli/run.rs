@@ -1,4 +1,4 @@
-use cli::{self, package};
+use cli;
 use colored::*;
 use error::DefaultResult;
 use holochain_common::env_vars::EnvVar;
@@ -8,7 +8,7 @@ use holochain_conductor_api::{
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
-use std::fs;
+use std::{fs, path::PathBuf};
 
 const LOCAL_STORAGE_PATH: &str = ".hc";
 
@@ -25,8 +25,9 @@ pub fn run(
     networked: bool,
     interface: String,
 ) -> DefaultResult<()> {
+    let dna_file_name = crate::std_dna_file_name();
     if package {
-        cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
+        cli::package(true, PathBuf::from(&dna_file_name))?;
     }
 
     // note that this behaviour is documented within
@@ -43,7 +44,7 @@ pub fn run(
 
     let dna_config = DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
-        file: package::DEFAULT_BUNDLE_FILE_NAME.into(),
+        file: dna_file_name,
         hash: None,
     };
 
@@ -179,6 +180,8 @@ pub fn run(
 #[cfg(test)]
 // flagged as broken for:
 // 1. taking 60+ seconds
+// 2. test doesn't take into account dynamic folder for package name
+// 3. test is broken in regard to reading an agent key
 #[cfg(feature = "broken-tests")]
 mod tests {
     use crate::cli::init::{init, tests::gen_dir};
@@ -202,7 +205,7 @@ mod tests {
             .args(&["run", "--package"])
             .output()
             .expect("should run");
-        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"\\u{1b}[1;32mCreated\\u{1b}[0m bundle file at \\\"bundle.json\\\"\\nStarting instance \\\"test-instance\\\"...\\nHolochain development conductor started. Running websocket server on port 8888\\nType \\\'exit\\\' to stop the conductor and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
+        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"\\u{1b}[1;32mCreated\\u{1b}[0m dna package file at \\\"x.dna.json\\\"\\nStarting instance \\\"test-instance\\\"...\\nHolochain development conductor started. Running websocket server on port 8888\\nType \\\'exit\\\' to stop the conductor and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
 
         let output = run2_cmd
             .args(&["run", "--interface", "http"])

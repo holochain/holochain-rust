@@ -54,13 +54,13 @@ pub fn test(
 
     if !skip_build {
         // build the package file, within the dist folder
-        let bundle_file_path = dist_path.join(package::DEFAULT_BUNDLE_FILE_NAME);
+        let file_path = crate::std_dna_file_name();
         println!(
             "{} files for testing to file: {:?}",
             "Packaging".green().bold(),
-            bundle_file_path
+            &file_path
         );
-        package(true, Some(bundle_file_path.to_path_buf()))?;
+        package(true, PathBuf::from(file_path))?;
     }
 
     // build tests

@@ -79,7 +79,7 @@
 ///         .check_consistency()
 ///         .map_err(|string| HolochainError::ConfigError(string))?;
 ///     let mut conductor = Conductor::from_config(config);
-///     conductor.load_config()?;
+///     conductor.load_config(None)?;
 ///     Ok(conductor)
 /// }
 ///

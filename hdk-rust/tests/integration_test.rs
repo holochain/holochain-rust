@@ -269,7 +269,6 @@ fn can_get_entry_ok() {
     let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
-
     let result = make_test_call(
         &mut hc,
         "check_get_entry_result",

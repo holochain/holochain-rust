@@ -4,16 +4,13 @@ version = "0.0.4-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-base64 = "0.10"
 failure = "0.1.1"
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
 holochain_net_connection = { path = "../net_connection" }
 holochain_net_ipc = { path = "../net_ipc" }
 lazy_static = "1.2"
-regex = "1"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1", features = ["preserve_order"] }
 snowflake = "1"
-multihash = "0.8.0"

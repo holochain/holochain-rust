@@ -1,9 +1,8 @@
-extern crate holochain_cas_implementations;
+#![warn(unused_extern_crates)]
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
-extern crate serde_json;
 extern crate tempfile;
 extern crate wabt;
 
@@ -68,8 +67,6 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
         "#;
     let wat_str = wat.unwrap_or_else(|| &default_wat);
 
-
-
     // Test WASM code that returns 1337 as integer
     let wasm_binary = Wat2Wasm::new()
         .canonicalize_lebs(false)
@@ -85,8 +82,8 @@ pub fn create_test_dna_with_wasm(zome_name: &str, _cap_name: &str, wasm: Vec<u8>
     let mut dna = Dna::new();
     let defs = create_test_defs_with_fn_name("public_test_fn");
 
-//    let mut capabilities = BTreeMap::new();
-//    capabilities.insert(cap_name.to_string(), capability);
+    //    let mut capabilities = BTreeMap::new();
+    //    capabilities.insert(cap_name.to_string(), capability);
 
     let mut test_entry_def = EntryTypeDef::new();
     test_entry_def.links_to.push(LinksTo {
@@ -121,7 +118,8 @@ pub fn create_test_dna_with_wasm(zome_name: &str, _cap_name: &str, wasm: Vec<u8>
 
     let mut trait_fns = TraitFns::new();
     trait_fns.functions.push("public_test_fn".to_string());
-    zome.traits.insert(ReservedTraitNames::Public.as_str().to_string(), trait_fns);
+    zome.traits
+        .insert(ReservedTraitNames::Public.as_str().to_string(), trait_fns);
     dna.zomes.insert(zome_name.to_string(), zome);
     dna.name = "TestApp".into();
     dna.uuid = "8ed84a02-a0e6-4c8c-a752-34828e302986".into();
@@ -144,7 +142,7 @@ pub fn create_test_defs_with_fn_name(fn_name: &str) -> (ZomeFnDeclarations, Zome
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_defs(
     zome_name: &str,
-    defs: (ZomeFnDeclarations,ZomeTraits),
+    defs: (ZomeFnDeclarations, ZomeTraits),
     wasm: &[u8],
 ) -> Dna {
     let mut dna = Dna::new();
@@ -213,7 +211,11 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
-pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(wasm_path: &str, fn_name: &str, params: J) -> HolochainResult<JsonString> {
+pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
+    wasm_path: &str,
+    fn_name: &str,
+    params: J,
+) -> HolochainResult<JsonString> {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(wasm_path);
     let defs = create_test_defs_with_fn_name(fn_name);
@@ -227,10 +229,7 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(wasm_path: &str, fn_name: 
     // Call the exposed wasm function
     return hc.call(
         "test_zome",
-        Some(CapabilityCall::new(
-            Address::from("test_token"),
-            None,
-        )),
+        Some(CapabilityCall::new(Address::from("test_token"), None)),
         fn_name,
         &String::from(params.into()),
     );

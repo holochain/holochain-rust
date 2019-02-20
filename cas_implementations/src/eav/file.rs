@@ -2,8 +2,8 @@ use glob::glob;
 use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
-        get_latest, increment_key_till_no_collision, Attribute, Entity, EntityAttributeValueIndex,
-        EntityAttributeValueStorage, IndexQuery, Value,
+        increment_key_till_no_collision, Attribute, EavFilter, EaviQuery, Entity,
+        EntityAttributeValueIndex, EntityAttributeValueStorage, IndexFilter, Value,
     },
     error::{HcResult, HolochainError},
     json::JsonString,
@@ -119,39 +119,38 @@ impl EavFileStorage {
     fn read_from_dir<T>(
         &self,
         subscript: String,
-        eav_constraint: Option<T>,
+        eav_filter: &EavFilter<T>,
     ) -> HcResult<BTreeSet<String>>
     where
-        T: ToString,
+        T: Eq + ToString + From<String>,
     {
-        let address = eav_constraint
-            .map(|e| e.to_string())
-            .unwrap_or("*".to_string());
-
         let path = self.dir_path.join(&subscript);
 
         if path.exists() {
-            let full_path = path.join(&address);
+            let full_path = path.join("*");
 
             let paths = glob(full_path.to_str().unwrap())
                 .map_err(|_| HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
 
-            let (eavs, errors): (Vec<_>, Vec<_>) = paths
-                .map(|path_val| {
-                    path_val.map(|walk| read_eav(walk.clone())).unwrap_or(Err(
-                        HolochainError::ErrorGeneric(
-                            "Could not read eavs from directory".to_string(),
-                        ),
-                    ))
+            let (paths, errors): (Vec<_>, Vec<_>) = paths.partition(Result::is_ok);
+            let eavs = paths
+                .into_iter()
+                .map(|p| p.unwrap())
+                .filter(|pathbuf| {
+                    pathbuf
+                        .iter()
+                        .last()
+                        .map(|v| eav_filter.check(v.to_string_lossy().to_string().into()))
+                        .unwrap_or_default()
                 })
-                .partition(Result::is_ok);
+                .map(|pathbuf| read_eav(pathbuf.clone()));
             if errors.len() > 0 {
                 Err(HolochainError::ErrorGeneric(
                     "Could not read eavs from directory".to_string(),
                 ))
             } else {
                 let mut ordmap: BTreeSet<String> = BTreeSet::new();
-                eavs.iter().for_each(|s| {
+                eavs.for_each(|s| {
                     s.clone().unwrap_or(Vec::new()).iter().for_each(|value| {
                         ordmap.insert(value.clone());
                     })
@@ -170,12 +169,12 @@ impl EntityAttributeValueStorage for EavFileStorage {
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
-        let fetched = self.fetch_eavi(
-            Some(eav.entity()),
-            Some(eav.attribute()),
-            Some(eav.value()),
-            IndexQuery::default(),
-        )?;
+        let fetched = self.fetch_eavi(&EaviQuery::new(
+            Some(eav.entity()).into(),
+            Some(eav.attribute()).into(),
+            Some(eav.value()).into(),
+            IndexFilter::LatestByAttribute,
+        ))?;
         let _guard = self.lock.write()?;
         create_dir_all(self.dir_path.clone())?;
         let new_eav = increment_key_till_no_collision(eav.clone(), fetched.clone())?;
@@ -187,89 +186,48 @@ impl EntityAttributeValueStorage for EavFileStorage {
 
     fn fetch_eavi(
         &self,
-        entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>,
-        index_query: IndexQuery,
+        query: &EaviQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let _guard = self.lock.read()?;
-        let prefixes = if !index_query.prefixes().is_empty() {
-            index_query.prefixes().clone()
-        } else {
-            vec![""]
-        };
-        let union_set: BTreeSet<String> = BTreeSet::new();
-        let entity_attribute_value_union = prefixes.iter().fold(
-            Ok(union_set.clone()),
-            |set: Result<BTreeSet<String>, HolochainError>, prefix: &&str| {
-                let entity_set =
-                    self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone())?;
-                let attribute_with_prefix = attribute
-                    .clone()
-                    .map(|attri| prefix.to_string() + &attri.clone());
-                let attribute_set = self
-                    .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute_with_prefix)
-                    .clone()?;
-                let value_set =
-                    self.read_from_dir::<Value>(VALUE_DIR.to_string(), value.clone())?;
 
-                let attribute_value_inter: BTreeSet<String> = value_set
-                    .intersection(&attribute_set.clone())
-                    .cloned()
-                    .collect();
-                let entity_attribute_value_inter: BTreeSet<String> = attribute_value_inter
-                    .intersection(&entity_set)
-                    .cloned()
-                    .collect();
-                let to_union = set?;
-                Ok(to_union
-                    .union(&entity_attribute_value_inter)
-                    .cloned()
-                    .collect())
-            },
-        );
+        let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), query.entity())?;
+        let attribute_set = self
+            .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), query.attribute())
+            .clone()?;
+        let value_set = self.read_from_dir::<Value>(VALUE_DIR.to_string(), query.value())?;
 
-        let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_union?
+        let attribute_value_inter: BTreeSet<String> = value_set
+            .intersection(&attribute_set.clone())
+            .cloned()
+            .collect();
+        let entity_attribute_value_inter: BTreeSet<String> = attribute_value_inter
+            .intersection(&entity_set)
+            .cloned()
+            .collect();
+
+        let (eavis, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
             .clone()
             .into_iter()
             .map(|content| EntityAttributeValueIndex::try_from_content(&JsonString::from(content)))
             .partition(|c| c.is_ok());
+
         if error.len() > 0 {
             Err(HolochainError::ErrorGeneric(
                 "Error Converting EAVs".to_string(),
             ))
         } else {
-            let map: BTreeSet<EntityAttributeValueIndex> = eav
-                .clone()
-                .into_iter()
-                .map(|value: HcResult<EntityAttributeValueIndex>| {
-                    value.unwrap_or(EntityAttributeValueIndex::default())
-                })
-                .collect();
-            Ok(map
-                .clone()
-                .into_iter()
-                .filter(|e| {
-                    index_query
-                        .start()
-                        .map(|start| start <= e.index())
-                        .unwrap_or_else(|| {
-                            let latest = get_latest(e.clone(), map.clone(), index_query.clone())
-                                .unwrap_or(EntityAttributeValueIndex::default());
-                            latest.index() == e.index()
-                        })
-                })
-                .filter(|e| {
-                    index_query
-                        .end()
-                        .map(|end| end >= e.index())
-                        .unwrap_or_else(|| {
-                            let latest = get_latest(e.clone(), map.clone(), index_query.clone())
-                                .unwrap_or(EntityAttributeValueIndex::default());
-                            latest.index() == e.index()
-                        })
-                })
-                .collect::<BTreeSet<EntityAttributeValueIndex>>())
+            // Build a query that only filters by Index, to be run on the collection that was already filtered
+            // by the above code
+            let index_query = EaviQuery::new(
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                query.index().clone(),
+            );
+            // We expect eavis to consist entirely of `Ok`s now, so we can filter out the `Err`s (of which there should be none)
+            let it = eavis.iter().cloned().filter_map(|r| r.ok());
+            let results = index_query.run(it);
+            Ok(results)
         }
     }
 }

@@ -1,9 +1,8 @@
-extern crate serde_json;
 use crate::context::Context;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
-    crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-    eav::{EaviQuery, EntityAttributeValueIndex, IndexFilter},
+    crud_status::CrudStatus,
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
@@ -80,7 +79,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     // Get crud-status
     let status_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
         Some(address.clone()).into(),
-        Some(STATUS_NAME.to_string()).into(),
+        Some(Attribute::CrudStatus).into(),
         None.into(),
         IndexFilter::LatestByAttribute,
     ))?;
@@ -118,7 +117,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     let mut maybe_crud_link = None;
     let link_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
         Some(address).into(),
-        Some(LINK_NAME.to_string()).into(),
+        Some(Attribute::CrudLink).into(),
         None.into(),
         IndexFilter::LatestByAttribute,
     ))?;
@@ -149,12 +148,7 @@ pub fn get_entry_with_meta<'a>(
         Ok(Some(entry)) => entry,
     };
     // 2. try to get the entry's metadata
-    let maybe_meta = get_entry_crud_meta_from_dht(context, address);
-    if let Err(err) = maybe_meta {
-        return Err(err);
-    }
-    let (crud_status, maybe_crud_link) = maybe_meta
-        .unwrap()
+    let (crud_status, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address)?
         .expect("Entry should have crud-status metadata");
     let item = EntryWithMeta {
         entry,

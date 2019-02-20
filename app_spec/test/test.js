@@ -59,6 +59,15 @@ scenario1.runTape('cross zome call', async (t, { alice }) => {
   t.equal(result.Ok, 4)
 })
 
+scenario2.runTape('send', async (t, { alice, bob }) => {
+  const params = { to_agent: bob.agentId, message: "ping" }
+  const result = alice.call("blog", "check_send", params)
+
+  //t.deepEqual(result.Ok, "Received : ping")
+  //the line above results in `undefined`, so I switched to result to get the actual error, below:
+  t.deepEqual(result, {Ok: { message: "ping" }})
+})
+
 scenario1.runTape('hash_post', async (t, { alice }) => {
 
   const params = { content: "Holo world" }

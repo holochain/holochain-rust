@@ -9,6 +9,7 @@ use std::{
     error::Error,
     fmt,
     io::{self, Error as IoError},
+    option::NoneError,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -190,6 +191,12 @@ impl From<reed_solomon::DecoderError> for HolochainError {
 impl From<FutureCanceled> for HolochainError {
     fn from(_: FutureCanceled) -> Self {
         HolochainError::ErrorGeneric("Failed future".to_string())
+    }
+}
+
+impl From<NoneError> for HolochainError {
+    fn from(_: NoneError) -> Self {
+        HolochainError::ErrorGeneric("Expected Some and got None".to_string())
     }
 }
 

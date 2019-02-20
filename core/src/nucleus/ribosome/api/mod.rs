@@ -186,10 +186,7 @@ impl ZomeApiFunction {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate wabt;
     use self::wabt::Wat2Wasm;
-    use holochain_core_types::json::JsonString;
-    extern crate test_utils;
     use super::ZomeApiFunction;
     use crate::{
         context::Context,
@@ -200,7 +197,10 @@ pub mod tests {
             ZomeFnCall,
         },
     };
+    use holochain_core_types::json::JsonString;
     use std::{str::FromStr, sync::Arc};
+    use test_utils;
+    use wabt;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument

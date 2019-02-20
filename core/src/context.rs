@@ -72,7 +72,7 @@ impl Context {
         _agent_id: AgentId,
     ) -> Arc<RwLock<IoHandler>> {
         // If you get here through this panic make sure that the context passed into the instance
-        // gets created with a real container API. In test config it will be populated with mock API
+        // gets created with a real conductor API. In test config it will be populated with mock API
         // that implements agent/sign with the mock_signer. We need this for testing but should
         // never use that code in production!
         // Hence the two different cases here.

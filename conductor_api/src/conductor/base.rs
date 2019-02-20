@@ -39,7 +39,6 @@ use std::{
 };
 
 use holochain_net::p2p_config::P2pConfig;
-use holochain_net_connection::net_connection::NetShutdown;
 use holochain_net_ipc::spawn::{ipc_spawn, SpawnResult};
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
 use static_file_server::StaticServer;
@@ -89,13 +88,15 @@ pub struct Conductor {
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
     p2p_config: Option<P2pConfig>,
-    network_child_process: NetShutdown,
+    network_spawn: Option<SpawnResult>,
 }
 
 impl Drop for Conductor {
     fn drop(&mut self) {
-        if let Some(kill) = self.network_child_process.take() {
-            kill();
+        if let Some(ref mut network_spawn) = self.network_spawn {
+            if let Some(kill) = network_spawn.kill.take() {
+                kill();
+            }
         }
     }
 }
@@ -127,7 +128,7 @@ impl Conductor {
             signal_tx: None,
             logger: DebugLogger::new(rules),
             p2p_config: None,
-            network_child_process: None,
+            network_spawn: None,
         }
     }
 
@@ -137,6 +138,13 @@ impl Conductor {
         }
         self.signal_tx = Some(signal_tx);
         self
+    }
+
+    pub fn p2p_bindings(&self) -> Option<Vec<String>> {
+        match self.network_spawn {
+            None => None,
+            Some(ref spawn) => Some(spawn.p2p_bindings.clone()),
+        }
     }
 
     pub fn config(&self) -> Configuration {
@@ -238,7 +246,7 @@ impl Conductor {
         self.instances = HashMap::new();
     }
 
-    pub fn spawn_network(&mut self) -> Result<String, HolochainError> {
+    pub fn spawn_network(&mut self) -> Result<SpawnResult, HolochainError> {
         let network_config = self
             .config
             .clone()
@@ -251,11 +259,7 @@ impl Conductor {
             "Spawning network with working directory: {}",
             network_config.n3h_persistence_path
         );
-        let SpawnResult {
-            kill,
-            ipc_binding,
-            p2p_bindings: _,
-        } = ipc_spawn(
+        let spawn_result = ipc_spawn(
             "node".to_string(),
             vec![format!(
                 "{}/packages/n3h/bin/n3h",
@@ -271,15 +275,14 @@ impl Conductor {
             true,
         )
         .map_err(|error| {
-            println!("Error spawning network process! {:?}", error);
+            println!("Error while spawning network process: {:?}", error);
             HolochainError::ErrorGeneric(error.to_string())
         })?;
-        self.network_child_process = kill;
-        println!("Network spawned with binding: {:?}", ipc_binding);
-        Ok(ipc_binding)
+        println!("Network spawned with ipc-binding: {:?}", spawn_result.ipc_binding);
+        Ok(spawn_result)
     }
 
-    fn instance_p2p_config(&self) -> P2pConfig {
+    fn get_p2p_config(&self) -> P2pConfig {
         self.p2p_config.clone().unwrap_or_else(|| {
             // This should never happen, but we'll throw out an in-memory server config rather than crashing,
             // just to be nice (TODO make proper logging statement)
@@ -298,10 +301,16 @@ impl Conductor {
         // ipc_uri for it and save it for future calls to `load_config`
         // or we use that uri value that was created from previous calls!
         let net_config = self.config.network.clone().unwrap();
-        let uri = net_config
-            .n3h_ipc_uri
-            .clone()
-            .or_else(|| self.spawn_network().ok());
+        let uri = match net_config.n3h_ipc_uri.clone() {
+            Some(uri) => Some(uri),
+            None => {
+                self.network_spawn = self.spawn_network().ok();
+                match self.network_spawn {
+                    None => None,
+                    Some(ref spawn) => Some(spawn.ipc_binding.clone()),
+                }
+            },
+        };
         P2pConfig::new_ipc_uri(
             uri,
             &net_config.bootstrap_nodes,
@@ -403,7 +412,7 @@ impl Conductor {
 
                 context_builder = context_builder.with_agent(agent_id);
 
-                context_builder = context_builder.with_p2p_config(self.instance_p2p_config());
+                context_builder = context_builder.with_p2p_config(self.get_p2p_config());
 
                 // Signal config:
                 if let Some(tx) = signal_tx {

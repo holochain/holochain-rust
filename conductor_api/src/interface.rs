@@ -1,5 +1,8 @@
+use base64;
 use holochain_core::state::State;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
+use holochain_dpki::keypair::{Keypair, SIGNATURESIZE};
+use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
@@ -8,7 +11,7 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     path::PathBuf,
-    sync::{mpsc::Receiver, Arc, RwLock},
+    sync::{mpsc::Receiver, Arc, Mutex, RwLock},
 };
 
 use conductor::{ConductorAdmin, ConductorUiAdmin, CONDUCTOR};
@@ -736,6 +739,32 @@ impl ConductorApiBuilder {
             ))
         });
 
+        self
+    }
+
+    pub fn with_agent_signature_callback(mut self, keypair: Arc<Mutex<Keypair>>) -> Self {
+        self.io.add_method("agent/sign", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+            // Convert payload string into a SecBuf
+            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+            // Create signature
+            let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
+
+            // Get write lock on the key since we need a mutuble reference to lock the
+            // secure memory the key is in:
+            keypair
+                .lock()
+                .unwrap()
+                .sign(&mut message, &mut message_signed)
+                .unwrap();
+
+            let message_signed = message_signed.read_lock();
+            // Return as base64 encoded string
+            let signature = base64::encode(&**message_signed);
+
+            Ok(json!({"payload": payload, "signature": signature}))
+        });
         self
     }
 }

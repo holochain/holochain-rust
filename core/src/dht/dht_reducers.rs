@@ -9,14 +9,12 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
-    eav::{EaviQuery, EntityAttributeValueIndex, IndexFilter},
+    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
     entry::Entry,
     error::HolochainError,
 };
 use std::{collections::BTreeSet, convert::TryFrom, str::FromStr, sync::Arc};
-
-pub const ENTRY_HEADER_ATTRIBUTE: &'static str = "entry-headers";
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -134,7 +132,7 @@ pub(crate) fn reduce_add_link(
     } else {
         let eav = EntityAttributeValueIndex::new(
             link.base(),
-            &format!("link__{}", link.tag()),
+            &Attribute::LinkTag(link.tag().to_owned()),
             link.target(),
         );
         eav.map(|e| {
@@ -171,7 +169,7 @@ pub(crate) fn reduce_remove_link(
     } else {
         let eav = EntityAttributeValueIndex::new(
             link.base(),
-            &format!("removed_link__{}", link.tag()),
+            &Attribute::RemovedLink(link.tag().to_string()),
             link.target(),
         );
         eav.map(|e| {
@@ -301,7 +299,7 @@ fn reduce_remove_entry_inner(
     let meta_storage = &new_store.meta_storage().clone();
     let maybe_status_eav = meta_storage.read().unwrap().fetch_eavi(&EaviQuery::new(
         Some(latest_deleted_address.clone()).into(),
-        Some(STATUS_NAME.to_string()).into(),
+        Some(Attribute::CrudStatus).into(),
         None.into(),
         IndexFilter::LatestByAttribute,
     ));
@@ -442,7 +440,7 @@ pub mod tests {
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), *link.target());
-        assert_eq!(eav.attribute(), format!("link__{}", link.tag()));
+        assert_eq!(eav.attribute(), Attribute::LinkTag(link.tag().to_owned()));
     }
 
     #[test]
@@ -481,7 +479,10 @@ pub mod tests {
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
-            EavFilter::<Attribute>::attribute_prefixes(vec!["link__", "removed_link__"], None),
+            EavFilter::predicate(|a| match a {
+                Attribute::LinkTag(_) | Attribute::RemovedLink(_) => true,
+                _ => false,
+            }),
             None.into(),
             IndexFilter::LatestByAttribute,
         ));
@@ -492,7 +493,10 @@ pub mod tests {
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), *link.target());
-        assert_eq!(eav.attribute(), format!("removed_link__{}", link.tag()));
+        assert_eq!(
+            eav.attribute(),
+            Attribute::RemovedLink(link.tag().to_string())
+        );
     }
 
     #[test]

@@ -176,7 +176,6 @@ scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
    t.deepEqual(error.kind, { ErrorGeneric: "Target for link not found" })
    t.ok(error.file)
    t.ok(error.line)
-  
   })
 
 scenario1.runTape('post max content size 280 characters', async (t, { alice }) => {

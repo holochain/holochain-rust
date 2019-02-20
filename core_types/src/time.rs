@@ -77,6 +77,24 @@ impl From<i64> for Iso8601 {
     }
 }
 
+impl From<u64> for Iso8601 {
+    fn from(secs: u64) -> Self {
+        Self::new(secs as i64, 0)
+    }
+}
+
+impl From<i32> for Iso8601 {
+    fn from(secs: i32) -> Self {
+        Self::new(secs.into(), 0)
+    }
+}
+
+impl From<u32> for Iso8601 {
+    fn from(secs: u32) -> Self {
+        Self::new(secs.into(), 0)
+    }
+}
+
 impl Iso8601 {
     fn new(secs: i64, nsecs: u32) -> Self {
         Self(FixedOffset::east(0).timestamp(secs, nsecs))

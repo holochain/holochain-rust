@@ -53,7 +53,7 @@ pub mod tests {
         assert!(result.is_ok(), "publish() result = {:?}", result);
 
         // TODO: Should wait for a success or saturation response from the network module instead
-        std::thread::sleep(std::time::Duration::from_millis(500));
+        std::thread::sleep(std::time::Duration::from_millis(1000));
 
         // Get it from the network
         // HACK: doing a loop because publish returns before actual confirmation from the network

@@ -8,6 +8,7 @@
 //! out into their separate crate as well since those are generic and not
 //! necessarily bound to Holochain.
 #![feature(try_from)]
+#![feature(try_trait)]
 #![feature(never_type)]
 #![warn(unused_extern_crates)]
 

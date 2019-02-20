@@ -61,7 +61,6 @@ pub type ZomeFnResult = HcResult<JsonString>;
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
     use super::*;
     use crate::{
         instance::{
@@ -74,6 +73,7 @@ pub mod tests {
         },
     };
     use holochain_core_types::dna::capabilities::CapabilityCall;
+    use test_utils;
 
     use holochain_core_types::{
         error::{DnaError, HolochainError},

@@ -198,6 +198,7 @@ impl Instance {
         }
 
         context.log(format!("trace/reduce: {:?}", action_wrapper.action()));
+
         self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers
@@ -285,8 +286,6 @@ pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrappe
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-    extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
@@ -307,6 +306,8 @@ pub mod tests {
         entry::{entry_type::EntryType, test_entry},
         json::{JsonString, RawString},
     };
+    use tempfile;
+    use test_utils;
 
     use crate::{persister::SimplePersister, state::State};
 
@@ -325,21 +326,23 @@ pub mod tests {
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = AgentId::generate_fake(agent_name);
-        let file_storage = Arc::new(RwLock::new(
+        let content_file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
+        let meta_file_storage = Arc::new(RwLock::new(
+            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         ));
         let logger = test_logger();
         (
             Arc::new(Context::new(
                 agent,
                 logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                file_storage.clone(),
-                file_storage.clone(),
-                Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                )),
+                Arc::new(Mutex::new(SimplePersister::new(
+                    content_file_storage.clone(),
+                ))),
+                content_file_storage.clone(),
+                content_file_storage.clone(),
+                meta_file_storage,
                 test_memory_network_config(network_name),
                 None,
                 None,

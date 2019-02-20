@@ -1,9 +1,7 @@
-extern crate directories;
-extern crate holochain_cas_implementations;
+#![warn(unused_extern_crates)]
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_net;
 
 use holochain_conductor_api::{context_builder::ContextBuilder, Holochain};
 use holochain_core::context::Context;

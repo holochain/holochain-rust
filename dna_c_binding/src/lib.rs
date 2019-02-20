@@ -4,6 +4,7 @@
 //!
 //! See the associated Qt unit tests in the c_binding_tests directory.
 #![feature(try_from)]
+#![warn(unused_extern_crates)]
 extern crate holochain_core_types;
 
 use holochain_core_types::dna::Dna;

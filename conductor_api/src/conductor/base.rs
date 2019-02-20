@@ -85,7 +85,7 @@ pub struct Conductor {
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
-    pub(in crate::conductor) broadcasters: Arc<RwLock<HashMap<String, Broadcaster>>>,
+    pub(in crate::conductor) interface_broadcasters: Arc<RwLock<HashMap<String, Broadcaster>>>,
     pub key_loader: KeyLoader,
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
@@ -126,7 +126,7 @@ impl Conductor {
             agent_keys: HashMap::new(),
             interface_threads: HashMap::new(),
             static_servers: HashMap::new(),
-            broadcasters: Arc::new(RwLock::new(HashMap::new())),
+            interface_broadcasters: Arc::new(RwLock::new(HashMap::new())),
             config,
             key_loader: Arc::new(Box::new(Self::load_key)),
             dna_loader: Arc::new(Box::new(Self::load_dna)),
@@ -156,7 +156,7 @@ impl Conductor {
     /// NB: This broadcast is far too broad! All signals will be broadcasted over all interfaces.
     /// This needs to be integrated with the capabilities model when ready.
     pub fn start_signal_broadcast(&mut self, signal_rx: SignalReceiver) -> thread::JoinHandle<()> {
-        let broadcasters = self.broadcasters.clone();
+        let broadcasters = self.interface_broadcasters.clone();
         self.log("starting broadcast loop".into());
         thread::spawn(move || {
             for signal in signal_rx {
@@ -630,7 +630,6 @@ impl Conductor {
         let dispatcher = self.make_interface_handler(&interface_config);
         // The "kill switch" is the channel which allows the interface to be stopped from outside its thread
         let (kill_switch_tx, kill_switch_rx) = channel();
-        let broadcasters = self.broadcasters.clone();
 
         let iface = make_interface(&interface_config);
         let (broadcaster, _handle) = iface
@@ -649,7 +648,7 @@ impl Conductor {
         ));
 
         {
-            broadcasters
+            self.interface_broadcasters
                 .write()
                 .unwrap()
                 .insert(interface_config.id.clone(), broadcaster);

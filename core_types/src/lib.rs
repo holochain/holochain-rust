@@ -54,3 +54,22 @@ pub mod link;
 pub mod signature;
 pub mod time;
 pub mod validation;
+
+pub const GIT_HASH: &str = env!(
+    "GIT_HASH",
+    "failed to obtain git hash from build environment. Check build.rs"
+);
+
+#[cfg(test)]
+mod test_hash {
+    use super::*;
+
+    #[test]
+    fn test_hash() {
+        assert_eq!(GIT_HASH.chars().count(), 40);
+        assert!(
+            GIT_HASH.is_ascii(),
+            "GIT HASH contains non-ascii characters"
+        );
+    }
+}

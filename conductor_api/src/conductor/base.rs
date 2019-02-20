@@ -278,7 +278,10 @@ impl Conductor {
             println!("Error while spawning network process: {:?}", error);
             HolochainError::ErrorGeneric(error.to_string())
         })?;
-        println!("Network spawned with ipc-binding: {:?}", spawn_result.ipc_binding);
+        println!(
+            "Network spawned with ipc-binding: {:?}",
+            spawn_result.ipc_binding
+        );
         Ok(spawn_result)
     }
 
@@ -309,7 +312,7 @@ impl Conductor {
                     None => None,
                     Some(ref spawn) => Some(spawn.ipc_binding.clone()),
                 }
-            },
+            }
         };
         P2pConfig::new_ipc_uri(
             uri,

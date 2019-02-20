@@ -9,7 +9,7 @@ use crate::{
     context::Context,
     nucleus::{
         reducers::{
-            init_application::reduce_init_application,
+            init_application::reduce_initialize_chain,
             return_initialization_result::reduce_return_initialization_result,
             return_validation_package::reduce_return_validation_package,
             return_validation_result::reduce_return_validation_result,
@@ -25,7 +25,7 @@ use std::sync::Arc;
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
         Action::ReturnInitializationResult(_) => Some(reduce_return_initialization_result),
-        Action::InitApplication(_) => Some(reduce_init_application),
+        Action::InitializeChain(_) => Some(reduce_initialize_chain),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         Action::ReturnValidationPackage(_) => Some(reduce_return_validation_package),

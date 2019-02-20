@@ -48,7 +48,7 @@ pub mod tests {
     /// test that we can initialize and send/receive result values from a nucleus
     fn can_reduce_return_init_result_action() {
         let dna = Dna::new();
-        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna));
+        let action_wrapper = ActionWrapper::new(Action::InitializeChain(dna));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);

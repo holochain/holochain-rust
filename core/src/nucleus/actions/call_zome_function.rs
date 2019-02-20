@@ -64,7 +64,6 @@ pub async fn call_zome_function(
     zome_call: ZomeFnCall,
     context: &Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
-
     context.log(format!(
         "debug/reduce/call_zome_fn: Validating call: {:?}",
         zome_call
@@ -123,7 +122,6 @@ pub fn validate_call(
     context: Arc<Context>,
     fn_call: &ZomeFnCall,
 ) -> Result<(String, DnaWasm), HolochainError> {
-
     let state = context.state().ok_or(HolochainError::ErrorGeneric(
         "Context not initialized".to_string(),
     ))?;

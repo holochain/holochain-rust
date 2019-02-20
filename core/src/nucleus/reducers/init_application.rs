@@ -5,12 +5,12 @@ use crate::{
 };
 use std::sync::Arc;
 
-/// Reduce InitApplication Action
+/// Reduce InitializeChain Action
 /// Switch status to failed if an initialization is tried for an
 /// already initialized, or initializing instance.
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
-pub fn reduce_init_application(
+pub fn reduce_initialize_chain(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,

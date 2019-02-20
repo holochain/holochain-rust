@@ -42,6 +42,7 @@ jsonrpc-lite = "0.5.0"
 globset = "0.4.2"
 pretty_assertions = "0.5.1"
 pin-utils = "0.1.0-alpha.4"
+crossbeam-channel = "0.3.8"
 
 [dev-dependencies]
 wabt = "0.7.2"

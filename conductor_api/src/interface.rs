@@ -1,5 +1,6 @@
 use base64;
 use conductor::broadcaster::Broadcaster;
+use crossbeam_channel::Receiver;
 use holochain_core::state::State;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use holochain_dpki::keypair::{Keypair, SIGNATURESIZE};
@@ -12,7 +13,7 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     path::PathBuf,
-    sync::{mpsc::Receiver, Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, RwLock},
     thread,
 };
 

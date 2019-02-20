@@ -37,6 +37,7 @@ fs_extra = "1.1"
 rpassword = "2.1.0"
 dirs = "1.0.4"
 base64 = "0.10"
+crossbeam-channel = "0.3.8"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

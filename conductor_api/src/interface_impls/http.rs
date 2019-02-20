@@ -1,8 +1,9 @@
 use conductor::broadcaster::Broadcaster;
+use crossbeam_channel::Receiver;
 use interface::Interface;
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
-use std::{sync::mpsc::Receiver, thread};
+use std::thread;
 
 pub struct HttpInterface {
     port: u16,

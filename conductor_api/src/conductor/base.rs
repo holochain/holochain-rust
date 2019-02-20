@@ -10,9 +10,10 @@ use crate::{
     Holochain,
 };
 use boolinator::Boolinator;
+use crossbeam_channel::{Sender, Receiver, unbounded};
 use holochain_core::{
     logger::{ChannelLogger, Logger},
-    signal::{signal_channel, Signal, SignalReceiver},
+    signal::Signal,
 };
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
@@ -34,10 +35,10 @@ use std::{
     io::prelude::*,
     path::PathBuf,
     sync::{
-        mpsc::{channel, Sender, SyncSender},
         Arc, Mutex, RwLock,
     },
     thread,
+    time::Duration,
 };
 
 use holochain_net::p2p_config::P2pConfig;
@@ -81,6 +82,7 @@ pub fn mount_conductor_from_config(config: Configuration) {
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
+    instance_signal_receivers: Arc<RwLock<HashMap<String, Receiver<Signal>>>>,
     agent_keys: HashMap<String, Arc<Mutex<Keypair>>>,
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
@@ -89,10 +91,7 @@ pub struct Conductor {
     pub key_loader: KeyLoader,
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
-
-    // @NB: this really wants to be just `SignalSender`, but can't be because we must initialize the
-    // Conductor in two stages, thus we need `signal_tx` to be able to be uninitialized.
-    signal_tx: Initable<SignalSender>,
+    signal_tx: Option<SignalSender>,
     logger: DebugLogger,
     p2p_config: Option<P2pConfig>,
     network_child_process: NetShutdown,
@@ -106,7 +105,7 @@ impl Drop for Conductor {
     }
 }
 
-type SignalSender = SyncSender<Signal>;
+type SignalSender = Sender<Signal>;
 pub type KeyLoader = Arc<Box<FnMut(&PathBuf) -> Result<Keypair, HolochainError> + Send + Sync>>;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
@@ -123,6 +122,7 @@ impl Conductor {
         holochain_sodium::check_init();
         Conductor {
             instances: HashMap::new(),
+            instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
             agent_keys: HashMap::new(),
             interface_threads: HashMap::new(),
             static_servers: HashMap::new(),
@@ -131,48 +131,53 @@ impl Conductor {
             key_loader: Arc::new(Box::new(Self::load_key)),
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
-            signal_tx: Initable::Uninit,
+            signal_tx: None,
             logger: DebugLogger::new(rules),
             p2p_config: None,
             network_child_process: None,
         }
     }
 
-    fn setup_signals(&mut self, maybe_signal_tx: Option<SignalSender>) {
-        if let Some(signal_tx) = maybe_signal_tx {
-            self.signal_tx = Initable::Init(signal_tx);
-        } else {
-            let (signal_tx, signal_rx) = signal_channel();
-            self.signal_tx = Initable::Init(signal_tx);
-            self.start_signal_broadcast(signal_rx);
-        }
-    }
+    //fn interfaces_for_instance(instance_id: String) -> String {}
 
     pub fn config(&self) -> Configuration {
         self.config.clone()
     }
 
-    /// Starts a new thread which monitors the signal channel and pushes signals out across all interfaces.
+    pub fn set_signal_sender(&mut self, signal_tx: SignalSender) {
+        self.signal_tx = Some(signal_tx);
+    }
+
+    /// Starts a new thread which monitors each instance's signal channel and pushes signals out across interfaces.
     /// NB: This broadcast is far too broad! All signals will be broadcasted over all interfaces.
     /// This needs to be integrated with the capabilities model when ready.
-    pub fn start_signal_broadcast(&mut self, signal_rx: SignalReceiver) -> thread::JoinHandle<()> {
+    pub fn start_signal_multiplexer(&mut self) -> thread::JoinHandle<()> {
         let broadcasters = self.interface_broadcasters.clone();
-        self.log("starting broadcast loop".into());
-        thread::spawn(move || {
-            for signal in signal_rx {
-                match signal {
-                    // Ignore internal signals for now
-                    Signal::Internal(_) => (),
-                    // Only pass through user-defined and the temporary Holo signals
-                    Signal::User(_) | Signal::Holo(_) => broadcasters
-                        .read()
-                        .unwrap()
-                        .values()
-                        .for_each(|broadcaster| {
-                            broadcaster.send(signal.clone()).expect("TODO: result");
-                        }),
+        let instance_signal_receivers = self.instance_signal_receivers.clone();
+        let signal_tx = self.signal_tx.clone();
+
+        self.log("starting signal loop".into());
+        thread::spawn(move || loop {
+            {
+                for (_instance_id, receiver) in instance_signal_receivers.read().unwrap().iter() {
+                    if let Ok(signal) = receiver.try_recv() {
+                        signal_tx.clone().map(|s| s.send(signal.clone()));
+                        match signal {
+                            // Ignore internal signals for now
+                            Signal::Internal(_) => (),
+                            // Only pass through user-defined and the temporary Holo signals
+                            Signal::User(_) | Signal::Holo(_) => broadcasters
+                                .read()
+                                .unwrap()
+                                .values()
+                                .for_each(|broadcaster| {
+                                    broadcaster.send(signal.clone()).expect("TODO: result");
+                                }),
+                        }
+                    }
                 }
             }
+            thread::sleep(Duration::from_millis(1));
         })
     }
 
@@ -348,15 +353,10 @@ impl Conductor {
     /// The first time we call this, we also initialize the conductor-wide config
     /// for use with all instances
     ///
-    /// Note that the `signal_tx` parameter represents an important bifurcation of signal handling functionality.
-    /// if None, then the signal channel will be instantiated and the receive will be owned by the `Conductor`,
-    /// allowing it to automatically handle signals and push them out across the Interfaces via Broadcasters.
-    /// if it is Some, then the signal receiver is externally owned, and signals will not be sent over Interfaces.  This is for the use-case of the nodejs conductor that we use for testing, which expects not to have those interfaces
-    ///
     /// @TODO: clean up the conductor creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config(&mut self, signal_tx: Option<SignalSender>) -> Result<(), String> {
+    pub fn load_config(&mut self) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
 
         if self.p2p_config.is_none() {
@@ -366,9 +366,11 @@ impl Conductor {
         let config = self.config.clone();
         self.shutdown();
 
+        self.start_signal_multiplexer();
+
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
             let instance = self
-                .instantiate_from_config(&id, &config, signal_tx.clone())
+                .instantiate_from_config(&id, &config)
                 .map_err(|error| {
                     format!(
                         "Error while trying to create instance \"{}\": {}",
@@ -413,7 +415,6 @@ impl Conductor {
         &mut self,
         id: &String,
         config: &Configuration,
-        signal_tx: Option<SignalSender>,
     ) -> Result<Holochain, String> {
         let _ = config.check_consistency()?;
 
@@ -438,9 +439,9 @@ impl Conductor {
                 context_builder = context_builder.with_p2p_config(self.instance_p2p_config());
 
                 // Signal config:
-                self.setup_signals(signal_tx.clone());
-                context_builder = context_builder
-                    .with_signals(self.signal_tx.clone().expect("Signal sender not set up"));
+                let (sender, receiver) = unbounded();
+                self.instance_signal_receivers.write().unwrap().insert(instance_config.id.clone(), receiver);
+                context_builder = context_builder.with_signals(sender);
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {
@@ -629,7 +630,7 @@ impl Conductor {
     fn spawn_interface_thread(&self, interface_config: InterfaceConfiguration) -> Sender<()> {
         let dispatcher = self.make_interface_handler(&interface_config);
         // The "kill switch" is the channel which allows the interface to be stopped from outside its thread
-        let (kill_switch_tx, kill_switch_rx) = channel();
+        let (kill_switch_tx, kill_switch_rx) = unbounded();
 
         let iface = make_interface(&interface_config);
         let (broadcaster, _handle) = iface
@@ -897,16 +898,17 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config(None).unwrap();
+        conductor.load_config().unwrap();
         conductor
     }
 
     fn test_conductor_with_signals(signal_tx: SignalSender) -> Conductor {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
+        conductor.set_signal_sender(signal_tx);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config(Some(signal_tx)).unwrap();
+        conductor.load_config().unwrap();
         conductor
     }
 
@@ -1171,7 +1173,7 @@ pub mod tests {
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         conductor
-            .load_config(None)
+            .load_config()
             .expect("Test config must be sane");
         conductor
             .start_all_instances()
@@ -1222,7 +1224,7 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        assert_eq!(conductor.load_config(None), Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'dlyr9y0wpQplNX_Dv8oO_HHk8G8zEvFupuuIU-jKlaL-rykxWZgD4Oq2ZpF2VL7wzN1Z97X5s_8z0a-xVbyrRnwBlWf8\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!".to_string()));
+        assert_eq!(conductor.load_config(), Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'dlyr9y0wpQplNX_Dv8oO_HHk8G8zEvFupuuIU-jKlaL-rykxWZgD4Oq2ZpF2VL7wzN1Z97X5s_8z0a-xVbyrRnwBlWf8\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!".to_string()));
     }
 
 }

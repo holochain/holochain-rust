@@ -100,6 +100,7 @@ extern crate holochain_net_ipc;
 extern crate holochain_sodium;
 
 extern crate chrono;
+extern crate crossbeam_channel;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;

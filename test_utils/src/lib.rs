@@ -1,4 +1,5 @@
 #![warn(unused_extern_crates)]
+extern crate crossbeam_channel;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
@@ -6,6 +7,7 @@ extern crate holochain_net;
 extern crate tempfile;
 extern crate wabt;
 
+use crossbeam_channel::Receiver;
 use holochain_conductor_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
     action::Action,
@@ -35,7 +37,7 @@ use std::{
     fs::File,
     hash::{Hash, Hasher},
     io::prelude::*,
-    sync::{mpsc::Receiver, Arc, Mutex},
+    sync::{Arc, Mutex},
     time::Duration,
 };
 use tempfile::tempdir;

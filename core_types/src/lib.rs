@@ -9,6 +9,7 @@
 //! necessarily bound to Holochain.
 #![feature(try_from)]
 #![feature(never_type)]
+#![warn(unused_extern_crates)]
 
 #[macro_use]
 extern crate arrayref;

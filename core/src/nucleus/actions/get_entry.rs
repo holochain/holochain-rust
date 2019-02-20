@@ -1,4 +1,3 @@
-extern crate serde_json;
 use crate::context::Context;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},

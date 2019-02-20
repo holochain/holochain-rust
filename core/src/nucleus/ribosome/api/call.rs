@@ -112,8 +112,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    extern crate test_utils;
-    extern crate wabt;
+    use test_utils;
 
     use crate::{
         context::Context,

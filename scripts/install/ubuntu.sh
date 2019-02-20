@@ -2,7 +2,7 @@
 
 # basics
 apt-get update
-apt-get install -y cmake curl sudo
+apt-get install -y cmake curl sudo git
 
 # sodium deps
 apt-get install -y \

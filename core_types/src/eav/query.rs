@@ -105,17 +105,8 @@ impl<'a, T: 'a + Eq> EavFilter<'a, T> {
         Self(Box::new(move |v| v == val))
     }
 
-    pub fn attribute_prefixes(
-        prefixes: Vec<&'a str>,
-        base: Option<&'a str>,
-    ) -> AttributeFilter<'a> {
-        Self(Box::new(move |v: Attribute| match base {
-            Some(base) => prefixes
-                .iter()
-                .map(|p| p.to_string() + base)
-                .any(|attr| v.to_owned() == attr),
-            None => prefixes.iter().any(|prefix| v.starts_with(prefix)),
-        }))
+    pub fn multiple(vals: Vec<T>) -> Self {
+        Self(Box::new(move |val| vals.iter().any(|v| *v == val)))
     }
 
     pub fn predicate<F>(predicate: F) -> Self
@@ -142,9 +133,17 @@ impl<'a, T: Eq> From<Option<T>> for EavFilter<'a, T> {
     }
 }
 
+impl<'a, T: Eq> From<Vec<T>> for EavFilter<'a, T> {
+    fn from(vals: Vec<T>) -> EavFilter<'a, T> {
+        EavFilter::multiple(vals)
+    }
+}
+
 /// Specifies options for filtering on Index:
-/// LatestByAttribute is a special kind of lookup used for links. TODO: describe in words
 /// Range returns all results within a particular range of indices.
+/// LatestByAttribute is more complex. It first does a normal filter by E, A, and V.
+/// Then, for each group of items which differ *only* by Attribute and Index, only the item with
+/// highest Index is retained for that grouping.
 #[derive(Clone, Debug)]
 pub enum IndexFilter {
     LatestByAttribute,

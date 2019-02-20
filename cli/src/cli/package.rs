@@ -147,7 +147,7 @@ impl Packager {
                 {
                     meta_tree.insert(file_name.clone(), META_DIR_ID.into());
 
-                    let build = Build::from_file(dir_with_code.join(BUILD_CONFIG_FILE_NAME))?;
+                    let build = Build::from_file(dir_with_code.join(BUILD_COCHANFIG_FILE_NAME))?;
 
                     let wasm = build.run(&dir_with_code)?;
 

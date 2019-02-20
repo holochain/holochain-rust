@@ -54,7 +54,7 @@ pub mod tests {
 
         // TODO: Should wait for a success or saturation response from the network module instead
         std::thread::sleep(std::time::Duration::from_millis(500));
-        
+
         // Get it from the network
         // HACK: doing a loop because publish returns before actual confirmation from the network
         let mut maybe_entry_with_meta: Option<EntryWithMeta> = None;

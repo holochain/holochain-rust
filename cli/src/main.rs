@@ -26,7 +26,6 @@ mod error;
 mod util;
 
 use crate::error::{HolochainError, HolochainResult};
-pub use holochain_common::paths::DNA_EXTENSION;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -151,21 +150,16 @@ fn main() {
     });
 }
 
-pub fn std_dna_file_name() -> String {
-    let dir_path = std::env::current_dir().expect("directory missing");
-    let dir_name = dir_path.file_name().expect("directory to be a file");
-    format!("{}.{}", dir_name.to_string_lossy(), DNA_EXTENSION)
-}
-
 fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
+    let project_path = std::env::current_dir().expect("fish");
     match args {
         Cli::Package { strip_meta, output } => {
             let output = if output.is_some() {
                 output.unwrap()
             } else {
-                PathBuf::from(std_dna_file_name())
+                util::std_package_path(&project_path).expect("fish")
             };
             cli::package(strip_meta, output).map_err(HolochainError::Default)?
         }
@@ -180,7 +174,7 @@ fn run() -> HolochainResult<()> {
             persist,
             networked,
             interface,
-        } => cli::run(package, port, persist, networked, interface)
+        } => cli::run(&project_path, package, port, persist, networked, interface)
             .map_err(HolochainError::Default)?,
         Cli::Test {
             dir,

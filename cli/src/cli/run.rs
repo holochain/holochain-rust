@@ -19,15 +19,15 @@ const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
 /// Starts a minimal configuration Conductor with the current application running
 pub fn run(
+    path: &PathBuf,
     package: bool,
     port: u16,
     persist: bool,
     networked: bool,
     interface: String,
 ) -> DefaultResult<()> {
-    let dna_file_name = crate::std_dna_file_name();
     if package {
-        cli::package(true, PathBuf::from(&dna_file_name))?;
+        cli::package(true, crate::util::std_package_path(path)?)?;
     }
 
     // note that this behaviour is documented within
@@ -44,7 +44,7 @@ pub fn run(
 
     let dna_config = DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
-        file: dna_file_name,
+        file: crate::util::std_dna_file_name(path)?,
         hash: None,
     };
 

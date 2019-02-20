@@ -2,14 +2,12 @@ use crate::{cli::package, error::DefaultResult, util};
 use colored::*;
 use failure::Error;
 use std::{
-    fs,
     io::ErrorKind,
     path::PathBuf,
     process::{Command, Stdio},
 };
 
 pub const TEST_DIR_NAME: &str = "test";
-pub const DIST_DIR_NAME: &str = "dist";
 
 pub fn test(
     path: &PathBuf,
@@ -45,16 +43,9 @@ pub fn test(
         }
     };
 
-    // create dist folder
-    let dist_path = path.join(&DIST_DIR_NAME);
-
-    if !dist_path.exists() {
-        fs::create_dir(dist_path.as_path())?;
-    }
-
     if !skip_build {
         // build the package file, within the dist folder
-        let file_path = crate::std_dna_file_name();
+        let file_path = util::std_package_path(path)?;
         println!(
             "{} files for testing to file: {:?}",
             "Packaging".green().bold(),

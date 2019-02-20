@@ -20,10 +20,10 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
     dna::{
-        capabilities::{Capability, CapabilityCall, CapabilityType},
+        capabilities::CapabilityCall,
         entry_types::{EntryTypeDef, LinksTo},
-        fn_declarations::FnDeclaration,
-        zome::{ZomeCapabilities, ZomeFnDeclarations},
+        fn_declarations::{FnDeclaration, TraitFns},
+        zome::{ZomeFnDeclarations, ZomeTraits},
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
@@ -144,12 +144,13 @@ pub fn zome_setup(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 }
 
 #[no_mangle]
-pub fn __list_capabilities(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+pub fn __list_traits(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
+
 #[no_mangle]
-pub fn __list_functions(_: u32) -> u32 {
-    0
+pub fn __list_functions(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
 
 #[no_mangle]
@@ -157,21 +158,19 @@ pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
-pub fn create_test_defs_with_fn_names(
-    fn_names: Vec<&str>,
-) -> (ZomeFnDeclarations, ZomeCapabilities) {
-    let mut capability = Capability::new(CapabilityType::Public);
+pub fn create_test_defs_with_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {
+    let mut traitfns = TraitFns::new();
     let mut fn_declarations = Vec::new();
 
     for fn_name in fn_names {
-        capability.functions.push(String::from(fn_name));
+        traitfns.functions.push(String::from(fn_name));
         let mut fn_decl = FnDeclaration::new();
         fn_decl.name = String::from(fn_name);
         fn_declarations.push(fn_decl);
     }
-    let mut capabilities = BTreeMap::new();
-    capabilities.insert("test_cap".to_string(), capability);
-    (fn_declarations, capabilities)
+    let mut traits = BTreeMap::new();
+    traits.insert("hc_public".to_string(), traitfns);
+    (fn_declarations, traits)
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
@@ -379,7 +378,6 @@ fn can_get_entry_ok() {
     let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
-
     let result = make_test_call(
         &mut hc,
         "check_get_entry_result",
@@ -404,7 +402,6 @@ fn can_get_entry_ok() {
 }
 
 #[test]
-#[cfg(not(windows))]
 fn can_get_entry_bad() {
     let (mut hc, _) = start_holochain_instance("can_get_entry_bad", "alice");
     // Call the exposed wasm function that calls the Commit API function
@@ -414,8 +411,8 @@ fn can_get_entry_bad() {
         &example_valid_entry_params(),
     );
     let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
-    assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(expected),);
+    assert!(result.is_ok(), "result = {:?}", result);
+    assert_eq!(result.unwrap(), JsonString::from(expected));
     // test the case with a bad address
     let result = make_test_call(
         &mut hc,
@@ -424,7 +421,7 @@ fn can_get_entry_bad() {
             {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
         ))),
     );
-    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert!(result.is_ok(), "result = {:?}", result);
     let empty_entry_result = GetEntryResult::new(StatusRequestKind::Latest, None);
     let expected: ZomeApiResult<GetEntryResult> = Ok(empty_entry_result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
@@ -437,7 +434,7 @@ fn can_get_entry_bad() {
             {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
         ))),
     );
-    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert!(result.is_ok(), "result = {:?}", result);
     let expected: ZomeApiResult<Option<Entry>> = Ok(None);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 }
@@ -464,7 +461,7 @@ fn can_invalidate_invalid_commit() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"94\\\"}\"}}"),
+        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"131\\\"}\"}}"),
     );
 }
 

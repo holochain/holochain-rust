@@ -1,31 +1,24 @@
-extern crate holochain_cas_implementations;
+#![warn(unused_extern_crates)]
 extern crate holochain_common;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dpki;
-extern crate holochain_net;
 extern crate holochain_sodium;
 extern crate holochain_wasm_utils;
 extern crate structopt;
 #[macro_use]
 extern crate failure;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate assert_cmd;
 extern crate base64;
 extern crate colored;
-extern crate dir_diff;
 extern crate semver;
 extern crate toml;
 #[macro_use]
 extern crate serde_json;
 extern crate ignore;
 extern crate rpassword;
-extern crate rustyline;
-extern crate tempfile;
-extern crate uuid;
 
 mod cli;
 mod config_files;
@@ -42,7 +35,7 @@ enum Cli {
     #[structopt(
         name = "package",
         alias = "p",
-        about = "Builds the current Holochain app into a .hcpkg file"
+        about = "Builds DNA source files into a single bundle.json DNA file"
     )]
     Package {
         #[structopt(
@@ -75,7 +68,7 @@ enum Cli {
     #[structopt(
         name = "generate",
         alias = "g",
-        about = "Generates a new zome and scaffolds the given capabilities"
+        about = "Generates a new zome and scaffolds the given functions"
     )]
     Generate {
         #[structopt(
@@ -143,12 +136,13 @@ enum Cli {
     #[structopt(
         name = "keygen",
         alias = "k",
-        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to ~/.config/holochain/keys"
+        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\\Users\\Alice\\AppData\\Roaming\\holochain\\holochain\\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)"
     )]
     KeyGen,
 }
 
 fn main() {
+    holochain_sodium::check_init();
     run().unwrap_or_else(|err| {
         eprintln!("{}", err);
 

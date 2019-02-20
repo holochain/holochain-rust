@@ -162,7 +162,7 @@ pub fn check_if_wrong_secbuf(buf: &mut SecBuf) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::holochain_sodium::random::random_secbuf;
+    use holochain_sodium::random::random_secbuf;
 
     const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
         pwhash::OPSLIMIT_INTERACTIVE,

@@ -197,7 +197,6 @@ impl Instance {
             *state = new_state;
         }
 
-        // context.log(format!("trace/reduce: {:?}", action_wrapper.action()));
         self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers
@@ -282,8 +281,6 @@ pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrappe
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-    extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
@@ -304,12 +301,10 @@ pub mod tests {
         entry::{entry_type::EntryType, test_entry},
         json::{JsonString, RawString},
     };
+    use tempfile;
+    use test_utils;
 
-    use crate::{
-        nucleus::ribosome::{callback::Callback, Defn},
-        persister::SimplePersister,
-        state::State,
-    };
+    use crate::{persister::SimplePersister, state::State};
 
     use std::{
         sync::{mpsc::channel, Arc, Mutex},
@@ -625,11 +620,7 @@ pub mod tests {
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
-        let dna = test_utils::create_test_dna_with_wat(
-            "test_zome",
-            Callback::Genesis.capability().as_str(),
-            None,
-        );
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
 
         let instance = test_instance(dna, None);
 
@@ -643,7 +634,7 @@ pub mod tests {
     fn test_genesis_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
+            "test_cap",
             Some(
                 r#"
             (module
@@ -672,7 +663,7 @@ pub mod tests {
     fn test_genesis_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
+            "test_cap",
             Some(
                 r#"
             (module

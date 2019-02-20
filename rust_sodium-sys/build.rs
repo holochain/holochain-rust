@@ -18,10 +18,7 @@ extern crate zip;
 
 use http_req::request;
 use sha2::{Digest, Sha256};
-use std::env;
-use std::fs;
-use std::io::Cursor;
-use std::path::Path;
+use std::{env, fs, io::Cursor, path::Path};
 
 const DOWNLOAD_BASE_URL: &'static str = "https://download.libsodium.org/libsodium/releases/";
 const VERSION: &'static str = "1.0.16";
@@ -101,8 +98,10 @@ fn get_install_dir() -> String {
 #[cfg(target_env = "msvc")]
 fn get_libsodium() {
     use libc::S_IFDIR;
-    use std::fs::File;
-    use std::io::{Read, Write};
+    use std::{
+        fs::File,
+        io::{Read, Write},
+    };
     use zip::ZipArchive;
 
     // Download zip file
@@ -212,8 +211,7 @@ fn get_libsodium() {
 #[cfg(not(windows))]
 fn get_libsodium() {
     use flate2::read::GzDecoder;
-    use std::process::Command;
-    use std::str;
+    use std::{process::Command, str};
     use tar::Archive;
 
     // Determine build target triple
@@ -257,7 +255,7 @@ fn get_libsodium() {
     // Decide on CC, CFLAGS and the --host configure argument
     let build = cc::Build::new();
     let mut compiler = unwrap!(build.get_compiler().path().to_str()).to_string();
-    let mut cflags = env::var("CFLAGS").unwrap_or(String::default());
+    let mut cflags = env::var("CFLAGS").unwrap_or_default();
     cflags += " -O2 -fPIC";
     let host_arg;
     let cross_compiling;
@@ -273,16 +271,14 @@ fn get_libsodium() {
             .to_string();
 
         // Determine SDK directory paths
-        let sdk_dir_simulator = unwrap!(
-            Path::new(&xcode_dir)
-                .join("Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk")
-                .to_str()
-        ).to_string();
-        let sdk_dir_ios = unwrap!(
-            Path::new(&xcode_dir)
-                .join("Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk")
-                .to_str()
-        ).to_string();
+        let sdk_dir_simulator = unwrap!(Path::new(&xcode_dir)
+            .join("Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk")
+            .to_str())
+        .to_string();
+        let sdk_dir_ios = unwrap!(Path::new(&xcode_dir)
+            .join("Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk")
+            .to_str())
+        .to_string();
 
         // Min versions
         let ios_simulator_version_min = "6.0.0";

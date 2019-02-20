@@ -11,13 +11,14 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: GetEntryArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetEntryArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            runtime.context.log(format!(
+            zome_call_data.context.log(format!(
                 "err/zome: invoke_get_entry() failed to deserialize: {:?}",
                 args_str
             ));
@@ -25,17 +26,17 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
     // Create workflow future and block on it
-    let result = runtime
+    let result = zome_call_data
         .context
-        .block_on(get_entry_result_workflow(&runtime.context, &input));
+        .block_on(get_entry_result_workflow(&zome_call_data.context, &input));
     // Store result in wasm memory
     runtime.store_result(result)
 }
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-    extern crate wabt;
+    use test_utils;
+    use wabt;
 
     use self::wabt::Wat2Wasm;
     use crate::{
@@ -47,6 +48,7 @@ pub mod tests {
                     commit::tests::test_commit_args_bytes,
                     tests::{test_parameters, test_zome_name},
                 },
+                runtime::WasmCallData,
             },
             tests::{test_capability_call, test_capability_name},
             ZomeFnCall,
@@ -163,7 +165,7 @@ pub mod tests {
     )
 
     (func
-        (export "__list_capabilities")
+        (export "__list_traits")
         (param $allocation i64)
         (result i64)
 
@@ -172,10 +174,10 @@ pub mod tests {
 
     (func
         (export "__list_functions")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
     )
 )
                 "#,
@@ -218,11 +220,9 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            &dna.name.to_string(),
-            Arc::clone(&context),
             wasm.clone(),
-            &commit_call,
             Some(test_commit_args_bytes()),
+            WasmCallData::new_zome_call(Arc::clone(&context), dna.name.clone(), commit_call),
         )
         .expect("test should be callable");
 
@@ -242,11 +242,9 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            &dna.name.to_string(),
-            Arc::clone(&context),
             wasm.clone(),
-            &get_call,
             Some(test_get_args_bytes()),
+            WasmCallData::new_zome_call(Arc::clone(&context), dna.name, get_call),
         )
         .expect("test should be callable");
 

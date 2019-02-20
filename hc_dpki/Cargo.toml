@@ -1,18 +1,15 @@
 [package]
 name = "holochain_dpki"
-version = "0.1.0"
+version = "0.0.4-alpha"
 authors = ["zo-el<zo@el.org>"]
 edition = "2018"
 
 [dependencies]
 arrayref = "0.3.5"
 base64 = "0.10.0"
-bip39 = "0.6.0-beta.1"
-boolinator = "2.4.0"
-holochain_sodium = { path = "../sodium" }
 holochain_core_types = { path = "../core_types" }
+holochain_sodium = { path = "../sodium" }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 rustc-serialize = "0.3.24"
-

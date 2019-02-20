@@ -4,7 +4,7 @@ const path = require('path');
 const { Config, Scenario } = require('..')
 
 const dnaValid = Config.dna(
-    path.join(__dirname, "../../app_spec/dist/app_spec.hcpkg"),
+    path.join(__dirname, "test-bundle.json"),
     'dna-valid'
 )
 const dnaInvalid = Config.dna(
@@ -20,7 +20,7 @@ const instanceInvalid = Config.instance(agent, dnaInvalid, 'ingrid')
 test('can run a scenario', t => {
     const scenario = new Scenario([instanceValid])
     scenario.run((stop, {valorie}) => {
-        t.equal(valorie.agentId.indexOf('007'), 0)
+        t.equal(valorie.agentId, "geQa11ADJKJpTAcwEI_o7A7HDgDWwKoFHPV4-Pj7DRWtqXFHzhjaAqTTYOQPsrtbsKfatOGxNHHVnaCBNKEBSTaSf0gh")
         t.end()
         stop()
     }).catch(t.fail)

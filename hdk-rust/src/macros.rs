@@ -48,9 +48,8 @@ macro_rules! load_string {
 /// 3. receive (optional): `receive` is a callback called by Holochain when another agent on a hApp has initiated a node-to-node direct message.
 ///     That node-to-node message is initiated via the [**send** function of the API](api/fn.send.html), which is where you can read further about use of `send` and `receive`.
 ///     `receive` is optional to include, based on whether you use `send` anywhere in the code.
-/// 4. functions: `functions` is divided up into `capabilities`, which specify who can access those functions.
-///     `functions` must be a tree structure where the first children are `capabilities`
-///     and the children of those `capabilities` are actual function definitions.
+/// 4. functions:
+///     `functions` declares all the zome's functions with their input/output signatures
 /// # Examples
 ///
 /// ```rust
@@ -164,10 +163,9 @@ macro_rules! load_string {
 ///             }
 ///     ]
 ///
-///     // by convention "public" is the name of the capability for functions
-///     // that can be called by anyone
-///     capabilities: {
-///         public (Public) [post_address]
+///     // trait named "hc_public" will grant public access to all its functions
+///     traits: {
+///         hc_public [post_address]
 ///     }
 /// }
 ///
@@ -200,10 +198,10 @@ macro_rules! define_zome {
             )*
         ]
 
-        capabilities : {
+        traits : {
                 $(
-                    $cap:ident ( $vis:ident ) [
-                        $($cap_fn:ident),*
+                    $trait:ident [
+                        $($trait_fn:ident),*
                     ]
                 )*
             }
@@ -277,34 +275,35 @@ macro_rules! define_zome {
             }
         )*
 
-        use $crate::holochain_core_types::dna::capabilities::Capability;
         use std::collections::HashMap;
 
         #[no_mangle]
         #[allow(unused_imports)]
-        pub fn __list_capabilities() -> $crate::holochain_core_types::dna::zome::ZomeCapabilities {
+        pub fn __list_traits() -> $crate::holochain_core_types::dna::zome::ZomeTraits {
 
-            use $crate::holochain_core_types::dna::capabilities::{Capability, CapabilityType};
-            use $crate::holochain_core_types::dna::fn_declarations::{FnParameter, FnDeclaration};
+            use $crate::holochain_core_types::dna::{
+                fn_declarations::{FnParameter, FnDeclaration, TraitFns},
+            };
+
             use std::collections::BTreeMap;
 
-            let return_value: $crate::holochain_core_types::dna::zome::ZomeCapabilities = {
-                let mut cap_map = BTreeMap::new();
+            let return_value: $crate::holochain_core_types::dna::zome::ZomeTraits = {
+                let mut traitfns_map = BTreeMap::new();
 
                 $(
                     {
-                        let mut capability = Capability::new(CapabilityType::$vis);
-                        capability.functions = vec![
+                        let mut traitfns = TraitFns::new();
+                        traitfns.functions = vec![
                             $(
-                                stringify!($cap_fn).into()
+                                stringify!($trait_fn).into()
                             ),*
                         ];
 
-                        cap_map.insert(stringify!($cap).into(), capability);
+                        traitfns_map.insert(stringify!($trait).into(), traitfns);
                     }
                 ),*
 
-                cap_map
+                traitfns_map
             };
 
             return_value
@@ -314,7 +313,6 @@ macro_rules! define_zome {
         #[allow(unused_imports)]
         pub fn __list_functions() -> $crate::holochain_core_types::dna::zome::ZomeFnDeclarations {
 
-            use $crate::holochain_core_types::dna::capabilities::{Capability, CapabilityType};
             use $crate::holochain_core_types::dna::fn_declarations::{FnParameter, FnDeclaration};
 
             let return_value: $crate::holochain_core_types::dna::zome::ZomeFnDeclarations = {
@@ -341,6 +339,31 @@ macro_rules! define_zome {
 
             return_value
         }
+
+
+        #[no_mangle]
+        pub extern "C" fn __install_panic_handler() -> () {
+            use $crate::{api::debug, holochain_core_types::json::RawString};
+            use std::panic;
+            panic::set_hook(Box::new(move |info| {
+                let _ = debug(RawString::from(
+                    info.payload().downcast_ref::<String>().unwrap().clone(),
+                ));
+                //let _ = debug(RawString::from(format!("{}", info.message().unwrap().clone())));
+                let _ = if let Some(location) = info.location() {
+                    debug(RawString::from(format!(
+                        "panic occurred in file '{}' at line {}",
+                        location.file(),
+                        location.line()
+                    )))
+                } else {
+                    debug(RawString::from(format!(
+                        "panic occurred but can't get location information..."
+                    )))
+                };
+            }));
+        }
+
 
         $(
                 #[no_mangle]

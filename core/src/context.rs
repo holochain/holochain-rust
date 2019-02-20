@@ -27,7 +27,7 @@ use holochain_sodium::secbuf::SecBuf;
 
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_lite::JsonRpc;
-use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
+use jsonrpc_core::{self, types::params::Params, IoHandler};
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{

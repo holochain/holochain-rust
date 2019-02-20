@@ -116,7 +116,7 @@ fn validate_provenances(validation_data: &ValidationData) -> Result<(), Holochai
             let result = Keypair::verify(author.to_string(), &mut signature_buf, &mut message_buf)?;
 
             (result == 0).ok_or(HolochainError::ValidationFailed(
-                "Signature invalid".to_string(),
+                format!("Signature for {} invalid",author),
             ))
         })
         .collect::<Result<Vec<()>, HolochainError>>()?;

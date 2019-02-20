@@ -169,13 +169,17 @@ impl ConductorApiBuilder {
                             let params_string = serde_json::to_string(&params)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
 
-                            let cap_call = {
-                                // TODO: get the token from the paramters on only if not there
-                                // assume public token.  Also cleanup unwraps.
+                            let cap_request = {
+                                // TODO: get the token from the parameters.  If not there assume public token.
+                                // currently we are always getting the public token.
                                 let context = hc.context();
                                 let state = context.state().unwrap().nucleus();
-                                let init = state.initialization().unwrap();
-                                let token = init.get_public_token(&zome_name).unwrap();
+                                let init = state
+                                    .initialization()
+                                    .ok_or(jsonrpc_core::Error::internal_error())?;
+                                let token = init.get_public_token(&zome_name).ok_or(
+                                    jsonrpc_core::Error::invalid_params("public token not found"),
+                                )?;
                                 let caller = Address::from("fake");
                                 make_cap_request_for_call(
                                     context.clone(),
@@ -186,10 +190,8 @@ impl ConductorApiBuilder {
                                 )
                             };
 
-                            // TODO: need to get the caller identity in here somehow
-
                             let response = hc
-                                .call(&zome_name, cap_call, &func_name, &params_string)
+                                .call(&zome_name, cap_request, &func_name, &params_string)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
                             Ok(Value::String(response.to_string()))
                         })

@@ -657,7 +657,9 @@ impl Conductor {
     }
 
     pub fn save_dna(&self, dna: &Dna) -> Result<PathBuf, HolochainError> {
-        let file_path = self.dna_dir_path().join(dna.address().to_string())
+        let file_path = self
+            .dna_dir_path()
+            .join(dna.address().to_string())
             .with_extension(DNA_EXTENSION);
         fs::create_dir_all(&self.dna_dir_path())?;
         self.save_dna_to(dna, file_path)

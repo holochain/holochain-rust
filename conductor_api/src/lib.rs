@@ -26,7 +26,6 @@
 ///
 /// # Example
 /// ```rust
-/// extern crate clap;
 /// extern crate holochain_conductor_api;
 /// extern crate holochain_core_types;
 /// #[macro_use]

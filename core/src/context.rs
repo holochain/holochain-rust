@@ -26,8 +26,8 @@ use holochain_dpki::keypair::{Keypair, SEEDSIZE, SIGNATURESIZE};
 use holochain_sodium::secbuf::SecBuf;
 
 use holochain_net::p2p_config::P2pConfig;
-use jsonrpc_lite::JsonRpc;
 use jsonrpc_core::{self, types::params::Params, IoHandler};
+use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{

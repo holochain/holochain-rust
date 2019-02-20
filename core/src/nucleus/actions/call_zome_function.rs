@@ -64,12 +64,6 @@ pub async fn call_zome_function(
     zome_call: ZomeFnCall,
     context: &Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
-    // Get DNA name and WASM code from state.
-    // This happens in a code block to scope the read-lock that we acquire from the state
-    // so that it drops the lock and frees the state for mutation.
-    // If we would leak (and move) the lock into the Ribosome thread below, it would lead to a
-    // dead-lock since the existence of this read-lock prevents the redux loop from writing to
-    // the state
 
     context.log(format!(
         "debug/reduce/call_zome_fn: Validating call: {:?}",
@@ -129,6 +123,7 @@ pub fn validate_call(
     context: Arc<Context>,
     fn_call: &ZomeFnCall,
 ) -> Result<(String, DnaWasm), HolochainError> {
+
     let state = context.state().ok_or(HolochainError::ErrorGeneric(
         "Context not initialized".to_string(),
     ))?;

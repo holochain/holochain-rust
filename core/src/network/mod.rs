@@ -33,7 +33,9 @@ pub mod tests {
     };
     use test_utils::*;
 
+    // TODO: Should wait for a success or saturation response from the network module after Publish
     #[test]
+    #[ignore]
     fn get_entry_roundtrip() {
         let netname = Some("get_entry_roundtrip");
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
@@ -53,7 +55,7 @@ pub mod tests {
         assert!(result.is_ok(), "publish() result = {:?}", result);
 
         // TODO: Should wait for a success or saturation response from the network module instead
-        std::thread::sleep(std::time::Duration::from_millis(2000));
+        // std::thread::sleep(std::time::Duration::from_millis(2000));
 
         // Get it from the network
         // HACK: doing a loop because publish returns before actual confirmation from the network
@@ -203,7 +205,9 @@ pub mod tests {
         assert_eq!(validation_package.chain_header, header);
     }
 
+    // TODO: Should wait for a success or saturation response from the network module after Publish
     #[test]
+    #[ignore]
     fn get_links_roundtrip() {
         let netname = Some("get_links_roundtrip");
         let wat = &test_wat_always_valid();
@@ -247,7 +251,7 @@ pub mod tests {
         assert!(result.is_ok(), "publish() result = {:?}", result);
 
         // TODO: Should wait for a success or saturation response from the network module instead
-        std::thread::sleep(std::time::Duration::from_millis(1000));
+        // std::thread::sleep(std::time::Duration::from_millis(1000));
 
         println!("\n get_links() ...");
         let maybe_links = context2.block_on(get_links(

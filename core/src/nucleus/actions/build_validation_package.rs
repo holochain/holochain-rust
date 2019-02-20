@@ -64,6 +64,9 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
 
         EntryType::AgentId => {
             // FIXME
+        },
+        EntryType::Meta =>{
+
         }
         _ => {
             return ValidationPackageFuture {
@@ -78,6 +81,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
     };
 
     {
+         println!("before id");
         let id = id.clone();
         let entry = entry.clone();
         let context = context.clone();
@@ -99,6 +103,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
 
         thread::spawn(move || {
             let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
+            println!("in thread {:?}",maybe_callback_result.clone());
             let maybe_validation_package = maybe_callback_result
                 .and_then(|callback_result| match callback_result {
                     CallbackResult::Fail(error_string) => {
@@ -116,24 +121,28 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
                 })
                 .and_then(|package_definition| {
                     Ok(match package_definition {
-                        Entry => ValidationPackage::only_header(entry_header),
+                        Entry => {println!("Entry{:?}",entry_header.clone());ValidationPackage::only_header(entry_header)},
                         ChainEntries => {
+                            println!("chain entries");
                             let mut package = ValidationPackage::only_header(entry_header);
                             package.source_chain_entries = Some(all_public_chain_entries(&context));
                             package
                         }
                         ChainHeaders => {
+                            println!("chain headers");
                             let mut package = ValidationPackage::only_header(entry_header);
                             package.source_chain_headers = Some(all_chain_headers(&context));
                             package
                         }
                         ChainFull => {
+                             println!("chain full");
                             let mut package = ValidationPackage::only_header(entry_header);
                             package.source_chain_entries = Some(all_public_chain_entries(&context));
                             package.source_chain_headers = Some(all_chain_headers(&context));
                             package
                         }
                         Custom(string) => {
+                             println!("custom");
                             let mut package = ValidationPackage::only_header(entry_header);
                             package.custom = Some(string);
                             package

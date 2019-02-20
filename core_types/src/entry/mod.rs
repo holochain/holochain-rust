@@ -74,6 +74,7 @@ pub enum Entry {
     ChainMigrate(ChainMigrate),
     CapToken(CapToken),
     CapTokenGrant(CapTokenGrant),
+    Meta((Address,CrudStatus))
 }
 
 impl From<Option<Entry>> for JsonString {
@@ -103,6 +104,7 @@ impl Entry {
             Entry::ChainMigrate(_) => EntryType::ChainMigrate,
             Entry::CapToken(_) => EntryType::CapToken,
             Entry::CapTokenGrant(_) => EntryType::CapTokenGrant,
+            Entry::Meta(_) => EntryType::Meta
 
         }
     }

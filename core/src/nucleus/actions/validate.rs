@@ -71,6 +71,9 @@ pub fn validate_entry<'a>(
         EntryType::AgentId => {
             // FIXME
         },
+        EntryType::Meta =>{
+
+        },
         _ => {
             return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(
                 format!(

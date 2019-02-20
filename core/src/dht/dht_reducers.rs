@@ -88,9 +88,9 @@ fn reduce_store_entry_common(
     let res = (*content_storage.write().unwrap()).add(entry).ok();
     if res.is_some() {
         let meta_storage = &new_store.meta_storage().clone();
-        println!("entry {:?}",entry.clone());
+        let meta_entry = Entry::Meta((entry.address(),CrudStatus::Live));
         context
-            .block_on(author_entry(&entry, None, &context))
+            .block_on(author_entry(&meta_entry, None, &context))
             .map(|_| Some(new_store))
                     .map_err(|err| {
                         context.log(format!(
@@ -214,8 +214,9 @@ pub(crate) fn reduce_update_entry(
     let json_entry = maybe_json_entry.expect("Could not parse json entry");
 
     let entry = Entry::try_from(json_entry).expect("Stored content should be a valid entry.");
+    let entry_to_author = Entry::Meta((entry.address(),CrudStatus::Modified));
     let new_status_eav_option = context
-            .block_on(author_entry(&entry, None, &context))
+            .block_on(author_entry(&entry_to_author, None, &context))
             .map(|_| None)
             .map_err(|err| {
                     closure_store
@@ -321,8 +322,9 @@ fn reduce_remove_entry_inner(
         )));
     }
     // Update crud-status
+    let meta_entry = Entry::Meta((entry.address(),CrudStatus::Deleted));
     let res = context
-            .block_on(author_entry(&entry, None, &context));
+            .block_on(author_entry(&meta_entry, None, &context));
     if let Err(err) = res {
         return Err(err);
     }

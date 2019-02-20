@@ -75,10 +75,13 @@ pub fn validate_entry(
         //                      context,
         //                    )?
         EntryType::AgentId => Ok(CallbackResult::Pass),
+        EntryType::Meta => Ok(CallbackResult::Pass),
 
         _ => Ok(CallbackResult::NotImplemented("validate_entry".into())),
     }
 }
+
+
 
 fn validate_link_entry(
     entry: Entry,

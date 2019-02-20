@@ -25,6 +25,8 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry: {} with content: {:?}",
         address, entry
     ));
+
+    println!("address");
     // 1. Build the context needed for validation of the entry
     let validation_package = await!(build_validation_package(&entry, &context))?;
     let validation_data = ValidationData {
@@ -32,6 +34,8 @@ pub async fn author_entry<'a>(
         lifecycle: EntryLifecycle::Chain,
         action: EntryAction::Create,
     };
+
+    println!("Building validation package");
 
     // 2. Validate the entry
     context.log(format!(
@@ -51,6 +55,8 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: committed",
         address
     ));
+
+    println!("Commit entry");
 
     // 4. Publish the valid entry to DHT. This will call Hold to itself
     //TODO: missing a general public/private sharing check here, for now just

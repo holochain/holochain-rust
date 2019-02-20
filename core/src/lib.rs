@@ -18,8 +18,6 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_core_types_derive;
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate pretty_assertions;
 
 pub mod action;

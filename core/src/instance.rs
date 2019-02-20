@@ -4,7 +4,7 @@ use crate::{
 #[cfg(test)]
 use crate::{
     network::actions::initialize_network::initialize_network_with_spoofed_dna,
-    nucleus::actions::initialize::initialize_application,
+    nucleus::actions::initialize::initialize_chain,
 };
 #[cfg(test)]
 use holochain_core_types::cas::content::Address;
@@ -77,7 +77,7 @@ impl Instance {
         let context = self.inner_setup(context);
         context.block_on(
             async {
-                await!(initialize_application(dna.clone(), &context))?;
+                await!(initialize_chain(dna.clone(), &context))?;
                 await!(initialize_network_with_spoofed_dna(
                     spoofed_dna_address,
                     &context

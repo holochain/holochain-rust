@@ -49,7 +49,7 @@ impl Initialization {
 /// Future will resolve to an error after this duration.
 const INITIALIZATION_TIMEOUT: u64 = 60;
 
-/// Initialize Application, Action Creator
+/// Initialize Chain, Action Creator
 /// This is the high-level initialization function that wraps the whole process of initializing an
 /// instance. It creates both InitApplication and ReturnInitializationResult actions asynchronously.
 ///
@@ -57,7 +57,7 @@ const INITIALIZATION_TIMEOUT: u64 = 60;
 /// the Dna error or errors from the genesis callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
-pub async fn initialize_application(
+pub async fn initialize_chain(
     dna: Dna,
     context: &Arc<Context>,
 ) -> Result<NucleusStatus, HolochainError> {
@@ -79,7 +79,7 @@ pub async fn initialize_application(
             .send(ActionWrapper::new(Action::ReturnInitializationResult(Err(
                 err.to_string(),
             ))))
-            .expect("Action channel not usable in initialize_application()");
+            .expect("Action channel not usable in initialize_chain()");
     }
 
     // Commit DNA to chain
@@ -166,20 +166,19 @@ pub async fn initialize_application(
         });
 
     // otherwise return the Initialization struct
-    let initialization_result = match maybe_error {
-        Some(error_message) => Err(error_message),
-        None => Ok(Initialization {
+    let initialization_result = maybe_error.map(Err).unwrap_or_else(|| {
+        Ok(Initialization {
             public_tokens,
             payload: None, // no payload for now
-        }),
-    };
+        })
+    });
 
     context_clone
         .action_channel()
         .send(ActionWrapper::new(Action::ReturnInitializationResult(
             initialization_result,
         )))
-        .expect("Action channel not usable in initialize_application()");
+        .expect("Action channel not usable in initialize_chain()");
 
     await!(InitializationFuture {
         context: context.clone(),

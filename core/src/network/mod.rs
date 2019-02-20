@@ -52,6 +52,9 @@ pub mod tests {
         let result = context1.block_on(publish(entry.address(), &context1));
         assert!(result.is_ok(), "publish() result = {:?}", result);
 
+        // TODO: Should wait for a success or saturation response from the network module instead
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        
         // Get it from the network
         // HACK: doing a loop because publish returns before actual confirmation from the network
         let mut maybe_entry_with_meta: Option<EntryWithMeta> = None;
@@ -201,7 +204,6 @@ pub mod tests {
     }
 
     #[test]
-    #[ignore]
     fn get_links_roundtrip() {
         let netname = Some("get_links_roundtrip");
         let wat = &test_wat_always_valid();
@@ -243,6 +245,9 @@ pub mod tests {
         assert!(result.is_ok(), "commit_entry() result = {:?}", result);
         let result = context1.block_on(publish(entry.address(), &context1));
         assert!(result.is_ok(), "publish() result = {:?}", result);
+
+        // TODO: Should wait for a success or saturation response from the network module instead
+        std::thread::sleep(std::time::Duration::from_millis(500));
 
         println!("\n get_links() ...");
         let maybe_links = context2.block_on(get_links(

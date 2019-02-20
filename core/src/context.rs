@@ -86,7 +86,6 @@ impl Context {
     ) -> Arc<RwLock<IoHandler>> {
         conductor_api
             .unwrap_or_else(|| Arc::new(RwLock::new(mock_conductor_api(agent_id))))
-            .unwrap()
     }
 
     pub fn new(

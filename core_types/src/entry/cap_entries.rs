@@ -4,6 +4,7 @@ use crate::{
     error::HolochainError,
     json::JsonString,
 };
+use std::collections::HashMap;
 
 /// Enum for Zome CapabilityType.  Public capabilities require public grant token.  Transferable
 /// capabilities require a token, but don't limit the capability to specific agent(s);
@@ -21,7 +22,7 @@ pub enum CapabilityType {
 }
 
 pub type CapTokenValue = Address;
-pub type CapFunction = String;
+pub type CapFunctions = HashMap<String, Vec<String>>;
 
 /// System entry to hold a capability token for use as a caller
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
@@ -42,11 +43,11 @@ impl CapToken {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct CapTokenGrant {
     assignees: Option<Vec<Address>>,
-    functions: Vec<CapFunction>,
+    functions: CapFunctions,
 }
 
 impl CapTokenGrant {
-    fn new(assignees: Option<Vec<Address>>, functions: Vec<CapFunction>) -> Self {
+    fn new(assignees: Option<Vec<Address>>, functions: CapFunctions) -> Self {
         CapTokenGrant {
             assignees,
             functions,
@@ -56,7 +57,7 @@ impl CapTokenGrant {
     pub fn create(
         cap_type: CapabilityType,
         assignees: Option<Vec<Address>>,
-        functions: Vec<CapFunction>,
+        functions: CapFunctions,
     ) -> Result<Self, HolochainError> {
         let assignees = CapTokenGrant::valid(cap_type, assignees)?;
         Ok(CapTokenGrant::new(assignees, functions))
@@ -112,7 +113,7 @@ impl CapTokenGrant {
         self.assignees.clone()
     }
 
-    pub fn functions(&self) -> Vec<CapFunction> {
+    pub fn functions(&self) -> CapFunctions {
         self.functions.clone()
     }
 }
@@ -123,12 +124,13 @@ pub mod tests {
 
     #[test]
     fn test_new_cap_token_grant_entry() {
-        let grant = CapTokenGrant::new(None, Vec::new());
+        let empty_functions = HashMap::new();
+        let grant = CapTokenGrant::new(None, empty_functions.clone());
         assert_eq!(grant.cap_type(), CapabilityType::Public);
-        let grant = CapTokenGrant::new(Some(Vec::new()), Vec::new());
+        let grant = CapTokenGrant::new(Some(Vec::new()), empty_functions.clone());
         assert_eq!(grant.cap_type(), CapabilityType::Transferable);
         let test_address = Address::new();
-        let grant = CapTokenGrant::new(Some(vec![test_address.clone()]), Vec::new());
+        let grant = CapTokenGrant::new(Some(vec![test_address.clone()]), empty_functions.clone());
         assert_eq!(grant.cap_type(), CapabilityType::Assigned);
         assert_eq!(grant.assignees().unwrap()[0], test_address)
     }
@@ -151,7 +153,8 @@ pub mod tests {
     #[test]
     fn test_create_cap_token_grant_entry() {
         let some_fn = String::from("some_fn");
-        let example_functions = vec![some_fn];
+        let mut example_functions = CapFunctions::new();
+        example_functions.insert("some_zome".to_string(), vec![some_fn]);
         let maybe_grant =
             CapTokenGrant::create(CapabilityType::Public, None, example_functions.clone());
         assert!(maybe_grant.is_ok());

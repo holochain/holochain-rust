@@ -16,7 +16,7 @@ use holochain_core_types::{
     cas::content::Address,
     dna::{traits::ReservedTraitNames, Dna},
     entry::{
-        cap_entries::{CapTokenGrant, CapabilityType},
+        cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
         Entry,
     },
     error::HolochainError,
@@ -29,19 +29,19 @@ use std::{collections::HashMap, pin::Pin, sync::Arc, time::*};
 /// desired
 #[derive(Clone, Debug, PartialEq)]
 pub struct Initialization {
-    public_tokens: HashMap<String, Address>,
+    public_token: Option<Address>,
     payload: Option<String>,
 }
 
 impl Initialization {
     pub fn new() -> Initialization {
         Initialization {
-            public_tokens: HashMap::new(),
+            public_token: None,
             payload: None,
         }
     }
-    pub fn get_public_token(&self, zome_name: &str) -> Option<Address> {
-        self.public_tokens.get(zome_name).map(|addr| addr.clone())
+    pub fn public_token(&self) -> Option<Address> {
+        self.public_token.clone()
     }
 }
 
@@ -107,7 +107,7 @@ pub async fn initialize_chain(
         ));
     }
 
-    let mut public_tokens = HashMap::new();
+    let mut cap_functions = CapFunctions::new();
     // Commit Public Capability Grants to chain
     for (zome_name, zome) in dna.clone().zomes {
         let maybe_public = zome
@@ -116,35 +116,40 @@ pub async fn initialize_chain(
             .find(|(cap_name, _)| *cap_name == ReservedTraitNames::Public.as_str());
         if maybe_public.is_some() {
             let (_, cap) = maybe_public.unwrap();
-            let maybe_public_cap_grant_entry =
-                CapTokenGrant::create(CapabilityType::Public, None, cap.functions.clone());
-
-            // Let initialization fail if Public Grant could not be committed.
-            if maybe_public_cap_grant_entry.is_err() {
-                dispatch_error_result(&context_clone, maybe_public_cap_grant_entry.err().unwrap());
-                return Err(HolochainError::InitializationFailed(
-                    "error creating public cap grant".to_string(),
-                ));
-            }
-
-            let public_cap_grant_commit = await!(commit_entry(
-                Entry::CapTokenGrant(maybe_public_cap_grant_entry.ok().unwrap()),
-                None,
-                &context_clone
-            ));
-
-            // Let initialization fail if Public Grant could not be committed.
-            match public_cap_grant_commit {
-                Err(err) => {
-                    dispatch_error_result(&context_clone, err);
-                    return Err(HolochainError::InitializationFailed(
-                        "error committing public grant".to_string(),
-                    ));
-                }
-                Ok(addr) => public_tokens.insert(zome_name, addr),
-            };
+            cap_functions.insert(zome_name, cap.functions.clone());
         }
     }
+    let public_token = if cap_functions.len() > 0 {
+        let maybe_public_cap_grant_entry =
+            CapTokenGrant::create(CapabilityType::Public, None, cap_functions);
+
+        // Let initialization fail if Public Grant could not be committed.
+        if maybe_public_cap_grant_entry.is_err() {
+            dispatch_error_result(&context_clone, maybe_public_cap_grant_entry.err().unwrap());
+            return Err(HolochainError::InitializationFailed(
+                "error creating public cap grant".to_string(),
+            ));
+        }
+
+        let public_cap_grant_commit = await!(commit_entry(
+            Entry::CapTokenGrant(maybe_public_cap_grant_entry.ok().unwrap()),
+            None,
+            &context_clone
+        ));
+
+        // Let initialization fail if Public Grant could not be committed.
+        match public_cap_grant_commit {
+            Err(err) => {
+                dispatch_error_result(&context_clone, err);
+                return Err(HolochainError::InitializationFailed(
+                    "error committing public grant".to_string(),
+                ));
+            }
+            Ok(addr) => Some(addr),
+        }
+    } else {
+        None
+    };
 
     // map genesis across every zome
     let results: Vec<_> = dna
@@ -168,7 +173,7 @@ pub async fn initialize_chain(
     // otherwise return the Initialization struct
     let initialization_result = maybe_error.map(Err).unwrap_or_else(|| {
         Ok(Initialization {
-            public_tokens,
+            public_token,
             payload: None, // no payload for now
         })
     });

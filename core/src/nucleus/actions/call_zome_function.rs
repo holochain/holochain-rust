@@ -222,7 +222,12 @@ pub fn make_cap_request_for_call<J: Into<JsonString>>(
 
 /// verifies that this grant is valid for a given requester and token value
 pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &ZomeFnCall) -> bool {
-    if !grant.functions().contains(&fn_call.fn_name) {
+    let cap_functions = grant.functions();
+    let maybe_zome_grants = cap_functions.get(&fn_call.zome_name);
+    if maybe_zome_grants.is_none() {
+        return false;
+    }
+    if !maybe_zome_grants.unwrap().contains(&fn_call.fn_name) {
         return false;
     }
 

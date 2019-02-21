@@ -295,7 +295,7 @@ fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainR
         let context = hc.context();
         let state = context.state().unwrap().nucleus();
         let init = state.initialization().unwrap();
-        let token = init.get_public_token("test_zome").unwrap();
+        let token = init.public_token().unwrap();
         let caller = Address::from("fake");
         make_cap_request_for_call(context.clone(), token, caller, fn_name, params.to_string())
     };

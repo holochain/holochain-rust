@@ -278,7 +278,7 @@ pub mod tests {
         let init = state.initialization().unwrap();
         let cap_request = make_cap_request_for_call(
             test_setup.context.clone(),
-            init.get_public_token("test_zome").unwrap(),
+            init.public_token().unwrap(),
             Address::from("any caller"),
             "test",
             "{}",

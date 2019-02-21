@@ -247,7 +247,7 @@ pub mod tests {
         let zome_call = ZomeFnCall::create(
             context.clone(),
             "test_zome",
-            init.get_public_token("test_zome").unwrap(),
+            init.public_token().unwrap(),
             Address::from("some caller"),
             "public_test_fn",
             "",

@@ -177,7 +177,7 @@ impl ConductorApiBuilder {
                                 let init = state
                                     .initialization()
                                     .ok_or(jsonrpc_core::Error::internal_error())?;
-                                let token = init.get_public_token(&zome_name).ok_or(
+                                let token = init.public_token().ok_or(
                                     jsonrpc_core::Error::invalid_params("public token not found"),
                                 )?;
                                 let caller = Address::from("fake");

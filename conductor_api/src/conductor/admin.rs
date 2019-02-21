@@ -515,6 +515,7 @@ pub mod tests {
         },
         config::{load_configuration, Configuration, InterfaceConfiguration, InterfaceDriver},
     };
+    use holochain_common::paths::DNA_EXTENSION;
     use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
     use std::{convert::TryFrom, env::current_dir, fs::File, io::Read};
 
@@ -578,7 +579,7 @@ public_address = '{}'"#,
 
     pub fn dna() -> String {
         r#"[[dnas]]
-file = 'app_spec.hcpkg'
+file = 'app_spec.dna.json'
 hash = 'Qm328wyq38924y'
 id = 'test-dna'"#
             .to_string()
@@ -680,7 +681,7 @@ pattern = '.*'"#
         let mut conductor = create_test_conductor(test_name, 3000);
 
         let mut new_dna_path = PathBuf::new();
-        new_dna_path.push("new-dna.hcpkg");
+        new_dna_path.push("new-dna.dna.json");
 
         assert_eq!(
             conductor.install_dna_from_file(
@@ -693,7 +694,8 @@ pattern = '.*'"#
         );
 
         let new_dna =
-            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.hcpkg")).unwrap();
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
+                .unwrap();
 
         assert_eq!(conductor.config().dnas.len(), 2,);
 
@@ -702,12 +704,12 @@ pattern = '.*'"#
             vec![
                 DnaConfiguration {
                     id: String::from("test-dna"),
-                    file: String::from("app_spec.hcpkg"),
+                    file: String::from("app_spec.dna.json"),
                     hash: Some(String::from("Qm328wyq38924y")),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
-                    file: String::from("new-dna.hcpkg"),
+                    file: String::from("new-dna.dna.json"),
                     hash: Some(String::from(new_dna.address())),
                 },
             ]
@@ -727,7 +729,7 @@ pattern = '.*'"#
             toml,
             String::from(
                 r#"[[dnas]]
-file = 'new-dna.hcpkg'
+file = 'new-dna.dna.json'
 hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
 id = 'new-dna'"#,
             ),
@@ -747,7 +749,7 @@ id = 'new-dna'"#,
         let mut conductor = create_test_conductor(test_name, 3000);
 
         let mut new_dna_path = PathBuf::new();
-        new_dna_path.push("new-dna.hcpkg");
+        new_dna_path.push("new-dna.dna.json");
 
         assert_eq!(
             conductor.install_dna_from_file(
@@ -760,7 +762,8 @@ id = 'new-dna'"#,
         );
 
         let new_dna =
-            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.hcpkg")).unwrap();
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
+                .unwrap();
 
         assert_eq!(conductor.config().dnas.len(), 2,);
 
@@ -771,14 +774,14 @@ id = 'new-dna'"#,
             .join("dna");
 
         output_dna_file.push(new_dna.address().to_string());
-        output_dna_file.set_extension("hcpkg");
+        output_dna_file.set_extension(DNA_EXTENSION);
 
         assert_eq!(
             conductor.config().dnas,
             vec![
                 DnaConfiguration {
                     id: String::from("test-dna"),
-                    file: String::from("app_spec.hcpkg"),
+                    file: String::from("app_spec.dna.json"),
                     hash: Some(String::from("Qm328wyq38924y")),
                 },
                 DnaConfiguration {
@@ -797,7 +800,7 @@ id = 'new-dna'"#,
         let mut conductor = create_test_conductor(test_name, 3000);
 
         let mut new_dna_path = PathBuf::new();
-        new_dna_path.push("new-dna.hcpkg");
+        new_dna_path.push("new-dna.dna.json");
         let new_props = json!({"propertyKey": "value"});
 
         assert_eq!(
@@ -823,7 +826,8 @@ id = 'new-dna'"#,
         );
 
         let mut new_dna =
-            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.hcpkg")).unwrap();
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
+                .unwrap();
         let original_hash = new_dna.address();
         new_dna.properties = new_props;
         let new_hash = new_dna.address();
@@ -837,14 +841,14 @@ id = 'new-dna'"#,
             .join("dna");
 
         output_dna_file.push(new_hash.to_string());
-        output_dna_file.set_extension("hcpkg");
+        output_dna_file.set_extension(DNA_EXTENSION);
 
         assert_eq!(
             conductor.config().dnas,
             vec![
                 DnaConfiguration {
                     id: String::from("test-dna"),
-                    file: String::from("app_spec.hcpkg"),
+                    file: String::from("app_spec.dna.json"),
                     hash: Some(String::from("Qm328wyq38924y")),
                 },
                 DnaConfiguration {
@@ -863,7 +867,7 @@ id = 'new-dna'"#,
         let mut conductor = create_test_conductor(test_name, 3001);
 
         let mut new_dna_path = PathBuf::new();
-        new_dna_path.push("new-dna.hcpkg");
+        new_dna_path.push("new-dna.dna.json");
         conductor
             .install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), false, None)
             .expect("Could not install DNA");
@@ -890,7 +894,7 @@ id = 'new-dna'"#,
             toml,
             String::from(
                 r#"[[dnas]]
-file = 'new-dna.hcpkg'
+file = 'new-dna.dna.json'
 hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
 id = 'new-dna'"#,
             ),

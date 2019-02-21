@@ -4,11 +4,11 @@ const path = require('path');
 const { Config, Scenario } = require('..')
 
 const dnaValid = Config.dna(
-    path.join(__dirname, "test-bundle.json"),
+    path.join(__dirname, "test.dna.json"),
     'dna-valid'
 )
 const dnaInvalid = Config.dna(
-    path.join(__dirname, "nonexistent-file.json"),
+    path.join(__dirname, "nonexistent.dna.json"),
     'dna-invalid'
 )
 

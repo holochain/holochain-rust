@@ -29,7 +29,7 @@
 //! // Instantiate a new holochain instance
 //!
 //! // Need to get to something like this:
-//! // let dna = holochain_core_types::dna::from_package_file("mydna.hcpkg");
+//! // let dna = holochain_core_types::dna::from_package_file("mydna.dna.json");
 //!
 //! // But for now:
 //! let dna = Dna::new();

@@ -17,7 +17,7 @@ public_address = "QOnZBLAxv01QT5arAKVwk7P4XDnApsItDqtxoMENACux4_PrFegIdgbEp2h-sz
 
 [[dnas]]
 id = "test/dna"
-file = "test/test-bundle.json"
+file = "test/test.dna.json"
 hash = "Qm328wyq38924y"
 
 [[instances]]

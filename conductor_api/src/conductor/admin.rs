@@ -730,11 +730,7 @@ pattern = '.*'"#
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-<<<<<<< HEAD
 hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
-=======
-hash = 'QmVbj99qBUFSd1m36gjTLe4vsaVzZD5K7szKxrQ5ARK6Dr'
->>>>>>> a694fae69... Small adjustments + hash hack
 id = 'new-dna'"#,
             ),
         );
@@ -899,11 +895,7 @@ id = 'new-dna'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-<<<<<<< HEAD
 hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
-=======
-hash = 'QmVbj99qBUFSd1m36gjTLe4vsaVzZD5K7szKxrQ5ARK6Dr'
->>>>>>> a694fae69... Small adjustments + hash hack
 id = 'new-dna'"#,
             ),
         );

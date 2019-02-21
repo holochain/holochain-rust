@@ -2,6 +2,7 @@ use crate::{
     action::ActionWrapper,
     instance::Observer,
     logger::Logger,
+    nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
     state::State,
@@ -18,7 +19,7 @@ use holochain_core_types::{
     },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
-    entry::entry_type::EntryType,
+    entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
 
@@ -293,7 +294,19 @@ impl Context {
                     found_entries.push(chain_header.entry_address().to_owned());
                 }
                 if found_entries.len() > 0 {
-                    return Some(found_entries[0].clone());
+                    let addr = found_entries[0].clone();
+                    let cas = self
+                        .state()
+                        .unwrap()
+                        .agent()
+                        .chain_store()
+                        .content_storage();
+                    let entry = get_entry_from_cas(&cas, &addr).ok()??;
+                    if let Entry::CapTokenGrant(grant) = entry {
+                        if grant.cap_type() == CapabilityType::Public {
+                            return Some(addr);
+                        }
+                    }
                 }
             }
         }

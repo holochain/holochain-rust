@@ -131,8 +131,9 @@ pub async fn initialize_chain(
             ));
         }
 
+        let grant = maybe_public_cap_grant_entry.ok().unwrap();
         let public_cap_grant_commit = await!(commit_entry(
-            Entry::CapTokenGrant(maybe_public_cap_grant_entry.ok().unwrap()),
+            Entry::CapTokenGrant(grant.clone()),
             None,
             &context_clone
         ));
@@ -145,7 +146,13 @@ pub async fn initialize_chain(
                     "error committing public grant".to_string(),
                 ));
             }
-            Ok(addr) => Some(addr),
+            Ok(addr) => {
+                context.log(format!(
+                    "debug/initialize: created public token: {:?}",
+                    addr
+                ));
+                Some(addr)
+            }
         }
     } else {
         None

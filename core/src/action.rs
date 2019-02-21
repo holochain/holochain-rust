@@ -177,7 +177,7 @@ pub enum Action {
     /// may call genesis internally
     InitializeChain(Dna),
     /// return the result of an InitializeChain action
-    /// the result is Some arbitrary string
+    /// the result is an initialization structure which include the generated public token if any
     ReturnInitializationResult(Result<Initialization, String>),
 
     /// Gets dispatched when a zome function call starts.

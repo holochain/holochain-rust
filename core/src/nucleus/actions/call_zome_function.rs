@@ -65,7 +65,7 @@ pub async fn call_zome_function(
     context: &Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
     context.log(format!(
-        "debug/reduce/call_zome_fn: Validating call: {:?}",
+        "debug/actions/call_zome_fn: Validating call: {:?}",
         zome_call
     ));
 
@@ -73,7 +73,7 @@ pub async fn call_zome_function(
     let (dna_name, wasm) = validate_call(context.clone(), &zome_call)?;
 
     context.log(format!(
-        "debug/reduce/call_zome_fn: executing call: {:?}",
+        "debug/actions/call_zome_fn: executing call: {:?}",
         zome_call
     ));
 
@@ -158,8 +158,8 @@ fn is_token_the_agent(context: Arc<Context>, request: &CapabilityRequest) -> boo
     context.agent_id.key == request.cap_token.to_string()
 }
 
-fn get_grant(context: Arc<Context>, address: &Address) -> Option<CapTokenGrant> {
-    match get_entry_from_agent_chain(&context, address).ok()?? {
+fn get_grant(context: &Arc<Context>, address: &Address) -> Option<CapTokenGrant> {
+    match get_entry_from_agent_chain(context, address).ok()?? {
         Entry::CapTokenGrant(grant) => Some(grant),
         _ => None,
     }
@@ -168,7 +168,7 @@ fn get_grant(context: Arc<Context>, address: &Address) -> Option<CapTokenGrant> 
 /// checks to see if a given function call is allowable according to the capabilities
 /// that have been registered to callers by looking for grants in the chain.
 pub fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
-    let maybe_grant = get_grant(context.clone(), &fn_call.cap_token());
+    let maybe_grant = get_grant(&context.clone(), &fn_call.cap_token());
     match maybe_grant {
         None => false,
         Some(grant) => verify_grant(context.clone(), &grant, fn_call),
@@ -225,13 +225,26 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
     let cap_functions = grant.functions();
     let maybe_zome_grants = cap_functions.get(&fn_call.zome_name);
     if maybe_zome_grants.is_none() {
+        context.log(format!(
+            "debug/actions/verify_grant: no grant for zome {:?} in grant {:?}",
+            fn_call.zome_name, cap_functions
+        ));
         return false;
     }
     if !maybe_zome_grants.unwrap().contains(&fn_call.fn_name) {
+        context.log(format!(
+            "debug/actions/verify_grant: no grant for function {:?} in grant {:?}",
+            fn_call.fn_name, maybe_zome_grants
+        ));
         return false;
     }
 
     if grant.token() != fn_call.cap_token() {
+        context.log(format!(
+            "debug/actions/verify_grant: grant token doesn't match: expecting {:?} got {:?}",
+            grant.token(),
+            fn_call.cap_token()
+        ));
         return false;
     }
 
@@ -241,6 +254,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
         &fn_call.fn_name,
         fn_call.parameters.clone(),
     ) {
+        context.log("debug/actions/verify_grant: call signature did not match");
         return false;
     }
 
@@ -255,6 +269,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
                 .unwrap()
                 .contains(&fn_call.cap.provenance.0)
             {
+                context.log("debug/actions/verify_grant: caller not one of the assignees");
                 return false;
             }
             true
@@ -387,7 +402,7 @@ pub mod tests {
             CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant.clone());
         let grant_addr = block_on(author_entry(&grant_entry, None, &context)).unwrap();
-        let maybe_grant = get_grant(context.clone(), &grant_addr);
+        let maybe_grant = get_grant(&context, &grant_addr);
         assert_eq!(maybe_grant, Some(grant));
     }
 

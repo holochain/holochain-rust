@@ -4,7 +4,7 @@ use crate::{
     error::HolochainError,
     json::JsonString,
 };
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// Enum for Zome CapabilityType.  Public capabilities require public grant token.  Transferable
 /// capabilities require a token, but don't limit the capability to specific agent(s);
@@ -22,7 +22,7 @@ pub enum CapabilityType {
 }
 
 pub type CapTokenValue = Address;
-pub type CapFunctions = HashMap<String, Vec<String>>;
+pub type CapFunctions = BTreeMap<String, Vec<String>>;
 
 /// System entry to hold a capability token for use as a caller
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]

@@ -437,16 +437,17 @@ impl Conductor {
                     // !!!!!!!!!!!!!!!!!!!!!!!
                     // Holo closed-alpha hack:
                     // !!!!!!!!!!!!!!!!!!!!!!!
-                    api_builder = api_builder
-                        .with_outsource_signing_callback(
-                            agent_id.clone(),
-                            self.config.signing_service_uri
-                                .clone()
-                                .expect("holo_remote_key needs signing_service_uri set")
-                        );
+                    api_builder = api_builder.with_outsource_signing_callback(
+                        agent_id.clone(),
+                        self.config
+                            .signing_service_uri
+                            .clone()
+                            .expect("holo_remote_key needs signing_service_uri set"),
+                    );
                 } else {
-                    api_builder = api_builder
-                        .with_agent_signature_callback(self.get_key_for_agent(&instance_config.agent)?);
+                    api_builder = api_builder.with_agent_signature_callback(
+                        self.get_key_for_agent(&instance_config.agent)?,
+                    );
                 }
 
                 // Bridges:
@@ -496,11 +497,16 @@ impl Conductor {
     /// passphrase prompts) before bootstrapping the whole config and have prompts appear
     /// in between other initialization output.
     pub fn check_load_key_for_agent(&mut self, agent_id: &String) -> Result<(), String> {
-        if Some(true) == self.config.agent_by_id(agent_id).and_then(|a| a.holo_remote_key) {
+        if Some(true)
+            == self
+                .config
+                .agent_by_id(agent_id)
+                .and_then(|a| a.holo_remote_key)
+        {
             // !!!!!!!!!!!!!!!!!!!!!!!
             // Holo closed-alpha hack:
             // !!!!!!!!!!!!!!!!!!!!!!!
-            return Ok(())
+            return Ok(());
         }
         self.get_key_for_agent(agent_id)?;
         Ok(())

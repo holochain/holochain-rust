@@ -1,10 +1,8 @@
-use base64;
 use crate::holo_signing_service::request_signing_service;
+use base64;
 use holochain_core::state::State;
 use holochain_core_types::{
-    agent::AgentId,
-    cas::content::Address,
-    dna::capabilities::CapabilityCall
+    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityCall,
 };
 use holochain_dpki::keypair::{Keypair, SIGNATURESIZE};
 use holochain_sodium::secbuf::SecBuf;
@@ -777,7 +775,7 @@ impl ConductorApiBuilder {
     pub fn with_outsource_signing_callback(
         mut self,
         agent_id: AgentId,
-        signing_service_uri: String
+        signing_service_uri: String,
     ) -> Self {
         let agent_id = agent_id.clone();
         let signing_service_uri = signing_service_uri.clone();

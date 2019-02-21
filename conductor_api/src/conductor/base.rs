@@ -21,7 +21,6 @@ use holochain_core_types::{
     dna::Dna,
     error::HolochainError,
     json::JsonString,
-    ugly::Initable,
 };
 use holochain_dpki::{bundle::KeyBundle, keypair::Keypair};
 use holochain_sodium::secbuf::SecBuf;

@@ -11,13 +11,6 @@ use holochain_conductor_api::{
 use holochain_core_types::agent::{AgentId, KeyBuffer};
 use std::{fs, path::PathBuf};
 
-const LOCAL_STORAGE_PATH: &str = ".hc";
-
-const AGENT_CONFIG_ID: &str = "hc-run-agent";
-const DNA_CONFIG_ID: &str = "hc-run-dna";
-const INSTANCE_CONFIG_ID: &str = "test-instance";
-const INTERFACE_CONFIG_ID: &str = "websocket-interface";
-
 /// Starts a minimal configuration Conductor with the current application running
 pub fn run(
     path: &PathBuf,
@@ -27,128 +20,20 @@ pub fn run(
     networked: bool,
     interface: String,
 ) -> DefaultResult<()> {
+    let dna_path = crate::util::std_package_path(path)?;
+
     if package {
-        cli::package(true, crate::util::std_package_path(path)?)?;
+        cli::package(true, dna_path.clone())?;
     }
 
-    // note that this behaviour is documented within
-    // holochain_common::env_vars module and should be updated
-    // if this logic changes
-    let agent_name = EnvVar::Agent
-        .value()
-        .ok()
-        .unwrap_or_else(|| String::from("testAgent"));
-    let keypair = test_key(&agent_name);
-    let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
-    let agent_id = AgentId::new(&agent_name, &pub_key);
-    let agent_config = AgentConfiguration {
-        id: AGENT_CONFIG_ID.into(),
-        name: agent_id.nick,
-        public_address: agent_id.key,
-        key_file: agent_name,
-    };
-
-    let dna_config = DnaConfiguration {
-        id: DNA_CONFIG_ID.into(),
-        file: crate::util::std_dna_file_name(path)?,
-        hash: None,
-    };
-
-    let storage = if persist {
-        fs::create_dir_all(LOCAL_STORAGE_PATH)?;
-
-        StorageConfiguration::File {
-            path: LOCAL_STORAGE_PATH.into(),
-        }
-    } else {
-        StorageConfiguration::Memory
-    };
-
-    let instance_config = InstanceConfiguration {
-        id: INSTANCE_CONFIG_ID.into(),
-        dna: DNA_CONFIG_ID.into(),
-        agent: AGENT_CONFIG_ID.into(),
-        storage,
-    };
-
-    // note that this behaviour is documented within
-    // holochain_common::env_vars module and should be updated
-    // if this logic changes
-    let interface_type = EnvVar::Interface.value().ok().unwrap_or_else(|| interface);
-    let driver = if interface_type == String::from("websocket") {
-        InterfaceDriver::Websocket { port }
-    } else if interface_type == String::from("http") {
-        InterfaceDriver::Http { port }
-    } else {
-        return Err(format_err!("unknown interface type: {}", interface_type));
-    };
-
-    let interface_config = InterfaceConfiguration {
-        id: INTERFACE_CONFIG_ID.into(),
-        driver,
-        admin: true,
-        instances: vec![InstanceReferenceConfiguration {
-            id: INSTANCE_CONFIG_ID.into(),
-        }],
-    };
-
-    // temporary log rules, should come from a configuration
-    let rules = LogRules::new();
-    let logger_config = LoggerConfiguration {
-        logger_type: "debug".to_string(),
-        rules,
-    };
-
-    // note that this behaviour is documented within
-    // holochain_common::env_vars module and should be updated
-    // if this logic changes
-    let n3h_path = EnvVar::N3hPath.value().ok();
-
-    // create an n3h network config if the --networked flag is set
-    // or if a value where to find n3h has been put into the
-    // HC_N3H_PATH environment variable
-    let network_config = if networked || n3h_path.is_some() {
-        // note that this behaviour is documented within
-        // holochain_common::env_vars module and should be updated
-        // if this logic changes
-        let n3h_mode = EnvVar::N3hMode.value().ok();
-        let n3h_persistence_path = EnvVar::N3hWorkDir.value().ok();
-        let n3h_bootstrap_node = EnvVar::N3hBootstrapNode.value().ok();
-        let mut n3h_bootstrap = Vec::new();
-
-        if n3h_bootstrap_node.is_some() {
-            n3h_bootstrap.push(n3h_bootstrap_node.unwrap())
-        }
-
-        // Load end_user config file
-        // note that this behaviour is documented within
-        // holochain_common::env_vars module and should be updated
-        // if this logic changes
-        let networking_config_filepath = EnvVar::NetworkingConfigFile.value().ok();
-
-        Some(NetworkConfig {
-            bootstrap_nodes: n3h_bootstrap,
-            n3h_path: n3h_path.unwrap_or_else(default_n3h_path),
-            n3h_mode: n3h_mode.unwrap_or_else(default_n3h_mode),
-            n3h_persistence_path: n3h_persistence_path.unwrap_or_else(default_n3h_persistence_path),
-            n3h_ipc_uri: Default::default(),
-            networking_config_file: networking_config_filepath,
-        })
-    } else {
-        None
-    };
-
-    let base_config = Configuration {
-        agents: vec![agent_config],
-        dnas: vec![dna_config],
-        instances: vec![instance_config],
-        interfaces: vec![interface_config],
-        network: network_config,
-        logger: logger_config,
-        ..Default::default()
-    };
-
-    mount_conductor_from_config(base_config);
+    let interface_type = get_interface_type_string(interface);
+    mount_conductor_from_config(hc_run_configuration(
+        &dna_path,
+        port,
+        persist,
+        networked,
+        &interface_type,
+    )?);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
     conductor.key_loader = test_key_loader();
@@ -182,6 +67,173 @@ pub fn run(
     }
 
     Ok(())
+}
+
+fn get_interface_type_string(given_type: String) -> String {
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
+    // The environment variable overrides the CLI flag
+    EnvVar::Interface.value().ok().unwrap_or_else(|| given_type)
+}
+
+fn hc_run_configuration(
+    dna_path: &PathBuf,
+    port: u16,
+    persist: bool,
+    networked: bool,
+    interface_type: &String,
+) -> DefaultResult<Configuration> {
+    Ok(Configuration {
+        agents: vec![agent_configuration()],
+        dnas: vec![dna_configuration(&dna_path)],
+        instances: vec![instance_configuration(storage_configuration(persist)?)],
+        interfaces: vec![interface_configuration(&interface_type, port)?],
+        network: networking_configuration(networked),
+        logger: logger_configuration(),
+        ..Default::default()
+    })
+}
+
+// AGENT
+const AGENT_NAME_DEFAULT: &str = "testAgent";
+const AGENT_CONFIG_ID: &str = "hc-run-agent";
+
+fn agent_configuration() -> AgentConfiguration {
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
+    let agent_name = EnvVar::Agent
+        .value()
+        .ok()
+        .unwrap_or_else(|| String::from(AGENT_NAME_DEFAULT));
+    let keypair = test_key(&agent_name);
+    let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
+    let agent_id = AgentId::new(&agent_name, &pub_key);
+    AgentConfiguration {
+        id: AGENT_CONFIG_ID.into(),
+        name: agent_id.nick,
+        public_address: agent_id.key,
+        key_file: agent_name,
+    }
+}
+
+// DNA
+const DNA_CONFIG_ID: &str = "hc-run-dna";
+
+fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
+    DnaConfiguration {
+        id: DNA_CONFIG_ID.into(),
+        file: dna_path
+            .to_str()
+            .expect("Expected DNA path to be valid unicode")
+            .to_string(),
+        hash: None,
+    }
+}
+
+// STORAGE
+const LOCAL_STORAGE_PATH: &str = ".hc";
+
+fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
+    let storage = if persist {
+        fs::create_dir_all(LOCAL_STORAGE_PATH)?;
+
+        StorageConfiguration::File {
+            path: LOCAL_STORAGE_PATH.into(),
+        }
+    } else {
+        StorageConfiguration::Memory
+    };
+    Ok(storage)
+}
+
+// INSTANCE
+const INSTANCE_CONFIG_ID: &str = "test-instance";
+
+fn instance_configuration(storage: StorageConfiguration) -> InstanceConfiguration {
+    InstanceConfiguration {
+        id: INSTANCE_CONFIG_ID.into(),
+        dna: DNA_CONFIG_ID.into(),
+        agent: AGENT_CONFIG_ID.into(),
+        storage,
+    }
+}
+
+// INTERFACE
+const INTERFACE_CONFIG_ID: &str = "websocket-interface";
+
+fn interface_configuration(
+    interface_type: &String,
+    port: u16,
+) -> DefaultResult<InterfaceConfiguration> {
+    let driver = if interface_type == &String::from("websocket") {
+        InterfaceDriver::Websocket { port }
+    } else if interface_type == &String::from("http") {
+        InterfaceDriver::Http { port }
+    } else {
+        return Err(format_err!("unknown interface type: {}", interface_type));
+    };
+
+    Ok(InterfaceConfiguration {
+        id: INTERFACE_CONFIG_ID.into(),
+        driver,
+        admin: true,
+        instances: vec![InstanceReferenceConfiguration {
+            id: INSTANCE_CONFIG_ID.into(),
+        }],
+    })
+}
+
+// LOGGER
+fn logger_configuration() -> LoggerConfiguration {
+    // temporary log rules, should come from a configuration
+    LoggerConfiguration {
+        logger_type: "debug".to_string(),
+        rules: LogRules::new(),
+    }
+}
+
+// NETWORKING
+fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
+    let n3h_path = EnvVar::N3hPath.value().ok();
+
+    // create an n3h network config if the --networked flag is set
+    // or if a value where to find n3h has been put into the
+    // HC_N3H_PATH environment variable
+    if networked || n3h_path.is_some() {
+        // note that this behaviour is documented within
+        // holochain_common::env_vars module and should be updated
+        // if this logic changes
+        let n3h_mode = EnvVar::N3hMode.value().ok();
+        let n3h_persistence_path = EnvVar::N3hWorkDir.value().ok();
+        let n3h_bootstrap_node = EnvVar::N3hBootstrapNode.value().ok();
+        let mut n3h_bootstrap = Vec::new();
+
+        if n3h_bootstrap_node.is_some() {
+            n3h_bootstrap.push(n3h_bootstrap_node.unwrap())
+        }
+
+        // Load end_user config file
+        // note that this behaviour is documented within
+        // holochain_common::env_vars module and should be updated
+        // if this logic changes
+        let networking_config_filepath = EnvVar::NetworkingConfigFile.value().ok();
+
+        Some(NetworkConfig {
+            bootstrap_nodes: n3h_bootstrap,
+            n3h_path: n3h_path.unwrap_or_else(default_n3h_path),
+            n3h_mode: n3h_mode.unwrap_or_else(default_n3h_mode),
+            n3h_persistence_path: n3h_persistence_path.unwrap_or_else(default_n3h_persistence_path),
+            n3h_ipc_uri: Default::default(),
+            networking_config_file: networking_config_filepath,
+        })
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]

@@ -1,3 +1,4 @@
+use boolinator::Boolinator;
 use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, error::HolochainError,
 };
@@ -19,6 +20,13 @@ pub fn request_signing_service(
     let mut response = client.post(url).body(body).send().map_err(|e| {
         HolochainError::ErrorGeneric(format!("Error during signing request: {:?}", e))
     })?;
+    response
+        .status()
+        .is_success()
+        .ok_or(HolochainError::new(&format!(
+            "Status of response from signing service is not success, but: {:?}",
+            response.status()
+        )))?;
     response
         .text()
         .map_err(|_| HolochainError::new("Signing service response has no text"))

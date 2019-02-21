@@ -20,7 +20,9 @@
 //!     cas::content::Address,
 //!     agent::{AgentId, KeyBuffer},
 //!     dna::Dna,
-//!     json::JsonString};
+//!     json::JsonString,
+//!     signature::Signature,
+//! };
 //! use holochain_dpki::keypair::{Keypair, SEEDSIZE};
 //! use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
 //!

@@ -10,7 +10,7 @@ use crate::{
     Holochain,
 };
 use boolinator::Boolinator;
-use crossbeam_channel::{Sender, Receiver, unbounded};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core::{
     logger::{ChannelLogger, Logger},
     signal::Signal,
@@ -33,9 +33,7 @@ use std::{
     fs::{self, File},
     io::prelude::*,
     path::PathBuf,
-    sync::{
-        Arc, Mutex, RwLock,
-    },
+    sync::{Arc, Mutex, RwLock},
     thread,
     time::Duration,
 };
@@ -172,20 +170,19 @@ impl Conductor {
                                     .interfaces
                                     .iter()
                                     .filter(|interface_config| {
-                                        interface_config.instances
+                                        interface_config
+                                            .instances
                                             .iter()
                                             .find(|instance| instance.id == *instance_id)
                                             .is_some()
                                     })
                                     .collect();
                                 for interface in interfaces_with_instance {
-                                    broadcasters
-                                        .get(&interface.id)
-                                        .map(|broadcaster| {
-                                            broadcaster.send(signal.clone()).expect("TODO: result");
-                                        });
+                                    broadcasters.get(&interface.id).map(|broadcaster| {
+                                        broadcaster.send(signal.clone()).expect("TODO: result");
+                                    });
                                 }
-                            },
+                            }
                         }
                     }
                 }
@@ -453,7 +450,10 @@ impl Conductor {
 
                 // Signal config:
                 let (sender, receiver) = unbounded();
-                self.instance_signal_receivers.write().unwrap().insert(instance_config.id.clone(), receiver);
+                self.instance_signal_receivers
+                    .write()
+                    .unwrap()
+                    .insert(instance_config.id.clone(), receiver);
                 context_builder = context_builder.with_signals(sender);
 
                 // Storage:
@@ -1185,9 +1185,7 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor
-            .load_config()
-            .expect("Test config must be sane");
+        conductor.load_config().expect("Test config must be sane");
         conductor
             .start_all_instances()
             .expect("Instances must be spawnable");

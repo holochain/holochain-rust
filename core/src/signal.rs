@@ -1,5 +1,5 @@
 use crate::action::ActionWrapper;
-use crossbeam_channel::{unbounded, Sender, Receiver};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::thread;

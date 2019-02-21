@@ -52,3 +52,9 @@ pub fn test_signature_b() -> Signature {
 pub fn test_signature_c() -> Signature {
     Signature::from("sig-c")
 }
+
+impl From<Signature> for String {
+    fn from(s: Signature) -> String {
+        s.0
+    }
+}

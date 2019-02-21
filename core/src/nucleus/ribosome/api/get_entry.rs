@@ -39,7 +39,7 @@ pub mod tests {
 
     use self::wabt::Wat2Wasm;
     use crate::{
-        instance::tests::{test_context_and_logger, test_instance},
+        instance::tests::test_instance_and_context,
         nucleus::{
             ribosome::{
                 self,
@@ -192,9 +192,8 @@ pub mod tests {
         let netname = Some("test_get_round_trip");
         let wasm = test_get_round_trip_wat();
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
-        let instance =
-            test_instance(dna.clone(), netname).expect("Could not initialize test instance");
-        let (context, _) = test_context_and_logger("joan", netname);
+        let (instance, context) = test_instance_and_context(dna.clone(), netname)
+            .expect("Could not initialize test instance");
         let context = instance.initialize_context(context);
 
         println!("{:?}", instance.state().agent().top_chain_header());

@@ -1,10 +1,10 @@
 #![warn(unused_extern_crates)]
-extern crate holochain_conductor_api;
-extern crate holochain_core;
-extern crate holochain_core_types;
-extern crate holochain_net;
-extern crate tempfile;
-extern crate wabt;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate serde_json;
+
+pub mod mock_signing;
 
 use holochain_conductor_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
@@ -15,7 +15,6 @@ use holochain_core::{
     nucleus::actions::call_zome_function::make_cap_request_for_call,
     };
 use holochain_core_types::{
-    agent::AgentId,
     cas::content::Address,
     dna::{
         traits::ReservedTraitNames,
@@ -171,15 +170,16 @@ pub fn test_context_and_logger_with_network_name(
     agent_name: &str,
     network_name: Option<&str>,
 ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let agent = AgentId::generate_fake(agent_name);
+    let agent = mock_signing::registered_test_agent(agent_name);
     let logger = test_logger();
     (
         Arc::new({
             let mut builder = ContextBuilder::new()
-                .with_agent(agent)
+                .with_agent(agent.clone())
                 .with_logger(logger.clone())
                 .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
-                .expect("Tempdir must be accessible");
+                .expect("Tempdir must be accessible")
+                .with_conductor_api(mock_signing::mock_conductor_api(agent));
             if let Some(network_name) = network_name {
                 let config = P2pConfig::new_with_memory_backend(network_name);
                 builder = builder.with_p2p_config(config);
@@ -246,12 +246,13 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn create_test_context(agent_name: &str) -> Arc<Context> {
-    let agent = AgentId::generate_fake(agent_name);
+    let agent = mock_signing::registered_test_agent(agent_name);
     Arc::new(
         ContextBuilder::new()
-            .with_agent(agent)
+            .with_agent(agent.clone())
             .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
             .expect("Tempdir must be accessible")
+            .with_conductor_api(mock_signing::mock_conductor_api(agent))
             .spawn(),
     )
 }

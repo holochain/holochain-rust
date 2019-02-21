@@ -283,7 +283,6 @@ pub mod tests {
     use crate::{
         action::tests::test_action_wrapper_commit,
         agent::chain_store::tests::test_chain_store,
-        context::mock_signer,
         instance::tests::{test_context, test_context_with_state},
         state::State,
     };
@@ -300,6 +299,7 @@ pub mod tests {
         collections::HashMap,
         sync::{Arc, RwLock},
     };
+    use test_utils::mock_signing::mock_signer;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -456,7 +456,10 @@ pub mod tests {
                 &test_entry().address(),
                 &[(
                     context.agent_id.address(),
-                    Signature::from(mock_signer(test_entry().address().to_string()))
+                    Signature::from(mock_signer(
+                        test_entry().address().to_string(),
+                        &context.agent_id
+                    ))
                 )]
                 .to_vec(),
                 &None,

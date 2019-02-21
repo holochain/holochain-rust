@@ -7,7 +7,7 @@ Tools to help with testing are also built right into the [development command li
 ## hc test
 
 Once you have a project folder initiated, you can run `hc test` to execute your tests. This combines the following steps:
-  1. Packaging your files into a DNA file, located at `dist/bundle.json`. This step will fail if your packaging step fails.
+  1. Packaging your files into a DNA file, located at `dist/your.dna.json`. This step will fail if your packaging step fails.
   2. Installing build and testing dependencies, if they're not installed (`npm install`)
   3. Executing the test file found at `test/index.js` (`node test/index.js`)
 

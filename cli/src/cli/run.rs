@@ -4,8 +4,8 @@ use error::DefaultResult;
 use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
-    key_loaders::{test_key, test_key_loader},
     config::*,
+    key_loaders::{test_key, test_key_loader},
     logger::LogRules,
 };
 use holochain_core_types::agent::{AgentId, KeyBuffer};

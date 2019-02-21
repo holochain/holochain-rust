@@ -8,9 +8,7 @@ use std::{path::PathBuf, sync::Arc};
 /// This replaces filesystem access for getting keys mentioned in the config.
 /// Uses `test_key` to create a deterministic key dependent on the (virtual) file name.
 pub fn test_key_loader() -> KeyLoader {
-    let loader = Box::new(|path: &PathBuf| {
-        Ok(test_key(&path.to_str().unwrap().to_string()))
-    })
+    let loader = Box::new(|path: &PathBuf| Ok(test_key(&path.to_str().unwrap().to_string())))
         as Box<FnMut(&PathBuf) -> Result<Keypair, HolochainError> + Send + Sync>;
     Arc::new(loader)
 }

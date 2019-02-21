@@ -2,12 +2,13 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
+    workflows::author_entry::author_entry
 };
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::{cas::content::Address, error::HolochainError,crud_status::CrudStatus,entry::Entry};
 use std::{
     pin::Pin,
     sync::{mpsc::SyncSender, Arc},
@@ -23,8 +24,11 @@ pub fn remove_entry(
     deletion_address: Address,
 ) -> RemoveEntryFuture {
     let action_wrapper =
-        ActionWrapper::new(Action::RemoveEntry((deleted_address, deletion_address)));
+        ActionWrapper::new(Action::RemoveEntry((deleted_address.clone(), deletion_address)));
     dispatch_action(action_channel, action_wrapper.clone());
+    let entry = Entry::Meta((deleted_address.clone(),CrudStatus::Deleted));
+    let new_context = context.clone();
+    new_context.block_on(author_entry(&entry,None,&new_context));
     RemoveEntryFuture {
         context: context.clone(),
         action: action_wrapper,

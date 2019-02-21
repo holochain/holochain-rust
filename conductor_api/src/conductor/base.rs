@@ -496,6 +496,12 @@ impl Conductor {
     /// passphrase prompts) before bootstrapping the whole config and have prompts appear
     /// in between other initialization output.
     pub fn check_load_key_for_agent(&mut self, agent_id: &String) -> Result<(), String> {
+        if Some(true) == self.config.agent_by_id(agent_id).and_then(|a| a.holo_remote_key) {
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            // Holo closed-alpha hack:
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            return Ok(())
+        }
         self.get_key_for_agent(agent_id)?;
         Ok(())
     }

@@ -47,18 +47,11 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
                 globals.agent_initial_hash = found_entries.pop().unwrap();
                 globals.agent_address = globals.agent_latest_hash.clone();
             }
-
-            let mut found_entries: Vec<Address> = vec![];
-            for chain_header in state
-                .agent()
-                .chain_store()
-                .iter_type(&maybe_top, &EntryType::CapTokenGrant)
-            {
-                found_entries.push(chain_header.entry_address().to_owned());
-            }
-            if found_entries.len() > 0 {
-                globals.public_token = found_entries[0].clone();
-            }
+        }
+        // Update public_token
+        let maybe_token = zome_call_data.context.get_public_token();
+        if maybe_token.is_some() {
+            globals.public_token = maybe_token.unwrap();
         }
     };
 
@@ -104,7 +97,7 @@ pub mod tests {
         // don't change.
         assert_eq!(
             globals.public_token,
-            Address::from("QmQ3rYEGoPCrfciYyxi28Y5C3UcD717r1JRaKhinPXbb6R")
+            Address::from("QmdVUAMNz5GwjsgMQusqzXjxggWwqZi9y25SXzg5ba4z6d"),
         );
     }
 }

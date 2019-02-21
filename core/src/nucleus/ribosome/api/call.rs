@@ -155,7 +155,7 @@ pub mod tests {
             Dna,
         },
         entry::{
-            cap_entries::{CapTokenGrant, CapabilityType},
+            cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
             Entry,
         },
         error::{DnaError, HolochainError},
@@ -274,11 +274,10 @@ pub mod tests {
     fn test_call_public() {
         let dna = setup_dna_for_test(true);
         let test_setup = setup_test(dna);
-        let state = test_setup.context.state().unwrap().nucleus();
-        let init = state.initialization().unwrap();
+        let token = test_setup.context.get_public_token().unwrap();
         let cap_request = make_cap_request_for_call(
             test_setup.context.clone(),
-            init.public_token().unwrap(),
+            token,
             Address::from("any caller"),
             "test",
             "{}",
@@ -320,13 +319,11 @@ pub mod tests {
             test_agent_capability_request(test_setup.context.clone(), "some_fn", "{}");
         test_reduce_call(&test_setup, cap_request, expected_failure);
 
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         // make the call with an valid capability call from a different sources
-        let grant = CapTokenGrant::create(
-            CapabilityType::Transferable,
-            None,
-            vec![String::from("test")],
-        )
-        .unwrap();
+        let grant =
+            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         let cap_request = make_cap_request_for_call(
@@ -364,10 +361,12 @@ pub mod tests {
 
         // test assigned capability where the caller is someone else
         let someone = Address::from("somoeone");
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         let grant = CapTokenGrant::create(
             CapabilityType::Assigned,
             Some(vec![someone.clone()]),
-            vec![String::from("test")],
+            cap_functions,
         )
         .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
@@ -483,13 +482,11 @@ pub mod tests {
         );
         assert!(!check_capability(context.clone(), &zome_call));
 
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         // add the transferable grant and get the token which is the grant's address
-        let grant = CapTokenGrant::create(
-            CapabilityType::Transferable,
-            None,
-            vec![String::from("test")],
-        )
-        .unwrap();
+        let grant =
+            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = block_on(author_entry(&grant_entry, None, &context)).unwrap();
 

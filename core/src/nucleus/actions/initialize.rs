@@ -21,7 +21,7 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
-use std::{collections::HashMap, pin::Pin, sync::Arc, time::*};
+use std::{pin::Pin, sync::Arc, time::*};
 
 /// Initialization is the value returned by successful initialization of a DNA instance
 /// this consists of any public tokens that were granted for use by the container to

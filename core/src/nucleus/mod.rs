@@ -239,15 +239,13 @@ pub mod tests {
         //let context = instance.initialize_context(test_context("janet", netname));
         let test_setup = setup_test(dna);
         let context = test_setup.context.clone();
-
-        let state = test_setup.context.state().unwrap().nucleus();
-        let init = state.initialization().unwrap();
+        let token = context.get_public_token().unwrap();
 
         // Create zome function call
         let zome_call = ZomeFnCall::create(
             context.clone(),
             "test_zome",
-            init.public_token().unwrap(),
+            token,
             Address::from("some caller"),
             "public_test_fn",
             "",

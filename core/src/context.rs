@@ -19,6 +19,7 @@ use holochain_core_types::{
     },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
+    entry::entry_type::EntryType,
     error::{HcResult, HolochainError},
 };
 
@@ -312,6 +313,27 @@ impl Context {
                 "Bridge call failed".to_string(),
             )),
         }
+    }
+
+    /// returns the public capability token (if any)
+    pub fn get_public_token(&self) -> Option<Address> {
+        if let Some(state) = self.state() {
+            let maybe_top = state.agent().top_chain_header();
+            if maybe_top.is_some() {
+                let mut found_entries: Vec<Address> = vec![];
+                for chain_header in state
+                    .agent()
+                    .chain_store()
+                    .iter_type(&maybe_top, &EntryType::CapTokenGrant)
+                {
+                    found_entries.push(chain_header.entry_address().to_owned());
+                }
+                if found_entries.len() > 0 {
+                    return Some(found_entries[0].clone());
+                }
+            }
+        }
+        None
     }
 }
 

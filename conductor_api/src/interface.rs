@@ -173,11 +173,7 @@ impl ConductorApiBuilder {
                                 // TODO: get the token from the parameters.  If not there assume public token.
                                 // currently we are always getting the public token.
                                 let context = hc.context();
-                                let state = context.state().unwrap().nucleus();
-                                let init = state
-                                    .initialization()
-                                    .ok_or(jsonrpc_core::Error::internal_error())?;
-                                let token = init.public_token().ok_or(
+                                let token = context.get_public_token().ok_or(
                                     jsonrpc_core::Error::invalid_params("public token not found"),
                                 )?;
                                 let caller = Address::from("fake");

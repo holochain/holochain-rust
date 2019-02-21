@@ -189,9 +189,7 @@ declare_types! {
                 let mut instance = instance_arc.write().unwrap();
                 let cap = {
                     let context = instance.context();
-                    let state = context.state().unwrap().nucleus();
-                    let init = state.initialization().unwrap();
-                    let token = init.public_token().unwrap();
+                    let token = context.get_public_token().unwrap();
                     let caller = Address::from("fake");
                     make_cap_request_for_call(
                         context.clone(),

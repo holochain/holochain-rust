@@ -303,7 +303,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         entry::{
-            cap_entries::{CapTokenGrant, CapabilityType},
+            cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
             Entry,
         },
         signature::Signature,
@@ -381,12 +381,10 @@ pub mod tests {
         let (_, context) =
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
-        let grant = CapTokenGrant::create(
-            CapabilityType::Transferable,
-            None,
-            vec![String::from("test")],
-        )
-        .unwrap();
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
+        let grant =
+            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant.clone());
         let grant_addr = block_on(author_entry(&grant_entry, None, &context)).unwrap();
         let maybe_grant = get_grant(context.clone(), &grant_addr);
@@ -427,8 +425,10 @@ pub mod tests {
             "{}",
         );
 
-        let grant = CapTokenGrant::create(CapabilityType::Public, None, vec![String::from("test")])
-            .unwrap();
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
+
+        let grant = CapTokenGrant::create(CapabilityType::Public, None, cap_functions).unwrap();
         let token = grant.token();
         assert!(verify_grant(
             context.clone(),
@@ -441,24 +441,20 @@ pub mod tests {
             &zome_call_from_addr1_bad_token
         ));
 
-        let grant_for_other_fn = CapTokenGrant::create(
-            CapabilityType::Transferable,
-            None,
-            vec![String::from("other_fn")],
-        )
-        .unwrap();
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("other_fn")]);
+        let grant_for_other_fn =
+            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
         assert!(!verify_grant(
             context.clone(),
             &grant_for_other_fn,
             &zome_call_valid(context.clone(), &grant_for_other_fn.token(), &test_address1)
         ));
 
-        let grant = CapTokenGrant::create(
-            CapabilityType::Transferable,
-            None,
-            vec![String::from("test")],
-        )
-        .unwrap();
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
+        let grant =
+            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
 
         let token = grant.token();
         assert!(!verify_grant(
@@ -498,10 +494,12 @@ pub mod tests {
             &zome_call_valid(context.clone(), &token, &test_address2)
         ));
 
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         let grant = CapTokenGrant::create(
             CapabilityType::Assigned,
             Some(vec![test_address1.clone()]),
-            vec![String::from("test")],
+            cap_functions,
         )
         .unwrap();
         let token = grant.token();

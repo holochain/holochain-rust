@@ -555,6 +555,7 @@ impl ConductorApiBuilder {
                 name,
                 public_address,
                 key_file,
+                holo_remote_key: None,
             };
             conductor_call!(|c| c.add_agent(agent))?;
             Ok(json!({"success": true}))

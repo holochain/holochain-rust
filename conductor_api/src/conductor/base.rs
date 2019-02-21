@@ -402,83 +402,83 @@ impl Conductor {
             .instance_by_id(&id)
             .ok_or(String::from("Instance not found in config"))
             .and_then(|instance_config| {
-        // Build context:
-        let mut context_builder = ContextBuilder::new();
+                // Build context:
+                let mut context_builder = ContextBuilder::new();
 
-        // Agent:
-        let agent_id = {
-            let keypair = self.get_key_for_agent(&instance_config.agent)?;
-            let keypair = keypair.lock().unwrap();
-            let pub_key = KeyBuffer::with_corrected(&keypair.get_id())?;
-            let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
-            AgentId::new(&agent_config.name, &pub_key)
-        };
+                // Agent:
+                let agent_id = {
+                    let keypair = self.get_key_for_agent(&instance_config.agent)?;
+                    let keypair = keypair.lock().unwrap();
+                    let pub_key = KeyBuffer::with_corrected(&keypair.get_id())?;
+                    let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
+                    AgentId::new(&agent_config.name, &pub_key)
+                };
 
-        context_builder = context_builder.with_agent(agent_id);
+                context_builder = context_builder.with_agent(agent_id);
 
-        context_builder = context_builder.with_p2p_config(self.get_p2p_config());
+                context_builder = context_builder.with_p2p_config(self.get_p2p_config());
 
-        // Signal config:
-        if let Some(tx) = signal_tx {
-            context_builder = context_builder.with_signals(tx)
-        };
+                // Signal config:
+                if let Some(tx) = signal_tx {
+                    context_builder = context_builder.with_signals(tx)
+                };
 
-        // Storage:
-        if let StorageConfiguration::File { path } = instance_config.storage {
-            context_builder = context_builder.with_file_storage(path).map_err(|hc_err| {
-                format!("Error creating context: {}", hc_err.to_string())
-            })?
-        };
+                // Storage:
+                if let StorageConfiguration::File { path } = instance_config.storage {
+                    context_builder = context_builder.with_file_storage(path).map_err(|hc_err| {
+                        format!("Error creating context: {}", hc_err.to_string())
+                    })?
+                };
 
-        if config.logger.logger_type == "debug" {
-            context_builder = context_builder.with_logger(Arc::new(Mutex::new(
-                ChannelLogger::new(instance_config.id.clone(), self.logger.get_sender()),
-            )));
-        }
+                if config.logger.logger_type == "debug" {
+                    context_builder = context_builder.with_logger(Arc::new(Mutex::new(
+                        ChannelLogger::new(instance_config.id.clone(), self.logger.get_sender()),
+                    )));
+                }
 
-        // Conductor API
-        let mut api_builder = ConductorApiBuilder::new();
-        // Signing callback:
-        api_builder = api_builder
-            .with_agent_signature_callback(self.get_key_for_agent(&instance_config.agent)?);
-        // Bridges:
-        let id = instance_config.id.clone();
-        for bridge in config.bridge_dependencies(id.clone()) {
-            assert_eq!(bridge.caller_id, id.clone());
-            let callee_config = config
-                .instance_by_id(&bridge.callee_id)
-                .expect("config.check_consistency()? jumps out if config is broken");
-            let callee_instance = self.instances.get(&bridge.callee_id).expect(
-                r#"
+                // Conductor API
+                let mut api_builder = ConductorApiBuilder::new();
+                // Signing callback:
+                api_builder = api_builder
+                    .with_agent_signature_callback(self.get_key_for_agent(&instance_config.agent)?);
+                // Bridges:
+                let id = instance_config.id.clone();
+                for bridge in config.bridge_dependencies(id.clone()) {
+                    assert_eq!(bridge.caller_id, id.clone());
+                    let callee_config = config
+                        .instance_by_id(&bridge.callee_id)
+                        .expect("config.check_consistency()? jumps out if config is broken");
+                    let callee_instance = self.instances.get(&bridge.callee_id).expect(
+                        r#"
                     We have to create instances ordered by bridge dependencies such that we
                     can expect the callee to be present here because we need it to create
                     the bridge API"#,
-            );
+                    );
 
-            api_builder = api_builder
-                .with_named_instance(bridge.handle.clone(), callee_instance.clone());
-            api_builder = api_builder
-                .with_named_instance_config(bridge.handle.clone(), callee_config);
-        }
-        context_builder = context_builder.with_conductor_api(api_builder.spawn());
-        if let Some(signal_tx) = self.signal_tx.clone() {
-            context_builder = context_builder.with_signals(signal_tx);
-        }
+                    api_builder = api_builder
+                        .with_named_instance(bridge.handle.clone(), callee_instance.clone());
+                    api_builder = api_builder
+                        .with_named_instance_config(bridge.handle.clone(), callee_config);
+                }
+                context_builder = context_builder.with_conductor_api(api_builder.spawn());
+                if let Some(signal_tx) = self.signal_tx.clone() {
+                    context_builder = context_builder.with_signals(signal_tx);
+                }
 
-        // Spawn context
-        let context = context_builder.spawn();
+                // Spawn context
+                let context = context_builder.spawn();
 
-        // Get DNA
-        let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
-        let dna_file = PathBuf::from(&dna_config.file);
-        let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(|_| {
-            HolochainError::ConfigError(format!(
-                "Could not load DNA file \"{}\"",
-                dna_config.file
-            ))
-        })?;
+                // Get DNA
+                let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
+                let dna_file = PathBuf::from(&dna_config.file);
+                let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(|_| {
+                    HolochainError::ConfigError(format!(
+                        "Could not load DNA file \"{}\"",
+                        dna_config.file
+                    ))
+                })?;
 
-        Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
+                Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
             })
     }
 

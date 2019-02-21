@@ -126,7 +126,8 @@ declare_types! {
                     let mut is_running = tc.is_running.lock().unwrap();
                     *is_running = true;
                 }
-                tc.conductor.load_config(Some(signal_tx)).and_then(|_| {
+                tc.conductor.set_signal_sender(signal_tx);
+                tc.conductor.load_config().and_then(|_| {
                     tc.conductor.start_all_instances().map_err(|e| e.to_string()).map(|_| {
                         await_held_agent_ids(tc.conductor.config(), &signal_rx);
                         let num_instances = tc.conductor.instances().len();

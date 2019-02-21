@@ -148,31 +148,45 @@ impl Conductor {
         self.signal_tx = Some(signal_tx);
     }
 
-    /// Starts a new thread which monitors each instance's signal channel and pushes signals out across interfaces.
-    /// NB: This broadcast is far too broad! All signals will be broadcasted over all interfaces.
-    /// This needs to be integrated with the capabilities model when ready.
+    /// Starts a new thread which monitors each instance's signal channel and pushes signals out
+    /// all interfaces the according instance is part of.
+    /// TODO: add kill-switch to this thread to close it on shutdown / also make sure to recreate if interfaces get changed..
     pub fn start_signal_multiplexer(&mut self) -> thread::JoinHandle<()> {
         let broadcasters = self.interface_broadcasters.clone();
         let instance_signal_receivers = self.instance_signal_receivers.clone();
         let signal_tx = self.signal_tx.clone();
+        let config = self.config.clone();
 
         self.log("starting signal loop".into());
         thread::spawn(move || loop {
             {
-                for (_instance_id, receiver) in instance_signal_receivers.read().unwrap().iter() {
+                for (instance_id, receiver) in instance_signal_receivers.read().unwrap().iter() {
                     if let Ok(signal) = receiver.try_recv() {
                         signal_tx.clone().map(|s| s.send(signal.clone()));
                         match signal {
                             // Ignore internal signals for now
                             Signal::Internal(_) => (),
                             // Only pass through user-defined and the temporary Holo signals
-                            Signal::User(_) | Signal::Holo(_) => broadcasters
-                                .read()
-                                .unwrap()
-                                .values()
-                                .for_each(|broadcaster| {
-                                    broadcaster.send(signal.clone()).expect("TODO: result");
-                                }),
+                            Signal::User(_) | Signal::Holo(_) => {
+                                let broadcasters = broadcasters.read().unwrap();
+                                let interfaces_with_instance: Vec<&InterfaceConfiguration> = config
+                                    .interfaces
+                                    .iter()
+                                    .filter(|interface_config| {
+                                        interface_config.instances
+                                            .iter()
+                                            .find(|instance| instance.id == *instance_id)
+                                            .is_some()
+                                    })
+                                    .collect();
+                                for interface in interfaces_with_instance {
+                                    broadcasters
+                                        .get(&interface.id)
+                                        .map(|broadcaster| {
+                                            broadcaster.send(signal.clone()).expect("TODO: result");
+                                        });
+                                }
+                            },
                         }
                     }
                 }

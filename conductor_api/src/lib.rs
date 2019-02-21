@@ -138,6 +138,7 @@ pub mod config;
 pub mod context_builder;
 pub mod error;
 pub mod holochain;
+pub mod holo_signing_service;
 pub mod interface;
 pub mod interface_impls;
 pub mod key_loaders;

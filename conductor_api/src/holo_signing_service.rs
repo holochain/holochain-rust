@@ -13,7 +13,9 @@ pub fn request_signing_service(
     let body = serde_json::to_string(&body_json).unwrap();
     let client = reqwest::Client::new();
     let url = reqwest::Url::parse(signing_service_uri)
-        .map_err(|_| HolochainError::new("Can't parse signing service URI"))?;
+        .map_err(|_| HolochainError::ConfigError(
+            format!("Can't parse signing service URI: '{}'", signing_service_uri)
+        ))?;
     let mut response = client.post(url)
         .body(body)
         .send()

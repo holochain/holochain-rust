@@ -4,6 +4,7 @@ pub const QUALIFIER: &'static str = "org";
 pub const ORGANIZATION: &'static str = "holochain";
 pub const APPLICATION: &'static str = "holochain";
 pub const KEYS_DIRECTORY: &'static str = "keys";
+pub const DNA_EXTENSION: &'static str = "dna.json";
 
 /// Returns the path to the root config directory for all of Holochain.
 /// If we can get a user directory it will be an XDG compliant path

@@ -36,7 +36,7 @@
   - [API DNA Variables](./zome/dna_variables.md)
   - [List of API Functions](./zome/api_functions.md)
 - [Building Holochain Apps: Packaging](./packaging.md)
-  - [.build Files](./build_files.md)
+  - [.hcbuild Files](./build_files.md)
   - [.hcignore Files](./hcignore_files.md)
 - [Building Holochain Apps: Testing](intro_to_testing.md)
   - [Running Tests](./running_tests.md)

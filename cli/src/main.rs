@@ -35,7 +35,7 @@ enum Cli {
     #[structopt(
         name = "package",
         alias = "p",
-        about = "Builds DNA source files into a single bundle.json DNA file"
+        about = "Builds DNA source files into a single .dna.json DNA file"
     )]
     Package {
         #[structopt(
@@ -153,8 +153,14 @@ fn main() {
 fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
+    let project_path = std::env::current_dir().expect("fish");
     match args {
         Cli::Package { strip_meta, output } => {
+            let output = if output.is_some() {
+                output.unwrap()
+            } else {
+                util::std_package_path(&project_path).expect("fish")
+            };
             cli::package(strip_meta, output).map_err(HolochainError::Default)?
         }
         Cli::Unpack { path, to } => cli::unpack(&path, &to).map_err(HolochainError::Default)?,
@@ -168,7 +174,7 @@ fn run() -> HolochainResult<()> {
             persist,
             networked,
             interface,
-        } => cli::run(package, port, persist, networked, interface)
+        } => cli::run(&project_path, package, port, persist, networked, interface)
             .map_err(HolochainError::Default)?,
         Cli::Test {
             dir,

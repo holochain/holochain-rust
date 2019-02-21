@@ -2,7 +2,7 @@ const path = require('path')
 const { Config, Conductor, Scenario } = require('../../nodejs_conductor')
 Scenario.setTape(require('tape'))
 
-const dnaPath = path.join(__dirname, "../dist/app_spec.hcpkg")
+const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
 const dna = Config.dna(dnaPath, 'app-spec')
 const agentAlice = Config.agent("alice")
 const agentBob = Config.agent("bob")

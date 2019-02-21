@@ -577,13 +577,13 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
     "#;
         let dnas = load_configuration::<Configuration>(toml).unwrap().dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(dna_config.file, "app_spec.hcpkg");
+        assert_eq!(dna_config.file, "app_spec.dna.json");
         assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
     }
 
@@ -598,7 +598,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -646,7 +646,7 @@ pub mod tests {
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(dna_config.file, "app_spec.hcpkg");
+        assert_eq!(dna_config.file, "app_spec.dna.json");
         assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
 
         let instances = config.instances;
@@ -683,7 +683,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -743,7 +743,7 @@ pub mod tests {
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(dna_config.file, "app_spec.hcpkg");
+        assert_eq!(dna_config.file, "app_spec.dna.json");
         assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
 
         let instances = config.instances;
@@ -768,7 +768,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -798,7 +798,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -841,7 +841,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
+    file = "app-spec-rust.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -884,7 +884,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
+    file = "app-spec-rust.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -1062,7 +1062,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]

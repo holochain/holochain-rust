@@ -217,10 +217,7 @@ impl Dna {
     }
 
     pub fn multihash(&self) -> Result<Vec<u8>, HolochainError> {
-        let mut self_clone = self.to_owned();
-        // HACK: Ignore the git hash of the DNA to get a consistent hash value
-        self_clone.git_hash = String::new();
-        let s = String::from(JsonString::from(self_clone));
+        let s = String::from(JsonString::from(self.to_owned()));
         multihash::encode(multihash::Hash::SHA2256, &s.into_bytes())
             .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))
     }

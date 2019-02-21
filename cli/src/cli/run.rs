@@ -4,10 +4,11 @@ use error::DefaultResult;
 use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
+    key_loaders::{test_key, test_key_loader},
     config::*,
     logger::LogRules,
 };
-use holochain_core_types::agent::AgentId;
+use holochain_core_types::agent::{AgentId, KeyBuffer};
 use std::{fs, path::PathBuf};
 
 const LOCAL_STORAGE_PATH: &str = ".hc";
@@ -33,13 +34,18 @@ pub fn run(
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
     // if this logic changes
-    let agent_name = EnvVar::Agent.value().ok();
-    let agent = AgentId::generate_fake(&agent_name.unwrap_or_else(|| String::from("testAgent")));
+    let agent_name = EnvVar::Agent
+        .value()
+        .ok()
+        .unwrap_or_else(|| String::from("testAgent"));
+    let keypair = test_key(&agent_name);
+    let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
+    let agent_id = AgentId::new(&agent_name, &pub_key);
     let agent_config = AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
-        name: agent.nick,
-        public_address: agent.key,
-        key_file: "hc_run.key".into(),
+        name: agent_id.nick,
+        public_address: agent_id.key,
+        key_file: agent_name,
     };
 
     let dna_config = DnaConfiguration {
@@ -145,6 +151,7 @@ pub fn run(
     mount_conductor_from_config(base_config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
+    conductor.key_loader = test_key_loader();
 
     conductor
         .load_config()

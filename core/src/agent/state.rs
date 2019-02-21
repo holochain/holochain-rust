@@ -176,11 +176,10 @@ pub fn create_new_chain_header(
         .get_agent_address()
         .unwrap_or(context.agent_id.address());
     let signature = Signature::from(
-        context
-            .sign(entry.address().to_string())?,
-            // Temporarily replaced by error handling for Holo hack signing.
-            // TODO: pull in the expect below after removing the Holo signing hack again
-            //.expect("Must be able to create signatures!"),
+        context.sign(entry.address().to_string())?,
+        // Temporarily replaced by error handling for Holo hack signing.
+        // TODO: pull in the expect below after removing the Holo signing hack again
+        //.expect("Must be able to create signatures!"),
     );
     let duration_since_epoch = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)

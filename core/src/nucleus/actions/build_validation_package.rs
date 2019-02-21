@@ -19,7 +19,10 @@ use holochain_core_types::{
 use snowflake;
 use std::{convert::TryInto, pin::Pin, sync::Arc, thread};
 
-pub async fn build_validation_package(entry: &Entry, context: Arc<Context>) -> Result<ValidationPackage, HolochainError> {
+pub async fn build_validation_package(
+    entry: &Entry,
+    context: Arc<Context>,
+) -> Result<ValidationPackage, HolochainError> {
     let id = snowflake::ProcessUniqueId::new();
 
     match entry.entry_type() {
@@ -59,10 +62,12 @@ pub async fn build_validation_package(entry: &Entry, context: Arc<Context>) -> R
         EntryType::AgentId => {
             // FIXME
         }
-        _ => return Err(HolochainError::ValidationFailed(format!(
+        _ => {
+            return Err(HolochainError::ValidationFailed(format!(
                 "Attempted to validate system entry type {:?}",
                 entry.entry_type(),
-            ))),
+            )));
+        }
     };
 
     {

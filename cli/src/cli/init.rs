@@ -8,7 +8,6 @@ use crate::{
     util::DIST_DIR_NAME,
 };
 use colored::*;
-use holochain_common::paths::DNA_EXTENSION;
 use serde_json;
 use std::{
     collections::HashMap,

@@ -174,8 +174,15 @@ fn run() -> HolochainResult<()> {
             persist,
             networked,
             interface,
-        } => cli::run(&project_path, package, port, persist, networked, interface)
-            .map_err(HolochainError::Default)?,
+        } => {
+            let dna_path = util::std_package_path(&project_path).expect("fish");
+            let interface_type = cli::get_interface_type_string(interface);
+            let conductor_config =
+                cli::hc_run_configuration(&dna_path, port, persist, networked, &interface_type)
+                    .map_err(HolochainError::Default)?;
+            cli::run(dna_path, package, port, interface_type, conductor_config)
+                .map_err(HolochainError::Default)?
+        }
         Cli::Test {
             dir,
             testfile,

@@ -13,27 +13,17 @@ use std::{fs, path::PathBuf};
 
 /// Starts a minimal configuration Conductor with the current application running
 pub fn run(
-    path: &PathBuf,
+    dna_path: PathBuf,
     package: bool,
     port: u16,
-    persist: bool,
-    networked: bool,
-    interface: String,
+    interface_type: String,
+    conductor_config: Configuration,
 ) -> DefaultResult<()> {
-    let dna_path = crate::util::std_package_path(path)?;
-
     if package {
-        cli::package(true, dna_path.clone())?;
+        cli::package(true, dna_path)?;
     }
 
-    let interface_type = get_interface_type_string(interface);
-    mount_conductor_from_config(hc_run_configuration(
-        &dna_path,
-        port,
-        persist,
-        networked,
-        &interface_type,
-    )?);
+    mount_conductor_from_config(conductor_config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
     conductor.key_loader = test_key_loader();
@@ -69,7 +59,7 @@ pub fn run(
     Ok(())
 }
 
-fn get_interface_type_string(given_type: String) -> String {
+pub fn get_interface_type_string(given_type: String) -> String {
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
     // if this logic changes
@@ -77,7 +67,7 @@ fn get_interface_type_string(given_type: String) -> String {
     EnvVar::Interface.value().ok().unwrap_or_else(|| given_type)
 }
 
-fn hc_run_configuration(
+pub fn hc_run_configuration(
     dna_path: &PathBuf,
     port: u16,
     persist: bool,

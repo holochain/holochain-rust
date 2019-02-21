@@ -12,7 +12,7 @@ use holochain_core_types::{
     cas::content::{Address,AddressableContent},
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
-    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
+    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
     entry::Entry
 };
 use std::sync::Arc;

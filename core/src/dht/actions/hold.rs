@@ -3,6 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::entry_with_header::EntryWithHeader,
+    workflows::author_entry::author_entry
 };
 use futures::{
     future::Future,
@@ -11,6 +12,9 @@ use futures::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     error::HolochainError,
+    crud_status::CrudStatus,
+    entry::Entry
+
 };
 use std::{pin::Pin, sync::Arc};
 
@@ -20,7 +24,9 @@ pub async fn hold_entry<'a>(
 ) -> Result<Address, HolochainError> {
     let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-
+    let entry = Entry::Meta((entry_wh.entry.address(),CrudStatus::Live));
+    let new_context = context.clone();
+    await!(author_entry(&entry,None,&new_context));
     await!(HoldEntryFuture {
         context: context,
         address: entry_wh.entry.address(),

@@ -128,7 +128,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
     t.equals(result.Ok, null)
   })
 
-scenario1.runTape('update_post', async (t, { alice }) => {
+scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
   const in_reply_to = null
   const params = { content, in_reply_to }
@@ -141,7 +141,7 @@ scenario1.runTape('update_post', async (t, { alice }) => {
 
   t.equals(result.Ok, null)
 
-  const updatedPost = alice.call("blog", "get_post", { post_address: createResult.Ok })
+  const updatedPost = bob.call("blog", "get_post", { post_address: createResult.Ok })
 
   t.ok(updatedPost.Ok)
 

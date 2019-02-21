@@ -77,6 +77,8 @@ pub enum Entry {
     Meta((Address,CrudStatus))
 }
 
+
+
 impl From<Option<Entry>> for JsonString {
     fn from(maybe_entry: Option<Entry>) -> Self {
         default_to_json(maybe_entry)

@@ -3,12 +3,13 @@ use crate::{
     agent::state::ActionResponse,
     context::Context,
     instance::dispatch_action,
+    workflows::author_entry::author_entry
 };
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
+use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError,crud_status::CrudStatus,cas::content::AddressableContent};
 use std::{pin::Pin, sync::Arc};
 //use core::mem::PinMut;
 
@@ -22,7 +23,7 @@ pub async fn commit_entry(
     maybe_crud_link: Option<Address>,
     context: &Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::Commit((entry, maybe_crud_link)));
+    let action_wrapper = ActionWrapper::new(Action::Commit((entry.clone(), maybe_crud_link)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     await!(CommitFuture {
         context: context.clone(),

@@ -7,7 +7,7 @@ use crate::{
         crud_status::crud_status_workflow
     },
 };
-use holochain_core_types::{eav::Attribute,crud_status::{LINK_NAME, STATUS_NAME}};
+use holochain_core_types::{eav::Attribute,crud_status::CrudStatus};
 use holochain_net_connection::json_protocol::{DhtMetaData, EntryData};
 use std::{sync::Arc, thread};
 
@@ -26,7 +26,7 @@ pub fn handle_store_entry(dht_data: EntryData, context: Arc<Context>) {
 /// The network requests us to store meta information (links/CRUD/etc) for an
 /// entry that we hold.
 pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
-    let attr = dht_meta_data.attribute;
+    let attr = dht_meta_data.clone().attribute;
     // @TODO: If network crates will switch to using the `Attribute` enum,
     // we can match on the enum directly
     if attr == Attribute::Link.to_string() {
@@ -63,18 +63,19 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         });
     } else if attr == Attribute::CrudStatus.to_string() {
         context.log("debug/net/handle: HandleStoreMeta: got CRUD status. processing...");
-    // FIXME: block_on hold crud_status metadata in DHT?
-    } else if attr == Attribute::CrudLink.to_string() {
-            let crud_status : CrudStatus = serde_json::from_str(
+        let crud_status : CrudStatus = serde_json::from_str(
                 &serde_json::to_string(&dht_meta_data.content_list[0])
                     .expect("dht_meta_data should be EntryWithHeader"),
             ).expect("Could not extract crudstatus from content list");
             thread::spawn(move || {
-                match context.block_on(crud_status_workflow(&context.clone(),&entity_address,&crud_status)) {
+                match context.block_on(crud_status_workflow(&context.clone(),&dht_meta_data.entry_address,&crud_status)) {
                     Err(error) => context.log(format!("err/net/dht: {}", error)),
                     _ => (),
                 }
             });
+    // FIXME: block_on hold crud_status metadata in DHT?
+    } else if attr == Attribute::CrudLink.to_string() {
+            
         context.log("debug/net/handle: HandleStoreMeta: got CRUD LINK. processing...");
         // FIXME: block_on hold crud_link metadata in DHT?
     }

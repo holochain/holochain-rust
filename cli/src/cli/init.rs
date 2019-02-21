@@ -102,7 +102,6 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
     let ignores = [
         &DIST_DIR_NAME,
         &TEST_DIR_NAME,
-        format!("*.{}", DNA_EXTENSION).as_str(),
         "README.md",
     ]
     .join("\n");

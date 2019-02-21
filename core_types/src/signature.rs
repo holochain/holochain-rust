@@ -19,3 +19,9 @@ impl From<String> for Signature {
         Signature(s.to_owned())
     }
 }
+
+impl From<Signature> for String {
+    fn from(s: Signature) -> String {
+        s.0
+    }
+}

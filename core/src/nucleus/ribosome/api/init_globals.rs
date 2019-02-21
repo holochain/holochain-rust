@@ -59,9 +59,10 @@ pub mod tests {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::{agent::AgentId, error::ZomeApiInternalResult, json::JsonString};
+    use holochain_core_types::{error::ZomeApiInternalResult, json::JsonString};
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use std::convert::TryFrom;
+    use test_utils::mock_signing::registered_test_agent;
 
     #[test]
     /// test that bytes passed to debug end up in the log
@@ -74,7 +75,7 @@ pub mod tests {
             ZomeApiGlobals::try_from(JsonString::from(zome_api_internal_result.value)).unwrap();
 
         assert_eq!(globals.dna_name, "TestApp");
-        let expected_agent = AgentId::generate_fake("jane");
+        let expected_agent = registered_test_agent("jane");
         assert_eq!(globals.agent_address.to_string(), expected_agent.key);
         // TODO (david.b) this should work:
         //assert_eq!(globals.agent_id_str, String::from(AgentId::generate_fake("jane")));

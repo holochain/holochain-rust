@@ -26,7 +26,6 @@
 ///
 /// # Example
 /// ```rust
-/// extern crate clap;
 /// extern crate holochain_conductor_api;
 /// extern crate holochain_core_types;
 /// #[macro_use]
@@ -91,6 +90,7 @@
 /// }
 /// ```
 extern crate holochain_cas_implementations;
+extern crate holochain_common;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dpki;
@@ -140,6 +140,7 @@ pub mod error;
 pub mod holochain;
 pub mod interface;
 pub mod interface_impls;
+pub mod key_loaders;
 pub mod logger;
 pub mod static_file_server;
 

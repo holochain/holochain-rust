@@ -1,14 +1,15 @@
-use cli::{self, package};
+use cli;
 use colored::*;
 use error::DefaultResult;
 use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
     config::*,
+    key_loaders::{test_key, test_key_loader},
     logger::LogRules,
 };
-use holochain_core_types::agent::AgentId;
-use std::fs;
+use holochain_core_types::agent::{AgentId, KeyBuffer};
+use std::{fs, path::PathBuf};
 
 const LOCAL_STORAGE_PATH: &str = ".hc";
 
@@ -19,6 +20,7 @@ const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
 /// Starts a minimal configuration Conductor with the current application running
 pub fn run(
+    path: &PathBuf,
     package: bool,
     port: u16,
     persist: bool,
@@ -26,24 +28,29 @@ pub fn run(
     interface: String,
 ) -> DefaultResult<()> {
     if package {
-        cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
+        cli::package(true, crate::util::std_package_path(path)?)?;
     }
 
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
     // if this logic changes
-    let agent_name = EnvVar::Agent.value().ok();
-    let agent = AgentId::generate_fake(&agent_name.unwrap_or_else(|| String::from("testAgent")));
+    let agent_name = EnvVar::Agent
+        .value()
+        .ok()
+        .unwrap_or_else(|| String::from("testAgent"));
+    let keypair = test_key(&agent_name);
+    let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
+    let agent_id = AgentId::new(&agent_name, &pub_key);
     let agent_config = AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
-        name: agent.nick,
-        public_address: agent.key,
-        key_file: "hc_run.key".into(),
+        name: agent_id.nick,
+        public_address: agent_id.key,
+        key_file: agent_name,
     };
 
     let dna_config = DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
-        file: package::DEFAULT_BUNDLE_FILE_NAME.into(),
+        file: crate::util::std_dna_file_name(path)?,
         hash: None,
     };
 
@@ -144,6 +151,7 @@ pub fn run(
     mount_conductor_from_config(base_config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
+    conductor.key_loader = test_key_loader();
 
     conductor
         .load_config()
@@ -179,6 +187,8 @@ pub fn run(
 #[cfg(test)]
 // flagged as broken for:
 // 1. taking 60+ seconds
+// 2. test doesn't take into account dynamic folder for package name
+// 3. test is broken in regard to reading an agent key
 #[cfg(feature = "broken-tests")]
 mod tests {
     use crate::cli::init::{init, tests::gen_dir};
@@ -202,7 +212,7 @@ mod tests {
             .args(&["run", "--package"])
             .output()
             .expect("should run");
-        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"\\u{1b}[1;32mCreated\\u{1b}[0m bundle file at \\\"bundle.json\\\"\\nStarting instance \\\"test-instance\\\"...\\nHolochain development conductor started. Running websocket server on port 8888\\nType \\\'exit\\\' to stop the conductor and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
+        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"\\u{1b}[1;32mCreated\\u{1b}[0m dna package file at \\\"x.dna.json\\\"\\nStarting instance \\\"test-instance\\\"...\\nHolochain development conductor started. Running websocket server on port 8888\\nType \\\'exit\\\' to stop the conductor and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
 
         let output = run2_cmd
             .args(&["run", "--interface", "http"])

@@ -99,12 +99,7 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
     gitignore_file.write_all(gitignore_starter.as_bytes())?;
 
     // create a default .hcignore file with good defaults
-    let ignores = [
-        &DIST_DIR_NAME,
-        &TEST_DIR_NAME,
-        "README.md",
-    ]
-    .join("\n");
+    let ignores = [&DIST_DIR_NAME, &TEST_DIR_NAME, "README.md"].join("\n");
     let mut hcignore_file = File::create(path.join(&IGNORE_FILE_NAME))?;
     hcignore_file.write_all(ignores.as_bytes())?;
 

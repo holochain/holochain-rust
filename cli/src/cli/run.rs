@@ -231,8 +231,8 @@ mod tests {
     // use crate::cli::init::{init, tests::gen_dir};
     // use assert_cmd::prelude::*;
     // use std::{env, process::Command, path::PathBuf};
-    use std::path::PathBuf;
     use holochain_conductor_api::config::*;
+    use std::path::PathBuf;
 
     #[test]
     // flagged as broken for:
@@ -281,11 +281,14 @@ mod tests {
     fn test_dna_configuration() {
         let dna_path = PathBuf::from("/test/path");
         let dna = super::dna_configuration(&dna_path);
-        assert_eq!(dna, DnaConfiguration {
-            id: "hc-run-dna".to_string(),
-            file: "/test/path".to_string(),
-            hash: None,
-        })
+        assert_eq!(
+            dna,
+            DnaConfiguration {
+                id: "hc-run-dna".to_string(),
+                file: "/test/path".to_string(),
+                hash: None,
+            }
+        )
     }
 
     #[test]
@@ -294,42 +297,57 @@ mod tests {
         assert_eq!(storage, StorageConfiguration::Memory);
 
         let persist_store = super::storage_configuration(true).unwrap();
-        assert_eq!(persist_store, StorageConfiguration::File { path: ".hc".to_string() });
+        assert_eq!(
+            persist_store,
+            StorageConfiguration::File {
+                path: ".hc".to_string()
+            }
+        );
     }
 
     #[test]
     fn test_instance_configuration() {
         let storage = super::storage_configuration(false).unwrap();
         let instance = super::instance_configuration(storage);
-        assert_eq!(instance, InstanceConfiguration {
-            id: "test-instance".to_string(),
-            dna: "hc-run-dna".to_string(),
-            agent: "hc-run-agent".to_string(),
-            storage: StorageConfiguration::Memory,
-        })
+        assert_eq!(
+            instance,
+            InstanceConfiguration {
+                id: "test-instance".to_string(),
+                dna: "hc-run-dna".to_string(),
+                agent: "hc-run-agent".to_string(),
+                storage: StorageConfiguration::Memory,
+            }
+        )
     }
 
     #[test]
     fn test_interface_configuration() {
         let http_interface = super::interface_configuration(&"http".to_string(), 4444).unwrap();
-        assert_eq!(http_interface, InterfaceConfiguration {
-            id: "websocket-interface".to_string(),
-            driver: InterfaceDriver::Http { port: 4444 },
-            admin: true,
-            instances: vec![InstanceReferenceConfiguration {
-                id: "test-instance".to_string(),
-            }],
-        });
+        assert_eq!(
+            http_interface,
+            InterfaceConfiguration {
+                id: "websocket-interface".to_string(),
+                driver: InterfaceDriver::Http { port: 4444 },
+                admin: true,
+                instances: vec![InstanceReferenceConfiguration {
+                    id: "test-instance".to_string(),
+                }],
+            }
+        );
 
-        let websocket_interface = super::interface_configuration(&"websocket".to_string(), 5555).unwrap();
-        assert_eq!(websocket_interface, InterfaceConfiguration {
-            id: "websocket-interface".to_string(),
-            driver: InterfaceDriver::Websocket { port: 5555 },
-            admin: true,
-            instances: vec![InstanceReferenceConfiguration {
-                id: "test-instance".to_string(),
-            }],
-        });
+        let websocket_interface =
+            super::interface_configuration(&"websocket".to_string(), 5555).unwrap();
+        assert_eq!(
+            websocket_interface,
+            InterfaceConfiguration {
+                id: "websocket-interface".to_string(),
+                driver: InterfaceDriver::Websocket { port: 5555 },
+                admin: true,
+                instances: vec![InstanceReferenceConfiguration {
+                    id: "test-instance".to_string(),
+                }],
+            }
+        );
 
         let invalid_type = super::interface_configuration(&"funny".to_string(), 4444);
         assert!(invalid_type.is_err());
@@ -338,14 +356,17 @@ mod tests {
     #[test]
     fn test_networking_configuration() {
         let networking = super::networking_configuration(true);
-        assert_eq!(networking, Some(NetworkConfig {
-            bootstrap_nodes: Vec::new(),
-            n3h_path: default_n3h_path(),
-            n3h_mode: default_n3h_mode(),
-            n3h_persistence_path: default_n3h_persistence_path(),
-            n3h_ipc_uri: Default::default(),
-            networking_config_file: None,
-        }));
+        assert_eq!(
+            networking,
+            Some(NetworkConfig {
+                bootstrap_nodes: Vec::new(),
+                n3h_path: default_n3h_path(),
+                n3h_mode: default_n3h_mode(),
+                n3h_persistence_path: default_n3h_persistence_path(),
+                n3h_ipc_uri: Default::default(),
+                networking_config_file: None,
+            })
+        );
 
         let no_networking = super::networking_configuration(false);
         assert!(no_networking.is_none());

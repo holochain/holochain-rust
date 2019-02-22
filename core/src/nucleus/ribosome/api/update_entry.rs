@@ -5,6 +5,7 @@ use crate::{
         ribosome::{api::ZomeApiResult, Runtime},
     },
     workflows::get_entry_result::get_entry_result_workflow,
+    workflows::author_entry::author_entry
 };
 use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
@@ -12,6 +13,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
+    crud_status::CrudStatus
 };
 use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
 use std::convert::TryFrom;
@@ -90,16 +92,12 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                     &zome_call_data.context,
                 )
             })
-            // 4. Update the entry in DHT metadata
-            .and_then(|new_address| {
-                update_entry(
-                    &zome_call_data.context,
-                    zome_call_data.context.action_channel(),
-                    latest_entry.address().clone(),
-                    new_address,
-                )
-            }),
     );
+    let res = zome_call_data.context.block_on(author_entry(&entry.clone(),Some(latest_entry.address()),&zome_call_data.context.clone()));
+    if !res.is_err()
+    {
+        return ribosome_error_code!(Unspecified)
+    }
 
     runtime.store_result(task_result)
 }

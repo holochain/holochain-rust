@@ -55,7 +55,17 @@ pub async fn crud_link_workflow<'a>(
 ) -> Result<(), HolochainError> 
 {
 
-create_crud_link(context,address,crud_link)
+let state = context.state().ok_or(HolochainError::ErrorGeneric("Could not find state".to_string()))?;
+
+    //grab meta from state
+    let dht = state.dht().clone();
+    let dht_meta = dht.meta_storage().clone();
+    //grab lock from meta_storage
+    let mut meta_storage = dht_meta.try_write().map_err(|_|HolochainError::ErrorGeneric("Could not get lock".to_string()))?;
+
+    let crud_link = create_crud_link_eav(address, &crud_link.clone().ok_or(HolochainError::ErrorGeneric("CrudLink Not Available".to_string()))?)?;
+    meta_storage.add_eavi(&crud_link)?;
+    Ok(())
       
 }
 
@@ -95,22 +105,7 @@ fn update_crud_status<'a>( context: &'a Arc<Context>,
     Ok(())
 }
 
-fn create_crud_link<'a>( context: &'a Arc<Context>,
-    address: &'a Address,crud_link :&'a Option<Address>) -> Result<(), HolochainError> 
-{
-    //grab state from context
-    let state = context.state().ok_or(HolochainError::ErrorGeneric("Could not find state".to_string()))?;
 
-    //grab meta from state
-    let dht = state.dht().clone();
-    let dht_meta = dht.meta_storage().clone();
-    //grab lock from meta_storage
-    let mut meta_storage = dht_meta.try_write().map_err(|_|HolochainError::ErrorGeneric("Could not get lock".to_string()))?;
-
-    let crud_link = create_crud_link_eav(address, &crud_link.clone().ok_or(HolochainError::ErrorGeneric("CrudLink Not Available".to_string()))?)?;
-    meta_storage.add_eavi(&crud_link)?;
-    Ok(())
-}
 
 fn remove_crud_status<'a>( context: &'a Arc<Context>,
     address: &'a Address) -> Result<(), HolochainError> 

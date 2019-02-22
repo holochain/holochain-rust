@@ -158,14 +158,6 @@ fn reduce_publish_inner(
                 maybe_crud_link,
             )
         }),
-        EntryType::Meta =>
-        {
-            match entry_with_header.entry
-            {
-                Entry::Meta((address,crud)) =>publish_crud_meta(network_state, address,crud, None),
-                _ => Err(HolochainError::NotImplemented("reduce_publish_inner".into()))
-            }
-        },
         _ => Err(HolochainError::NotImplemented(
             "reduce_publish_inner".into(),
         )),

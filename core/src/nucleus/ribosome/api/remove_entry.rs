@@ -91,8 +91,8 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                 remove_entry(
                     &zome_call_data.context,
                     zome_call_data.context.action_channel(),
+                    deletion_entry.clone(),
                     deleted_entry_address.clone(),
-                    deletion_entry.address().clone(),
                 )
             }),
     );

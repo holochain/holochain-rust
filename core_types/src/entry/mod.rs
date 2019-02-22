@@ -73,8 +73,7 @@ pub enum Entry {
     ChainHeader(ChainHeader),
     ChainMigrate(ChainMigrate),
     CapToken(CapToken),
-    CapTokenGrant(CapTokenGrant),
-    Meta((Address,CrudStatus))
+    CapTokenGrant(CapTokenGrant)
 }
 
 
@@ -105,8 +104,7 @@ impl Entry {
             Entry::ChainHeader(_) => EntryType::ChainHeader,
             Entry::ChainMigrate(_) => EntryType::ChainMigrate,
             Entry::CapToken(_) => EntryType::CapToken,
-            Entry::CapTokenGrant(_) => EntryType::CapTokenGrant,
-            Entry::Meta(_) => EntryType::Meta
+            Entry::CapTokenGrant(_) => EntryType::CapTokenGrant
 
         }
     }

@@ -62,9 +62,6 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
 
         EntryType::AgentId => {
             // FIXME
-        },
-        EntryType::Meta =>{
-
         }
         _ => {
             return ValidationPackageFuture {

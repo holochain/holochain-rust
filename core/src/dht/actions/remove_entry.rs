@@ -8,7 +8,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError,crud_status::CrudStatus,entry::Entry};
+use holochain_core_types::{cas::content::{Address,AddressableContent}, error::HolochainError,crud_status::CrudStatus,entry::Entry};
 use std::{
     pin::Pin,
     sync::{mpsc::SyncSender, Arc},
@@ -20,15 +20,13 @@ use std::{
 pub fn remove_entry(
     context: &Arc<Context>,
     action_channel: &SyncSender<ActionWrapper>,
-    deleted_address: Address,
+    deleted_entry: Entry,
     deletion_address: Address,
 ) -> RemoveEntryFuture {
     let action_wrapper =
-        ActionWrapper::new(Action::RemoveEntry((deleted_address.clone(), deletion_address)));
-    dispatch_action(action_channel, action_wrapper.clone());
-    let entry = Entry::Meta((deleted_address.clone(),CrudStatus::Deleted));
+        ActionWrapper::new(Action::RemoveEntry((deleted_entry.address().clone(), deletion_address.clone())));
     let new_context = context.clone();
-    new_context.block_on(author_entry(&entry,None,&new_context));
+    new_context.block_on(author_entry(&deleted_entry,Some(deletion_address),&new_context));
     RemoveEntryFuture {
         context: context.clone(),
         action: action_wrapper,

@@ -105,6 +105,7 @@ fn agent_configuration() -> AgentConfiguration {
         name: agent_id.nick,
         public_address: agent_id.key,
         key_file: agent_name,
+        holo_remote_key: None,
     }
 }
 
@@ -271,7 +272,8 @@ mod tests {
             id: "hc-run-agent".to_string(),
             name: "testAgent".to_string(),
             public_address: "s9UNYMzKdze-AAcg5-0UGHhdtu_vPQvfjYOyJifXivr_FIyhglPbbUgzcIwVhr7rzw4KCR6FcezPeRlQ_RPubdXwT1E_".to_string(),
-            key_file: "testAgent".to_string()
+            key_file: "testAgent".to_string(),
+            holo_remote_key: None,
         });
     }
 

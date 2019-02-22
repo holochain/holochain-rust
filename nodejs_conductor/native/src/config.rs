@@ -72,6 +72,7 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
                 name: agent_name.clone(),
                 public_address: pub_key.render(),
                 key_file: agent_name.clone(),
+                holo_remote_key: None,
             };
             config
         });

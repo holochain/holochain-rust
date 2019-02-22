@@ -153,13 +153,13 @@ fn main() {
 fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
-    let project_path = std::env::current_dir().expect("fish");
+    let project_path = std::env::current_dir().expect("working dir should be available");
     match args {
         Cli::Package { strip_meta, output } => {
             let output = if output.is_some() {
                 output.unwrap()
             } else {
-                util::std_package_path(&project_path).expect("fish")
+                util::std_package_path(&project_path).map_err(HolochainError::Default)?
             };
             cli::package(strip_meta, output).map_err(HolochainError::Default)?
         }
@@ -175,7 +175,7 @@ fn run() -> HolochainResult<()> {
             networked,
             interface,
         } => {
-            let dna_path = util::std_package_path(&project_path).expect("fish");
+            let dna_path = util::std_package_path(&project_path).map_err(HolochainError::Default)?;
             let interface_type = cli::get_interface_type_string(interface);
             let conductor_config =
                 cli::hc_run_configuration(&dna_path, port, persist, networked, &interface_type)

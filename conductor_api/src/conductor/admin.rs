@@ -1300,6 +1300,7 @@ type = 'websocket'"#,
             name: String::from("Mr. New"),
             public_address: AgentId::generate_fake("new").address().to_string(),
             key_file: String::from("new-test-path"),
+            holo_remote_key: None,
         };
 
         assert_eq!(conductor.add_agent(agent_config), Ok(()),);

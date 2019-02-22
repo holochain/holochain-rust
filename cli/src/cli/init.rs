@@ -1,14 +1,16 @@
 use crate::{
     cli::{
-        package::{DEFAULT_BUNDLE_FILE_NAME, GITIGNORE_FILE_NAME, IGNORE_FILE_NAME},
-        test::{DIST_DIR_NAME, TEST_DIR_NAME},
+        package::{GITIGNORE_FILE_NAME, IGNORE_FILE_NAME},
+        test::TEST_DIR_NAME,
     },
     config_files::App as AppConfig,
     error::DefaultResult,
+    util::DIST_DIR_NAME,
 };
 use colored::*;
 use serde_json;
 use std::{
+    collections::HashMap,
     fs::{self, File, OpenOptions},
     io::Write,
     path::PathBuf,
@@ -18,28 +20,52 @@ fn create_test_file(
     test_folder_path: &PathBuf,
     test_file_name: &str,
     test_file_contents: &str,
+    maybe_replacements: Option<HashMap<&str, &str>>,
 ) -> DefaultResult<()> {
     let dest_filepath = test_folder_path.join(test_file_name);
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
         .open(dest_filepath)?;
-    file.write_all(test_file_contents.as_bytes())?;
+    let contents = match maybe_replacements {
+        Some(replacements) => {
+            let mut contents = test_file_contents.to_string();
+            for (from, to) in &replacements {
+                contents = contents.replace(from, to);
+            }
+            contents
+        }
+        None => test_file_contents.to_string(),
+    };
+    file.write_all(contents.as_bytes())?;
     Ok(())
 }
 
+macro_rules! hashmap {
+    ($( $key: expr => $val: expr ),*) => {{
+        let mut map = ::std::collections::HashMap::new();
+        $( map.insert($key, $val); )*
+            map
+    }}
+}
+
 fn setup_test_folder(path: &PathBuf, test_folder: &str) -> DefaultResult<()> {
+    let dir_name = path.file_name().expect("directory to be a file");
+    let project_name = dir_name.to_string_lossy().to_string();
+
     let tests_path = path.join(test_folder);
     fs::create_dir_all(tests_path.clone())?;
     create_test_file(
         &tests_path,
         "index.js",
         include_str!("js-tests-scaffold/index.js"),
+        Some(hashmap!["<<DNA_NAME>>" =>  project_name.as_str()]),
     )?;
     create_test_file(
         &tests_path,
         "package.json",
         include_str!("js-tests-scaffold/package.json"),
+        None,
     )?;
     Ok(())
 }
@@ -72,13 +98,7 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
     gitignore_file.write_all(gitignore_starter.as_bytes())?;
 
     // create a default .hcignore file with good defaults
-    let ignores = [
-        &DIST_DIR_NAME,
-        &TEST_DIR_NAME,
-        &DEFAULT_BUNDLE_FILE_NAME,
-        "README.md",
-    ]
-    .join("\n");
+    let ignores = [&DIST_DIR_NAME, &TEST_DIR_NAME, "README.md"].join("\n");
     let mut hcignore_file = File::create(path.join(&IGNORE_FILE_NAME))?;
     hcignore_file.write_all(ignores.as_bytes())?;
 

@@ -1,9 +1,10 @@
 use std::path::PathBuf;
 
-pub const QUALIFIER: &'static str = "org";
-pub const ORGANIZATION: &'static str = "holochain";
-pub const APPLICATION: &'static str = "holochain";
-pub const KEYS_DIRECTORY: &'static str = "keys";
+pub const QUALIFIER: &str = "org";
+pub const ORGANIZATION: &str = "holochain";
+pub const APPLICATION: &str = "holochain";
+pub const KEYS_DIRECTORY: &str = "keys";
+pub const DNA_EXTENSION: &str = "dna.json";
 
 /// Returns the path to the root config directory for all of Holochain.
 /// If we can get a user directory it will be an XDG compliant path

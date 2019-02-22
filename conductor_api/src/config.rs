@@ -304,7 +304,7 @@ impl Configuration {
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct AgentConfiguration {
     pub id: String,
     pub name: String,
@@ -345,7 +345,7 @@ impl TryFrom<DnaConfiguration> for Dna {
 
 /// An instance combines a DNA with an agent.
 /// Each instance has its own storage configuration.
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct InstanceConfiguration {
     pub id: String,
     pub dna: String,
@@ -360,7 +360,7 @@ pub struct InstanceConfiguration {
 /// * file
 ///
 /// Projected are various DB adapters.
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum StorageConfiguration {
     Memory,
@@ -379,7 +379,7 @@ pub enum StorageConfiguration {
 /// The instances (referenced by ID) that are to be made available via that interface should be listed.
 /// An admin flag will enable conductor functions for programatically changing the configuration
 /// (e.g. installing apps)
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct InterfaceConfiguration {
     pub id: String,
     pub driver: InterfaceDriver,
@@ -389,7 +389,7 @@ pub struct InterfaceConfiguration {
     pub instances: Vec<InstanceReferenceConfiguration>,
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum InterfaceDriver {
     Websocket { port: u16 },
@@ -398,7 +398,7 @@ pub enum InterfaceDriver {
     Custom(toml::value::Value),
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct InstanceReferenceConfiguration {
     pub id: String,
 }

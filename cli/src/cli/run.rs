@@ -126,16 +126,15 @@ fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
 const LOCAL_STORAGE_PATH: &str = ".hc";
 
 fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
-    let storage = if persist {
+    if persist {
         fs::create_dir_all(LOCAL_STORAGE_PATH)?;
 
-        StorageConfiguration::File {
+        Ok(StorageConfiguration::File {
             path: LOCAL_STORAGE_PATH.into(),
-        }
+        })
     } else {
-        StorageConfiguration::Memory
-    };
-    Ok(storage)
+        Ok(StorageConfiguration::Memory)
+    }
 }
 
 // INSTANCE
@@ -227,17 +226,19 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
 }
 
 #[cfg(test)]
-// flagged as broken for:
-// 1. taking 60+ seconds
-// 2. test doesn't take into account dynamic folder for package name
-// 3. test is broken in regard to reading an agent key
-#[cfg(feature = "broken-tests")]
 mod tests {
-    use crate::cli::init::{init, tests::gen_dir};
-    use assert_cmd::prelude::*;
-    use std::{env, process::Command};
+    // use crate::cli::init::{init, tests::gen_dir};
+    // use assert_cmd::prelude::*;
+    // use std::{env, process::Command, path::PathBuf};
+    use std::path::PathBuf;
+    use holochain_conductor_api::config::*;
 
     #[test]
+    // flagged as broken for:
+    // 1. taking 60+ seconds
+    // 2. test doesn't take into account dynamic folder for package name
+    // 3. test is broken in regard to reading an agent key
+    #[cfg(feature = "broken-tests")]
     fn test_run() {
         let temp_dir = gen_dir();
         let temp_dir_path = temp_dir.path();
@@ -261,5 +262,90 @@ mod tests {
             .output()
             .expect("should run");
         assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"Starting instance \\\"test-instance\\\"...\\nHolochain development conductor started. Running http server on port 8888\\nType \\\'exit\\\' to stop the conductor and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
+    }
+
+    #[test]
+    fn test_agent_configuration() {
+        let agent = super::agent_configuration();
+        assert_eq!(agent, AgentConfiguration {
+            id: "hc-run-agent".to_string(),
+            name: "testAgent".to_string(),
+            public_address: "s9UNYMzKdze-AAcg5-0UGHhdtu_vPQvfjYOyJifXivr_FIyhglPbbUgzcIwVhr7rzw4KCR6FcezPeRlQ_RPubdXwT1E_".to_string(),
+            key_file: "testAgent".to_string()
+        });
+    }
+
+    #[test]
+    fn test_dna_configuration() {
+        let dna_path = PathBuf::from("/test/path");
+        let dna = super::dna_configuration(&dna_path);
+        assert_eq!(dna, DnaConfiguration {
+            id: "hc-run-dna".to_string(),
+            file: "/test/path".to_string(),
+            hash: None,
+        })
+    }
+
+    #[test]
+    fn test_storage_configuration() {
+        let storage = super::storage_configuration(false).unwrap();
+        assert_eq!(storage, StorageConfiguration::Memory);
+
+        let persist_store = super::storage_configuration(true).unwrap();
+        assert_eq!(persist_store, StorageConfiguration::File { path: ".hc".to_string() });
+    }
+
+    #[test]
+    fn test_instance_configuration() {
+        let storage = super::storage_configuration(false).unwrap();
+        let instance = super::instance_configuration(storage);
+        assert_eq!(instance, InstanceConfiguration {
+            id: "test-instance".to_string(),
+            dna: "hc-run-dna".to_string(),
+            agent: "hc-run-agent".to_string(),
+            storage: StorageConfiguration::Memory,
+        })
+    }
+
+    #[test]
+    fn test_interface_configuration() {
+        let http_interface = super::interface_configuration(&"http".to_string(), 4444).unwrap();
+        assert_eq!(http_interface, InterfaceConfiguration {
+            id: "websocket-interface".to_string(),
+            driver: InterfaceDriver::Http { port: 4444 },
+            admin: true,
+            instances: vec![InstanceReferenceConfiguration {
+                id: "test-instance".to_string(),
+            }],
+        });
+
+        let websocket_interface = super::interface_configuration(&"websocket".to_string(), 5555).unwrap();
+        assert_eq!(websocket_interface, InterfaceConfiguration {
+            id: "websocket-interface".to_string(),
+            driver: InterfaceDriver::Websocket { port: 5555 },
+            admin: true,
+            instances: vec![InstanceReferenceConfiguration {
+                id: "test-instance".to_string(),
+            }],
+        });
+
+        let invalid_type = super::interface_configuration(&"funny".to_string(), 4444);
+        assert!(invalid_type.is_err());
+    }
+
+    #[test]
+    fn test_networking_configuration() {
+        let networking = super::networking_configuration(true);
+        assert_eq!(networking, Some(NetworkConfig {
+            bootstrap_nodes: Vec::new(),
+            n3h_path: default_n3h_path(),
+            n3h_mode: default_n3h_mode(),
+            n3h_persistence_path: default_n3h_persistence_path(),
+            n3h_ipc_uri: Default::default(),
+            networking_config_file: None,
+        }));
+
+        let no_networking = super::networking_configuration(false);
+        assert!(no_networking.is_none());
     }
 }

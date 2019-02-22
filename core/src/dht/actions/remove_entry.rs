@@ -22,15 +22,15 @@ pub fn remove_entry(
     action_channel: &SyncSender<ActionWrapper>,
     deleted_entry: Entry,
     deletion_address: Address,
-) -> RemoveEntryFuture {
-    let action_wrapper =
+) -> Result<RemoveEntryFuture,HolochainError> {
+    let _action_wrapper =
         ActionWrapper::new(Action::RemoveEntry((deleted_entry.address().clone(), deletion_address.clone())));
     let new_context = context.clone();
-    new_context.block_on(author_entry(&deleted_entry,Some(deletion_address),&new_context));
-    RemoveEntryFuture {
+    new_context.block_on(author_entry(&deleted_entry,Some(deletion_address),&new_context))?;
+    Ok(RemoveEntryFuture {
         context: context.clone(),
-        action: action_wrapper,
-    }
+        action: _action_wrapper,
+    })
 }
 
 /// RemoveEntryFuture resolves to ActionResponse

@@ -25,7 +25,7 @@ pub async fn hold_entry<'a>(
     let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
     let new_context = context.clone();
     let entry = entry_wh.entry.clone();
-    await!(author_entry(&entry,None,&new_context));
+    await!(author_entry(&entry,None,&new_context))?;
     await!(HoldEntryFuture {
         context: context,
         address: entry_wh.entry.address(),

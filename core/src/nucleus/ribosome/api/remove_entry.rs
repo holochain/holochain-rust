@@ -86,15 +86,14 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                     &zome_call_data.context,
                 )
             })
-            // 4. Remove the entry in DHT metadata
-            .and_then(|_| {
+            .and_then(|_|{
                 remove_entry(
                     &zome_call_data.context,
                     zome_call_data.context.action_channel(),
                     deletion_entry.clone(),
                     deleted_entry_address.clone(),
-                )
-            }),
+                ).expect("Could not remove entry")
+            })
     );
 
     runtime.store_result(result)

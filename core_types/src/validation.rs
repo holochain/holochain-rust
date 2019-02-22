@@ -18,7 +18,6 @@ pub struct ValidationPackage {
 
 impl ValidationPackage {
     pub fn only_header(header: ChainHeader) -> ValidationPackage {
-        println!("validation package");
         ValidationPackage {
             chain_header: header,
             source_chain_entries: None,

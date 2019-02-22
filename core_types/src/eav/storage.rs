@@ -81,13 +81,7 @@ pub fn increment_key_till_no_collision(
     mut eav: EntityAttributeValueIndex,
     map: BTreeSet<EntityAttributeValueIndex>,
 ) -> HcResult<EntityAttributeValueIndex> {
-    if map
-        .iter()
-        .filter(|e| e.index() == eav.index())
-        .collect::<BTreeSet<&EntityAttributeValueIndex>>()
-        .len()
-        > 0
-    {
+    if map.iter().any(|e| e.index() == eav.index()) {
         let timestamp = eav.clone().index() + 1;
         eav.set_index(timestamp);
         increment_key_till_no_collision(eav, map)

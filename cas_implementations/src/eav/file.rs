@@ -152,14 +152,14 @@ impl EavFileStorage {
                         .unwrap_or_default()
                 })
                 .map(|pathbuf| read_eav(pathbuf.clone()));
-            if errors.len() > 0 {
+            if !errors.is_empty() {
                 Err(HolochainError::ErrorGeneric(
                     "Could not read eavs from directory".to_string(),
                 ))
             } else {
                 let mut ordmap: BTreeSet<String> = BTreeSet::new();
                 eavs.for_each(|s| {
-                    s.clone().unwrap_or(Vec::new()).iter().for_each(|value| {
+                    s.clone().unwrap_or_default().iter().for_each(|value| {
                         ordmap.insert(value.clone());
                     })
                 });

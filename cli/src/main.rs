@@ -175,7 +175,8 @@ fn run() -> HolochainResult<()> {
             networked,
             interface,
         } => {
-            let dna_path = util::std_package_path(&project_path).map_err(HolochainError::Default)?;
+            let dna_path =
+                util::std_package_path(&project_path).map_err(HolochainError::Default)?;
             let interface_type = cli::get_interface_type_string(interface);
             let conductor_config =
                 cli::hc_run_configuration(&dna_path, port, persist, networked, &interface_type)

@@ -8,7 +8,7 @@ use crate::{
 };
 use futures::{
     future::Future,
-    task::{LocalWaker, Poll},
+    task::{Poll, Waker},
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -190,7 +190,7 @@ pub struct ValidationPackageFuture {
 impl Future for ValidationPackageFuture {
     type Output = Result<ValidationPackage, HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &Waker) -> Poll<Self::Output> {
         if let Some(ref error) = self.error {
             return Poll::Ready(Err(error.clone()));
         }

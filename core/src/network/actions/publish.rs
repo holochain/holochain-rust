@@ -6,7 +6,7 @@ use crate::{
 };
 use futures::{
     future::Future,
-    task::{LocalWaker, Poll},
+    task::{Poll, Waker},
 };
 use holochain_core_types::{cas::content::Address, error::HcResult};
 use std::{pin::Pin, sync::Arc};
@@ -35,7 +35,7 @@ pub struct PublishFuture {
 impl Future for PublishFuture {
     type Output = HcResult<Address>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &Waker) -> Poll<Self::Output> {
         let state = self.context.state().unwrap().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(error));

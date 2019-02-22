@@ -6,7 +6,7 @@ use crate::{
 };
 use futures::{
     future::Future,
-    task::{LocalWaker, Poll},
+    task::{Poll, Waker},
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError, time::Timeout};
 use snowflake::ProcessUniqueId;
@@ -54,7 +54,7 @@ pub struct SendResponseFuture {
 impl Future for SendResponseFuture {
     type Output = Result<String, HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &Waker) -> Poll<Self::Output> {
         let state = self.context.state().unwrap().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(HolochainError::ErrorGeneric(error.to_string())));

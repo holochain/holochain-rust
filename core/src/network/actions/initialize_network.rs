@@ -5,7 +5,7 @@ use crate::{
     network::actions::publish::publish,
 };
 use futures::{
-    task::{LocalWaker, Poll},
+    task::{Poll, Waker},
     Future,
 };
 #[cfg(test)]
@@ -59,7 +59,7 @@ pub struct InitNetworkFuture {
 impl Future for InitNetworkFuture {
     type Output = HcResult<()>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &Waker) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

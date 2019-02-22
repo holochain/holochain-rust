@@ -48,7 +48,7 @@ impl Packager {
             Some(vec![
                 "Compiling to WASM also requires adding WASM as a compile target.",
                 "For this, also run:",
-                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-01-24",
+                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-02-22",
             ]),
         )?;
         if !should_continue {

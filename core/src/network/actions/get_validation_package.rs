@@ -5,7 +5,7 @@ use crate::{
 };
 use futures::{
     future::Future,
-    task::{LocalWaker, Poll},
+    task::{Poll, Waker},
 };
 use holochain_core_types::{
     cas::content::Address, chain_header::ChainHeader, error::HcResult,
@@ -43,7 +43,7 @@ pub struct GetValidationPackageFuture {
 impl Future for GetValidationPackageFuture {
     type Output = HcResult<Option<ValidationPackage>>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &Waker) -> Poll<Self::Output> {
         let state = self.context.state().unwrap().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(error));

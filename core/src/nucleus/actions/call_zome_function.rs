@@ -8,7 +8,7 @@ use crate::{
 };
 use futures::{
     future::Future,
-    task::{LocalWaker, Poll},
+    task::{Poll, Waker},
 };
 use holochain_core_types::error::HolochainError;
 use std::{pin::Pin, sync::Arc};
@@ -181,7 +181,7 @@ pub struct CallResultFuture {
 impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &Waker) -> Poll<Self::Output> {
         // With our own executor implementation in Context::block_on we actually
         // wouldn't need the waker since this executor is attached to the redux loop
         // and re-polls after every State mutation.

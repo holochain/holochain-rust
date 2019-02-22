@@ -10,7 +10,7 @@ use crate::{
 };
 use futures::{
     future::Future,
-    task::{LocalWaker, Poll},
+    task::{Poll, Waker},
 };
 use holochain_core_types::{dna::Dna, entry::Entry, error::HolochainError};
 use std::{pin::Pin, sync::Arc, time::*};
@@ -119,7 +119,7 @@ pub struct InitializationFuture {
 impl Future for InitializationFuture {
     type Output = Result<NucleusStatus, HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &Waker) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

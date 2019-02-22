@@ -6,7 +6,7 @@ use crate::{
 use boolinator::Boolinator;
 use futures::{
     future::Future,
-    task::{LocalWaker, Poll},
+    task::{Poll, Waker},
 };
 use holochain_core_types::{
     cas::content::AddressableContent,
@@ -173,7 +173,7 @@ pub struct ValidationFuture {
 impl Future for ValidationFuture {
     type Output = Result<HashString, HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &Waker) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

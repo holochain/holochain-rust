@@ -103,7 +103,8 @@ impl CapTokenGrant {
         if cap_type == CapabilityType::Public {
             return true;
         }
-        if !from.is_some() {
+
+        if from.is_none() {
             return false;
         }
 

@@ -157,14 +157,7 @@ impl EavFileStorage {
                     "Could not read eavs from directory".to_string(),
                 ))
             } else {
-                let mut ordmap: BTreeSet<String> = BTreeSet::new();
-                eavs.for_each(|s| {
-                    s.clone().unwrap_or_default().iter().for_each(|value| {
-                        ordmap.insert(value.clone());
-                    })
-                });
-
-                Ok(ordmap)
+                Ok(eavs.filter_map(|s| s.ok()).flatten().collect())
             }
         } else {
             Ok(BTreeSet::new())

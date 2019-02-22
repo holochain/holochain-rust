@@ -140,7 +140,7 @@ fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
         })
     } else {
         Ok(StorageConfiguration::Memory)
-        }
+    }
 }
 
 // INSTANCE

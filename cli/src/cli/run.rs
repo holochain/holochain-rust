@@ -32,11 +32,6 @@ pub fn run(
         .load_config()
         .map_err(|err| format_err!("{}", err))?;
 
-    println!(
-        "Holochain development conductor started. Network running on {:?}",
-        conductor.p2p_bindings()
-    );
-
     conductor.start_all_interfaces();
     conductor.start_all_instances()?;
 

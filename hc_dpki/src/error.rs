@@ -1,11 +1,11 @@
 /// Error for hc-dpki lib to use in your code.
 #[derive(Debug)]
-pub enum DPKIError {
+pub enum DpkiError {
     ErrorMessage(String),
 }
 
-impl DPKIError {
-    pub fn new(msg: &str) -> DPKIError {
-        DPKIError::ErrorMessage(msg.to_string())
+impl DpkiError {
+    pub fn new(msg: &str) -> DpkiError {
+        DpkiError::ErrorMessage(msg.to_string())
     }
 }

@@ -2,7 +2,7 @@ use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     cas::content::{Address, AddressableContent},
 };
-use holochain_dpki::keypair::{Keypair, SEEDSIZE, SIGNATURESIZE};
+use holochain_dpki::keypair::{KeyPairPair, SEED_SIZE, SIGNATURE_SIZE};
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
 use std::{
@@ -18,9 +18,9 @@ lazy_static! {
 pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
     let nick = nick.into();
     // Create deterministic seed from nick:
-    let mut seed = SecBuf::with_insecure(SEEDSIZE);
+    let mut seed = SecBuf::with_insecure(SEED_SIZE);
     let nick_bytes = nick.as_bytes();
-    let seed_bytes: Vec<u8> = (1..SEEDSIZE).map(|num| {
+    let seed_bytes: Vec<u8> = (1..SEED_SIZE).map(|num| {
         if num <= nick_bytes.len(){
             nick_bytes[num-1]
         } else {
@@ -32,7 +32,7 @@ pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
         .expect("SecBuf must be writeable");
 
     // Create keypair from seed:
-    let keypair = Keypair::new_from_seed(&mut seed).unwrap();
+    let keypair = KeyPairPair::new_from_seed(&mut seed).unwrap();
     let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
     let agent_id = AgentId::new(&nick, &pub_key);
 
@@ -58,7 +58,7 @@ pub fn mock_signer(payload: String, agent_id: &AgentId) -> String {
             let mut message = SecBuf::with_insecure_from_string(payload);
 
             // Create signature
-            let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
+            let mut message_signed = SecBuf::with_insecure(SIGNATURE_SIZE);
             keypair.sign(&mut message, &mut message_signed).unwrap();
             let message_signed = message_signed.read_lock();
 

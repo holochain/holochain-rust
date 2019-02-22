@@ -21,7 +21,7 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{bundle::KeyBundle, keypair::Keypair};
+use holochain_dpki::{bundle::KeyBundle, keypair::KeyPairPair};
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
@@ -80,7 +80,7 @@ pub fn mount_conductor_from_config(config: Configuration) {
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
-    agent_keys: HashMap<String, Arc<Mutex<Keypair>>>,
+    agent_keys: HashMap<String, Arc<Mutex<KeyPairPair>>>,
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
@@ -102,7 +102,7 @@ impl Drop for Conductor {
 }
 
 type SignalSender = SyncSender<Signal>;
-pub type KeyLoader = Arc<Box<FnMut(&PathBuf) -> Result<Keypair, HolochainError> + Send + Sync>>;
+pub type KeyLoader = Arc<Box<FnMut(&PathBuf) -> Result<KeyPairPair, HolochainError> + Send + Sync>>;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
     Arc<Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
@@ -515,7 +515,7 @@ impl Conductor {
     /// Get reference to key for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
-    fn get_key_for_agent(&mut self, agent_id: &String) -> Result<Arc<Mutex<Keypair>>, String> {
+    fn get_key_for_agent(&mut self, agent_id: &String) -> Result<Arc<Mutex<KeyPairPair>>, String> {
         if !self.agent_keys.contains_key(agent_id) {
             let agent_config = self
                 .config
@@ -563,7 +563,7 @@ impl Conductor {
     }
 
     /// Default KeyLoader that actually reads files from the filesystem
-    fn load_key(file: &PathBuf) -> Result<Keypair, HolochainError> {
+    fn load_key(file: &PathBuf) -> Result<KeyPairPair, HolochainError> {
         notify(format!("Reading agent key from {}", file.display()));
 
         // Read key file
@@ -587,7 +587,7 @@ impl Conductor {
             *byte = 0u8;
         }
 
-        Keypair::from_bundle(&bundle, &mut passphrase_buf, None)
+        KeyPairPair::from_bundle(&bundle, &mut passphrase_buf, None)
     }
 
     fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {
@@ -734,7 +734,7 @@ pub mod tests {
     use crate::config::load_configuration;
     use holochain_core::{action::Action, signal::signal_channel};
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
-    use holochain_dpki::keypair::{Keypair, SEEDSIZE};
+    use holochain_dpki::keypair::{KeyPairPair, SEED_SIZE};
     use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
@@ -767,19 +767,19 @@ pub mod tests {
                 unknown
             ))),
         })
-            as Box<FnMut(&PathBuf) -> Result<Keypair, HolochainError> + Send + Sync>;
+            as Box<FnMut(&PathBuf) -> Result<KeyPairPair, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
-    pub fn test_key(index: u8) -> Keypair {
+    pub fn test_key(index: u8) -> KeyPairPair {
         // Create deterministic seed:
-        let mut seed = SecBuf::with_insecure(SEEDSIZE);
-        let mock_seed: Vec<u8> = (1..SEEDSIZE).map(|e| e as u8 + index).collect();
+        let mut seed = SecBuf::with_insecure(SEED_SIZE);
+        let mock_seed: Vec<u8> = (1..SEED_SIZE).map(|e| e as u8 + index).collect();
         seed.write(0, mock_seed.as_slice())
             .expect("SecBuf must be writeable");
 
         // Create keypair from seed:
-        Keypair::new_from_seed(&mut seed).unwrap()
+        KeyPairPair::new_from_seed(&mut seed).unwrap()
     }
 
     pub fn test_toml() -> String {

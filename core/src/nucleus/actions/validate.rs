@@ -16,7 +16,7 @@ use holochain_core_types::{
     hash::HashString,
     validation::ValidationData,
 };
-use holochain_dpki::keypair::Keypair;
+use holochain_dpki::keypair::KeyPairPair;
 use holochain_sodium::secbuf::SecBuf;
 use snowflake::{self, ProcessUniqueId};
 use std::{pin::Pin, sync::Arc, thread};
@@ -113,7 +113,7 @@ fn validate_provenances(validation_data: &ValidationData) -> Result<(), Holochai
 
             let mut message_buf =
                 SecBuf::with_insecure_from_string(header.entry_address().to_string());
-            let result = Keypair::verify(author.to_string(), &mut signature_buf, &mut message_buf)?;
+            let result = KeyPairPair::verify(author.to_string(), &mut signature_buf, &mut message_buf)?;
 
             (result == 0).ok_or(HolochainError::ValidationFailed(format!(
                 "Signature of entry {} from author {} invalid",

@@ -1,5 +1,5 @@
 use crate::bundle;
-use holochain_core_types::{agent::KeyBuffer, error::HolochainError};
+use holochain_core_types::error::HolochainError;
 use holochain_sodium::{aead, kx, pwhash, secbuf::SecBuf};
 
 pub type OpsLimit = u64;
@@ -103,49 +103,57 @@ pub fn convert_array_to_secbuf(data: &[u8], buf: &mut SecBuf) {
     }
 }
 
-/// Generate an identity string with a pair of public keys
-///
-/// @param {SecBuf} signPub - singing public key
-///
-/// @param {SecBuf} encPub - encryption public key
-///
-/// @param {SecBuf} id
-pub fn encode_id(sign_pub: &mut SecBuf, enc_pub: &mut SecBuf) -> String {
+///// Generate an identity string with a pair of public keys
+/////
+///// @param {SecBuf} signPub - singing public key
+/////
+///// @param {SecBuf} encPub - encryption public key
+/////
+///// @param {SecBuf} id
+//pub fn encode_id(sign_pub: &mut SecBuf, enc_pub: &mut SecBuf) -> String {
+//    let sign_pub = sign_pub.read_lock();
+//    let enc_pub = enc_pub.read_lock();
+//    let sp = &*sign_pub;
+//    let ep = &*enc_pub;
+//    KeyBuffer::with_raw_parts(array_ref![sp, 0, 32], array_ref![ep, 0, 32]).render()
+//}
+pub fn encode_id(sign_pub: &mut SecBuf, enc_pub: &mut SecBuf) -> ([u8; 32], [u8; 32]) {
     let sign_pub = sign_pub.read_lock();
     let enc_pub = enc_pub.read_lock();
     let sp = &*sign_pub;
     let ep = &*enc_pub;
-    KeyBuffer::with_raw_parts(array_ref![sp, 0, 32], array_ref![ep, 0, 32]).render()
+    (array_ref![sp, 0, 32], array_ref![ep, 0, 32])
 }
 
-/// break an identity string up into a pair of public keys
-///
-/// @param {string} id
-///
-/// @param {SecBuf} signPub - Empty singing public key
-///
-/// @param {SecBuf} encPub - Empty encryption public key
-pub fn decode_id(
-    key: String,
-    sign_pub: &mut SecBuf,
-    enc_pub: &mut SecBuf,
-) -> Result<(), HolochainError> {
-    let id = &KeyBuffer::with_corrected(&key)?;
-
-    let mut sign_pub = sign_pub.write_lock();
-    let mut enc_pub = enc_pub.write_lock();
-
-    let sig = id.get_sig();
-    let enc = id.get_enc();
-
-    for x in 0..sign_pub.len() {
-        sign_pub[x] = sig[x];
-    }
-    for x in 0..enc_pub.len() {
-        enc_pub[x] = enc[x];
-    }
-    Ok(())
-}
+//
+///// break an identity string up into a pair of public keys
+/////
+///// @param {string} id
+/////
+///// @param {SecBuf} signPub - Empty singing public key
+/////
+///// @param {SecBuf} encPub - Empty encryption public key
+//pub fn decode_id(
+//    key: String,
+//    sign_pub: &mut SecBuf,
+//    enc_pub: &mut SecBuf,
+//) -> Result<(), HolochainError> {
+//    let id = &KeyBuffer::with_corrected(&key)?;
+//
+//    let mut sign_pub = sign_pub.write_lock();
+//    let mut enc_pub = enc_pub.write_lock();
+//
+//    let sig = id.get_sig();
+//    let enc = id.get_enc();
+//
+//    for x in 0..sign_pub.len() {
+//        sign_pub[x] = sig[x];
+//    }
+//    for x in 0..enc_pub.len() {
+//        enc_pub[x] = enc[x];
+//    }
+//    Ok(())
+//}
 
 /// Check if the buffer is empty i.e. [0,0,0,0,0,0,0,0]
 pub fn check_if_wrong_secbuf(buf: &mut SecBuf) -> bool {

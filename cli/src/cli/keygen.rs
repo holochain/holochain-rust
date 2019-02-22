@@ -2,7 +2,7 @@ use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_dpki::{
     bundle::KeyBundle,
-    keypair::{Keypair, SEEDSIZE},
+    keypair::{KeyPairPair, SEED_SIZE},
 };
 use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
 use rpassword;
@@ -30,9 +30,9 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         passphrase1
     });
 
-    let mut seed = SecBuf::with_secure(SEEDSIZE);
+    let mut seed = SecBuf::with_secure(SEED_SIZE);
     random_secbuf(&mut seed);
-    let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
+    let mut keypair = KeyPairPair::new_from_seed(&mut seed).unwrap();
     let passphrase_bytes = passphrase.as_bytes();
     let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
     passphrase_buf
@@ -85,7 +85,7 @@ pub mod test {
 
         let bundle: KeyBundle = serde_json::from_str(&contents).unwrap();
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        let keypair = Keypair::from_bundle(&bundle, &mut passphrase, None);
+        let keypair = KeyPairPair::from_bundle(&bundle, &mut passphrase, None);
 
         assert!(keypair.is_ok());
 

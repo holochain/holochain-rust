@@ -60,7 +60,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
 
     // Resolve future
-    let result: Result<(), HolochainError> = zome_call_data.context.block_on(
+    let result: Result<Address, HolochainError> = zome_call_data.context.block_on(
         // 1. Build the context needed for validation of the entry
         build_validation_package(&deletion_entry, &zome_call_data.context)
             .and_then(|validation_package| {
@@ -86,15 +86,24 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                     &zome_call_data.context,
                 )
             })
-            .and_then(|_|{
-                remove_entry(
+            
+    );
+
+    if !result.is_err()
+    {
+        return ribosome_error_code!(Unspecified);
+    }
+    let remove_entry_future = remove_entry(
                     &zome_call_data.context,
                     zome_call_data.context.action_channel(),
                     deletion_entry.clone(),
                     deleted_entry_address.clone(),
-                ).expect("Could not remove entry")
-            })
-    );
+                );
+    if !remove_entry_future.is_err()
+    {
+        return ribosome_error_code!(Unspecified);
+    }
+    let zome_last = zome_call_data.context.block_on(remove_entry_future.unwrap());
 
-    runtime.store_result(result)
+    runtime.store_result(zome_last)
 }

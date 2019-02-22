@@ -57,7 +57,7 @@ pub enum EntryType {
     ChainHeader,
     ChainMigrate,
     CapTokenGrant,
-    CapToken
+    CapToken,
 }
 
 impl From<AppEntryType> for EntryType {
@@ -161,7 +161,7 @@ impl From<EntryType> for String {
             EntryType::LinkList => sys_prefix!("link_list"),
             EntryType::ChainMigrate => sys_prefix!("chain_migrate"),
             EntryType::CapToken => sys_prefix!("cap_token"),
-            EntryType::CapTokenGrant => sys_prefix!("cap_token_grant")
+            EntryType::CapTokenGrant => sys_prefix!("cap_token_grant"),
         })
     }
 }

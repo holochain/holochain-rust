@@ -76,7 +76,6 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
     };
 
     {
-
         let id = id.clone();
         let entry = entry.clone();
         let context = context.clone();
@@ -117,26 +116,22 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
                     Ok(match package_definition {
                         Entry => ValidationPackage::only_header(entry_header),
                         ChainEntries => {
-                            
                             let mut package = ValidationPackage::only_header(entry_header);
                             package.source_chain_entries = Some(all_public_chain_entries(&context));
                             package
                         }
                         ChainHeaders => {
-                            
                             let mut package = ValidationPackage::only_header(entry_header);
                             package.source_chain_headers = Some(all_chain_headers(&context));
                             package
                         }
                         ChainFull => {
-                           
                             let mut package = ValidationPackage::only_header(entry_header);
                             package.source_chain_entries = Some(all_public_chain_entries(&context));
                             package.source_chain_headers = Some(all_chain_headers(&context));
                             package
                         }
                         Custom(string) => {
-                             
                             let mut package = ValidationPackage::only_header(entry_header);
                             package.custom = Some(string);
                             package

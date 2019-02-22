@@ -1,7 +1,6 @@
 use crate::{
-    context::Context,
-    network::entry_with_header::EntryWithHeader,
-    workflows::author_entry::author_entry
+    context::Context, network::entry_with_header::EntryWithHeader,
+    workflows::author_entry::author_entry,
 };
 use futures::{
     future::Future,
@@ -10,7 +9,6 @@ use futures::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     error::HolochainError,
-
 };
 use std::{pin::Pin, sync::Arc};
 
@@ -20,7 +18,7 @@ pub async fn hold_entry<'a>(
 ) -> Result<Address, HolochainError> {
     let new_context = context.clone();
     let entry = entry_wh.entry.clone();
-    await!(author_entry(&entry,None,&new_context))?;
+    await!(author_entry(&entry, None, &new_context))?;
     await!(HoldEntryFuture {
         context: context,
         address: entry_wh.entry.address(),

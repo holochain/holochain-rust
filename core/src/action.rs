@@ -12,11 +12,11 @@ use crate::{
 use holochain_core_types::{
     cas::content::Address,
     chain_header::ChainHeader,
+    crud_status::CrudStatus,
     dna::Dna,
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
     link::Link,
-    crud_status::CrudStatus,
     validation::ValidationPackage,
 };
 use holochain_net::p2p_config::P2pConfig;
@@ -102,7 +102,7 @@ pub enum Action {
     AddLink(Link),
 
     //action for updating crudstatus
-    CrudStatus((EntryWithHeader,CrudStatus)),
+    CrudStatus((EntryWithHeader, CrudStatus)),
 
     //Removes a link for the local DHT
     RemoveLink(Link),

@@ -85,24 +85,23 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                     Some(deleted_entry_address.clone()),
                     &zome_call_data.context,
                 )
-            })
-            
+            }),
     );
 
-    if result.is_err()
-    {
+    if result.is_err() {
         return ribosome_error_code!(Unspecified);
     }
     let remove_entry_future = remove_entry(
-                    &zome_call_data.context,
-                    deletion_entry.clone(),
-                    deleted_entry_address.clone(),
-                );
-    if remove_entry_future.is_err()
-    {
+        &zome_call_data.context,
+        deletion_entry.clone(),
+        deleted_entry_address.clone(),
+    );
+    if remove_entry_future.is_err() {
         return ribosome_error_code!(Unspecified);
     }
-    let zome_last = zome_call_data.context.block_on(remove_entry_future.unwrap());
+    let zome_last = zome_call_data
+        .context
+        .block_on(remove_entry_future.unwrap());
 
     runtime.store_result(zome_last)
 }

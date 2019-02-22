@@ -78,8 +78,6 @@ pub fn validate_entry(
     }
 }
 
-
-
 fn validate_link_entry(
     entry: Entry,
     validation_data: ValidationData,

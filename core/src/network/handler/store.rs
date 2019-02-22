@@ -2,12 +2,13 @@ use crate::{
     context::Context,
     network::entry_with_header::EntryWithHeader,
     workflows::{
-        hold_entry::hold_entry_workflow, hold_link::hold_link_workflow,
+        crud_status::{crud_link_workflow, crud_status_workflow},
+        hold_entry::hold_entry_workflow,
+        hold_link::hold_link_workflow,
         remove_link::remove_link_workflow,
-        crud_status::{crud_status_workflow,crud_link_workflow}
     },
 };
-use holochain_core_types::{eav::Attribute,crud_status::CrudStatus,cas::content::Address};
+use holochain_core_types::{cas::content::Address, crud_status::CrudStatus, eav::Attribute};
 use holochain_net_connection::json_protocol::{DhtMetaData, EntryData};
 use std::{sync::Arc, thread};
 
@@ -63,31 +64,40 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         });
     } else if attr == Attribute::CrudStatus.to_string() {
         context.log("debug/net/handle: HandleStoreMeta: got CRUD status. processing...");
-        let crud_status : CrudStatus = serde_json::from_str(
-                &serde_json::to_string(&dht_meta_data.content_list[0])
-                    .expect("dht_meta_data should be EntryWithHeader"),
-            ).expect("Could not extract crudstatus from content list");
-            thread::spawn(move || {
-                match context.block_on(crud_status_workflow(&context.clone(),&dht_meta_data.entry_address,&crud_status)) {
-                    Err(error) => context.log(format!("err/net/dht: {}", error)),
-                    _ => (),
-                }
-            });
+        let crud_status: CrudStatus = serde_json::from_str(
+            &serde_json::to_string(&dht_meta_data.content_list[0])
+                .expect("dht_meta_data should be EntryWithHeader"),
+        )
+        .expect("Could not extract crudstatus from content list");
+        thread::spawn(move || {
+            match context.block_on(crud_status_workflow(
+                &context.clone(),
+                &dht_meta_data.entry_address,
+                &crud_status,
+            )) {
+                Err(error) => context.log(format!("err/net/dht: {}", error)),
+                _ => (),
+            }
+        });
     // FIXME: block_on hold crud_status metadata in DHT?
     } else if attr == Attribute::CrudLink.to_string() {
-            
         context.log("debug/net/handle: HandleStoreMeta: got CRUD LINK. processing...");
         // FIXME: block_on hold crud_link metadata in DHT?
 
-        let crud_link : Address = serde_json::from_str(
-                &serde_json::to_string(&dht_meta_data.content_list[0])
-                    .expect("dht_meta_data should be EntryWithHeader"),
-            ).expect("Could not extract Address from content list");
-            thread::spawn(move || {
-                match context.block_on(crud_link_workflow(&context.clone(),&dht_meta_data.entry_address,&Some(crud_link))) {
-                    Err(error) => context.log(format!("err/net/dht: {}", error)),
-                    _ => (),
-                }
-            });
+        let crud_link: Address = serde_json::from_str(
+            &serde_json::to_string(&dht_meta_data.content_list[0])
+                .expect("dht_meta_data should be EntryWithHeader"),
+        )
+        .expect("Could not extract Address from content list");
+        thread::spawn(move || {
+            match context.block_on(crud_link_workflow(
+                &context.clone(),
+                &dht_meta_data.entry_address,
+                &Some(crud_link),
+            )) {
+                Err(error) => context.log(format!("err/net/dht: {}", error)),
+                _ => (),
+            }
+        });
     }
 }

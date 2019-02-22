@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     agent::state::ActionResponse,
     context::Context,
-    instance::dispatch_action
+    instance::dispatch_action,
 };
 use futures::{
     future::Future,

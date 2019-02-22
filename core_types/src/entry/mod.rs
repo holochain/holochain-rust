@@ -73,10 +73,8 @@ pub enum Entry {
     ChainHeader(ChainHeader),
     ChainMigrate(ChainMigrate),
     CapToken(CapToken),
-    CapTokenGrant(CapTokenGrant)
+    CapTokenGrant(CapTokenGrant),
 }
-
-
 
 impl From<Option<Entry>> for JsonString {
     fn from(maybe_entry: Option<Entry>) -> Self {
@@ -104,8 +102,7 @@ impl Entry {
             Entry::ChainHeader(_) => EntryType::ChainHeader,
             Entry::ChainMigrate(_) => EntryType::ChainMigrate,
             Entry::CapToken(_) => EntryType::CapToken,
-            Entry::CapTokenGrant(_) => EntryType::CapTokenGrant
-
+            Entry::CapTokenGrant(_) => EntryType::CapTokenGrant,
         }
     }
 }

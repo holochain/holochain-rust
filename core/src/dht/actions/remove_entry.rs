@@ -1,17 +1,18 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    workflows::author_entry::author_entry
+    workflows::author_entry::author_entry,
 };
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::{Address,AddressableContent}, error::HolochainError,entry::Entry};
-use std::{
-    pin::Pin,
-    sync::Arc,
+use holochain_core_types::{
+    cas::content::{Address, AddressableContent},
+    entry::Entry,
+    error::HolochainError,
 };
+use std::{pin::Pin, sync::Arc};
 
 /// Remove Entry Action Creator
 ///
@@ -20,11 +21,17 @@ pub fn remove_entry(
     context: &Arc<Context>,
     deleted_entry: Entry,
     deletion_address: Address,
-) -> Result<RemoveEntryFuture,HolochainError> {
-    let _action_wrapper =
-        ActionWrapper::new(Action::RemoveEntry((deleted_entry.address().clone(), deletion_address.clone())));
+) -> Result<RemoveEntryFuture, HolochainError> {
+    let _action_wrapper = ActionWrapper::new(Action::RemoveEntry((
+        deleted_entry.address().clone(),
+        deletion_address.clone(),
+    )));
     let new_context = context.clone();
-    new_context.block_on(author_entry(&deleted_entry,Some(deletion_address),&new_context))?;
+    new_context.block_on(author_entry(
+        &deleted_entry,
+        Some(deletion_address),
+        &new_context,
+    ))?;
     Ok(RemoveEntryFuture {
         context: context.clone(),
         action: _action_wrapper,

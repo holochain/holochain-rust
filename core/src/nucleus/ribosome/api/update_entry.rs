@@ -4,14 +4,14 @@ use crate::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
-    workflows::get_entry_result::get_entry_result_workflow
+    workflows::get_entry_result::get_entry_result_workflow,
 };
 use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData}
+    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
 use std::convert::TryFrom;
@@ -89,17 +89,21 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                     Some(chain_header_address),
                     &zome_call_data.context,
                 )
-            })
+            }),
     );
-    if task_result.is_err()
-    {
+    if task_result.is_err() {
         return ribosome_error_code!(Unspecified);
     }
-    let update_entry_future = update_entry(&zome_call_data.context.clone(),entry.clone(),latest_entry.address());
-    if update_entry_future.is_err()
-    {
+    let update_entry_future = update_entry(
+        &zome_call_data.context.clone(),
+        entry.clone(),
+        latest_entry.address(),
+    );
+    if update_entry_future.is_err() {
         return ribosome_error_code!(Unspecified);
     }
-    let _res = zome_call_data.context.block_on(update_entry_future.unwrap());
+    let _res = zome_call_data
+        .context
+        .block_on(update_entry_future.unwrap());
     runtime.store_result(task_result)
 }

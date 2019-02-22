@@ -61,6 +61,12 @@ pub struct Configuration {
     /// where to persist the config file and DNAs. Optional.
     #[serde(default = "default_persistence_dir")]
     pub persistence_dir: PathBuf,
+
+    /// Optional URI for a websocket connection to an outsourced signing service.
+    /// Bootstrapping step for Holo closed-alpha.
+    /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures
+    /// over this websocket.
+    pub signing_service_uri: Option<String>,
 }
 
 pub fn default_persistence_dir() -> PathBuf {
@@ -304,6 +310,9 @@ pub struct AgentConfiguration {
     pub name: String,
     pub public_address: String,
     pub key_file: String,
+    /// If set to true conductor will ignore key_file and instead use the remote signer
+    /// accessible through signing_service_uri to request signatures.
+    pub holo_remote_key: Option<bool>,
 }
 
 impl From<AgentConfiguration> for AgentId {

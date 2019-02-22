@@ -1,16 +1,12 @@
 bridges = []
+signing_service_uri = "http://localhost:8888"
 
 [[agents]]
 id = "test agent 1"
 key_file = "holo_tester.key"
 name = "Holo Tester 1"
 public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
-
-[[agents]]
-id = "test agent 2"
-key_file = "holo_tester.key"
-name = "Holo Tester 2"
-public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+holo_remote_key = true
 
 [[dnas]]
 file = "../app_spec/dist/app_spec.dna.json"
@@ -26,24 +22,9 @@ id = "app spec instance 1"
 path = "example-config/tmp-storage"
 type = "file"
 
-[[instances]]
-agent = "test agent 2"
-dna = "app spec rust"
-id = "app spec instance 2"
-
-[instances.storage]
-path = "example-config/tmp-storage"
-type = "file"
-
 [[interfaces]]
 admin = true
-id = "websocket interface"
-
-[[interfaces.instances]]
-id = "app spec instance 1"
-
-[[interfaces.instances]]
-id = "app spec instance 2"
+id = "websocket admin interface"
 
 [interfaces.driver]
 port = 3000
@@ -51,13 +32,17 @@ type = "websocket"
 
 [[interfaces]]
 admin = true
-id = "http interface"
+id = "http admin interface"
+
+[interfaces.driver]
+port = 4000
+type = "http"
+
+[[interfaces]]
+id = "agent interface 1"
 
 [[interfaces.instances]]
 id = "app spec instance 1"
-
-[[interfaces.instances]]
-id = "app spec instance 2"
 
 [interfaces.driver]
 port = 4000

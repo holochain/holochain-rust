@@ -406,15 +406,21 @@ impl Conductor {
                 let mut context_builder = ContextBuilder::new();
 
                 // Agent:
-                let agent_id = {
+                let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
+                let agent_id = if Some(true) == agent_config.holo_remote_key {
+                    // !!!!!!!!!!!!!!!!!!!!!!!
+                    // Holo closed-alpha hack:
+                    // !!!!!!!!!!!!!!!!!!!!!!!
+                    let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
+                    AgentId::new(&agent_config.name, &pub_key)
+                } else {
                     let keypair = self.get_key_for_agent(&instance_config.agent)?;
                     let keypair = keypair.lock().unwrap();
                     let pub_key = KeyBuffer::with_corrected(&keypair.get_id())?;
-                    let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
                     AgentId::new(&agent_config.name, &pub_key)
                 };
 
-                context_builder = context_builder.with_agent(agent_id);
+                context_builder = context_builder.with_agent(agent_id.clone());
 
                 context_builder = context_builder.with_p2p_config(self.get_p2p_config());
 
@@ -439,8 +445,23 @@ impl Conductor {
                 // Conductor API
                 let mut api_builder = ConductorApiBuilder::new();
                 // Signing callback:
-                api_builder = api_builder
-                    .with_agent_signature_callback(self.get_key_for_agent(&instance_config.agent)?);
+                if Some(true) == agent_config.holo_remote_key {
+                    // !!!!!!!!!!!!!!!!!!!!!!!
+                    // Holo closed-alpha hack:
+                    // !!!!!!!!!!!!!!!!!!!!!!!
+                    api_builder = api_builder.with_outsource_signing_callback(
+                        agent_id.clone(),
+                        self.config
+                            .signing_service_uri
+                            .clone()
+                            .expect("holo_remote_key needs signing_service_uri set"),
+                    );
+                } else {
+                    api_builder = api_builder.with_agent_signature_callback(
+                        self.get_key_for_agent(&instance_config.agent)?,
+                    );
+                }
+
                 // Bridges:
                 let id = instance_config.id.clone();
                 for bridge in config.bridge_dependencies(id.clone()) {
@@ -488,6 +509,17 @@ impl Conductor {
     /// passphrase prompts) before bootstrapping the whole config and have prompts appear
     /// in between other initialization output.
     pub fn check_load_key_for_agent(&mut self, agent_id: &String) -> Result<(), String> {
+        if Some(true)
+            == self
+                .config
+                .agent_by_id(agent_id)
+                .and_then(|a| a.holo_remote_key)
+        {
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            // Holo closed-alpha hack:
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            return Ok(());
+        }
         self.get_key_for_agent(agent_id)?;
         Ok(())
     }

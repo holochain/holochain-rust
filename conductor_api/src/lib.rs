@@ -136,6 +136,7 @@ pub mod conductor;
 pub mod config;
 pub mod context_builder;
 pub mod error;
+pub mod holo_signing_service;
 pub mod holochain;
 pub mod interface;
 pub mod interface_impls;

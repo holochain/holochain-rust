@@ -1,17 +1,17 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    instance::dispatch_action,
+    workflows::author_entry::author_entry
 };
 
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::{cas::content::{Address,AddressableContent},error::HolochainError,entry::Entry};
 use std::{
     pin::Pin,
-    sync::{mpsc::SyncSender, Arc},
+    sync::Arc,
 };
 
 /// Update Entry Action Creator
@@ -19,16 +19,16 @@ use std::{
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
 pub fn update_entry(
     context: &Arc<Context>,
-    action_channel: &SyncSender<ActionWrapper>,
-    old_address: Address,
+    old_entry: Entry,
     new_address: Address,
-) -> UpdateEntryFuture {
-    let action_wrapper = ActionWrapper::new(Action::UpdateEntry((old_address, new_address)));
-    dispatch_action(action_channel, action_wrapper.clone());
-    UpdateEntryFuture {
+) -> Result<UpdateEntryFuture,HolochainError> {
+    let action_wrapper = ActionWrapper::new(Action::UpdateEntry((old_entry.clone().address(), new_address.clone())));
+    let new_context = context.clone();
+    context.block_on(author_entry(&old_entry,Some(new_address),&new_context))?;
+    Ok(UpdateEntryFuture {
         context: context.clone(),
         action: action_wrapper,
-    }
+    })
 }
 
 /// RemoveEntryFuture resolves to ActionResponse

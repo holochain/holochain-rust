@@ -2,14 +2,13 @@ use crate::{
     action::{Action, ActionWrapper},
     agent::state::ActionResponse,
     context::Context,
-    instance::dispatch_action,
-    workflows::author_entry::author_entry
+    instance::dispatch_action
 };
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError,crud_status::CrudStatus,cas::content::AddressableContent};
+use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use std::{pin::Pin, sync::Arc};
 //use core::mem::PinMut;
 

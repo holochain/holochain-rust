@@ -89,17 +89,16 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             
     );
 
-    if !result.is_err()
+    if result.is_err()
     {
         return ribosome_error_code!(Unspecified);
     }
     let remove_entry_future = remove_entry(
                     &zome_call_data.context,
-                    zome_call_data.context.action_channel(),
                     deletion_entry.clone(),
                     deleted_entry_address.clone(),
                 );
-    if !remove_entry_future.is_err()
+    if remove_entry_future.is_err()
     {
         return ribosome_error_code!(Unspecified);
     }

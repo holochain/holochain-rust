@@ -1,17 +1,16 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    instance::dispatch_action,
     workflows::author_entry::author_entry
 };
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::{Address,AddressableContent}, error::HolochainError,crud_status::CrudStatus,entry::Entry};
+use holochain_core_types::{cas::content::{Address,AddressableContent}, error::HolochainError,entry::Entry};
 use std::{
     pin::Pin,
-    sync::{mpsc::SyncSender, Arc},
+    sync::Arc,
 };
 
 /// Remove Entry Action Creator
@@ -19,7 +18,6 @@ use std::{
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
 pub fn remove_entry(
     context: &Arc<Context>,
-    action_channel: &SyncSender<ActionWrapper>,
     deleted_entry: Entry,
     deletion_address: Address,
 ) -> Result<RemoveEntryFuture,HolochainError> {

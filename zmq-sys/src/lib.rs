@@ -1,3 +1,4 @@
+#![warn(unused_extern_crates)]
 extern crate libc;
 
 #[cfg(unix)]

@@ -1,4 +1,3 @@
-extern crate futures;
 use crate::{
     action::{Action, ActionWrapper, DirectMessageData},
     context::Context,

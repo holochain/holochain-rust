@@ -35,12 +35,12 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-    extern crate wabt;
+    use test_utils;
+    use wabt;
 
     use self::wabt::Wat2Wasm;
     use crate::{
-        instance::tests::{test_context_and_logger, test_instance},
+        instance::tests::test_instance_and_context,
         nucleus::{
             ribosome::{
                 self,
@@ -197,9 +197,8 @@ pub mod tests {
             &test_capability_name(),
             wasm.clone(),
         );
-        let instance =
-            test_instance(dna.clone(), netname).expect("Could not initialize test instance");
-        let (context, _) = test_context_and_logger("joan", netname);
+        let (instance, context) = test_instance_and_context(dna.clone(), netname)
+            .expect("Could not initialize test instance");
         let context = instance.initialize_context(context);
 
         println!("{:?}", instance.state().agent().top_chain_header());

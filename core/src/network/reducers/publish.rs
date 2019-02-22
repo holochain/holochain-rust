@@ -87,9 +87,9 @@ fn publish_link_meta(
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
-    let (link_type, _link_attribute) = match entry_with_header.entry.clone() {
-        Entry::LinkAdd(link_add_entry) => (link_add_entry, "link"),
-        Entry::LinkRemove(link_remove) => (link_remove, "link_remove"),
+    let (link_type, link_attribute) = match entry_with_header.entry.clone() {
+        Entry::LinkAdd(link_add_entry) => (link_add_entry, Attribute::Link),
+        Entry::LinkRemove(link_remove) => (link_remove, Attribute::LinkRemove),
         _ => {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Received bad entry type. Expected Entry::LinkAdd received {:?}",
@@ -110,8 +110,7 @@ fn publish_link_meta(
             dna_address: network_state.dna_address.clone().unwrap(),
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: link.base().clone(),
-
-            attribute: Attribute::Link.to_string(),
+            attribute: link_attribute.to_string(),
             content_list: vec![serde_json::from_str(
                 &serde_json::to_string(&entry_with_header).unwrap(),
             )

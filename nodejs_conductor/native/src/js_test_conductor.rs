@@ -11,6 +11,7 @@ use std::{
 
 use holochain_conductor_api::{
     conductor::Conductor as RustConductor,
+    key_loaders::test_key_loader,
     config::{load_configuration, Configuration},
 };
 use holochain_core::{
@@ -73,7 +74,8 @@ declare_types! {
             } else {
                 panic!("Invalid type specified for config, must be object or string");
             };
-            let conductor = RustConductor::from_config(config);
+            let mut conductor = RustConductor::from_config(config);
+            conductor.key_loader = test_key_loader();
             let is_running = Arc::new(Mutex::new(false));
 
             Ok(TestConductor { conductor, sender_tx: None, is_running, is_started: false })

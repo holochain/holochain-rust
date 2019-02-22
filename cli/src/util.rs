@@ -1,6 +1,8 @@
 use crate::error::DefaultResult;
 use colored::*;
+pub use holochain_common::paths::DNA_EXTENSION;
 use std::{
+    fs,
     io::ErrorKind,
     path::PathBuf,
     process::{Command, Stdio},
@@ -23,6 +25,29 @@ pub fn run_cmd(base_path: PathBuf, bin: String, args: &[&str]) -> DefaultResult<
     );
 
     Ok(())
+}
+
+/// Helper method for getting the standard dna file name built from the directory name and extension
+pub fn std_dna_file_name(path: &PathBuf) -> DefaultResult<String> {
+    let dir_name = file_name_string(path)?;
+    Ok(format!("{}.{}", dir_name, DNA_EXTENSION))
+}
+
+pub const DIST_DIR_NAME: &str = "dist";
+
+/// Helper method for obtaining the path to the dist directory, and creating it if it doesn't exist
+pub fn get_dist_path(path: &PathBuf) -> DefaultResult<PathBuf> {
+    // create dist folder
+    let dist_path = path.join(&DIST_DIR_NAME);
+
+    if !dist_path.exists() {
+        fs::create_dir(dist_path.as_path())?;
+    }
+    Ok(dist_path)
+}
+
+pub fn std_package_path(path: &PathBuf) -> DefaultResult<PathBuf> {
+    Ok(get_dist_path(path)?.join(std_dna_file_name(path)?))
 }
 
 /// Helper method for obtaining the file name of a path as a String

@@ -142,28 +142,22 @@ impl EavFileStorage {
                         .iter()
                         .last()
                         .and_then(|v| {
-                            v.to_string_lossy()
-                                .to_string()
+                            let v = v.to_string_lossy();
+                            v.to_string()
                                 .try_into()
+                                .map_err(|_| println!("warn/eav: invalid EAV string: {}", v))
                                 .ok()
                                 .map(|val| eav_filter.check(val))
                         })
                         .unwrap_or_default()
                 })
                 .map(|pathbuf| read_eav(pathbuf.clone()));
-            if errors.len() > 0 {
+            if !errors.is_empty() {
                 Err(HolochainError::ErrorGeneric(
                     "Could not read eavs from directory".to_string(),
                 ))
             } else {
-                let mut ordmap: BTreeSet<String> = BTreeSet::new();
-                eavs.for_each(|s| {
-                    s.clone().unwrap_or(Vec::new()).iter().for_each(|value| {
-                        ordmap.insert(value.clone());
-                    })
-                });
-
-                Ok(ordmap)
+                Ok(eavs.filter_map(|s| s.ok()).flatten().collect())
             }
         } else {
             Ok(BTreeSet::new())

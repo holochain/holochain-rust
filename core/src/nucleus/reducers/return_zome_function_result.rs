@@ -23,8 +23,6 @@ pub fn reduce_return_zome_function_result(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-
     use super::*;
     use crate::{
         action::tests::test_action_wrapper_rzfr, instance::tests::test_context,

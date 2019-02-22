@@ -4,8 +4,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Node JS version relaxed to 8.x in nix shell
+- develop docker tag now uses nix
+- legacy docker files removed
+- nixos friendly shebang added to bash scripts
+- file name for cli packaging changed: [PR#1036](https://github.com/holochain/holochain-rust/pull/1036)
+  - `bundle.json` & `.hcpkg` unified to `YOUR_DNA_NAME.dna.json`
+  - `.build` files renamed to `.hcbuild`
+  - `hc package` now builds to `dist` directory by default, to match how `hc test` works
 ### Removed
 ### Added
+- Adds a panic handler to HDK-Rust and that reroutes infos about panics happening inside the WASM Ribosome to the instances logger [PR#1029](https://github.com/holochain/holochain-rust/pull/1029).
+- mac os x install script installs cmake and qt
 ### Fixed
 
 ## [0.0.4-alpha] - 2019-02-15

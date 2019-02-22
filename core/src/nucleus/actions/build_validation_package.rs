@@ -1,5 +1,3 @@
-extern crate futures;
-extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
     agent::{self, find_chain_header},

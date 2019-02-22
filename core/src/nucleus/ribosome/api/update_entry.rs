@@ -94,10 +94,13 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     if task_result.is_err() {
         return ribosome_error_code!(Unspecified);
     }
-    let res = zome_call_data.context.block_on(author_entry(
-        &entry.clone(),
-        Some(latest_entry.address().clone()),
-        &zome_call_data.context.clone(),
-    )).map(|_| ());
+    let res = zome_call_data
+        .context
+        .block_on(author_entry(
+            &entry.clone(),
+            Some(latest_entry.address().clone()),
+            &zome_call_data.context.clone(),
+        ))
+        .map(|_| ());
     runtime.store_result(res)
 }

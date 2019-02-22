@@ -124,7 +124,7 @@ pub mod tests {
 
     #[test]
     fn test_new_cap_token_grant_entry() {
-        let empty_functions = HashMap::new();
+        let empty_functions = CapFunctions::new();
         let grant = CapTokenGrant::new(None, empty_functions.clone());
         assert_eq!(grant.cap_type(), CapabilityType::Public);
         let grant = CapTokenGrant::new(Some(Vec::new()), empty_functions.clone());

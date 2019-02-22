@@ -441,8 +441,7 @@ impl EavTestSuite {
             //insert every range
             if s > 1 {
                 expected_all_range.insert(eavi.clone());
-            } else {
-            };
+            }
         });
 
         // get only many one values per specified range

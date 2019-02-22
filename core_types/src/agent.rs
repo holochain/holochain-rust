@@ -39,7 +39,7 @@ impl KeyBuffer {
 
     /// generate a key buffer from raw bytes (no correction)
     pub fn with_raw(b: &[u8; KeyBuffer::KEY_LEN]) -> KeyBuffer {
-        KeyBuffer(b.clone())
+        KeyBuffer(*b)
     }
 
     /// generate a key buffer from raw bytes from two parts (no correction)
@@ -47,13 +47,13 @@ impl KeyBuffer {
         a: &[u8; KeyBuffer::HALF_KEY_LEN],
         b: &[u8; KeyBuffer::HALF_KEY_LEN],
     ) -> KeyBuffer {
-        let mut buf: [u8; KeyBuffer::KEY_LEN] = [0; 64];
-        for i in 0..KeyBuffer::HALF_KEY_LEN {
-            buf[i] = a[i];
-        }
-        for i in 0..KeyBuffer::HALF_KEY_LEN {
-            buf[KeyBuffer::HALF_KEY_LEN + i] = b[i];
-        }
+        let mut buf: [u8; KeyBuffer::KEY_LEN] = [0; KeyBuffer::KEY_LEN];
+
+        buf[..KeyBuffer::HALF_KEY_LEN].clone_from_slice(&a[..KeyBuffer::HALF_KEY_LEN]);
+
+        buf[KeyBuffer::HALF_KEY_LEN..KeyBuffer::KEY_LEN]
+            .clone_from_slice(&b[..KeyBuffer::HALF_KEY_LEN]);
+
         KeyBuffer(buf)
     }
 

@@ -4,7 +4,7 @@ use crate::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
-    workflows::{get_entry_result::get_entry_result_workflow,author_entry::author_entry}
+    workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
 use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
@@ -94,15 +94,12 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     if task_result.is_err() {
         return ribosome_error_code!(Unspecified);
     }
-    let res = zome_call_data
-        .context
-        .block_on(author_entry(
+    let res = zome_call_data.context.block_on(author_entry(
         &entry.clone(),
         Some(latest_entry.address().clone()),
-        &zome_call_data
-        .context.clone()
+        &zome_call_data.context.clone(),
     ));
 
-    println!("res {:?}",res.clone());
+    println!("res {:?}", res.clone());
     runtime.store_result(res)
 }

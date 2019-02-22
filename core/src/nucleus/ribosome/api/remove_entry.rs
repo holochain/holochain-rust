@@ -4,7 +4,7 @@ use crate::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
-    workflows::{get_entry_result::get_entry_result_workflow,author_entry::author_entry}
+    workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
 use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
@@ -90,13 +90,10 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     if result.is_err() {
         return ribosome_error_code!(Unspecified);
     }
-    let res = zome_call_data
-        .context
-        .block_on(author_entry(
+    let res = zome_call_data.context.block_on(author_entry(
         &deletion_entry.clone(),
         Some(deleted_entry_address.clone()),
-        &zome_call_data
-        .context.clone()
+        &zome_call_data.context.clone(),
     ));
 
     runtime.store_result(res)

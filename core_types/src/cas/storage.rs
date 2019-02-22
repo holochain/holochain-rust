@@ -422,7 +422,7 @@ impl EavTestSuite {
         let addresses = vec![many_one.address(), many_two.address()];
 
         //iterate 5 times
-        (0..5).into_iter().for_each(|s| {
+        (0..5).for_each(|s| {
             let alter_index = s % 2;
             let eav =
                 EntityAttributeValueIndex::new(&addresses[alter_index], &attribute, &one.address())
@@ -431,7 +431,7 @@ impl EavTestSuite {
                 .add_eavi(&eav)
                 .expect("could not add eav")
                 .expect("Could not get eavi option");
-            if s.clone() % 2 == 0 {
+            if s % 2 == 0 {
                 //insert many ones
                 expected_many_one.insert(eavi.clone());
             } else {
@@ -439,10 +439,9 @@ impl EavTestSuite {
                 expected_many_two.insert(eavi.clone());
             }
             //insert every range
-            if s.clone() > 1 {
+            if s > 1 {
                 expected_all_range.insert(eavi.clone());
-            } else {
-            };
+            }
         });
 
         // get only many one values per specified range

@@ -84,7 +84,8 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         context.log("debug/net/handle: HandleStoreMeta: got CRUD LINK. processing...");
         // FIXME: block_on hold crud_link metadata in DHT?
 
-        let crud_link: Address = serde_json::from_str(
+        assert_eq!(dht_meta_data.content_list.len(), 1);
+        let crud_link : Address = serde_json::from_str(
             &serde_json::to_string(&dht_meta_data.content_list[0])
                 .expect("dht_meta_data should be EntryWithHeader"),
         )

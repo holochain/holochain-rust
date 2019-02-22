@@ -1,11 +1,10 @@
 use crate::{
     agent::actions::commit::commit_entry,
-    dht::actions::remove_entry::remove_entry,
     nucleus::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
-    workflows::get_entry_result::get_entry_result_workflow,
+    workflows::{get_entry_result::get_entry_result_workflow,author_entry::author_entry}
 };
 use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
@@ -91,17 +90,14 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     if result.is_err() {
         return ribosome_error_code!(Unspecified);
     }
-    let remove_entry_future = remove_entry(
-        &zome_call_data.context,
-        deletion_entry.clone(),
-        deleted_entry_address.clone(),
-    );
-    if remove_entry_future.is_err() {
-        return ribosome_error_code!(Unspecified);
-    }
-    let zome_last = zome_call_data
+    let res = zome_call_data
         .context
-        .block_on(remove_entry_future.unwrap());
+        .block_on(author_entry(
+        &deletion_entry.clone(),
+        Some(deleted_entry_address.clone()),
+        &zome_call_data
+        .context.clone()
+    ));
 
-    runtime.store_result(zome_last)
+    runtime.store_result(res)
 }

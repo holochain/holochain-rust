@@ -1,10 +1,10 @@
 use crate::{
-    agent::actions::{commit::commit_entry, update_entry::update_entry},
+    agent::actions::commit::commit_entry,
     nucleus::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
-    workflows::get_entry_result::get_entry_result_workflow,
+    workflows::{get_entry_result::get_entry_result_workflow,author_entry::author_entry}
 };
 use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
@@ -94,16 +94,15 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     if task_result.is_err() {
         return ribosome_error_code!(Unspecified);
     }
-    let update_entry_future = update_entry(
-        &zome_call_data.context.clone(),
-        entry.clone(),
-        latest_entry.address(),
-    );
-    if update_entry_future.is_err() {
-        return ribosome_error_code!(Unspecified);
-    }
-    let _res = zome_call_data
+    let res = zome_call_data
         .context
-        .block_on(update_entry_future.unwrap());
-    runtime.store_result(task_result)
+        .block_on(author_entry(
+        &entry.clone(),
+        Some(latest_entry.address().clone()),
+        &zome_call_data
+        .context.clone()
+    ));
+
+    println!("res {:?}",res.clone());
+    runtime.store_result(res)
 }

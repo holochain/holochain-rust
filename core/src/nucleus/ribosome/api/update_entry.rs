@@ -98,8 +98,6 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         &entry.clone(),
         Some(latest_entry.address().clone()),
         &zome_call_data.context.clone(),
-    ));
-
-    println!("res {:?}", res.clone());
+    )).map(|_| ());
     runtime.store_result(res)
 }

@@ -60,7 +60,7 @@ impl ChainHeader {
     pub fn new(
         entry_type: &EntryType,
         entry_address: &Address,
-        provenances: &Vec<Provenance>,
+        provenances: &[Provenance],
         link: &Option<Address>,
         link_same_type: &Option<Address>,
         link_crud: &Option<Address>,
@@ -69,7 +69,7 @@ impl ChainHeader {
         ChainHeader {
             entry_type: entry_type.to_owned(),
             entry_address: entry_address.to_owned(),
-            provenances: provenances.clone(),
+            provenances: provenances.to_owned(),
             link: link.to_owned(),
             link_same_type: link_same_type.to_owned(),
             link_crud: link_crud.to_owned(),

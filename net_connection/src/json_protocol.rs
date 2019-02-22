@@ -232,6 +232,7 @@ pub struct FetchMetaResultData {
     #[serde(rename = "entryAddress")]
     pub entry_address: Address,
     pub attribute: String,
+
     // // List of (hash, content) pairs.
     // single string or list of hashs
     #[serde(rename = "contentList")]

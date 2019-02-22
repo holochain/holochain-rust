@@ -139,14 +139,11 @@ impl Zome {
     }
 
     // Helper function for finding out if a given function call is public
-    pub fn is_fn_public(&self, fn_name: &String) -> bool {
-        let pub_trait = ReservedTraitNames::Public.as_str().to_string();
-        self.traits
-            .iter()
-            .find(|(trait_name, trait_fns)| {
-                trait_name.to_string() == pub_trait && trait_fns.functions.contains(fn_name)
-            })
-            .is_some()
+    pub fn is_fn_public(&self, fn_name: &str) -> bool {
+        let pub_trait = ReservedTraitNames::Public.as_str();
+        self.traits.iter().any(|(trait_name, trait_fns)| {
+            trait_name == pub_trait && trait_fns.functions.contains(&fn_name.to_owned())
+        })
     }
 }
 

@@ -3,10 +3,10 @@ use holochain_conductor_api::{
         AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
         LoggerConfiguration, StorageConfiguration,
     },
+    key_loaders::test_key,
     logger::LogRules,
 };
 use holochain_core_types::agent::KeyBuffer;
-use js_test_conductor::test_key;
 use neon::prelude::*;
 use std::{collections::HashMap, path::PathBuf};
 
@@ -72,6 +72,7 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
                 name: agent_name.clone(),
                 public_address: pub_key.render(),
                 key_file: agent_name.clone(),
+                holo_remote_key: None,
             };
             config
         });

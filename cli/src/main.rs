@@ -153,7 +153,7 @@ fn main() {
 fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
-    let project_path = std::env::current_dir().expect("working dir should be available");
+    let project_path = std::env::current_dir().map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
     match args {
         Cli::Package { strip_meta, output } => {
             let output = if output.is_some() {

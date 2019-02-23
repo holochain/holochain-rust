@@ -15,7 +15,7 @@ use std::str;
 
 use serde_derive::{Deserialize, Serialize};
 
-const BLOB_FORMAT_VERSION = 2;
+const BLOB_FORMAT_VERSION: usize = 2;
 
 const BLOB_DATA_LEN_MISALIGN: usize = 1 // version byte
     + sign::PUBLICKEYBYTES
@@ -149,7 +149,7 @@ impl KeyBundle {
         data_buf.write(offset, &[BLOB_FORMAT_VERSION])?;
         offset += 1;
         // Write public signing key
-        data_buf.write(1, corrected_pub_keys.get_sig())?;
+        data_buf.write(offset, corrected_pub_keys.get_sig())?;
         offset += sign::PUBLICKEYBYTES;
         // Write public signing key
         data_buf.write(offset, corrected_pub_keys.get_enc())?;
@@ -159,6 +159,9 @@ impl KeyBundle {
         offset += sign::SECRETKEYBYTES;
         // Write public signing key
         data_buf.write(offset, &**self.enc_priv.read_lock())?;
+        offset += kx::SECRETKEYBYTES;
+        assert_eq!(offset, BLOB_DATA_LEN_MISALIGN);
+
         // encrypt buffer
         let encrypted_blob = util::pw_enc(&mut data_buf, passphrase, config)?;
         let serialized_blob = json::encode(&encrypted_blob).expect("");

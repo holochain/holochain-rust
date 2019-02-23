@@ -375,13 +375,13 @@ impl ConductorApiBuilder {
         self.io
             .add_method("admin/dna/install_from_file", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
-                let id = Self::get_as_string("id", &params_map)?;
+                let id = Self::get_as_string("id", &params_map).ok();
                 let path = Self::get_as_string("path", &params_map)?;
                 let copy = Self::get_as_bool("copy", &params_map).unwrap_or(false);
                 let properties = params_map.get("properties");
                 conductor_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
-                    id.to_string(),
+                    id.map(|i| i.to_string()),
                     copy,
                     properties
                 ))?;

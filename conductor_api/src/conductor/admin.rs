@@ -14,7 +14,7 @@ pub trait ConductorAdmin {
     fn install_dna_from_file(
         &mut self,
         path: PathBuf,
-        id: String,
+        id: Option<String>,
         copy: bool,
         properties: Option<&serde_json::Value>,
     ) -> Result<(), HolochainError>;
@@ -63,7 +63,7 @@ impl ConductorAdmin for Conductor {
     fn install_dna_from_file(
         &mut self,
         path: PathBuf,
-        id: String,
+        id: Option<String>,
         copy: bool,
         properties: Option<&serde_json::Value>,
     ) -> Result<(), HolochainError> {
@@ -96,10 +96,12 @@ impl ConductorAdmin for Conductor {
             .to_str()
             .ok_or(HolochainError::ConfigError("invalid path".into()))?;
 
+        let hash = dna.address().to_string();
+        let id_or_hash = id.clone().unwrap_or(hash.clone());
         let new_dna = DnaConfiguration {
-            id: id.clone(),
+            id: id_or_hash.clone(),
             file: config_path_str.into(),
-            hash: Some(dna.address().to_string()),
+            hash: Some(hash),
         };
 
         let mut new_config = self.config.clone();
@@ -107,7 +109,10 @@ impl ConductorAdmin for Conductor {
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
-        notify(format!("Installed DNA from {} as \"{}\"", path_string, id));
+        notify(format!(
+            "Installed DNA from {} as \"{}\"",
+            path_string, id_or_hash
+        ));
         Ok(())
     }
 
@@ -686,7 +691,7 @@ pattern = '.*'"#
         assert_eq!(
             conductor.install_dna_from_file(
                 new_dna_path.clone(),
-                String::from("new-dna"),
+                Some(String::from("new-dna")),
                 false,
                 None
             ),
@@ -754,7 +759,7 @@ id = 'new-dna'"#,
         assert_eq!(
             conductor.install_dna_from_file(
                 new_dna_path.clone(),
-                String::from("new-dna"),
+                Some(String::from("new-dna")),
                 true,
                 None
             ),
@@ -806,7 +811,7 @@ id = 'new-dna'"#,
         assert_eq!(
             conductor.install_dna_from_file(
                 new_dna_path.clone(),
-                String::from("new-dna-with-props"),
+                Some(String::from("new-dna-with-props")),
                 false,
                 Some(&new_props)
             ),
@@ -818,7 +823,7 @@ id = 'new-dna'"#,
         assert_eq!(
             conductor.install_dna_from_file(
                 new_dna_path.clone(),
-                String::from("new-dna-with-props"),
+                Some(String::from("new-dna-with-props")),
                 true,
                 Some(&new_props)
             ),
@@ -869,7 +874,12 @@ id = 'new-dna'"#,
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
         conductor
-            .install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), false, None)
+            .install_dna_from_file(
+                new_dna_path.clone(),
+                Some(String::from("new-dna")),
+                false,
+                None,
+            )
             .expect("Could not install DNA");
 
         let add_result = conductor.add_instance(

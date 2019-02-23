@@ -2,13 +2,12 @@
 extern crate holochain_sodium;
 use crate::keypair::holochain_sodium::{kx, secbuf::SecBuf, sign};
 use holochain_sodium::random::random_secbuf;
-use holochain_sodium::secbuf::SecBuf;
-// use holochain_sodium::sign::*;
+
 use hcid::*;
 
 use crate::{
     key_bundle,
-    util::{self, PwHashConfig},
+    password_encryption::{self, PwHashConfig},
 };
 use holochain_core_types::error::{HcResult, HolochainError};
 use rustc_serialize::json;

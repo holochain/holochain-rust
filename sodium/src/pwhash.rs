@@ -27,7 +27,7 @@ pub const SALTBYTES: usize = rust_sodium_sys::crypto_pwhash_SALTBYTES as usize;
 ///
 /// @param {i8} algorithm - which hashing algorithm
 ///
-/// @param {SecBuf} salt - predefined salt (randomomiz it if you dont want to generate it )
+/// @param {SecBuf} salt - predefined salt (randomized it if you dont want to generate it )
 ///
 /// @param {SecBuf} hash - the hash generated
 pub fn hash(

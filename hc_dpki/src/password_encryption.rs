@@ -8,34 +8,47 @@ pub type PwHashAlgo = i8;
 
 pub struct PwHashConfig(pub OpsLimit, pub MemLimit, pub PwHashAlgo);
 
-/// Simplify the api for generating a password hash with our set parameters
+
+/// Struct holding the result of a passphrase encryption
+#[derive(RustcDecodable, RustcEncodable)]
+pub(crate) struct EncryptedData {
+    pub salt: Vec<u8>,
+    pub nonce: Vec<u8>,
+    pub cipher: Vec<u8>,
+}
+
+
+/// Simplify the API for generating a password hash with our set parameters
 /// @param {SecBuf} pass - the password buffer to hash
 /// @param {SecBuf} salt - if specified, hash with this salt (otherwise random)
 /// @param {SecBuf} -  Empty hash buf
-pub fn pw_hash(
+/// TODO make salt optional
+pub(crate) fn pw_hash(
     password: &mut SecBuf,
     salt: &mut SecBuf,
-    hash: &mut SecBuf,
+    hash_result: &mut SecBuf,
     config: Option<PwHashConfig>,
 ) -> HcResult<()> {
+    debug_assert!(is_secbuf_empty(hash_result));
     let config = config.unwrap_or(PwHashConfig(
         pwhash::OPSLIMIT_SENSITIVE,
         pwhash::MEMLIMIT_SENSITIVE,
         pwhash::ALG_ARGON2ID13,
     ));
-    pwhash::hash(password, config.0, config.1, config.2, salt, hash)?;
+    pwhash::hash(password, config.0, config.1, config.2, salt, hash_result)?;
+    debug_assert!(!is_secbuf_empty(hash_result));
     Ok(())
 }
 
 /// Helper for encrypting a buffer with a pwhash-ed passphrase
 /// @param {Buffer} data
 /// @param {string} passphrase
-/// @return {bundle::ReturnBundleData} - the encrypted data
-pub fn pw_enc(
+/// @return {BlobData} - the encrypted data
+pub(crate) fn pw_enc(
     data: &mut SecBuf,
     passphrase: &mut SecBuf,
     config: Option<PwHashConfig>,
-) -> HcResult<key_bundle::ReturnBlobData> {
+) -> HcResult<EncryptedData> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
     holochain_sodium::random::random_secbuf(&mut salt);
@@ -48,64 +61,33 @@ pub fn pw_enc(
     let salt = salt.read_lock().to_vec();
     let nonce = nonce.read_lock().to_vec();
     let cipher = cipher.read_lock().to_vec();
-    let data = key_bundle::ReturnBlobData {
-        salt,
-        nonce,
-        cipher,
-    };
-    Ok(data)
+    // Done
+    Ok(EncryptedData { salt, nonce, cipher })
 }
 
 /// Helper for decrypting a buffer with a pwhash-ed passphrase
 /// @param {Buffer} data
 /// @param {string} passphrase
 /// @param {SecBuf} - the decrypted data
-pub fn pw_dec(
-    return_blob: &key_bundle::ReturnBlobData,
+pub(crate) fn pw_dec(
+    encrypted_data: &EncryptedData,
     passphrase: &mut SecBuf,
     decrypted_data: &mut SecBuf,
     config: Option<PwHashConfig>,
 ) -> HcResult<()> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
-    convert_vec_to_secbuf(&return_blob.salt, &mut salt);
-    let mut nonce = SecBuf::with_insecure(return_blob.nonce.len());
-    convert_vec_to_secbuf(&return_blob.nonce, &mut nonce);
-    let mut cipher = SecBuf::with_insecure(return_blob.cipher.len());
-    convert_vec_to_secbuf(&return_blob.cipher, &mut cipher);
+    vec_to_secbuf(&encrypted_data.salt, &mut salt);
+    let mut nonce = SecBuf::with_insecure(encrypted_data.nonce.len());
+    vec_to_secbuf(&encrypted_data.nonce, &mut nonce);
+    let mut cipher = SecBuf::with_insecure(encrypted_data.cipher.len());
+    vec_to_secbuf(&encrypted_data.cipher, &mut cipher);
     pw_hash(passphrase, &mut salt, &mut secret, config)?;
     aead::dec(decrypted_data, &mut secret, None, &mut nonce, &mut cipher)?;
     Ok(())
 }
 
-/// Load the Vec<u8> into the SecBuf
-pub fn convert_vec_to_secbuf(data: &Vec<u8>, buf: &mut SecBuf) {
-    let mut buf = buf.write_lock();
-    for x in 0..data.len() {
-        buf[x] = data[x];
-    }
-}
 
-/// Load the [u8] into the SecBuf
-pub fn convert_array_to_secbuf(data: &[u8], buf: &mut SecBuf) {
-    let mut buf = buf.write_lock();
-    for x in 0..data.len() {
-        buf[x] = data[x];
-    }
-}
-
-
-/// Check if the buffer is empty i.e. [0,0,0,0,0,0,0,0]
-pub fn check_if_wrong_secbuf(buf: &mut SecBuf) -> bool {
-    let buf = buf.read_lock();
-    println!("Buf{:?}", *buf);
-    for i in 0..buf.len() {
-        if buf[i] != 0 {
-            return true;
-        }
-    }
-    return false;
-}
 
 #[cfg(test)]
 mod tests {
@@ -132,29 +114,29 @@ mod tests {
             password[0] = 42;
             password[1] = 222;
         }
-        let mut blob =
+        let mut encrypted_data =
             pw_enc(&mut data, &mut password, TEST_CONFIG).unwrap();
 
-        let mut dec_mess = SecBuf::with_insecure(32);
-        pw_dec(&mut blob, &mut password, &mut dec_mess, TEST_CONFIG).unwrap();
+        let mut decrypted_data = SecBuf::with_insecure(32);
+        pw_dec(&mut encrypted_data, &mut password, &mut decrypted_data, TEST_CONFIG).unwrap();
 
         let data = data.read_lock();
-        let dec_mess = dec_mess.read_lock();
-        assert_eq!(format!("{:?}", *dec_mess), format!("{:?}", *data));
+        let decrypted_data = decrypted_data.read_lock();
+        assert_eq!(format!("{:?}", *decrypted_data), format!("{:?}", *data));
     }
 
     #[test]
     fn it_should_generate_pw_hash_with_salt() {
         let mut password = SecBuf::with_insecure(pwhash::HASHBYTES);
-        let mut pw2_hash = SecBuf::with_insecure(pwhash::HASHBYTES);
+        let mut hashed_password = SecBuf::with_insecure(pwhash::HASHBYTES);
         {
             let mut password = password.write_lock();
             password[0] = 42;
             password[1] = 222;
         }
         let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
-        pw_hash(&mut password, &mut salt, &mut pw2_hash, TEST_CONFIG).unwrap();
-        let pw2_hash = pw2_hash.read_lock();
+        pw_hash(&mut password, &mut salt, &mut hashed_password, TEST_CONFIG).unwrap();
+        let pw2_hash = hashed_password.read_lock();
         assert_eq!("[134, 156, 170, 171, 184, 19, 40, 158, 64, 227, 105, 252, 59, 175, 119, 226, 77, 238, 49, 61, 27, 174, 47, 246, 179, 168, 88, 200, 65, 11, 14, 159]",  format!("{:?}", *pw2_hash));
     }
 

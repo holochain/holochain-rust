@@ -10,4 +10,4 @@ extern crate hcid;
 pub mod key_bundle;
 pub mod error;
 pub mod keypair;
-pub mod util;
+pub mod password_encryption;

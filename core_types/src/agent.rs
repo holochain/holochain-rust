@@ -124,11 +124,7 @@ impl AgentId {
         }
     }
 
-    pub fn decode_key(&self) -> String {
-        let codec = with_hcs0().expect("HCID failed miserably.");
-        let bytes = codec.decode(&self.key_b32).expect("AgentID key decoding failed. Key was not properly encoded.");
-        str::from_utf8(&bytes).expect("AgentID key decoding failed.").to_string()
-    }
+
 
 
 //    /// get a key buffer based on this agent's key (no correction)

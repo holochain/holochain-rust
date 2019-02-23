@@ -6,10 +6,11 @@ edition = "2018"
 
 [dependencies]
 arrayref = "0.3.5"
-base64 = "0.10.0"
+#base64 = "0.10.0"
 holochain_core_types = { path = "../core_types" }
 holochain_sodium = { path = "../sodium" }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 rustc-serialize = "0.3.24"
+hcid = "0.0.3-alpha"

@@ -1,5 +1,5 @@
-use crate::bundle;
-use holochain_core_types::error::HolochainError;
+use crate::key_bundle;
+use holochain_core_types::error::HcResult;
 use holochain_sodium::{aead, kx, pwhash, secbuf::SecBuf};
 
 pub type OpsLimit = u64;
@@ -8,19 +8,16 @@ pub type PwHashAlgo = i8;
 
 pub struct PwHashConfig(pub OpsLimit, pub MemLimit, pub PwHashAlgo);
 
-/// simplify the api for generating a password hash with our set parameters
-///
+/// Simplify the api for generating a password hash with our set parameters
 /// @param {SecBuf} pass - the password buffer to hash
-///
 /// @param {SecBuf} salt - if specified, hash with this salt (otherwise random)
-///
 /// @param {SecBuf} -  Empty hash buf
 pub fn pw_hash(
     password: &mut SecBuf,
     salt: &mut SecBuf,
     hash: &mut SecBuf,
     config: Option<PwHashConfig>,
-) -> Result<(), HolochainError> {
+) -> HcResult<()> {
     let config = config.unwrap_or(PwHashConfig(
         pwhash::OPSLIMIT_SENSITIVE,
         pwhash::MEMLIMIT_SENSITIVE,
@@ -31,17 +28,14 @@ pub fn pw_hash(
 }
 
 /// Helper for encrypting a buffer with a pwhash-ed passphrase
-///
 /// @param {Buffer} data
-///
 /// @param {string} passphrase
-///
 /// @return {bundle::ReturnBundleData} - the encrypted data
 pub fn pw_enc(
     data: &mut SecBuf,
     passphrase: &mut SecBuf,
     config: Option<PwHashConfig>,
-) -> Result<bundle::ReturnBundleData, HolochainError> {
+) -> HcResult<key_bundle::ReturnBlobData> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
     holochain_sodium::random::random_secbuf(&mut salt);
@@ -54,7 +48,7 @@ pub fn pw_enc(
     let salt = salt.read_lock().to_vec();
     let nonce = nonce.read_lock().to_vec();
     let cipher = cipher.read_lock().to_vec();
-    let data = bundle::ReturnBundleData {
+    let data = key_bundle::ReturnBlobData {
         salt,
         nonce,
         cipher,
@@ -63,25 +57,22 @@ pub fn pw_enc(
 }
 
 /// Helper for decrypting a buffer with a pwhash-ed passphrase
-///
 /// @param {Buffer} data
-///
 /// @param {string} passphrase
-///
 /// @param {SecBuf} - the decrypted data
 pub fn pw_dec(
-    bundle: &bundle::ReturnBundleData,
+    return_blob: &key_bundle::ReturnBlobData,
     passphrase: &mut SecBuf,
     decrypted_data: &mut SecBuf,
     config: Option<PwHashConfig>,
-) -> Result<(), HolochainError> {
+) -> HcResult<()> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
-    convert_vec_to_secbuf(&bundle.salt, &mut salt);
-    let mut nonce = SecBuf::with_insecure(bundle.nonce.len());
-    convert_vec_to_secbuf(&bundle.nonce, &mut nonce);
-    let mut cipher = SecBuf::with_insecure(bundle.cipher.len());
-    convert_vec_to_secbuf(&bundle.cipher, &mut cipher);
+    convert_vec_to_secbuf(&return_blob.salt, &mut salt);
+    let mut nonce = SecBuf::with_insecure(return_blob.nonce.len());
+    convert_vec_to_secbuf(&return_blob.nonce, &mut nonce);
+    let mut cipher = SecBuf::with_insecure(return_blob.cipher.len());
+    convert_vec_to_secbuf(&return_blob.cipher, &mut cipher);
     pw_hash(passphrase, &mut salt, &mut secret, config)?;
     aead::dec(decrypted_data, &mut secret, None, &mut nonce, &mut cipher)?;
     Ok(())
@@ -103,57 +94,6 @@ pub fn convert_array_to_secbuf(data: &[u8], buf: &mut SecBuf) {
     }
 }
 
-///// Generate an identity string with a pair of public keys
-/////
-///// @param {SecBuf} signPub - singing public key
-/////
-///// @param {SecBuf} encPub - encryption public key
-/////
-///// @param {SecBuf} id
-//pub fn encode_id(sign_pub: &mut SecBuf, enc_pub: &mut SecBuf) -> String {
-//    let sign_pub = sign_pub.read_lock();
-//    let enc_pub = enc_pub.read_lock();
-//    let sp = &*sign_pub;
-//    let ep = &*enc_pub;
-//    KeyBuffer::with_raw_parts(array_ref![sp, 0, 32], array_ref![ep, 0, 32]).render()
-//}
-pub fn encode_id(sign_pub: &mut SecBuf, enc_pub: &mut SecBuf) -> ([u8; 32], [u8; 32]) {
-    let sign_pub = sign_pub.read_lock();
-    let enc_pub = enc_pub.read_lock();
-    let sp = &*sign_pub;
-    let ep = &*enc_pub;
-    (array_ref![sp, 0, 32], array_ref![ep, 0, 32])
-}
-
-//
-///// break an identity string up into a pair of public keys
-/////
-///// @param {string} id
-/////
-///// @param {SecBuf} signPub - Empty singing public key
-/////
-///// @param {SecBuf} encPub - Empty encryption public key
-//pub fn decode_id(
-//    key: String,
-//    sign_pub: &mut SecBuf,
-//    enc_pub: &mut SecBuf,
-//) -> Result<(), HolochainError> {
-//    let id = &KeyBuffer::with_corrected(&key)?;
-//
-//    let mut sign_pub = sign_pub.write_lock();
-//    let mut enc_pub = enc_pub.write_lock();
-//
-//    let sig = id.get_sig();
-//    let enc = id.get_enc();
-//
-//    for x in 0..sign_pub.len() {
-//        sign_pub[x] = sig[x];
-//    }
-//    for x in 0..enc_pub.len() {
-//        enc_pub[x] = enc[x];
-//    }
-//    Ok(())
-//}
 
 /// Check if the buffer is empty i.e. [0,0,0,0,0,0,0,0]
 pub fn check_if_wrong_secbuf(buf: &mut SecBuf) -> bool {
@@ -192,11 +132,11 @@ mod tests {
             password[0] = 42;
             password[1] = 222;
         }
-        let mut bundle: bundle::ReturnBundleData =
+        let mut blob =
             pw_enc(&mut data, &mut password, TEST_CONFIG).unwrap();
 
         let mut dec_mess = SecBuf::with_insecure(32);
-        pw_dec(&mut bundle, &mut password, &mut dec_mess, TEST_CONFIG).unwrap();
+        pw_dec(&mut blob, &mut password, &mut dec_mess, TEST_CONFIG).unwrap();
 
         let data = data.read_lock();
         let dec_mess = dec_mess.read_lock();

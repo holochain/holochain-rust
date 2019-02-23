@@ -5,8 +5,9 @@
 
 #[macro_use]
 extern crate arrayref;
+extern crate hcid;
 
-pub mod bundle;
+pub mod key_bundle;
 pub mod error;
 pub mod keypair;
 pub mod util;

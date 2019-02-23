@@ -1,7 +1,7 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_dpki::{
-    bundle::KeyBundle,
+    key_bundle::KeyBlob,
     keypair::{KeyPairPair, SEED_SIZE},
 };
 use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
@@ -39,7 +39,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         .write(0, passphrase_bytes)
         .expect("SecBuf must be writeable");
 
-    let bundle: KeyBundle = keypair
+    let blob = keypair
         .get_bundle(&mut passphrase_buf, "hint".to_string(), None)
         .unwrap();
 
@@ -52,7 +52,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     };
 
     let mut file = File::create(path.clone())?;
-    file.write_all(serde_json::to_string(&bundle).unwrap().as_bytes())?;
+    file.write_all(serde_json::to_string(&blob).unwrap().as_bytes())?;
     println!("");
     println!("Succesfully created new agent keys.");
     println!("");
@@ -66,7 +66,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use holochain_dpki::bundle::KeyBundle;
+    use holochain_dpki::key_bundle::KeyBlob;
     use std::{
         fs::{remove_file, File},
         path::PathBuf,
@@ -83,7 +83,7 @@ pub mod test {
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
 
-        let bundle: KeyBundle = serde_json::from_str(&contents).unwrap();
+        let bundle: KeyBlob = serde_json::from_str(&contents).unwrap();
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
         let keypair = KeyPairPair::from_bundle(&bundle, &mut passphrase, None);
 

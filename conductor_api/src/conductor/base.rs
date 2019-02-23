@@ -21,7 +21,7 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{bundle::KeyBundle, keypair::KeyPairPair};
+use holochain_dpki::{key_bundle::KeyBlob, keypair::KeyPairPair};
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
@@ -570,7 +570,7 @@ impl Conductor {
         let mut file = File::open(file)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let bundle: KeyBundle = serde_json::from_str(&contents)?;
+        let blob: KeyBlob = serde_json::from_str(&contents)?;
 
         // Prompt for passphrase
         let mut passphrase_string = rpassword::read_password_from_tty(Some("Passphrase: "))?;
@@ -587,7 +587,7 @@ impl Conductor {
             *byte = 0u8;
         }
 
-        KeyPairPair::from_bundle(&bundle, &mut passphrase_buf, None)
+        KeyPairPair::from_blob(&blob, &mut passphrase_buf, None)
     }
 
     fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {

@@ -5,9 +5,6 @@
 
 #[macro_use]
 extern crate arrayref;
-//extern crate hcid;
-//extern crate base64;
-//extern crate holochain_sodium;
 
 pub mod error;
 pub mod key_bundle;

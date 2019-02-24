@@ -35,7 +35,7 @@ pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
     seed.write(0, seed_bytes.as_slice())
         .expect("SecBuf must be writeable");
 
-    // Create keypair from seed
+    // Create KeyBundle from seed
     let keybundle = KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap();
     let agent_id = AgentId::new(&nick, keybundle.get_id());
 
@@ -56,13 +56,13 @@ pub fn mock_signer(payload: String, agent_id: &AgentId) -> String {
         .get(&agent_id.address())
         .expect("Test agent keys need to be registered first")
         .lock()
-        .map(|mut keypair| {
+        .map(|mut keybundle| {
             // Convert payload string into a SecBuf
             let mut message = SecBuf::with_insecure_from_string(payload);
 
             // Create signature
             let mut message_signed = SigningKeyPair::create_secbuf();
-            keypair.sign(&mut message, &mut message_signed).unwrap();
+            keybundle.sign(&mut message, &mut message_signed).unwrap();
             let message_signed = message_signed.read_lock();
 
             // Return as base64 encoded string

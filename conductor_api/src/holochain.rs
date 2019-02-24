@@ -20,7 +20,7 @@
 //!     agent::{AgentId, KeyBuffer},
 //!     dna::{Dna, capabilities::CapabilityCall},
 //!     json::JsonString};
-//! use holochain_dpki::keypair::{Keypair, SEEDSIZE};
+//! use holochain_dpki::{key_bundle::KeyBundle, utils::SEED_SIZE};
 //! use holochain_sodium::secbuf::SecBuf;
 //!
 //! use std::sync::{Arc, Mutex};
@@ -48,7 +48,7 @@
 //!
 //! // The instance needs a conductor API with at least the signing callback:
 //! let conductor_api = interface::ConductorApiBuilder::new()
-//!     .with_agent_signature_callback(Arc::new(Mutex::new(keypair)))
+//!     .with_agent_signature_callback(Arc::new(Mutex::new(keybundle)))
 //!     .spawn();
 //!
 //! // The conductor API, together with the storage and the agent ID

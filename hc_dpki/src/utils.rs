@@ -3,7 +3,7 @@ use holochain_core_types::{agent::Base32, error::HcResult};
 use holochain_sodium::{secbuf::SecBuf, sign};
 use std::str;
 
-pub const SEED_SIZE: usize = 32;
+pub(crate) const SEED_SIZE: usize = 32;
 
 ///
 pub(crate) fn decode_pub_key_into_secbuf(

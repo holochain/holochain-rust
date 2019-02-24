@@ -21,7 +21,7 @@
 //!     dna::{Dna, capabilities::CapabilityCall},
 //!     json::JsonString};
 //! use holochain_dpki::keypair::{Keypair, SEEDSIZE};
-//! use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
+//! use holochain_sodium::secbuf::SecBuf;
 //!
 //! use std::sync::{Arc, Mutex};
 //! use tempfile::tempdir;
@@ -39,7 +39,8 @@
 //! // We need to provide a cryptographic key that represents the agent.
 //! // Creating a new random one on the fly:
 //! let mut seed = SecBuf::with_insecure(SEEDSIZE);
-//! random_secbuf(&mut seed);
+//! seed.randomize();
+//!
 //! let keypair = Keypair::new_from_seed(&mut seed).unwrap();
 //! let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
 //!

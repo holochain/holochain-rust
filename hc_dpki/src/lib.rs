@@ -6,8 +6,11 @@
 #[macro_use]
 extern crate arrayref;
 extern crate hcid;
+extern crate base64;
+extern crate holochain_sodium;
 
 pub mod key_bundle;
 pub mod error;
 pub mod keypair;
 pub mod password_encryption;
+// pub mod secbuf_utils;

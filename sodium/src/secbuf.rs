@@ -234,13 +234,46 @@ impl SecBuf {
         if offset + data.len() > self.len() {
             return Err(SodiumError::new("bad write offset / length"));
         }
-
         unsafe {
             let mut b = self.write_lock();
             std::ptr::copy(data.as_ptr(), (**b).as_mut_ptr().add(offset), data.len());
         }
-
         Ok(())
+    }
+
+    /// Check if the buffer is empty i.e. [0,0,0,0,0,0,0,0]
+    pub fn is_empty(&mut self) -> bool {
+        let buf = self.read_lock();
+        // println!("Buf{:?}", *buf);
+        for i in 0..buf.len() {
+            if buf[i] != 0 {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Load the [u8] into the SecBuf
+    pub fn from_array(&mut self, data: &[u8]) -> Result<(), SodiumError> {
+        if (data.len() !=  self.len()) {
+            return Err(SodiumError::Generic("Input does not have same size as SecBuf".to_string()));
+        }
+        let mut buf = self.write_lock();
+        for x in 0..data.len() {
+            buf[x] = data[x];
+        }
+        Ok(())
+    }
+
+    /// Dump the content of the SecBuf in a Vec
+    pub fn dump(&mut self) -> Vec<u8> {
+        let size = self.len();
+        let mut output = Vec::with_capacity(size);
+        let mut buf = self.write_lock();
+        for x in 0..size {
+            output.push(buf[x]);
+        }
+        output
     }
 }
 

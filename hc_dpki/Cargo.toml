@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 arrayref = "0.3.5"
-#base64 = "0.10.0"
+base64 = "0.10.0"
 holochain_core_types = { path = "../core_types" }
 holochain_sodium = { path = "../sodium" }
 serde = "1.0"

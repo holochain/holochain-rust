@@ -90,7 +90,7 @@ pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut Sec
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::random::random_secbuf;
+
     #[test]
     fn it_should_get_true_on_good_verify() {
         let mut seed = SecBuf::with_secure(32);
@@ -98,12 +98,12 @@ mod tests {
         let mut secret_key = SecBuf::with_secure(64);
         let mut signature = SecBuf::with_secure(64);
 
-        random_secbuf(&mut seed);
+        seed.randomize();
 
         seed_keypair(&mut public_key, &mut secret_key, &mut seed).unwrap();
 
         let mut message = SecBuf::with_insecure(32);
-        random_secbuf(&mut message);
+        message.randomize();
 
         sign(&mut message, &mut secret_key, &mut signature).unwrap();
         {
@@ -119,15 +119,15 @@ mod tests {
         let mut secret_key = SecBuf::with_secure(64);
         let mut signature = SecBuf::with_secure(64);
 
-        random_secbuf(&mut seed);
+        seed.randomize();
 
         seed_keypair(&mut public_key, &mut secret_key, &mut seed).unwrap();
 
         let mut message = SecBuf::with_insecure(32);
-        random_secbuf(&mut message);
+        message.randomize();
 
         let mut fake_message = SecBuf::with_insecure(32);
-        random_secbuf(&mut fake_message);
+        fake_message.randomize();
 
         sign(&mut message, &mut secret_key, &mut signature).unwrap();
 

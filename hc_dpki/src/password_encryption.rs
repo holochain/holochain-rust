@@ -1,6 +1,6 @@
-use crate::key_bundle;
 use holochain_core_types::error::HcResult;
 use holochain_sodium::{aead, kx, pwhash, secbuf::SecBuf};
+use crate::secbuf_utils::*;
 
 pub type OpsLimit = u64;
 pub type MemLimit = usize;
@@ -35,7 +35,7 @@ pub(crate) fn pw_hash(
         pwhash::MEMLIMIT_SENSITIVE,
         pwhash::ALG_ARGON2ID13,
     ));
-    pwhash::hash(password, config.0, config.1, config.2, salt, hash_result)?;
+    pwhash::hash(password, config.0, config.1, config.2, salt, hash_result);
     debug_assert!(!is_secbuf_empty(hash_result));
     Ok(())
 }
@@ -51,9 +51,9 @@ pub(crate) fn pw_enc(
 ) -> HcResult<EncryptedData> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
-    holochain_sodium::random::random_secbuf(&mut salt);
+    salt.randomize();
     let mut nonce = SecBuf::with_insecure(aead::NONCEBYTES);
-    holochain_sodium::random::random_secbuf(&mut nonce);
+    nonce.randomize();
     let mut cipher = SecBuf::with_insecure(data.len() + aead::ABYTES);
     pw_hash(passphrase, &mut salt, &mut secret, config)?;
     aead::enc(data, &mut secret, None, &mut nonce, &mut cipher)?;
@@ -92,7 +92,6 @@ pub(crate) fn pw_dec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use holochain_sodium::random::random_secbuf;
 
     const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
         pwhash::OPSLIMIT_INTERACTIVE,
@@ -100,19 +99,25 @@ mod tests {
         pwhash::ALG_ARGON2ID13,
     ));
 
-    #[test]
-    fn it_should_encrypt_data() {
-        let mut data = SecBuf::with_insecure(32);
-        {
-            let mut data = data.write_lock();
-            data[0] = 88;
-            data[1] = 101;
-        }
+    fn test_password() -> SecBuf {
         let mut password = SecBuf::with_insecure(pwhash::HASHBYTES);
         {
             let mut password = password.write_lock();
             password[0] = 42;
             password[1] = 222;
+        }
+        password
+    }
+
+
+    #[test]
+    fn it_should_encrypt_data() {
+        let mut password = test_password();
+        let mut data = SecBuf::with_insecure(32);
+        {
+            let mut data = data.write_lock();
+            data[0] = 88;
+            data[1] = 101;
         }
         let mut encrypted_data =
             pw_enc(&mut data, &mut password, TEST_CONFIG).unwrap();
@@ -127,39 +132,20 @@ mod tests {
 
     #[test]
     fn it_should_generate_pw_hash_with_salt() {
-        let mut password = SecBuf::with_insecure(pwhash::HASHBYTES);
+        let mut password = test_password();
         let mut hashed_password = SecBuf::with_insecure(pwhash::HASHBYTES);
-        {
-            let mut password = password.write_lock();
-            password[0] = 42;
-            password[1] = 222;
-        }
         let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
+        println!("salt = {:?}", salt);
         pw_hash(&mut password, &mut salt, &mut hashed_password, TEST_CONFIG).unwrap();
+        println!("salt = {:?}", salt);
         let pw2_hash = hashed_password.read_lock();
-        assert_eq!("[134, 156, 170, 171, 184, 19, 40, 158, 64, 227, 105, 252, 59, 175, 119, 226, 77, 238, 49, 61, 27, 174, 47, 246, 179, 168, 88, 200, 65, 11, 14, 159]",  format!("{:?}", *pw2_hash));
+        assert_eq!(
+            "[134, 156, 170, 171, 184, 19, 40, 158, 64, 227, 105, 252, 59, 175, 119, 226, 77, 238, 49, 61, 27, 174, 47, 246, 179, 168, 88, 200, 65, 11, 14, 159]",
+            format!("{:?}", *pw2_hash),
+        );
+
+        // TODO
+        // hash again, should have different result
     }
 
-    #[test]
-    fn it_should_decode_to_create_pub_key() {
-        let mut sign_pub = SecBuf::with_insecure(32);
-        random_secbuf(&mut sign_pub);
-
-        let mut enc_pub = SecBuf::with_insecure(32);
-        random_secbuf(&mut enc_pub);
-
-        let enc: String = encode_id(&mut sign_pub, &mut enc_pub);
-
-        let mut sign_pub_dec = SecBuf::with_insecure(32);
-        let mut enc_pub_dec = SecBuf::with_insecure(32);
-
-        decode_id(enc, &mut sign_pub_dec, &mut enc_pub_dec).unwrap();
-
-        let sign_pub = sign_pub.read_lock();
-        let enc_pub = enc_pub.read_lock();
-        let sign_pub_dec = sign_pub_dec.read_lock();
-        let enc_pub_dec = enc_pub_dec.read_lock();
-        assert_eq!(format!("{:?}", *sign_pub), format!("{:?}", *sign_pub_dec));
-        assert_eq!(format!("{:?}", *enc_pub), format!("{:?}", *enc_pub_dec));
-    }
 }

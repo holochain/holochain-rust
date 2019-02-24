@@ -269,7 +269,8 @@ impl SecBuf {
     pub fn dump(&mut self) -> Vec<u8> {
         let size = self.len();
         let mut output = Vec::with_capacity(size);
-        let mut buf = self.write_lock();
+
+        let mut buf = self.read_lock();
         for x in 0..size {
             output.push(buf[x]);
         }

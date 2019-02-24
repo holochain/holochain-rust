@@ -18,6 +18,7 @@ pub const SIGNATURE_SIZE: usize = 64;
 
 pub type Base32 = String;
 
+///
 fn decode_pub_key_into_secbuf(pub_key_b32: &str, codec: &HcidEncoding) -> HcResult<SecBuf> {
     // Decode Base32 public key
     let pub_key =     codec.decode(pub_key_b32)?;
@@ -32,6 +33,7 @@ fn decode_pub_key_into_secbuf(pub_key_b32: &str, codec: &HcidEncoding) -> HcResu
     Ok(pub_key_sec)
 }
 
+///
 fn encode_pub_key(pub_key_sec: &mut SecBuf, codec: &HcidEncoding) -> HcResult<Base32> {
     let locker = pub_key_sec.read_lock();
     let pub_buf = &*locker;
@@ -92,6 +94,11 @@ impl KeyPair {
     pub fn new(public: Base32, private: SecBuf) -> Self {
         KeyPair { public, private }
     }
+
+    pub fn is_same(&mut self, other: &mut KeyPair) -> bool {
+        self.public == other.public  &&
+            self.private.dump() == other.private.dump()
+    }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -139,6 +146,7 @@ impl SigningKeyPair {
     /// @param {SecBuf} data - the data to sign
     /// @param {SecBuf} signature - Empty Buf to be filled with the signature
     pub fn sign(&mut self, data: &mut SecBuf, signature: &mut SecBuf) -> HcResult<()> {
+
         holochain_sodium::sign::sign(data, &mut self.keypair.private, signature)?;
         Ok(())
     }
@@ -162,10 +170,6 @@ pub struct EncryptingKeyPair {
     pub keypair: KeyPair,
 }
 
-impl EncryptingKeyPair {
-
-}
-
 impl KeyPairable for EncryptingKeyPair {
     fn public(&self) -> String { self.keypair.public.clone() }
     // fn private(&self) -> SecBuf { self.keypair.private.clone() }
@@ -176,7 +180,6 @@ impl KeyPairable for EncryptingKeyPair {
 }
 
 impl EncryptingKeyPair {
-
     /// Standard Constructor
     pub fn new(public: String, private: SecBuf) -> Self {
         EncryptingKeyPair { keypair: KeyPair::new(public, private) }

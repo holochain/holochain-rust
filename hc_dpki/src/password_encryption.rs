@@ -1,6 +1,5 @@
 use holochain_core_types::error::HcResult;
 use holochain_sodium::{aead, kx, pwhash, secbuf::SecBuf};
-use crate::secbuf_utils::*;
 
 pub type OpsLimit = u64;
 pub type MemLimit = usize;
@@ -29,14 +28,14 @@ pub(crate) fn pw_hash(
     hash_result: &mut SecBuf,
     config: Option<PwHashConfig>,
 ) -> HcResult<()> {
-    debug_assert!(is_secbuf_empty(hash_result));
+    debug_assert!(hash_result.is_empty());
     let config = config.unwrap_or(PwHashConfig(
         pwhash::OPSLIMIT_SENSITIVE,
         pwhash::MEMLIMIT_SENSITIVE,
         pwhash::ALG_ARGON2ID13,
     ));
-    pwhash::hash(password, config.0, config.1, config.2, salt, hash_result);
-    debug_assert!(!is_secbuf_empty(hash_result));
+    pwhash::hash(password, config.0, config.1, config.2, salt, hash_result)?;
+    debug_assert!(!hash_result.is_empty());
     Ok(())
 }
 
@@ -77,11 +76,11 @@ pub(crate) fn pw_dec(
 ) -> HcResult<()> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
-    vec_to_secbuf(&encrypted_data.salt, &mut salt);
+    salt.from_array(&encrypted_data.salt).expect("Failed to write SecBuf with array");
     let mut nonce = SecBuf::with_insecure(encrypted_data.nonce.len());
-    vec_to_secbuf(&encrypted_data.nonce, &mut nonce);
+    nonce.from_array(&encrypted_data.nonce).expect("Failed to write SecBuf with array");
     let mut cipher = SecBuf::with_insecure(encrypted_data.cipher.len());
-    vec_to_secbuf(&encrypted_data.cipher, &mut cipher);
+    cipher.from_array(&encrypted_data.cipher).expect("Failed to write SecBuf with array");
     pw_hash(passphrase, &mut salt, &mut secret, config)?;
     aead::dec(decrypted_data, &mut secret, None, &mut nonce, &mut cipher)?;
     Ok(())

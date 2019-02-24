@@ -1,8 +1,8 @@
+use crate::SEED_SIZE;
 use hcid::*;
 use holochain_core_types::{agent::Base32, error::HcResult};
 use holochain_sodium::{secbuf::SecBuf, sign};
 use std::str;
-use crate::SEED_SIZE;
 
 ///
 pub(crate) fn decode_pub_key_into_secbuf(

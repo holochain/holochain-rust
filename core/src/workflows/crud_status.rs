@@ -17,11 +17,13 @@ pub async fn crud_status_workflow<'a>(
     match crud_status {
         CrudStatus::Modified => await!(update_crud_status(context, address)),
         CrudStatus::Deleted => await!(remove_crud_status(context, address)),
+        CrudStatus::Live => Ok(()),
         _ => Err(HolochainError::NotImplemented(
             "Crud Status Not Implemented".to_string(),
         )),
     }
 }
+
 
 pub async fn crud_link_workflow<'a>(
     context: &'a Arc<Context>,

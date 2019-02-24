@@ -132,7 +132,15 @@ fn reduce_publish_inner(
         let entry_type = entry_with_header.entry.entry_type().clone();
     println!("entry type{:?}",entry_type);
     match entry_with_header.entry.entry_type() {
-        EntryType::AgentId => publish_entry(network_state, &entry_with_header),
+        EntryType::AgentId => publish_entry(network_state, &entry_with_header).and_then(|_| {
+            let crud = if maybe_crud_link.is_some() {CrudStatus::Modified} else {CrudStatus::Live};
+            publish_crud_meta(
+                network_state,
+                entry_with_header.entry.address(),
+                crud,
+                maybe_crud_link,
+            )
+        }),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
             let crud = if maybe_crud_link.is_some() {CrudStatus::Modified} else {CrudStatus::Live};
             publish_crud_meta(

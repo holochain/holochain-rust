@@ -194,7 +194,8 @@ impl Waiter {
                             Entry::Deletion(deleted_entry) => {
                                 checker.add(num_instances, move |aw| match aw.action() {
                                     Action::RemoveEntry(_) => {
-                                        deleted_entry.address() == committed_entry.address()
+                                        deleted_entry.deleted_entry_address()
+                                            == committed_entry.address()
                                     }
                                     _ => false,
                                 });

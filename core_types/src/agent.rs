@@ -7,14 +7,13 @@ use crate::{
     json::JsonString,
 };
 
-use std::{convert::TryFrom, str};
 use crate::error::HolochainError;
+use std::{convert::TryFrom, str};
 //use reed_solomon::{Decoder, Encoder};
 
 use hcid::*;
 
 pub type Base32 = String;
-
 
 //
 ///// A raw public key buffer
@@ -111,17 +110,17 @@ impl AgentId {
         }
     }
 
-//    pub fn has_authored(&self, data: &mut SecBuf, signature: &mut SecBuf) -> bool {
-//        utils::verify_sign(self.key_b32, data, signature)
-//            .expect("Failed to verify signature with AgentId. Key might be invalid.");
-//    }
+    //    pub fn has_authored(&self, data: &mut SecBuf, signature: &mut SecBuf) -> bool {
+    //        utils::verify_sign(self.key_b32, data, signature)
+    //            .expect("Failed to verify signature with AgentId. Key might be invalid.");
+    //    }
 
-//    /// get a key buffer based on this agent's key (no correction)
-//    pub fn to_buffer(&self) -> KeyBuffer {
-//        let s = self.key.replace("-", "+").replace("_", "/");
-//        let key = base64::decode(&s).expect("corrupt identity key");
-//        KeyBuffer::with_raw(array_ref![key, 0, KeyBuffer::KEY_LEN])
-//    }
+    //    /// get a key buffer based on this agent's key (no correction)
+    //    pub fn to_buffer(&self) -> KeyBuffer {
+    //        let s = self.key.replace("-", "+").replace("_", "/");
+    //        let key = base64::decode(&s).expect("corrupt identity key");
+    //        KeyBuffer::with_raw(array_ref![key, 0, KeyBuffer::KEY_LEN])
+    //    }
 }
 
 impl AddressableContent for AgentId {
@@ -160,7 +159,9 @@ pub static TOO_BAD_ID: &'static str =
 
 pub fn test_base32_to_agent_id(s: &str) -> Result<AgentId, HolochainError> {
     let codec = with_hcs0().expect("HCID failed miserably.");
-    let key_b32 = codec.encode(s.as_bytes()).expect("AgentID key decoding failed. Key was not properly encoded.");
+    let key_b32 = codec
+        .encode(s.as_bytes())
+        .expect("AgentID key decoding failed. Key was not properly encoded.");
     Ok(AgentId::new("bob", key_b32))
 }
 
@@ -175,55 +176,55 @@ mod tests {
     pub fn test_identity_value() -> Content {
         format!("{{\"nick\":\"bob\",\"key\":\"{}\"}}", GOOD_ID).into()
     }
-//
-//    #[test]
-//    fn it_should_allow_buffer_with_pair() {
-//        // let buf = test_base64_to_agent_id(GOOD_ID).unwrap().to_buffer();
-//        let buf = KeyBuffer::with_raw_parts(
-//            &[
-//                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
-//                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
-//            ],
-//            &[
-//                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
-//                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0,
-//            ],
-//        );
-//        assert_eq!(
-//            &[
-//                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
-//                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239
-//            ],
-//            buf.get_sig()
-//        );
-//        assert_eq!(
-//            &[
-//                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
-//                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0
-//            ],
-//            buf.get_enc()
-//        );
-//    }
-//
-//    #[test]
-//    fn it_should_allow_buffer_access() {
-//        let buf = test_base64_to_agent_id(GOOD_ID).unwrap().to_buffer();
-//
-//        assert_eq!(
-//            &[
-//                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
-//                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239
-//            ],
-//            buf.get_sig()
-//        );
-//        assert_eq!(
-//            &[
-//                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
-//                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0
-//            ],
-//            buf.get_enc()
-//        );
-//    }
+    //
+    //    #[test]
+    //    fn it_should_allow_buffer_with_pair() {
+    //        // let buf = test_base64_to_agent_id(GOOD_ID).unwrap().to_buffer();
+    //        let buf = KeyBuffer::with_raw_parts(
+    //            &[
+    //                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
+    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
+    //            ],
+    //            &[
+    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
+    //                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0,
+    //            ],
+    //        );
+    //        assert_eq!(
+    //            &[
+    //                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
+    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239
+    //            ],
+    //            buf.get_sig()
+    //        );
+    //        assert_eq!(
+    //            &[
+    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
+    //                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0
+    //            ],
+    //            buf.get_enc()
+    //        );
+    //    }
+    //
+    //    #[test]
+    //    fn it_should_allow_buffer_access() {
+    //        let buf = test_base64_to_agent_id(GOOD_ID).unwrap().to_buffer();
+    //
+    //        assert_eq!(
+    //            &[
+    //                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
+    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239
+    //            ],
+    //            buf.get_sig()
+    //        );
+    //        assert_eq!(
+    //            &[
+    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
+    //                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0
+    //            ],
+    //            buf.get_enc()
+    //        );
+    //    }
 
     #[test]
     fn it_can_generate_fake() {

@@ -5,8 +5,8 @@ use holochain_core_types::{
     agent::AgentId, cas::content::Address, dna::capabilities::CapabilityCall,
 };
 use holochain_dpki::{
-    keypair::{KeyPair, SIGNATURE_SIZE},
     key_bundle::KeyBundle,
+    keypair::{KeyPair, SIGNATURE_SIZE},
 };
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;

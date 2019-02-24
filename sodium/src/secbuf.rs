@@ -255,8 +255,10 @@ impl SecBuf {
 
     /// Load the [u8] into the SecBuf
     pub fn from_array(&mut self, data: &[u8]) -> Result<(), SodiumError> {
-        if (data.len() !=  self.len()) {
-            return Err(SodiumError::Generic("Input does not have same size as SecBuf".to_string()));
+        if (data.len() != self.len()) {
+            return Err(SodiumError::Generic(
+                "Input does not have same size as SecBuf".to_string(),
+            ));
         }
         let mut buf = self.write_lock();
         for x in 0..data.len() {

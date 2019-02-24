@@ -1,17 +1,15 @@
-use holochain_sodium::{
-    secbuf::SecBuf, sign,
-};
 use hcid::*;
-use holochain_core_types::{
-    error::HcResult,
-    agent::Base32,
-};
+use holochain_core_types::{agent::Base32, error::HcResult};
+use holochain_sodium::{secbuf::SecBuf, sign};
 use std::str;
 
 pub const SEED_SIZE: usize = 32;
 
 ///
-pub(crate) fn decode_pub_key_into_secbuf(pub_key_b32: &str, codec: &HcidEncoding) -> HcResult<SecBuf> {
+pub(crate) fn decode_pub_key_into_secbuf(
+    pub_key_b32: &str,
+    codec: &HcidEncoding,
+) -> HcResult<SecBuf> {
     // Decode Base32 public key
     let pub_key = codec.decode(pub_key_b32)?;
     // convert to SecBuf
@@ -38,11 +36,15 @@ pub(crate) fn encode_pub_key(pub_key_sec: &mut SecBuf, codec: &HcidEncoding) -> 
 /// @param {SecBuf} data buffer to verify
 /// @param {SecBuf} signature candidate for that data buffer
 /// @return true if verification succeeded
-pub fn verify_sign(pub_sign_key_b32: Base32, data: &mut SecBuf, signature: &mut SecBuf) -> HcResult<bool> {
+pub fn verify_sign(
+    pub_sign_key_b32: Base32,
+    data: &mut SecBuf,
+    signature: &mut SecBuf,
+) -> HcResult<bool> {
     let mut pub_key = decode_pub_key_into_secbuf(
         &pub_sign_key_b32,
         &with_hcs0().expect("HCID failed miserably with_hcs0."),
     )?;
-    let res= holochain_sodium::sign::verify(signature, data, &mut pub_key);
+    let res = holochain_sodium::sign::verify(signature, data, &mut pub_key);
     Ok(res == 0)
 }

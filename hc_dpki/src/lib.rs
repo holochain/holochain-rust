@@ -9,8 +9,8 @@ extern crate arrayref;
 //extern crate base64;
 //extern crate holochain_sodium;
 
-pub mod key_bundle;
 pub mod error;
+pub mod key_bundle;
 pub mod keypair;
 pub mod password_encryption;
 pub mod utils;

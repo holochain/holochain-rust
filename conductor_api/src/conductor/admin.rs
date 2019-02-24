@@ -510,7 +510,7 @@ pub mod tests {
     use super::*;
     use crate::{
         conductor::base::{
-            tests::{example_dna_string, test_keybundle, test_key_loader},
+            tests::{example_dna_string, test_key_loader, test_keybundle},
             DnaLoader,
         },
         config::{load_configuration, Configuration, InterfaceConfiguration, InterfaceDriver},

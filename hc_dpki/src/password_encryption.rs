@@ -7,7 +7,6 @@ pub type PwHashAlgo = i8;
 
 pub struct PwHashConfig(pub OpsLimit, pub MemLimit, pub PwHashAlgo);
 
-
 /// Struct holding the result of a passphrase encryption
 #[derive(RustcDecodable, RustcEncodable)]
 pub(crate) struct EncryptedData {
@@ -15,7 +14,6 @@ pub(crate) struct EncryptedData {
     pub nonce: Vec<u8>,
     pub cipher: Vec<u8>,
 }
-
 
 /// Simplify the API for generating a password hash with our set parameters
 /// @param {SecBuf} pass - the password buffer to hash
@@ -59,7 +57,11 @@ pub(crate) fn pw_enc(
     let nonce = nonce.read_lock().to_vec();
     let cipher = cipher.read_lock().to_vec();
     // Done
-    Ok(EncryptedData { salt, nonce, cipher })
+    Ok(EncryptedData {
+        salt,
+        nonce,
+        cipher,
+    })
 }
 
 /// Helper for decrypting a buffer with a pwhash-ed passphrase
@@ -74,17 +76,20 @@ pub(crate) fn pw_dec(
 ) -> HcResult<()> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
-    salt.from_array(&encrypted_data.salt).expect("Failed to write SecBuf with array");
+    salt.from_array(&encrypted_data.salt)
+        .expect("Failed to write SecBuf with array");
     let mut nonce = SecBuf::with_insecure(encrypted_data.nonce.len());
-    nonce.from_array(&encrypted_data.nonce).expect("Failed to write SecBuf with array");
+    nonce
+        .from_array(&encrypted_data.nonce)
+        .expect("Failed to write SecBuf with array");
     let mut cipher = SecBuf::with_insecure(encrypted_data.cipher.len());
-    cipher.from_array(&encrypted_data.cipher).expect("Failed to write SecBuf with array");
+    cipher
+        .from_array(&encrypted_data.cipher)
+        .expect("Failed to write SecBuf with array");
     pw_hash(passphrase, &mut salt, &mut secret, config)?;
     aead::dec(decrypted_data, &mut secret, None, &mut nonce, &mut cipher)?;
     Ok(())
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -106,7 +111,6 @@ mod tests {
         password
     }
 
-
     #[test]
     fn it_should_encrypt_data() {
         let mut password = test_password();
@@ -116,11 +120,16 @@ mod tests {
             data[0] = 88;
             data[1] = 101;
         }
-        let mut encrypted_data =
-            pw_enc(&mut data, &mut password, TEST_CONFIG).unwrap();
+        let mut encrypted_data = pw_enc(&mut data, &mut password, TEST_CONFIG).unwrap();
 
         let mut decrypted_data = SecBuf::with_insecure(32);
-        pw_dec(&mut encrypted_data, &mut password, &mut decrypted_data, TEST_CONFIG).unwrap();
+        pw_dec(
+            &mut encrypted_data,
+            &mut password,
+            &mut decrypted_data,
+            TEST_CONFIG,
+        )
+        .unwrap();
 
         let data = data.read_lock();
         let decrypted_data = decrypted_data.read_lock();
@@ -144,12 +153,24 @@ mod tests {
         // hash with different salt should have different result
         salt.randomize();
         let mut hashed_password_b = SecBuf::with_insecure(pwhash::HASHBYTES);
-        pw_hash(&mut password, &mut salt, &mut hashed_password_b, TEST_CONFIG).unwrap();
+        pw_hash(
+            &mut password,
+            &mut salt,
+            &mut hashed_password_b,
+            TEST_CONFIG,
+        )
+        .unwrap();
         assert_ne!(hashed_password.dump(), hashed_password_b.dump());
 
         // same hash should have same result
         let mut hashed_password_c = SecBuf::with_insecure(pwhash::HASHBYTES);
-        pw_hash(&mut password, &mut salt, &mut hashed_password_c, TEST_CONFIG).unwrap();
+        pw_hash(
+            &mut password,
+            &mut salt,
+            &mut hashed_password_c,
+            TEST_CONFIG,
+        )
+        .unwrap();
         assert_eq!(hashed_password_c.dump(), hashed_password_b.dump());
     }
 

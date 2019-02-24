@@ -1,18 +1,17 @@
 #![allow(warnings)]
-use holochain_sodium::{kx, secbuf::SecBuf, sign};
-use holochain_sodium::*;
+use holochain_sodium::{kx, secbuf::SecBuf, sign, *};
 
 use crate::{
     keypair::*,
-    password_encryption::{self, PwHashConfig, EncryptedData},
+    password_encryption::{self, EncryptedData, PwHashConfig},
+    utils::{self, SEED_SIZE},
 };
 use holochain_core_types::{
-    error::{HcResult, HolochainError},
     agent::Base32,
+    error::{HcResult, HolochainError},
 };
 use rustc_serialize::json;
 use std::str;
-use crate::utils::{self, SEED_SIZE};
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -26,7 +25,6 @@ const BLOB_DATA_LEN_MISALIGN: usize = 1 // version byte
 
 pub const BLOB_DATA_LEN: usize = ((BLOB_DATA_LEN_MISALIGN + 8 - 1) / 8) * 8;
 
-
 /// The data includes a base64 encoded, json serialized string of the EncryptedData that
 /// was created by concatenating all the keys in one SecBuf
 #[derive(Serialize, Deserialize)]
@@ -36,7 +34,6 @@ pub struct KeyBlob {
     ///  base64 encoded, json serialized string of the EncryptedData
     pub data: String,
 }
-
 
 /// Enum holding all the types of seeds that can generate cryptographic keys
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -115,10 +112,15 @@ impl KeyBundle {
             priv_enc.write(0, &decrypted_data[129..161])?;
         }
 
-
         Ok(KeyBundle {
-            sign_keys: SigningKeyPair::new(SigningKeyPair::encode_pub_key(&mut pub_sign), priv_sign),
-            enc_keys: EncryptingKeyPair::new(EncryptingKeyPair::encode_pub_key(&mut pub_enc), priv_enc),
+            sign_keys: SigningKeyPair::new(
+                SigningKeyPair::encode_pub_key(&mut pub_sign),
+                priv_sign,
+            ),
+            enc_keys: EncryptingKeyPair::new(
+                EncryptingKeyPair::encode_pub_key(&mut pub_enc),
+                priv_enc,
+            ),
             seed_type: blob.seed_type.clone(),
         })
     }
@@ -142,21 +144,25 @@ impl KeyBundle {
         // Write public signing key
         let key = self.sign_keys.decode_pub_key();
         assert_eq!(sign::PUBLICKEYBYTES, key.len());
-        data_buf.write(offset, &key)
+        data_buf
+            .write(offset, &key)
             .expect("Failed blobbing public signing key");
         offset += sign::PUBLICKEYBYTES;
         // Write public encoding key
         let key = self.enc_keys.decode_pub_key();
         assert_eq!(kx::PUBLICKEYBYTES, key.len());
-        data_buf.write(offset, &key)
+        data_buf
+            .write(offset, &key)
             .expect("Failed blobbing public encoding key");
         offset += kx::PUBLICKEYBYTES;
         // Write private signing key
-        data_buf.write(offset, &**self.sign_keys.keypair.private.read_lock())
+        data_buf
+            .write(offset, &**self.sign_keys.keypair.private.read_lock())
             .expect("Failed blobbing private signing key");
         offset += sign::SECRETKEYBYTES;
         // Write private encoding key
-        data_buf.write(offset, &**self.enc_keys.keypair.private.read_lock())
+        data_buf
+            .write(offset, &**self.enc_keys.keypair.private.read_lock())
             .expect("Failed blobbing private encoding key");
         offset += kx::SECRETKEYBYTES;
         assert_eq!(offset, BLOB_DATA_LEN_MISALIGN);
@@ -196,9 +202,9 @@ impl KeyBundle {
 
     ///
     pub fn is_same(&mut self, other: &mut KeyBundle) -> bool {
-        self.sign_keys.keypair.is_same(&mut other.sign_keys.keypair) &&
-            self.enc_keys.keypair.is_same(&mut other.enc_keys.keypair) &&
-            self.seed_type == other.seed_type
+        self.sign_keys.keypair.is_same(&mut other.sign_keys.keypair)
+            && self.enc_keys.keypair.is_same(&mut other.enc_keys.keypair)
+            && self.seed_type == other.seed_type
     }
 }
 
@@ -212,7 +218,6 @@ mod tests {
         pwhash::MEMLIMIT_INTERACTIVE,
         pwhash::ALG_ARGON2ID13,
     ));
-
 
     fn test_generate_random_seed() -> SecBuf {
         let mut seed = SecBuf::with_insecure(SEED_SIZE);
@@ -265,7 +270,6 @@ mod tests {
         assert!(!succeeded);
     }
 
-
     #[test]
     fn it_should_blob_keybundle() {
         let mut seed = test_generate_random_seed();
@@ -286,9 +290,9 @@ mod tests {
 
         assert!(bundle.is_same(&mut unblob));
 
-//        assert_eq!(64, unblob.sign_priv.len());
-//        assert_eq!(32, unblob.enc_priv.len());
-//        assert_eq!(92, unblob.pub_keys.len());
+        //        assert_eq!(64, unblob.sign_priv.len());
+        //        assert_eq!(32, unblob.enc_priv.len());
+        //        assert_eq!(92, unblob.pub_keys.len());
 
         // Test with wrong passphrase
         passphrase.randomize();

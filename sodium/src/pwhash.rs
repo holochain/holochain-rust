@@ -45,7 +45,7 @@ pub fn hash(
     let hash_len = hash.len() as libc::c_ulonglong;
     let pw_len = password.len() as libc::c_ulonglong;
     let res = unsafe {
-         rust_sodium_sys::crypto_pwhash(
+        rust_sodium_sys::crypto_pwhash(
             raw_ptr_char!(hash),
             hash_len,
             raw_ptr_ichar_immut!(password),

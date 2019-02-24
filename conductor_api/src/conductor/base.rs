@@ -15,13 +15,10 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::AgentId,
-    cas::content::AddressableContent,
-    dna::Dna,
-    error::HolochainError,
+    agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{key_bundle::KeyBlob, key_bundle::KeyBundle};
+use holochain_dpki::key_bundle::{KeyBlob, KeyBundle};
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
@@ -515,7 +512,10 @@ impl Conductor {
     /// Get reference to key for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
-    fn get_keybundle_for_agent(&mut self, agent_id: &String) -> Result<Arc<Mutex<KeyBundle>>, String> {
+    fn get_keybundle_for_agent(
+        &mut self,
+        agent_id: &String,
+    ) -> Result<Arc<Mutex<KeyBundle>>, String> {
         if !self.agent_keys.contains_key(agent_id) {
             let agent_config = self
                 .config
@@ -735,10 +735,7 @@ pub mod tests {
     use crate::config::load_configuration;
     use holochain_core::{action::Action, signal::signal_channel};
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
-    use holochain_dpki::{
-        key_bundle::KeyBundle,
-        utils::SEED_SIZE,
-    };
+    use holochain_dpki::{key_bundle::KeyBundle, utils::SEED_SIZE};
     use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
     use std::{

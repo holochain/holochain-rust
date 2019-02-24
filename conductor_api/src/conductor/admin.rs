@@ -1321,7 +1321,7 @@ type = 'websocket'"#,
 id = 'new-agent'
 key_file = 'new-test-path'
 name = 'Mr. New'
-public_address = 'new-------------------------------------------------------------------------------AAAFeOAoWg'"#,
+public_address = 'HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa'"#,
             ),
         );
         toml = add_block(toml, dna());

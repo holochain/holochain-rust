@@ -26,8 +26,10 @@ pub struct AgentId {
 impl AgentId {
     /// generate a agent id with fake key
     pub fn generate_fake(nick: &str) -> Self {
-        let key = "42";
-        AgentId::new_with_raw_key(nick, key).expect("AgentId fake key generation failed.")
+        let mut key: [u8; 32] = [0; 32];
+        key[0] = 42;
+        AgentId::new_with_raw_key(nick, str::from_utf8(&key).unwrap())
+            .expect("AgentId fake key generation failed")
     }
 
     /// initialize an Agent struct with `nick` and `key` that will be encoded

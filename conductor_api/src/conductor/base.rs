@@ -1208,7 +1208,11 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        assert_eq!(conductor.load_config(), Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'dlyr9y0wpQplNX_Dv8oO_HHk8G8zEvFupuuIU-jKlaL-rykxWZgD4Oq2ZpF2VL7wzN1Z97X5s_8z0a-xVbyrRnwBlWf8\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!".to_string()));
+        assert_eq!(
+            conductor.load_config(),
+            Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
+                .to_string()),
+        );
     }
 
 }

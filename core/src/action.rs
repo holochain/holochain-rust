@@ -136,9 +136,9 @@ pub enum Action {
     ///
     RemoveEntry(Address),
     ///
-    /// 
-    CrudLink((Address,Address)),
-    
+    ///
+    CrudLink((Address, Address)),
+
     GetEntryTimeout(GetEntryKey),
 
     /// get links from entry address and tag name

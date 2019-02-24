@@ -54,33 +54,30 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     }
 }
 
-pub(crate) fn reduce_crud_link(_context: Arc<Context>,
+pub(crate) fn reduce_crud_link(
+    _context: Arc<Context>,
     old_store: &DhtStore,
-    action_wrapper: &ActionWrapper) -> Option<DhtStore>
-{
-
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
     let action = action_wrapper.action();
-    let (address,crud_link) = unwrap_to!(action => Action::CrudLink);
+    let (address, crud_link) = unwrap_to!(action => Action::CrudLink);
     //grab meta from state
     let dht_meta = old_store.meta_storage().clone();
-   
+
     //grab lock from meta_storage
-    let mut meta_storage = dht_meta
-        .write()
-        .unwrap();
+    let mut meta_storage = dht_meta.write().unwrap();
 
-    let link_option = create_crud_link_eav(
-        address,
-        crud_link,
-    );
+    let link_option = create_crud_link_eav(address, crud_link);
 
-    if link_option.is_err()
-    {
-        return None::<DhtStore>
+    if link_option.is_err() {
+        return None::<DhtStore>;
     }
 
     println!("grab crudlink from state");
-    let store = meta_storage.add_eavi(&link_option.unwrap()).map(|_|None::<DhtStore>).unwrap_or(Some(old_store.clone()));
+    let store = meta_storage
+        .add_eavi(&link_option.unwrap())
+        .map(|_| None::<DhtStore>)
+        .unwrap_or(Some(old_store.clone()));
 
     store
 }

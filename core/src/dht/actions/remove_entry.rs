@@ -1,16 +1,13 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    instance::dispatch_action
+    instance::dispatch_action,
 };
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{
-    cas::content::Address,
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, error::HolochainError};
 use std::{pin::Pin, sync::Arc};
 
 /// Remove Entry Action Creator
@@ -20,9 +17,7 @@ pub fn remove_entry(
     context: &Arc<Context>,
     address: Address,
 ) -> Result<RemoveEntryFuture, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::RemoveEntry(
-        address
-    ));
+    let action_wrapper = ActionWrapper::new(Action::RemoveEntry(address));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     Ok(RemoveEntryFuture {

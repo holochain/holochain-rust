@@ -1,16 +1,13 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    instance::dispatch_action
+    instance::dispatch_action,
 };
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{
-    cas::content::Address,
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, error::HolochainError};
 use std::{pin::Pin, sync::Arc};
 
 /// Crud Link Action Creator
@@ -18,12 +15,10 @@ use std::{pin::Pin, sync::Arc};
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
 pub fn crud_link(
     context: &Arc<Context>,
-    address : Address,
+    address: Address,
     crud_link: Address,
 ) -> Result<CrudLinkFuture, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::CrudLink((
-        address,crud_link
-    )));
+    let action_wrapper = ActionWrapper::new(Action::CrudLink((address, crud_link)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     Ok(CrudLinkFuture {

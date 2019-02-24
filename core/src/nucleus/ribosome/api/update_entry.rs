@@ -1,13 +1,8 @@
 use crate::{
-    nucleus::{
-        ribosome::{api::ZomeApiResult, Runtime},
-    },
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
-use holochain_core_types::{
-    cas::content::{AddressableContent},
-    entry::Entry,
-};
+use holochain_core_types::{cas::content::AddressableContent, entry::Entry};
 use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -66,11 +61,10 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let new_entry = entry.clone();
 
     let task_result = zome_call_data.context.block_on(author_entry(
-            &new_entry,
-            Some(chain_header_address.clone()),
-            &new_context,
-           ));
- 
+        &new_entry,
+        Some(chain_header_address.clone()),
+        &new_context,
+    ));
+
     runtime.store_result(task_result)
 }
-

@@ -1,17 +1,14 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    instance::dispatch_action
+    instance::dispatch_action,
 };
 
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{
-    cas::content::Address,
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, error::HolochainError};
 use std::{pin::Pin, sync::Arc};
 
 /// Update Entry Action Creator
@@ -19,11 +16,9 @@ use std::{pin::Pin, sync::Arc};
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
 pub fn update_entry(
     context: &Arc<Context>,
-    address: Address
+    address: Address,
 ) -> Result<UpdateEntryFuture, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::UpdateEntry(
-        address
-    ));
+    let action_wrapper = ActionWrapper::new(Action::UpdateEntry(address));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     Ok(UpdateEntryFuture {
         context: context.clone(),

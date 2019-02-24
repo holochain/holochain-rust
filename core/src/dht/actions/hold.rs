@@ -1,15 +1,16 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context, network::entry_with_header::EntryWithHeader,
-    instance::dispatch_action
+    context::Context,
+    instance::dispatch_action,
+    network::entry_with_header::EntryWithHeader,
 };
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-    cas::content::{Address,AddressableContent},
-    error::HolochainError
+    cas::content::{Address, AddressableContent},
+    error::HolochainError,
 };
 use std::{pin::Pin, sync::Arc};
 

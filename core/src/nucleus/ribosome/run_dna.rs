@@ -1,9 +1,6 @@
-use crate::{
-    context::Context,
-    nucleus::{
-        ribosome::{api::ZomeApiFunction, memory::WasmPageManager, Runtime},
-        ZomeFnCall, ZomeFnResult,
-    },
+use crate::nucleus::{
+    ribosome::{api::ZomeApiFunction, memory::WasmPageManager, runtime::WasmCallData, Runtime},
+    ZomeFnResult,
 };
 use holochain_core_types::{
     error::{
@@ -12,7 +9,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
-use std::{convert::TryFrom, str::FromStr, sync::Arc};
+use std::{convert::TryFrom, str::FromStr};
 use wasmi::{
     self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver,
     ModuleInstance, NopExternals, RuntimeValue, Signature, ValueType,
@@ -21,13 +18,7 @@ use wasmi::{
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
-pub fn run_dna(
-    dna_name: &str,
-    context: Arc<Context>,
-    wasm: Vec<u8>,
-    zome_call: &ZomeFnCall,
-    parameters: Option<Vec<u8>>,
-) -> ZomeFnResult {
+pub fn run_dna(wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
     // Create wasm module from wasm binary
     let module =
         wasmi::Module::from_buffer(wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))?;
@@ -92,12 +83,11 @@ pub fn run_dna(
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
 
+    let fn_name = data.fn_name();
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
         memory_manager: WasmPageManager::new(&wasm_instance),
-        context,
-        zome_call: zome_call.clone(),
-        dna_name: dna_name.to_string(),
+        data,
     };
 
     // Write input arguments in wasm memory
@@ -111,7 +101,10 @@ pub fn run_dna(
             Err(AllocationError::ZeroLength) => RibosomeEncodedValue::Success.into(),
             // Any other error is memory related
             Err(err) => {
-                return Err(HolochainError::RibosomeFailed(String::from(err)));
+                return Err(HolochainError::RibosomeFailed(format!(
+                    "WASM Memory issue: {:?}",
+                    err
+                )));
             }
             // Write successful, encode allocation
             Ok(allocation) => RibosomeEncodedValue::from(allocation).into(),
@@ -123,21 +116,29 @@ pub fn run_dna(
     {
         let mut_runtime = &mut runtime;
 
+        // Try installing a custom panic handler.
+        // HDK-rust implements a function __install_panic_handler that reroutes output of
+        // PanicInfo to hdk::debug.
+        // Try calling it but fail silently if this function is not there.
+        let _ = wasm_instance.invoke_export("__install_panic_handler", &[], mut_runtime);
+
         // invoke function in wasm instance
         // arguments are info for wasm on how to retrieve complex input arguments
         // which have been set in memory module
         returned_encoding = wasm_instance
             .invoke_export(
-                zome_call.fn_name.clone().as_str(),
+                &fn_name,
                 &[RuntimeValue::I64(
                     RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits,
                 )],
                 mut_runtime,
             )
-            .map_err(|err| HolochainError::RibosomeFailed(err.to_string()))?
+            .map_err(|err| {
+                HolochainError::RibosomeFailed(format!("WASM invocation failed: {}", err))
+            })?
             .unwrap()
-            .try_into()
-            .unwrap();
+            .try_into() // Option<_>
+            .ok_or_else(|| HolochainError::RibosomeFailed("WASM return value missing".to_owned()))?
     }
 
     // Handle result returned by called zome function
@@ -154,7 +155,10 @@ pub fn run_dna(
 
         RibosomeEncodedValue::Failure(err_code) => {
             return_log_msg = return_code.to_string();
-            return_result = Err(HolochainError::RibosomeFailed(err_code.to_string()));
+            return_result = Err(HolochainError::RibosomeFailed(format!(
+                "Zome function failure: {}",
+                err_code.as_str()
+            )));
         }
 
         RibosomeEncodedValue::Allocation(ribosome_allocation) => {
@@ -168,13 +172,17 @@ pub fn run_dna(
                         }
                         Err(err) => {
                             return_log_msg = err.to_string();
-                            return_result = Err(HolochainError::RibosomeFailed(err.to_string()));
+                            return_result = Err(HolochainError::RibosomeFailed(format!(
+                                "WASM failed to return value: {}",
+                                err
+                            )));
                         }
                     }
                 }
                 Err(allocation_error) => {
                     return_log_msg = String::from(allocation_error.clone());
-                    return_result = Err(HolochainError::RibosomeFailed(String::from(
+                    return_result = Err(HolochainError::RibosomeFailed(format!(
+                        "WASM return value allocation failed: {:?}",
                         allocation_error,
                     )));
                 }

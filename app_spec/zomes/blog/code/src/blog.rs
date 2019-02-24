@@ -78,6 +78,10 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
     )
 }
 
+pub fn handle_check_send(to_agent: Address, message: String) -> ZomeApiResult<String> {
+    hdk::send(to_agent, message, 10000.into())
+}
+
 fn post_entry(content: String) -> Entry {
     Entry::App("post".into(), Post::new(&content, "now").into())
 }
@@ -97,6 +101,15 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
     }
 
+    Ok(address)
+}
+
+
+
+pub fn handle_delete_post(content:String) -> ZomeApiResult<Address>
+{
+    let address = hdk::entry_address(&post_entry(content))?;
+    hdk::remove_link(&AGENT_ADDRESS,&address.clone(),"authored_posts")?;
     Ok(address)
 }
 
@@ -137,7 +150,7 @@ pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     hdk::get_entry(&post_address)
 }
 
-pub fn handle_delete_post(post_address: Address) -> ZomeApiResult<()> {
+pub fn handle_delete_entry_post(post_address: Address) -> ZomeApiResult<()> {
     hdk::get_entry(&post_address)?;
 
     hdk::remove_entry(&post_address)?;

@@ -1,11 +1,11 @@
 #![feature(try_from)]
-
+#![warn(unused_extern_crates)]
 #[macro_use]
 extern crate hdk;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
@@ -33,6 +33,12 @@ define_zome! {
         Ok(())
     }
 
+    receive: |message| {
+        json!({
+            "message": message
+        }).to_string()
+    }
+
     functions: [
 
         show_env: {
@@ -53,6 +59,12 @@ define_zome! {
             handler: blog::handle_check_sum
         }
 
+        check_send: {
+            inputs: |to_agent: Address, message: String|,
+            outputs: |response: ZomeApiResult<String>|,
+            handler: blog::handle_check_send
+        }
+
         post_address: {
             inputs: |content: String|,
             outputs: |result: ZomeApiResult<Address>|,
@@ -66,9 +78,15 @@ define_zome! {
         }
 
         delete_post: {
+            inputs: |content: String|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_delete_post
+        }
+
+        delete_entry_post: {
             inputs: |post_address: Address|,
             outputs: |result: ZomeApiResult<()>|,
-            handler: blog::handle_delete_post
+            handler: blog::handle_delete_entry_post
         }
 
         update_post: {
@@ -107,6 +125,7 @@ define_zome! {
             handler: blog::handle_my_posts_as_commited
         }
 
+
         recommend_post: {
             inputs: |post_address: Address, agent_address: Address|,
             outputs: |result: ZomeApiResult<()>|,
@@ -120,8 +139,8 @@ define_zome! {
         }
     ]
 
-    capabilities: {
-        public (Public) [show_env, check_sum, get_sources, post_address, create_post, delete_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
+    traits: {
+        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
     }
 
 }

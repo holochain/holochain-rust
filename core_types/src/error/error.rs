@@ -9,6 +9,7 @@ use std::{
     error::Error,
     fmt,
     io::{self, Error as IoError},
+    option::NoneError,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -191,6 +192,12 @@ impl From<FutureCanceled> for HolochainError {
     }
 }
 
+impl From<NoneError> for HolochainError {
+    fn from(_: NoneError) -> Self {
+        HolochainError::ErrorGeneric("Expected Some and got None".to_string())
+    }
+}
+
 #[derive(Serialize, Deserialize, Default, Debug, DefaultJson)]
 pub struct ZomeApiInternalResult {
     pub ok: bool,
@@ -291,7 +298,7 @@ mod tests {
                 "foo",
             ),
             (
-                HolochainError::Dna(DnaError::CapabilityNotFound(String::from("foo"))),
+                HolochainError::Dna(DnaError::TraitNotFound(String::from("foo"))),
                 "foo",
             ),
             (

@@ -17,7 +17,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::get_entry::*;
 use serde_json;
-use std::{collections::HashMap, convert::TryFrom, sync::Arc};
+use std::{collections::HashMap, convert::TryFrom, sync::Arc, time::SystemTime};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -175,11 +175,18 @@ pub fn create_new_chain_header(
     let agent_address = agent_state
         .get_agent_address()
         .unwrap_or(context.agent_id.address());
+    let signature = Signature::from(
+        context
+            .sign(entry.address().to_string())
+            .expect("Must be able to create signatures!"),
+    );
+    let duration_since_epoch = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("System time must not be before UNIX EPOCH");
     ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
-        // @TODO signatures
-        &vec![(agent_address, Signature::from("TODO"))],
+        &vec![(agent_address, signature)],
         &agent_state
             .top_chain_header
             .clone()
@@ -190,8 +197,7 @@ pub fn create_new_chain_header(
             .nth(0)
             .and_then(|chain_header| Some(chain_header.address())),
         crud_link,
-        // @TODO timestamp
-        &Iso8601::from(""),
+        &Iso8601::from(duration_since_epoch.as_secs()),
     )
 }
 
@@ -265,24 +271,25 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot};
+    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot, *};
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         instance::tests::test_context, state::State,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
-        chain_header::test_chain_header,
+        chain_header::{test_chain_header, ChainHeader},
         entry::{expected_entry_address, test_entry, Entry},
         error::HolochainError,
         json::JsonString,
+        signature::Signature,
     };
     use serde_json;
     use std::{
         collections::HashMap,
         sync::{Arc, RwLock},
     };
+    use test_utils::mock_signing::mock_signer;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -400,6 +407,40 @@ pub mod tests {
             JsonString::from(ActionResponse::LinkEntries(Err(HolochainError::new(
                 "some error"
             )))),
+        );
+    }
+
+    #[test]
+    fn test_create_new_chain_header() {
+        let agent_state = test_agent_state();
+        let netname = Some("test_create_new_chain_header");
+        let context = test_context("bob", netname);
+        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
+        let mut context = test_context("bob", netname);
+        Arc::get_mut(&mut context)
+            .unwrap()
+            .set_state(Arc::new(RwLock::new(state)));
+
+        let header = create_new_chain_header(&test_entry(), context.clone(), &None);
+        println!("{:?}", header);
+        assert_eq!(
+            header,
+            ChainHeader::new(
+                &test_entry().entry_type(),
+                &test_entry().address(),
+                &[(
+                    context.agent_id.address(),
+                    Signature::from(mock_signer(
+                        test_entry().address().to_string(),
+                        &context.agent_id
+                    ))
+                )]
+                .to_vec(),
+                &None,
+                &None,
+                &None,
+                &header.timestamp(),
+            )
         );
     }
 }

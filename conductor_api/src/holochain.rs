@@ -11,31 +11,55 @@
 //! extern crate holochain_core;
 //! extern crate holochain_net;
 //! extern crate holochain_cas_implementations;
+//! extern crate holochain_dpki;
+//! extern crate holochain_sodium;
 //! extern crate tempfile;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
 //! use holochain_core_types::{
 //!     cas::content::Address,
-//!     agent::AgentId,
+//!     agent::{AgentId, KeyBuffer},
 //!     dna::{Dna, capabilities::CapabilityCall},
 //!     json::JsonString};
-//! use std::sync::Arc;
+//! use holochain_dpki::keypair::{Keypair, SEEDSIZE};
+//! use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
+//!
+//! use std::sync::{Arc, Mutex};
 //! use tempfile::tempdir;
 //!
-//! // instantiate a new holochain instance
+//! // Instantiate a new holochain instance
 //!
-//! // need to get to something like this:
-//! //let dna = holochain_core_types::dna::from_package_file("mydna.hcpkg");
+//! // Need to get to something like this:
+//! // let dna = holochain_core_types::dna::from_package_file("mydna.dna.json");
 //!
-//! // but for now:
+//! // But for now:
 //! let dna = Dna::new();
 //! let dir = tempdir().unwrap();
 //! let storage_directory_path = dir.path().to_str().unwrap();
-//! let agent = AgentId::generate_fake("bob");
+//!
+//! // We need to provide a cryptographic key that represents the agent.
+//! // Creating a new random one on the fly:
+//! let mut seed = SecBuf::with_insecure(SEEDSIZE);
+//! random_secbuf(&mut seed);
+//! let keypair = Keypair::new_from_seed(&mut seed).unwrap();
+//! let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
+//!
+//! // The keypair's public part is the agent's address
+//! let agent = AgentId::new("bob", &pub_key);
+//!
+//! // The instance needs a conductor API with at least the signing callback:
+//! let conductor_api = interface::ConductorApiBuilder::new()
+//!     .with_agent_signature_callback(Arc::new(Mutex::new(keypair)))
+//!     .spawn();
+//!
+//! // The conductor API, together with the storage and the agent ID
+//! // constitute the instance's context:
 //! let context = ContextBuilder::new()
 //!     .with_agent(agent)
+//!     .with_conductor_api(conductor_api)
 //!     .with_file_storage(storage_directory_path)
 //!     .expect("Tempdir should be accessible")
 //!     .spawn();
+//!
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
 //! // start up the holochain instance
@@ -61,7 +85,7 @@ use crate::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::{call_and_wait_for_result, ZomeFnCall},
+    nucleus::{call_zome_function, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
 };
@@ -94,6 +118,7 @@ impl Holochain {
     ) -> HolochainResult<Self> {
         let name = dna.name.clone();
         let result = instance.initialize(Some(dna), context.clone());
+
         match result {
             Ok(new_context) => {
                 context.log(format!("debug/conductor: {} instantiated", name));
@@ -152,7 +177,8 @@ impl Holochain {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
         let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
-        Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
+        let context = self.context();
+        Ok(context.block_on(call_zome_function(zome_call, context))?)
     }
 
     /// checks to see if an instance is active
@@ -172,36 +198,36 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
-    extern crate holochain_cas_implementations;
-
     use super::*;
+    extern crate tempfile;
+    use self::tempfile::tempdir;
     use context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::ribosome::{callback::Callback, Defn},
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna, json::RawString};
+    use holochain_core_types::{cas::content::Address, dna::Dna, json::RawString};
     use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
-    use tempfile::tempdir;
     use test_utils::{
         create_test_defs_with_fn_name, create_test_dna_with_defs, create_test_dna_with_wat,
         create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
+        mock_signing::{mock_conductor_api, registered_test_agent},
     };
 
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
-        let agent = AgentId::generate_fake(agent_name);
+        let agent = registered_test_agent(agent_name);
         let (signal_tx, signal_rx) = signal_channel();
         let logger = test_logger();
         (
             Arc::new(
                 ContextBuilder::new()
-                    .with_agent(agent)
+                    .with_agent(agent.clone())
                     .with_logger(logger.clone())
                     .with_signals(signal_tx)
+                    .with_conductor_api(mock_conductor_api(agent))
                     .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
                     .unwrap()
                     .spawn(),
@@ -271,7 +297,7 @@ mod tests {
     fn fails_instantiate_if_genesis_fails() {
         let dna = create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
+            "test_cap",
             Some(
                 r#"
             (module

@@ -4,7 +4,7 @@ It is possible to use the same configuration as you would for the [`holochain` C
 
 To see some examples of what these configuration files can look like, you can check out [this folder on GitHub](https://github.com/holochain/holochain-rust/tree/develop/conductor/example-config).
 
-#### Using a Javascript Object
+#### Using a Plain Old Javascript Object
 
 ```javascript
 const { Conductor } = require('@holochain/holochain-nodejs')
@@ -15,10 +15,6 @@ const conductor = new Conductor({
     bridges: [],
     // etc...
 })
-
-conductor.start()
-// do what you will
-conductor.stop()
 ```
 
 #### Using TOML
@@ -36,9 +32,5 @@ const toml = `
 ...etc...
 `
 const conductor = new Conductor(toml)
-
-conductor.start()
-// do what you will
-conductor.stop()
 ```
 

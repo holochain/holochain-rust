@@ -2,9 +2,8 @@
 //! structs relating to the adding and removing of links between entries
 //! and lists of links.
 
-pub mod link_add;
+pub mod link_data;
 pub mod link_list;
-pub mod link_remove;
 
 use crate::{cas::content::Address, error::HolochainError, json::JsonString};
 
@@ -44,7 +43,7 @@ impl Link {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum LinkActionKind {
     ADD,
-    DELETE,
+    REMOVE,
 }
 
 #[cfg(test)]

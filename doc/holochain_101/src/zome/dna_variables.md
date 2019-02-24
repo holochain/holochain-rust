@@ -2,7 +2,7 @@
 
 Note: Full reference is available in language-specific API Reference documentation.
 
-For the Rust `hdk`, [see here](https://developer.holochain.org/api/0.0.3/hdk/api/index.html#structs)
+For the Rust `hdk`, [see here](https://developer.holochain.org/api/0.0.4-alpha/hdk/api/index.html#structs)
 
 | Name        | Purpose           |
 | ------------- |:-------------|

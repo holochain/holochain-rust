@@ -232,6 +232,7 @@ pub struct FetchMetaResultData {
     #[serde(rename = "entryAddress")]
     pub entry_address: Address,
     pub attribute: String,
+
     // // List of (hash, content) pairs.
     // single string or list of hashs
     #[serde(rename = "contentList")]
@@ -315,6 +316,10 @@ pub enum JsonProtocol {
     /// Order the p2p module to be part of the network of the specified DNA.
     #[serde(rename = "trackDna")]
     TrackDna(TrackDnaData),
+
+    /// Order the p2p module to leave the network of the specified DNA.
+    #[serde(rename = "untrackDna")]
+    UntrackDna(TrackDnaData),
 
     /// Connect to the specified multiaddr
     #[serde(rename = "connect")]
@@ -424,7 +429,7 @@ pub enum JsonProtocol {
     HandleGetHoldingMetaListResult(MetaListData),
 }
 
-// Conversions
+/// Conversions
 impl<'a> TryFrom<&'a Protocol> for JsonProtocol {
     type Error = Error;
     fn try_from(p: &Protocol) -> Result<Self, Error> {

@@ -4,6 +4,7 @@
 //!
 //! See the associated Qt unit tests in the c_binding_tests directory.
 #![feature(try_from)]
+#![warn(unused_extern_crates)]
 extern crate holochain_core_types;
 
 use holochain_core_types::dna::Dna;
@@ -222,11 +223,11 @@ pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringV
 }
 
 #[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
-fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>> {
+fn traits_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>> {
     let result = dna
         .zomes
         .get(zome_name)?
-        .capabilities
+        .traits
         .keys()
         .map(|cap_name| {
             let raw = match CString::new(cap_name.clone()) {
@@ -241,15 +242,15 @@ fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>>
 
 #[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
-pub unsafe extern "C" fn holochain_dna_get_capabilities_names(
+pub unsafe extern "C" fn holochain_dna_get_trait_names(
     ptr: *mut Dna,
     zome_name: *const c_char,
     string_vec: *mut CStringVec,
 ) {
     let dna = &*ptr;
     let zome_name = CStr::from_ptr(zome_name).to_string_lossy();
-    let capabalities = capabilities_as_vec(dna, &*zome_name);
-    vec_char_to_cstringvec(capabalities, string_vec);
+    let traits = traits_as_vec(dna, &*zome_name);
+    vec_char_to_cstringvec(traits, string_vec);
 }
 
 #[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
@@ -382,9 +383,8 @@ mod tests {
                         "name": "test zome",
                         "description": "test",
                         "config": {},
-                        "capabilities": {
-                            "test capability": {
-                                "type": "public",
+                        "traits": {
+                            "test trait": {
                                 "functions": []
                             }
                         },
@@ -414,9 +414,8 @@ mod tests {
                         "name": "test zome",
                         "description": "test",
                         "config": {},
-                        "capabilities": {
-                            "test capability": {
-                                "type": "public",
+                        "traits": {
+                            "test trait": {
                                 "functions": []
                             }
                         },
@@ -449,17 +448,17 @@ mod tests {
 
         let mut cnames = CStringVec {
             len: 0,
-            ptr: 0 as *const *const c_char,
+            ptr: std::ptr::null(),
         };
         unsafe { holochain_dna_get_zome_names(&mut dna, &mut cnames) };
 
         assert_eq!(cnames.len, 2);
 
         let names = unsafe { cstring_vec_to_rustvec(&mut cnames) };
-        let names = names
+        let names: Vec<_> = names
             .into_iter()
-            .map(|s| s.into_string().unwrap())
-            .collect::<Vec<_>>();
+            .filter_map(|s| s.into_string().ok())
+            .collect();
 
         assert!(names[0] == "test zome" || names[1] == "test zome");
         assert!(names[0] == "test zome2" || names[1] == "test zome2");

@@ -1,5 +1,3 @@
-extern crate futures;
-extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
     agent::{self, find_chain_header},
@@ -47,6 +45,10 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
         }
 
         EntryType::LinkAdd => {
+            // LinkAdd can always be validated
+        }
+
+        EntryType::LinkRemove => {
             // LinkAdd can always be validated
         }
 

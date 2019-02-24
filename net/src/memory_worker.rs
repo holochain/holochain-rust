@@ -15,10 +15,12 @@ use std::{
 };
 
 /// a p2p worker for mocking in-memory scenario tests
+#[allow(non_snake_case)]
 pub struct InMemoryWorker {
     handler: NetHandler,
     receiver_per_dna: HashMap<Address, mpsc::Receiver<Protocol>>,
     server_name: String,
+    can_send_P2pReady: bool,
 }
 
 impl NetWorker for InMemoryWorker {
@@ -32,26 +34,59 @@ impl NetWorker for InMemoryWorker {
             .lock()
             .unwrap();
         if let Ok(json_msg) = JsonProtocol::try_from(&data) {
-            if let JsonProtocol::TrackDna(track_msg) = json_msg {
-                match self
-                    .receiver_per_dna
-                    .entry(track_msg.dna_address.to_owned())
-                {
-                    Entry::Occupied(_) => (),
-                    Entry::Vacant(e) => {
-                        let (tx, rx) = mpsc::channel();
-                        server.register(&track_msg.dna_address, &track_msg.agent_id, tx)?;
-                        e.insert(rx);
-                    }
-                };
+            match json_msg {
+                JsonProtocol::TrackDna(track_msg) => {
+                    match self
+                        .receiver_per_dna
+                        .entry(track_msg.dna_address.to_owned())
+                    {
+                        Entry::Occupied(_) => (),
+                        Entry::Vacant(e) => {
+                            let (tx, rx) = mpsc::channel();
+                            server.register_cell(
+                                &track_msg.dna_address,
+                                &track_msg.agent_id,
+                                tx,
+                            )?;
+                            e.insert(rx);
+                        }
+                    };
+                }
+                _ => (),
             }
         }
-        server.serve(data)?;
+        // Serve
+        server.serve(data.clone())?;
+        // After serve
+        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
+            match json_msg {
+                JsonProtocol::UntrackDna(untrack_msg) => {
+                    match self
+                        .receiver_per_dna
+                        .entry(untrack_msg.dna_address.to_owned())
+                    {
+                        Entry::Vacant(_) => (),
+                        Entry::Occupied(e) => {
+                            server.unregister_cell(&untrack_msg.dna_address, &untrack_msg.agent_id);
+                            e.remove();
+                        }
+                    };
+                }
+                _ => (),
+            }
+        }
+        // Done
         Ok(())
     }
 
     /// check for messages from our InMemoryServer
     fn tick(&mut self) -> NetResult<bool> {
+        // Send p2pready on first tick
+        if self.can_send_P2pReady {
+            self.can_send_P2pReady = false;
+            (self.handler)(Ok(Protocol::P2pReady))?;
+        }
+        // check for messages from our InMemoryServer
         let mut did_something = false;
         for (_, receiver) in self.receiver_per_dna.iter_mut() {
             if let Ok(data) = receiver.try_recv() {
@@ -102,6 +137,7 @@ impl InMemoryWorker {
             handler,
             receiver_per_dna: HashMap::new(),
             server_name,
+            can_send_P2pReady: true,
         })
     }
 }
@@ -135,7 +171,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
-    fn can_memory_double_track() {
+    fn can_memory_worker_double_track() {
         // setup client 1
         let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_string());
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
@@ -150,6 +186,11 @@ mod tests {
             )
             .unwrap(),
         );
+
+        // Should receive p2pready on first tick
+        memory_worker_1.tick().unwrap();
+        let message = handler_recv_1.recv().unwrap();
+        assert_eq!(message, Protocol::P2pReady);
 
         // First Track
         memory_worker_1

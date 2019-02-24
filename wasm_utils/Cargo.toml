@@ -1,6 +1,6 @@
 [package]
 name = "holochain_wasm_utils"
-version = "0.0.3"
+version = "0.0.4-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]

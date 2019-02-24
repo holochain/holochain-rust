@@ -190,12 +190,10 @@ impl Waiter {
                                     }
                                     _ => false,
                                 });
-                            },
-                            Entry::Deletion(deleted_entry) {
+                            }
+                            Entry::Deletion(deleted_entry) => {
                                 checker.add(num_instances, move |aw| match aw.action() {
-                                    Action::Deletion(deleted_entry.address()) => {
-                                        *deleted_entry == committed_entry
-                                    }
+                                    Action::RemoveEntry(_) => *deleted_entry == committed_entry,
                                     _ => false,
                                 });
                             }

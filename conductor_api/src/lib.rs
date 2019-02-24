@@ -130,7 +130,7 @@ extern crate tokio;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
-// extern crate base64;
+extern crate base64;
 extern crate rpassword;
 
 pub mod conductor;

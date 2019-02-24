@@ -5,10 +5,10 @@ use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
     config::*,
-    key_loaders::{test_key, test_key_loader},
+    key_loaders::{test_keybundle, test_keybundle_loader},
     logger::LogRules,
 };
-use holochain_core_types::agent::{AgentId, KeyBuffer};
+use holochain_core_types::agent::AgentId;
 use std::{fs, path::PathBuf};
 
 /// Starts a minimal configuration Conductor with the current application running
@@ -26,7 +26,7 @@ pub fn run(
     mount_conductor_from_config(conductor_config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
-    conductor.key_loader = test_key_loader();
+    conductor.key_loader = test_keybundle_loader();
 
     conductor
         .load_config()
@@ -97,9 +97,8 @@ fn agent_configuration() -> AgentConfiguration {
         .value()
         .ok()
         .unwrap_or_else(|| String::from(AGENT_NAME_DEFAULT));
-    let keypair = test_key(&agent_name);
-    let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
-    let agent_id = AgentId::new(&agent_name, &pub_key);
+    let keybundle = test_keybundle(&agent_name);
+    let agent_id = AgentId::new(&agent_name, keybundle.get_id());
     AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
         name: agent_id.nick,

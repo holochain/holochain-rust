@@ -251,14 +251,14 @@ mod tests {
         message.randomize();
 
         // sign it
-        let mut signature = SecBuf::with_insecure(SIGNATURE_SIZE);
+        let mut signature = SigningKeyPair::create_secbuf();
         bundle.sign(&mut message, &mut signature).unwrap();
         // authentify signature
         let succeeded = bundle.verify(&mut message, &mut signature);
         assert!(succeeded);
 
         // Create random data
-        let mut random_signature = SecBuf::with_insecure(SIGNATURE_SIZE);
+        let mut random_signature = SigningKeyPair::create_secbuf();
         random_signature.randomize();
         // authentify random signature
         let succeeded = bundle.verify(&mut message, &mut random_signature);

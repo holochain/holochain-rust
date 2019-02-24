@@ -1,10 +1,10 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_dpki::{
-    key_bundle::{KeyBlob, KeyBundle, SeedType},
+    key_bundle::{KeyBundle, SeedType},
     utils::SEED_SIZE,
 };
-use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
+use holochain_sodium::secbuf::SecBuf;
 use rpassword;
 use std::{
     fs::{create_dir_all, File},
@@ -31,8 +31,10 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     });
 
     let mut seed = SecBuf::with_secure(SEED_SIZE);
-    random_secbuf(&mut seed);
-    let mut keybundle = KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap();
+    seed.randomize();
+
+    let mut keybundle = KeyBundle::new_from_seed(&mut seed, SeedType::Mock)
+        .expect("Failed to generate keybundle");
     let passphrase_bytes = passphrase.as_bytes();
     let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
     passphrase_buf
@@ -40,13 +42,13 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         .expect("SecBuf must be writeable");
 
     let blob = keybundle
-        .get_bundle(&mut passphrase_buf, "hint".to_string(), None)
-        .unwrap();
+        .as_blob(&mut passphrase_buf, "hint".to_string(), None)
+        .expect("Failed encrypting with passphrase.");
 
     let path = if None == path {
         let p = keys_directory();
         create_dir_all(p.clone())?;
-        p.join(keybundle.pub_keys.clone())
+        p.join(keybundle.get_id().clone())
     } else {
         path.unwrap()
     };
@@ -56,7 +58,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     println!("");
     println!("Succesfully created new agent keys.");
     println!("");
-    println!("Public address: {}", keybundle.pub_keys);
+    println!("Public address: {}", keybundle.get_id());
     println!("Bundle written to: {}.", path.to_str().unwrap());
     println!("");
     println!("You can set this file in a conductor config as key_file for an agent.");

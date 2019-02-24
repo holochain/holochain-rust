@@ -13,7 +13,7 @@ use crate::logger::LogRules;
 use boolinator::*;
 use directories;
 use holochain_core_types::{
-    agent::AgentId,
+    agent::{AgentId, Base32},
     dna::Dna,
     error::{HcResult, HolochainError},
     json::JsonString,
@@ -308,7 +308,7 @@ impl Configuration {
 pub struct AgentConfiguration {
     pub id: String,
     pub name: String,
-    pub public_address: String,
+    pub public_address: Base32,
     pub key_file: String,
     /// If set to true conductor will ignore key_file and instead use the remote signer
     /// accessible through signing_service_uri to request signatures.

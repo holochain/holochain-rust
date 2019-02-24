@@ -8,7 +8,6 @@ use crate::{
     logger::DebugLogger,
     Holochain,
 };
-use boolinator::Boolinator;
 use holochain_common::paths::DNA_EXTENSION;
 use holochain_core::{
     logger::{ChannelLogger, Logger},
@@ -396,13 +395,11 @@ impl Conductor {
                     // !!!!!!!!!!!!!!!!!!!!!!!
                     // Holo closed-alpha hack:
                     // !!!!!!!!!!!!!!!!!!!!!!!
-                    let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
-                    AgentId::new(&agent_config.name, &pub_key)
+                    AgentId::new(&agent_config.name, agent_config.public_address)
                 } else {
-                    let keypair = self.get_keybundle_for_agent(&instance_config.agent)?;
-                    let keypair = keypair.lock().unwrap();
-                    let pub_key = KeyBuffer::with_corrected(&keypair.get_id())?;
-                    AgentId::new(&agent_config.name, &pub_key)
+                    let keybundle_arc = self.get_keybundle_for_agent(&instance_config.agent)?;
+                    let keybundle = keybundle_arc.lock().unwrap();
+                    AgentId::new(&agent_config.name, keybundle.get_id())
                 };
 
                 context_builder = context_builder.with_agent(agent_id.clone());
@@ -522,25 +519,26 @@ impl Conductor {
                 .agent_by_id(agent_id)
                 .ok_or(format!("Agent '{}' not found", agent_id))?;
             let key_file_path = PathBuf::from(agent_config.key_file.clone());
-            let keypair =
+            let keybundle =
                 Arc::get_mut(&mut self.key_loader).unwrap()(&key_file_path).map_err(|_| {
                     HolochainError::ConfigError(format!(
                         "Could not load key file \"{}\"",
                         agent_config.key_file,
                     ))
                 })?;
-            (agent_config.public_address == keypair.get_id()).ok_or(format!(
-                "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
-                key_file_path.to_str().unwrap(),
-                keypair.get_id(),
-                agent_config.public_address,
-            ))?;
+            if agent_config.public_address != keybundle.get_id() {
+                return Err(format!(
+                    "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
+                    key_file_path.to_str().unwrap(),
+                    keybundle.get_id(),
+                    agent_config.public_address,
+                ));
+            }
             self.agent_keys
-                .insert(agent_id.clone(), Arc::new(Mutex::new(keypair)));
+                .insert(agent_id.clone(), Arc::new(Mutex::new(keybundle)));
         }
-
-        let keypair_ref = self.agent_keys.get(agent_id).unwrap();
-        Ok(keypair_ref.clone())
+        let keybundle_ref = self.agent_keys.get(agent_id).unwrap();
+        Ok(keybundle_ref.clone())
     }
 
     fn start_interface(&mut self, config: &InterfaceConfiguration) -> Result<(), String> {

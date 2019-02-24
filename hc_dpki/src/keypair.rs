@@ -40,24 +40,9 @@ pub trait KeyPairable {
         utils::decode_pub_key_into_secbuf(&self.public(), &Self::codec())
             .expect("Public key decoding failed. Key was not properly encoded.")
     }
+
+    fn create_secbuf() -> SecBuf;
 }
-
-//fn decode_pub_key_into_secbuf(codec: HcidEncoding, pub_key_b32: Base32) -> HcResult<SecBuf> {
-//    // Decode Base32 public key
-//    let pub_key = codec.decode(client_b32)?;
-//    // convert to SecBuf
-//    let mut pub_key_sec = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
-//    let mut pub_key_lock = pub_key_sec.write_lock();
-//    for x in 0..pub_key.len() {
-//        pub_key_lock[x] = pub_key[x];
-//    }
-//    Ok(pub_key_sec)
-//}
-
-//pub enum KeyPairKind {
-//    SIGNING,
-//    ENCRYPTING,
-//}
 
 pub struct KeyPair {
     pub public: Base32,
@@ -90,6 +75,10 @@ impl KeyPairable for SigningKeyPair {
 
     fn codec() -> HcidEncoding {
         with_hcs0().expect("HCID failed miserably with_hcs0.")
+    }
+
+    fn create_secbuf() -> SecBuf {
+        SecBuf::with_insecure(SIGNATURE_SIZE)
     }
 }
 
@@ -155,6 +144,10 @@ impl KeyPairable for EncryptingKeyPair {
 
     fn codec() -> HcidEncoding {
         with_hck0().expect("HCID failed miserably with_hck0.")
+    }
+
+    fn create_secbuf() -> SecBuf {
+        SecBuf::with_secure(SEED_SIZE)
     }
 }
 
@@ -252,7 +245,7 @@ mod tests {
         message.randomize();
 
         // sign it
-        let mut signature = SecBuf::with_insecure(SIGNATURE_SIZE);
+        let mut signature = SigningKeyPair::create_secbuf();
         sign_keys.sign(&mut message, &mut signature).unwrap();
         println!("signature = {:?}", signature);
         // authentify signature
@@ -260,7 +253,7 @@ mod tests {
         assert!(succeeded);
 
         // Create random data
-        let mut random_signature = SecBuf::with_insecure(SIGNATURE_SIZE);
+        let mut random_signature = SigningKeyPair::create_secbuf();
         random_signature.randomize();
         // authentify random signature
         let succeeded = sign_keys.verify(&mut message, &mut random_signature);

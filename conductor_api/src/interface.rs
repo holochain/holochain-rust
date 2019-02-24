@@ -1,12 +1,12 @@
 use crate::holo_signing_service::request_signing_service;
-// use base64;
+use base64;
 use holochain_core::state::State;
 use holochain_core_types::{
     agent::AgentId, cas::content::Address, dna::capabilities::CapabilityCall,
 };
 use holochain_dpki::{
     key_bundle::KeyBundle,
-    keypair::{KeyPair, SIGNATURE_SIZE},
+    keypair::{SigningKeyPair, KeyPairable},
 };
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
@@ -756,19 +756,19 @@ impl ConductorApiBuilder {
             // Convert payload string into a SecBuf
             let mut message = SecBuf::with_insecure_from_string(payload.clone());
             // Create signature
-            let mut message_signed = SecBuf::with_insecure(SIGNATURE_SIZE);
+            let mut message_signature = SigningKeyPair::create_secbuf();
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
             keybundle
                 .lock()
                 .unwrap()
-                .sign(&mut message, &mut message_signed)
-                .unwrap();
+                .sign(&mut message, &mut message_signature)
+                .expect("Failed to sign with keybundle.");
 
-            let message_signed = message_signed.read_lock();
+            let message_signature = message_signature.read_lock();
             // Return as base64 encoded string
-            let signature = base64::encode(&**message_signed);
+            let signature = base64::encode(&**message_signature);
 
             Ok(json!({"payload": payload, "signature": signature}))
         });

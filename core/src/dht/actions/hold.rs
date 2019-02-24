@@ -1,14 +1,15 @@
 use crate::{
+    action::{Action, ActionWrapper},
     context::Context, network::entry_with_header::EntryWithHeader,
-    workflows::author_entry::author_entry,
+    instance::dispatch_action
 };
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    error::HolochainError,
+    cas::content::{Address,AddressableContent},
+    error::HolochainError
 };
 use std::{pin::Pin, sync::Arc};
 
@@ -16,9 +17,8 @@ pub async fn hold_entry<'a>(
     entry_wh: EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let new_context = context.clone();
-    let entry = entry_wh.entry.clone();
-    await!(author_entry(&entry, None, &new_context))?;
+    let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
+    dispatch_action(context.action_channel(), action_wrapper);
     await!(HoldEntryFuture {
         context: context,
         address: entry_wh.entry.address(),

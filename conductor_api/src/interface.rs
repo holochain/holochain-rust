@@ -1,10 +1,13 @@
 use crate::holo_signing_service::request_signing_service;
-use base64;
+// use base64;
 use holochain_core::state::State;
 use holochain_core_types::{
     agent::AgentId, cas::content::Address, dna::capabilities::CapabilityCall,
 };
-use holochain_dpki::keypair::{KeyPairPair, SIGNATURE_SIZE};
+use holochain_dpki::{
+    keypair::{KeyPair, SIGNATURE_SIZE},
+    key_bundle::KeyBundle,
+};
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
@@ -746,7 +749,7 @@ impl ConductorApiBuilder {
         self
     }
 
-    pub fn with_agent_signature_callback(mut self, keypair: Arc<Mutex<KeyPairPair>>) -> Self {
+    pub fn with_agent_signature_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
         self.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
@@ -757,7 +760,7 @@ impl ConductorApiBuilder {
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            keypair
+            keybundle
                 .lock()
                 .unwrap()
                 .sign(&mut message, &mut message_signed)

@@ -286,7 +286,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
     let agent_state = state.agent();
 
     let agent = await!(agent_state.get_agent(&context))?;
-    let agent_id = agent.key;
+    let agent_id = agent.key_b32;
 
     let dna = state
         .nucleus()

@@ -2,7 +2,11 @@ use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     cas::content::{Address, AddressableContent},
 };
-use holochain_dpki::keypair::{KeyPairPair, SEED_SIZE, SIGNATURE_SIZE};
+use holochain_dpki::{
+    keypair::SIGNATURE_SIZE,
+    key_bundle::{KeyBundle, SeedType},
+    utils::SEED_SIZE,
+};
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
 use std::{
@@ -32,12 +36,12 @@ pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
         .expect("SecBuf must be writeable");
 
     // Create keypair from seed:
-    let keypair = KeyPairPair::new_from_seed(&mut seed).unwrap();
-    let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
+    let keybundle = KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap();
+    let pub_key = KeyBuffer::with_corrected(&keybundle.get_id()).unwrap();
     let agent_id = AgentId::new(&nick, &pub_key);
 
     // Register key in static TEST_AGENT_KEYS
-    TEST_AGENT_KEYS.lock().unwrap().insert(agent_id.address(), Arc::new(Mutex::new(keypair)));
+    TEST_AGENT_KEYS.lock().unwrap().insert(agent_id.address(), Arc::new(Mutex::new(keybundle)));
     agent_id
 }
 

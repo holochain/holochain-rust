@@ -16,7 +16,7 @@ use holochain_core_types::{
     hash::HashString,
     validation::ValidationData,
 };
-use holochain_dpki::keypair::KeyPairPair;
+use holochain_dpki::utils;
 use holochain_sodium::secbuf::SecBuf;
 use snowflake::{self, ProcessUniqueId};
 use std::{pin::Pin, sync::Arc, thread};
@@ -99,7 +99,7 @@ fn validate_provenances(validation_data: &ValidationData) -> Result<(), Holochai
         .provenances()
         .iter()
         .map(|provenance| {
-            let author = &provenance.0;
+            let author_id = &provenance.0;
             let signature = &provenance.1;
             let signature_string: String = signature.clone().into();
             let signature_bytes: Vec<u8> = base64::decode(&signature_string).map_err(|_| {
@@ -113,13 +113,24 @@ fn validate_provenances(validation_data: &ValidationData) -> Result<(), Holochai
 
             let mut message_buf =
                 SecBuf::with_insecure_from_string(header.entry_address().to_string());
-            let result = KeyPairPair::verify(author.to_string(), &mut signature_buf, &mut message_buf)?;
 
-            (result == 0).ok_or(HolochainError::ValidationFailed(format!(
-                "Signature of entry {} from author {} invalid",
-                header.entry_address(),
-                author,
-            )))
+            let maybe_has_authored = utils::verify_sign(author_id.to_string(), &mut message_buf, &mut signature_buf);
+            match maybe_has_authored {
+                Err(_) => {
+                    Err(HolochainError::ValidationFailed(format!(
+                        "Signature of entry {} from author {} failed to verify public signing key. Key might be invalid.",
+                        header.entry_address(),
+                        author_id,
+                    )))
+                },
+                Ok(has_authored) => {
+                    has_authored.ok_or(HolochainError::ValidationFailed(format!(
+                        "Signature of entry {} from author {} invalid",
+                        header.entry_address(),
+                        author_id,
+                    )))
+                },
+            }
         })
         .collect::<Result<Vec<()>, HolochainError>>()?;
     Ok(())

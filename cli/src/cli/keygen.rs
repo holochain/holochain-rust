@@ -1,8 +1,8 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_dpki::{
-    key_bundle::KeyBlob,
-    keypair::{KeyPairPair, SEED_SIZE},
+    key_bundle::{KeyBlob, KeyBundle, SeedType},
+    utils::SEED_SIZE,
 };
 use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
 use rpassword;
@@ -32,21 +32,21 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
 
     let mut seed = SecBuf::with_secure(SEED_SIZE);
     random_secbuf(&mut seed);
-    let mut keypair = KeyPairPair::new_from_seed(&mut seed).unwrap();
+    let mut keybundle = KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap();
     let passphrase_bytes = passphrase.as_bytes();
     let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
     passphrase_buf
         .write(0, passphrase_bytes)
         .expect("SecBuf must be writeable");
 
-    let blob = keypair
+    let blob = keybundle
         .get_bundle(&mut passphrase_buf, "hint".to_string(), None)
         .unwrap();
 
     let path = if None == path {
         let p = keys_directory();
         create_dir_all(p.clone())?;
-        p.join(keypair.pub_keys.clone())
+        p.join(keybundle.pub_keys.clone())
     } else {
         path.unwrap()
     };
@@ -56,7 +56,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     println!("");
     println!("Succesfully created new agent keys.");
     println!("");
-    println!("Public address: {}", keypair.pub_keys);
+    println!("Public address: {}", keybundle.pub_keys);
     println!("Bundle written to: {}.", path.to_str().unwrap());
     println!("");
     println!("You can set this file in a conductor config as key_file for an agent.");
@@ -83,11 +83,11 @@ pub mod test {
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
 
-        let bundle: KeyBlob = serde_json::from_str(&contents).unwrap();
+        let blob: KeyBlob = serde_json::from_str(&contents).unwrap();
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        let keypair = KeyPairPair::from_bundle(&bundle, &mut passphrase, None);
+        let keybundle = KeyBundle::from_blob(&blob, &mut passphrase, None);
 
-        assert!(keypair.is_ok());
+        assert!(keybundle.is_ok());
 
         let _ = remove_file(path);
     }

@@ -1,7 +1,7 @@
 [package]
 name = "holochain_net_ipc"
 version = "0.0.4-alpha"
-authors = ["neonphog <neonphog@gmail.com>"]
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 failure = "0.1.1"

@@ -8,11 +8,13 @@ use crate::{
 };
 
 use std::{convert::TryFrom, str};
-
 use crate::error::HolochainError;
 //use reed_solomon::{Decoder, Encoder};
 
 use hcid::*;
+
+pub type Base32 = String;
+
 
 //
 ///// A raw public key buffer
@@ -78,8 +80,6 @@ use hcid::*;
 //    }
 //}
 
-pub type Base32 = String;
-
 /// agent data that can be stored in the CAS / source-chain
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct AgentId {
@@ -91,19 +91,6 @@ pub struct AgentId {
 
 impl AgentId {
     /// generate a agent id with fake key
-//    pub fn generate_fake(nick: &str) -> Self {
-//        let mut buf = nick.to_string();
-//        // Make sure base64 string must is big enough to decode into 64 bytes key
-//        while buf.len() < 82 {
-//            buf.push_str("+");
-//        }
-//        buf.push_str("AAAA");
-//        let buf = base64::decode(&buf)
-//            .expect("could not decode the generated fake base64 string - use the base64 alphabet");
-//        let buf = KeyBuffer::with_raw(array_ref![buf, 0, KeyBuffer::KEY_LEN]);
-//        AgentId::new(nick, &buf)
-//    }
-
     pub fn generate_fake(nick: &str) -> Self {
         let key = "42";
         AgentId::new_with_key(nick, key).expect("AgentId fake key generation failed.")
@@ -124,8 +111,10 @@ impl AgentId {
         }
     }
 
-
-
+//    pub fn has_authored(&self, data: &mut SecBuf, signature: &mut SecBuf) -> bool {
+//        utils::verify_sign(self.key_b32, data, signature)
+//            .expect("Failed to verify signature with AgentId. Key might be invalid.");
+//    }
 
 //    /// get a key buffer based on this agent's key (no correction)
 //    pub fn to_buffer(&self) -> KeyBuffer {
@@ -136,7 +125,7 @@ impl AgentId {
 }
 
 impl AddressableContent for AgentId {
-    /// for an Agent, the address is their public base64url encoded itentity string
+    /// for an Agent, the address is their public base32 encoded public signing key string
     fn address(&self) -> Address {
         self.key_b32.clone().into()
     }

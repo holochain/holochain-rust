@@ -510,7 +510,7 @@ pub mod tests {
     use super::*;
     use crate::{
         conductor::base::{
-            tests::{example_dna_string, test_key, test_key_loader},
+            tests::{example_dna_string, test_keybundle, test_key_loader},
             DnaLoader,
         },
         config::{load_configuration, Configuration, InterfaceConfiguration, InterfaceDriver},
@@ -562,7 +562,7 @@ id = 'test-agent-1'
 key_file = 'holo_tester1.key'
 name = 'Holo Tester 1'
 public_address = '{}'"#,
-            test_key(1).get_id()
+            test_keybundle(1).get_id()
         )
     }
 
@@ -573,7 +573,7 @@ id = 'test-agent-2'
 key_file = 'holo_tester2.key'
 name = 'Holo Tester 2'
 public_address = '{}'"#,
-            test_key(2).get_id()
+            test_keybundle(2).get_id()
         )
     }
 

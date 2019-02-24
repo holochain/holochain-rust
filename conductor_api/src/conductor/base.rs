@@ -15,13 +15,13 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::{AgentId, KeyBuffer},
+    agent::AgentId,
     cas::content::AddressableContent,
     dna::Dna,
     error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{key_bundle::KeyBlob, keypair::KeyPairPair};
+use holochain_dpki::{key_bundle::KeyBlob, key_bundle::KeyBundle};
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
@@ -80,7 +80,7 @@ pub fn mount_conductor_from_config(config: Configuration) {
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
-    agent_keys: HashMap<String, Arc<Mutex<KeyPairPair>>>,
+    agent_keys: HashMap<String, Arc<Mutex<KeyBundle>>>,
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
@@ -102,7 +102,7 @@ impl Drop for Conductor {
 }
 
 type SignalSender = SyncSender<Signal>;
-pub type KeyLoader = Arc<Box<FnMut(&PathBuf) -> Result<KeyPairPair, HolochainError> + Send + Sync>>;
+pub type KeyLoader = Arc<Box<FnMut(&PathBuf) -> Result<KeyBundle, HolochainError> + Send + Sync>>;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
     Arc<Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
@@ -402,7 +402,7 @@ impl Conductor {
                     let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
                     AgentId::new(&agent_config.name, &pub_key)
                 } else {
-                    let keypair = self.get_key_for_agent(&instance_config.agent)?;
+                    let keypair = self.get_keybundle_for_agent(&instance_config.agent)?;
                     let keypair = keypair.lock().unwrap();
                     let pub_key = KeyBuffer::with_corrected(&keypair.get_id())?;
                     AgentId::new(&agent_config.name, &pub_key)
@@ -446,7 +446,7 @@ impl Conductor {
                     );
                 } else {
                     api_builder = api_builder.with_agent_signature_callback(
-                        self.get_key_for_agent(&instance_config.agent)?,
+                        self.get_keybundle_for_agent(&instance_config.agent)?,
                     );
                 }
 
@@ -508,14 +508,14 @@ impl Conductor {
             // !!!!!!!!!!!!!!!!!!!!!!!
             return Ok(());
         }
-        self.get_key_for_agent(agent_id)?;
+        self.get_keybundle_for_agent(agent_id)?;
         Ok(())
     }
 
     /// Get reference to key for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
-    fn get_key_for_agent(&mut self, agent_id: &String) -> Result<Arc<Mutex<KeyPairPair>>, String> {
+    fn get_keybundle_for_agent(&mut self, agent_id: &String) -> Result<Arc<Mutex<KeyBundle>>, String> {
         if !self.agent_keys.contains_key(agent_id) {
             let agent_config = self
                 .config
@@ -563,7 +563,7 @@ impl Conductor {
     }
 
     /// Default KeyLoader that actually reads files from the filesystem
-    fn load_key(file: &PathBuf) -> Result<KeyPairPair, HolochainError> {
+    fn load_key(file: &PathBuf) -> Result<KeyBundle, HolochainError> {
         notify(format!("Reading agent key from {}", file.display()));
 
         // Read key file
@@ -580,14 +580,15 @@ impl Conductor {
         let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
         passphrase_buf
             .write(0, passphrase_bytes.as_slice())
-            .expect("SecBuf must be writeable");
+            .expect("Failed to write passphrase in a SecBuf");
 
         // Overwrite the unsafe passphrase memory with zeros
         for byte in passphrase_bytes.iter_mut() {
             *byte = 0u8;
         }
 
-        KeyPairPair::from_blob(&blob, &mut passphrase_buf, None)
+        // Unblob into KeyBundle
+        KeyBundle::from_blob(&blob, &mut passphrase_buf, None)
     }
 
     fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {
@@ -734,7 +735,10 @@ pub mod tests {
     use crate::config::load_configuration;
     use holochain_core::{action::Action, signal::signal_channel};
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
-    use holochain_dpki::keypair::{KeyPairPair, SEED_SIZE};
+    use holochain_dpki::{
+        key_bundle::KeyBundle,
+        utils::SEED_SIZE,
+    };
     use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
@@ -759,27 +763,27 @@ pub mod tests {
 
     pub fn test_key_loader() -> KeyLoader {
         let loader = Box::new(|path: &PathBuf| match path.to_str().unwrap().as_ref() {
-            "holo_tester1.key" => Ok(test_key(1)),
-            "holo_tester2.key" => Ok(test_key(2)),
-            "holo_tester3.key" => Ok(test_key(3)),
+            "holo_tester1.key" => Ok(test_keybundle(1)),
+            "holo_tester2.key" => Ok(test_keybundle(2)),
+            "holo_tester3.key" => Ok(test_keybundle(3)),
             unknown => Err(HolochainError::ErrorGeneric(format!(
                 "No test key for {}",
                 unknown
             ))),
         })
-            as Box<FnMut(&PathBuf) -> Result<KeyPairPair, HolochainError> + Send + Sync>;
+            as Box<FnMut(&PathBuf) -> Result<KeyBundle, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
-    pub fn test_key(index: u8) -> KeyPairPair {
-        // Create deterministic seed:
+    pub fn test_keybundle(index: u8) -> KeyBundle {
+        // Create deterministic seed
         let mut seed = SecBuf::with_insecure(SEED_SIZE);
         let mock_seed: Vec<u8> = (1..SEED_SIZE).map(|e| e as u8 + index).collect();
         seed.write(0, mock_seed.as_slice())
             .expect("SecBuf must be writeable");
 
-        // Create keypair from seed:
-        KeyPairPair::new_from_seed(&mut seed).unwrap()
+        // Create keypair from seed
+        KeyBundle::new_from_seed(&mut seed, holochain_dpki::key_bundle::SeedType::Mock).unwrap()
     }
 
     pub fn test_toml() -> String {
@@ -875,9 +879,9 @@ pub mod tests {
     callee_id = "test-instance-1"
     handle = "test-callee"
     "#,
-            test_key(1).get_id(),
-            test_key(2).get_id(),
-            test_key(3).get_id()
+            test_keybundle(1).get_id(),
+            test_keybundle(2).get_id(),
+            test_keybundle(3).get_id()
         )
     }
 

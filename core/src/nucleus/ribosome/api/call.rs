@@ -271,7 +271,7 @@ pub mod tests {
         let expected = Ok(Err(HolochainError::RibosomeFailed(
             "Zome function failure: Argument deserialization failed".to_string(),
         )));
-        let agent_token_str = test_setup.context.agent_id.key_b32.clone();
+        let agent_token_str = test_setup.context.agent_id.pub_sign_key.clone();
         test_reduce_call(
             &test_setup,
             &agent_token_str,
@@ -309,7 +309,7 @@ pub mod tests {
         let expected = Ok(Err(HolochainError::RibosomeFailed(
             "Zome function failure: Argument deserialization failed".to_string(),
         )));
-        let agent_token_str = test_setup.context.agent_id.key_b32.clone();
+        let agent_token_str = test_setup.context.agent_id.pub_sign_key.clone();
         test_reduce_call(
             &test_setup,
             &agent_token_str,

@@ -1,5 +1,3 @@
-//! Represents an agent entry in the cas
-
 use crate::{
     cas::content::{Address, AddressableContent, Content},
     entry::Entry,
@@ -9,104 +7,41 @@ use crate::{
 
 use crate::error::HolochainError;
 use std::{convert::TryFrom, str};
-//use reed_solomon::{Decoder, Encoder};
 
 use hcid::*;
 
 pub type Base32 = String;
 
-//
-///// A raw public key buffer
-///// Can extract the signature and encryption portions
-///// Can parse a base64url encoded user representation
-///// Can render a base64url encoded user representation
-//#[derive(Clone)]
-//pub struct KeyBuffer([u8; KeyBuffer::KEY_LEN]);
-//
-//impl KeyBuffer {
-//    /// Constants specific to KeyBuffer
-//    const PARITY_LEN: usize = 5;
-//    const KEY_LEN: usize = 64;
-//    const HALF_KEY_LEN: usize = KeyBuffer::KEY_LEN / 2;
-//
-//    /// take a potentially user-entered base64url encoded user representation
-//    /// of an public key identity
-//    /// apply reed-solomon parity correction
-//    /// returns a raw byte buffer
-//    pub fn with_corrected(s: &str) -> Result<KeyBuffer, HolochainError> {
-//        let s = s.replace("-", "+").replace("_", "/");
-//        let base64 = base64::decode(&s)?;
-//        let dec = Decoder::new(KeyBuffer::PARITY_LEN);
-//        let dec = *dec.correct(base64.as_slice(), None)?;
-//        Ok(KeyBuffer::with_raw(array_ref![dec, 0, KeyBuffer::KEY_LEN]))
-//    }
-//
-//    /// generate a key buffer from raw bytes (no correction)
-//    pub fn with_raw(b: &[u8; KeyBuffer::KEY_LEN]) -> KeyBuffer {
-//        KeyBuffer(*b)
-//    }
-//
-//    /// generate a key buffer from raw bytes from two parts (no correction)
-//    pub fn with_raw_parts(
-//        a: &[u8; KeyBuffer::HALF_KEY_LEN],
-//        b: &[u8; KeyBuffer::HALF_KEY_LEN],
-//    ) -> KeyBuffer {
-//        let mut buf: [u8; KeyBuffer::KEY_LEN] = [0; KeyBuffer::KEY_LEN];
-//
-//        buf[..KeyBuffer::HALF_KEY_LEN].clone_from_slice(&a[..KeyBuffer::HALF_KEY_LEN]);
-//
-//        buf[KeyBuffer::HALF_KEY_LEN..KeyBuffer::KEY_LEN]
-//            .clone_from_slice(&b[..KeyBuffer::HALF_KEY_LEN]);
-//
-//        KeyBuffer(buf)
-//    }
-//
-//    /// render a base64url encoded user identity with reed-solomon parity bytes
-//    pub fn render(&self) -> String {
-//        let enc = Encoder::new(KeyBuffer::PARITY_LEN);
-//        let enc = *enc.encode(&self.0);
-//        base64::encode(&enc[..]).replace("+", "-").replace("/", "_")
-//    }
-//
-//    /// get the signature public key portion of this buffer
-//    pub fn get_sig(&self) -> &[u8; KeyBuffer::HALF_KEY_LEN] {
-//        array_ref![self.0, 0, KeyBuffer::HALF_KEY_LEN]
-//    }
-//
-//    /// get the encryption public key portion of this buffer
-//    pub fn get_enc(&self) -> &[u8; KeyBuffer::HALF_KEY_LEN] {
-//        array_ref![self.0, KeyBuffer::HALF_KEY_LEN, KeyBuffer::HALF_KEY_LEN]
-//    }
-//}
-
-/// agent data that can be stored in the CAS / source-chain
+/// AgentId represents an agent in the Holochain framework.
+/// This data struct is meant be stored in the CAS and source-chain.
+/// Its key is the public signing key, and is also used as its address.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct AgentId {
     /// a nickname for referencing this agent
     pub nick: String,
     /// the encoded public signing key of this agent (the magnifier)
-    pub key_b32: Base32,
+    pub pub_sign_key: Base32,
 }
 
 impl AgentId {
     /// generate a agent id with fake key
     pub fn generate_fake(nick: &str) -> Self {
         let key = "42";
-        AgentId::new_with_key(nick, key).expect("AgentId fake key generation failed.")
+        AgentId::new_with_raw_key(nick, key).expect("AgentId fake key generation failed.")
     }
 
-    /// initialize an Agent struct with `nick` and `key`
-    pub fn new_with_key(nick: &str, key: &str) -> HcResult<Self> {
+    /// initialize an Agent struct with `nick` and `key` that will be encoded
+    pub fn new_with_raw_key(nick: &str, key: &str) -> HcResult<Self> {
         let codec = with_hcs0()?;
         let key_b32 = codec.encode(key.as_bytes())?;
         Ok(AgentId::new(nick, key_b32))
     }
 
-    /// initialize an Agent struct with `nick` and `key`
+    /// initialize an Agent struct with `nick` and a Base32 `key` from HCID
     pub fn new(nick: &str, key_b32: Base32) -> Self {
         AgentId {
             nick: nick.to_string(),
-            key_b32,
+            pub_sign_key: key_b32,
         }
     }
 
@@ -114,19 +49,12 @@ impl AgentId {
     //        utils::verify_sign(self.key_b32, data, signature)
     //            .expect("Failed to verify signature with AgentId. Key might be invalid.");
     //    }
-
-    //    /// get a key buffer based on this agent's key (no correction)
-    //    pub fn to_buffer(&self) -> KeyBuffer {
-    //        let s = self.key.replace("-", "+").replace("_", "/");
-    //        let key = base64::decode(&s).expect("corrupt identity key");
-    //        KeyBuffer::with_raw(array_ref![key, 0, KeyBuffer::KEY_LEN])
-    //    }
 }
 
 impl AddressableContent for AgentId {
     /// for an Agent, the address is their public base32 encoded public signing key string
     fn address(&self) -> Address {
-        self.key_b32.clone().into()
+        self.pub_sign_key.clone().into()
     }
 
     /// get the entry content

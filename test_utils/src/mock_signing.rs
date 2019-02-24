@@ -1,9 +1,9 @@
 use holochain_core_types::{
-    agent::{AgentId, KeyBuffer},
+    agent::AgentId,
     cas::content::{Address, AddressableContent},
 };
 use holochain_dpki::{
-    keypair::SigningKeyPair,
+    keypair::{SigningKeyPair, KeyPairable},
     key_bundle::{KeyBundle, SeedType},
     utils::SEED_SIZE,
 };
@@ -15,7 +15,7 @@ use std::{
 };
 
 lazy_static! {
-    pub static ref TEST_AGENT_KEYS: Mutex<HashMap<Address, Arc<Mutex<Keypair>>>>
+    pub static ref TEST_AGENT_KEYBUNDLES: Mutex<HashMap<Address, Arc<Mutex<KeyBundle>>>>
         = Mutex::new(HashMap::new());
 }
 
@@ -35,13 +35,12 @@ pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
     seed.write(0, seed_bytes.as_slice())
         .expect("SecBuf must be writeable");
 
-    // Create keypair from seed:
+    // Create keypair from seed
     let keybundle = KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap();
-    let pub_key = KeyBuffer::with_corrected(&keybundle.get_id()).unwrap();
-    let agent_id = AgentId::new(&nick, &pub_key);
+    let agent_id = AgentId::new(&nick, keybundle.get_id());
 
     // Register key in static TEST_AGENT_KEYS
-    TEST_AGENT_KEYS.lock().unwrap().insert(agent_id.address(), Arc::new(Mutex::new(keybundle)));
+    TEST_AGENT_KEYBUNDLES.lock().unwrap().insert(agent_id.address(), Arc::new(Mutex::new(keybundle)));
     agent_id
 }
 
@@ -51,7 +50,7 @@ pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
 /// This enables unit testing of core code that creates signatures without
 /// depending on the conductor or actual key files.
 pub fn mock_signer(payload: String, agent_id: &AgentId) -> String {
-    TEST_AGENT_KEYS
+    TEST_AGENT_KEYBUNDLES
         .lock()
         .unwrap()
         .get(&agent_id.address())

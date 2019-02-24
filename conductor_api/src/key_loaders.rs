@@ -23,6 +23,6 @@ pub fn test_keybundle(name: &String) -> KeyBundle {
     let mut seed = SecBuf::with_insecure(SEED_SIZE);
     sha256(&mut name, &mut seed).expect("Could not hash test agent name");
 
-    // Create keypair from seed
+    // Create KeyBundle from seed
     KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap()
 }

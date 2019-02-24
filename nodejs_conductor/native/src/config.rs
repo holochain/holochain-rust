@@ -65,12 +65,11 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
         let agent_name = instance.agent.name;
         let mut dna_data = instance.dna;
         let agent_config = agent_configs.entry(agent_name.clone()).or_insert_with(|| {
-            let keypair = test_key(&agent_name);
-            let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
+            let keybundle = test_keybundle(&agent_name);
             let config = AgentConfiguration {
                 id: agent_name.clone(),
                 name: agent_name.clone(),
-                public_address: pub_key.render(),
+                public_address: keybundle.get_id(),
                 key_file: agent_name.clone(),
                 holo_remote_key: None,
             };

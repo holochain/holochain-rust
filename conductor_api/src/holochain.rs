@@ -41,11 +41,10 @@
 //! let mut seed = SecBuf::with_insecure(SEEDSIZE);
 //! seed.randomize();
 //!
-//! let keypair = Keypair::new_from_seed(&mut seed).unwrap();
-//! let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
+//! let keybundle = KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap();
 //!
-//! // The keypair's public part is the agent's address
-//! let agent = AgentId::new("bob", &pub_key);
+//! // The keybundle's public part is the agent's address
+//! let agent = AgentId::new("bob", keybundle.get_id());
 //!
 //! // The instance needs a conductor API with at least the signing callback:
 //! let conductor_api = interface::ConductorApiBuilder::new()

@@ -4,7 +4,7 @@ use holochain_sodium::{kx, secbuf::SecBuf, sign, *};
 use crate::{
     keypair::*,
     password_encryption::{self, EncryptedData, PwHashConfig},
-    utils::{self, SEED_SIZE},
+    utils, SEED_SIZE,
 };
 use holochain_core_types::{
     agent::Base32,

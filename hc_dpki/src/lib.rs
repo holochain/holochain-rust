@@ -11,3 +11,5 @@ pub mod key_bundle;
 pub mod keypair;
 pub mod password_encryption;
 pub mod utils;
+
+pub const SEED_SIZE: usize = 32;

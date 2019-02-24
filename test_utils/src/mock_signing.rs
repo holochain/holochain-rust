@@ -5,7 +5,7 @@ use holochain_core_types::{
 use holochain_dpki::{
     keypair::{SigningKeyPair, KeyPairable},
     key_bundle::{KeyBundle, SeedType},
-    utils::SEED_SIZE,
+    SEED_SIZE,
 };
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};

@@ -2,7 +2,7 @@ use crate::conductor::base::KeyLoader;
 use holochain_core_types::error::HolochainError;
 use holochain_dpki::{
     key_bundle::{KeyBundle, SeedType},
-    utils::SEED_SIZE,
+    SEED_SIZE,
 };
 use holochain_sodium::{hash::sha256, secbuf::SecBuf};
 use std::{path::PathBuf, sync::Arc};

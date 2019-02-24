@@ -2,7 +2,7 @@ use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_dpki::{
     key_bundle::{KeyBundle, SeedType},
-    utils::SEED_SIZE,
+    SEED_SIZE,
 };
 use holochain_sodium::secbuf::SecBuf;
 use rpassword;
@@ -43,7 +43,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
 
     let blob = keybundle
         .as_blob(&mut passphrase_buf, "hint".to_string(), None)
-        .expect("Failed encrypting with passphrase.");
+        .expect("Failed to encrypt with passphrase.");
 
     let path = if None == path {
         let p = keys_directory();

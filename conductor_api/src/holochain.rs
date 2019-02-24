@@ -20,7 +20,7 @@
 //!     agent::{AgentId, KeyBuffer},
 //!     dna::{Dna, capabilities::CapabilityCall},
 //!     json::JsonString};
-//! use holochain_dpki::{key_bundle::KeyBundle, utils::SEED_SIZE};
+//! use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
 //! use holochain_sodium::secbuf::SecBuf;
 //!
 //! use std::sync::{Arc, Mutex};

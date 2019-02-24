@@ -3,7 +3,7 @@
 use crate::{
     key_bundle,
     password_encryption::{self, PwHashConfig},
-    utils::{self, SEED_SIZE},
+    utils, SEED_SIZE,
 };
 use hcid::*;
 use holochain_core_types::{

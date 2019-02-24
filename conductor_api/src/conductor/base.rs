@@ -733,7 +733,7 @@ pub mod tests {
     use crate::config::load_configuration;
     use holochain_core::{action::Action, signal::signal_channel};
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
-    use holochain_dpki::{key_bundle::KeyBundle, utils::SEED_SIZE};
+    use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
     use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
     use std::{

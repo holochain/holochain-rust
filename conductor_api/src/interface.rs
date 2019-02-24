@@ -6,7 +6,7 @@ use holochain_core_types::{
 };
 use holochain_dpki::{
     key_bundle::KeyBundle,
-    keypair::{SigningKeyPair, KeyPairable},
+    keypair::{KeyPairable, SigningKeyPair},
 };
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;

@@ -232,7 +232,7 @@ impl SecBuf {
     /// helper for writing data to our internal buffer
     pub fn write(&mut self, offset: usize, data: &[u8]) -> Result<(), SodiumError> {
         if offset + data.len() > self.len() {
-            return Err(SodiumError::new("bad write offset / length"));
+            return Err(SodiumError::new("SecBuf write overflow"));
         }
         unsafe {
             let mut b = self.write_lock();
@@ -247,10 +247,10 @@ impl SecBuf {
         // println!("Buf{:?}", *buf);
         for i in 0..buf.len() {
             if buf[i] != 0 {
-                return true;
+                return false;
             }
         }
-        false
+        true
     }
 
     /// Load the [u8] into the SecBuf

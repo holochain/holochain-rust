@@ -28,14 +28,12 @@ pub(crate) fn pw_hash(
     hash_result: &mut SecBuf,
     config: Option<PwHashConfig>,
 ) -> HcResult<()> {
-    debug_assert!(hash_result.is_empty());
     let config = config.unwrap_or(PwHashConfig(
         pwhash::OPSLIMIT_SENSITIVE,
         pwhash::MEMLIMIT_SENSITIVE,
         pwhash::ALG_ARGON2ID13,
     ));
     pwhash::hash(password, config.0, config.1, config.2, salt, hash_result)?;
-    debug_assert!(!hash_result.is_empty());
     Ok(())
 }
 
@@ -132,19 +130,27 @@ mod tests {
     #[test]
     fn it_should_generate_pw_hash_with_salt() {
         let mut password = test_password();
-        let mut hashed_password = SecBuf::with_insecure(pwhash::HASHBYTES);
         let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
-        println!("salt = {:?}", salt);
+        let mut hashed_password = SecBuf::with_insecure(pwhash::HASHBYTES);
         pw_hash(&mut password, &mut salt, &mut hashed_password, TEST_CONFIG).unwrap();
         println!("salt = {:?}", salt);
-        let pw2_hash = hashed_password.read_lock();
-        assert_eq!(
-            "[134, 156, 170, 171, 184, 19, 40, 158, 64, 227, 105, 252, 59, 175, 119, 226, 77, 238, 49, 61, 27, 174, 47, 246, 179, 168, 88, 200, 65, 11, 14, 159]",
-            format!("{:?}", *pw2_hash),
-        );
+        {
+            let pw2_hash = hashed_password.read_lock();
+            assert_eq!(
+                "[134, 156, 170, 171, 184, 19, 40, 158, 64, 227, 105, 252, 59, 175, 119, 226, 77, 238, 49, 61, 27, 174, 47, 246, 179, 168, 88, 200, 65, 11, 14, 159]",
+                format!("{:?}", *pw2_hash),
+            );
+        }
+        // hash with different salt should have different result
+        salt.randomize();
+        let mut hashed_password_b = SecBuf::with_insecure(pwhash::HASHBYTES);
+        pw_hash(&mut password, &mut salt, &mut hashed_password_b, TEST_CONFIG).unwrap();
+        assert_ne!(hashed_password.dump(), hashed_password_b.dump());
 
-        // TODO
-        // hash again, should have different result
+        // same hash should have same result
+        let mut hashed_password_c = SecBuf::with_insecure(pwhash::HASHBYTES);
+        pw_hash(&mut password, &mut salt, &mut hashed_password_c, TEST_CONFIG).unwrap();
+        assert_eq!(hashed_password_c.dump(), hashed_password_b.dump());
     }
 
 }

@@ -82,29 +82,24 @@ impl KeyBundle {
         let mut decrypted_data = SecBuf::with_secure(BLOB_DATA_LEN);
         password_encryption::pw_dec(&data, passphrase, &mut decrypted_data, config)?;
 
-        let mut priv_sign = SecBuf::with_secure(SIGNATURE_SIZE);
-        let mut priv_enc = SecBuf::with_secure(32);
-        let mut pub_sign = SecBuf::with_secure(SIGNATURE_SIZE);
-        let mut pub_enc = SecBuf::with_secure(32);
+        let mut pub_sign = SecBuf::with_secure(sign::PUBLICKEYBYTES);
+        let mut pub_enc = SecBuf::with_secure(kx::PUBLICKEYBYTES);
+        let mut priv_sign = SecBuf::with_secure(sign::SECRETKEYBYTES);
+        let mut priv_enc = SecBuf::with_secure(kx::SECRETKEYBYTES);
 
-        // FIXME
-//        let pub_keys = {
-//            let decrypted_data = decrypted_data.read_lock();
-//            if decrypted_data[0] != BLOB_FORMAT_VERSION {
-//                return Err(HolochainError::ErrorGeneric(format!(
-//                    "Invalid Blob Format: v{:?} != v{:?}",
-//                    decrypted_data[0], BLOB_FORMAT_VERSION
-//                )));
-//            }
-//            priv_sign.write(0, &decrypted_data[65..129])?;
-//            priv_enc.write(0, &decrypted_data[129..161])?;
-//
-//            KeyBuffer::with_raw_parts(
-//                array_ref![&decrypted_data, 1, 32],
-//                array_ref![&decrypted_data, 33, 32],
-//            )
-//                .render()
-//        };
+        {
+            let decrypted_data = decrypted_data.read_lock();
+            if decrypted_data[0] != BLOB_FORMAT_VERSION {
+                return Err(HolochainError::ErrorGeneric(format!(
+                    "Invalid Blob Format: v{:?} != v{:?}",
+                    decrypted_data[0], BLOB_FORMAT_VERSION
+                )));
+            }
+            pub_sign.write(0, &decrypted_data[1..33])?;
+            pub_enc.write(0, &decrypted_data[33..65])?;
+            priv_sign.write(0, &decrypted_data[65..129])?;
+            priv_enc.write(0, &decrypted_data[129..161])?;
+        }
 
 
         Ok(KeyBundle {
@@ -124,7 +119,6 @@ impl KeyBundle {
         hint: String,
         config: Option<PwHashConfig>,
     ) -> HcResult<KeyBlob> {
-        // let corrected_pub_keys = KeyBuffer::with_corrected(&self.pub_keys)?;
         // Initialize buffer
         let mut data_buf = SecBuf::with_secure(BLOB_DATA_LEN);
         let mut offset: usize = 0;
@@ -132,22 +126,30 @@ impl KeyBundle {
         data_buf.write(offset, &[BLOB_FORMAT_VERSION])?;
         offset += 1;
         // Write public signing key
-        data_buf.write(offset, &self.sign_keys.decode_pub_key())?;
+        let key = self.sign_keys.decode_pub_key();
+        assert_eq!(sign::PUBLICKEYBYTES, key.len());
+        data_buf.write(offset, &key)
+            .expect("Failed blobbing public signing key");
         offset += sign::PUBLICKEYBYTES;
-        // Write public signing key
-        data_buf.write(offset, &self.enc_keys.decode_pub_key())?;
+        // Write public encoding key
+        let key = self.enc_keys.decode_pub_key();
+        assert_eq!(kx::PUBLICKEYBYTES, key.len());
+        data_buf.write(offset, &key)
+            .expect("Failed blobbing public encoding key");
         offset += kx::PUBLICKEYBYTES;
-        // Write public signing key
-        data_buf.write(offset, &**self.sign_keys.keypair.private.read_lock())?;
+        // Write private signing key
+        data_buf.write(offset, &**self.sign_keys.keypair.private.read_lock())
+            .expect("Failed blobbing private signing key");
         offset += sign::SECRETKEYBYTES;
-        // Write public signing key
-        data_buf.write(offset, &**self.sign_keys.keypair.private.read_lock())?;
+        // Write private encoding key
+        data_buf.write(offset, &**self.enc_keys.keypair.private.read_lock())
+            .expect("Failed blobbing private encoding key");
         offset += kx::SECRETKEYBYTES;
         assert_eq!(offset, BLOB_DATA_LEN_MISALIGN);
 
         // encrypt buffer
         let encrypted_blob = password_encryption::pw_enc(&mut data_buf, passphrase, config)?;
-        let serialized_blob = json::encode(&encrypted_blob).expect("");
+        let serialized_blob = json::encode(&encrypted_blob).expect("Failed to serialize KeyBundle");
         // conver to base64
         let encoded_blob = base64::encode(&serialized_blob);
         // Done
@@ -222,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    fn it_should_sign_message_and_verify() {
+    fn keybundle_should_sign_message_and_verify() {
         let mut bundle = test_generate_random_bundle();
 
         // Create random data
@@ -230,22 +232,22 @@ mod tests {
         message.randomize();
 
         // sign it
-        let mut message_signed = SecBuf::with_insecure(SIGNATURE_SIZE);
-        bundle.sign(&mut message, &mut message_signed).unwrap();
+        let mut signature = SecBuf::with_insecure(SIGNATURE_SIZE);
+        bundle.sign(&mut message, &mut signature).unwrap();
         // authentify signature
-        let succeeded = bundle.verify(&mut message_signed, &mut message);
+        let succeeded = bundle.verify(&mut message, &mut signature);
         assert!(succeeded);
 
         // Create random data
-        let mut random_signed = SecBuf::with_insecure(SIGNATURE_SIZE);
-        random_signed.randomize();
+        let mut random_signature = SecBuf::with_insecure(SIGNATURE_SIZE);
+        random_signature.randomize();
         // authentify random signature
-        let succeeded = bundle.verify(&mut random_signed, &mut message);
+        let succeeded = bundle.verify(&mut message, &mut random_signature);
         assert!(!succeeded);
 
         // Randomize data again
         message.randomize();
-        let succeeded = bundle.verify(&mut message_signed, &mut message);
+        let succeeded = bundle.verify(&mut message, &mut signature);
         assert!(!succeeded);
     }
 
@@ -276,28 +278,8 @@ mod tests {
 
         // Test with wrong passphrase
         passphrase.randomize();
-        let unblob = KeyBundle::from_blob(&blob, &mut passphrase, TEST_CONFIG);
-
-    }
-
-    #[test]
-    fn it_should_try_get_bundle_and_decode_it() {
-        let mut seed = test_generate_random_seed();
-        let mut passphrase = test_generate_random_seed();
-
-        let mut bundle = KeyBundle::new_from_seed(&mut seed, SeedType::Root).unwrap();
-        let mut passphrase = SecBuf::with_insecure(SEED_SIZE);
-
-        let blob = bundle
-            .as_blob(&mut passphrase, "hint".to_string(), TEST_CONFIG)
-            .unwrap();
-
-
-        let unblob = KeyBundle::from_blob(&blob, &mut passphrase, TEST_CONFIG).unwrap();
-
-//        assert_eq!(64, keypair_from_bundle.sign_priv.len());
-//        assert_eq!(32, keypair_from_bundle.enc_priv.len());
-//        assert_eq!(92, keypair_from_bundle.pub_keys.len());
+        let maybe_unblob = KeyBundle::from_blob(&blob, &mut passphrase, TEST_CONFIG);
+        assert!(maybe_unblob.is_err());
     }
 
     // #[test]

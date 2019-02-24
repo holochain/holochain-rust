@@ -218,6 +218,72 @@ impl EncryptingKeyPair {
 mod tests {
     use super::*;
 
-//    #[test]
-//    fn it_should_set_keypair_from_seed() {}
+    fn test_generate_random_seed() -> SecBuf {
+        let mut seed = SecBuf::with_insecure(SEED_SIZE);
+        seed.randomize();
+        seed
+    }
+
+    fn test_generate_random_sign_keypair() -> SigningKeyPair {
+        let mut seed = test_generate_random_seed();
+        SigningKeyPair::new_from_seed(&mut seed).unwrap()
+    }
+
+    fn test_generate_random_enc_keypair() -> EncryptingKeyPair {
+        let mut seed = test_generate_random_seed();
+        EncryptingKeyPair::new_from_seed(&mut seed).unwrap()
+    }
+
+    #[test]
+    fn keypair_should_construct_sign() {
+        let mut sign_keys = test_generate_random_sign_keypair();
+        // Test public key
+        println!("sign_keys.public = {:?}", sign_keys.keypair.public);
+        assert_eq!(63, sign_keys.keypair.public.len());
+        let prefix: String = sign_keys.keypair.public.chars().skip(0).take(3).collect();
+        assert_eq!("HcS", prefix);
+        // Test private key
+        assert_eq!(64, sign_keys.keypair.private.len());
+    }
+
+    #[test]
+    fn keypair_should_construct_enc() {
+        let mut sign_keys = test_generate_random_enc_keypair();
+        // Test public key
+        println!("sign_keys.public = {:?}", sign_keys.keypair.public);
+        assert_eq!(63, sign_keys.keypair.public.len());
+        let prefix: String = sign_keys.keypair.public.chars().skip(0).take(3).collect();
+        assert_eq!("HcK", prefix);
+        // Test private key
+        assert_eq!(32, sign_keys.keypair.private.len());
+    }
+
+    #[test]
+    fn keypair_should_sign_message_and_verify() {
+        let mut sign_keys = test_generate_random_sign_keypair();
+
+        // Create random data
+        let mut message = SecBuf::with_insecure(16);
+        message.randomize();
+
+        // sign it
+        let mut signature = SecBuf::with_insecure(SIGNATURE_SIZE);
+        sign_keys.sign(&mut message, &mut signature).unwrap();
+        println!("signature = {:?}", signature);
+        // authentify signature
+        let succeeded = sign_keys.verify(&mut message, &mut signature);
+        assert!(succeeded);
+
+        // Create random data
+        let mut random_signature = SecBuf::with_insecure(SIGNATURE_SIZE);
+        random_signature.randomize();
+        // authentify random signature
+        let succeeded = sign_keys.verify(&mut message, &mut random_signature);
+        assert!(!succeeded);
+
+        // Randomize data again
+        message.randomize();
+        let succeeded = sign_keys.verify(&mut message, &mut signature);
+        assert!(!succeeded);
+    }
 }

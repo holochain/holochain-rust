@@ -190,6 +190,14 @@ impl Waiter {
                                     }
                                     _ => false,
                                 });
+                            },
+                            Entry::Deletion(deleted_entry) {
+                                checker.add(num_instances, move |aw| match aw.action() {
+                                    Action::Deletion(deleted_entry.address()) => {
+                                        *deleted_entry == committed_entry
+                                    }
+                                    _ => false,
+                                });
                             }
                             // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s
                             Entry::LinkAdd(link_add) => {

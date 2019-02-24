@@ -127,22 +127,18 @@ fn reduce_publish_inner(
     network_state.initialized()?;
 
     let entry_with_header = fetch_entry_with_header(&address, &context)?;
-    let (crud_status, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address.clone())?
+    let (_, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address.clone())?
         .expect("Entry should have crud-status metadata in DHT.");
+        let entry_type = entry_with_header.entry.entry_type().clone();
+    println!("entry type{:?}",entry_type);
     match entry_with_header.entry.entry_type() {
-        EntryType::AgentId => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            publish_crud_meta(
-                network_state,
-                entry_with_header.entry.address(),
-                crud_status,
-                maybe_crud_link,
-            )
-        }),
+        EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
+            let crud = if maybe_crud_link.is_some() {CrudStatus::Modified} else {CrudStatus::Live};
             publish_crud_meta(
                 network_state,
                 entry_with_header.entry.address(),
-                crud_status,
+                crud,
                 maybe_crud_link,
             )
         }),
@@ -154,7 +150,7 @@ fn reduce_publish_inner(
             publish_crud_meta(
                 network_state,
                 entry_with_header.entry.address(),
-                crud_status,
+                CrudStatus::Deleted,
                 maybe_crud_link,
             )
         }),

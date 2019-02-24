@@ -49,8 +49,40 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
         Action::RemoveEntry(_) => Some(reduce_remove_entry),
         Action::AddLink(_) => Some(reduce_add_link),
         Action::RemoveLink(_) => Some(reduce_remove_link),
+        Action::CrudLink(_) => Some(reduce_crud_link),
         _ => None,
     }
+}
+
+pub(crate) fn reduce_crud_link(_context: Arc<Context>,
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper) -> Option<DhtStore>
+{
+
+    let action = action_wrapper.action();
+    let (address,crud_link) = unwrap_to!(action => Action::CrudLink);
+    //grab meta from state
+    let dht_meta = old_store.meta_storage().clone();
+   
+    //grab lock from meta_storage
+    let mut meta_storage = dht_meta
+        .write()
+        .unwrap();
+
+    let link_option = create_crud_link_eav(
+        address,
+        crud_link,
+    );
+
+    if link_option.is_err()
+    {
+        return None::<DhtStore>
+    }
+
+    println!("grab crudlink from state");
+    let store = meta_storage.add_eavi(&link_option.unwrap()).map(|_|None::<DhtStore>).unwrap_or(Some(old_store.clone()));
+
+    store
 }
 
 pub(crate) fn reduce_hold_entry(
@@ -191,8 +223,8 @@ pub(crate) fn reduce_update_entry(
 ) -> Option<DhtStore> {
     // Setup
     let action = action_wrapper.action();
-    let (old_address, new_address) = unwrap_to!(action => Action::UpdateEntry);
-    let mut new_store = (*old_store).clone();
+    let old_address = unwrap_to!(action => Action::UpdateEntry);
+    let new_store = (*old_store).clone();
     // Update crud-status
     let latest_old_address = old_address;
     let meta_storage = &new_store.meta_storage().clone();
@@ -213,32 +245,7 @@ pub(crate) fn reduce_update_entry(
         })
         .ok()
         .unwrap_or(None);
-    if new_status_eav_option.is_some() {
-        new_status_eav_option
-    } else {
-        // Update crud-link
-        create_crud_link_eav(latest_old_address, new_address)
-            .map(|crud_link_eav| {
-                let res = (*meta_storage.write().unwrap()).add_eavi(&crud_link_eav);
-                let res_option = res.clone().ok();
-                res_option
-                    .and_then(|_| {
-                        new_store.actions_mut().insert(
-                            action_wrapper.clone(),
-                            res.clone().map(|_| new_address.clone()),
-                        );
-                        Some(new_store.clone())
-                    })
-                    .or_else(|| {
-                        new_store
-                            .actions_mut()
-                            .insert(action_wrapper.clone(), Err(res.err().unwrap()));
-                        Some(new_store.clone())
-                    })
-            })
-            .ok()
-            .unwrap_or(None)
-    }
+    new_status_eav_option
 }
 
 pub(crate) fn reduce_remove_entry(
@@ -248,10 +255,10 @@ pub(crate) fn reduce_remove_entry(
 ) -> Option<DhtStore> {
     // Setup
     let action = action_wrapper.action();
-    let (deleted_address, deletion_address) = unwrap_to!(action => Action::RemoveEntry);
+    let deleted_address = unwrap_to!(action => Action::RemoveEntry);
     let mut new_store = (*old_store).clone();
     // Act
-    let res = reduce_remove_entry_inner(context, &mut new_store, deleted_address, deletion_address);
+    let res = reduce_remove_entry_inner(context, &mut new_store, deleted_address);
     // Done
     new_store.actions_mut().insert(action_wrapper.clone(), res);
     Some(new_store)
@@ -262,7 +269,6 @@ fn reduce_remove_entry_inner(
     _context: Arc<Context>,
     new_store: &mut DhtStore,
     latest_deleted_address: &Address,
-    deletion_address: &Address,
 ) -> Result<Address, HolochainError> {
     // pre-condition: Must already have entry in local content_storage
     let content_storage = &new_store.content_storage().clone();
@@ -320,10 +326,6 @@ fn reduce_remove_entry_inner(
     if let Err(err) = res {
         return Err(err);
     }
-    // Update crud-link
-    let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
-        .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
-    let res = (*meta_storage.write().unwrap()).add_eavi(&crud_link_eav);
     res.map(|_| latest_deleted_address.clone())
 }
 

@@ -1,17 +1,12 @@
 use crate::{
-    agent::actions::commit::commit_entry,
     nucleus::{
-        actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
-use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
+    cas::content::{AddressableContent},
     entry::Entry,
-    error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
 use std::convert::TryFrom;
@@ -67,40 +62,15 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Create Chain Entry
     let entry = Entry::from(entry_args.new_entry.clone());
 
-    // Wait for future to be resolved
-    let task_result: Result<Address, HolochainError> = zome_call_data.context.block_on(
-        // 1. Build the context needed for validation of the entry
-        build_validation_package(&entry, &zome_call_data.context)
-            .and_then(|validation_package| {
-                future::ready(Ok(ValidationData {
-                    package: validation_package,
-                    lifecycle: EntryLifecycle::Chain,
-                    action: EntryAction::Modify,
-                }))
-            })
-            // 2. Validate the entry
-            .and_then(|validation_data| {
-                validate_entry(entry.clone(), validation_data, &zome_call_data.context)
-            })
-            // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| {
-                commit_entry(
-                    entry.clone(),
-                    Some(chain_header_address),
-                    &zome_call_data.context,
-                )
-            }),
-    );
-    if task_result.is_err() {
-        return ribosome_error_code!(Unspecified);
-    }
-    let res : Result<Address, HolochainError> = zome_call_data
-        .context
-        .block_on(author_entry(
-            &entry.clone(),
-            Some(task_result.unwrap().clone()),
-            &zome_call_data.context.clone(),
-        ));
+    let new_context = zome_call_data.context.clone();
+    let new_entry = entry.clone();
 
-    runtime.store_result(res)
+    let task_result = zome_call_data.context.block_on(author_entry(
+            &new_entry,
+            Some(chain_header_address.clone()),
+            &new_context,
+           ));
+ 
+    runtime.store_result(task_result)
 }
+

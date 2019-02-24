@@ -13,32 +13,33 @@ use holochain_core_types::{
 };
 use std::{pin::Pin, sync::Arc};
 
-/// Remove Entry Action Creator
+/// Crud Link Action Creator
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
-pub fn remove_entry(
+pub fn crud_link(
     context: &Arc<Context>,
-    address: Address,
-) -> Result<RemoveEntryFuture, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::RemoveEntry(
-        address
-    ));
+    address : Address,
+    crud_link: Address,
+) -> Result<CrudLinkFuture, HolochainError> {
+    let action_wrapper = ActionWrapper::new(Action::CrudLink((
+        address,crud_link
+    )));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
-    Ok(RemoveEntryFuture {
+    Ok(CrudLinkFuture {
         context: context.clone(),
         action: action_wrapper,
     })
 }
 
-/// RemoveEntryFuture resolves to ActionResponse
+/// CrudLinkFuture resolves to ActionResponse
 /// Tracks the state for a response to its ActionWrapper
-pub struct RemoveEntryFuture {
+pub struct CrudLinkFuture {
     context: Arc<Context>,
     action: ActionWrapper,
 }
 
-impl Future for RemoveEntryFuture {
+impl Future for CrudLinkFuture {
     type Output = Result<(), HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {

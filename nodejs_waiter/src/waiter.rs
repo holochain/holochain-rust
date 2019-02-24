@@ -4,7 +4,7 @@ use holochain_core::{
     nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
-use holochain_core_types::entry::Entry;
+use holochain_core_types::{entry::Entry,cas::content::AddressableContent};
 use neon::{context::Context, prelude::*};
 use std::{
     cell::RefCell,

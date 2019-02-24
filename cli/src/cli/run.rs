@@ -267,13 +267,16 @@ mod tests {
     #[test]
     fn test_agent_configuration() {
         let agent = super::agent_configuration();
-        assert_eq!(agent, AgentConfiguration {
-            id: "hc-run-agent".to_string(),
-            name: "testAgent".to_string(),
-            public_address: "s9UNYMzKdze-AAcg5-0UGHhdtu_vPQvfjYOyJifXivr_FIyhglPbbUgzcIwVhr7rzw4KCR6FcezPeRlQ_RPubdXwT1E_".to_string(),
-            key_file: "testAgent".to_string(),
-            holo_remote_key: None,
-        });
+        assert_eq!(
+            agent,
+            AgentConfiguration {
+                id: "hc-run-agent".to_string(),
+                name: "testAgent".to_string(),
+                public_address: "HcScjN8wBwrn3tuyg89aab3a69xsIgdzmX5P9537BqQZ5A7TEZu7qCY4Xzzjhma".to_string(),
+                key_file: "testAgent".to_string(),
+                holo_remote_key: None,
+            },
+        );
     }
 
     #[test]

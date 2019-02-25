@@ -83,6 +83,7 @@ impl EntryType {
     pub fn is_app(&self) -> bool {
         match self {
             EntryType::App(_) => true,
+            EntryType::Deletion=> true,
             _ => false,
         }
     }

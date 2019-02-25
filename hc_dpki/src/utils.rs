@@ -49,7 +49,7 @@ pub fn verify(
 mod tests {
     use super::*;
     use crate::SIGNATURE_SIZE;
-    use hcid::*;
+    use hcid::with_hcs0;
     use holochain_sodium::{secbuf::SecBuf, sign};
 
     #[test]

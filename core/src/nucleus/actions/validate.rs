@@ -114,7 +114,7 @@ fn validate_provenances(validation_data: &ValidationData) -> Result<(), Holochai
             let mut message_buf =
                 SecBuf::with_insecure_from_string(header.entry_address().to_string());
 
-            let maybe_has_authored = utils::verify_sign(author_id.to_string(), &mut message_buf, &mut signature_buf);
+            let maybe_has_authored = utils::verify(author_id.to_string(), &mut message_buf, &mut signature_buf);
             match maybe_has_authored {
                 Err(_) => {
                     Err(HolochainError::ValidationFailed(format!(

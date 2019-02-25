@@ -3,7 +3,7 @@
 use crate::{
     key_bundle,
     password_encryption::{self, PwHashConfig},
-    utils, SEED_SIZE,
+    utils, SEED_SIZE, SIGNATURE_SIZE,
 };
 use hcid::*;
 use holochain_core_types::{
@@ -13,8 +13,6 @@ use holochain_core_types::{
 use holochain_sodium::{kx, secbuf::SecBuf, sign};
 use rustc_serialize::json;
 use std::str;
-
-pub const SIGNATURE_SIZE: usize = 64;
 
 pub trait KeyPairable {
     fn public(&self) -> Base32;
@@ -37,7 +35,7 @@ pub trait KeyPairable {
     }
 
     fn decode_pub_key_into_secbuf(&self) -> SecBuf {
-        utils::decode_pub_key_into_secbuf(&self.public(), &Self::codec())
+        utils::decode_pub_key(&self.public(), &Self::codec())
             .expect("Public key decoding failed. Key was not properly encoded.")
     }
 

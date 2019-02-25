@@ -1,5 +1,6 @@
 use crate::{
-    action::ActionWrapper, context::Context, signal::Signal, state::State, workflows::application,
+    action::ActionWrapper, context::Context, scheduled_jobs, signal::Signal, state::State,
+    workflows::application,
 };
 use clokwerk::{Scheduler, TimeUnits};
 #[cfg(test)]
@@ -52,7 +53,7 @@ impl Instance {
         let context = self.initialize_context(context);
         self.start_action_loop(context.clone(), rx_action, rx_observer);
         let mut scheduler = Scheduler::new();
-        scheduler.every(10.seconds()).run(|| println!("scheduled test output"));
+        scheduler.every(10.seconds()).run(scheduled_jobs::create_callback(context.clone()));
         self.scheduler_handle = Some(Arc::new(scheduler.watch_thread(Duration::from_millis(5))));
         context
     }

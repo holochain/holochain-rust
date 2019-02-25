@@ -122,7 +122,9 @@ impl Holochain {
 
             if let Ok(json_string) = maybe_json_string {
                 if json_string != holochain_core_types::GIT_HASH.into() {
-                    return Err(HolochainError::ErrorGeneric("HALP!".into()).into());
+                    eprintln!("WARNING! The git-hash of the runtime and the zome don't match.");
+                    eprintln!("Runtime hash: {}", holochain_core_types::GIT_HASH);
+                    eprintln!("Zome hash: {}", json_string);
                 }
             }
         }

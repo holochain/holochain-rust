@@ -92,11 +92,11 @@ pub fn run_dna(wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -
 
     // Write input arguments in wasm memory
     // scope for mutable borrow of runtime
-    let encoded_allocation_of_input: RibosomeEncodingBits;
-    {
+    let encoded_allocation_of_input: RibosomeEncodingBits = {
         let mut_runtime = &mut runtime;
         let maybe_allocation = mut_runtime.memory_manager.write(&input_parameters);
-        encoded_allocation_of_input = match maybe_allocation {
+
+        match maybe_allocation {
             // No allocation to write is ok
             Err(AllocationError::ZeroLength) => RibosomeEncodedValue::Success.into(),
             // Any other error is memory related
@@ -109,11 +109,10 @@ pub fn run_dna(wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -
             // Write successful, encode allocation
             Ok(allocation) => RibosomeEncodedValue::from(allocation).into(),
         }
-    }
+    };
 
     // scope for mutable borrow of runtime
-    let returned_encoding: RibosomeEncodingBits;
-    {
+    let returned_encoding: RibosomeEncodingBits = {
         let mut_runtime = &mut runtime;
 
         // Try installing a custom panic handler.
@@ -121,11 +120,10 @@ pub fn run_dna(wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -
         // PanicInfo to hdk::debug.
         // Try calling it but fail silently if this function is not there.
         let _ = wasm_instance.invoke_export("__install_panic_handler", &[], mut_runtime);
-
         // invoke function in wasm instance
         // arguments are info for wasm on how to retrieve complex input arguments
         // which have been set in memory module
-        returned_encoding = wasm_instance
+        wasm_instance
             .invoke_export(
                 &fn_name,
                 &[RuntimeValue::I64(
@@ -139,7 +137,7 @@ pub fn run_dna(wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -
             .unwrap()
             .try_into() // Option<_>
             .ok_or_else(|| HolochainError::RibosomeFailed("WASM return value missing".to_owned()))?
-    }
+    };
 
     // Handle result returned by called zome function
     let return_code = RibosomeEncodedValue::from(returned_encoding);

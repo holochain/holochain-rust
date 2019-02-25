@@ -62,7 +62,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Resolve future
     let result: Result<(), HolochainError> = context.clone().block_on(
         // 1. Build the context needed for validation of the entry
-        build_validation_package(&deletion_entry, &context)
+        build_validation_package(&deletion_entry, context.clone())
             .and_then(|validation_package| {
                 future::ready(Ok(ValidationData {
                     package: validation_package,

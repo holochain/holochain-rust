@@ -167,7 +167,7 @@ pub fn create_new_chain_header(
     entry: &Entry,
     context: Arc<Context>,
     crud_link: &Option<Address>,
-) -> ChainHeader {
+) -> Result<ChainHeader, HolochainError> {
     let agent_state = context
         .state()
         .expect("create_new_chain_header called without state")
@@ -176,14 +176,15 @@ pub fn create_new_chain_header(
         .get_agent_address()
         .unwrap_or(context.agent_id.address());
     let signature = Signature::from(
-        context
-            .sign(entry.address().to_string())
-            .expect("Must be able to create signatures!"),
+        context.sign(entry.address().to_string())?,
+        // Temporarily replaced by error handling for Holo hack signing.
+        // TODO: pull in the expect below after removing the Holo signing hack again
+        //.expect("Must be able to create signatures!"),
     );
     let duration_since_epoch = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("System time must not be before UNIX EPOCH");
-    ChainHeader::new(
+    Ok(ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
         &vec![(agent_address, signature)],
@@ -198,21 +199,7 @@ pub fn create_new_chain_header(
             .and_then(|chain_header| Some(chain_header.address())),
         crud_link,
         &Iso8601::from(duration_since_epoch.as_secs()),
-    )
-}
-
-/// function for doing the commit action, refactored out of the reducer for ease of testing
-pub(crate) fn commit_entry_to_chain(
-    context: &Arc<Context>,
-    state: &mut AgentState,
-    entry: &Entry,
-    maybe_crud_link: &Option<Address>,
-) -> Result<(Address, ChainHeader), HolochainError> {
-    let chain_header = create_new_chain_header(&entry, context.clone(), &maybe_crud_link);
-    let storage = &state.chain_store.content_storage().clone();
-    storage.write().unwrap().add(entry)?;
-    storage.write().unwrap().add(&chain_header)?;
-    Ok((entry.address(), chain_header))
+    ))
 }
 
 /// Do a Commit Action against an agent state.
@@ -231,25 +218,28 @@ fn reduce_commit_entry(
     let action = action_wrapper.action();
     let (entry, maybe_crud_link) = unwrap_to!(action => Action::Commit);
 
-    let result = commit_entry_to_chain(&context, state, entry, maybe_crud_link).map(
-        |(address, chain_header)| {
+    let result = create_new_chain_header(&entry, context.clone(), &maybe_crud_link)
+        .and_then(|chain_header| {
+            let storage = &state.chain_store.content_storage().clone();
+            storage.write().unwrap().add(entry)?;
+            storage.write().unwrap().add(&chain_header)?;
+            Ok((chain_header, entry.address()))
+        })
+        .and_then(|(chain_header, address)| {
             state.top_chain_header = Some(chain_header);
-            address
-        },
-    );
-
-    let con = context.clone();
-
-    #[allow(unused_must_use)]
-    con.state().map(|global_state_lock| {
-        let persis_lock = context.clone().persister.clone();
-        let persister = &mut *persis_lock.lock().unwrap();
-        persister.save(global_state_lock.clone());
-    });
+            Ok(address)
+        });
 
     state
         .actions
         .insert(action_wrapper.clone(), ActionResponse::Commit(result));
+
+    #[allow(unused_must_use)]
+    context.state().map(|global_state_lock| {
+        let persis_lock = context.clone().persister.clone();
+        let persister = &mut *persis_lock.lock().unwrap();
+        persister.save(global_state_lock.clone());
+    });
 }
 
 /// maps incoming action to the correct handler
@@ -281,10 +271,8 @@ pub fn reduce(
 pub mod tests {
     use super::*;
     use crate::{
-        action::tests::test_action_wrapper_commit,
-        agent::chain_store::tests::test_chain_store,
-        instance::tests::{test_context, test_context_with_state},
-        state::State,
+        action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
+        instance::tests::test_context, state::State,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -321,22 +309,6 @@ pub mod tests {
     /// test for the agent state actions getter
     fn agent_state_actions() {
         assert_eq!(HashMap::new(), test_agent_state().actions());
-    }
-
-    #[test]
-    /// test for committing the entry to the chain
-    fn test_commit_entry_to_chain() {
-        let entry = test_entry();
-        let context = test_context_with_state(None);
-        let mut agent_state = test_agent_state();
-        let result = commit_entry_to_chain(&context, &mut agent_state, &entry, &None);
-        let (address, chain_header) = result.ok().unwrap();
-        assert_eq!(address, entry.address());
-        let all: Vec<ChainHeader> = agent_state
-            .chain_store()
-            .iter(&Some(chain_header.clone()))
-            .collect();
-        assert_eq!(all[0], chain_header);
     }
 
     #[test]
@@ -447,7 +419,7 @@ pub mod tests {
             .unwrap()
             .set_state(Arc::new(RwLock::new(state)));
 
-        let header = create_new_chain_header(&test_entry(), context.clone(), &None);
+        let header = create_new_chain_header(&test_entry(), context.clone(), &None).unwrap();
         println!("{:?}", header);
         assert_eq!(
             header,

@@ -94,8 +94,8 @@ pub mod tests {
 
         // Create Entry & crud-status metadata, and store it.
         let entry = test_entry();
-        let header1 = create_new_chain_header(&entry, context1.clone(), &None);
-        let header2 = create_new_chain_header(&entry, context2.clone(), &None);
+        let header1 = create_new_chain_header(&entry, context1.clone(), &None).unwrap();
+        let header2 = create_new_chain_header(&entry, context2.clone(), &None).unwrap();
         context1
             .block_on(commit_entry(entry.clone(), None, &context1))
             .unwrap();

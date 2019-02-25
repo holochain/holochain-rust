@@ -84,9 +84,8 @@ impl Packager {
             .skip(1);
 
         let root: Vec<_> = root_dir
-            .filter(|e| e.is_ok())
-            // unwrap safe here due to is_ok() filter above
-            .map(|e| e.unwrap().path().to_path_buf())
+            .filter_map(|e| e.ok())
+            .map(|e| e.path().to_path_buf())
             .collect();
 
         let maybe_json_file_path = root
@@ -173,8 +172,8 @@ impl Packager {
                 // this is the code folder itself, with a .hcbuild file in it
                 } else if let Some(build_config) = node
                     .read_dir()?
-                    .filter(|e| e.is_ok())
-                    .map(|e| e.unwrap().path())
+                    .filter_map(|e| e.ok())
+                    .map(|e| e.path())
                     .find(|path| path.ends_with(BUILD_CONFIG_FILE_NAME))
                 {
                     meta_tree.insert(file_name.clone(), META_BIN_ID.into());

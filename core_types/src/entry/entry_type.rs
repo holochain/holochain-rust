@@ -122,7 +122,7 @@ impl EntryType {
         // TODO #445 - do a real regex test instead
         // - must not be empty
         // - must not contain any glob wildcards
-        entry_type_name.len() > 0
+        !entry_type_name.is_empty()
         // Must not have sys_prefix
             && &entry_type_name[0..1] != "%"
     }

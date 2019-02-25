@@ -5,10 +5,7 @@ use holochain_sodium::{secbuf::SecBuf, sign};
 use std::str;
 
 ///
-pub(crate) fn decode_pub_key(
-    pub_key_b32: &str,
-    codec: &HcidEncoding,
-) -> HcResult<SecBuf> {
+pub(crate) fn decode_pub_key(pub_key_b32: &str, codec: &HcidEncoding) -> HcResult<SecBuf> {
     // Decode Base32 public key
     let pub_key = codec.decode(pub_key_b32)?;
     // convert to SecBuf
@@ -50,10 +47,10 @@ pub fn verify(
 
 #[cfg(test)]
 mod tests {
-    use holochain_sodium::{secbuf::SecBuf, sign};
-    use hcid::*;
     use super::*;
     use crate::SIGNATURE_SIZE;
+    use hcid::*;
+    use holochain_sodium::{secbuf::SecBuf, sign};
 
     #[test]
     fn it_should_hcid_roundtrip() {
@@ -61,10 +58,7 @@ mod tests {
         pub_sec_buf.randomize();
 
         let codec = with_hcs0().expect("HCID failed miserably with_hcs0");
-        let pub_key_b32 = encode_pub_key(
-            &mut pub_sec_buf,
-            &codec,
-        ).unwrap();
+        let pub_key_b32 = encode_pub_key(&mut pub_sec_buf, &codec).unwrap();
 
         let mut roundtrip = decode_pub_key(&pub_key_b32, &codec)
             .expect("Public key decoding failed. Key was not properly encoded.");
@@ -82,10 +76,7 @@ mod tests {
         let mut public_key = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut secret_key = SecBuf::with_secure(sign::SECRETKEYBYTES);
         holochain_sodium::sign::seed_keypair(&mut public_key, &mut secret_key, &mut seed).unwrap();
-        let pub_key_b32 = encode_pub_key(
-            &mut public_key,
-            &codec,
-        ).unwrap();
+        let pub_key_b32 = encode_pub_key(&mut public_key, &codec).unwrap();
         // Create signing buffers
         let mut message = SecBuf::with_insecure(42);
         message.randomize();

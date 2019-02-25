@@ -79,8 +79,7 @@ impl AddressableContent for AgentId {
 
 pub static GOOD_ID: &'static str =
     "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
-pub static BAD_ID: &'static str =
-    "HcScIkRaAaaaaaaaaaAaaaBBBBaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
+pub static BAD_ID: &'static str = "HcScIkRaAaaaaaaaaaAaaaBBBBaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
 pub static TOO_BAD_ID: &'static str =
     "HcScIkRaAaaaaaaaaaBBBBBBBBaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
 

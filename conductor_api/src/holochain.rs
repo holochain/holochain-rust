@@ -17,10 +17,10 @@
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
 //! use holochain_core_types::{
 //!     cas::content::Address,
-//!     agent::{AgentId, KeyBuffer},
+//!     agent::AgentId,
 //!     dna::{Dna, capabilities::CapabilityCall},
 //!     json::JsonString};
-//! use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
+//! use holochain_dpki::{key_bundle::{KeyBundle, SeedType}, SEED_SIZE};
 //! use holochain_sodium::secbuf::SecBuf;
 //!
 //! use std::sync::{Arc, Mutex};
@@ -38,7 +38,7 @@
 //!
 //! // We need to provide a cryptographic key that represents the agent.
 //! // Creating a new random one on the fly:
-//! let mut seed = SecBuf::with_insecure(SEEDSIZE);
+//! let mut seed = SecBuf::with_insecure(SEED_SIZE);
 //! seed.randomize();
 //!
 //! let keybundle = KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap();

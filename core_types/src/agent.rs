@@ -47,6 +47,12 @@ impl AgentId {
         }
     }
 
+    pub fn decoded_key(&self) -> HcResult<String> {
+        let codec = with_hcs0()?;
+        let key_b32 = codec.decode(&self.pub_sign_key)?;
+        Ok(str::from_utf8(&key_b32).unwrap().to_owned())
+    }
+
     //    pub fn has_authored(&self, data: &mut SecBuf, signature: &mut SecBuf) -> bool {
     //        utils::verify_sign(self.key_b32, data, signature)
     //            .expect("Failed to verify signature with AgentId. Key might be invalid.");
@@ -75,28 +81,21 @@ impl AddressableContent for AgentId {
     }
 }
 
-pub static GOOD_ID: &'static str =
-    "sandwich--------------------------------------------------------------------------AAAEqzh28L";
-pub static BAD_ID: &'static str =
-    "asndwich--------------------------------------------------------------------------AAAEqzh28L";
-pub static TOO_BAD_ID: &'static str =
-    "asadwich--------------------------------------------------------------------------AAAEqzh28L";
+pub static GOOD_ID: &'static str    = "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
+pub static BAD_ID: &'static str     = "HcScIkRaAaaaaaaaaaAaaaBAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
+pub static TOO_BAD_ID: &'static str = "HcScIkRaAaaaaaaaaaBBBBBBBBaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
 
-//pub fn test_base64_to_agent_id(s: &str) -> Result<AgentId, HolochainError> {
-//    let key = &KeyBuffer::with_corrected(s)?;
-//    Ok(AgentId::new("bob", key))
+//pub fn test_base32_to_agent_id(s: &str) -> Result<AgentId, HolochainError> {
+//    let codec = with_hcs0().expect("HCID failed miserably.");
+//    let key_b32 = codec
+//        .encode(s.as_bytes())
+//        .expect("AgentID key decoding failed. Key was not properly encoded");
+//    Ok(AgentId::new("bob", key_b32))
 //}
 
-pub fn test_base32_to_agent_id(s: &str) -> Result<AgentId, HolochainError> {
-    let codec = with_hcs0().expect("HCID failed miserably.");
-    let key_b32 = codec
-        .encode(s.as_bytes())
-        .expect("AgentID key decoding failed. Key was not properly encoded.");
-    Ok(AgentId::new("bob", key_b32))
-}
 
 pub fn test_agent_id() -> AgentId {
-    test_base32_to_agent_id(BAD_ID).unwrap()
+    AgentId::new("bob", GOOD_ID.to_string())
 }
 
 #[cfg(test)]
@@ -104,76 +103,37 @@ mod tests {
     use super::*;
 
     pub fn test_identity_value() -> Content {
-        format!("{{\"nick\":\"bob\",\"key\":\"{}\"}}", GOOD_ID).into()
+        format!("{{\"nick\":\"bob\",\"pub_sign_key\":\"{}\"}}", GOOD_ID).into()
     }
-    //
-    //    #[test]
-    //    fn it_should_allow_buffer_with_pair() {
-    //        // let buf = test_base64_to_agent_id(GOOD_ID).unwrap().to_buffer();
-    //        let buf = KeyBuffer::with_raw_parts(
-    //            &[
-    //                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
-    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
-    //            ],
-    //            &[
-    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
-    //                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0,
-    //            ],
-    //        );
-    //        assert_eq!(
-    //            &[
-    //                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
-    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239
-    //            ],
-    //            buf.get_sig()
-    //        );
-    //        assert_eq!(
-    //            &[
-    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
-    //                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0
-    //            ],
-    //            buf.get_enc()
-    //        );
-    //    }
-    //
-    //    #[test]
-    //    fn it_should_allow_buffer_access() {
-    //        let buf = test_base64_to_agent_id(GOOD_ID).unwrap().to_buffer();
-    //
-    //        assert_eq!(
-    //            &[
-    //                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
-    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239
-    //            ],
-    //            buf.get_sig()
-    //        );
-    //        assert_eq!(
-    //            &[
-    //                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
-    //                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0
-    //            ],
-    //            buf.get_enc()
-    //        );
-    //    }
 
     #[test]
     fn it_can_generate_fake() {
         let agent_id = AgentId::generate_fake("sandwich");
         assert_eq!(
-            "sandwich--------------------------------------------------------------------------AAAEqzh28L".to_string(),
+            "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa".to_string(),
             agent_id.address().to_string(),
         );
     }
 
     #[test]
+    fn it_should_decode_key() {
+        let agent_id  = test_agent_id();
+        let raw_key = agent_id.decoded_key().unwrap();
+        println!("decoded key = {}", raw_key);
+    }
+
+    #[test]
     fn it_should_correct_errors() {
-        assert_eq!(GOOD_ID.to_string(), test_agent_id().address().to_string());
+        let corrected_id = AgentId::new("bob", BAD_ID.to_string());
+        let raw_key = corrected_id.decoded_key().unwrap();
+        assert_eq!(test_agent_id().decoded_key().unwrap(), raw_key);
     }
 
     #[test]
     fn it_fails_if_too_many_errors() {
-        let res = test_base32_to_agent_id(TOO_BAD_ID);
-        assert!(res.is_err())
+        let corrected_id = AgentId::new("bob", TOO_BAD_ID.to_string());
+        let maybe_key = corrected_id.decoded_key();
+        assert!(maybe_key.is_err());
     }
 
     #[test]
@@ -186,7 +146,7 @@ mod tests {
     /// show AddressableContent implementation for Agent
     fn agent_addressable_content_test() {
         let expected_content =
-            Content::from("{\"AgentId\":{\"nick\":\"bob\",\"key\":\"sandwich--------------------------------------------------------------------------AAAEqzh28L\"}}");
+            Content::from("{\"AgentId\":{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}");
         // content()
         assert_eq!(expected_content, test_agent_id().content(),);
 

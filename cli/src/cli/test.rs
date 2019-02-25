@@ -88,6 +88,11 @@ pub fn test(
 
 #[cfg(test)]
 pub mod tests {
+    use super::*;
+    use crate::cli::init::{init, tests::gen_dir};
+    //    use assert_cmd::prelude::*;
+    //    use std::{env, process::Command};
+
     #[test]
     // flagged as broken for:
     // 1. taking 60+ seconds
@@ -131,7 +136,6 @@ pub mod tests {
     // behaviour of the command is different, depending whether nodejs is installed on the system or not
     #[test]
     #[cfg(not(windows))]
-    #[cfg(feature = "broken-tests")]
     fn test_command_no_test_folder() {
         let temp_dir = gen_dir();
         let temp_dir_path = temp_dir.path();

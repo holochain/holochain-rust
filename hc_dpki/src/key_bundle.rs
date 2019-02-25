@@ -6,10 +6,7 @@ use crate::{
     password_encryption::{self, EncryptedData, PwHashConfig},
     utils, SEED_SIZE,
 };
-use holochain_core_types::{
-    agent::Base32,
-    error::{HcResult, HolochainError},
-};
+use holochain_core_types::{agent::Base32, error::HcResult};
 use rustc_serialize::json;
 use std::str;
 
@@ -44,7 +41,7 @@ pub struct KeyBundle {
 impl KeyBundle {
     /// Derive the keys from a 32 bytes seed buffer
     /// @param {SecBuf} seed - the seed buffer
-    pub fn new_from_seed(seed: &mut SecBuf, seed_type: SeedType) -> Result<Self, HolochainError> {
+    pub fn new_from_seed(seed: &mut SecBuf, seed_type: SeedType) -> HcResult<Self> {
         assert_eq!(seed.len(), SEED_SIZE);
         Ok(KeyBundle {
             sign_keys: SigningKeyPair::new_from_seed(seed)?,

@@ -6,10 +6,7 @@ use crate::{
     utils, SEED_SIZE, SIGNATURE_SIZE,
 };
 use hcid::*;
-use holochain_core_types::{
-    agent::Base32,
-    error::{HcResult, HolochainError},
-};
+use holochain_core_types::{agent::Base32, error::HcResult};
 use holochain_sodium::{kx, secbuf::SecBuf, sign};
 use rustc_serialize::json;
 use std::str;

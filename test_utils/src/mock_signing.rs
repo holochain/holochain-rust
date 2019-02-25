@@ -2,7 +2,7 @@ use holochain_core_types::{
     agent::AgentId,
     cas::content::{Address, AddressableContent},
 };
-use holochain_dpki::
+use holochain_dpki::{
     key_bundle::{KeyBundle, SeedType},
     SEED_SIZE,
 };

@@ -121,6 +121,7 @@ impl SigningKeyPair {
 // Encrypting KeyPair
 //--------------------------------------------------------------------------------------------------
 
+/// KeyPair used for encrypting data
 pub struct EncryptingKeyPair {
     pub public: Base32,
     pub private: SecBuf,
@@ -163,13 +164,7 @@ impl EncryptingKeyPair {
         Self { public, private }
     }
 
-    /// Decode the public key from Base32 into a [u8]
-    pub fn decode_pub_key(&self) -> Vec<u8> {
-        let codec = with_hck0().expect("HCID failed miserably.");
-        codec
-            .decode(&self.public)
-            .expect("Encrypting key decoding failed. Key was not properly encoded.")
-    }
+    // TODO: Encrypt and decrypt functions
 }
 
 //--------------------------------------------------------------------------------------------------

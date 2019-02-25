@@ -140,8 +140,8 @@ impl Packager {
                 // should build the json and insert it for this zome
                 if let Some(dir_with_code) = node
                     .read_dir()?
-                    .filter(|e| e.is_ok())
-                    .map(|e| e.unwrap().path())
+                    .filter_map(|e| e.ok())
+                    .map(|e| e.path())
                     .filter(|path| path.is_dir())
                     .find(|path| path.join(BUILD_CONFIG_FILE_NAME).exists())
                 {

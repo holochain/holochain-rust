@@ -85,7 +85,11 @@ use crate::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::{call_zome_function, ZomeFnCall},
+    nucleus::{
+        call_zome_function,
+        ribosome::{run_dna, WasmCallData},
+        ZomeFnCall,
+    },
     persister::{Persister, SimplePersister},
     state::State,
 };
@@ -108,6 +112,19 @@ impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
         let instance = Instance::new(context.clone());
+
+        for zome in dna.zomes.values() {
+            let json_string = run_dna(
+                zome.code.code.clone(),
+                None,
+                WasmCallData::DirectCall("__hdk_git_hash".to_string()),
+            )?;
+
+            if json_string != holochain_core_types::GIT_HASH.into() {
+                return Err(HolochainError::ErrorGeneric("HALP!".into()).into());
+            }
+        }
+
         Self::from_dna_and_context_and_instance(dna, context, instance)
     }
 

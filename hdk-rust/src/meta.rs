@@ -228,6 +228,20 @@ pub extern "C" fn __hdk_validate_link(
 }
 
 #[no_mangle]
+pub extern "C" fn __hdk_git_hash() -> RibosomeEncodingBits {
+    let mut mem_stack = unsafe {
+        match G_MEM_STACK {
+            Some(mem_stack) => mem_stack,
+            None => {
+                return AllocationError::BadStackAlignment.as_ribosome_encoding();
+            }
+        }
+    };
+
+    return_code_for_allocation_result(mem_stack.write_string(holochain_core_types::GIT_HASH)).into()
+}
+
+#[no_mangle]
 pub extern "C" fn __hdk_get_json_definition(
     encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {
@@ -289,10 +303,12 @@ pub mod tests {
     // Adding empty zome_setup() so that the cfg(test) build can link.
     #[no_mangle]
     pub fn zome_setup(_: &mut super::ZomeDefinition) {}
+
     #[no_mangle]
     pub fn __list_traits() -> ZomeTraits {
         BTreeMap::new()
     }
+
     #[no_mangle]
     pub fn __list_functions() -> ZomeFnDeclarations {
         Vec::new()

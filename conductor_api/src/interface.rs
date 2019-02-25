@@ -1,12 +1,9 @@
 use crate::holo_signing_service::request_signing_service;
 use base64;
 use holochain_core::{
-    nucleus::actions::call_zome_function::make_cap_request_for_call,
-    state::State,
+    nucleus::actions::call_zome_function::make_cap_request_for_call, state::State,
 };
-use holochain_core_types::{
-    agent::AgentId, cas::content::Address,
-};
+use holochain_core_types::{agent::AgentId, cas::content::Address};
 
 use holochain_dpki::keypair::{Keypair, SIGNATURESIZE};
 use holochain_sodium::secbuf::SecBuf;

@@ -15,10 +15,11 @@ pub(crate) struct EncryptedData {
     pub cipher: Vec<u8>,
 }
 
-/// Simplify the API for generating a password hash with our set parameters
-/// @param {SecBuf} pass - the password buffer to hash
+/// Simple API for generating a password hash with our set parameters
+/// @param {SecBuf} password - the password buffer to hash
 /// @param {SecBuf} salt - if specified, hash with this salt (otherwise random)
-/// @param {SecBuf} -  Empty hash buf
+/// @param {SecBuf} hash_result - Empty SecBuf to receive the resulting hash.
+/// @param {Option<PwHashConfig>} config - Optional hashing settings
 /// TODO make salt optional
 pub(crate) fn pw_hash(
     password: &mut SecBuf,
@@ -35,10 +36,11 @@ pub(crate) fn pw_hash(
     Ok(())
 }
 
-/// Helper for encrypting a buffer with a pwhash-ed passphrase
-/// @param {Buffer} data
-/// @param {string} passphrase
-/// @return {BlobData} - the encrypted data
+/// Simple API for encrypting a buffer with a pwhash-ed passphrase
+/// @param {Buffer} data - the data to encrypt
+/// @param {SecBuf} passphrase - the passphrase to use for encrypting
+/// @param {Option<PwHashConfig>} config - Optional encrypting settings
+/// @return {EncryptedData} - the resulting encrypted data
 pub(crate) fn pw_enc(
     data: &mut SecBuf,
     passphrase: &mut SecBuf,
@@ -64,10 +66,11 @@ pub(crate) fn pw_enc(
     })
 }
 
-/// Helper for decrypting a buffer with a pwhash-ed passphrase
-/// @param {Buffer} data
-/// @param {string} passphrase
-/// @param {SecBuf} - the decrypted data
+/// Simple API for decrypting a buffer with a pwhash-ed passphrase
+/// @param {EncryptedData} encrypted_data - the data to decrypt
+/// @param {SecBuf} passphrase - the passphrase to use for encrypting
+/// @param {SecBuf} decrypted_data - the dresulting ecrypted data
+/// @param {Option<PwHashConfig>} config - Optional decrypting settings
 pub(crate) fn pw_dec(
     encrypted_data: &EncryptedData,
     passphrase: &mut SecBuf,

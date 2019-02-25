@@ -10,10 +10,11 @@ use std::sync::Arc;
 pub fn test_instance_with_spoofed_dna(
     dna: Dna,
     spoofed_dna_address: Address,
-    name: &str,
+    agent_name: &str,
+    network_name: Option<&str>,
 ) -> Result<(Instance, Arc<Context>), String> {
     // Create instance and plug in our DNA
-    let context = test_context(name, None);
+    let context = test_context(agent_name, network_name);
     let mut instance = Instance::new(context.clone());
     let context =
         instance.initialize_with_spoofed_dna(dna.clone(), spoofed_dna_address, context)?;

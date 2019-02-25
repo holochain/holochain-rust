@@ -60,14 +60,11 @@ pub async fn hold_link_workflow<'a>(
 }
 
 #[cfg(test)]
-// too slow!
-#[cfg(feature = "broken-tests")]
 pub mod tests {
     use super::*;
     use crate::{
         network::test_utils::*, nucleus::actions::tests::*, workflows::author_entry::author_entry,
     };
-    use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent, entry::test_entry, link::link_data::LinkData,
     };
@@ -81,6 +78,7 @@ pub mod tests {
     ///
     /// hold_link_workflow is then expected to fail in its validation step
     fn test_reject_invalid_link_on_hold_workflow() {
+        let netname = Some("test_reject_invalid_link_on_hold_workflow");
         // Hacked DNA that regards everything as valid
         let hacked_dna =
             create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_valid()));
@@ -93,8 +91,8 @@ pub mod tests {
         let dna_address = dna.address();
 
         let (_, context1) =
-            test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice").unwrap();
-        let netname = Some("test_reject_invalid_link_on_remove_workflow");
+            test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice", netname).unwrap();
+
         let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
         // Commit entry on attackers node

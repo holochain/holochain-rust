@@ -32,14 +32,14 @@ impl AgentId {
             .expect("AgentId fake key generation failed")
     }
 
-    /// initialize an Agent struct with `nick` and `key` that will be encoded
+    /// initialize an Agent struct with `nick` and `key` that will be encoded with HCID.
     pub fn new_with_raw_key(nick: &str, key: &str) -> HcResult<Self> {
         let codec = with_hcs0()?;
         let key_b32 = codec.encode(key.as_bytes())?;
         Ok(AgentId::new(nick, key_b32))
     }
 
-    /// initialize an Agent struct with `nick` and a Base32 `key` from HCID
+    /// initialize an Agent struct with `nick` and a HCID encoded key.
     pub fn new(nick: &str, key_b32: Base32) -> Self {
         AgentId {
             nick: nick.to_string(),
@@ -47,16 +47,12 @@ impl AgentId {
         }
     }
 
+    /// Get the key decoded with HCID
     pub fn decoded_key(&self) -> HcResult<String> {
         let codec = with_hcs0()?;
         let key_b32 = codec.decode(&self.pub_sign_key)?;
         Ok(str::from_utf8(&key_b32).unwrap().to_owned())
     }
-
-    //    pub fn has_authored(&self, data: &mut SecBuf, signature: &mut SecBuf) -> bool {
-    //        utils::verify_sign(self.key_b32, data, signature)
-    //            .expect("Failed to verify signature with AgentId. Key might be invalid.");
-    //    }
 }
 
 impl AddressableContent for AgentId {
@@ -83,17 +79,10 @@ impl AddressableContent for AgentId {
 
 pub static GOOD_ID: &'static str =
     "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
-pub static BAD_ID: &'static str = "HcScIkRaAaaaaaaaaaAaaaBAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
+pub static BAD_ID: &'static str =
+    "HcScIkRaAaaaaaaaaaAaaaBBBBaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
 pub static TOO_BAD_ID: &'static str =
     "HcScIkRaAaaaaaaaaaBBBBBBBBaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
-
-//pub fn test_base32_to_agent_id(s: &str) -> Result<AgentId, HolochainError> {
-//    let codec = with_hcs0().expect("HCID failed miserably.");
-//    let key_b32 = codec
-//        .encode(s.as_bytes())
-//        .expect("AgentID key decoding failed. Key was not properly encoded");
-//    Ok(AgentId::new("bob", key_b32))
-//}
 
 pub fn test_agent_id() -> AgentId {
     AgentId::new("bob", GOOD_ID.to_string())

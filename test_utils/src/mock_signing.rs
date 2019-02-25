@@ -3,7 +3,7 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
 };
 use holochain_dpki::{
-    keypair::{SigningKeyPair, KeyPairable},
+    keypair::{SigningKeyPair, KeyPair},
     key_bundle::{KeyBundle, SeedType},
     SEED_SIZE,
 };
@@ -61,7 +61,7 @@ pub fn mock_signer(payload: String, agent_id: &AgentId) -> String {
             let mut message = SecBuf::with_insecure_from_string(payload);
 
             // Create signature
-            let mut message_signed = SigningKeyPair::create_secbuf();
+            let mut message_signed = SigningKeyPair::create_signature_secbuf();
             keybundle.sign(&mut message, &mut message_signed).unwrap();
             let message_signed = message_signed.read_lock();
 

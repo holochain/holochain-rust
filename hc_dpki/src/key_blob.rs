@@ -69,12 +69,12 @@ impl KeyBundle {
         offset += kx::PUBLICKEYBYTES;
         // Write private signing key
         data_buf
-            .write(offset, &**self.sign_keys.keypair.private.read_lock())
+            .write(offset, &**self.sign_keys.private.read_lock())
             .expect("Failed blobbing private signing key");
         offset += sign::SECRETKEYBYTES;
         // Write private encoding key
         data_buf
-            .write(offset, &**self.enc_keys.keypair.private.read_lock())
+            .write(offset, &**self.enc_keys.private.read_lock())
             .expect("Failed blobbing private encoding key");
         offset += kx::SECRETKEYBYTES;
         assert_eq!(offset, BLOB_DATA_LEN_MISALIGN);

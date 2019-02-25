@@ -4,10 +4,7 @@ use holochain_core::state::State;
 use holochain_core_types::{
     agent::AgentId, cas::content::Address, dna::capabilities::CapabilityCall,
 };
-use holochain_dpki::{
-    key_bundle::KeyBundle,
-    keypair::{KeyPairable, SigningKeyPair},
-};
+use holochain_dpki::{key_bundle::KeyBundle, keypair::SigningKeyPair};
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
@@ -756,7 +753,7 @@ impl ConductorApiBuilder {
             // Convert payload string into a SecBuf
             let mut message = SecBuf::with_insecure_from_string(payload.clone());
             // Create signature
-            let mut message_signature = SigningKeyPair::create_secbuf();
+            let mut message_signature = SigningKeyPair::create_signature_secbuf();
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:

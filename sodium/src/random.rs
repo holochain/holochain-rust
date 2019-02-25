@@ -20,13 +20,13 @@ mod tests {
     use super::*;
     #[test]
     fn it_should_randomize_buffer() {
-        let mut buf_a = SecBuf::with_insecure(1);
+        let mut buf_a = SecBuf::with_insecure(4);
         buf_a.randomize();
-        let mut buf_b = SecBuf::with_insecure(1);
+        let mut buf_b = SecBuf::with_insecure(4);
         buf_b.randomize();
         assert_ne!(buf_a.dump(), buf_b.dump());
         // re-randomize
-        let mut buf_c = SecBuf::with_insecure(1);
+        let mut buf_c = SecBuf::with_insecure(4);
         buf_c.from_array(&buf_a.dump()).unwrap();
         assert_eq!(buf_c.dump(), buf_a.dump());
         buf_a.randomize();

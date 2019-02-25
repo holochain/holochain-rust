@@ -55,7 +55,7 @@ impl KeyBundle {
 
     /// get the identifier key
     pub fn get_id(&self) -> Base32 {
-        self.sign_keys.keypair.public.clone()
+        self.sign_keys.public.clone()
     }
 
     /// sign some arbitrary data with the signing private key
@@ -75,8 +75,8 @@ impl KeyBundle {
 
     ///
     pub fn is_same(&mut self, other: &mut KeyBundle) -> bool {
-        self.sign_keys.keypair.is_same(&mut other.sign_keys.keypair)
-            && self.enc_keys.keypair.is_same(&mut other.enc_keys.keypair)
+        self.sign_keys.is_same(&mut other.sign_keys)
+            && self.enc_keys.is_same(&mut other.enc_keys)
             && self.seed_type == other.seed_type
     }
 }
@@ -107,8 +107,8 @@ pub(crate) mod tests {
     fn it_should_create_keybundle_from_seed() {
         let bundle = test_generate_random_bundle();
         assert_eq!(SeedType::Mock, bundle.seed_type);
-        assert_eq!(64, bundle.sign_keys.keypair.private.len());
-        assert_eq!(32, bundle.enc_keys.keypair.private.len());
+        assert_eq!(64, bundle.sign_keys.private.len());
+        assert_eq!(32, bundle.enc_keys.private.len());
 
         let id = bundle.get_id();
         println!("id: {:?}", id);
@@ -124,14 +124,14 @@ pub(crate) mod tests {
         message.randomize();
 
         // sign it
-        let mut signature = SigningKeyPair::create_secbuf();
+        let mut signature = SigningKeyPair::create_signature_secbuf();
         bundle.sign(&mut message, &mut signature).unwrap();
         // authentify signature
         let succeeded = bundle.verify(&mut message, &mut signature);
         assert!(succeeded);
 
         // Create random data
-        let mut random_signature = SigningKeyPair::create_secbuf();
+        let mut random_signature = SigningKeyPair::create_signature_secbuf();
         random_signature.randomize();
         // authentify random signature
         let succeeded = bundle.verify(&mut message, &mut random_signature);

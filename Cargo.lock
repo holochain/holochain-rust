@@ -753,7 +753,6 @@ dependencies = [
  "holochain_core_types 0.0.4-alpha",
  "holochain_dpki 0.0.4-alpha",
  "holochain_net 0.0.4-alpha",
- "holochain_net_connection 0.0.4-alpha",
  "holochain_net_ipc 0.0.4-alpha",
  "holochain_sodium 0.0.4-alpha",
  "holochain_wasm_utils 0.0.4-alpha",

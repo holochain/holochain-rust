@@ -23,7 +23,6 @@ jsonrpc-http-server = { git = "https://github.com/paritytech/jsonrpc" }
 petgraph = "0.4.13"
 colored = "1.6"
 regex = "1"
-holochain_net_connection = { path = "../net_connection" }
 holochain_net_ipc = { path = "../net_ipc" }
 maplit = "1.0.1"
 lazy_static = "1.2"
@@ -36,11 +35,11 @@ fs_extra = "1.1"
 rpassword = "2.1.0"
 dirs = "1.0.4"
 base64 = "0.10"
+reqwest = "0.9"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
 tempfile = "3"
 holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "0.2"
-reqwest = "0.9"
 pretty_assertions = "*"

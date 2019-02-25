@@ -1,12 +1,17 @@
+use crate::holo_signing_service::request_signing_service;
+use base64;
 use holochain_core::{
-    nucleus::actions::call_zome_function::make_cap_request_for_call, state::State,
+    nucleus::actions::call_zome_function::make_cap_request_for_call,
+    state::State,
 };
-use holochain_core_types::cas::content::Address;
+use holochain_core_types::{
+    agent::AgentId, cas::content::Address,
+};
+
 use holochain_dpki::keypair::{Keypair, SIGNATURESIZE};
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
-use base64;
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use serde_json;
 use std::{
@@ -570,6 +575,7 @@ impl ConductorApiBuilder {
                 name,
                 public_address,
                 key_file,
+                holo_remote_key: None,
             };
             conductor_call!(|c| c.add_agent(agent))?;
             Ok(json!({"success": true}))
@@ -777,6 +783,29 @@ impl ConductorApiBuilder {
             let message_signed = message_signed.read_lock();
             // Return as base64 encoded string
             let signature = base64::encode(&**message_signed);
+
+            Ok(json!({"payload": payload, "signature": signature}))
+        });
+        self
+    }
+
+    pub fn with_outsource_signing_callback(
+        mut self,
+        agent_id: AgentId,
+        signing_service_uri: String,
+    ) -> Self {
+        let agent_id = agent_id.clone();
+        let signing_service_uri = signing_service_uri.clone();
+
+        self.io.add_method("agent/sign", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+
+            let signature = request_signing_service(&agent_id, &payload, &signing_service_uri)
+                .map_err(|holochain_error| {
+                    println!("Error in signing hack: {:?}", holochain_error);
+                    jsonrpc_core::Error::internal_error()
+                })?;
 
             Ok(json!({"payload": payload, "signature": signature}))
         });

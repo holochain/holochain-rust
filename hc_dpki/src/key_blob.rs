@@ -2,10 +2,10 @@
 use holochain_sodium::{kx, secbuf::SecBuf, sign, *};
 
 use crate::{
+    key_bundle::*,
     keypair::*,
     password_encryption::{self, EncryptedData, PwHashConfig},
     utils, SEED_SIZE,
-    key_bundle::*,
 };
 use holochain_core_types::{
     agent::Base32,
@@ -36,9 +36,7 @@ pub struct KeyBlob {
     pub data: String,
 }
 
-
 impl KeyBundle {
-
     /// Generate an encrypted blob for persistence
     /// @param {SecBuf} passphrase - the encryption passphrase
     /// @param {string} hint - additional info / description for the bundle
@@ -149,8 +147,8 @@ impl KeyBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use holochain_sodium::pwhash;
     use crate::key_bundle::tests::*;
+    use holochain_sodium::pwhash;
 
     #[test]
     fn it_should_blob_keybundle() {

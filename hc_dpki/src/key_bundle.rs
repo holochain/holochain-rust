@@ -15,7 +15,6 @@ use std::str;
 
 use serde_derive::{Deserialize, Serialize};
 
-
 /// Enum holding all the types of seeds that can generate cryptographic keys
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum SeedType {

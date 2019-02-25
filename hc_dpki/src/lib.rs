@@ -7,11 +7,11 @@
 extern crate arrayref;
 
 pub mod error;
+pub mod key_blob;
 pub mod key_bundle;
 pub mod keypair;
 pub mod password_encryption;
 pub mod utils;
-pub mod key_blob;
 
 pub const SEED_SIZE: usize = 32;
 pub const SIGNATURE_SIZE: usize = 64;

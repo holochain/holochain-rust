@@ -241,10 +241,11 @@ impl SecBuf {
         Ok(())
     }
 
+    // -- Helpers -- //
+
     /// Check if the buffer is empty i.e. [0,0,0,0,0,0,0,0]
     pub fn is_empty(&mut self) -> bool {
         let buf = self.read_lock();
-        // println!("Buf{:?}", *buf);
         for i in 0..buf.len() {
             if buf[i] != 0 {
                 return false;
@@ -267,16 +268,11 @@ impl SecBuf {
         Ok(())
     }
 
-    /// Dump the content of the SecBuf in a Vec
-    pub fn dump(&mut self) -> Vec<u8> {
-        let size = self.len();
-        let mut output = Vec::with_capacity(size);
-
-        let mut buf = self.read_lock();
-        for x in 0..size {
-            output.push(buf[x]);
-        }
-        output
+    /// Return true if both buffers hold the same data
+    pub fn is_same(&mut self, other: &mut Self) -> bool {
+        let a = self.read_lock();
+        let b = other.read_lock();
+        **a == **b
     }
 }
 

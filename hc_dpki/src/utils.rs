@@ -63,7 +63,7 @@ mod tests {
         let mut roundtrip = decode_pub_key(&pub_key_b32, &codec)
             .expect("Public key decoding failed. Key was not properly encoded.");
 
-        assert_eq!(pub_sec_buf.dump(), roundtrip.dump());
+        assert!(pub_sec_buf.is_same(&mut roundtrip));
     }
 
     #[test]

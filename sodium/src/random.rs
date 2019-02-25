@@ -18,18 +18,24 @@ impl SecBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn it_should_randomize_buffer() {
+        // Create two random buffers
         let mut buf_a = SecBuf::with_insecure(4);
         buf_a.randomize();
         let mut buf_b = SecBuf::with_insecure(4);
         buf_b.randomize();
-        assert_ne!(buf_a.dump(), buf_b.dump());
+        // Should be different (unless we are really lucky...)
+        assert!(!buf_a.is_same(&mut buf_b));
         // re-randomize
         let mut buf_c = SecBuf::with_insecure(4);
-        buf_c.from_array(&buf_a.dump()).unwrap();
-        assert_eq!(buf_c.dump(), buf_a.dump());
+        {
+            let a = buf_a.read_lock();
+            buf_c.from_array(&a).unwrap();
+        }
+        assert!(buf_a.is_same(&mut buf_c));
         buf_a.randomize();
-        assert_ne!(buf_c.dump(), buf_a.dump());
+        assert!(!buf_a.is_same(&mut buf_c));
     }
 }

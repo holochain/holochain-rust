@@ -43,7 +43,7 @@ pub trait KeyPair {
 
     /// Return true if the keys are equivalent
     fn is_same(&mut self, other: &mut Self) -> bool {
-        self.public() == other.public() && self.private().dump() == other.private().dump()
+        self.public() == other.public() && self.private().is_same(other.private())
     }
 }
 

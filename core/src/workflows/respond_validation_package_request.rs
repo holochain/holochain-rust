@@ -33,7 +33,7 @@ pub async fn respond_validation_package_request(
     context: Arc<Context>,
 ) {
     let maybe_validation_package = match get_entry(&requested_entry_address, &context) {
-        Ok(entry) => await!(build_validation_package(&entry, &context)).ok(),
+        Ok(entry) => await!(build_validation_package(&entry, context.clone())).ok(),
         Err(_) => None,
     };
 

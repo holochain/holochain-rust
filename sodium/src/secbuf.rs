@@ -240,40 +240,6 @@ impl SecBuf {
         }
         Ok(())
     }
-
-    // -- Helpers -- //
-
-    /// Check if the buffer is empty i.e. [0,0,0,0,0,0,0,0]
-    pub fn is_empty(&mut self) -> bool {
-        let buf = self.read_lock();
-        for i in 0..buf.len() {
-            if buf[i] != 0 {
-                return false;
-            }
-        }
-        true
-    }
-
-    /// Load the [u8] into the SecBuf
-    pub fn from_array(&mut self, data: &[u8]) -> Result<(), SodiumError> {
-        if (data.len() != self.len()) {
-            return Err(SodiumError::Generic(
-                "Input does not have same size as SecBuf".to_string(),
-            ));
-        }
-        let mut buf = self.write_lock();
-        for x in 0..data.len() {
-            buf[x] = data[x];
-        }
-        Ok(())
-    }
-
-    /// Return true if both buffers hold the same data
-    pub fn is_same(&mut self, other: &mut Self) -> bool {
-        let a = self.read_lock();
-        let b = other.read_lock();
-        **a == **b
-    }
 }
 
 impl Deref for SecBuf {

@@ -163,7 +163,7 @@ mod tests {
             TEST_CONFIG,
         )
         .unwrap();
-        assert!(!hashed_password.is_same(&mut hashed_password_b));
+        assert!(hashed_password.compare(&mut hashed_password_b) != 0);
 
         // same hash should have same result
         let mut hashed_password_c = SecBuf::with_insecure(pwhash::HASHBYTES);
@@ -174,7 +174,7 @@ mod tests {
             TEST_CONFIG,
         )
         .unwrap();
-        assert!(hashed_password_c.is_same(&mut hashed_password_b));
+        assert!(hashed_password_c.compare(&mut hashed_password_b) == 0);
     }
 
 }

@@ -3,10 +3,9 @@ use holochain_conductor_api::{
         AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
         LoggerConfiguration, StorageConfiguration,
     },
-    key_loaders::test_key,
+    key_loaders::test_keybundle,
     logger::LogRules,
 };
-use holochain_core_types::agent::KeyBuffer;
 use neon::prelude::*;
 use std::{collections::HashMap, path::PathBuf};
 

@@ -68,7 +68,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use holochain_dpki::key_bundle::KeyBlob;
+    use holochain_dpki::key_blob::KeyBlob;
     use std::{
         fs::{remove_file, File},
         path::PathBuf,

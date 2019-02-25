@@ -11,7 +11,7 @@ use std::{
 
 use holochain_conductor_api::{
     conductor::Conductor as RustConductor,
-    key_loaders::test_key_loader,
+    key_loaders::test_keybundle_loader,
     config::{load_configuration, Configuration},
 };
 use holochain_core::{
@@ -42,7 +42,7 @@ fn await_held_agent_ids(config: Configuration, signal_rx: &SignalReceiver) {
                 header: _,
             }) = action
             {
-                agent_addresses.remove(&id.key);
+                agent_addresses.remove(&id.pub_sign_key);
             }
             if agent_addresses.is_empty() {
                 break;

@@ -60,9 +60,9 @@ impl KeyBundle {
 
     /// sign some arbitrary data with the signing private key
     /// @param {SecBuf} data - the data to sign
-    /// @param {SecBuf} signature - Empty Buf to be filled with the signature
-    pub fn sign(&mut self, data: &mut SecBuf, signature: &mut SecBuf) -> HcResult<()> {
-        self.sign_keys.sign(data, signature)
+    /// @return {SecBuf} signature - Empty Buf to be filled with the signature
+    pub fn sign(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
+        self.sign_keys.sign(data)
     }
 
     /// verify data that was signed with our private signing key
@@ -84,6 +84,7 @@ impl KeyBundle {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    use crate::SIGNATURE_SIZE;
     use holochain_sodium::pwhash;
 
     pub(crate) const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
@@ -124,14 +125,13 @@ pub(crate) mod tests {
         message.randomize();
 
         // sign it
-        let mut signature = SigningKeyPair::create_signature_secbuf();
-        bundle.sign(&mut message, &mut signature).unwrap();
+        let mut signature = bundle.sign(&mut message).unwrap();
         // authentify signature
         let succeeded = bundle.verify(&mut message, &mut signature);
         assert!(succeeded);
 
         // Create random data
-        let mut random_signature = SigningKeyPair::create_signature_secbuf();
+        let mut random_signature = SecBuf::with_insecure(SIGNATURE_SIZE);
         random_signature.randomize();
         // authentify random signature
         let succeeded = bundle.verify(&mut message, &mut random_signature);

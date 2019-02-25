@@ -15,11 +15,13 @@ use rustc_serialize::json;
 use std::str;
 
 pub trait KeyPair {
+    // -- Interface to implement -- //
+
     fn public(&self) -> Base32;
     fn private(&mut self) -> &mut SecBuf;
-
-    // fn new_from_seed(seed: &mut SecBuf) -> HcResult<KeyPairable>;
-
+    fn new_from_seed(seed: &mut SecBuf) -> HcResult<Self>
+    where
+        Self: Sized;
     fn codec() -> HcidEncoding;
 
     // -- Common methods -- //
@@ -36,11 +38,13 @@ pub trait KeyPair {
             .expect("Public key decoding failed. Key was not properly encoded.")
     }
 
+    /// Decode the public key from Base32 into a SecBuf
     fn decode_pub_key_into_secbuf(&self) -> SecBuf {
         utils::decode_pub_key(&self.public(), &Self::codec())
             .expect("Public key decoding failed. Key was not properly encoded.")
     }
 
+    /// Return true if the keys are equivalent
     fn is_same(&mut self, other: &mut Self) -> bool {
         self.public() == other.public() && self.private().dump() == other.private().dump()
     }
@@ -50,6 +54,7 @@ pub trait KeyPair {
 // Signing KeyPair
 //--------------------------------------------------------------------------------------------------
 
+/// KeyPair used for signing data
 pub struct SigningKeyPair {
     pub public: Base32,
     pub private: SecBuf,
@@ -65,20 +70,9 @@ impl KeyPair for SigningKeyPair {
     fn codec() -> HcidEncoding {
         with_hcs0().expect("HCID failed miserably with_hcs0.")
     }
-}
-
-impl SigningKeyPair {
-    pub fn new(public: Base32, private: SecBuf) -> Self {
-        Self { public, private }
-    }
-
-    pub fn new_with_secbuf(pub_key_sec: &mut SecBuf, private: SecBuf) -> Self {
-        let public = Self::encode_pub_key(pub_key_sec);
-        Self { public, private }
-    }
 
     /// derive the signing pair from a 32 byte seed buffer
-    pub fn new_from_seed(seed: &mut SecBuf) -> HcResult<Self> {
+    fn new_from_seed(seed: &mut SecBuf) -> HcResult<Self> {
         assert_eq!(seed.len(), SEED_SIZE);
         // Generate keys
         let mut pub_sec_buf = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
@@ -89,17 +83,27 @@ impl SigningKeyPair {
         // Done
         Ok(SigningKeyPair::new(pub_key_b32, priv_sec_buf))
     }
+}
 
-    pub fn create_signature_secbuf() -> SecBuf {
-        SecBuf::with_insecure(SIGNATURE_SIZE)
+impl SigningKeyPair {
+    /// Standard Constructor
+    pub fn new(public: Base32, private: SecBuf) -> Self {
+        Self { public, private }
+    }
+
+    /// Construct with a public key not already HCID encoded
+    pub fn new_with_secbuf(pub_key_sec: &mut SecBuf, private: SecBuf) -> Self {
+        let public = Self::encode_pub_key(pub_key_sec);
+        Self { public, private }
     }
 
     /// sign some arbitrary data with the signing private key
     /// @param {SecBuf} data - the data to sign
-    /// @param {SecBuf} signature - Empty Buf to be filled with the signature
-    pub fn sign(&mut self, data: &mut SecBuf, signature: &mut SecBuf) -> HcResult<()> {
-        holochain_sodium::sign::sign(data, &mut self.private, signature)?;
-        Ok(())
+    /// @return {SecBuf} signature - Empty SecBuf to be filled with the signature
+    pub fn sign(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
+        let mut signature = SecBuf::with_insecure(SIGNATURE_SIZE);
+        holochain_sodium::sign::sign(data, &mut self.private, &mut signature)?;
+        Ok(signature)
     }
 
     /// verify data that was signed with our private signing key
@@ -133,6 +137,19 @@ impl KeyPair for EncryptingKeyPair {
     fn codec() -> HcidEncoding {
         with_hck0().expect("HCID failed miserably with_hck0.")
     }
+
+    /// Derive the signing pair from a 32 byte seed buffer
+    fn new_from_seed(seed: &mut SecBuf) -> HcResult<Self> {
+        assert_eq!(seed.len(), SEED_SIZE);
+        // Generate keys
+        let mut pub_sec_buf = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
+        let mut priv_sec_buf = SecBuf::with_secure(kx::SECRETKEYBYTES);
+        holochain_sodium::kx::seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
+        // Convert and encode public key side
+        let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, &Self::codec())?;
+        // Done
+        Ok(EncryptingKeyPair::new(pub_key_b32, priv_sec_buf))
+    }
 }
 
 impl EncryptingKeyPair {
@@ -144,19 +161,6 @@ impl EncryptingKeyPair {
     pub fn new_with_secbuf(pub_key_sec: &mut SecBuf, private: SecBuf) -> Self {
         let public = Self::encode_pub_key(pub_key_sec);
         Self { public, private }
-    }
-
-    /// Derive the signing pair from a 32 byte seed buffer
-    pub fn new_from_seed(seed: &mut SecBuf) -> HcResult<Self> {
-        assert_eq!(seed.len(), SEED_SIZE);
-        // Generate keys
-        let mut pub_sec_buf = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
-        let mut priv_sec_buf = SecBuf::with_secure(kx::SECRETKEYBYTES);
-        holochain_sodium::kx::seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
-        // Convert and encode public key side
-        let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, &Self::codec())?;
-        // Done
-        Ok(EncryptingKeyPair::new(pub_key_b32, priv_sec_buf))
     }
 
     /// Decode the public key from Base32 into a [u8]
@@ -225,15 +229,14 @@ mod tests {
         message.randomize();
 
         // sign it
-        let mut signature = SigningKeyPair::create_signature_secbuf();
-        sign_keys.sign(&mut message, &mut signature).unwrap();
+        let mut signature = sign_keys.sign(&mut message).unwrap();
         println!("signature = {:?}", signature);
         // authentify signature
         let succeeded = sign_keys.verify(&mut message, &mut signature);
         assert!(succeeded);
 
         // Create random data
-        let mut random_signature = SigningKeyPair::create_signature_secbuf();
+        let mut random_signature = SecBuf::with_insecure(SIGNATURE_SIZE);
         random_signature.randomize();
         // authentify random signature
         let succeeded = sign_keys.verify(&mut message, &mut random_signature);

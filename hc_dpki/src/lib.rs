@@ -14,4 +14,4 @@ pub mod password_encryption;
 pub mod utils;
 
 pub const SEED_SIZE: usize = 32;
-pub const SIGNATURE_SIZE: usize = 64;
+pub(crate) const SIGNATURE_SIZE: usize = 64;

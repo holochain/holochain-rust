@@ -94,6 +94,7 @@ pub mod tests {
     // NOTE, before re-enabling make sure to add an environment variable
     // HC_SCAFFOLD_VERSION='branch="develop"' when you run the test.
     #[cfg(feature = "broken-tests")]
+    #[ignore]
     fn test_command_basic_test() {
         let temp_dir = gen_dir();
         let temp_dir_path = temp_dir.path();
@@ -131,6 +132,7 @@ pub mod tests {
     // behaviour of the command is different, depending whether nodejs is installed on the system or not
     #[test]
     #[cfg(not(windows))]
+    #[ignore]
     fn test_command_no_test_folder() {
         let temp_dir = gen_dir();
         let temp_dir_path = temp_dir.path();

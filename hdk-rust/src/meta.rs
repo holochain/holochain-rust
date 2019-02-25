@@ -228,7 +228,15 @@ pub extern "C" fn __hdk_validate_link(
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_git_hash() -> RibosomeEncodingBits {
+pub extern "C" fn __hdk_git_hash(
+    encoded_allocation_of_input: RibosomeEncodingBits,
+) -> RibosomeEncodingBits {
+    if let Err(allocation_error) =
+        ::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+    {
+        return allocation_error.as_ribosome_encoding();
+    }
+
     let mut mem_stack = unsafe {
         match G_MEM_STACK {
             Some(mem_stack) => mem_stack,

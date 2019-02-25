@@ -114,14 +114,16 @@ impl Holochain {
         let instance = Instance::new(context.clone());
 
         for zome in dna.zomes.values() {
-            let json_string = run_dna(
+            let maybe_json_string = run_dna(
                 zome.code.code.clone(),
-                None,
+                Some("{}".as_bytes().to_vec()),
                 WasmCallData::DirectCall("__hdk_git_hash".to_string()),
-            )?;
+            );
 
-            if json_string != holochain_core_types::GIT_HASH.into() {
-                return Err(HolochainError::ErrorGeneric("HALP!".into()).into());
+            if let Ok(json_string) = maybe_json_string {
+                if json_string != holochain_core_types::GIT_HASH.into() {
+                    return Err(HolochainError::ErrorGeneric("HALP!".into()).into());
+                }
             }
         }
 

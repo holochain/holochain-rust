@@ -37,7 +37,7 @@ pub trait KeyPair {
 
     /// Decode the public key from Base32 into a SecBuf
     fn decode_pub_key_into_secbuf(&self) -> SecBuf {
-        utils::decode_pub_key(&self.public(), &Self::codec())
+        utils::decode_pub_key(self.public(), &Self::codec())
             .expect("Public key decoding failed. Key was not properly encoded.")
     }
 

@@ -160,14 +160,13 @@ fn reduce_publish_inner(
             .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
         EntryType::LinkRemove => publish_entry(network_state, &entry_with_header)
             .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
-        EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
+        EntryType::Deletion => 
             publish_crud_meta(
                 network_state,
                 entry_with_header.entry.address(),
                 CrudStatus::Deleted,
                 maybe_crud_link,
-            )
-        }),
+            ),
         _ => Err(HolochainError::NotImplemented(
             "reduce_publish_inner".into(),
         )),

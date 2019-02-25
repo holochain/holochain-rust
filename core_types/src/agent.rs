@@ -81,9 +81,11 @@ impl AddressableContent for AgentId {
     }
 }
 
-pub static GOOD_ID: &'static str    = "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
-pub static BAD_ID: &'static str     = "HcScIkRaAaaaaaaaaaAaaaBAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
-pub static TOO_BAD_ID: &'static str = "HcScIkRaAaaaaaaaaaBBBBBBBBaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
+pub static GOOD_ID: &'static str =
+    "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
+pub static BAD_ID: &'static str = "HcScIkRaAaaaaaaaaaAaaaBAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
+pub static TOO_BAD_ID: &'static str =
+    "HcScIkRaAaaaaaaaaaBBBBBBBBaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
 
 //pub fn test_base32_to_agent_id(s: &str) -> Result<AgentId, HolochainError> {
 //    let codec = with_hcs0().expect("HCID failed miserably.");
@@ -92,7 +94,6 @@ pub static TOO_BAD_ID: &'static str = "HcScIkRaAaaaaaaaaaBBBBBBBBaaaaaaaaAaaaaAa
 //        .expect("AgentID key decoding failed. Key was not properly encoded");
 //    Ok(AgentId::new("bob", key_b32))
 //}
-
 
 pub fn test_agent_id() -> AgentId {
     AgentId::new("bob", GOOD_ID.to_string())
@@ -117,7 +118,7 @@ mod tests {
 
     #[test]
     fn it_should_decode_key() {
-        let agent_id  = test_agent_id();
+        let agent_id = test_agent_id();
         let raw_key = agent_id.decoded_key().unwrap();
         println!("decoded key = {}", raw_key);
     }

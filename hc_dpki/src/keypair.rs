@@ -3,7 +3,7 @@
 use crate::{
     key_bundle,
     password_encryption::{self, PwHashConfig},
-    utils, SEED_SIZE, SIGNATURE_SIZE,
+    utils, CODEC_HCK0, CODEC_HCS0, SEED_SIZE, SIGNATURE_SIZE,
 };
 use hcid::*;
 use holochain_core_types::{agent::Base32, error::HcResult};
@@ -19,7 +19,8 @@ pub trait KeyPair {
     fn new_from_seed(seed: &mut SecBuf) -> HcResult<Self>
     where
         Self: Sized;
-    fn codec() -> HcidEncoding;
+
+    fn codec<'a>() -> &'a HcidEncoding;
 
     // -- Common methods -- //
 
@@ -37,7 +38,7 @@ pub trait KeyPair {
 
     /// Decode the public key from Base32 into a SecBuf
     fn decode_pub_key_into_secbuf(&self) -> SecBuf {
-        utils::decode_pub_key(self.public(), &Self::codec())
+        utils::decode_pub_key(self.public(), Self::codec())
             .expect("Public key decoding failed. Key was not properly encoded.")
     }
 
@@ -64,8 +65,8 @@ impl KeyPair for SigningKeyPair {
     fn private(&mut self) -> &mut SecBuf {
         &mut self.private
     }
-    fn codec() -> HcidEncoding {
-        with_hcs0().expect("HCID failed miserably with_hcs0.")
+    fn codec<'a>() -> &'a HcidEncoding {
+        &CODEC_HCS0
     }
 
     /// derive the signing pair from a 32 byte seed buffer
@@ -76,7 +77,7 @@ impl KeyPair for SigningKeyPair {
         let mut priv_sec_buf = SecBuf::with_secure(sign::SECRETKEYBYTES);
         holochain_sodium::sign::seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
         // Convert and encode public key side
-        let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, &Self::codec())?;
+        let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, Self::codec())?;
         // Done
         Ok(SigningKeyPair::new(pub_key_b32, priv_sec_buf))
     }
@@ -89,7 +90,7 @@ impl SigningKeyPair {
     }
 
     /// Construct with a public key not already HCID encoded
-    pub fn new_with_secbuf(pub_key_sec: &mut SecBuf, private: SecBuf) -> Self {
+    pub fn new_with_raw_key(pub_key_sec: &mut SecBuf, private: SecBuf) -> Self {
         let public = Self::encode_pub_key(pub_key_sec);
         Self { public, private }
     }
@@ -109,8 +110,7 @@ impl SigningKeyPair {
     /// @return true if verification succeeded
     pub fn verify(&mut self, data: &mut SecBuf, signature: &mut SecBuf) -> bool {
         let mut pub_key = self.decode_pub_key_into_secbuf();
-        let res = holochain_sodium::sign::verify(signature, data, &mut pub_key);
-        res == 0
+        holochain_sodium::sign::verify(signature, data, &mut pub_key)
     }
 }
 
@@ -132,8 +132,8 @@ impl KeyPair for EncryptingKeyPair {
         &mut self.private
     }
 
-    fn codec() -> HcidEncoding {
-        with_hck0().expect("HCID failed miserably with_hck0.")
+    fn codec<'a>() -> &'a HcidEncoding {
+        &CODEC_HCK0
     }
 
     /// Derive the signing pair from a 32 byte seed buffer
@@ -144,7 +144,7 @@ impl KeyPair for EncryptingKeyPair {
         let mut priv_sec_buf = SecBuf::with_secure(kx::SECRETKEYBYTES);
         holochain_sodium::kx::seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
         // Convert and encode public key side
-        let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, &Self::codec())?;
+        let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, Self::codec())?;
         // Done
         Ok(EncryptingKeyPair::new(pub_key_b32, priv_sec_buf))
     }

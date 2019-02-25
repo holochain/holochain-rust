@@ -71,20 +71,21 @@ pub fn sign(
 /// @param {Buffer} message
 ///
 /// @param {Buffer} publicKey
-pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut SecBuf) -> i32 {
+pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut SecBuf) -> bool {
     check_init();
     let signature = signature.read_lock();
     let message = message.read_lock();
     let public_key = public_key.read_lock();
     let mess_len = message.len() as libc::c_ulonglong;
-    unsafe {
-        return rust_sodium_sys::crypto_sign_verify_detached(
+    let res = unsafe {
+        rust_sodium_sys::crypto_sign_verify_detached(
             raw_ptr_char_immut!(signature),
             raw_ptr_char_immut!(message),
             mess_len,
             raw_ptr_char_immut!(public_key),
-        );
-    }
+        )
+    };
+    res == 0
 }
 
 #[cfg(test)]
@@ -107,8 +108,8 @@ mod tests {
 
         sign(&mut message, &mut secret_key, &mut signature).unwrap();
         {
-            let ver = verify(&mut signature, &mut message, &mut public_key);
-            assert_eq!(0, ver);
+            let succeeded = verify(&mut signature, &mut message, &mut public_key);
+            assert!(succeeded);
         }
     }
 
@@ -132,8 +133,8 @@ mod tests {
         sign(&mut message, &mut secret_key, &mut signature).unwrap();
 
         {
-            let ver = verify(&mut signature, &mut fake_message, &mut public_key);
-            assert_eq!(-1, ver);
+            let succeeded = verify(&mut signature, &mut fake_message, &mut public_key);
+            assert!(!succeeded);
         }
     }
 }

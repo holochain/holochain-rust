@@ -58,7 +58,8 @@ pub fn hash(
     };
     match res {
         0 => Ok(()),
-        _ => Err(SodiumError::OutOfMemory),
+        -1 => Err(SodiumError::OutOfMemory),
+        _ => unreachable!(),
     }
 }
 

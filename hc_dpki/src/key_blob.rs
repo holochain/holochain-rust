@@ -111,8 +111,8 @@ impl KeyBundle {
         let mut decrypted_data = SecBuf::with_secure(BLOB_DATA_LEN);
         password_encryption::pw_dec(&data, passphrase, &mut decrypted_data, config)?;
 
-        let mut pub_sign = SecBuf::with_secure(sign::PUBLICKEYBYTES);
-        let mut pub_enc = SecBuf::with_secure(kx::PUBLICKEYBYTES);
+        let mut pub_sign = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
+        let mut pub_enc = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
         let mut priv_sign = SecBuf::with_secure(sign::SECRETKEYBYTES);
         let mut priv_enc = SecBuf::with_secure(kx::SECRETKEYBYTES);
 

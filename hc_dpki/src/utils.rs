@@ -1,4 +1,4 @@
-use crate::SEED_SIZE;
+use crate::{CODEC_HCS0, SEED_SIZE};
 use hcid::*;
 use holochain_core_types::{agent::Base32, error::HcResult};
 use holochain_sodium::{secbuf::SecBuf, sign};
@@ -12,12 +12,8 @@ pub(crate) fn decode_pub_key(pub_key_b32: Base32, codec: &HcidEncoding) -> HcRes
     let pub_key = codec.decode(&pub_key_b32)?;
     // convert to SecBuf
     let mut pub_key_sec = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
-    {
-        let mut pub_key_lock = pub_key_sec.write_lock();
-        for x in 0..pub_key.len() {
-            pub_key_lock[x] = pub_key[x];
-        }
-    }
+    pub_key_sec.from_array(&pub_key)?;
+    // Done
     Ok(pub_key_sec)
 }
 
@@ -27,9 +23,7 @@ pub(crate) fn decode_pub_key(pub_key_b32: Base32, codec: &HcidEncoding) -> HcRes
 /// @return {Base32} Resulting HCID encoded key
 pub(crate) fn encode_pub_key(pub_key_sec: &mut SecBuf, codec: &HcidEncoding) -> HcResult<Base32> {
     let locker = pub_key_sec.read_lock();
-    let pub_buf = &*locker;
-    let pub_key = array_ref![pub_buf, 0, SEED_SIZE];
-    Ok(codec.encode(pub_key)?)
+    Ok(codec.encode(&locker[0..SEED_SIZE])?)
 }
 
 /// Verify data that was signed
@@ -42,12 +36,12 @@ pub fn verify(
     data: &mut SecBuf,
     signature: &mut SecBuf,
 ) -> HcResult<bool> {
-    let mut pub_key = decode_pub_key(
-        pub_sign_key_b32,
-        &with_hcs0().expect("HCID failed miserably with_hcs0."),
-    )?;
-    let res = holochain_sodium::sign::verify(signature, data, &mut pub_key);
-    Ok(res == 0)
+    let mut pub_key = decode_pub_key(pub_sign_key_b32, &CODEC_HCS0)?;
+    Ok(holochain_sodium::sign::verify(
+        signature,
+        data,
+        &mut pub_key,
+    ))
 }
 
 #[cfg(test)]

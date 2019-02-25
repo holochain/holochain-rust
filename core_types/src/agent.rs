@@ -21,14 +21,20 @@ pub struct AgentId {
     pub nick: String,
     /// the encoded public signing key of this agent (the magnifier)
     pub pub_sign_key: Base32,
+    // TODO: Add the encoded public encrypting key (the safe / padlock)
+    // pub pub_enc_key: Base32,
 }
 
 impl AgentId {
-    /// generate a agent id with fake key
+    /// A well-known key useful for testing and used by generate_fake()
+    pub const FAKE_RAW_KEY: [u8; 32] = [
+        42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0,
+    ];
+
+    /// generate an agent id with fake key
     pub fn generate_fake(nick: &str) -> Self {
-        let mut key: [u8; 32] = [0; 32];
-        key[0] = 42;
-        AgentId::new_with_raw_key(nick, str::from_utf8(&key).unwrap())
+        AgentId::new_with_raw_key(nick, str::from_utf8(&AgentId::FAKE_RAW_KEY).unwrap())
             .expect("AgentId fake key generation failed")
     }
 

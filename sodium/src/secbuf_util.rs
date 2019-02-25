@@ -35,7 +35,7 @@ impl SecBuf {
         }
     }
 
-    /// Compares the Two SecBuf
+    /// Compares two SecBuf
     /// Return :
     /// | if a > b; return 1
     /// | if a < b; return -1

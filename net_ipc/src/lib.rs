@@ -17,6 +17,23 @@ extern crate lazy_static;
 extern crate snowflake;
 extern crate zmq;
 
+// wss
+extern crate tungstenite;
+extern crate url;
+extern crate native_tls;
+
+mod connection;
+mod connection_wss;
+
+pub use connection::{
+    ConnectionError,
+    ConnectionResult,
+    DidWork,
+    ConnectionEvent,
+    Connection};
+
+pub use connection_wss::ConnectionWss;
+
 #[macro_use]
 pub mod errors;
 pub mod context;

@@ -7,6 +7,12 @@ use holochain_net_ipc::{
     socket::{IpcSocket, MockIpcSocket, TestStruct, ZmqIpcSocket},
     spawn,
     util::get_millis,
+    ConnectionError,
+    ConnectionResult,
+    DidWork,
+    ConnectionEvent,
+    Connection,
+    ConnectionWss,
 };
 
 use holochain_net_connection::{

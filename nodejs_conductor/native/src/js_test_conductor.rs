@@ -75,7 +75,7 @@ declare_types! {
                 panic!("Invalid type specified for config, must be object or string");
             };
             let mut conductor = RustConductor::from_config(config);
-            conductor.key_loader = test_key_loader();
+            conductor.key_loader = test_keybundle_loader();
             let is_running = Arc::new(Mutex::new(false));
 
             Ok(TestConductor { conductor, sender_tx: None, is_running, is_started: false })

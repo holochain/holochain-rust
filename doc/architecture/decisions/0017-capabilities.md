@@ -1,6 +1,6 @@
 # Capabilities & Security ADR
 
-Date: 2019-02-xx
+Date: 2019-02-26
 
 ## Status
 Draft
@@ -57,7 +57,7 @@ Capabilities allow developers to specify control access to zome function calling
 
 1. Agent bundles function name, parameters and a timestamp into a call request block, and signs it with the agent's private key, and sends it to Conductor along with any other parameters necessary for routing to the correct instance over what ever interface is being used.
 2. Conductor creates a CapabilityRequest structure and passes it into holochain Core.
-3. Core loads CapabilityGrant from chain by it's address, and checks validity according to the grant's parameters, returing a CapabilityCheckFailed error, or calling the zome function if successfull.  It may also check the timestamp of the call to make-sure it's within a reasonble window to prevent some re-play attacks.  Additionally, if complete security from replay attacks is necessary we may implement an additional handshake where the agent makes a "pre-call" indicating the desire to make a zome call.  In that case the Conductor would have to pass this request into core where nonce could be generated.  For use in including in the call request block. Note that this also requires implementing an ephemeral store for in core, something that's on our development path.
+3. Core loads CapabilityGrant from chain by it's address, and checks validity according to the grant's parameters, returning a CapabilityCheckFailed error, or calling the zome function if successfull.  It may also check the timestamp of the call to make-sure it's within a reasonble window to prevent some re-play attacks.  Additionally, if complete security from replay attacks is necessary we may implement an additional handshake where the agent makes a "pre-call" indicating the desire to make a zome call.  In that case the Conductor would have to pass this request into core where a nonce could be generated that the client has to include in the call request block. Note that this also requires implementing an ephemeral store in core, something that's on our development path.
 
 *Comments:*
 

@@ -1,7 +1,9 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_dpki::{
-    key_bundle::{KeyBundle, SeedType},
+    key_bundle::KeyBundle,
+    key_blob::Blobbable,
+    seed::SeedType,
     SEED_SIZE,
 };
 use holochain_sodium::secbuf::SecBuf;

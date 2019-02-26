@@ -16,13 +16,6 @@ use std::str;
 
 use serde_derive::{Deserialize, Serialize};
 
-pub enum BlobType {
-    Seed,
-    KeyBundle,
-    KeyPair,
-    Key,
-}
-
 /// The data includes a base64 encoded, json serialized string of the EncryptedData that
 /// was created by concatenating all the keys in one SecBuf
 #[derive(Serialize, Deserialize)]
@@ -34,6 +27,16 @@ pub struct KeyBlob {
     pub data: String,
 }
 
+/// Enum of all blobbable types
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum BlobType {
+    Seed,
+    KeyBundle,
+    KeyPair,
+    Key,
+}
+
+/// Trait to implement in order to be blobbable into a KeyBlob
 pub trait Blobbable {
     fn blob_type() -> BlobType;
     fn blob_size() -> usize;
@@ -42,7 +45,9 @@ pub trait Blobbable {
         blob: &KeyBlob,
         passphrase: &mut SecBuf,
         config: Option<PwHashConfig>,
-    ) -> HcResult<Self>;
+    ) -> HcResult<Self>
+        where
+            Self: Sized;
 
     fn as_blob(
         &mut self,
@@ -69,7 +74,7 @@ pub trait Blobbable {
         // Serialize and convert to base64
         let serialized_blob =
             serde_json::to_string(&encrypted_blob).expect("Failed to serialize Blob");
-        Ok(base64::encode(&serialized_blob)?)
+        Ok(base64::encode(&serialized_blob))
     }
 
     //
@@ -77,7 +82,8 @@ pub trait Blobbable {
         blob: &KeyBlob,
         passphrase: &mut SecBuf,
         config: Option<PwHashConfig>,
-    ) -> HcResult<Self> {
+    ) -> HcResult<SecBuf>
+    {
         // Check type
         if blob.blob_type != Self::blob_type() {
             return Err(HolochainError::ErrorGeneric(
@@ -125,19 +131,21 @@ impl Blobbable for Seed {
         blob: &KeyBlob,
         passphrase: &mut SecBuf,
         config: Option<PwHashConfig>,
-    ) -> HcResult<TypedSeed> {
+    ) -> HcResult<Self> {
         // Retrieve data buf from blob
         let mut seed_buf = Self::unblob(blob, passphrase, config)?;
         // Construct
-        match blob.seed_type {
-            SeedType::Root => Ok(TypedSeed::Root(RootSeed::new(seed_buf))),
-            SeedType::Device => Ok(TypedSeed::Device(DeviceSeed::new(seed_buf))),
-            SeedType::DevicePin => Ok(TypedSeed::DevicePin(DevicePinSeed::new(seed_buf))),
-            _ => Err(HolochainError::new(&format!(
-                "Unblobbing seed of type '{:?}' not allowed",
-                blob.seed_type
-            ))),
-        }
+        Ok(Seed::new(seed_buf, blob.seed_type.clone()))
+        // Construct
+//        match blob.seed_type {
+//            SeedType::Root => Ok(TypedSeed::Root(RootSeed::new(seed_buf))),
+//            SeedType::Device => Ok(TypedSeed::Device(DeviceSeed::new(seed_buf))),
+//            SeedType::DevicePin => Ok(TypedSeed::DevicePin(DevicePinSeed::new(seed_buf))),
+//            _ => Err(HolochainError::new(&format!(
+//                "Unblobbing seed of type '{:?}' not allowed",
+//                blob.seed_type
+//            ))),
+//        }
     }
 
     ///  generate a persistence bundle with hint info
@@ -152,10 +160,10 @@ impl Blobbable for Seed {
         config: Option<PwHashConfig>,
     ) -> HcResult<KeyBlob> {
         // Blob seed buf directly
-        let encoded_blob = Self::finalize_blobbing(&mut self.seed_buf, passphrase, config)?;
+        let encoded_blob = Self::finalize_blobbing(&mut self.buf, passphrase, config)?;
 
         Ok(KeyBlob {
-            seed_type: self.seed_type.clone(),
+            seed_type: self.kind.clone(),
             blob_type: BlobType::Seed,
             hint,
             data: encoded_blob,
@@ -293,10 +301,10 @@ mod tests {
 
     #[test]
     fn it_should_blob_keybundle() {
-        let mut seed = test_generate_random_seed();
+        let mut seed_buf = test_generate_random_seed();
         let mut passphrase = test_generate_random_seed();
 
-        let mut bundle = KeyBundle::new_from_seed_buf(&mut seed, SeedType::Mock).unwrap();
+        let mut bundle = KeyBundle::new_from_seed_buf(&mut seed_buf, SeedType::Mock).unwrap();
 
         let blob = bundle
             .as_blob(&mut passphrase, "hint".to_string(), TEST_CONFIG)
@@ -327,20 +335,14 @@ mod tests {
             .as_blob(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
-        let typed_seed = Seed::from_blob(&blob, &mut passphrase, TEST_CONFIG).unwrap();
-
-        match typed_seed {
-            TypedSeed::Root(mut root_seed) => {
-                assert_eq!(
-                    0,
-                    root_seed
-                        .seed_mut()
-                        .seed_buf
-                        .compare(&mut initial_seed.seed_buf)
-                );
-            }
-            _ => unreachable!(),
-        }
+        let mut root_seed= Seed::from_blob(&blob, &mut passphrase, TEST_CONFIG).unwrap();
+        assert_eq!(SeedType::Root, root_seed.kind);
+        assert_eq!(
+            0,
+            root_seed
+                .buf
+                .compare(&mut initial_seed.buf)
+        );
     }
 
     #[test]
@@ -350,22 +352,25 @@ mod tests {
         let mut initial_device_pin_seed = DevicePinSeed::new(seed_buf);
 
         let blob = initial_device_pin_seed
+            .seed_mut()
             .as_blob(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
-        let typed_seed = Seed::from_blob(&blob, &mut passphrase, TEST_CONFIG).unwrap();
+        let seed= Seed::from_blob(&blob, &mut passphrase, TEST_CONFIG).unwrap();
+        let mut typed_seed = seed.into_typed().unwrap();
 
-        match s {
-            TypedSeed::DevicePinSeed(mut device_pin_seed) => {
+        match typed_seed {
+            TypedSeed::DevicePin(mut device_pin_seed) => {
                 assert_eq!(
                     0,
                     device_pin_seed
                         .seed_mut()
-                        .seed_buf
-                        .compare(&mut initial_seed.seed_buf)
+                        .buf
+                        .compare(&mut initial_device_pin_seed.seed_mut().buf)
                 );
-            }
+            },
             _ => unreachable!(),
         }
+
     }
 }

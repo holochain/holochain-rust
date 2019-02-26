@@ -5,7 +5,6 @@
 
 #[macro_use]
 extern crate lazy_static;
-extern crate bip39;
 
 pub const SEED_SIZE: usize = 32;
 pub(crate) const SIGNATURE_SIZE: usize = 64;

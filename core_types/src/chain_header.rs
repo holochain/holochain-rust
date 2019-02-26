@@ -36,8 +36,8 @@ pub struct ChainHeader {
     link: Option<Address>,
     /// Key to the most recent header of the same type, None is valid only for the first of that type
     link_same_type: Option<Address>,
-    /// Key to the header of the previous version of this chain header's entry
-    link_crud: Option<Address>,
+    /// Address of the header that this entry is a an update (or deletion) of
+    link_update_delete: Option<Address>,
     /// ISO8601 time stamp
     timestamp: Iso8601,
 }
@@ -65,7 +65,7 @@ impl ChainHeader {
         provenances: &[Provenance],
         link: &Option<Address>,
         link_same_type: &Option<Address>,
-        link_crud: &Option<Address>,
+        link_update_delete: &Option<Address>,
         timestamp: &Iso8601,
     ) -> Self {
         ChainHeader {
@@ -74,7 +74,7 @@ impl ChainHeader {
             provenances: provenances.to_owned(),
             link: link.to_owned(),
             link_same_type: link_same_type.to_owned(),
-            link_crud: link_crud.to_owned(),
+            link_update_delete: link_update_delete.to_owned(),
             timestamp: timestamp.to_owned(),
         }
     }
@@ -104,9 +104,9 @@ impl ChainHeader {
         self.link_same_type.clone()
     }
 
-    /// link_crud getter
-    pub fn link_crud(&self) -> Option<Address> {
-        self.link_crud.clone()
+    /// link_update_delete getter
+    pub fn link_update_delete(&self) -> Option<Address> {
+        self.link_update_delete.clone()
     }
 
     /// entry_signature getter

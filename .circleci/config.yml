@@ -32,9 +32,9 @@ jobs:
        nix-shell --run hc-install-conductor
        nix-shell --run hc-test-conductor-serve
 
-   - run:
-       name: app spec tests
-       command: nix-shell --run hc-test-app-spec
+   # - run:
+   #     name: app spec tests
+   #     command: nix-shell --run hc-test-app-spec
 
  cli-tests:
   docker:

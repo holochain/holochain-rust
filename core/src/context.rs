@@ -282,35 +282,38 @@ impl Context {
 
     /// returns the public capability token (if any)
     pub fn get_public_token(&self) -> Option<Address> {
-        if let Some(state) = self.state() {
-            let maybe_top = state.agent().top_chain_header();
-            if maybe_top.is_some() {
-                let mut found_entries: Vec<Address> = vec![];
-                for chain_header in state
-                    .agent()
-                    .chain_store()
-                    .iter_type(&maybe_top, &EntryType::CapTokenGrant)
-                {
-                    found_entries.push(chain_header.entry_address().to_owned());
-                }
-                if found_entries.len() > 0 {
-                    let addr = found_entries[0].clone();
-                    let cas = self
-                        .state()
-                        .unwrap()
-                        .agent()
-                        .chain_store()
-                        .content_storage();
-                    let entry = get_entry_from_cas(&cas, &addr).ok()??;
-                    if let Entry::CapTokenGrant(grant) = entry {
-                        if grant.cap_type() == CapabilityType::Public {
-                            return Some(addr);
-                        }
-                    }
+        self.state().and_then(|state| {
+            let top = state.agent().top_chain_header()?;
+
+            // Get address of first Token Grant entry (return early if none)
+            let addr = state
+                .agent()
+                .chain_store()
+                .iter_type(&Some(top), &EntryType::CapTokenGrant)
+                .nth(0)?
+                .entry_address()
+                .to_owned();
+
+            // Get CAS
+            let cas = self
+                .state()
+                .unwrap()
+                .agent()
+                .chain_store()
+                .content_storage();
+
+            // Get according Token Grant entry from CAS
+            let entry = get_entry_from_cas(&cas, &addr).ok()??;
+
+            // Make sure entry is a public grant and return it
+            if let Entry::CapTokenGrant(grant) = entry {
+                if grant.cap_type() == CapabilityType::Public {
+                    return Some(addr);
                 }
             }
-        }
-        None
+
+            None
+        })
     }
 }
 

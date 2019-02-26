@@ -68,7 +68,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     }
     
     let mut entry_with_header = entry_with_header_result.unwrap();
-    entry_with_header.header.set_link_crud(Some(chain_header_address.clone()));
+    entry_with_header.header.set_link_update_delete(Some(chain_header_address.clone()));
     let task_result = zome_call_data.context.block_on(author_entry(
         &entry_with_header,
         &new_context,

@@ -26,17 +26,11 @@ jobs:
    - checkout
 
    - run:
-       name: install cli
-       command: nix-shell --run hc-install-cli
-
-   - run:
-      name: install conductor
-      command: nix-shell --run hc-install-conductor
-
-   - run:
-      name: run conductor
-      command: nix-shell --run hc-test-conductor-serve
+      name: install and serve conductor
       background: true
+      command: |
+       nix-shell --run hc-install-conductor
+       nix-shell --run hc-test-conductor-serve
 
    - run:
        name: app spec tests

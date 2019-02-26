@@ -224,7 +224,7 @@ pub mod tests {
         let zome_call = ZomeFnCall::new("test_zome", cap_request, "test", "{}");
 
         let context = &test_setup.context;
-        let result = context.block_on(call_zome_function(zome_call, context));
+        let result = test_setup.context.block_on(call_zome_function(zome_call, context));
         assert_eq!(expected, Ok(result));
     }
 
@@ -326,9 +326,7 @@ pub mod tests {
         let grant =
             CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        println!("before blockon in test_call_transferable");
-        let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
-        println!("after blockon in test_call_transferable");
+        let addr = test_setup.context.block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         let cap_request = make_cap_request_for_call(
             test_setup.context.clone(),
             addr,
@@ -336,9 +334,7 @@ pub mod tests {
             "test",
             "{}",
         );
-        println!("before reduce call 1");
         test_reduce_call(&test_setup, cap_request, success_expected());
-        println!("after reduce call 1");
     }
 
     #[test]
@@ -375,9 +371,7 @@ pub mod tests {
         )
         .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        println!("before blockon in test_call_transfer");
-        let grant_addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
-        println!("after blockon in test_call_transfer");
+        let grant_addr = test_setup.context.block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         let cap_request = make_cap_request_for_call(
             test_setup.context.clone(),
             grant_addr.clone(),
@@ -385,9 +379,7 @@ pub mod tests {
             "test",
             "{}",
         );
-        println!("before reduce call 1");
         test_reduce_call(&test_setup, cap_request, expected_failure.clone());
-        println!("after reduce call 1");
 
         // test assigned capability where the caller is someone else
         let cap_request = make_cap_request_for_call(
@@ -397,9 +389,7 @@ pub mod tests {
             "test",
             "{}",
         );
-        println!("before reduce call 2");
         test_reduce_call(&test_setup, cap_request, success_expected());
-        println!("after reduce call 2");
     }
 
     #[test]

@@ -35,7 +35,7 @@ pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
         .expect("SecBuf must be writeable");
 
     // Create KeyBundle from seed
-    let keybundle = KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap();
+    let keybundle = KeyBundle::new_from_seed_buf(&mut seed, SeedType::Mock).unwrap();
     let agent_id = AgentId::new(&nick, keybundle.get_id());
 
     // Register key in static TEST_AGENT_KEYS

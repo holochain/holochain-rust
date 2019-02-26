@@ -5,6 +5,7 @@
 
 #[macro_use]
 extern crate lazy_static;
+extern crate bip39;
 
 pub const SEED_SIZE: usize = 32;
 pub(crate) const SIGNATURE_SIZE: usize = 64;
@@ -20,5 +21,5 @@ pub mod key_blob;
 pub mod key_bundle;
 pub mod keypair;
 pub mod password_encryption;
-pub mod utils;
 pub mod seed;
+pub mod utils;

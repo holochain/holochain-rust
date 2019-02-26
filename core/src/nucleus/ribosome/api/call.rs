@@ -205,9 +205,10 @@ pub mod tests {
         pub instance: Instance,
     }
 
-    pub fn setup_test(dna: Dna) -> TestSetup {
+    pub fn setup_test(dna: Dna, netname: &str) -> TestSetup {
+        let netname = Some("test_get_round_trip");
         let (instance, context) =
-            test_instance_and_context(dna, None).expect("Could not initialize test instance");
+            test_instance_and_context(dna, netname).expect("Could not initialize test instance");
         TestSetup {
             context: context,
             instance: instance,
@@ -230,7 +231,7 @@ pub mod tests {
     #[test]
     fn test_call_no_zome() {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", None);
-        let test_setup = setup_test(dna);
+        let test_setup = setup_test(dna, "test_call_no_zome");
         let expected = Ok(Err(HolochainError::Dna(DnaError::ZomeNotFound(
             r#"Zome 'test_zome' not found"#.to_string(),
         ))));
@@ -273,7 +274,7 @@ pub mod tests {
     #[test]
     fn test_call_public() {
         let dna = setup_dna_for_test(true);
-        let test_setup = setup_test(dna);
+        let test_setup = setup_test(dna, "test_call_public");
         let token = test_setup.context.get_public_token().unwrap();
         let cap_request = make_cap_request_for_call(
             test_setup.context.clone(),
@@ -299,7 +300,7 @@ pub mod tests {
     #[test]
     fn test_call_transferable() {
         let dna = setup_dna_for_test(false);
-        let test_setup = setup_test(dna);
+        let test_setup = setup_test(dna, "test_call_transferable");
         let expected_failure = Ok(Err(HolochainError::CapabilityCheckFailed));
 
         // make the call with an invalid capability call, i.e. incorrect token
@@ -339,7 +340,7 @@ pub mod tests {
     #[test]
     fn test_call_assigned() {
         let dna = setup_dna_for_test(false);
-        let test_setup = setup_test(dna);
+        let test_setup = setup_test(dna, "test_call_assigned");
         let expected_failure = Ok(Err(HolochainError::CapabilityCheckFailed));
         let cap_request = CapabilityRequest::new(
             Address::from("foo_token"),
@@ -394,7 +395,7 @@ pub mod tests {
     #[test]
     fn test_validate_call_public() {
         let dna = setup_dna_for_test(true);
-        let test_setup = setup_test(dna);
+        let test_setup = setup_test(dna, "test_validate_call_public");
         let context = test_setup.context;
 
         // non existent functions should fail
@@ -421,7 +422,7 @@ pub mod tests {
     #[test]
     fn test_validate_call_by_agent() {
         let dna = setup_dna_for_test(false);
-        let test_setup = setup_test(dna);
+        let test_setup = setup_test(dna, "validate_call_by_agent");
         let context = test_setup.context;
 
         // non public call should fail
@@ -466,7 +467,7 @@ pub mod tests {
     #[test]
     fn test_check_capability_transferable() {
         let dna = setup_dna_for_test(false);
-        let test_setup = setup_test(dna);
+        let test_setup = setup_test(dna, "test_check_cap_transferable");
         let context = test_setup.context;
 
         // bogus cap_request should fail

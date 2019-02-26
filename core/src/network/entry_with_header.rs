@@ -14,6 +14,11 @@ impl EntryWithHeader {
     pub fn new(entry: Entry, header: ChainHeader) -> EntryWithHeader {
         EntryWithHeader { entry, header }
     }
+
+    pub fn set_entry(&mut self, entry : Entry)
+    {
+        self.entry = entry
+    }
 }
 
 fn fetch_entry_from_cas(

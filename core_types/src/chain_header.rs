@@ -109,6 +109,11 @@ impl ChainHeader {
         self.link_crud.clone()
     }
 
+    pub fn set_link_crud(&mut self,address : Option<Address>)
+    {
+        self.link_crud = address
+    }
+
     /// entry_signature getter
     pub fn provenances(&self) -> &Vec<Provenance> {
         &self.provenances

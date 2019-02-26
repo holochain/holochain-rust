@@ -1,11 +1,13 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, runtime::Runtime},
     workflows::author_entry::author_entry,
+    network::entry_with_header::{EntryWithHeader,fetch_entry_with_header}
 };
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
+    cas::content::AddressableContent
 };
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
@@ -34,10 +36,18 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let link_add = LinkData::from_link(&link, LinkActionKind::ADD);
     let entry = Entry::LinkAdd(link_add);
 
+     let mut entry_with_header_result = fetch_entry_with_header(&entry.address(),&zome_call_data.context.clone());
+    if entry_with_header_result.is_err()
+    {
+        return ribosome_error_code!(Unspecified)
+    }
+    
+    let entry_with_header = entry_with_header_result.unwrap();
+
     // Wait for future to be resolved
     let result: Result<(), HolochainError> = zome_call_data
         .context
-        .block_on(author_entry(&entry, None, &zome_call_data.context))
+        .block_on(author_entry(&entry_with_header, &zome_call_data.context))
         .map(|_| ());
 
     runtime.store_result(result)

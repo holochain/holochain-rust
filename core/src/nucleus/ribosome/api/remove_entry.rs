@@ -1,6 +1,7 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
+    network::entry_with_header::{EntryWithHeader,fetch_entry_with_header}
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -49,14 +50,21 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     }
     let deleted_entry_address = entry_result.latest().unwrap().address();
 
+    let mut entry_with_header_result = fetch_entry_with_header(&deleted_entry_address,&zome_call_data.context.clone());
+    if entry_with_header_result.is_err()
+    {
+        return ribosome_error_code!(Unspecified)
+    }
+    let mut entry_with_header = entry_with_header_result.unwrap();
+
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
+    entry_with_header.set_entry(deletion_entry);
 
     let res: Result<(), HolochainError> = zome_call_data
         .context
         .block_on(author_entry(
-            &deletion_entry.clone(),
-            Some(deleted_entry_address.clone()),
+            &entry_with_header,
             &zome_call_data.context.clone(),
         ))
         .map(|_| ());

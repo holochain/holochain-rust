@@ -35,7 +35,7 @@ jobs:
    - run:
        name: app spec tests
        # command: nix-shell --run hc-test-app-spec
-       command: curl -I http://127.0.0.1:3000
+       command: nix-shell -p curl --run 'curl -I http://127.0.0.1:3000'
 
  cli-tests:
   docker:

@@ -1,5 +1,6 @@
 use holochain_core_types::error::HcResult;
 use holochain_sodium::{aead, kx, pwhash, secbuf::SecBuf};
+use serde_derive::{Deserialize, Serialize};
 
 pub type OpsLimit = u64;
 pub type MemLimit = usize;
@@ -8,7 +9,7 @@ pub type PwHashAlgo = i8;
 pub struct PwHashConfig(pub OpsLimit, pub MemLimit, pub PwHashAlgo);
 
 /// Struct holding the result of a passphrase encryption
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(Serialize, Deserialize)]
 pub(crate) struct EncryptedData {
     pub salt: Vec<u8>,
     pub nonce: Vec<u8>,

@@ -11,7 +11,6 @@ use holochain_core_types::{
     agent::Base32,
     error::{HcResult, HolochainError},
 };
-use rustc_serialize::json;
 use std::str;
 
 use serde_derive::{Deserialize, Serialize};
@@ -51,7 +50,7 @@ impl KeyBundle {
         let mut data_buf = SecBuf::with_secure(BLOB_DATA_LEN);
         let mut offset: usize = 0;
         // Write version
-        data_buf.write(offset, &[BLOB_FORMAT_VERSION])?;
+        data_buf.write(0, &[BLOB_FORMAT_VERSION]).unwrap();
         offset += 1;
         // Write public signing key
         let key = self.sign_keys.decode_pub_key();
@@ -81,8 +80,8 @@ impl KeyBundle {
 
         // encrypt buffer
         let encrypted_blob = password_encryption::pw_enc(&mut data_buf, passphrase, config)?;
-        let serialized_blob = json::encode(&encrypted_blob).expect("Failed to serialize KeyBundle");
-        // conver to base64
+        // Serialize and convert to base64
+        let serialized_blob = serde_json::to_string(&encrypted_blob).expect("Failed to serialize KeyBundle");
         let encoded_blob = base64::encode(&serialized_blob);
         // Done
         Ok(KeyBlob {
@@ -105,11 +104,12 @@ impl KeyBundle {
         let blob_decoded = base64::decode(&blob.data)?;
 
         // Deserialize
-        let blob_string = str::from_utf8(&blob_decoded).unwrap();
-        let data: EncryptedData = json::decode(&blob_string).unwrap();
+        let blob_string = str::from_utf8(&blob_decoded)?;
+        let data: EncryptedData = serde_json::from_str(&blob_string)?;
         // Decrypt
         let mut decrypted_data = SecBuf::with_secure(BLOB_DATA_LEN);
         password_encryption::pw_dec(&data, passphrase, &mut decrypted_data, config)?;
+        assert_eq!(decrypted_data.len(), BLOB_DATA_LEN);
 
         let mut pub_sign = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut pub_enc = SecBuf::with_insecure(kx::PUBLICKEYBYTES);

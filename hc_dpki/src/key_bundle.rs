@@ -7,7 +7,7 @@ use crate::{
     utils, SEED_SIZE,
 };
 use holochain_core_types::{agent::Base32, error::HcResult};
-use rustc_serialize::json;
+use serde_json::json;
 use std::str;
 
 use serde_derive::{Deserialize, Serialize};

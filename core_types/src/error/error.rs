@@ -180,6 +180,12 @@ impl From<base64::DecodeError> for HolochainError {
     }
 }
 
+impl From<std::str::Utf8Error> for HolochainError {
+    fn from(error: std::str::Utf8Error) -> Self {
+        HolochainError::ErrorGeneric(format!("std::str::Utf8Error error: {}", error.to_string()))
+    }
+}
+
 impl From<FutureCanceled> for HolochainError {
     fn from(_: FutureCanceled) -> Self {
         HolochainError::ErrorGeneric("Failed future".to_string())

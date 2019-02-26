@@ -8,7 +8,7 @@ use crate::{
 use hcid::*;
 use holochain_core_types::{agent::Base32, error::HcResult};
 use holochain_sodium::{kx, secbuf::SecBuf, sign};
-use rustc_serialize::json;
+use serde_json::json;
 use std::str;
 
 pub trait KeyPair {

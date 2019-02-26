@@ -4,7 +4,7 @@
 use std::io::{Read, Write};
 
 use crate::ipc::transport::{
-    DidWork, Transport, TransportError, TransportEvent, TransportId, TransportResult,
+    DidWork, Transport, TransportError, TransportEvent, TransportId, TransportIdRef, TransportResult,
 };
 
 // -- some internal types for readability -- //
@@ -143,11 +143,11 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
     }
 
     /// send a message to one or more remote connected nodes
-    fn send(&mut self, id_list: Vec<TransportId>, payload: Vec<u8>) -> TransportResult<()> {
+    fn send(&mut self, id_list: &[&TransportIdRef], payload: &[u8]) -> TransportResult<()> {
         for id in id_list {
-            if let Some(info) = self.stream_sockets.get_mut(&id) {
+            if let Some(info) = self.stream_sockets.get_mut(&id.to_string()) {
                 if let WssStreamState::Ready(socket) = &mut info.socket {
-                    socket.write_message(tungstenite::Message::Binary(payload.clone()))?;
+                    socket.write_message(tungstenite::Message::Binary(payload.to_vec()))?;
                 } else {
                     return Err(TransportError(format!("bad stream state")));
                 }
@@ -195,11 +195,11 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                 self.event_queue.push(TransportEvent::Close(info.id));
                 continue;
             }
-            if info.last_msg.elapsed().as_millis() > 200 {
+            if info.last_msg.elapsed().as_millis() > 2000 {
                 if let WssStreamState::Ready(socket) = &mut info.socket {
                     socket.write_message(tungstenite::Message::Ping(vec![]))?;
                 }
-            } else if info.last_msg.elapsed().as_millis() > 500 {
+            } else if info.last_msg.elapsed().as_millis() > 5000 {
                 self.event_queue.push(TransportEvent::Close(info.id));
                 info.socket = WssStreamState::None;
                 continue;

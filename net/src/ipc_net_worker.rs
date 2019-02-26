@@ -128,22 +128,18 @@ impl IpcNetWorker {
         let mut cid: Option<String> = None;
 
         while cid.is_none() {
-            let (did_work, evt_lst) = socket.poll()?;
+            let (_did_work, evt_lst) = socket.poll()?;
             for evt in evt_lst {
                 match evt {
                     TransportEvent::Connect(id) => {
                         cid = Some(id.clone());
                     }
                     _ => {
-                        panic!("unexpected {:?}", evt);
+                        panic!("unexpected message during connect: {:?}", evt);
                     }
                 }
             }
-            if did_work {
-                std::thread::sleep(std::time::Duration::from_millis(1));
-            } else {
-                std::thread::sleep(std::time::Duration::from_millis(20));
-            }
+            std::thread::sleep(std::time::Duration::from_millis(3));
         }
 
         Ok(IpcNetWorker {
@@ -175,7 +171,7 @@ impl NetWorker for IpcNetWorker {
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
         let data: NamedBinaryData = data.into();
         let data = rmp_serde::to_vec_named(&data)?;
-        self.socket.send(vec![self.cid.clone()], data)?;
+        self.socket.send(&[&self.cid], &data)?;
 
         Ok(())
     }
@@ -192,19 +188,15 @@ impl NetWorker for IpcNetWorker {
         for evt in evt_lst {
             match evt {
                 TransportEvent::TransportError(id, e) => {
-                    panic!("wss error {:?} {:?}", id, e);
+                    panic!("IPC WS ERROR {:?} {:?}", id, e);
                 }
-                TransportEvent::Connect(id) => {
-                    panic!("connect! we should already be connected {:?}", id);
+                TransportEvent::Connect(_id) => {
+                    // don't need to do anything here
                 }
                 TransportEvent::Close(id) => {
-                    panic!("close! what now? {:?}", id);
+                    panic!("IPC WS CLOSED {:?}", id);
                 }
-                TransportEvent::Message(id, msg) => {
-                    if id != self.cid {
-                        panic!("message from bad cid {:?} {:?}", id, self.cid);
-                    }
-
+                TransportEvent::Message(_id, msg) => {
                     let msg: NamedBinaryData = rmp_serde::from_slice(&msg)?;
                     let msg: Protocol = msg.into();
 

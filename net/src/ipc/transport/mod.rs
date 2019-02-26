@@ -4,6 +4,7 @@ mod error;
 
 /// a connection identifier
 pub type TransportId = String;
+pub type TransportIdRef = str;
 
 pub use self::error::{TransportError, TransportResult};
 
@@ -34,5 +35,5 @@ pub trait Transport {
     fn poll(&mut self) -> TransportResult<(DidWork, Vec<TransportEvent>)>;
 
     /// send a payload to remote nodes
-    fn send(&mut self, id_list: Vec<TransportId>, payload: Vec<u8>) -> TransportResult<()>;
+    fn send(&mut self, id_list: &[&TransportIdRef], payload: &[u8]) -> TransportResult<()>;
 }

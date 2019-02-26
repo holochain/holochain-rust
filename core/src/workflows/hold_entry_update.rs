@@ -33,11 +33,12 @@ pub async fn hold_update_workflow<'a>(
         action: EntryAction::Create,
     };
 
+    let link = header.link_update_delete().ok_or("Could not get link update from header".to_string())?;
     // 3. Validate the entry
     await!(validate_entry(entry.clone(), validation_data, &context))?;
 
     // 3. If valid store the entry in the local DHT shard
-    await!(update_entry(&context.clone(),entry.address())?)
+    await!(update_entry(&context.clone(),entry.clone(),link)?)
 }
 
 

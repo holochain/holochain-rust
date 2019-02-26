@@ -132,13 +132,10 @@ pub enum Action {
     HandleFetchResult(FetchEntryResultData),
 
     ///
-    UpdateEntry(Address),
+    UpdateEntry((Address, Address)),
     ///
-    RemoveEntry(Address),
+    RemoveEntry((Address, Address)),
     ///
-    ///
-    CrudLink((Address, Address)),
-
     GetEntryTimeout(GetEntryKey),
 
     /// get links from entry address and tag name

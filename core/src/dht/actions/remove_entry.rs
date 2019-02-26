@@ -7,7 +7,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::{cas::content::{Address,AddressableContent}, error::HolochainError,entry::Entry};
 use std::{pin::Pin, sync::Arc};
 
 /// Remove Entry Action Creator
@@ -15,11 +15,14 @@ use std::{pin::Pin, sync::Arc};
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
 pub fn remove_entry(
     context: &Arc<Context>,
-    address: Address,
+    deleted_entry: Entry,
+    deletion_address: Address,
 ) -> Result<RemoveEntryFuture, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::RemoveEntry(address));
+    let action_wrapper = ActionWrapper::new(Action::RemoveEntry((
+        deleted_entry.address().clone(),
+        deletion_address.clone(),
+    )));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-
     Ok(RemoveEntryFuture {
         context: context.clone(),
         action: action_wrapper,

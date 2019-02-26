@@ -740,7 +740,6 @@ fn can_check_call_with_args() {
 fn can_remove_entry() {
     let (mut hc, _) = start_holochain_instance("can_remove_entry", "alice");
     let result = make_test_call(&mut hc, "remove_entry_ok", r#"{}"#);
-    
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),

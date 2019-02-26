@@ -2,7 +2,6 @@ use crate::{
     context::Context,
     network::entry_with_header::EntryWithHeader,
     workflows::{
-        crud_status::{crud_link_workflow, crud_status_workflow},
         hold_entry::hold_entry_workflow,
         hold_entry_remove::hold_remove_workflow,
         hold_entry_update::hold_update_workflow,
@@ -99,42 +98,12 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
             }
         });
     } else if attr == Attribute::CrudStatus.to_string() {
-        context.log("debug/net/handle: HandleStoreMeta: got CRUD status. processing...");
-        let crud_status: CrudStatus = serde_json::from_str(
-            &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHeader"),
-        )
-        .expect("Could not extract crudstatus from content list");
-        thread::spawn(move || {
-            match context.block_on(crud_status_workflow(
-                &context.clone(),
-                &dht_meta_data.entry_address,
-                &crud_status,
-            )) {
-                Err(error) => context.log(format!("err/net/dht: {}", error)),
-                _ => (),
-            }
-        });
+        context.log("debug/net/handle: HandleStoreMeta: got CRUD STATUS. processing...");
     // FIXME: block_on hold crud_status metadata in DHT?
+       
     } else if attr == Attribute::CrudLink.to_string() {
         context.log("debug/net/handle: HandleStoreMeta: got CRUD LINK. processing...");
         // FIXME: block_on hold crud_link metadata in DHT?
 
-        assert_eq!(dht_meta_data.content_list.len(), 1);
-        let crud_link : Address = serde_json::from_str(
-            &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHeader"),
-        )
-        .expect("Could not extract Address from content list");
-        thread::spawn(move || {
-            match context.block_on(crud_link_workflow(
-                &context.clone(),
-                &dht_meta_data.entry_address,
-                &Some(crud_link),
-            )) {
-                Err(error) => context.log(format!("err/net/dht: {}", error)),
-                _ => (),
-            }
-        });
     }
 }

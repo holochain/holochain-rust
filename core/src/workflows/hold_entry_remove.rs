@@ -35,8 +35,10 @@ pub async fn hold_remove_workflow<'a>(
     // 3. Validate the entry
     await!(validate_entry(entry.clone(), validation_data, &context))?;
 
+    let link = header.link_update_delete().ok_or("Could not get link update from header".to_string())?;
+
     // 3. If valid store the entry in the local DHT shard
-    await!(remove_entry(&context.clone(),entry.address())?)
+    await!(remove_entry(&context.clone(),entry.clone(),link)?)
 }
 
 

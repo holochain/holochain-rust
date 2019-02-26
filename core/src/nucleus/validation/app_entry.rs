@@ -1,22 +1,18 @@
 use crate::{
     context::Context,
-    nucleus::ZomeFnCall,
+    nucleus::{
+        actions::run_validation_callback::run_validation_callback,
+        state::{ValidationError, ValidationResult},
+        ZomeFnCall,
+    },
 };
 use holochain_core_types::{
     cas::content::AddressableContent,
-    entry::{
-        entry_type::{AppEntryType},
-        Entry,
-    },
+    entry::{entry_type::AppEntryType, Entry},
     validation::ValidationData,
 };
-use holochain_wasm_utils::api_serialization::validation::{
-    EntryValidationArgs,
-};
+use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
 use std::sync::Arc;
-use crate::nucleus::state::ValidationResult;
-use crate::nucleus::state::ValidationError;
-use crate::nucleus::actions::run_validation_callback::run_validation_callback;
 
 pub async fn validate_app_entry(
     entry: Entry,
@@ -25,7 +21,8 @@ pub async fn validate_app_entry(
     context: &Arc<Context>,
 ) -> ValidationResult {
     let dna = context.get_dna().expect("Callback called without DNA set!");
-    let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type)
+    let zome_name = dna
+        .get_zome_name_for_app_entry_type(&app_entry_type)
         .ok_or(ValidationError::NotImplemented)?;
 
     let params = EntryValidationArgs {
@@ -34,12 +31,7 @@ pub async fn validate_app_entry(
         validation_data: validation_data.clone(),
     };
 
-    let zome_call = ZomeFnCall::new(
-        &zome_name,
-        None,
-        "__hdk_validate_app_entry",
-        params,
-    );
+    let zome_call = ZomeFnCall::new(&zome_name, None, "__hdk_validate_app_entry", params);
 
-    await!(run_validation_callback(entry.address() , zome_call, context))
+    await!(run_validation_callback(entry.address(), zome_call, context))
 }

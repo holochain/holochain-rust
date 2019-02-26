@@ -77,7 +77,8 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                     deletion_entry.clone(),
                     validation_data,
                     &zome_call_data.context,
-                ).map_err(|validation_error| HolochainError::from(validation_error))
+                )
+                .map_err(|validation_error| HolochainError::from(validation_error))
             })
             // 3. Commit the valid entry to chain and DHT
             .and_then(|_| {

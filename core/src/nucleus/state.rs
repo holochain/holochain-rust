@@ -32,8 +32,12 @@ impl From<ValidationError> for HolochainError {
     fn from(ve: ValidationError) -> Self {
         match ve {
             ValidationError::Fail(reason) => HolochainError::ValidationFailed(reason),
-            ValidationError::UnresolvedDependencies(_) => HolochainError::ValidationFailed("Missing dependencies".to_string()),
-            ValidationError::NotImplemented => HolochainError::NotImplemented("Validation not implemented".to_string()),
+            ValidationError::UnresolvedDependencies(_) => {
+                HolochainError::ValidationFailed("Missing dependencies".to_string())
+            }
+            ValidationError::NotImplemented => {
+                HolochainError::NotImplemented("Validation not implemented".to_string())
+            }
             ValidationError::Error(e) => HolochainError::ErrorGeneric(e),
         }
     }

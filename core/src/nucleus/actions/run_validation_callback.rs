@@ -3,6 +3,7 @@ use crate::{
     context::Context,
     nucleus::{
         ribosome::{self, runtime::WasmCallData},
+        state::{ValidationError, ValidationResult},
         ZomeFnCall,
     },
 };
@@ -10,15 +11,9 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{
-    cas::content::Address,
-    error::HolochainError,
-    hash::HashString,
-};
+use holochain_core_types::{cas::content::Address, error::HolochainError, hash::HashString};
 use snowflake;
 use std::{pin::Pin, sync::Arc, thread};
-use crate::nucleus::state::ValidationResult;
-use crate::nucleus::state::ValidationError;
 
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
@@ -39,15 +34,23 @@ pub async fn run_validation_callback(
     context: &Arc<Context>,
 ) -> ValidationResult {
     let id = snowflake::ProcessUniqueId::new();
-    let dna_name = context.state().unwrap().nucleus().dna.as_ref().unwrap().name.clone();
-    let wasm = context.get_wasm(&zome_call.zome_name)
+    let dna_name = context
+        .state()
+        .unwrap()
+        .nucleus()
+        .dna
+        .as_ref()
+        .unwrap()
+        .name
+        .clone();
+    let wasm = context
+        .get_wasm(&zome_call.zome_name)
         .ok_or(ValidationError::NotImplemented)?;
-
 
     let clone_address = address.clone();
     let cloned_context = context.clone();
     thread::spawn(move || {
-        let validation_result : ValidationResult = match ribosome::run_dna(
+        let validation_result: ValidationResult = match ribosome::run_dna(
             wasm.code.clone(),
             Some(zome_call.clone().parameters.into_bytes()),
             WasmCallData::new_zome_call(cloned_context.clone(), dna_name, zome_call),
@@ -59,14 +62,15 @@ pub async fn run_validation_callback(
             // TODO: have "not matching schema" be its own error
             Err(HolochainError::RibosomeFailed(error_string)) => {
                 if error_string == "Argument deserialization failed" {
-                    Err(ValidationError::Error(String::from("JSON object does not match entry schema")))
+                    Err(ValidationError::Error(String::from(
+                        "JSON object does not match entry schema",
+                    )))
                 } else {
                     Err(ValidationError::Error(error_string))
                 }
             }
             Err(error) => Err(ValidationError::Error(error.to_string())),
         };
-
 
         cloned_context
             .action_channel()

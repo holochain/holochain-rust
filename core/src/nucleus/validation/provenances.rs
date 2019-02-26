@@ -1,12 +1,6 @@
-use crate::{
-    nucleus::{
-        state::{ValidationError, ValidationResult},
-    },
-};
+use crate::nucleus::state::{ValidationError, ValidationResult};
 use boolinator::Boolinator;
-use holochain_core_types::{
-    validation::ValidationData,
-};
+use holochain_core_types::validation::ValidationData;
 use holochain_dpki::keypair::Keypair;
 use holochain_sodium::secbuf::SecBuf;
 

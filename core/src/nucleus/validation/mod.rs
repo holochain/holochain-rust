@@ -1,7 +1,4 @@
-use crate::{
-    context::Context,
-    nucleus::state::ValidationResult,
-};
+use crate::{context::Context, nucleus::state::ValidationResult};
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     validation::ValidationData,
@@ -20,7 +17,6 @@ pub async fn validate_entry(
     validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> ValidationResult {
-
     //check_entry_type(entry.entry_type(), context)?;
     header_address::validate_header_address(&entry, &validation_data.package.chain_header)?;
     provenances::validate_provenances(&validation_data)?;
@@ -37,9 +33,17 @@ pub async fn validate_entry(
             context,
         )),
 
-        EntryType::LinkAdd => await!(link_entry::validate_link_entry(entry.clone(), validation_data, context)),
+        EntryType::LinkAdd => await!(link_entry::validate_link_entry(
+            entry.clone(),
+            validation_data,
+            context
+        )),
 
-        EntryType::LinkRemove => await!(link_entry::validate_link_entry(entry.clone(), validation_data, context)),
+        EntryType::LinkRemove => await!(link_entry::validate_link_entry(
+            entry.clone(),
+            validation_data,
+            context
+        )),
 
         // Deletion entries are not validated currently and always valid
         // TODO: Specify how Deletion can be commited to chain.
@@ -56,6 +60,6 @@ pub async fn validate_entry(
         //                    )?
         EntryType::AgentId => Ok(()),
 
-        _ => Err(ValidationError::NotImplemented)
+        _ => Err(ValidationError::NotImplemented),
     }
 }

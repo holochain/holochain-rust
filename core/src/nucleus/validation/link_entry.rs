@@ -1,26 +1,17 @@
 use crate::{
     context::Context,
     nucleus::{
-        ribosome::{
-            callback::{links_utils},
-        },
+        actions::run_validation_callback::run_validation_callback,
+        ribosome::callback::links_utils,
+        state::{ValidationError, ValidationResult},
         ZomeFnCall,
     },
 };
 use holochain_core_types::{
-    cas::content::AddressableContent,
-    entry::{
-        Entry,
-    },
-    validation::ValidationData,
+    cas::content::AddressableContent, entry::Entry, validation::ValidationData,
 };
-use holochain_wasm_utils::api_serialization::validation::{
-    LinkValidationArgs,
-};
+use holochain_wasm_utils::api_serialization::validation::LinkValidationArgs;
 use std::sync::Arc;
-use crate::nucleus::state::ValidationResult;
-use crate::nucleus::state::ValidationError;
-use crate::nucleus::actions::run_validation_callback::run_validation_callback;
 
 pub async fn validate_link_entry(
     entry: Entry,
@@ -38,11 +29,11 @@ pub async fn validate_link_entry(
         }
     };
     let link = link.link().clone();
-    let (base, target) = links_utils::get_link_entries(&link, context)
-        .map_err(|_| ValidationError::UnresolvedDependencies([
-            link.base().clone(),
-            link.target().clone()
-        ].to_vec()))?;
+    let (base, target) = links_utils::get_link_entries(&link, context).map_err(|_| {
+        ValidationError::UnresolvedDependencies(
+            [link.base().clone(), link.target().clone()].to_vec(),
+        )
+    })?;
 
     let link_definition_path = links_utils::find_link_definition_in_dna(
         &base.entry_type(),
@@ -50,8 +41,7 @@ pub async fn validate_link_entry(
         &target.entry_type(),
         context,
     )
-        .map_err(|_| ValidationError::NotImplemented)?;
-
+    .map_err(|_| ValidationError::NotImplemented)?;
 
     let params = LinkValidationArgs {
         entry_type: link_definition_path.entry_type_name,

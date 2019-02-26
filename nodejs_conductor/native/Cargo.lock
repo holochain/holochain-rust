@@ -671,7 +671,6 @@ dependencies = [
  "holochain_core_types 0.0.4-alpha",
  "holochain_dpki 0.0.4-alpha",
  "holochain_net 0.0.4-alpha",
- "holochain_net_connection 0.0.4-alpha",
  "holochain_net_ipc 0.0.4-alpha",
  "holochain_sodium 0.0.4-alpha",
  "hyper 0.12.24 (registry+https://github.com/rust-lang/crates.io-index)",

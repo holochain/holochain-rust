@@ -4,7 +4,8 @@
 use std::io::{Read, Write};
 
 use crate::ipc::transport::{
-    DidWork, Transport, TransportError, TransportEvent, TransportId, TransportIdRef, TransportResult,
+    DidWork, Transport, TransportError, TransportEvent, TransportId, TransportIdRef,
+    TransportResult,
 };
 
 // -- some internal types for readability -- //
@@ -42,6 +43,7 @@ struct TransportInfo<T: Read + Write + std::fmt::Debug> {
     id: TransportId,
     url: url::Url,
     last_msg: std::time::Instant,
+    send_queue: Vec<Vec<u8>>,
     socket: WssStreamState<T>,
 }
 
@@ -86,6 +88,7 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
             id: id.clone(),
             url: uri,
             last_msg: std::time::Instant::now(),
+            send_queue: Vec::new(),
             socket: WssStreamState::Connecting(socket),
         };
         self.stream_sockets.insert(id.clone(), info);
@@ -94,40 +97,36 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
 
     /// close a currently tracked connection
     fn close(&mut self, id: TransportId) -> TransportResult<()> {
-        if let Some(info) = self.stream_sockets.get_mut(&id) {
-            if let WssStreamState::Ready(socket) = &mut info.socket {
-                socket.close(None)?;
-                socket.write_pending()?;
-            }
-            info.socket = WssStreamState::None;
-        } else {
-            return Err(TransportError(format!("bad id: {}", id)));
+        if let Some(mut info) = self.stream_sockets.remove(&id) {
+            self.priv_close_one(&mut info)?;
         }
         Ok(())
     }
 
     /// close all currently tracked connections
     fn close_all(&mut self) -> TransportResult<()> {
-        let mut err: Option<TransportError> = None;
+        let mut err: TransportResult<()> = Ok(());
 
-        let sockets: Vec<(String, TransportInfo<T>)> = self.stream_sockets.drain().collect();
-
-        for (_id, mut info) in sockets {
-            if let WssStreamState::Ready(socket) = &mut info.socket {
-                if let Err(e) = socket.close(None) {
-                    err = Some(e.into());
-                }
-                if let Err(e) = socket.write_pending() {
-                    err = Some(e.into());
+        while !self.stream_sockets.is_empty() {
+            let key = self
+                .stream_sockets
+                .keys()
+                .next()
+                .expect("should not be None")
+                .to_string();
+            if let Some(mut info) = self.stream_sockets.remove(&key) {
+                if let Err(e) = self.priv_close_one(&mut info) {
+                    err = Err(e.into());
                 }
             }
         }
 
-        if let Some(e) = err {
-            Err(e)
-        } else {
-            Ok(())
-        }
+        err
+    }
+
+    /// get a list of all open transport ids
+    fn transport_id_list(&self) -> TransportResult<Vec<TransportId>> {
+        Ok(self.stream_sockets.keys().map(|k| k.to_string()).collect())
     }
 
     /// this should be called frequently on the event loop
@@ -146,14 +145,18 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
     fn send(&mut self, id_list: &[&TransportIdRef], payload: &[u8]) -> TransportResult<()> {
         for id in id_list {
             if let Some(info) = self.stream_sockets.get_mut(&id.to_string()) {
-                if let WssStreamState::Ready(socket) = &mut info.socket {
-                    socket.write_message(tungstenite::Message::Binary(payload.to_vec()))?;
-                } else {
-                    return Err(TransportError(format!("bad stream state")));
-                }
+                info.send_queue.push(payload.to_vec());
             } else {
                 return Err(TransportError(format!("bad id: {}", id)));
             }
+        }
+        Ok(())
+    }
+
+    /// send a message to all remote nodes
+    fn send_all(&mut self, payload: &[u8]) -> TransportResult<()> {
+        for info in self.stream_sockets.values_mut() {
+            info.send_queue.push(payload.to_vec());
         }
         Ok(())
     }
@@ -177,6 +180,15 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
         let out = format!("ws{}", self.n_id);
         self.n_id += 1;
         return out;
+    }
+
+    fn priv_close_one(&mut self, info: &mut TransportInfo<T>) -> TransportResult<()> {
+        if let WssStreamState::Ready(socket) = &mut info.socket {
+            socket.close(None)?;
+            socket.write_pending()?;
+        }
+        info.socket = WssStreamState::None;
+        Ok(())
     }
 
     // see if any work needs to be done on our stream sockets
@@ -252,6 +264,12 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                 return Ok(());
             }
             WssStreamState::Ready(mut socket) => {
+                let msgs: Vec<Vec<u8>> = info.send_queue.drain(..).collect();
+                for msg in msgs {
+                    if let Err(e) = socket.write_message(tungstenite::Message::Binary(msg)) {
+                        return Err(e.into());
+                    }
+                }
                 match socket.read_message() {
                     Err(tungstenite::error::Error::Io(e)) => {
                         if e.kind() == std::io::ErrorKind::WouldBlock {

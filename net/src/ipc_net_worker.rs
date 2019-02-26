@@ -19,7 +19,6 @@ use serde_json;
 pub struct IpcNetWorker {
     handler: NetHandler,
     socket: TransportWss<std::net::TcpStream>,
-    cid: String,
 
     done: NetShutdown,
 
@@ -123,29 +122,11 @@ impl IpcNetWorker {
         endpoint: String,
     ) -> NetResult<Self> {
         let mut socket = TransportWss::with_std_tcp_stream();
-        socket.connect(&ipc_uri)?;
-
-        let mut cid: Option<String> = None;
-
-        while cid.is_none() {
-            let (_did_work, evt_lst) = socket.poll()?;
-            for evt in evt_lst {
-                match evt {
-                    TransportEvent::Connect(id) => {
-                        cid = Some(id.clone());
-                    }
-                    _ => {
-                        panic!("unexpected message during connect: {:?}", evt);
-                    }
-                }
-            }
-            std::thread::sleep(std::time::Duration::from_millis(3));
-        }
+        wait_connect(&mut socket, &ipc_uri)?;
 
         Ok(IpcNetWorker {
             handler,
             socket,
-            cid: cid.expect("should be a connection id"),
             done,
             is_ready: false,
             last_known_state: "undefined".to_string(),
@@ -154,6 +135,31 @@ impl IpcNetWorker {
             endpoint,
         })
     }
+}
+
+fn wait_connect(
+    socket: &mut TransportWss<std::net::TcpStream>,
+    uri: &str,
+) -> NetResult<Vec<TransportEvent>> {
+    let mut out = Vec::new();
+
+    socket.connect(&uri)?;
+
+    let start = std::time::Instant::now();
+    while start.elapsed().as_millis() < 5000 {
+        let (_did_work, evt_lst) = socket.poll()?;
+        for evt in evt_lst {
+            match evt {
+                TransportEvent::Connect(_id) => {
+                    return Ok(out);
+                }
+                _ => out.push(evt),
+            }
+        }
+        std::thread::sleep(std::time::Duration::from_millis(3));
+    }
+
+    bail!("ipc connection timeout");
 }
 
 impl NetWorker for IpcNetWorker {
@@ -171,7 +177,7 @@ impl NetWorker for IpcNetWorker {
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
         let data: NamedBinaryData = data.into();
         let data = rmp_serde::to_vec_named(&data)?;
-        self.socket.send(&[&self.cid], &data)?;
+        self.socket.send_all(&data)?;
 
         Ok(())
     }

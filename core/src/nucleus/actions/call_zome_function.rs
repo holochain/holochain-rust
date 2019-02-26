@@ -181,12 +181,12 @@ fn make_call_sig<J: Into<JsonString>>(
     function: &str,
     parameters: J,
 ) -> Signature {
-    Signature::from(
-        context.sign(format!(
-            "{}:{}",
-            function,
-            parameters.into()
-        )).expect("signing should work"))
+    Signature::from(format!(
+        "{}:{}:{}",
+        context.agent_id.pub_sign_key,
+        function,
+        parameters.into()
+    ))
 }
 
 // temporary function to verify a mock signature of for a zome call cap request
@@ -196,14 +196,13 @@ pub fn verify_call_sig<J: Into<JsonString>>(
     function: &str,
     parameters: J,
 ) -> bool {
-    let what_was_signed = format!(
-        "{}:{}",
+    let mock_signature = Signature::from(format!(
+        "{}:{}:{}",
+        context.agent_id.pub_sign_key,
         function,
         parameters.into()
-    );
-    let data = what_was_signed into secbuf;
-    let signature = call_sig
-    verify(context.agent_id.pub_sign_key.clone(),data,signature).unwrap();
+    ));
+    *call_sig == mock_signature
 }
 
 /// creates a capability request for a zome call by signing the function name and parameters

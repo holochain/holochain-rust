@@ -2,21 +2,12 @@
 
 use holochain_core_types::json::JsonString;
 
-use crate::ipc::{
-    spawn,
-    util::get_millis,
-    ConnectionError,
-    ConnectionResult,
-    DidWork,
-    ConnectionEvent,
-    Connection,
-    ConnectionWss,
-};
+use crate::ipc::{spawn, util::get_millis, Transport, TransportEvent, TransportWss};
 
 use crate::connection::{
     json_protocol::{ConfigData, ConnectData, JsonProtocol, StateData},
     net_connection::{NetHandler, NetShutdown, NetWorker},
-    protocol::{Protocol, NamedBinaryData},
+    protocol::{NamedBinaryData, Protocol},
     NetResult,
 };
 
@@ -27,7 +18,7 @@ use serde_json;
 /// a NetWorker talking to the network via another process through an IPC connection.
 pub struct IpcNetWorker {
     handler: NetHandler,
-    socket: ConnectionWss<std::net::TcpStream>,
+    socket: TransportWss<std::net::TcpStream>,
     cid: String,
 
     done: NetShutdown,
@@ -96,13 +87,7 @@ impl IpcNetWorker {
         // create a new IpcNetWorker that connects to the given 'ipcUri'
         let uri = config["ipcUri"].as_str().unwrap().to_string();
         let endpoint = uri.clone();
-        IpcNetWorker::priv_new(
-            handler,
-            uri,
-            None,
-            bootstrap_nodes,
-            endpoint,
-        )
+        IpcNetWorker::priv_new(handler, uri, None, bootstrap_nodes, endpoint)
     }
 }
 
@@ -130,7 +115,6 @@ impl IpcNetWorker {
     }
 
     /// Constructor without config
-    /// Using a NetConnectionRelay as socket
     fn priv_new(
         handler: NetHandler,
         ipc_uri: String,
@@ -138,7 +122,7 @@ impl IpcNetWorker {
         bootstrap_nodes: Vec<String>,
         endpoint: String,
     ) -> NetResult<Self> {
-        let mut socket = ConnectionWss::with_std_tcp_stream();
+        let mut socket = TransportWss::with_std_tcp_stream();
         socket.connect(&ipc_uri)?;
 
         let mut cid: Option<String> = None;
@@ -147,7 +131,7 @@ impl IpcNetWorker {
             let (did_work, evt_lst) = socket.poll()?;
             for evt in evt_lst {
                 match evt {
-                    ConnectionEvent::Connect(id) => {
+                    TransportEvent::Connect(id) => {
                         cid = Some(id.clone());
                     }
                     _ => {
@@ -156,11 +140,9 @@ impl IpcNetWorker {
                 }
             }
             if did_work {
-                std::thread::sleep(
-                    std::time::Duration::from_millis(1));
+                std::thread::sleep(std::time::Duration::from_millis(1));
             } else {
-                std::thread::sleep(
-                    std::time::Duration::from_millis(20));
+                std::thread::sleep(std::time::Duration::from_millis(20));
             }
         }
 
@@ -209,16 +191,16 @@ impl NetWorker for IpcNetWorker {
         let (did_work, evt_lst) = self.socket.poll()?;
         for evt in evt_lst {
             match evt {
-                ConnectionEvent::ConnectionError(id, e) => {
+                TransportEvent::TransportError(id, e) => {
                     panic!("wss error {:?} {:?}", id, e);
                 }
-                ConnectionEvent::Connect(id) => {
+                TransportEvent::Connect(id) => {
                     panic!("connect! we should already be connected {:?}", id);
                 }
-                ConnectionEvent::Close(id) => {
+                TransportEvent::Close(id) => {
                     panic!("close! what now? {:?}", id);
                 }
-                ConnectionEvent::Message(id, msg) => {
+                TransportEvent::Message(id, msg) => {
                     if id != self.cid {
                         panic!("message from bad cid {:?} {:?}", id, self.cid);
                     }

@@ -25,4 +25,3 @@ exclude = [
 
 [patch.crates-io]
 rust_sodium-sys = { path = "./rust_sodium-sys" }
-zmq-sys = { path = "./zmq-sys" }

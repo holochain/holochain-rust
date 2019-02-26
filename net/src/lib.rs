@@ -21,9 +21,9 @@ extern crate serde_json;
 extern crate serde_derive;
 
 // wss
+extern crate native_tls;
 extern crate tungstenite;
 extern crate url;
-extern crate native_tls;
 
 pub mod connection;
 pub mod error;

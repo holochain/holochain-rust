@@ -9,17 +9,12 @@
 //! The main export you should care about is ZmqIpcClient.
 //!
 
-mod connection;
-mod connection_wss;
+mod transport;
+mod transport_wss;
 
-pub use connection::{
-    ConnectionError,
-    ConnectionResult,
-    DidWork,
-    ConnectionEvent,
-    Connection};
+pub use transport::{DidWork, Transport, TransportError, TransportEvent, TransportResult};
 
-pub use connection_wss::ConnectionWss;
+pub use transport_wss::TransportWss;
 
 #[macro_use]
 pub mod errors;

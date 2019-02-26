@@ -1,7 +1,6 @@
 use crate::{
-    agent::actions::update_entry::update_entry,
     context::Context,
-    dht::actions::{crud_link::crud_link as crud_link_action_creator, remove_entry::remove_entry},
+    dht::actions::{crud_link::crud_link as crud_link_action_creator, update_entry::update_entry,remove_entry::remove_entry},
 };
 
 use holochain_core_types::{cas::content::Address, crud_status::CrudStatus, error::HolochainError};

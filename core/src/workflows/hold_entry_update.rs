@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    agent::actions::update_entry::update_entry,
+    dht::actions::update_entry::update_entry,
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },

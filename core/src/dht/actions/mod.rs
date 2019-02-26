@@ -3,3 +3,4 @@ pub mod crud_link;
 pub mod hold;
 pub mod remove_entry;
 pub mod remove_link;
+pub mod update_entry;

@@ -11,10 +11,11 @@ use holochain_core_types::{
     cas::content::{Address,AddressableContent},
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
+    
 };
 use std::sync::Arc;
 
-pub async fn hold_remove_workflow<'a>(
+pub async fn hold_update_workflow<'a>(
     entry_with_header: EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<Address, HolochainError> {

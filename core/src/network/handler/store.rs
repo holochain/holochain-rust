@@ -4,11 +4,13 @@ use crate::{
     workflows::{
         crud_status::{crud_link_workflow, crud_status_workflow},
         hold_entry::hold_entry_workflow,
+        hold_entry_remove::hold_remove_workflow,
+        hold_entry_update::hold_update_workflow,
         hold_link::hold_link_workflow,
         remove_link::remove_link_workflow,
     },
 };
-use holochain_core_types::{cas::content::Address, crud_status::CrudStatus, eav::Attribute};
+use holochain_core_types::{cas::content::Address, crud_status::CrudStatus, eav::Attribute,entry::entry_type::EntryType};
 use holochain_net_connection::json_protocol::{DhtMetaData, EntryData};
 use std::{sync::Arc, thread};
 
@@ -16,12 +18,32 @@ use std::{sync::Arc, thread};
 pub fn handle_store_entry(dht_data: EntryData, context: Arc<Context>) {
     let entry_with_header: EntryWithHeader =
         serde_json::from_str(&serde_json::to_string(&dht_data.entry_content).unwrap()).unwrap();
-    thread::spawn(move || {
-        match context.block_on(hold_entry_workflow(entry_with_header, context.clone())) {
-            Err(error) => context.log(format!("err/net/dht: {}", error)),
-            _ => (),
-        }
-    });
+    let entry = entry_with_header.entry.clone();
+    match entry.entry_type()
+    {
+        EntryType::App(_) =>
+        {
+            thread::spawn(move || {
+                match context.block_on(hold_entry_workflow(entry_with_header, context.clone())) {
+                    Err(error) => context.log(format!("err/net/dht: {}", error)),
+                    _ => (),
+                }
+            });
+        },
+        EntryType::Deletion =>
+        {
+            thread::spawn(move || {
+                match context.block_on(hold_remove_workflow(entry_with_header, context.clone())) {
+                    Err(error) => context.log(format!("err/net/dht: {}", error)),
+                    _ => (),
+                }
+            });
+        },
+        _ => ()
+        
+
+    }
+    
 }
 
 /// The network requests us to store meta information (links/CRUD/etc) for an

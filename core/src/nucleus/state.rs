@@ -19,7 +19,25 @@ impl Default for NucleusStatus {
     }
 }
 
-pub type ValidationResult = Result<(), String>;
+#[derive(Clone, Debug, PartialEq)]
+pub enum ValidationError {
+    Fail(String),
+    UnresolvedDependencies(Vec<Address>),
+    NotImplemented,
+    Error(String),
+}
+pub type ValidationResult = Result<(), ValidationError>;
+
+impl From<ValidationError> for HolochainError {
+    fn from(ve: ValidationError) -> Self {
+        match ve {
+            ValidationError::Fail(reason) => HolochainError::ValidationFailed(reason),
+            ValidationError::UnresolvedDependencies(_) => HolochainError::ValidationFailed("Missing dependencies".to_string()),
+            ValidationError::NotImplemented => HolochainError::NotImplemented("Validation not implemented".to_string()),
+            ValidationError::Error(e) => HolochainError::ErrorGeneric(e),
+        }
+    }
+}
 
 /// The state-slice for the Nucleus.
 /// Holds the dynamic parts of the DNA, i.e. zome calls and validation requests.

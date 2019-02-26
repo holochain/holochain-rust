@@ -1,7 +1,4 @@
-use crate::{
-    network::entry_with_header::EntryWithHeader, nucleus::ZomeFnCall,
-    scheduled_jobs::pending_validations::PendingValidation,
-};
+use crate::{nucleus::ZomeFnCall, scheduled_jobs::pending_validations::PendingValidation};
 use holochain_core_types::{
     cas::content::Address, dna::Dna, error::HolochainError, json::JsonString,
     validation::ValidationPackage,

@@ -17,11 +17,11 @@
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
 //! use holochain_core_types::{
 //!     cas::content::Address,
-//!     agent::{AgentId, KeyBuffer},
+//!     agent::AgentId,
 //!     dna::{Dna, capabilities::CapabilityCall},
 //!     json::JsonString};
-//! use holochain_dpki::keypair::{Keypair, SEEDSIZE};
-//! use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
+//! use holochain_dpki::{key_bundle::{KeyBundle, SeedType}, SEED_SIZE};
+//! use holochain_sodium::secbuf::SecBuf;
 //!
 //! use std::sync::{Arc, Mutex};
 //! use tempfile::tempdir;
@@ -38,17 +38,17 @@
 //!
 //! // We need to provide a cryptographic key that represents the agent.
 //! // Creating a new random one on the fly:
-//! let mut seed = SecBuf::with_insecure(SEEDSIZE);
-//! random_secbuf(&mut seed);
-//! let keypair = Keypair::new_from_seed(&mut seed).unwrap();
-//! let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
+//! let mut seed = SecBuf::with_insecure(SEED_SIZE);
+//! seed.randomize();
 //!
-//! // The keypair's public part is the agent's address
-//! let agent = AgentId::new("bob", &pub_key);
+//! let keybundle = KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap();
+//!
+//! // The keybundle's public part is the agent's address
+//! let agent = AgentId::new("bob", keybundle.get_id());
 //!
 //! // The instance needs a conductor API with at least the signing callback:
 //! let conductor_api = interface::ConductorApiBuilder::new()
-//!     .with_agent_signature_callback(Arc::new(Mutex::new(keypair)))
+//!     .with_agent_signature_callback(Arc::new(Mutex::new(keybundle)))
 //!     .spawn();
 //!
 //! // The conductor API, together with the storage and the agent ID
@@ -85,7 +85,11 @@ use crate::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::{call_zome_function, ZomeFnCall},
+    nucleus::{
+        call_zome_function,
+        ribosome::{run_dna, WasmCallData},
+        ZomeFnCall,
+    },
     persister::{Persister, SimplePersister},
     state::State,
 };
@@ -108,6 +112,23 @@ impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
         let instance = Instance::new(context.clone());
+
+        for zome in dna.zomes.values() {
+            let maybe_json_string = run_dna(
+                zome.code.code.clone(),
+                Some("{}".as_bytes().to_vec()),
+                WasmCallData::DirectCall("__hdk_git_hash".to_string()),
+            );
+
+            if let Ok(json_string) = maybe_json_string {
+                if json_string != holochain_core_types::GIT_HASH.into() {
+                    eprintln!("WARNING! The git-hash of the runtime and the zome don't match.");
+                    eprintln!("Runtime hash: {}", holochain_core_types::GIT_HASH);
+                    eprintln!("Zome hash: {}", json_string);
+                }
+            }
+        }
+
         Self::from_dna_and_context_and_instance(dna, context, instance)
     }
 

@@ -9,12 +9,10 @@ use std::collections::BTreeMap;
 
 /// Enum for Zome EntryType "sharing" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+#[serde(rename_all = "lowercase")]
 pub enum Sharing {
-    #[serde(rename = "public")]
     Public,
-    #[serde(rename = "private")]
     Private,
-    #[serde(rename = "encrypted")]
     Encrypted,
 }
 

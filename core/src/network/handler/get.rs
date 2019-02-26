@@ -5,7 +5,7 @@ use crate::{
     nucleus,
 };
 use holochain_core_types::{cas::content::Address, eav::Attribute};
-use holochain_net_connection::json_protocol::{
+use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
 use std::{collections::BTreeSet, convert::TryInto, sync::Arc};

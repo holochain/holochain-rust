@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bundle.json` & `.hcpkg` unified to `YOUR_DNA_NAME.dna.json`
   - `.build` files renamed to `.hcbuild`
   - `hc package` now builds to `dist` directory by default, to match how `hc test` works
+- replace libzmq (zeromq) with websockets for ipc communication to networking module
 ### Removed
 ### Added
 - Adds a panic handler to HDK-Rust and that reroutes infos about panics happening inside the WASM Ribosome to the instances logger [PR#1029](https://github.com/holochain/holochain-rust/pull/1029).

@@ -29,6 +29,9 @@ let
 
   hc-install-conductor = nixpkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain --release && cargo install -f --path conductor";
 
+  hc-test-conductor-serve = nixpkgs.writeShellScriptBin "hc-test-conductor-serve" "cd app_spec && holochain -c ./container-config.toml";
+  hc-test-conductor-test = nixpkgs.writeShellScriptBin "hc-test-conductor-test" "cd app_spec && . build_and_test.sh";
+
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
 
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
@@ -98,6 +101,9 @@ stdenv.mkDerivation rec {
 
     hc-install-cli
     hc-install-conductor
+
+    hc-test-conductor-serve
+    hc-test-conductor-test
 
     hc-test-cli
     hc-test-app-spec

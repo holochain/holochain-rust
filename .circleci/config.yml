@@ -35,7 +35,7 @@ jobs:
 
    - run:
       name: run conductor
-      command: cd $HOME/project/app_spec && holochain -c ./container-config.toml
+      command: nix-shell --run hc-test-conductor-serve
       background: true
 
    - run:

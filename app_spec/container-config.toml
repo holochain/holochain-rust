@@ -3,6 +3,7 @@ id = "test agent 1"
 name = "Holo Tester 1"
 public_address = "UZmlGgs3KI6CBa0827iyb8H0heV4W0DsOwLAvt8f-C6h92icPoGyLU8zhgCGkClBzvIAGGyjBbWX0NBGCCzvcFqBqk7G"
 key_file = "holo_tester.key"
+holo_remote_key = true
 
 dnas = []
 

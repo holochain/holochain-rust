@@ -111,7 +111,7 @@ impl<T: Read + Write + std::fmt::Debug> Connection for ConnectionWss<T> {
         let sockets: Vec<(String, ConnectionInfo<T>)> =
             self.stream_sockets.drain().collect();
 
-        for (id, mut info) in sockets {
+        for (_id, mut info) in sockets {
             if let WssStreamState::Ready(socket) = &mut info.socket {
                 if let Err(e) = socket.close(None) {
                     err = Some(e.into());

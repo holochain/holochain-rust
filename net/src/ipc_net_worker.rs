@@ -3,8 +3,6 @@
 use holochain_core_types::json::JsonString;
 
 use crate::ipc::{
-    ipc_client::IpcClient,
-    socket::{IpcSocket, MockIpcSocket, TestStruct, ZmqIpcSocket},
     spawn,
     util::get_millis,
     ConnectionError,
@@ -17,13 +15,12 @@ use crate::ipc::{
 
 use crate::connection::{
     json_protocol::{ConfigData, ConnectData, JsonProtocol, StateData},
-    net_connection::{NetHandler, NetSend, NetShutdown, NetWorker, NetWorkerFactory},
-    net_relay::NetConnectionRelay,
+    net_connection::{NetHandler, NetShutdown, NetWorker},
     protocol::{Protocol, NamedBinaryData},
     NetResult,
 };
 
-use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
+use std::{collections::HashMap, convert::TryFrom};
 
 use serde_json;
 
@@ -32,6 +29,8 @@ pub struct IpcNetWorker {
     handler: NetHandler,
     socket: ConnectionWss<std::net::TcpStream>,
     cid: String,
+
+    done: NetShutdown,
 
     is_ready: bool,
 
@@ -52,7 +51,6 @@ impl IpcNetWorker {
     ) -> NetResult<Self> {
         // Load config
         let config: serde_json::Value = serde_json::from_str(config.into())?;
-        let block_connect = config["blockConnect"].as_bool().unwrap_or(true);
         let empty = vec![];
         let bootstrap_nodes: Vec<String> = config["bootstrapNodes"]
             .as_array()
@@ -92,7 +90,6 @@ impl IpcNetWorker {
                 spawn_config["workDir"].as_str().unwrap().to_string(),
                 enduser_config,
                 env,
-                block_connect,
                 bootstrap_nodes,
             );
         }
@@ -102,7 +99,6 @@ impl IpcNetWorker {
         IpcNetWorker::priv_new(
             handler,
             uri,
-            block_connect,
             None,
             bootstrap_nodes,
             endpoint,
@@ -120,18 +116,17 @@ impl IpcNetWorker {
         work_dir: String,
         config: String,
         env: HashMap<String, String>,
-        block_connect: bool,
         bootstrap_nodes: Vec<String>,
     ) -> NetResult<Self> {
         // Spawn a process with given `cmd` that we will have an IPC connection with
-        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, config, env, block_connect)?;
+        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, config, env, true)?;
         // Get spawn result info
         let ipc_binding = spawn_result.ipc_binding;
         let kill = spawn_result.kill;
         let endpoint = ipc_binding.clone();
 
         // Done
-        IpcNetWorker::priv_new(handler, ipc_binding, block_connect, kill, bootstrap_nodes, endpoint)
+        IpcNetWorker::priv_new(handler, ipc_binding, kill, bootstrap_nodes, endpoint)
     }
 
     /// Constructor without config
@@ -139,7 +134,6 @@ impl IpcNetWorker {
     fn priv_new(
         handler: NetHandler,
         ipc_uri: String,
-        block_connect: bool,
         done: NetShutdown,
         bootstrap_nodes: Vec<String>,
         endpoint: String,
@@ -174,6 +168,7 @@ impl IpcNetWorker {
             handler,
             socket,
             cid: cid.expect("should be a connection id"),
+            done,
             is_ready: false,
             last_known_state: "undefined".to_string(),
             last_state_millis: 0.0_f64,
@@ -187,6 +182,9 @@ impl NetWorker for IpcNetWorker {
     /// stop the net worker
     fn stop(mut self: Box<Self>) -> NetResult<()> {
         self.socket.close_all()?;
+        if let Some(done) = self.done {
+            done();
+        }
         Ok(())
     }
 
@@ -328,6 +326,7 @@ impl IpcNetWorker {
             }"#;
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -472,3 +471,4 @@ mod tests {
         cli.stop().unwrap();
     }
 }
+*/

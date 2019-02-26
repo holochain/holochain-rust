@@ -1,7 +1,6 @@
 #![feature(fnbox)]
 #![feature(try_from)]
 #![feature(vec_remove_item)]
-#![warn(unused_extern_crates)]
 
 //! holochain_net is a library that defines an abstract networking layer for
 //! different network transports, providing a configurable interface

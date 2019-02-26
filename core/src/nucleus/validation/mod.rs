@@ -12,6 +12,18 @@ mod provenances;
 
 use crate::nucleus::state::ValidationError;
 
+/// Main validation workflow.
+/// This is the high-level validate function that wraps the whole validation process and is what should
+/// be called from other workflows for validating an entry.
+///
+/// 1. Checks if the entry's address matches the address in given header provided by
+///    the validation package.
+/// 2. Validates provenances given in the header by verifying the cryptographic signatures
+///    against the source agent addresses.
+/// 3. Finally spawns a thread to run the type specific validation callback in a Ribosome.
+///
+/// All of this actually happens in the functions of the sub modules. This function is the
+/// main validation entry point and, like a workflow, stays high-level.
 pub async fn validate_entry(
     entry: Entry,
     validation_data: ValidationData,

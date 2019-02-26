@@ -11,9 +11,7 @@ use crate::connection::{
 use std::{thread::sleep, time::Duration};
 
 use crate::{
-    ipc_net_worker::IpcNetWorker,
-    in_memory::memory_worker::InMemoryWorker,
-    p2p_config::*,
+    in_memory::memory_worker::InMemoryWorker, ipc_net_worker::IpcNetWorker, p2p_config::*,
 };
 
 /// Facade handling a p2p module responsable for the network connection

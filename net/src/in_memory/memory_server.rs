@@ -6,8 +6,6 @@
 
 use super::memory_book::*;
 use crate::{
-    tweetlog::*,
-    error::NetworkError,
     connection::{
         json_protocol::{
             DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
@@ -17,6 +15,8 @@ use crate::{
         protocol::Protocol,
         NetResult,
     },
+    error::NetworkError,
+    tweetlog::*,
 };
 use holochain_core_types::cas::content::Address;
 use std::{

@@ -330,9 +330,11 @@ impl IpcNetWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::p2p_config::P2pConfig;
-    use crate::connection::protocol::{NamedBinaryData, PongData};
-    use crate::ipc::socket::make_test_channels;
+    use crate::{
+        connection::protocol::{NamedBinaryData, PongData},
+        ipc::socket::make_test_channels,
+        p2p_config::P2pConfig,
+    };
 
     #[test]
     fn it_ipc_networker_zmq_create() {

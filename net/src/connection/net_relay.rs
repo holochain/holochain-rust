@@ -1,5 +1,4 @@
-use super::NetResult;
-use super::{net_connection::*, protocol::Protocol};
+use super::{net_connection::*, protocol::Protocol, NetResult};
 
 /// a simple pass-through NetSend instance
 /// this struct can be use to compose one type of NetWorker into another

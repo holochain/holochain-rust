@@ -1,7 +1,9 @@
 use basic_workflows::setup_two_nodes;
 use constants::*;
-use holochain_net::tweetlog::*;
-use holochain_net::connection::{json_protocol::JsonProtocol, NetResult};
+use holochain_net::{
+    connection::{json_protocol::JsonProtocol, NetResult},
+    tweetlog::*,
+};
 use p2p_node::P2pNode;
 
 /// Test the following workflow after normal setup:

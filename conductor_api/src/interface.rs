@@ -4,7 +4,7 @@ use holochain_core::state::State;
 use holochain_core_types::{
     agent::AgentId, cas::content::Address, dna::capabilities::CapabilityCall,
 };
-use holochain_dpki::keypair::{Keypair, SIGNATURESIZE};
+use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
@@ -746,26 +746,24 @@ impl ConductorApiBuilder {
         self
     }
 
-    pub fn with_agent_signature_callback(mut self, keypair: Arc<Mutex<Keypair>>) -> Self {
+    pub fn with_agent_signature_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
         self.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
             let mut message = SecBuf::with_insecure_from_string(payload.clone());
-            // Create signature
-            let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            keypair
+            let mut message_signature = keybundle
                 .lock()
                 .unwrap()
-                .sign(&mut message, &mut message_signed)
-                .unwrap();
+                .sign(&mut message)
+                .expect("Failed to sign with keybundle.");
 
-            let message_signed = message_signed.read_lock();
+            let message_signature = message_signature.read_lock();
             // Return as base64 encoded string
-            let signature = base64::encode(&**message_signed);
+            let signature = base64::encode(&**message_signature);
 
             Ok(json!({"payload": payload, "signature": signature}))
         });

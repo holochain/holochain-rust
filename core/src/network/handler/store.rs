@@ -23,12 +23,26 @@ pub fn handle_store_entry(dht_data: EntryData, context: Arc<Context>) {
     {
         EntryType::App(_) =>
         {
-            thread::spawn(move || {
-                match context.block_on(hold_entry_workflow(entry_with_header, context.clone())) {
-                    Err(error) => context.log(format!("err/net/dht: {}", error)),
-                    _ => (),
-                }
-            });
+            if entry_with_header.header.link_update_delete().is_none()
+            {
+                    thread::spawn(move || {
+                    match context.block_on(hold_entry_workflow(entry_with_header, context.clone())) {
+                        Err(error) => context.log(format!("err/net/dht: {}", error)),
+                        _ => (),
+                    }
+                });
+            }
+            else
+            {
+                    thread::spawn(move || {
+                    match context.block_on(hold_update_workflow(entry_with_header, context.clone())) {
+                        Err(error) => context.log(format!("err/net/dht: {}", error)),
+                        _ => (),
+                    }
+                });
+            }
+
+            
         },
         EntryType::Deletion =>
         {

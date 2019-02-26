@@ -15,13 +15,6 @@ let
    rm -rf ~/.cargo/git;
   '';
 
-  hc-install-node-conductor = nixpkgs.writeShellScriptBin "hc-install-node-conductor"
-  ''
-   export RUST_SODIUM_LIB_DIR=/nix/store/l1nbc3vgr37lswxny8pwhkq4m937y2g4-libsodium-1.0.16;
-   export RUST_SODIUM_SHARED=1;
-   . ./scripts/build_nodejs_conductor.sh;
-  '';
-
   hc-install-tarpaulin = nixpkgs.writeShellScriptBin "hc-install-tarpaulin"
   ''
    if ! cargo --list | grep --quiet tarpaulin;
@@ -36,7 +29,6 @@ let
 
   hc-test-cli = nixpkgs.writeShellScriptBin "hc-test-cli" "cd cli && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
-  hc-test-node-conductor = nixpkgs.writeShellScriptBin "hc-test-node-conductor" "cd nodejs_conductor && npm test";
 
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
@@ -105,11 +97,9 @@ stdenv.mkDerivation rec {
 
     hc-install-cli
     hc-install-conductor
-    hc-install-node-conductor
 
     hc-test-cli
     hc-test-app-spec
-    hc-test-node-conductor
 
     hc-fmt
     hc-fmt-check

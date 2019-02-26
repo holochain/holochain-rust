@@ -34,8 +34,7 @@ jobs:
 
    - run:
        name: app spec tests
-       # command: nix-shell --run hc-test-app-spec
-       command: nix-shell -p curl watch --run 'watch -n 5 curl -Is http://127.0.0.1:3000'
+       command: nix-shell -p curl --run 'until $(curl -o /dev/null -sI http://127.0.0.1:3000); do printf '.'; sleep 5; done;'
 
  cli-tests:
   docker:

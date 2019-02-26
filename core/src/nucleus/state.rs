@@ -1,4 +1,4 @@
-use crate::nucleus::ZomeFnCall;
+use crate::{network::entry_with_header::EntryWithHeader, nucleus::ZomeFnCall};
 use holochain_core_types::{
     cas::content::Address, dna::Dna, error::HolochainError, json::JsonString,
     validation::ValidationPackage,
@@ -58,6 +58,7 @@ pub struct NucleusState {
     pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
     pub validation_packages:
         HashMap<snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>>,
+    pub pending_validations: HashMap<Address, Box<(EntryWithHeader, Vec<Address>)>>,
 }
 
 impl NucleusState {
@@ -68,6 +69,7 @@ impl NucleusState {
             zome_calls: HashMap::new(),
             validation_results: HashMap::new(),
             validation_packages: HashMap::new(),
+            pending_validations: HashMap::new(),
         }
     }
 

@@ -30,6 +30,15 @@ jobs:
        command: nix-shell --run hc-install-cli
 
    - run:
+      name: install conductor
+      command: nix-shell --run hc-install-conductor
+
+   - run:
+      name: run conductor
+      command: cd $HOME/project/app_spec && holochain -c ./container-config.toml
+      background: true
+
+   - run:
        name: app spec tests
        command: nix-shell --run hc-test-app-spec
 

@@ -40,7 +40,7 @@ You should see the tests all passing successfully.
 
 In order to get from the source directory tree to a Holochain DNA package, and then test that, several steps need to be taken which are all automated.
 
-This includes compiling any Rust code projects to WASM, and then assembling a DNA file (.hcpkg) with all configuration snippets and the WASM in it.
+This includes compiling any Rust code projects to WASM, and then assembling a DNA file (.dna.json) with all configuration snippets and the WASM in it.
 
 It will error at this point if for some reason it can't successfully build the WASM, or the DNA file.
 
@@ -56,7 +56,7 @@ Holochain is an open source project.  We welcome all sorts of participation and 
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-Copyright (C) 2018, Holochain Trust
+Copyright (C) 2018, Holochain Foundation
 
 This program is free software: you can redistribute it and/or modify it under the terms of the license p
 rovided in the LICENSE file (GPLv3).  This program is distributed in the hope that it will be useful, bu

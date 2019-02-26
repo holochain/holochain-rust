@@ -1,10 +1,10 @@
-extern crate serde_json;
 use crate::{
     context::Context,
     nucleus::{
         ribosome::{
             self,
             callback::{links_utils, CallbackResult},
+            runtime::WasmCallData,
         },
         ZomeFnCall,
     },
@@ -54,6 +54,12 @@ pub fn validate_entry(
             context,
         )?),
 
+        EntryType::LinkRemove => Ok(validate_link_entry(
+            entry.clone(),
+            validation_data,
+            context,
+        )?),
+
         // Deletion entries are not validated currently and always valid
         // TODO: Specify how Deletion can be commited to chain.
         EntryType::Deletion => Ok(CallbackResult::Pass),
@@ -78,15 +84,16 @@ fn validate_link_entry(
     validation_data: ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
-    let link_add = match entry {
+    let link = match entry {
         Entry::LinkAdd(link_add) => link_add,
+        Entry::LinkRemove(link_remove) => link_remove,
         _ => {
             return Err(HolochainError::ValidationFailed(
                 "Could not extract link_add from entry".into(),
             ));
         }
     };
-    let link = link_add.link().clone();
+    let link = link.link().clone();
     let (base, target) = links_utils::get_link_entries(&link, &context)?;
     let link_definition_path = links_utils::find_link_definition_in_dna(
         &base.entry_type(),
@@ -178,16 +185,14 @@ fn build_validation_call(
 
 fn run_validation_callback(
     context: Arc<Context>,
-    fc: ZomeFnCall,
+    zome_call: ZomeFnCall,
     wasm: &DnaWasm,
     dna_name: String,
 ) -> CallbackResult {
     match ribosome::run_dna(
-        &dna_name,
-        context,
         wasm.code.clone(),
-        &fc,
-        Some(fc.clone().parameters.into_bytes()),
+        Some(zome_call.clone().parameters.into_bytes()),
+        WasmCallData::new_zome_call(context, dna_name, zome_call),
     ) {
         Ok(call_result) => match call_result.is_null() {
             true => CallbackResult::Pass,

@@ -197,7 +197,6 @@ impl Instance {
             *state = new_state;
         }
 
-        // context.log(format!("trace/reduce: {:?}", action_wrapper.action()));
         self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers
@@ -282,8 +281,6 @@ pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrappe
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-    extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
@@ -304,18 +301,18 @@ pub mod tests {
         entry::{entry_type::EntryType, test_entry},
         json::{JsonString, RawString},
     };
+    use tempfile;
+    use test_utils;
 
-    use crate::{
-        nucleus::ribosome::{callback::Callback, Defn},
-        persister::SimplePersister,
-        state::State,
-    };
+    use crate::{persister::SimplePersister, state::State};
 
     use std::{
         sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
     };
+
+    use test_utils::mock_signing::registered_test_agent;
 
     use holochain_core_types::entry::Entry;
 
@@ -325,22 +322,24 @@ pub mod tests {
         agent_name: &str,
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        let agent = AgentId::generate_fake(agent_name);
-        let file_storage = Arc::new(RwLock::new(
+        let agent = registered_test_agent(agent_name);
+        let content_file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
+        let meta_file_storage = Arc::new(RwLock::new(
+            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         ));
         let logger = test_logger();
         (
             Arc::new(Context::new(
                 agent,
                 logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                file_storage.clone(),
-                file_storage.clone(),
-                Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                )),
+                Arc::new(Mutex::new(SimplePersister::new(
+                    content_file_storage.clone(),
+                ))),
+                content_file_storage.clone(),
+                content_file_storage.clone(),
+                meta_file_storage,
                 test_memory_network_config(network_name),
                 None,
                 None,
@@ -394,7 +393,7 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
-            AgentId::generate_fake("Florence"),
+            registered_test_agent("Florence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
@@ -418,7 +417,7 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
         let mut context = Context::new(
-            AgentId::generate_fake("Florence"),
+            registered_test_agent("Florence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
             cas.clone(),
@@ -625,11 +624,7 @@ pub mod tests {
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
-        let dna = test_utils::create_test_dna_with_wat(
-            "test_zome",
-            Callback::Genesis.capability().as_str(),
-            None,
-        );
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
 
         let instance = test_instance(dna, None);
 
@@ -643,7 +638,7 @@ pub mod tests {
     fn test_genesis_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
+            "test_cap",
             Some(
                 r#"
             (module
@@ -672,7 +667,7 @@ pub mod tests {
     fn test_genesis_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
+            "test_cap",
             Some(
                 r#"
             (module

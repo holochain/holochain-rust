@@ -1,8 +1,8 @@
-extern crate holochain_core_types;
+#![warn(unused_extern_crates)]
+#![allow(warnings)]
 extern crate rust_sodium_sys;
 #[macro_use]
 extern crate lazy_static;
-extern crate libc;
 
 lazy_static! {
     /// we only need to call sodium_init once
@@ -46,13 +46,14 @@ macro_rules! raw_ptr_ichar_immut {
         $name.as_ptr() as *const libc::c_char
     };
 }
+
 pub mod aead;
 pub mod error;
 pub mod hash;
 pub mod kdf;
 pub mod kx;
 pub mod pwhash;
-pub mod random;
 pub mod secbuf;
+pub mod secbuf_random;
+pub mod secbuf_util;
 pub mod sign;
-pub mod util;

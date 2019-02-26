@@ -2,7 +2,7 @@
 //! or more generally for making rust code that the Ribosome can run.
 //! Must not have any dependency with any other Holochain crates.
 #![feature(try_from)]
-extern crate serde;
+#![warn(unused_extern_crates)]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
@@ -18,6 +18,8 @@ pub mod macros;
 pub mod memory;
 
 pub fn wasm_target_dir(test_path: &str, wasm_path: &str) -> String {
+    // this env var checker can't use holochain_common
+    // crate because that uses `directories` crate which doesn't compile to WASM
     match std::env::var("HC_TARGET_PREFIX") {
         Ok(prefix) => format!("{}{}{}target", prefix, test_path, wasm_path),
         Err(_) => format!("{}target", wasm_path),

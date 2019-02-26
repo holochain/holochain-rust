@@ -7,7 +7,8 @@
  * This script is responsible for compiling and building the NPM release bundle for this repo. The following steps are taken:
  *
  * + Clean up any existing Rust builds by running `cargo clean`.
- * + Run `cargo update` to make sure all dependencies are available.
+ * + Run `cargo update` to make sure all dependencies are available. Disable because
+ *   we are now committing the lock file.
  * + Compile rust code into index.node file.
  * + Run unit tests to ensure the library is in good shape for publishing.
  * + Move all expected content into a `dist` directory.
@@ -43,7 +44,7 @@ shell.rm("-rf", "./dist/native/target");
 
 
 shell.pushd("./native");
-shell.exec("cargo update");
+//shell.exec("cargo update");
 shell.popd();
 shell.exec("yarn run compile");
 

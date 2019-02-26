@@ -2,19 +2,19 @@
 
 use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net::{
+    connection::{
+        json_protocol::{
+            DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
+            FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
+            MessageData, MetaKey, MetaListData, MetaTuple,
+        },
+        net_connection::NetSend,
+        protocol::Protocol,
+        NetResult,
+    },
     p2p_config::*,
     p2p_network::P2pNetwork,
     tweetlog::{TweetProxy, *},
-};
-use holochain_net_connection::{
-    json_protocol::{
-        DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
-        FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-        MessageData, MetaKey, MetaListData, MetaTuple,
-    },
-    net_connection::NetSend,
-    protocol::Protocol,
-    NetResult,
 };
 use multihash::Hash;
 use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
@@ -129,9 +129,20 @@ pub struct P2pNode {
     pub logger: TweetProxy,
 }
 
-// Search logs
-// return the ith message that fullfills the predicate
+/// Query logs
 impl P2pNode {
+    /// Return number of JsonProtocol message this node has received
+    pub fn count_recv_json_messages(&self) -> usize {
+        let mut count = 0;
+        for msg in self.recv_msg_log.clone() {
+            if JsonProtocol::try_from(&msg).is_ok() {
+                count += 1;
+            };
+        }
+        count
+    }
+
+    /// Return the ith JSON message that this node has received and fullfills predicate
     pub fn find_recv_msg(
         &self,
         ith: usize,
@@ -496,6 +507,13 @@ impl P2pNode {
         config: &P2pConfig,
         _maybe_temp_dir: Option<tempfile::TempDir>,
     ) -> Self {
+        log_dd!(
+            "p2pnode",
+            "new P2pNode '{}' with config: {:?}",
+            agent_id_arg,
+            config
+        );
+
         // use a mpsc channel for messaging between p2p connection and main thread
         let (sender, receiver) = mpsc::channel::<Protocol>();
         // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
@@ -554,10 +572,15 @@ impl P2pNode {
         dna_address: Address,
         n3h_path: &str,
         maybe_config_filepath: Option<&str>,
+        maybe_end_user_config_filepath: Option<String>,
         bootstrap_nodes: Vec<String>,
     ) -> Self {
-        let (p2p_config, temp_dir) =
-            create_ipc_config(n3h_path, maybe_config_filepath, bootstrap_nodes);
+        let (p2p_config, temp_dir) = create_ipc_config(
+            n3h_path,
+            maybe_config_filepath,
+            maybe_end_user_config_filepath,
+            bootstrap_nodes,
+        );
         return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, Some(temp_dir));
     }
 
@@ -737,6 +760,9 @@ impl P2pNode {
             JsonProtocol::TrackDna(_) => {
                 panic!("Core should not receive TrackDna message");
             }
+            JsonProtocol::UntrackDna(_) => {
+                panic!("Core should not receive UntrackDna message");
+            }
             JsonProtocol::Connect(_) => {
                 panic!("Core should not receive Connect message");
             }
@@ -876,6 +902,7 @@ impl NetSend for P2pNode {
 fn create_ipc_config(
     n3h_path: &str,
     maybe_config_filepath: Option<&str>,
+    maybe_end_user_config_filepath: Option<String>,
     bootstrap_nodes: Vec<String>,
 ) -> (P2pConfig, tempfile::TempDir) {
     // Create temp directory
@@ -885,7 +912,7 @@ fn create_ipc_config(
     log_i!("create_ipc_config() dir = {}", dir);
 
     // Create config
-    let config = match maybe_config_filepath {
+    let mut config: P2pConfig = match maybe_config_filepath {
         Some(filepath) => {
             log_d!("filepath = {}", filepath);
             // Get config from file
@@ -938,5 +965,8 @@ fn create_ipc_config(
             .expect("Failled making valid default P2pConfig")
         }
     };
+    config.maybe_end_user_config = Some(P2pConfig::load_end_user_config(
+        maybe_end_user_config_filepath,
+    ));
     return (config, dir_ref);
 }

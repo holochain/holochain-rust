@@ -2,6 +2,7 @@
 
 members = [
   "cli",
+  "common",
   "conductor",
   "conductor_api",
   "core_api_c_binding",
@@ -9,8 +10,6 @@ members = [
   "dna_c_binding",
   "hdk-rust",
   "net",
-  "net_connection",
-  "net_ipc",
   "nodejs_waiter",
   "sodium",
   "hc_dpki",

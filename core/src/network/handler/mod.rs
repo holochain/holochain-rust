@@ -13,7 +13,7 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     hash::HashString,
 };
-use holochain_net_connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
+use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
@@ -41,7 +41,7 @@ fn is_my_dna(context: &Arc<Context>, dna_address: &Address) -> bool {
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
 fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
-    if agent_id != "" && context.agent_id.key != agent_id {
+    if agent_id != "" && context.agent_id.pub_sign_key != agent_id {
         context.log("debug/net/handle: ignoring, same id");
         return false;
     }
@@ -56,14 +56,24 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     Box::new(move |message| {
         let message = message.unwrap();
         // context.log(format!(
-        //     "debug/net/handle:({}): {:?}",
-        //     context.agent_id.nick, message
+        //   "trace/net/handle:({}): {:?}",
+        //   context.agent_id.nick, message
         // ));
         let maybe_json_msg = JsonProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {
             return Ok(());
         }
         match maybe_json_msg.unwrap() {
+            JsonProtocol::FailureResult(failure_data) => {
+                if !is_my_dna(&context, &failure_data.dna_address) {
+                    return Ok(());
+                }
+                context.log(format!(
+                    "warning/net/handle: FailureResult: {:?}",
+                    failure_data
+                ));
+                // TODO: Handle the reception of a FailureResult
+            }
             JsonProtocol::HandleStoreEntry(dht_entry_data) => {
                 if !is_my_dna(&context, &dht_entry_data.dna_address) {
                     return Ok(());

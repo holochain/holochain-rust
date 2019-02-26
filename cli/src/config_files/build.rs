@@ -15,7 +15,7 @@ pub struct Build {
 }
 
 impl Build {
-    /// Creates a Build struct from a .build JSON file and returns it
+    /// Creates a Build struct from a .hcbuild JSON file and returns it
     pub fn from_file<T: AsRef<Path>>(path: T) -> DefaultResult<Build> {
         let file = File::open(path)?;
 

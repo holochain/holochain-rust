@@ -12,7 +12,7 @@ use holochain_core::{
 };
 use holochain_core_types::{
     agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
-    error::HolochainError, json::JsonString,
+    error::HolochainError,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -38,7 +38,7 @@ pub struct ContextBuilder {
     chain_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
     dht_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
     eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage>>>,
-    network_config: Option<JsonString>,
+    p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
 }
@@ -51,7 +51,7 @@ impl ContextBuilder {
             chain_storage: None,
             dht_storage: None,
             eav_storage: None,
-            network_config: None,
+            p2p_config: None,
             conductor_api: None,
             signal_tx: None,
         }
@@ -93,8 +93,8 @@ impl ContextBuilder {
     }
 
     /// Sets the network config.
-    pub fn with_network_config(mut self, network_config: JsonString) -> Self {
-        self.network_config = Some(network_config);
+    pub fn with_p2p_config(mut self, p2p_config: P2pConfig) -> Self {
+        self.p2p_config = Some(p2p_config);
         self
     }
 
@@ -134,9 +134,8 @@ impl ContextBuilder {
             chain_storage,
             dht_storage,
             eav_storage,
-            self.network_config.unwrap_or(JsonString::from(
-                P2pConfig::new_with_unique_memory_backend().as_str(),
-            )),
+            self.p2p_config
+                .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
         )
@@ -146,42 +145,53 @@ impl ContextBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
+    extern crate tempfile;
+    use self::tempfile::tempdir;
+    use holochain_net::p2p_config::P2pBackendKind;
+    use test_utils::mock_signing::mock_conductor_api;
 
     #[test]
     fn vanilla() {
-        let context = ContextBuilder::new().spawn();
-        assert_eq!(context.agent_id, AgentId::generate_fake("alice"));
-        assert!(context
-            .network_config
-            .to_string()
-            .contains(r#""backend_kind":"MEMORY""#));
+        let agent = AgentId::generate_fake("alice");
+        let context = ContextBuilder::new()
+            .with_conductor_api(mock_conductor_api(agent.clone()))
+            .spawn();
+        assert_eq!(context.agent_id, agent);
+        assert_eq!(P2pBackendKind::MEMORY, context.p2p_config.backend_kind);
     }
 
     #[test]
     fn with_agent() {
         let agent = AgentId::generate_fake("alice");
-        let context = ContextBuilder::new().with_agent(agent.clone()).spawn();
+        let context = ContextBuilder::new()
+            .with_agent(agent.clone())
+            .with_conductor_api(mock_conductor_api(agent.clone()))
+            .spawn();
         assert_eq!(context.agent_id, agent);
     }
 
     #[test]
     fn with_network_config() {
-        let net = JsonString::from(P2pConfig::new_with_unique_memory_backend().as_str());
+        let net = P2pConfig::new_with_unique_memory_backend();
         let context = ContextBuilder::new()
-            .with_network_config(net.clone())
+            .with_p2p_config(net.clone())
+            .with_conductor_api(mock_conductor_api(AgentId::generate_fake("alice")))
             .spawn();
-        assert_eq!(context.network_config, net);
+        assert_eq!(context.p2p_config, net);
     }
 
     #[test]
     fn smoke_tests() {
-        let _ = ContextBuilder::new().with_memory_storage().spawn();
+        let _ = ContextBuilder::new()
+            .with_memory_storage()
+            .with_conductor_api(mock_conductor_api(AgentId::generate_fake("alice")))
+            .spawn();
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let _ = ContextBuilder::new()
             .with_file_storage(temp_path)
             .expect("Filestorage should get instantiated with tempdir")
+            .with_conductor_api(mock_conductor_api(AgentId::generate_fake("alice")))
             .spawn();
     }
 }

@@ -1,9 +1,13 @@
 use crate::{cli::package, error::DefaultResult, util};
 use colored::*;
-use std::{fs, path::PathBuf};
+use failure::Error;
+use std::{
+    io::ErrorKind,
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
 pub const TEST_DIR_NAME: &str = "test";
-pub const DIST_DIR_NAME: &str = "dist";
 
 pub fn test(
     path: &PathBuf,
@@ -11,22 +15,43 @@ pub fn test(
     testfile: &str,
     skip_build: bool,
 ) -> DefaultResult<()> {
-    // create dist folder
-    let dist_path = path.join(&DIST_DIR_NAME);
-
-    if !dist_path.exists() {
-        fs::create_dir(dist_path.as_path())?;
-    }
+    // First, check whether they have `node` installed
+    match Command::new("node")
+        .args(&["--version"])
+        .stdout(Stdio::null())
+        .status()
+    {
+        Ok(_) => {}
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::NotFound => {
+                    println!("This command requires the `node` and `npm` commands.");
+                    println!("The built in test suite utilizes nodejs.");
+                    println!("Other methods of testing Zomes will be integrated in the future.");
+                    println!(
+                        "Visit https://nodejs.org to install node and npm (which comes with node)."
+                    );
+                    println!("Once installed, retry this command.");
+                    // early exit with Ok, since this is the graceful exit
+                    return Ok(());
+                }
+                // convert from a std::io::Error into a failure::Error
+                // and actually return that error since it's something
+                // different than just not finding `node`
+                _ => return Err(Error::from(e)),
+            }
+        }
+    };
 
     if !skip_build {
         // build the package file, within the dist folder
-        let bundle_file_path = dist_path.join(package::DEFAULT_BUNDLE_FILE_NAME);
+        let file_path = util::std_package_path(path)?;
         println!(
             "{} files for testing to file: {:?}",
             "Packaging".green().bold(),
-            bundle_file_path
+            &file_path
         );
-        package(true, Some(bundle_file_path.to_path_buf()))?;
+        package(true, PathBuf::from(file_path))?;
     }
 
     // build tests
@@ -71,10 +96,8 @@ pub mod tests {
     #[test]
     // flagged as broken for:
     // 1. taking 60+ seconds
-    // 2. because `generate_cargo_toml` in cli/src/scaffold/rust.rs sets the
-    //    branch to a fixed value rather than develop and currently there's no way to
-    //    adjust that on the fly.
-    // 3. because holochain-nodejs version doesn't exist yet
+    // NOTE, before re-enabling make sure to add an environment variable
+    // HC_SCAFFOLD_VERSION='branch="develop"' when you run the test.
     #[cfg(feature = "broken-tests")]
     fn test_command_basic_test() {
         let temp_dir = gen_dir();
@@ -109,7 +132,10 @@ pub mod tests {
             .exists());
     }
 
+    // TODO: this test is non-deterministic, pivoting around the fact that the
+    // behaviour of the command is different, depending whether nodejs is installed on the system or not
     #[test]
+    #[cfg(not(windows))]
     fn test_command_no_test_folder() {
         let temp_dir = gen_dir();
         let temp_dir_path = temp_dir.path();

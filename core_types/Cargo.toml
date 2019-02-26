@@ -1,7 +1,8 @@
 [package]
 name = "holochain_core_types"
-version = "0.0.3"
+version = "0.0.4-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+build = "build.rs"
 
 [dependencies]
 arrayref = "0.3.5"
@@ -10,6 +11,7 @@ chrono = "0.4"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
+lazy_static = "1.2"
 multihash = "0.8.0"
 futures-preview = "=0.3.0-alpha.12"
 futures-core-preview = "=0.3.0-alpha.12"
@@ -19,7 +21,8 @@ futures-io-preview = "=0.3.0-alpha.12"
 futures-sink-preview = "=0.3.0-alpha.12"
 futures-util-preview = "=0.3.0-alpha.12"
 
-reed-solomon = "0.2.1"
+hcid = "0.0.3-alpha"
+
 rust-base58 = "0.0.4"
 rustc-serialize = "0.3.24"
 snowflake = "1.2"

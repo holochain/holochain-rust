@@ -1,5 +1,3 @@
-extern crate futures;
-extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
     agent::{self, find_chain_header},
@@ -21,7 +19,10 @@ use holochain_core_types::{
 use snowflake;
 use std::{convert::TryInto, pin::Pin, sync::Arc, thread};
 
-pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> ValidationPackageFuture {
+pub async fn build_validation_package(
+    entry: &Entry,
+    context: Arc<Context>,
+) -> Result<ValidationPackage, HolochainError> {
     let id = snowflake::ProcessUniqueId::new();
 
     match entry.entry_type() {
@@ -35,18 +36,18 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
                 .get_zome_name_for_app_entry_type(&app_entry_type)
                 .is_none()
             {
-                return ValidationPackageFuture {
-                    context: context.clone(),
-                    key: id,
-                    error: Some(HolochainError::ValidationFailed(format!(
-                        "Unknown app entry type '{}'",
-                        String::from(app_entry_type),
-                    ))),
-                };
+                return Err(HolochainError::ValidationFailed(format!(
+                    "Unknown app entry type '{}'",
+                    String::from(app_entry_type),
+                )));
             }
         }
 
         EntryType::LinkAdd => {
+            // LinkAdd can always be validated
+        }
+
+        EntryType::LinkRemove => {
             // LinkAdd can always be validated
         }
 
@@ -62,14 +63,10 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
             // FIXME
         }
         _ => {
-            return ValidationPackageFuture {
-                context: context.clone(),
-                key: id,
-                error: Some(HolochainError::ValidationFailed(format!(
-                    "Attempted to validate system entry type {:?}",
-                    entry.entry_type(),
-                ))),
-            };
+            return Err(HolochainError::ValidationFailed(format!(
+                "Attempted to validate system entry type {:?}",
+                entry.entry_type(),
+            )));
         }
     };
 
@@ -90,7 +87,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
             // and just used for the validation, I don't see why it would be a problem.
             // If it was a problem, we would have to make sure that the whole commit process
             // (including validtion) is atomic.
-            agent::state::create_new_chain_header(&entry, context.clone(), &None),
+            agent::state::create_new_chain_header(&entry, context.clone(), &None)?,
         );
 
         thread::spawn(move || {
@@ -147,11 +144,11 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
         });
     }
 
-    ValidationPackageFuture {
+    await!(ValidationPackageFuture {
         context: context.clone(),
         key: id,
         error: None,
-    }
+    })
 }
 
 fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
@@ -229,7 +226,7 @@ mod tests {
 
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_entry(),
-            &context.clone(),
+            context.clone(),
         ));
         println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
@@ -257,7 +254,7 @@ mod tests {
 
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_entries(),
-            &context.clone(),
+            context.clone(),
         ));
         assert!(maybe_validation_package.is_ok());
 
@@ -284,7 +281,7 @@ mod tests {
 
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_headers(),
-            &context.clone(),
+            context.clone(),
         ));
         assert!(maybe_validation_package.is_ok());
 
@@ -311,7 +308,7 @@ mod tests {
 
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_full(),
-            &context.clone(),
+            context.clone(),
         ));
         assert!(maybe_validation_package.is_ok());
 

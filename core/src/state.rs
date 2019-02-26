@@ -5,7 +5,7 @@ use crate::{
         state::{AgentState, AgentStateSnapshot},
     },
     context::Context,
-    dht::{dht_reducers::ENTRY_HEADER_ATTRIBUTE, dht_store::DhtStore},
+    dht::dht_store::DhtStore,
     network::state::NetworkState,
     nucleus::state::NucleusState,
 };
@@ -16,6 +16,7 @@ use holochain_core_types::{
     },
     chain_header::ChainHeader,
     dna::Dna,
+    eav::{Attribute, EaviQuery, IndexFilter},
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
@@ -174,12 +175,12 @@ impl State {
             .read()
             .unwrap()
             // fetch all EAV references to chain headers for this entry
-            .fetch_eavi(
-                Some(entry_address),
-                Some(ENTRY_HEADER_ATTRIBUTE.to_string()),
-                None,
-                Default::default(),
-            )?
+            .fetch_eavi(&EaviQuery::new(
+                Some(entry_address).into(),
+                Some(Attribute::EntryHeader).into(),
+                None.into(),
+                IndexFilter::LatestByAttribute,
+            ))?
             .into_iter()
             // get the header addresses
             .map(|eavi| eavi.value())

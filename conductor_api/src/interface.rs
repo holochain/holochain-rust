@@ -1,5 +1,11 @@
+use crate::holo_signing_service::request_signing_service;
+use base64;
 use holochain_core::state::State;
-use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
+use holochain_core_types::{
+    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityCall,
+};
+use holochain_dpki::key_bundle::KeyBundle;
+use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
@@ -8,7 +14,7 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     path::PathBuf,
-    sync::{mpsc::Receiver, Arc, RwLock},
+    sync::{mpsc::Receiver, Arc, Mutex, RwLock},
 };
 
 use conductor::{ConductorAdmin, ConductorUiAdmin, CONDUCTOR};
@@ -552,6 +558,7 @@ impl ConductorApiBuilder {
                 name,
                 public_address,
                 key_file,
+                holo_remote_key: None,
             };
             conductor_call!(|c| c.add_agent(agent))?;
             Ok(json!({"success": true}))
@@ -736,6 +743,53 @@ impl ConductorApiBuilder {
             ))
         });
 
+        self
+    }
+
+    pub fn with_agent_signature_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
+        self.io.add_method("agent/sign", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+            // Convert payload string into a SecBuf
+            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+
+            // Get write lock on the key since we need a mutuble reference to lock the
+            // secure memory the key is in:
+            let mut message_signature = keybundle
+                .lock()
+                .unwrap()
+                .sign(&mut message)
+                .expect("Failed to sign with keybundle.");
+
+            let message_signature = message_signature.read_lock();
+            // Return as base64 encoded string
+            let signature = base64::encode(&**message_signature);
+
+            Ok(json!({"payload": payload, "signature": signature}))
+        });
+        self
+    }
+
+    pub fn with_outsource_signing_callback(
+        mut self,
+        agent_id: AgentId,
+        signing_service_uri: String,
+    ) -> Self {
+        let agent_id = agent_id.clone();
+        let signing_service_uri = signing_service_uri.clone();
+
+        self.io.add_method("agent/sign", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+
+            let signature = request_signing_service(&agent_id, &payload, &signing_service_uri)
+                .map_err(|holochain_error| {
+                    println!("Error in signing hack: {:?}", holochain_error);
+                    jsonrpc_core::Error::internal_error()
+                })?;
+
+            Ok(json!({"payload": payload, "signature": signature}))
+        });
         self
     }
 }

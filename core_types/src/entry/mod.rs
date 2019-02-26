@@ -20,7 +20,7 @@ use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
 use error::{HcResult, HolochainError};
 use json::{default_to_json, default_try_from_json, JsonString, RawString};
-use link::{link_add::LinkAdd, link_list::LinkList, link_remove::LinkRemove};
+use link::{link_data::LinkData, link_list::LinkList};
 use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;
@@ -67,8 +67,8 @@ pub enum Entry {
     Dna(Dna),
     AgentId(AgentId),
     Deletion(DeletionEntry),
-    LinkAdd(LinkAdd),
-    LinkRemove(LinkRemove),
+    LinkAdd(LinkData),
+    LinkRemove(LinkData),
     LinkList(LinkList),
     ChainHeader(ChainHeader),
     ChainMigrate(ChainMigrate),
@@ -292,7 +292,7 @@ pub mod tests {
 
         let sys_entry = test_sys_entry();
         let expected = JsonString::from(format!(
-            "{{\"AgentId\":{{\"nick\":\"{}\",\"key\":\"{}\"}}}}",
+            "{{\"AgentId\":{{\"nick\":\"{}\",\"pub_sign_key\":\"{}\"}}}}",
             "bob",
             crate::agent::GOOD_ID,
         ));

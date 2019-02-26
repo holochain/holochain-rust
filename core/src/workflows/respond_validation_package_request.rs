@@ -19,7 +19,9 @@ fn get_entry(address: &Address, context: &Arc<Context>) -> Result<Entry, Holocha
         .read()
         .unwrap()
         .fetch(address)?
-        .ok_or(HolochainError::ErrorGeneric("Entry not found".to_string()))?;
+        .ok_or(HolochainError::ErrorGeneric(
+            "Entry not found when trying to build validation package".to_string(),
+        ))?;
 
     Entry::try_from(raw)
 }
@@ -31,7 +33,7 @@ pub async fn respond_validation_package_request(
     context: Arc<Context>,
 ) {
     let maybe_validation_package = match get_entry(&requested_entry_address, &context) {
-        Ok(entry) => await!(build_validation_package(&entry, &context)).ok(),
+        Ok(entry) => await!(build_validation_package(&entry, context.clone())).ok(),
         Err(_) => None,
     };
 

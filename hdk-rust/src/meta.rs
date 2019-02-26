@@ -7,7 +7,7 @@ use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
-        zome::{ZomeCapabilities, ZomeEntryTypes, ZomeFnDeclarations},
+        zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
     },
     entry::entry_type::{AppEntryType, EntryType},
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
@@ -34,7 +34,7 @@ struct PartialZome {
     #[serde(serialize_with = "serialize_entry_types")]
     #[serde(deserialize_with = "deserialize_entry_types")]
     entry_types: ZomeEntryTypes,
-    capabilities: ZomeCapabilities,
+    traits: ZomeTraits,
     fn_declarations: ZomeFnDeclarations,
 }
 
@@ -59,7 +59,7 @@ impl ZomeDefinition {
 #[allow(improper_ctypes)]
 extern "C" {
     fn zome_setup(zd: &mut ZomeDefinition);
-    fn __list_capabilities() -> ZomeCapabilities;
+    fn __list_traits() -> ZomeTraits;
     fn __list_functions() -> ZomeFnDeclarations;
 }
 
@@ -228,6 +228,28 @@ pub extern "C" fn __hdk_validate_link(
 }
 
 #[no_mangle]
+pub extern "C" fn __hdk_git_hash(
+    encoded_allocation_of_input: RibosomeEncodingBits,
+) -> RibosomeEncodingBits {
+    if let Err(allocation_error) =
+        ::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+    {
+        return allocation_error.as_ribosome_encoding();
+    }
+
+    let mut mem_stack = unsafe {
+        match G_MEM_STACK {
+            Some(mem_stack) => mem_stack,
+            None => {
+                return AllocationError::BadStackAlignment.as_ribosome_encoding();
+            }
+        }
+    };
+
+    return_code_for_allocation_result(mem_stack.write_string(holochain_core_types::GIT_HASH)).into()
+}
+
+#[no_mangle]
 pub extern "C" fn __hdk_get_json_definition(
     encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {
@@ -248,12 +270,12 @@ pub extern "C" fn __hdk_get_json_definition(
         );
     }
 
-    let capabilities = unsafe { __list_capabilities() };
+    let traits = unsafe { __list_traits() };
     let fn_declarations = unsafe { __list_functions() };
 
     let partial_zome = PartialZome {
         entry_types,
-        capabilities,
+        traits,
         fn_declarations,
     };
 
@@ -278,7 +300,7 @@ pub mod tests {
     use holochain_core_types::{
         dna::{
             entry_types::Sharing,
-            zome::{ZomeCapabilities, ZomeFnDeclarations},
+            zome::{ZomeFnDeclarations, ZomeTraits},
         },
         error::HolochainError,
         json::JsonString,
@@ -289,10 +311,12 @@ pub mod tests {
     // Adding empty zome_setup() so that the cfg(test) build can link.
     #[no_mangle]
     pub fn zome_setup(_: &mut super::ZomeDefinition) {}
+
     #[no_mangle]
-    pub fn __list_capabilities() -> ZomeCapabilities {
+    pub fn __list_traits() -> ZomeTraits {
         BTreeMap::new()
     }
+
     #[no_mangle]
     pub fn __list_functions() -> ZomeFnDeclarations {
         Vec::new()
@@ -335,7 +359,7 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(partial_zome),
-            JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"fn_declarations\":[]}"),
+            JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
         );
     }
 }

@@ -27,6 +27,9 @@ pub trait Connection {
     /// close an existing open connection
     fn close(&mut self, id: ConnectionId) -> ConnectionResult<()>;
 
+    /// close all existing open connections
+    fn close_all(&mut self) -> ConnectionResult<()>;
+
     /// do some work... this should be called very frequently on an event loop
     fn poll(&mut self) -> ConnectionResult<(DidWork, Vec<ConnectionEvent>)>;
 

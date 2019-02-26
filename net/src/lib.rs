@@ -21,6 +21,11 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
+// wss
+extern crate tungstenite;
+extern crate url;
+extern crate native_tls;
+
 pub mod connection;
 pub mod error;
 pub mod in_memory;

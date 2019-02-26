@@ -9,11 +9,6 @@
 //! The main export you should care about is ZmqIpcClient.
 //!
 
-// wss
-extern crate tungstenite;
-extern crate url;
-extern crate native_tls;
-
 mod connection;
 mod connection_wss;
 

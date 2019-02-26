@@ -95,12 +95,38 @@ impl<T: Read + Write + std::fmt::Debug> Connection for ConnectionWss<T> {
         if let Some(info) = self.stream_sockets.get_mut(&id) {
             if let WssStreamState::Ready(socket) = &mut info.socket {
                 socket.close(None)?;
+                socket.write_pending()?;
             }
             info.socket = WssStreamState::None;
         } else {
             return Err(ConnectionError(format!("bad id: {}", id)));
         }
         Ok(())
+    }
+
+    /// close all currently tracked connections
+    fn close_all(&mut self) -> ConnectionResult<()> {
+        let mut err: Option<ConnectionError> = None;
+
+        let sockets: Vec<(String, ConnectionInfo<T>)> =
+            self.stream_sockets.drain().collect();
+
+        for (id, mut info) in sockets {
+            if let WssStreamState::Ready(socket) = &mut info.socket {
+                if let Err(e) = socket.close(None) {
+                    err = Some(e.into());
+                }
+                if let Err(e) = socket.write_pending() {
+                    err = Some(e.into());
+                }
+            }
+        }
+
+        if let Some(e) = err {
+            Err(e)
+        } else {
+            Ok(())
+        }
     }
 
     /// this should be called frequently on the event loop

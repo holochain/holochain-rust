@@ -4,7 +4,7 @@ use holochain_sodium::{kx, secbuf::SecBuf, sign, *};
 use crate::{
     keypair::*,
     password_encryption::{self, EncryptedData, PwHashConfig},
-    seed::SeedType,
+    seed::{Seed, SeedType},
     utils, SEED_SIZE,
 };
 use holochain_core_types::{agent::Base32, error::HcResult};
@@ -21,13 +21,23 @@ pub struct KeyBundle {
 }
 
 impl KeyBundle {
+    /// Derive the keys from a Seed
+    pub fn new_from_seed(seed: &mut Seed) -> HcResult<Self> {
+        Ok(KeyBundle {
+            sign_keys: SigningKeyPair::new_from_seed(&mut seed.buf)?,
+            enc_keys: EncryptingKeyPair::new_from_seed(&mut seed.buf)?,
+            seed_type: seed.kind.clone(),
+        })
+    }
+
     /// Derive the keys from a 32 bytes seed buffer
     /// @param {SecBuf} seed - the seed buffer
-    pub fn new_from_seed_buf(seed: &mut SecBuf, seed_type: SeedType) -> HcResult<Self> {
-        assert_eq!(seed.len(), SEED_SIZE);
+    /// @param {SeedType} seed_type - seed type of the buffer
+    pub fn new_from_seed_buf(seed_buf: &mut SecBuf, seed_type: SeedType) -> HcResult<Self> {
+        assert_eq!(seed_buf.len(), SEED_SIZE);
         Ok(KeyBundle {
-            sign_keys: SigningKeyPair::new_from_seed(seed)?,
-            enc_keys: EncryptingKeyPair::new_from_seed(seed)?,
+            sign_keys: SigningKeyPair::new_from_seed(seed_buf)?,
+            enc_keys: EncryptingKeyPair::new_from_seed(seed_buf)?,
             seed_type,
         })
     }

@@ -3,8 +3,8 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
 };
 use holochain_dpki::{
-    key_bundle::{KeyBundle, SeedType},
-    SEED_SIZE,
+    key_bundle::KeyBundle,
+    seed::SeedType, SEED_SIZE,
 };
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};

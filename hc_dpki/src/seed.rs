@@ -28,7 +28,7 @@ pub enum SeedType {
     Revocation,
     /// Device specific seed
     Device,
-    /// PIN Key for a device
+    /// Derivative of a Device seed with a PIN
     DevicePin,
     /// Application specific seed
     Application,
@@ -122,7 +122,7 @@ impl Seed {
         let mnemonic = Mnemonic::from_entropy(e, Language::English).map_err(|e| {
             HolochainError::ErrorGeneric(format!("Error generating Mnemonic phrase: {}", e))
         })?;
-        Ok(mnemonic.phrase().to_string())
+        Ok(mnemonic.into_phrase())
     }
 }
 

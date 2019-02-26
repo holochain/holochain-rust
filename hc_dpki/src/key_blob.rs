@@ -32,8 +32,9 @@ pub struct KeyBlob {
 pub enum BlobType {
     Seed,
     KeyBundle,
-    KeyPair,
-    Key,
+    // TODO futur blobbables?
+    // KeyPair,
+    // Key,
 }
 
 /// Trait to implement in order to be blobbable into a KeyBlob
@@ -56,8 +57,9 @@ pub trait Blobbable {
         config: Option<PwHashConfig>,
     ) -> HcResult<KeyBlob>;
 
-    // -- Private methods -- //
+    // -- Common methods -- //
 
+    /// Blobs a data buf
     fn finalize_blobbing(
         data_buf: &mut SecBuf,
         passphrase: &mut SecBuf,
@@ -77,7 +79,7 @@ pub trait Blobbable {
         Ok(base64::encode(&serialized_blob))
     }
 
-    //
+    /// Get the data buf back from a Blob
     fn unblob(
         blob: &KeyBlob,
         passphrase: &mut SecBuf,
@@ -135,16 +137,6 @@ impl Blobbable for Seed {
         let mut seed_buf = Self::unblob(blob, passphrase, config)?;
         // Construct
         Ok(Seed::new(seed_buf, blob.seed_type.clone()))
-        // Construct
-        //        match blob.seed_type {
-        //            SeedType::Root => Ok(TypedSeed::Root(RootSeed::new(seed_buf))),
-        //            SeedType::Device => Ok(TypedSeed::Device(DeviceSeed::new(seed_buf))),
-        //            SeedType::DevicePin => Ok(TypedSeed::DevicePin(DevicePinSeed::new(seed_buf))),
-        //            _ => Err(HolochainError::new(&format!(
-        //                "Unblobbing seed of type '{:?}' not allowed",
-        //                blob.seed_type
-        //            ))),
-        //        }
     }
 
     ///  generate a persistence bundle with hint info
@@ -160,7 +152,7 @@ impl Blobbable for Seed {
     ) -> HcResult<KeyBlob> {
         // Blob seed buf directly
         let encoded_blob = Self::finalize_blobbing(&mut self.buf, passphrase, config)?;
-
+        // Done
         Ok(KeyBlob {
             seed_type: self.kind.clone(),
             blob_type: BlobType::Seed,

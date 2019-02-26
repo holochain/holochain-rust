@@ -795,7 +795,7 @@ pub mod tests {
             .expect("SecBuf must be writeable");
 
         // Create KeyBundle from seed
-        KeyBundle::new_from_seed_buf(&mut seed, holochain_dpki::key_bundle::SeedType::Mock).unwrap()
+        KeyBundle::new_from_seed_buf(&mut seed, holochain_dpki::seed::SeedType::Mock).unwrap()
     }
 
     pub fn test_toml() -> String {

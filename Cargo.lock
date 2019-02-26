@@ -981,7 +981,6 @@ dependencies = [
  "objekt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust-base58 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2191,11 +2190,6 @@ version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "rustc-serialize"
-version = "0.3.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
 name = "rustc_version"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3247,7 +3241,6 @@ dependencies = [
 "checksum rpassword 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d37473170aedbe66ffa3ad3726939ba677d83c646ad4fd99e5b4bc38712f45ec"
 "checksum rust-base58 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b313b91fcdc6719ad41fa2dad2b7e810b03833fae4bf911950e15529a5f04439"
 "checksum rustc-demangle 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "adacaae16d02b6ec37fdc7acfcddf365978de76d1983d3ee22afc260e1ca9619"
-"checksum rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)" = "dcf128d1287d2ea9d80910b5f1120d0b8eede3fbf1abe91c40d39ea7d51e6fda"
 "checksum rustc_version 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
 "checksum rustyline 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6010155119d53aac4f5b987cb8f6ea913d0d64d9b237da36f8f96a90cb3f5385"
 "checksum ryu 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "eb9e9b8cde282a9fe6a42dd4681319bfb63f121b8a8ee9439c6f4107e58a46f7"

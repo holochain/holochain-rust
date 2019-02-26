@@ -24,7 +24,6 @@ futures-util-preview = "=0.3.0-alpha.12"
 hcid = "0.0.3-alpha"
 
 rust-base58 = "0.0.4"
-rustc-serialize = "0.3.24"
 snowflake = "1.2"
 objekt="0.1.1"
 holochain_core_types_derive = { path = "../core_types_derive" }

@@ -15,7 +15,6 @@ use holochain_core_types::{cas::content::Address, error::HolochainError, hash::H
 use snowflake;
 use std::{pin::Pin, sync::Arc, thread};
 
-
 /// Validation callback action creator.
 /// Spawns a thread in which a WASM Ribosome runs the custom validation function defined by
 /// `zome_call`.

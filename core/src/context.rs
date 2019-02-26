@@ -6,6 +6,10 @@ use crate::{
     signal::{Signal, SignalSender},
     state::State,
 };
+use futures::{
+    task::{noop_local_waker_ref, Poll},
+    Future,
+};
 use holochain_core_types::{
     agent::AgentId,
     cas::{
@@ -15,15 +19,22 @@ use holochain_core_types::{
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
     error::{HcResult, HolochainError},
-    json::JsonString,
 };
+
 use holochain_net::p2p_config::P2pConfig;
+use jsonrpc_lite::JsonRpc;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
+use snowflake::ProcessUniqueId;
 use std::{
-    sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
+    sync::{
+        mpsc::{channel, Receiver, SyncSender},
+        Arc, Mutex, RwLock, RwLockReadGuard,
+    },
     thread::sleep,
     time::Duration,
 };
+#[cfg(test)]
+use test_utils::mock_signing::mock_conductor_api;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -40,14 +51,40 @@ pub struct Context {
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
-    pub network_config: JsonString,
-    pub container_api: Option<Arc<RwLock<IoHandler>>>,
+    pub p2p_config: P2pConfig,
+    pub conductor_api: Arc<RwLock<IoHandler>>,
     pub signal_tx: Option<SyncSender<Signal>>,
 }
 
 impl Context {
     pub fn default_channel_buffer_size() -> usize {
         100
+    }
+
+    // test_check_conductor_api() is used to inject a conductor_api with a working
+    // mock of agent/sign to be used in tests.
+    // There are two different implementations of this function below which get pulled
+    // in depending on if "test" is in the build config, or not.
+    // This allows unit tests of core to not have to deal with a conductor_api.
+    #[cfg(not(test))]
+    fn test_check_conductor_api(
+        conductor_api: Option<Arc<RwLock<IoHandler>>>,
+        _agent_id: AgentId,
+    ) -> Arc<RwLock<IoHandler>> {
+        // If you get here through this panic make sure that the context passed into the instance
+        // gets created with a real conductor API. In test config it will be populated with mock API
+        // that implements agent/sign with the mock_signer. We need this for testing but should
+        // never use that code in production!
+        // Hence the two different cases here.
+        conductor_api.expect("Context can't be created without conductor API")
+    }
+
+    #[cfg(test)]
+    fn test_check_conductor_api(
+        conductor_api: Option<Arc<RwLock<IoHandler>>>,
+        agent_id: AgentId,
+    ) -> Arc<RwLock<IoHandler>> {
+        conductor_api.unwrap_or_else(|| Arc::new(RwLock::new(mock_conductor_api(agent_id))))
     }
 
     pub fn new(
@@ -57,12 +94,12 @@ impl Context {
         chain_storage: Arc<RwLock<ContentAddressableStorage>>,
         dht_storage: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
-        network_config: JsonString,
-        container_api: Option<Arc<RwLock<IoHandler>>>,
+        p2p_config: P2pConfig,
+        conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
-            agent_id,
+            agent_id: agent_id.clone(),
             logger,
             persister,
             state: None,
@@ -72,8 +109,8 @@ impl Context {
             chain_storage,
             dht_storage,
             eav_storage: eav,
-            network_config,
-            container_api,
+            p2p_config,
+            conductor_api: Self::test_check_conductor_api(conductor_api, agent_id),
         }
     }
 
@@ -86,10 +123,10 @@ impl Context {
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
-        network_config: JsonString,
+        p2p_config: P2pConfig,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
-            agent_id,
+            agent_id: agent_id.clone(),
             logger,
             persister,
             state: None,
@@ -99,8 +136,8 @@ impl Context {
             chain_storage: cas.clone(),
             dht_storage: cas,
             eav_storage: eav,
-            network_config,
-            container_api: None,
+            p2p_config,
+            conductor_api: Self::test_check_conductor_api(None, agent_id),
         })
     }
 
@@ -159,7 +196,8 @@ impl Context {
     pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
         let dna = self.get_dna().expect("Callback called without DNA set!");
         dna.get_wasm_from_zome_name(zome)
-            .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
+            .cloned()
+            .filter(|wasm| !wasm.code.is_empty())
     }
 
     // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
@@ -184,6 +222,61 @@ impl Context {
             .as_ref()
             .expect("Observer channel not initialized")
     }
+
+    /// This creates an observer for the instance's redux loop and installs it.
+    /// The returned receiver gets sent ticks from the instance every time the state
+    /// got mutated.
+    /// This enables blocking/parking the calling thread until the application state got changed.
+    pub fn create_observer(&self) -> Receiver<()> {
+        let (tick_tx, tick_rx) = channel();
+        self.observer_channel()
+            .send(Observer { ticker: tick_tx })
+            .expect("Observer channel not initialized");
+        tick_rx
+    }
+
+    /// Custom future executor that enables nested futures and nested calls of `block_on`.
+    /// This makes use of the redux action loop and the observers.
+    /// The given future gets polled everytime the instance's state got changed.
+    pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output {
+        let tick_rx = self.create_observer();
+        pin_utils::pin_mut!(future);
+
+        loop {
+            let _ = match future.as_mut().poll(noop_local_waker_ref()) {
+                Poll::Ready(result) => return result,
+                _ => tick_rx.recv_timeout(Duration::from_millis(10)),
+            };
+        }
+    }
+
+    pub fn sign(&self, payload: String) -> Result<String, HolochainError> {
+        let handler = self.conductor_api.write().unwrap();
+        let request = format!(
+            r#"{{"jsonrpc": "2.0", "method": "agent/sign", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
+            payload, ProcessUniqueId::new()
+        );
+
+        let response = handler
+            .handle_request_sync(&request)
+            .ok_or("Conductor sign call failed".to_string())?;
+
+        let response = JsonRpc::parse(&response)?;
+
+        match response {
+            JsonRpc::Success(_) => Ok(String::from(
+                response.get_result().unwrap()["signature"]
+                    .as_str()
+                    .unwrap(),
+            )),
+            JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
+                serde_json::to_string(&response.get_error().unwrap()).unwrap(),
+            )),
+            _ => Err(HolochainError::ErrorGeneric(
+                "Bridge call failed".to_string(),
+            )),
+        }
+    }
 }
 
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
@@ -202,12 +295,6 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
     Ok((dna.address(), agent_id))
 }
 
-/// create a unique test network
-#[cfg_attr(tarpaulin, skip)]
-pub fn unique_memory_network_config() -> JsonString {
-    JsonString::from(P2pConfig::new_with_unique_memory_backend())
-}
-
 /// Create an in-memory network config with the provided name,
 /// otherwise create a unique name and thus network using snowflake.
 /// This is the base function that many other `text_context*` functions use, and hence they also
@@ -215,25 +302,21 @@ pub fn unique_memory_network_config() -> JsonString {
 /// single instance may simply pass None and get a unique network name, but tests which require two
 /// instances to be on the same network need to ensure both contexts use the same network name.
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_memory_network_config(network_name: Option<&str>) -> JsonString {
+pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
     network_name
-        .map(|name| JsonString::from(P2pConfig::new_with_memory_backend(name)))
-        .unwrap_or(unique_memory_network_config())
+        .map(|name| P2pConfig::new_with_memory_backend(name))
+        .unwrap_or(P2pConfig::new_with_unique_memory_backend())
 }
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-    extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use crate::{
-        context::unique_memory_network_config, logger::test_logger, persister::SimplePersister,
-        state::State,
-    };
+    use crate::{logger::test_logger, persister::SimplePersister, state::State};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;
     use std::sync::{Arc, Mutex, RwLock};
+    use tempfile;
 
     #[test]
     fn default_buffer_size_test() {
@@ -255,7 +338,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            unique_memory_network_config(),
+            P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
         );
@@ -288,7 +371,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            unique_memory_network_config(),
+            P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
         );

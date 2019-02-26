@@ -1,4 +1,3 @@
-extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
     agent::actions::commit::commit_entry,
@@ -18,7 +17,7 @@ use std::{pin::Pin, sync::Arc, time::*};
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
-const INITIALIZATION_TIMEOUT: u64 = 30;
+const INITIALIZATION_TIMEOUT: u64 = 60;
 
 /// Initialize Application, Action Creator
 /// This is the high-level initialization function that wraps the whole process of initializing an
@@ -38,14 +37,10 @@ pub async fn initialize_application(
         ));
     }
 
-    let context_clone = context.clone();
-
     let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
-    dispatch_action_and_wait(
-        &context_clone.action_channel(),
-        &context_clone.observer_channel(),
-        action_wrapper.clone(),
-    );
+    dispatch_action_and_wait(context.clone(), action_wrapper.clone());
+
+    let context_clone = context.clone();
 
     // Commit DNA to chain
     let dna_entry = Entry::Dna(dna.clone());
@@ -82,8 +77,6 @@ pub async fn initialize_application(
             .expect("Action channel not usable in initialize_application()");
         return Err(HolochainError::new("error committing Agent"));
     }
-
-    // TODO: Question: genesis is called AFTER dna and agent entries committed??
 
     // map genesis across every zome
     let results: Vec<_> = dna

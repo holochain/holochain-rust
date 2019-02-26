@@ -9,6 +9,7 @@ use std::{
     error::Error,
     fmt,
     io::{self, Error as IoError},
+    option::NoneError,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -44,11 +45,6 @@ impl CoreError {
             line: String::new(),
         }
     }
-
-    // TODO - get the u32 error code from a CoreError
-    //    pub fn code(&self) -> u32 {
-    //        u32::from(self.kind.code()) << 16 as u32
-    //    }
 }
 
 impl ::std::convert::TryFrom<ZomeApiInternalResult> for CoreError {
@@ -80,7 +76,9 @@ impl fmt::Display for CoreError {
 
 /// TODO rename to CoreErrorKind
 /// Enum holding all Holochain Core errors
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, DefaultJson, Hash)]
+#[derive(
+    Clone, Debug, PartialEq, Eq, Serialize, Deserialize, DefaultJson, Hash, PartialOrd, Ord,
+)]
 pub enum HolochainError {
     ErrorGeneric(String),
     NotImplemented(String),
@@ -194,6 +192,12 @@ impl From<FutureCanceled> for HolochainError {
     }
 }
 
+impl From<NoneError> for HolochainError {
+    fn from(_: NoneError) -> Self {
+        HolochainError::ErrorGeneric("Expected Some and got None".to_string())
+    }
+}
+
 #[derive(Serialize, Deserialize, Default, Debug, DefaultJson)]
 pub struct ZomeApiInternalResult {
     pub ok: bool,
@@ -294,7 +298,7 @@ mod tests {
                 "foo",
             ),
             (
-                HolochainError::Dna(DnaError::CapabilityNotFound(String::from("foo"))),
+                HolochainError::Dna(DnaError::TraitNotFound(String::from("foo"))),
                 "foo",
             ),
             (

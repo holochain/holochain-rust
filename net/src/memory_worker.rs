@@ -15,10 +15,12 @@ use std::{
 };
 
 /// a p2p worker for mocking in-memory scenario tests
+#[allow(non_snake_case)]
 pub struct InMemoryWorker {
     handler: NetHandler,
     receiver_per_dna: HashMap<Address, mpsc::Receiver<Protocol>>,
     server_name: String,
+    can_send_P2pReady: bool,
 }
 
 impl NetWorker for InMemoryWorker {
@@ -32,26 +34,59 @@ impl NetWorker for InMemoryWorker {
             .lock()
             .unwrap();
         if let Ok(json_msg) = JsonProtocol::try_from(&data) {
-            if let JsonProtocol::TrackDna(track_msg) = json_msg {
-                match self
-                    .receiver_per_dna
-                    .entry(track_msg.dna_address.to_owned())
-                {
-                    Entry::Occupied(_) => (),
-                    Entry::Vacant(e) => {
-                        let (tx, rx) = mpsc::channel();
-                        server.register(&track_msg.dna_address, &track_msg.agent_id, tx)?;
-                        e.insert(rx);
-                    }
-                };
+            match json_msg {
+                JsonProtocol::TrackDna(track_msg) => {
+                    match self
+                        .receiver_per_dna
+                        .entry(track_msg.dna_address.to_owned())
+                    {
+                        Entry::Occupied(_) => (),
+                        Entry::Vacant(e) => {
+                            let (tx, rx) = mpsc::channel();
+                            server.register_cell(
+                                &track_msg.dna_address,
+                                &track_msg.agent_id,
+                                tx,
+                            )?;
+                            e.insert(rx);
+                        }
+                    };
+                }
+                _ => (),
             }
         }
-        server.handle(data)?;
+        // Serve
+        server.serve(data.clone())?;
+        // After serve
+        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
+            match json_msg {
+                JsonProtocol::UntrackDna(untrack_msg) => {
+                    match self
+                        .receiver_per_dna
+                        .entry(untrack_msg.dna_address.to_owned())
+                    {
+                        Entry::Vacant(_) => (),
+                        Entry::Occupied(e) => {
+                            server.unregister_cell(&untrack_msg.dna_address, &untrack_msg.agent_id);
+                            e.remove();
+                        }
+                    };
+                }
+                _ => (),
+            }
+        }
+        // Done
         Ok(())
     }
 
     /// check for messages from our InMemoryServer
     fn tick(&mut self) -> NetResult<bool> {
+        // Send p2pready on first tick
+        if self.can_send_P2pReady {
+            self.can_send_P2pReady = false;
+            (self.handler)(Ok(Protocol::P2pReady))?;
+        }
+        // check for messages from our InMemoryServer
         let mut did_something = false;
         for (_, receiver) in self.receiver_per_dna.iter_mut() {
             if let Ok(data) = receiver.try_recv() {
@@ -102,6 +137,7 @@ impl InMemoryWorker {
             handler,
             receiver_per_dna: HashMap::new(),
             server_name,
+            can_send_P2pReady: true,
         })
     }
 }
@@ -125,21 +161,17 @@ mod tests {
     use crate::p2p_config::P2pConfig;
 
     use holochain_core_types::cas::content::Address;
-    use holochain_net_connection::json_protocol::{
-        DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, JsonProtocol, MessageData,
-        SuccessResultData, TrackDnaData,
-    };
+    use holochain_net_connection::json_protocol::{JsonProtocol, TrackDnaData};
 
     fn example_dna_address() -> Address {
         "blabladnaAddress".into()
     }
 
     static AGENT_ID_1: &'static str = "agent-hash-test-1";
-    static AGENT_ID_2: &'static str = "agent-hash-test-2";
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
-    fn can_memory_double_track() {
+    fn can_memory_worker_double_track() {
         // setup client 1
         let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_string());
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
@@ -154,6 +186,11 @@ mod tests {
             )
             .unwrap(),
         );
+
+        // Should receive p2pready on first tick
+        memory_worker_1.tick().unwrap();
+        let message = handler_recv_1.recv().unwrap();
+        assert_eq!(message, Protocol::P2pReady);
 
         // First Track
         memory_worker_1
@@ -182,317 +219,5 @@ mod tests {
             .unwrap();
 
         memory_worker_1.tick().unwrap();
-    }
-
-    #[test]
-    #[cfg_attr(tarpaulin, skip)]
-    fn can_memory_network_flow() {
-        // setup client 1
-        let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_string());
-        let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
-
-        let mut memory_worker_1 = Box::new(
-            InMemoryWorker::new(
-                Box::new(move |r| {
-                    handler_send_1.send(r?)?;
-                    Ok(())
-                }),
-                memory_config,
-            )
-            .unwrap(),
-        );
-
-        memory_worker_1
-            .receive(
-                JsonProtocol::TrackDna(TrackDnaData {
-                    dna_address: example_dna_address(),
-                    agent_id: AGENT_ID_1.to_string(),
-                })
-                .into(),
-            )
-            .unwrap();
-        // Should receive PeerConnected
-        memory_worker_1.tick().unwrap();
-        let _res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
-
-        // setup client 2
-        let (handler_send_2, handler_recv_2) = mpsc::channel::<Protocol>();
-        let mut memory_worker_2 = Box::new(
-            InMemoryWorker::new(
-                Box::new(move |r| {
-                    handler_send_2.send(r?)?;
-                    Ok(())
-                }),
-                memory_config,
-            )
-            .unwrap(),
-        );
-        memory_worker_2
-            .receive(
-                JsonProtocol::TrackDna(TrackDnaData {
-                    dna_address: example_dna_address(),
-                    agent_id: AGENT_ID_2.to_string(),
-                })
-                .into(),
-            )
-            .unwrap();
-        // Should receive PeerConnected
-        memory_worker_1.tick().unwrap();
-        let _res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
-        memory_worker_2.tick().unwrap();
-        let _res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
-
-        // node2node:  send & receive
-        memory_worker_1
-            .receive(
-                JsonProtocol::SendMessage(MessageData {
-                    dna_address: example_dna_address(),
-                    to_agent_id: AGENT_ID_2.to_string(),
-                    from_agent_id: AGENT_ID_1.to_string(),
-                    msg_id: "yada".to_string(),
-                    data: json!("hello"),
-                })
-                .into(),
-            )
-            .unwrap();
-
-        memory_worker_2.tick().unwrap();
-
-        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
-
-        if let JsonProtocol::HandleSendMessage(msg) = res {
-            memory_worker_2
-                .receive(
-                    JsonProtocol::HandleSendMessageResult(MessageData {
-                        dna_address: msg.dna_address,
-                        to_agent_id: msg.from_agent_id,
-                        from_agent_id: AGENT_ID_2.to_string(),
-                        msg_id: msg.msg_id,
-                        data: json!(format!("echo: {}", msg.data.to_string())),
-                    })
-                    .into(),
-                )
-                .unwrap();
-        } else {
-            println!("Did not expect to receive: {:?}", res);
-            panic!("bad msg");
-        }
-
-        memory_worker_1.tick().unwrap();
-
-        let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
-
-        if let JsonProtocol::SendMessageResult(msg) = res {
-            assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
-        } else {
-            println!("Did not expect to receive: {:?}", res);
-            panic!("bad msg");
-        }
-
-        // -- dht get -- //
-
-        memory_worker_2
-            .receive(
-                JsonProtocol::GetDhtData(GetDhtData {
-                    msg_id: "yada".to_string(),
-                    dna_address: example_dna_address(),
-                    from_agent_id: AGENT_ID_2.to_string(),
-                    address: "hello".to_string(),
-                })
-                .into(),
-            )
-            .unwrap();
-
-        memory_worker_1.tick().unwrap();
-
-        let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
-
-        if let JsonProtocol::HandleGetDhtData(msg) = res {
-            memory_worker_1
-                .receive(
-                    JsonProtocol::HandleGetDhtDataResult(DhtData {
-                        msg_id: msg.msg_id.clone(),
-                        dna_address: msg.dna_address.clone(),
-                        agent_id: msg.from_agent_id.clone(),
-                        address: msg.address.clone(),
-                        content: json!(format!("data-for: {}", msg.address)),
-                    })
-                    .into(),
-                )
-                .unwrap();
-        } else {
-            println!("Did not expect to receive: {:?}", res);
-            panic!("bad msg");
-        }
-
-        memory_worker_2.tick().unwrap();
-
-        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
-
-        if let JsonProtocol::GetDhtDataResult(msg) = res {
-            assert_eq!("\"data-for: hello\"".to_string(), msg.content.to_string());
-        } else {
-            println!("Did not expect to receive: {:?}", res);
-            panic!("bad msg");
-        }
-
-        // -- dht publish / store -- //
-
-        memory_worker_2
-            .receive(
-                JsonProtocol::PublishDhtData(DhtData {
-                    msg_id: "yada".to_string(),
-                    dna_address: example_dna_address(),
-                    agent_id: AGENT_ID_2.to_string(),
-                    address: "hello".to_string(),
-                    content: json!("test-data"),
-                })
-                .into(),
-            )
-            .unwrap();
-
-        memory_worker_1.tick().unwrap();
-        memory_worker_2.tick().unwrap();
-
-        let res1 = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
-        let res2 = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
-
-        assert_eq!(res1, res2);
-
-        if let JsonProtocol::HandleStoreDhtData(msg) = res1 {
-            memory_worker_1
-                .receive(
-                    JsonProtocol::SuccessResult(SuccessResultData {
-                        msg_id: msg.msg_id.clone(),
-                        dna_address: msg.dna_address.clone(),
-                        to_agent_id: msg.agent_id.clone(),
-                        success_info: json!("signature here"),
-                    })
-                    .into(),
-                )
-                .unwrap();
-        } else {
-            println!("Did not expect to receive: {:?}", res1);
-            panic!("bad msg");
-        }
-
-        memory_worker_2.tick().unwrap();
-        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
-
-        if let JsonProtocol::SuccessResult(msg) = res {
-            assert_eq!("\"signature here\"", &msg.success_info.to_string())
-        } else {
-            println!("Did not expect to receive: {:?}", res);
-            panic!("bad msg");
-        }
-
-        // -- dht meta get -- //
-
-        memory_worker_2
-            .receive(
-                JsonProtocol::GetDhtMeta(GetDhtMetaData {
-                    msg_id: "yada".to_string(),
-                    dna_address: example_dna_address(),
-                    from_agent_id: AGENT_ID_2.to_string(),
-                    address: "hello".to_string(),
-                    attribute: "link:test".to_string(),
-                })
-                .into(),
-            )
-            .unwrap();
-
-        memory_worker_1.tick().unwrap();
-
-        let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
-
-        if let JsonProtocol::HandleGetDhtMeta(msg) = res {
-            memory_worker_1
-                .receive(
-                    JsonProtocol::HandleGetDhtMetaResult(DhtMetaData {
-                        msg_id: msg.msg_id.clone(),
-                        dna_address: msg.dna_address.clone(),
-                        agent_id: msg.from_agent_id.clone(),
-                        from_agent_id: AGENT_ID_1.to_string(),
-                        address: msg.address.clone(),
-                        attribute: msg.attribute.clone(),
-                        content: json!(format!("meta-data-for: {}", msg.address)),
-                    })
-                    .into(),
-                )
-                .unwrap();
-        } else {
-            println!("Did not expect to receive: {:?}", res);
-            panic!("bad msg");
-        }
-
-        memory_worker_2.tick().unwrap();
-
-        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
-
-        if let JsonProtocol::GetDhtMetaResult(msg) = res {
-            assert_eq!(
-                "\"meta-data-for: hello\"".to_string(),
-                msg.content.to_string()
-            );
-        } else {
-            println!("Did not expect to receive: {:?}", res);
-            panic!("bad msg");
-        }
-
-        // -- dht meta publish / store -- //
-
-        memory_worker_2
-            .receive(
-                JsonProtocol::PublishDhtMeta(DhtMetaData {
-                    msg_id: "yada".to_string(),
-                    dna_address: example_dna_address(),
-                    agent_id: AGENT_ID_2.to_string(),
-                    from_agent_id: AGENT_ID_1.to_string(),
-                    address: "hello".to_string(),
-                    attribute: "link:test".to_string(),
-                    content: json!("test-data"),
-                })
-                .into(),
-            )
-            .unwrap();
-
-        memory_worker_1.tick().unwrap();
-        memory_worker_2.tick().unwrap();
-
-        let res1 = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
-        let res2 = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
-
-        assert_eq!(res1, res2);
-
-        if let JsonProtocol::HandleStoreDhtMeta(msg) = res1 {
-            memory_worker_1
-                .receive(
-                    JsonProtocol::SuccessResult(SuccessResultData {
-                        msg_id: msg.msg_id.clone(),
-                        dna_address: msg.dna_address.clone(),
-                        to_agent_id: msg.agent_id.clone(),
-                        success_info: json!("signature here"),
-                    })
-                    .into(),
-                )
-                .unwrap();
-        } else {
-            println!("Did not expect to receive: {:?}", res1);
-            panic!("bad msg");
-        }
-
-        memory_worker_2.tick().unwrap();
-        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
-
-        if let JsonProtocol::SuccessResult(msg) = res {
-            assert_eq!("\"signature here\"", &msg.success_info.to_string())
-        } else {
-            println!("Did not expect to receive: {:?}", res);
-            panic!("bad msg");
-        }
-
-        // cleanup
-        memory_worker_1.stop().unwrap();
-        memory_worker_2.stop().unwrap();
     }
 }

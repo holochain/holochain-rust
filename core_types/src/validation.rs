@@ -2,15 +2,15 @@
 //! of data that is used for validation of chain modifying
 //! agent actions between Holochain and Zomes.
 
-extern crate serde_json;
 use crate::{
-    chain_header::ChainHeader, entry::Entry, error::HolochainError, hash::HashString,
+    cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
     json::JsonString,
 };
+use chain_header::test_chain_header;
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson, Default)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub struct ValidationPackage {
-    pub chain_header: Option<ChainHeader>,
+    pub chain_header: ChainHeader,
     pub source_chain_entries: Option<Vec<Entry>>,
     pub source_chain_headers: Option<Vec<ChainHeader>>,
     pub custom: Option<String>,
@@ -19,7 +19,7 @@ pub struct ValidationPackage {
 impl ValidationPackage {
     pub fn only_header(header: ChainHeader) -> ValidationPackage {
         ValidationPackage {
-            chain_header: Some(header),
+            chain_header: header,
             source_chain_entries: None,
             source_chain_headers: None,
             custom: None,
@@ -29,13 +29,13 @@ impl ValidationPackage {
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub enum ValidationPackageDefinition {
-    /// sending only the entry
+    /// send the header for the entry, along with the entry
     Entry,
-    /// sending all (public?) source chain entries
+    /// sending all public source chain entries
     ChainEntries,
     /// sending all source chain headers
     ChainHeaders,
-    /// sending the whole chain, entries and headers
+    /// sending the whole chain: public entries and all headers
     ChainFull,
     /// sending something custom
     Custom(String),
@@ -44,7 +44,7 @@ pub enum ValidationPackageDefinition {
 /// This structs carries information contextual for the process
 /// of validating an entry of link and is passed in to the according
 /// callbacks.
-#[derive(Clone, Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ValidationData {
     /// The validation package is data from the entry's/link's
     /// source agent that is needed to determine the validity
@@ -54,13 +54,38 @@ pub struct ValidationData {
     /// callbacks in the [entry!](macro.entry.html) and
     /// [link!](macro.link.html) macros.
     pub package: ValidationPackage,
-    /// The list of authors that have signed this entry.
-    pub sources: Vec<HashString>,
     /// In which lifecycle of the entry creation are we running
     /// this validation callback?
     pub lifecycle: EntryLifecycle,
     /// Does the entry get committed, modified or deleted?
     pub action: EntryAction,
+}
+
+impl Default for ValidationData {
+    fn default() -> Self {
+        Self {
+            package: ValidationPackage {
+                chain_header: test_chain_header(),
+                source_chain_entries: None,
+                source_chain_headers: None,
+                custom: None,
+            },
+            lifecycle: EntryLifecycle::default(),
+            action: EntryAction::default(),
+        }
+    }
+}
+
+impl ValidationData {
+    /// The list of authors that have signed this entry.
+    pub fn sources(&self) -> Vec<Address> {
+        self.package
+            .chain_header
+            .provenances()
+            .iter()
+            .map(|(addr, _)| addr.clone())
+            .collect()
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]

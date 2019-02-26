@@ -10,10 +10,11 @@ extern crate boolinator;
 extern crate holochain_core_types_derive;
 
 use boolinator::Boolinator;
-use hdk::holochain_core_types::dna::entry_types::Sharing;
-use hdk::holochain_core_types::json::JsonString;
-use hdk::holochain_core_types::json::RawString;
-use hdk::holochain_core_types::error::HolochainError;
+use hdk::holochain_core_types::{
+    dna::entry_types::Sharing,
+    error::HolochainError,
+    json::{JsonString, RawString},
+};
 
 #[derive(Serialize, Deserialize, DefaultJson, Debug)]
 struct TestEntryType {
@@ -31,7 +32,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |s: RawString, _ctx: hdk::ValidationData| {
+            validation: |s: RawString, _validation_data: hdk::ValidationData| {
                 (String::from(s) != String::from("FAIL"))
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             }
@@ -46,7 +47,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
+            validation: |entry: TestEntryType, _validation_data: hdk::ValidationData| {
                 (entry.stuff != "FAIL")
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             }
@@ -61,7 +62,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainEntries
             },
 
-            validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
+            validation: |entry: TestEntryType, _validation_data: hdk::ValidationData| {
                 (entry.stuff != "FAIL")
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             }
@@ -76,7 +77,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainHeaders
             },
 
-            validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
+            validation: |entry: TestEntryType, _validation_data: hdk::ValidationData| {
                 (entry.stuff != "FAIL")
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             }
@@ -91,7 +92,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
+            validation: |entry: TestEntryType, _validation_data: hdk::ValidationData| {
                 (entry.stuff != "FAIL")
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             }
@@ -102,7 +103,17 @@ define_zome! {
         Ok(())
     }
 
-    functions: {
+    functions: [
+        test_fn: {
+            inputs: | |,
+            outputs: | x:u32 |,
+            handler: test_handler
+        }
+    ]
 
-    }
+    traits: {}
+}
+
+fn test_handler() -> u32 {
+    0
 }

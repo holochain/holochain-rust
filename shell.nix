@@ -4,19 +4,10 @@ let
     overlays = [ moz_overlay ];
   };
 
-  date = "2018-12-26";
+  date = "2019-01-24";
   wasmTarget = "wasm32-unknown-unknown";
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
-
-  nodejs-8_13 = nixpkgs.nodejs-8_x.overrideAttrs(oldAttrs: rec {
-    name = "nodejs-${version}";
-    version = "8.13.0";
-    src = nixpkgs.fetchurl {
-      url = "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
-      sha256 = "1qidcj4smxsz3pmamg3czgk6hlbw71yw537h2jfk7iinlds99a9a";
-    };
-  });
 
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
   ''
@@ -24,9 +15,11 @@ let
    rm -rf ~/.cargo/git;
   '';
 
-  hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
+  hc-install-node-conductor = nixpkgs.writeShellScriptBin "hc-install-node-conductor"
   ''
-   . ./scripts/build_nodejs_container.sh;
+   export RUST_SODIUM_LIB_DIR=/nix/store/l1nbc3vgr37lswxny8pwhkq4m937y2g4-libsodium-1.0.16;
+   export RUST_SODIUM_SHARED=1;
+   . ./scripts/build_nodejs_conductor.sh;
   '';
 
   hc-install-tarpaulin = nixpkgs.writeShellScriptBin "hc-install-tarpaulin"
@@ -38,12 +31,12 @@ let
   '';
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
 
-  hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc --release && cargo install -f --path cmd";
-  hc-install-container = nixpkgs.writeShellScriptBin "hc-install-container" "cargo build -p holochain_container --release && cargo install -f --path container";
+  hc-install-cli = nixpkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
+  hc-install-conductor = nixpkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain --release && cargo install -f --path conductor";
 
-  hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
+  hc-test-cli = nixpkgs.writeShellScriptBin "hc-test-cli" "cd cli && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
-  hc-test-node-container = nixpkgs.writeShellScriptBin "hc-test-node-container" "cd nodejs_container && npm test";
+  hc-test-node-conductor = nixpkgs.writeShellScriptBin "hc-test-node-conductor" "cd nodejs_conductor && npm test";
 
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
@@ -70,8 +63,8 @@ let
   wasm-paths = [
    "hdk-rust/wasm-test"
    "wasm_utils/wasm-test/integration-test"
-   "container_api/wasm-test"
-   "container_api/test-bridge-caller"
+   "conductor_api/wasm-test"
+   "conductor_api/test-bridge-caller"
    "core/src/nucleus/actions/wasm-test"
   ];
   hc-build-wasm = nixpkgs.writeShellScriptBin "hc-build-wasm"
@@ -81,7 +74,7 @@ let
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
    hc-build-wasm
-   cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
+   HC_SIMPLE_LOGGER_MUTE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
   '';
 
 in
@@ -99,7 +92,7 @@ stdenv.mkDerivation rec {
     pkgconfig
     rust-build
 
-    nodejs-8_13
+    nodejs-8_x
     yarn
 
     hc-flush-cargo-registry
@@ -110,18 +103,19 @@ stdenv.mkDerivation rec {
     hc-install-tarpaulin
     hc-tarpaulin
 
-    hc-install-cmd
-    hc-install-container
-    hc-install-node-container
+    hc-install-cli
+    hc-install-conductor
+    hc-install-node-conductor
 
-    hc-test-cmd
+    hc-test-cli
     hc-test-app-spec
-    hc-test-node-container
+    hc-test-node-conductor
 
     hc-fmt
     hc-fmt-check
 
     zeromq4
+    libsodium
 
     # dev tooling
     git
@@ -151,8 +145,8 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   shellHook = ''
-   # needed for install cmd and tarpaulin
+   # needed for install cli and tarpaulin
    export PATH=$PATH:~/.cargo/bin;
-   export HC_TARGET_PREFIX=/tmp/holochain/
+   export HC_TARGET_PREFIX=~/nix-holochain/
   '';
 }

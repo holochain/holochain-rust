@@ -5,39 +5,32 @@
 
 use crate::{
     cas::content::{Address, AddressableContent, Content},
-    eav::EntityAttributeValue,
+    eav::EntityAttributeValueIndex,
     error::error::{HcResult, HolochainError},
     hash::HashString,
     json::JsonString,
 };
+use eav::Attribute;
 use std::{convert::TryInto, str::FromStr};
 
-// @TODO are these the correct key names?
-// @see https://github.com/holochain/holochain-rust/issues/143
-/// The [EAV](../eav/index.html) attribute name utilized for storing metadata about the lifecycle related status
-/// of an entry
-pub const STATUS_NAME: &str = "crud-status";
-/// The [EAV](../eav/index.html) attribute name utilized for storing metadata that indicates the address of an updated version of a given entry
-pub const LINK_NAME: &str = "crud-link";
-
-/// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an entry address as the Entity, [STATUS_NAME](constant.STATUS_NAME.html) as the attribute
+/// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an entry address as the Entity, [CrudStatus](../eav/Attribute.html) as the attribute
 /// and CrudStatus as the value.
 /// This will come to represent the lifecycle status of an entry, when it gets stored in an [EAV Storage](../eav/trait.EntityAttributeValueStorage.html)
 pub fn create_crud_status_eav(
     address: &Address,
     status: CrudStatus,
-) -> HcResult<EntityAttributeValue> {
-    EntityAttributeValue::new(
+) -> HcResult<EntityAttributeValueIndex> {
+    EntityAttributeValueIndex::new(
         address,
-        &STATUS_NAME.to_string(),
+        &Attribute::CrudStatus,
         &HashString::from(String::from(status)),
     )
 }
 
-/// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an old entry address as the Entity, [LINK_NAME](constant.LINK_NAME.html) as the attribute
+/// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an old entry address as the Entity, [CrudLink](../eav/Attribute.html) as the attribute
 /// and a new entry address as the value
-pub fn create_crud_link_eav(from: &Address, to: &Address) -> HcResult<EntityAttributeValue> {
-    EntityAttributeValue::new(from, &LINK_NAME.to_string(), to)
+pub fn create_crud_link_eav(from: &Address, to: &Address) -> HcResult<EntityAttributeValueIndex> {
+    EntityAttributeValueIndex::new(from, &Attribute::CrudLink, to)
 }
 
 /// the CRUD status of a Pair is stored using an EAV, NOT in the entry itself
@@ -100,7 +93,7 @@ mod tests {
             },
             storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
         },
-        eav::eav_round_trip_test_runner,
+        eav::{eav_round_trip_test_runner, Attribute},
         json::{JsonString, RawString},
     };
 
@@ -110,7 +103,7 @@ mod tests {
             RawString::from("example"),
         ))
         .unwrap();
-        let attribute = String::from("favourite-badge");
+        let attribute = Attribute::LinkTag("favourite-badge".into());
         let value_content: Content =
             CrudStatus::try_from_content(&JsonString::from(CrudStatus::Rejected))
                 .unwrap()

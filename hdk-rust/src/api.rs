@@ -10,7 +10,8 @@ use holochain_core_types::{
     cas::content::Address,
     dna::capabilities::CapabilityCall,
     entry::Entry,
-    error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
+    error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
+    time::Timeout,
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
@@ -21,18 +22,21 @@ use holochain_wasm_utils::{
         },
         get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
         link_entries::LinkEntriesArgs,
-        send::SendArgs,
-        QueryArgs, QueryArgsNames, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
+        send::{SendArgs, SendOptions},
+        QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
         hash::HashString,
         json::{JsonString, RawString},
     },
-    memory_allocation::*,
-    memory_serialization::*,
+    memory::ribosome::load_ribosome_encoded_json,
 };
+use init_globals::hc_init_globals;
 use serde_json;
-use std::{convert::TryInto, os::raw::c_char};
+use std::{
+    convert::{TryFrom, TryInto},
+    time::Duration,
+};
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -182,42 +186,88 @@ pub enum BundleOnClose {
 // API FUNCTIONS
 //--------------------------------------------------------------------------------------------------
 
-/// Prints a string through the stdout of the running service, and also
-/// writes that string to the logger in the execution context
-/// # Examples
-/// ```rust
-/// # #[macro_use]
-/// # extern crate hdk;
-/// # use hdk::error::ZomeApiResult;
-///
-/// # fn main() {
-/// pub fn handle_some_function(content: String) -> ZomeApiResult<()> {
-///     // ...
-///     hdk::debug("write a message to the logs");
-///     // ...
-///     Ok(())
-/// }
-///
-/// # }
-/// ```
-pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
-    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+pub enum Dispatch {
+    Debug,
+    InitGlobals,
+    Call,
+    CommitEntry,
+    GetEntry,
+    GetLinks,
+    LinkEntries,
+    EntryAddress,
+    UpdateEntry,
+    RemoveEntry,
+    Query,
+    Send,
+    Sleep,
+    RemoveLink,
+}
 
-    let allocation_of_input = store_as_json(&mut mem_stack, msg)?;
+impl Dispatch {
+    pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(
+        &self,
+        input: I,
+    ) -> ZomeApiResult<O> {
+        let mut mem_stack = match unsafe { G_MEM_STACK } {
+            Some(mem_stack) => mem_stack,
+            None => {
+                return Err(ZomeApiError::Internal(
+                    "debug failed to load mem_stack".to_string(),
+                ));
+            }
+        };
 
-    unsafe {
-        hc_debug(allocation_of_input.encode());
+        let wasm_allocation = mem_stack.write_json(input)?;
+
+        // Call Ribosome's commit_entry()
+        let encoded_input: RibosomeEncodingBits =
+            RibosomeEncodedAllocation::from(wasm_allocation).into();
+        let encoded_output: RibosomeEncodingBits = unsafe {
+            (match self {
+                Dispatch::Debug => hc_debug,
+                Dispatch::Call => hc_call,
+                Dispatch::CommitEntry => hc_commit_entry,
+                Dispatch::GetEntry => hc_get_entry,
+                Dispatch::GetLinks => hc_get_links,
+                Dispatch::LinkEntries => hc_link_entries,
+                Dispatch::InitGlobals => hc_init_globals,
+                Dispatch::EntryAddress => hc_entry_address,
+                Dispatch::UpdateEntry => hc_update_entry,
+                Dispatch::RemoveEntry => hc_remove_entry,
+                Dispatch::Query => hc_query,
+                Dispatch::Send => hc_send,
+                Dispatch::Sleep => hc_sleep,
+                Dispatch::RemoveLink => hc_remove_link,
+            })(encoded_input)
+        };
+
+        let result: ZomeApiInternalResult = match load_ribosome_encoded_json(encoded_output) {
+            Ok(r) => r,
+            Err(e) => {
+                mem_stack.deallocate(wasm_allocation)?;
+                return Err(e.into());
+            }
+        };
+
+        // Free result & input allocations
+        mem_stack.deallocate(wasm_allocation)?;
+
+        // Done
+        if result.ok {
+            match JsonString::from(result.value).try_into() {
+                Ok(v) => Ok(v),
+                Err(_) => Err(ZomeApiError::from(String::from(
+                    "Failed to deserialize return value",
+                ))),
+            }
+        } else {
+            Err(ZomeApiError::from(result.error))
+        }
     }
-
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("should be able to deallocate input that has been allocated on memory stack");
-
-    Ok(())
 }
 
 /// Call an exposed function from another zome or another (bridged) instance running
-/// on the same agent in the same container.
+/// on the same agent in the same conductor.
 /// Arguments for the called function are passed as `JsonString`.
 /// Returns the value that's returned by the given function as a json str.
 /// # Examples
@@ -226,6 +276,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///
 /// This first one, is the one that is called into, with the Zome name `summer`.
 /// ```rust
+/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate serde;
@@ -234,26 +285,39 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # use hdk::holochain_core_types::json::JsonString;
+/// # use hdk::holochain_core_types::error::HolochainError;
+/// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
+/// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_call(_: u32) -> u32 { 0 }
+/// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: u32) -> u32 { 0 }
+/// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -269,14 +333,16 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         Ok(())
 ///     }
 ///
-///     functions: {
-///         main (Public) {
+///     functions: [
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
 ///                 outputs: |sum: JsonString|,
 ///                 handler: handle_sum
 ///             }
-///         }
+///     ]
+///
+///     traits: {
+///         hc_public [sum]
 ///     }
 /// }
 ///
@@ -301,26 +367,38 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::error::ZomeApiResult;
 /// # use std::convert::TryInto;
+/// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
+/// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_call(_: u32) -> u32 { 0 }
+/// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: u32) -> u32 { 0 }
+/// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -334,7 +412,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     hdk::call(hdk::THIS_INSTANCE, "summer", "main", "test_token", "sum", call_input.into())
+///     hdk::call(hdk::THIS_INSTANCE, "summer", "test_token", "sum", call_input.into())
 /// }
 ///
 /// define_zome! {
@@ -344,14 +422,16 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         Ok(())
 ///     }
 ///
-///     functions: {
-///         main (Public) {
+///     functions: [
 ///             check_sum: {
 ///                 inputs: |num1: u32, num2: u32|,
 ///                 outputs: |sum: ZomeApiResult<JsonString>|,
 ///                 handler: handle_check_sum
 ///             }
-///         }
+///     ]
+///
+///     traits: {
+///         hc_public [sum]
 ///     }
 /// }
 ///
@@ -360,47 +440,42 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 pub fn call<S: Into<String>>(
     instance_handle: S,
     zome_name: S,
-    cap_name: S, //temporary...
     cap_token: S,
     fn_name: S,
     fn_args: JsonString,
 ) -> ZomeApiResult<JsonString> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
+    Dispatch::Call.with_input(ZomeFnCallArgs {
+        instance_handle: instance_handle.into(),
+        zome_name: zome_name.into(),
+        cap: Some(CapabilityCall::new(Address::from(cap_token.into()), None)),
+        fn_name: fn_name.into(),
+        fn_args: String::from(fn_args),
+    })
+}
 
-    // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(
-        &mut mem_stack,
-        ZomeFnCallArgs {
-            instance_handle: instance_handle.into(),
-            zome_name: zome_name.into(),
-            cap: Some(CapabilityCall::new(
-                cap_name.into(),
-                Address::from(cap_token.into()),
-                None,
-            )),
-            fn_name: fn_name.into(),
-            fn_args: String::from(fn_args),
-        },
-    )?;
-
-    // Call WASMI-able commit
-    let encoded_allocation_of_result: u32 = unsafe { hc_call(allocation_of_input.encode() as u32) };
-    // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result)?;
-
-    // Free result & input allocations.
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-    // Done
-    if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
-    } else {
-        Err(ZomeApiError::from(result.error))
-    }
+/// Prints a string through the stdout of the running service, and also
+/// writes that string to the logger in the execution context
+/// # Examples
+/// ```rust
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # use hdk::error::ZomeApiResult;
+///
+/// # fn main() {
+/// pub fn handle_some_function(content: String) -> ZomeApiResult<()> {
+///     // ...
+///     hdk::debug("write a message to the logs");
+///     // ...
+///     Ok(())
+/// }
+///
+/// # }
+/// ```
+pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
+    let _: ZomeApiResult<()> = Dispatch::Debug.with_input(msg);
+    // internally returns RibosomeEncodedValue::Success which is a zero length allocation
+    // return Ok(()) unconditionally instead of the "error" from success
+    Ok(())
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
@@ -423,9 +498,10 @@ pub fn call<S: Into<String>>(
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_core_types::cas::content::Address;
+/// # use holochain_core_types::error::RibosomeEncodingBits;
 ///
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 ///
 /// # fn main() {
 ///
@@ -451,31 +527,7 @@ pub fn call<S: Into<String>>(
 /// # }
 /// ```
 pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
-
-    let allocation_of_input = store_as_json(&mut mem_stack, entry)?;
-
-    // Call Ribosome's commit_entry()
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as u32);
-    }
-
-    // Deserialize complex result stored in wasm memory
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
-    // Free result & input allocations
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-    // Done
-    if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
-    } else {
-        Err(ZomeApiError::from(result.error))
-    }
+    Dispatch::CommitEntry.with_input(entry)
 }
 
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
@@ -517,7 +569,7 @@ pub fn get_entry(address: &Address) -> ZomeApiResult<Option<Entry>> {
 pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(
         address,
-        GetEntryOptions::new(StatusRequestKind::Initial, true, false, false),
+        GetEntryOptions::new(StatusRequestKind::Initial, true, false, Default::default()),
     )?;
     Ok(entry_result.latest())
 }
@@ -528,7 +580,7 @@ pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
 pub fn get_entry_history(address: &Address) -> ZomeApiResult<Option<EntryHistory>> {
     let entry_result = get_entry_result(
         address,
-        GetEntryOptions::new(StatusRequestKind::All, true, false, false),
+        GetEntryOptions::new(StatusRequestKind::All, true, false, Default::default()),
     )?;
     if !entry_result.found() {
         return Ok(None);
@@ -546,36 +598,10 @@ pub fn get_entry_result(
     address: &Address,
     options: GetEntryOptions,
 ) -> ZomeApiResult<GetEntryResult> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
-
-    let entry_args = GetEntryArgs {
+    Dispatch::GetEntry.with_input(GetEntryArgs {
         address: address.clone(),
         options,
-    };
-
-    // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, entry_args)?;
-
-    // Call WASMI-able get_entry
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_get_entry(allocation_of_input.encode() as u32);
-    }
-    // Deserialize complex result stored in memory
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
-    // Free result & input allocations
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-    // Done
-    if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
-    } else {
-        Err(ZomeApiError::from(result.error))
-    }
+    })
 }
 
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
@@ -625,7 +651,7 @@ pub fn get_entry_result(
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
-///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, header: false, sources: false })?;
+///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, headers: false, timeout: Default::default() })?;
 ///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
 ///     }
 ///
@@ -639,33 +665,73 @@ pub fn link_entries<S: Into<String>>(
     target: &Address,
     tag: S,
 ) -> Result<(), ZomeApiError> {
-    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+    Dispatch::LinkEntries.with_input(LinkEntriesArgs {
+        base: base.clone(),
+        target: target.clone(),
+        tag: tag.into(),
+    })
+}
 
-    // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(
-        &mut mem_stack,
-        LinkEntriesArgs {
-            base: base.clone(),
-            target: target.clone(),
-            tag: tag.into(),
-        },
-    )?;
-
-    let encoded_allocation_of_result: u32 =
-        unsafe { hc_link_entries(allocation_of_input.encode() as u32) };
-
-    // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
-    // Free result & input allocations
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-    // Done
-    if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
-    } else {
-        Err(ZomeApiError::from(result.error))
-    }
+/// Consumes three values, two of which are the addresses of entries, and one of which is a string that removes a
+/// relationship between them, called a `tag`. Later, lists of entries.
+/// # Examples
+/// ```rust
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
+/// # use holochain_core_types::entry::Entry;
+/// # use holochain_core_types::cas::content::Address;
+/// # use hdk::AGENT_ADDRESS;
+/// # use hdk::error::ZomeApiResult;
+/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;
+/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::StatusRequestKind;
+/// # fn main() {
+///
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// pub struct Post {
+///     content: String,
+///     date_created: String,
+/// }
+///
+/// pub fn handle_remove_link(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<()> {
+///
+///     let post_entry = Entry::App("post".into(), Post{
+///             content,
+///             date_created: "now".into(),
+///     }.into());
+///
+///     let address = hdk::commit_entry(&post_entry)?;
+///
+///     hdk::remove_link(
+///         &AGENT_ADDRESS,
+///         &address,
+///         "authored_posts",
+///     )?;
+///
+///
+///     Ok(())
+///
+/// }
+/// # }
+/// ```
+pub fn remove_link<S: Into<String>>(
+    base: &Address,
+    target: &Address,
+    tag: S,
+) -> Result<(), ZomeApiError> {
+    Dispatch::RemoveLink.with_input(LinkEntriesArgs {
+        base: base.clone(),
+        target: target.clone(),
+        tag: tag.into(),
+    })
 }
 
 /// NOT YET AVAILABLE
@@ -718,30 +784,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// # }
 /// ```
 pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
-    // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, entry)?;
-
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_entry_address(allocation_of_input.encode() as u32);
-    }
-
-    // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
-    // Free result & input allocations
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-    // Done
-    if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
-    } else {
-        Err(ZomeApiError::from(result.error))
-    }
+    Dispatch::EntryAddress.with_input(entry)
 }
 
 /// NOT YET AVAILABLE
@@ -765,35 +808,10 @@ pub fn verify_signature<S: Into<String>>(
 /// The updated entry will hold the previous entry's address in its header,
 /// which will be used by validation routes.
 pub fn update_entry(new_entry: Entry, address: &Address) -> ZomeApiResult<Address> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
-
-    let update_args = UpdateEntryArgs {
+    Dispatch::UpdateEntry.with_input(UpdateEntryArgs {
         new_entry,
         address: address.clone(),
-    };
-
-    // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, update_args)?;
-
-    // Call Ribosome
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_update_entry(allocation_of_input.encode() as u32);
-    }
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
-    // Free result & input allocations
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-    // Done
-    if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
-    } else {
-        Err(ZomeApiError::from(result.error))
-    }
+    })
 }
 
 /// NOT YET AVAILABLE
@@ -805,25 +823,7 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
 /// metadata, which will be used by validation routes.
 pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
-    // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, address.clone())?;
-
-    // Call WASMI-able get_entry
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_remove_entry(allocation_of_input.encode() as u32);
-    }
-    let res = check_for_ribosome_error(encoded_allocation_of_result);
-    // Free result & input allocations
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-    // Done
-    res
+    Dispatch::RemoveEntry.with_input(address.to_owned())
 }
 
 /// Consumes three values; the address of an entry get get links from (the base), the tag of the links
@@ -854,35 +854,11 @@ pub fn get_links_with_options<S: Into<String>>(
     tag: S,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
-    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
-    // Put args in struct and serialize into memory
-
-    let allocation_of_input = store_as_json(
-        &mut mem_stack,
-        GetLinksArgs {
-            entry_address: base.clone(),
-            tag: tag.into(),
-            options: options,
-        },
-    )?;
-
-    // Call Ribosome
-    let encoded_allocation_of_result: u32 =
-        unsafe { hc_get_links(allocation_of_input.encode() as u32) };
-
-    // Deserialize complex result stored in memory
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
-
-    // Free result & input allocations
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-
-    if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
-    } else {
-        Err(ZomeApiError::from(result.error))
-    }
+    Dispatch::GetLinks.with_input(GetLinksArgs {
+        entry_address: base.clone(),
+        tag: tag.into(),
+        options,
+    })
 }
 
 /// Helper function for get_links. Returns a vector with the default return results.
@@ -951,15 +927,21 @@ pub fn get_links_and_load<S: Into<String>>(
     Ok(entries)
 }
 
-/// Returns a list of entries from your local source chain, that match a given entry type name or names.
+/// Returns a list of entries from your local source chain that match a given entry type name or names.
 ///
-/// Each name may be a plain entry type name, or a "glob" pattern such as "prefix/*" (matches all
-/// entry types starting with "prefix/"), or "[!%]*e" (matches all non-system non-name-spaced entry
-/// types ending in "e").  All names and patterns are merged into a single efficient Regular
-/// Expression for scanning.
+/// Each name may be a plain entry type name, or a `"glob"` pattern.  All names and patterns are
+/// merged into a single efficient Regular Expression for scanning.
 ///
-/// Entry type name-spaces are supported by including "/" in your entry type names; use vec![], "",
-/// or "**" to match all names in all name-spaces, "*" to match all non-namespaced names.
+/// You can select many names with patterns such as `"boo*"` (match all entry types starting with
+/// `"boo"`), or `"[!%]*e"` (all non-system non-name-spaced entry types ending in `"e"`).
+///
+/// You can organize your entry types using simple name-spaces, by including `"/"` in your entry type
+/// names.  For example, if you have several entry types related to fizzing a widget, you might
+/// create entry types `"fizz/bar"`, `"fizz/baz"`, `"fizz/qux/foo"` and `"fizz/qux/boo"`.  Query for
+/// `"fizz/**"` to match them all.
+///
+/// Use vec![], `""`, or `"**"` to match all names in all name-spaces.  Matching `"*"` will match only
+/// non-namespaced names.
 ///
 /// entry_type_names: Specify type of entry(s) to retrieve, as a String or Vec<String> of 0 or more names, converted into the QueryArgNames type
 /// start: First entry in result list to retrieve
@@ -984,40 +966,59 @@ pub fn get_links_and_load<S: Into<String>>(
 /// }
 /// # }
 /// ```
+///
+/// With hdk::query_result, you can specify a package of QueryArgsOptions, and get a
+/// variety of return values, such a vector of Headers as a `Vec<ChainHeader>`:
+///
+/// ```
+/// // pub fn get_post_headers() -> ZomeApiResult<QueryResult> {
+/// //    hdk::query_result("post".into(), QueryArgsOptions{ headers: true, ..Default::default()})
+/// // }
+/// ```
+///
+/// The types of the results available depend on whether `headers` and/or `entries` is set:
+///
+/// ```
+/// //                                                     // headers  entries
+/// // pub enum QueryResult {                              // -------  -------
+/// //     Addresses(Vec<Address>),                        // false    false
+/// //     Headers(Vec<ChainHeader>),                      // true     false
+/// //     Entries(Vec<(Address, Entry)>),                 // false    true
+/// //     HeadersWithEntries(Vec<(ChainHeader, Entry)>),  // true     true
+/// // }
+/// ```
 pub fn query(
     entry_type_names: QueryArgsNames,
-    start: u32,
-    limit: u32,
-) -> ZomeApiResult<QueryResult> {
-    let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
-
-    // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(
-        &mut mem_stack,
-        QueryArgs {
-            entry_type_names,
-            start,
-            limit,
+    start: usize,
+    limit: usize,
+) -> ZomeApiResult<Vec<Address>> {
+    // The hdk::query API always returns a simple Vec<Address>
+    match query_result(
+        entry_type_names,
+        QueryArgsOptions {
+            start: start,
+            limit: limit,
+            headers: false,
+            entries: false,
         },
-    )?;
-
-    let encoded_allocation_of_result: u32 =
-        unsafe { hc_query(allocation_of_input.encode() as u32) };
-
-    // Deserialize complex result stored in memory
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
-    // Free result & input allocations
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-    // Done
-    if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
-    } else {
-        Err(ZomeApiError::from(result.error))
+    ) {
+        Ok(result) => match result {
+            QueryResult::Addresses(addresses) => Ok(addresses),
+            _ => return Err(ZomeApiError::FunctionNotImplemented), // should never occur
+        },
+        Err(e) => Err(e),
     }
 }
 
+pub fn query_result(
+    entry_type_names: QueryArgsNames,
+    options: QueryArgsOptions,
+) -> ZomeApiResult<QueryResult> {
+    Dispatch::Query.with_input(QueryArgs {
+        entry_type_names,
+        options,
+    })
+}
 /// Sends a node-to-node message to the given agent, specified by their address.
 /// Addresses of agents can be accessed using [hdk::AGENT_ADDRESS](struct.AGENT_ADDRESS.html).
 /// This works in conjunction with the `receive` callback that has to be defined in the
@@ -1027,6 +1028,7 @@ pub fn query(
 /// by the `receive` callback of the other node.
 /// # Examples
 /// ```rust
+/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
@@ -1037,32 +1039,46 @@ pub fn query(
 /// # extern crate serde_json;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::cas::content::Address;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::error::RibosomeEncodingBits;
+/// # use holochain_core_types::error::RibosomeEncodedValue;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_call(_: u32) -> u32 { 0 }
+/// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: u32) -> u32 { 0 }
+/// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
 ///     // because the function signature of hdk::send is the same as the
 ///     // signature of handle_send_message we can just directly return its' result
-///     hdk::send(to_agent, message)
+///     hdk::send(to_agent, message, 60000.into())
 /// }
 ///
 /// define_zome! {
@@ -1071,42 +1087,32 @@ pub fn query(
 ///    genesis: || { Ok(()) }
 ///
 ///    receive: |payload| {
-///        // simply pass back the received value, appended to a modifier
-///        format!("Received: {}", payload)
+///        // if you want to serialize data as json to pass, use the json! serde macro
+///        json!({
+///            "key": "value"
+///        }).to_string()
 ///    }
 ///
-///    functions: {
-///        main (Public) {
+///    functions: [
 ///            send_message: {
 ///                inputs: |to_agent: Address, message: String|,
 ///                outputs: |response: ZomeApiResult<String>|,
 ///                handler: handle_send_message
 ///            }
-///        }
-///    }
+///    ]
+///
+///     traits: {
+///         hc_public [send_message]
+///     }
 ///}
 /// # }
 /// ```
-pub fn send(to_agent: Address, payload: String) -> ZomeApiResult<String> {
-    let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
-
-    // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, SendArgs { to_agent, payload })?;
-
-    let encoded_allocation_of_result: u32 = unsafe { hc_send(allocation_of_input.encode() as u32) };
-
-    // Deserialize complex result stored in memory
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
-    // Free result & input allocations
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-    // Done
-    if result.ok {
-        Ok(String::from(result.value))
-    } else {
-        Err(ZomeApiError::from(result.error))
-    }
+pub fn send(to_agent: Address, payload: String, timeout: Timeout) -> ZomeApiResult<String> {
+    Dispatch::Send.with_input(SendArgs {
+        to_agent,
+        payload,
+        options: SendOptions(timeout),
+    })
 }
 
 /// NOT YET AVAILABLE
@@ -1119,30 +1125,27 @@ pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-//--------------------------------------------------------------------------------------------------
-// Helpers
-//--------------------------------------------------------------------------------------------------
-
-#[doc(hidden)]
-pub fn check_for_ribosome_error(encoded_allocation: u32) -> ZomeApiResult<()> {
-    // Check for error from Ribosome
-    let rib_result = decode_encoded_allocation(encoded_allocation);
-    match rib_result {
-        // Expecting a 'Success' return code
-        Err(ret_code) => match ret_code {
-            RibosomeReturnCode::Success => Ok(()),
-            RibosomeReturnCode::Failure(err_code) => {
-                Err(ZomeApiError::Internal(err_code.to_string()))
-            }
-        },
-        // If we have an allocation, than it should be a CoreError
-        Ok(allocation) => {
-            let maybe_err: Result<CoreError, HolochainError> =
-                load_json_from_raw(allocation.offset() as *mut c_char);
-            match maybe_err {
-                Err(hc_err) => Err(ZomeApiError::Internal(hc_err.to_string())),
-                Ok(core_err) => Err(ZomeApiError::Internal(core_err.to_string())),
-            }
-        }
-    }
+/// Lets the DNA runtime sleep for the given duration.
+/// # Examples
+/// ```rust
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # use hdk::error::ZomeApiResult;
+/// # use std::time::Duration;
+///
+/// # fn main() {
+/// pub fn handle_some_function(content: String) -> ZomeApiResult<()> {
+///     // ...
+///     hdk::sleep(Duration::from_millis(100));
+///     // ...
+///     Ok(())
+/// }
+///
+/// # }
+/// ```
+pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
+    let _: ZomeApiResult<()> = Dispatch::Sleep.with_input(JsonString::from(duration.as_nanos()));
+    // internally returns RibosomeEncodedValue::Success which is a zero length allocation
+    // return Ok(()) unconditionally instead of the "error" from success
+    Ok(())
 }

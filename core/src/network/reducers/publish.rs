@@ -11,32 +11,36 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
+    crud_status::CrudStatus,
+    eav::Attribute,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net_connection::json_protocol::{DhtData, DhtMetaData, JsonProtocol};
+use holochain_net_connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
 use std::sync::Arc;
 
+/// Send to network a PublishDhtData message
 fn publish_entry(
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
-    //let entry_with_header = util::EntryWithHeader::from((entry.clone(), header.clone()));
-
     send(
         network_state,
-        JsonProtocol::PublishDhtData(DhtData {
-            msg_id: "?".to_string(),
+        JsonProtocol::PublishEntry(EntryData {
             dna_address: network_state.dna_address.clone().unwrap(),
-            agent_id: network_state.agent_id.clone().unwrap(),
-            address: entry_with_header.entry.address().to_string(),
-            content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
-                .unwrap(),
+            provider_agent_id: network_state.agent_id.clone().unwrap(),
+            entry_address: entry_with_header.entry.address().clone(),
+            entry_content: serde_json::from_str(
+                &serde_json::to_string(&entry_with_header).unwrap(),
+            )
+            .unwrap(),
         }),
     )
 }
 
+/// Send to network:
+///  - a PublishDhtMeta message for the crud-status
+///  - a PublishDhtMeta message for the crud-link
 fn publish_crud_meta(
     network_state: &mut NetworkState,
     entry_address: Address,
@@ -46,14 +50,14 @@ fn publish_crud_meta(
     // publish crud-status
     send(
         network_state,
-        JsonProtocol::PublishDhtMeta(DhtMetaData {
-            msg_id: "?".to_string(),
+        JsonProtocol::PublishMeta(DhtMetaData {
             dna_address: network_state.dna_address.clone().unwrap(),
-            agent_id: network_state.agent_id.clone().unwrap(),
-            from_agent_id: network_state.agent_id.clone().unwrap(),
-            address: entry_address.to_string(),
-            attribute: STATUS_NAME.to_string(),
-            content: serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
+            provider_agent_id: network_state.agent_id.clone().unwrap(),
+            entry_address: entry_address.clone(),
+            attribute: Attribute::CrudStatus.to_string(),
+            content_list: vec![
+                serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
+            ],
         }),
     )?;
 
@@ -63,27 +67,29 @@ fn publish_crud_meta(
     }
     send(
         network_state,
-        JsonProtocol::PublishDhtMeta(DhtMetaData {
-            msg_id: "?".to_string(),
+        JsonProtocol::PublishMeta(DhtMetaData {
             dna_address: network_state.dna_address.clone().unwrap(),
-            agent_id: network_state.agent_id.clone().unwrap(),
-            from_agent_id: network_state.agent_id.clone().unwrap(),
-            address: entry_address.to_string(),
-            attribute: LINK_NAME.to_string(),
-            content: serde_json::from_str(&serde_json::to_string(&crud_link.unwrap()).unwrap())
-                .unwrap(),
+            provider_agent_id: network_state.agent_id.clone().unwrap(),
+            entry_address: entry_address.clone(),
+            attribute: Attribute::CrudLink.to_string(),
+            content_list: vec![serde_json::from_str(
+                &serde_json::to_string(&crud_link.unwrap()).unwrap(),
+            )
+            .unwrap()],
         }),
     )?;
     Ok(())
 }
 
+/// Send to network a PublishMeta message holding a link metadata to `entry_with_header`
 fn publish_link_meta(
     context: &Arc<Context>,
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
-    let link_add_entry = match entry_with_header.entry.clone() {
-        Entry::LinkAdd(link_add_entry) => link_add_entry,
+    let (link_type, link_attribute) = match entry_with_header.entry.clone() {
+        Entry::LinkAdd(link_add_entry) => (link_add_entry, Attribute::Link),
+        Entry::LinkRemove(link_remove) => (link_remove, Attribute::LinkRemove),
         _ => {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Received bad entry type. Expected Entry::LinkAdd received {:?}",
@@ -91,7 +97,7 @@ fn publish_link_meta(
             )));
         }
     };
-    let link = link_add_entry.link().clone();
+    let link = link_type.link().clone();
 
     context.log(format!(
         "debug/reduce/link_meta: Publishing link meta for link: {:?}",
@@ -100,15 +106,15 @@ fn publish_link_meta(
 
     send(
         network_state,
-        JsonProtocol::PublishDhtMeta(DhtMetaData {
-            msg_id: "?".to_string(),
+        JsonProtocol::PublishMeta(DhtMetaData {
             dna_address: network_state.dna_address.clone().unwrap(),
-            agent_id: network_state.agent_id.clone().unwrap(),
-            from_agent_id: network_state.agent_id.clone().unwrap(),
-            address: link.base().to_string(),
-            attribute: String::from("link"),
-            content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
-                .unwrap(),
+            provider_agent_id: network_state.agent_id.clone().unwrap(),
+            entry_address: link.base().clone(),
+            attribute: link_attribute.to_string(),
+            content_list: vec![serde_json::from_str(
+                &serde_json::to_string(&entry_with_header).unwrap(),
+            )
+            .unwrap()],
         }),
     )
 }
@@ -141,6 +147,8 @@ fn reduce_publish_inner(
             )
         }),
         EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
+            .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
+        EntryType::LinkRemove => publish_entry(network_state, &entry_with_header)
             .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
         EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
             publish_crud_meta(

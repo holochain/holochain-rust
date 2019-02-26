@@ -2,7 +2,6 @@ use crate::{
     network::actions::get_links::get_links,
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
-use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksStatusRequestKind,
 };
@@ -10,16 +9,17 @@ use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::GetLinks function code
-/// args: [0] encoded MemoryAllocation as u32
+/// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetLinksArgs
-/// Returns an HcApiReturnCode as I32
+/// Returns an HcApiReturnCode as I64
 pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetLinksArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         Err(_) => {
-            runtime.context.log(format!(
+            zome_call_data.context.log(format!(
                 "err/zome: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
                 args_str
             ));
@@ -28,21 +28,26 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     };
 
     if input.options.status_request != LinksStatusRequestKind::Live {
-        runtime
+        zome_call_data
             .context
             .log("get links status request other than Live not implemented!");
         return ribosome_error_code!(Unspecified);
     }
 
     if input.options.sources {
-        runtime
+        zome_call_data
             .context
             .log("get links retrieve sources not implemented!");
         return ribosome_error_code!(Unspecified);
     }
 
     // Get links from DHT
-    let maybe_links = block_on(get_links(&runtime.context, &input.entry_address, input.tag));
+    let maybe_links = zome_call_data.context.block_on(get_links(
+        zome_call_data.context.clone(),
+        input.entry_address,
+        input.tag,
+        input.options.timeout,
+    ));
 
     runtime.store_result(match maybe_links {
         Ok(links) => Ok(GetLinksResult::new(links)),
@@ -52,8 +57,7 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-    extern crate wabt;
+    use test_utils;
 
     use crate::{
         agent::actions::commit::commit_entry,
@@ -67,14 +71,13 @@ pub mod tests {
             tests::*,
         },
     };
-    use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::Address,
         entry::{entry_type::test_app_entry_type, Entry},
         json::JsonString,
         link::Link,
     };
-    use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksOptions};
+    use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use serde_json;
 
     /// dummy link_entries args from standard test entry
@@ -82,7 +85,7 @@ pub mod tests {
         let args = GetLinksArgs {
             entry_address: base.clone(),
             tag: String::from(tag),
-            options: GetLinksOptions::default(),
+            options: Default::default(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")
@@ -108,7 +111,8 @@ pub mod tests {
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
             let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
-            let address = block_on(commit_entry(entry, None, &initialized_context))
+            let address = initialized_context
+                .block_on(commit_entry(entry, None, &initialized_context))
                 .expect("Could not commit entry for testing");
             entry_addresses.push(address);
         }
@@ -116,8 +120,12 @@ pub mod tests {
         let link1 = Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag");
         let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag");
 
-        assert!(block_on(add_link(&link1, &initialized_context)).is_ok());
-        assert!(block_on(add_link(&link2, &initialized_context)).is_ok());
+        assert!(initialized_context
+            .block_on(add_link(&link1, &initialized_context))
+            .is_ok());
+        assert!(initialized_context
+            .block_on(add_link(&link2, &initialized_context))
+            .is_ok());
 
         let call_result = test_zome_api_function_call(
             &dna_name,

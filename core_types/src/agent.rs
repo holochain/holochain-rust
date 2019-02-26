@@ -39,7 +39,22 @@ impl KeyBuffer {
 
     /// generate a key buffer from raw bytes (no correction)
     pub fn with_raw(b: &[u8; KeyBuffer::KEY_LEN]) -> KeyBuffer {
-        KeyBuffer(b.clone())
+        KeyBuffer(*b)
+    }
+
+    /// generate a key buffer from raw bytes from two parts (no correction)
+    pub fn with_raw_parts(
+        a: &[u8; KeyBuffer::HALF_KEY_LEN],
+        b: &[u8; KeyBuffer::HALF_KEY_LEN],
+    ) -> KeyBuffer {
+        let mut buf: [u8; KeyBuffer::KEY_LEN] = [0; KeyBuffer::KEY_LEN];
+
+        buf[..KeyBuffer::HALF_KEY_LEN].clone_from_slice(&a[..KeyBuffer::HALF_KEY_LEN]);
+
+        buf[KeyBuffer::HALF_KEY_LEN..KeyBuffer::KEY_LEN]
+            .clone_from_slice(&b[..KeyBuffer::HALF_KEY_LEN]);
+
+        KeyBuffer(buf)
     }
 
     /// render a base64url encoded user identity with reed-solomon parity bytes
@@ -149,6 +164,35 @@ mod tests {
 
     pub fn test_identity_value() -> Content {
         format!("{{\"nick\":\"bob\",\"key\":\"{}\"}}", GOOD_ID).into()
+    }
+
+    #[test]
+    fn it_should_allow_buffer_with_pair() {
+        // let buf = test_base64_to_agent_id(GOOD_ID).unwrap().to_buffer();
+        let buf = KeyBuffer::with_raw_parts(
+            &[
+                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
+                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
+            ],
+            &[
+                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
+                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0,
+            ],
+        );
+        assert_eq!(
+            &[
+                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
+                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239
+            ],
+            buf.get_sig()
+        );
+        assert_eq!(
+            &[
+                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
+                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0
+            ],
+            buf.get_enc()
+        );
     }
 
     #[test]

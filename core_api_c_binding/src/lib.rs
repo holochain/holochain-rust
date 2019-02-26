@@ -1,11 +1,9 @@
-extern crate directories;
-extern crate holochain_cas_implementations;
-extern crate holochain_container_api;
+#![warn(unused_extern_crates)]
+extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_net;
 
-use holochain_container_api::{context_builder::ContextBuilder, Holochain};
+use holochain_conductor_api::{context_builder::ContextBuilder, Holochain};
 use holochain_core::context::Context;
 use holochain_core_types::{cas::content::Address, dna::Dna, error::HolochainError};
 
@@ -94,34 +92,23 @@ type CStrPtr = *mut c_char;
 pub unsafe extern "C" fn holochain_call(
     ptr: *mut Holochain,
     zome: CStrPtr,
-    capability: CStrPtr,
     token: CStrPtr,
     function: CStrPtr,
     parameters: CStrPtr,
 ) -> CStrPtr {
-    if ptr.is_null()
-        || zome.is_null()
-        || capability.is_null()
-        || function.is_null()
-        || parameters.is_null()
-    {
+    if ptr.is_null() || zome.is_null() || function.is_null() || parameters.is_null() {
         return std::ptr::null_mut();
     }
 
     let holochain = &mut *ptr;
     let zome = CStr::from_ptr(zome).to_string_lossy().into_owned();
-    let capability = CStr::from_ptr(capability).to_string_lossy().into_owned();
     let token = CStr::from_ptr(token).to_string_lossy().into_owned();
     let function = CStr::from_ptr(function).to_string_lossy().into_owned();
     let parameters = CStr::from_ptr(parameters).to_string_lossy().into_owned();
 
     match holochain.call(
         zome.as_str(),
-        Some(CapabilityCall::new(
-            capability.to_string(),
-            Address::from(token.as_str()),
-            None,
-        )),
+        Some(CapabilityCall::new(Address::from(token.as_str()), None)),
         function.as_str(),
         parameters.as_str(),
     ) {

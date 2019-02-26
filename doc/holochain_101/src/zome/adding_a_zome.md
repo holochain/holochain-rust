@@ -17,6 +17,7 @@ The output should be as follows
 ```shell
 cargo init --lib --vcs none
 Created library package
+Generated new rust Zome at "zomes/your_zome_name"
 ```
 
 Note that in the case of a Rust Zome, which is the only language for a Zome we can generate at the moment, it will rely internally on Rust related commands (`cargo init`), meaning that Rust (and its package manager, cargo) must already ALSO be installed for this command to work successfully.
@@ -29,7 +30,7 @@ A Rust based Zome folder looks something like this:
 - code
     - src
         - lib.rs
-    - .build
+    - .hcbuild
     - Cargo.toml
 - zome.json
 
@@ -48,7 +49,7 @@ The most minimalistic library crate would look like this:
     - lib.rs
 - Cargo.toml
 
-Notice that the Zome we generated has one extra file, `.build`. This is the only Holochain specific file in the `code` folder. The rest is standard Rust. The [`.build` file is discussed](../build_files.md) in another chapter.
+Notice that the Zome we generated has one extra file, `.hcbuild`. This is the only Holochain specific file in the `code` folder. The rest is standard Rust. The [`.hcbuild` file is discussed](../build_files.md) in another chapter.
 
 In general, the generated files have been modified from their defaults to offer basic boilerplate needed to get started writing Zome code.
 

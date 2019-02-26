@@ -4,12 +4,16 @@ use libc::c_void;
 use std::ops::{Deref, DerefMut};
 
 use super::check_init;
+use crate::error::SodiumError;
 
 /// a trait for structures that can be used as a backing store for SecBuf
-pub trait Bufferable {
+pub trait Bufferable: Send {
     fn new(s: usize) -> Box<Bufferable>
     where
-        Self: Sized;
+        Self: Sized + Send;
+    fn from_string(s: String) -> Box<Bufferable>
+    where
+        Self: Sized + Send;
     fn len(&self) -> usize;
     fn readable(&mut self);
     fn writable(&mut self);
@@ -27,6 +31,11 @@ struct RustBuf {
 impl Bufferable for RustBuf {
     fn new(s: usize) -> Box<Bufferable> {
         let b = vec![0; s].into_boxed_slice();
+        Box::new(RustBuf { b })
+    }
+
+    fn from_string(s: String) -> Box<Bufferable> {
+        let b = s.into_bytes().into_boxed_slice();
         Box::new(RustBuf { b })
     }
 
@@ -55,10 +64,12 @@ struct SodiumBuf {
     s: usize,
 }
 
+unsafe impl Send for SodiumBuf {}
+
 impl Bufferable for SodiumBuf {
     /// warning: funky sizes may result in mis-alignment
     fn new(s: usize) -> Box<Bufferable> {
-        if s != 8 && s != 16 && s != 32 && s != 64 {
+        if s % 8 != 0 {
             panic!("bad buffer size: {}, disallowing this for safety", s);
         }
         let z = unsafe {
@@ -71,6 +82,11 @@ impl Bufferable for SodiumBuf {
             z
         };
         Box::new(SodiumBuf { z, s })
+    }
+
+    fn from_string(s: String) -> Box<Bufferable> {
+        let b = s.into_bytes().into_boxed_slice();
+        Box::new(RustBuf { b })
     }
 
     fn len(&self) -> usize {
@@ -152,6 +168,13 @@ impl SecBuf {
         }
     }
 
+    pub fn with_insecure_from_string(s: String) -> Self {
+        SecBuf {
+            b: RustBuf::from_string(s),
+            p: ProtectState::NoAccess,
+        }
+    }
+
     /// what is the current memory protection state of this SecBuf?
     pub fn protect_state(&self) -> ProtectState {
         self.p.clone()
@@ -204,6 +227,20 @@ impl SecBuf {
     /// that will secure this SecBuf automatically when it goes out of scope.
     pub fn write_lock(&mut self) -> Locker {
         Locker::new(self, true)
+    }
+
+    /// helper for writing data to our internal buffer
+    pub fn write(&mut self, offset: usize, data: &[u8]) -> Result<(), SodiumError> {
+        if offset + data.len() > self.len() {
+            return Err(SodiumError::new("bad write offset / length"));
+        }
+
+        unsafe {
+            let mut b = self.write_lock();
+            std::ptr::copy(data.as_ptr(), (**b).as_mut_ptr().add(offset), data.len());
+        }
+
+        Ok(())
     }
 }
 
@@ -270,6 +307,12 @@ impl<'a> DerefMut for Locker<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn it_should_create_secbuf_from_string() {
+        let b = SecBuf::with_insecure_from_string("zooooo".to_string());
+        assert_eq!(ProtectState::NoAccess, b.protect_state());
+    }
 
     #[test]
     fn it_should_read_write_insecure() {
@@ -339,5 +382,22 @@ mod tests {
     fn it_should_panic_on_not_writeable() {
         let mut b = SecBuf::with_insecure(1);
         b[0] = 22;
+    }
+
+    #[test]
+    fn it_should_write() {
+        let mut b = SecBuf::with_insecure(4);
+        b.write(1, &[42, 42]).unwrap();
+        {
+            let b = b.read_lock();
+            assert_eq!("[0, 42, 42, 0]", format!("{:?}", *b));
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn it_should_fail_write_on_bad_offset() {
+        let mut b = SecBuf::with_insecure(4);
+        b.write(3, &[42, 42]).unwrap();
     }
 }

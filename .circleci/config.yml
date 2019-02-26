@@ -6,37 +6,54 @@ jobs:
  build:
   docker:
    - image: holochain/holochain-rust:circle.zz.end
+  resource_class: large
   steps:
    - checkout
-
-   - run: nix-shell --run hc-fmt-check
    - run: nix-shell --run hc-test
 
- integration-tests:
+ fmt:
   docker:
    - image: holochain/holochain-rust:circle.zz.end
   steps:
    - checkout
+   - run: nix-shell --run hc-fmt-check
+
+ app-spec-tests:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  resource_class: large
+  steps:
+   - checkout
 
    - run:
-       name: install cmd
-       command: nix-shell --run hc-install-cmd
+       name: install cli
+       command: nix-shell --run hc-install-cli
 
    - run:
-      name: test cmd
-      command: nix-shell --run hc-test-cmd
-
-   - run:
-       name: install node container
-       command: nix-shell --run hc-install-node-container
+       name: install node conductor
+       command: nix-shell --run hc-install-node-conductor
 
    - run:
        name: app spec tests
        command: nix-shell --run hc-test-app-spec
 
    - run:
-       name: nodejs container tests
-       command: nix-shell --run hc-test-node-container
+       name: nodejs conductor tests
+       command: nix-shell --run hc-test-node-conductor
+
+ cli-tests:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  steps:
+   - checkout
+
+   - run:
+       name: install cli
+       command: nix-shell --run hc-install-cli
+
+   - run:
+      name: test cli
+      command: nix-shell --run hc-test-cli
 
  # https://circleci.com/docs/2.0/building-docker-images/
  docker.start:
@@ -72,8 +89,9 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end .
+   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end -t holochain/holochain-rust:develop .
    - run: docker push holochain/holochain-rust:circle.zz.end
+   - run: docker push holochain/holochain-rust:develop
 
  cold.ubuntu:
   docker:
@@ -88,7 +106,9 @@ workflows:
  tests:
   jobs:
    - build
-   - integration-tests
+   - fmt
+   - app-spec-tests
+   - cli-tests
 
  cold:
   jobs:

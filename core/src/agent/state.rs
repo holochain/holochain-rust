@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
-    agent::chain_store::ChainStore,
+    agent::chain_store::{ChainStore, ChainStoreIterator},
     context::Context,
     state::State,
     workflows::get_entry_result::get_entry_result_workflow,
@@ -17,7 +17,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::get_entry::*;
 use serde_json;
-use std::{collections::HashMap, convert::TryFrom, sync::Arc};
+use std::{collections::HashMap, convert::TryFrom, sync::Arc, time::SystemTime};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -27,24 +27,27 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-    chain: ChainStore,
+    chain_store: ChainStore,
     top_chain_header: Option<ChainHeader>,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: ChainStore) -> AgentState {
+    pub fn new(chain_store: ChainStore) -> AgentState {
         AgentState {
             actions: HashMap::new(),
-            chain,
+            chain_store,
             top_chain_header: None,
         }
     }
 
-    pub fn new_with_top_chain_header(chain: ChainStore, chain_header: ChainHeader) -> AgentState {
+    pub fn new_with_top_chain_header(
+        chain_store: ChainStore,
+        chain_header: ChainHeader,
+    ) -> AgentState {
         AgentState {
             actions: HashMap::new(),
-            chain,
+            chain_store,
             top_chain_header: Some(chain_header),
         }
     }
@@ -55,16 +58,20 @@ impl AgentState {
         self.actions.clone()
     }
 
-    pub fn chain(&self) -> ChainStore {
-        self.chain.clone()
+    pub fn chain_store(&self) -> ChainStore {
+        self.chain_store.clone()
     }
 
     pub fn top_chain_header(&self) -> Option<ChainHeader> {
         self.top_chain_header.clone()
     }
 
+    pub fn iter_chain(&self) -> ChainStoreIterator {
+        self.chain_store.iter(&self.top_chain_header)
+    }
+
     pub fn get_agent_address(&self) -> HcResult<Address> {
-        self.chain()
+        self.chain_store()
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
             .nth(0)
             .and_then(|chain_header| Some(chain_header.entry_address().clone()))
@@ -77,7 +84,7 @@ impl AgentState {
         let agent_entry_address = self.get_agent_address()?;
         let entry_args = GetEntryArgs {
             address: agent_entry_address,
-            options: GetEntryOptions::default(),
+            options: Default::default(),
         };
         let agent_entry_result = await!(get_entry_result_workflow(context, &entry_args))?;
         let agent_entry = agent_entry_result.latest();
@@ -90,8 +97,8 @@ impl AgentState {
         }
     }
 
-    pub fn get_header_for_entry(&self, entry: &Entry) -> Option<ChainHeader> {
-        self.chain()
+    pub fn get_most_recent_header_for_entry(&self, entry: &Entry) -> Option<ChainHeader> {
+        self.chain_store()
             .iter_type(&self.top_chain_header(), &entry.entry_type())
             .find(|h| h.entry_address() == &entry.address())
     }
@@ -151,7 +158,7 @@ impl AddressableContent for AgentStateSnapshot {
 // @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
     Commit(Result<Address, HolochainError>),
-    GetEntry(Option<Entry>),
+    FetchEntry(Option<Entry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
     LinkEntries(Result<Entry, HolochainError>),
 }
@@ -160,7 +167,7 @@ pub fn create_new_chain_header(
     entry: &Entry,
     context: Arc<Context>,
     crud_link: &Option<Address>,
-) -> ChainHeader {
+) -> Result<ChainHeader, HolochainError> {
     let agent_state = context
         .state()
         .expect("create_new_chain_header called without state")
@@ -168,25 +175,31 @@ pub fn create_new_chain_header(
     let agent_address = agent_state
         .get_agent_address()
         .unwrap_or(context.agent_id.address());
-    ChainHeader::new(
+    let signature = Signature::from(
+        context.sign(entry.address().to_string())?,
+        // Temporarily replaced by error handling for Holo hack signing.
+        // TODO: pull in the expect below after removing the Holo signing hack again
+        //.expect("Must be able to create signatures!"),
+    );
+    let duration_since_epoch = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("System time must not be before UNIX EPOCH");
+    Ok(ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
-        &vec![agent_address],
-        // @TODO signatures
-        &vec![Signature::from("")],
+        &vec![(agent_address, signature)],
         &agent_state
             .top_chain_header
             .clone()
             .and_then(|chain_header| Some(chain_header.address())),
         &agent_state
-            .chain()
+            .chain_store()
             .iter_type(&agent_state.top_chain_header, &entry.entry_type())
             .nth(0)
             .and_then(|chain_header| Some(chain_header.address())),
         crud_link,
-        // @TODO timestamp
-        &Iso8601::from(""),
-    )
+        &Iso8601::from(duration_since_epoch.as_secs()),
+    ))
 }
 
 /// Do a Commit Action against an agent state.
@@ -204,32 +217,29 @@ fn reduce_commit_entry(
 ) {
     let action = action_wrapper.action();
     let (entry, maybe_crud_link) = unwrap_to!(action => Action::Commit);
-    let chain_header = create_new_chain_header(&entry, context.clone(), &maybe_crud_link);
 
-    fn response(
-        state: &mut AgentState,
-        entry: &Entry,
-        chain_header: &ChainHeader,
-    ) -> Result<Address, HolochainError> {
-        let storage = &state.chain.content_storage().clone();
-        storage.write().unwrap().add(entry)?;
-        storage.write().unwrap().add(chain_header)?;
-        Ok(entry.address())
-    }
-    let result = response(state, &entry, &chain_header);
-    state.top_chain_header = Some(chain_header);
-    let con = context.clone();
-
-    #[allow(unused_must_use)]
-    con.state().map(|global_state_lock| {
-        let persis_lock = context.clone().persister.clone();
-        let persister = &mut *persis_lock.lock().unwrap();
-        persister.save(global_state_lock.clone());
-    });
+    let result = create_new_chain_header(&entry, context.clone(), &maybe_crud_link)
+        .and_then(|chain_header| {
+            let storage = &state.chain_store.content_storage().clone();
+            storage.write().unwrap().add(entry)?;
+            storage.write().unwrap().add(&chain_header)?;
+            Ok((chain_header, entry.address()))
+        })
+        .and_then(|(chain_header, address)| {
+            state.top_chain_header = Some(chain_header);
+            Ok(address)
+        });
 
     state
         .actions
         .insert(action_wrapper.clone(), ActionResponse::Commit(result));
+
+    #[allow(unused_must_use)]
+    context.state().map(|global_state_lock| {
+        let persis_lock = context.clone().persister.clone();
+        let persister = &mut *persis_lock.lock().unwrap();
+        persister.save(global_state_lock.clone());
+    });
 }
 
 /// maps incoming action to the correct handler
@@ -259,24 +269,25 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot};
+    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot, *};
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         instance::tests::test_context, state::State,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
-        chain_header::test_chain_header,
+        chain_header::{test_chain_header, ChainHeader},
         entry::{expected_entry_address, test_entry, Entry},
         error::HolochainError,
         json::JsonString,
+        signature::Signature,
     };
     use serde_json;
     use std::{
         collections::HashMap,
         sync::{Arc, RwLock},
     };
+    use test_utils::mock_signing::mock_signer;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -343,15 +354,15 @@ pub mod tests {
     fn test_get_response_to_json() {
         assert_eq!(
             JsonString::from(
-                "{\"GetEntry\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}"
+                "{\"FetchEntry\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}"
             ),
-            JsonString::from(ActionResponse::GetEntry(Some(Entry::from(
+            JsonString::from(ActionResponse::FetchEntry(Some(Entry::from(
                 test_entry().clone()
             ))))
         );
         assert_eq!(
-            JsonString::from("{\"GetEntry\":null}"),
-            JsonString::from(ActionResponse::GetEntry(None)),
+            JsonString::from("{\"FetchEntry\":null}"),
+            JsonString::from(ActionResponse::FetchEntry(None)),
         )
     }
 
@@ -394,6 +405,40 @@ pub mod tests {
             JsonString::from(ActionResponse::LinkEntries(Err(HolochainError::new(
                 "some error"
             )))),
+        );
+    }
+
+    #[test]
+    fn test_create_new_chain_header() {
+        let agent_state = test_agent_state();
+        let netname = Some("test_create_new_chain_header");
+        let context = test_context("bob", netname);
+        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
+        let mut context = test_context("bob", netname);
+        Arc::get_mut(&mut context)
+            .unwrap()
+            .set_state(Arc::new(RwLock::new(state)));
+
+        let header = create_new_chain_header(&test_entry(), context.clone(), &None).unwrap();
+        println!("{:?}", header);
+        assert_eq!(
+            header,
+            ChainHeader::new(
+                &test_entry().entry_type(),
+                &test_entry().address(),
+                &[(
+                    context.agent_id.address(),
+                    Signature::from(mock_signer(
+                        test_entry().address().to_string(),
+                        &context.agent_id
+                    ))
+                )]
+                .to_vec(),
+                &None,
+                &None,
+                &None,
+                &header.timestamp(),
+            )
         );
     }
 }

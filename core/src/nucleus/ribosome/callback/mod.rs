@@ -13,6 +13,7 @@ use crate::{
         ribosome::{
             self,
             callback::{genesis::genesis, receive::receive},
+            runtime::WasmCallData,
             Defn,
         },
         ZomeFnCall,
@@ -20,18 +21,16 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    dna::{
-        capabilities::{CapabilityCall, ReservedCapabilityNames},
-        wasm::DnaWasm,
-    },
+    dna::{capabilities::CapabilityCall, wasm::DnaWasm},
     entry::Entry,
-    error::{HolochainError, RibosomeReturnCode},
+    error::{HolochainError, RibosomeEncodedValue},
     json::{default_to_json, JsonString},
     validation::ValidationPackageDefinition,
 };
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use num_traits::FromPrimitive;
 use serde_json;
-use std::{str::FromStr, sync::Arc};
+use std::{convert::TryFrom, str::FromStr, sync::Arc};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -43,14 +42,8 @@ pub enum Callback {
     /// Error index for unimplemented functions
     MissingNo = 0,
 
-    /// MissingNo Capability
-
-    /// LifeCycle Capability
-
     /// genesis() -> bool
     Genesis,
-
-    /// Communication Capability
 
     /// receive(from: String, message: String) -> String
     Receive,
@@ -110,16 +103,6 @@ impl Defn for Callback {
             None => Callback::MissingNo,
         }
     }
-
-    fn capability(&self) -> ReservedCapabilityNames {
-        match *self {
-            Callback::MissingNo => ReservedCapabilityNames::MissingNo,
-            Callback::Genesis => ReservedCapabilityNames::LifeCycle,
-            // @TODO call this from somewhere
-            // @see https://github.com/holochain/holochain-rust/issues/201
-            Callback::Receive => ReservedCapabilityNames::Communication,
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, DefaultJson)]
@@ -167,13 +150,19 @@ impl From<JsonString> for CallbackResult {
     }
 }
 
-impl From<RibosomeReturnCode> for CallbackResult {
-    fn from(ribosome_return_code: RibosomeReturnCode) -> CallbackResult {
+impl From<RibosomeEncodedValue> for CallbackResult {
+    fn from(ribosome_return_code: RibosomeEncodedValue) -> CallbackResult {
         match ribosome_return_code {
-            RibosomeReturnCode::Failure(ribosome_error_code) => {
+            RibosomeEncodedValue::Failure(ribosome_error_code) => {
                 CallbackResult::Fail(ribosome_error_code.to_string())
             }
-            RibosomeReturnCode::Success => CallbackResult::Pass,
+            RibosomeEncodedValue::Allocation(ribosome_allocation) => {
+                match WasmAllocation::try_from(ribosome_allocation) {
+                    Ok(allocation) => CallbackResult::Fail(allocation.read_to_string()),
+                    Err(allocation_error) => CallbackResult::Fail(String::from(allocation_error)),
+                }
+            }
+            RibosomeEncodedValue::Success => CallbackResult::Pass,
         }
     }
 }
@@ -185,11 +174,9 @@ pub(crate) fn run_callback(
     dna_name: String,
 ) -> CallbackResult {
     match ribosome::run_dna(
-        &dna_name,
-        context,
         wasm.code.clone(),
-        &fc,
         Some(fc.clone().parameters.into_bytes()),
+        WasmCallData::new_zome_call(context, dna_name, fc),
     ) {
         Ok(call_result) => {
             if call_result.is_null() {
@@ -211,7 +198,6 @@ pub fn call(
     let zome_call = ZomeFnCall::new(
         zome,
         Some(CapabilityCall::new(
-            function.capability().as_str().to_string(),
             Address::from(""), //FIXME!!
             None,
         )),
@@ -237,18 +223,18 @@ pub fn call(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-    extern crate wabt;
     use self::wabt::Wat2Wasm;
     use crate::{
         instance::{tests::test_instance, Instance},
         nucleus::ribosome::{callback::Callback, Defn},
     };
     use std::str::FromStr;
+    use test_utils;
+    use wabt;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument
-    pub fn test_callback_wasm(canonical_name: &str, result: i32) -> Vec<u8> {
+    pub fn test_callback_wasm(canonical_name: &str, result: u64) -> Vec<u8> {
         Wat2Wasm::new()
             .canonicalize_lebs(false)
             .write_debug_names(true)
@@ -267,8 +253,8 @@ pub mod tests {
                 // define the signature as 1 input, 1 output
                 // (import "env" "<canonical name>"
                 //      (func $zome_api_function
-                //          (param i32)
-                //          (result i32)
+                //          (param i64)
+                //          (result i64)
                 //      )
                 // )
                 //
@@ -285,10 +271,10 @@ pub mod tests {
                 // (func (export "test") ...)
                 //
                 // define the memory allocation for the memory manager that the serialized input
-                // struct can be found across as an i32 to the exported function, also the function
-                // return type is i32
-                // (param $allocation i32)
-                // (result i32)
+                // struct can be found across as an i64 to the exported function, also the function
+                // return type is i64
+                // (param $allocation i64)
+                // (result i64)
                 //
                 // call the imported function and pass the exported function arguments straight
                 // through, let the return also fall straight through
@@ -306,10 +292,10 @@ pub mod tests {
 
     (func
         (export "{}")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const {})
+        (i64.const {})
     )
 )
                 "#,
@@ -324,15 +310,12 @@ pub mod tests {
     pub fn test_callback_instance(
         zome: &str,
         canonical_name: &str,
-        result: i32,
+        result: u64,
         network_name: Option<&str>,
     ) -> Result<Instance, String> {
         let dna = test_utils::create_test_dna_with_wasm(
             zome,
-            Callback::from_str(canonical_name)
-                .expect("string argument canonical_name should be valid callback")
-                .capability()
-                .as_str(),
+            "test_cap",
             test_callback_wasm(canonical_name, result),
         );
 

@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core_api_c_binding"
-version = "0.0.3"
+version = "0.0.4-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
@@ -10,8 +10,5 @@ crate-type = ["staticlib"]
 
 [dependencies]
 holochain_core = { path = "../core" }
-holochain_container_api = { path = "../container_api" }
-holochain_net = { path = "../net" }
-holochain_cas_implementations = { path = "../cas_implementations" }
+holochain_conductor_api = { path = "../conductor_api" }
 holochain_core_types = { path = "../core_types" }
-directories="1.0.2"

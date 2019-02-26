@@ -1,7 +1,8 @@
+#![warn(unused_extern_crates)]
+#![allow(warnings)]
 extern crate rust_sodium_sys;
 #[macro_use]
 extern crate lazy_static;
-extern crate libc;
 
 lazy_static! {
     /// we only need to call sodium_init once

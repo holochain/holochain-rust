@@ -1,5 +1,3 @@
-extern crate futures;
-extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
@@ -61,7 +59,6 @@ mod tests {
     use super::*;
     use crate::nucleus;
 
-    use futures::executor::block_on;
     use holochain_core_types::{cas::content::AddressableContent, entry::Entry, link::Link};
 
     #[cfg_attr(tarpaulin, skip)]
@@ -79,7 +76,7 @@ mod tests {
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-tag");
 
-        let result = block_on(add_link(&link, &context.clone()));
+        let result = context.block_on(add_link(&link, &context.clone()));
 
         assert!(result.is_ok(), "result = {:?}", result);
     }
@@ -92,7 +89,7 @@ mod tests {
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-tag");
 
-        let result = block_on(add_link(&link, &context.clone()));
+        let result = context.block_on(add_link(&link, &context.clone()));
 
         assert!(result.is_err());
         assert_eq!(

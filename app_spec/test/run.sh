@@ -1,6 +1,6 @@
-if [ -z $1 ] 
+if [ -z $1 ]
 then
-	faucet test.js regressions.js
+	tape test.js regressions.js | tee test.out~ | faucet || ( cat test.out~; false )
 else
-	faucet $1
+	tape $1
 fi

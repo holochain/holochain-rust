@@ -18,10 +18,7 @@ extern crate zip;
 
 use http_req::request;
 use sha2::{Digest, Sha256};
-use std::env;
-use std::fs;
-use std::io::Cursor;
-use std::path::Path;
+use std::{env, fs, io::Cursor, path::Path};
 
 const DOWNLOAD_BASE_URL: &'static str = "https://download.libsodium.org/libsodium/releases/";
 const VERSION: &'static str = "1.0.16";
@@ -77,7 +74,7 @@ fn download(url: &str, expected_hash: &str) -> Cursor<Vec<u8>> {
     let response = unwrap!(request::get(url));
 
     // Only accept 2xx status codes
-    if response.status_code() < 200 && response.status_code() >= 300 {
+    if response.status_code() < 200 || response.status_code() >= 300 {
         panic!("Download error: HTTP {}", response.status_code());
     }
     let resp_body = response.body();
@@ -101,8 +98,10 @@ fn get_install_dir() -> String {
 #[cfg(target_env = "msvc")]
 fn get_libsodium() {
     use libc::S_IFDIR;
-    use std::fs::File;
-    use std::io::{Read, Write};
+    use std::{
+        fs::File,
+        io::{Read, Write},
+    };
     use zip::ZipArchive;
 
     // Download zip file
@@ -212,8 +211,7 @@ fn get_libsodium() {
 #[cfg(not(windows))]
 fn get_libsodium() {
     use flate2::read::GzDecoder;
-    use std::process::Command;
-    use std::str;
+    use std::{process::Command, str};
     use tar::Archive;
 
     // Determine build target triple
@@ -257,8 +255,8 @@ fn get_libsodium() {
     // Decide on CC, CFLAGS and the --host configure argument
     let build = cc::Build::new();
     let mut compiler = unwrap!(build.get_compiler().path().to_str()).to_string();
-    let mut cflags = env::var("CFLAGS").unwrap_or(String::default());
-    cflags += " -O2";
+    let mut cflags = env::var("CFLAGS").unwrap_or_default();
+    cflags += " -O2 -fPIC";
     let host_arg;
     let cross_compiling;
     let help;
@@ -273,16 +271,14 @@ fn get_libsodium() {
             .to_string();
 
         // Determine SDK directory paths
-        let sdk_dir_simulator = unwrap!(
-            Path::new(&xcode_dir)
-                .join("Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk")
-                .to_str()
-        ).to_string();
-        let sdk_dir_ios = unwrap!(
-            Path::new(&xcode_dir)
-                .join("Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk")
-                .to_str()
-        ).to_string();
+        let sdk_dir_simulator = unwrap!(Path::new(&xcode_dir)
+            .join("Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk")
+            .to_str())
+        .to_string();
+        let sdk_dir_ios = unwrap!(Path::new(&xcode_dir)
+            .join("Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk")
+            .to_str())
+        .to_string();
 
         // Min versions
         let ios_simulator_version_min = "6.0.0";
@@ -354,6 +350,7 @@ fn get_libsodium() {
     if !cflags.is_empty() {
         configure_cmd.env("CFLAGS", &cflags);
     }
+    println!("cargo:warning=libsodium CFLAGS used: {}", cflags);
     println!("cargo:rerun-if-env-changed=RUST_SODIUM_DISABLE_PIE");
     if env::var("RUST_SODIUM_DISABLE_PIE").is_ok() {
         configure_cmd.arg("--disable-pie");

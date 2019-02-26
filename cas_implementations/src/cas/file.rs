@@ -7,7 +7,7 @@ use holochain_core_types::{
 };
 use std::{
     fs::{create_dir_all, read_to_string, write},
-    path::{Path, MAIN_SEPARATOR},
+    path::{Path, PathBuf},
     sync::{Arc, RwLock},
 };
 
@@ -16,7 +16,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug)]
 pub struct FilesystemStorage {
     /// path to the directory where content will be saved to disk
-    dir_path: String,
+    dir_path: PathBuf,
     id: Uuid,
     lock: Arc<RwLock<()>>,
 }
@@ -28,19 +28,23 @@ impl PartialEq for FilesystemStorage {
 }
 
 impl FilesystemStorage {
-    pub fn new(dir_path: &str) -> Result<FilesystemStorage, HolochainError> {
+    pub fn new<P: AsRef<Path>>(dir_path: P) -> Result<FilesystemStorage, HolochainError> {
+        let dir_path = dir_path.as_ref().into();
+
         Ok(FilesystemStorage {
-            dir_path: String::from(dir_path),
+            dir_path,
             id: Uuid::new_v4(),
             lock: Arc::new(RwLock::new(())),
         })
     }
 
     /// builds an absolute path for an AddressableContent address
-    fn address_to_path(&self, address: &Address) -> String {
+    fn address_to_path(&self, address: &Address) -> PathBuf {
         // using .txt extension because content is arbitrary and controlled by the
         // AddressableContent trait implementation
-        format!("{}{}{}.txt", self.dir_path, MAIN_SEPARATOR, address)
+        self.dir_path
+            .join(address.to_string())
+            .with_extension("txt")
     }
 }
 
@@ -80,7 +84,6 @@ impl ContentAddressableStorage for FilesystemStorage {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate serde_test;
     extern crate tempfile;
 
     use self::tempfile::{tempdir, TempDir};
@@ -95,10 +98,7 @@ pub mod tests {
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
         let dir = tempdir().expect("Could not create a tempdir for CAS testing");
-        (
-            FilesystemStorage::new(&dir.path().to_string_lossy()).unwrap(),
-            dir,
-        )
+        (FilesystemStorage::new(dir.path()).unwrap(), dir)
     }
 
     #[test]

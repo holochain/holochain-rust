@@ -1,9 +1,8 @@
-extern crate futures;
-extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
+    network::entry_with_header::EntryWithHeader,
 };
 use futures::{
     future::Future,
@@ -11,21 +10,20 @@ use futures::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::Entry,
     error::HolochainError,
 };
 use std::{pin::Pin, sync::Arc};
 
 pub async fn hold_entry<'a>(
-    entry: &'a Entry,
-    context: &'a Arc<Context>,
+    entry_wh: EntryWithHeader,
+    context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::Hold(entry.clone()));
+    let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     await!(HoldEntryFuture {
-        context: context.clone(),
-        address: entry.address(),
+        context: context,
+        address: entry_wh.entry.address(),
     })
 }
 

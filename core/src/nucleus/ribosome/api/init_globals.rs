@@ -6,27 +6,26 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
-use multihash::Hash as Multihash;
 use wasmi::RuntimeArgs;
 
 /// ZomeApiFunction::InitGlobals secret function code
-/// args: [0] encoded MemoryAllocation as u32
+/// args: [0] encoded MemoryAllocation as u64
 /// Not expecting any complex input
-/// Returns an HcApiReturnCode as I32
+/// Returns an HcApiReturnCode as I64
 pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     // Create the ZomeApiGlobals struct with some default values
     let mut globals = ZomeApiGlobals {
-        dna_name: runtime.dna_name.to_string(),
+        dna_name: zome_call_data.dna_name.to_string(),
         dna_address: Address::from(""),
-        agent_id_str: JsonString::from(runtime.context.agent_id.clone()).to_string(),
-        // TODO #233 - Implement agent pub key hash
-        agent_address: Address::encode_from_str("FIXME-agent_address", Multihash::SHA2256),
+        agent_id_str: JsonString::from(zome_call_data.context.agent_id.clone()).to_string(),
+        agent_address: Address::from(zome_call_data.context.agent_id.address()),
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
     };
 
     // Update fields
-    if let Some(state) = runtime.context.state() {
+    if let Some(state) = zome_call_data.context.state() {
         // Update dna_address
         if let Some(dna) = state.nucleus().dna() {
             globals.dna_address = dna.address()
@@ -37,7 +36,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
             let mut found_entries: Vec<Address> = vec![];
             for chain_header in state
                 .agent()
-                .chain()
+                .chain_store()
                 .iter_type(&maybe_top, &EntryType::AgentId)
             {
                 found_entries.push(chain_header.entry_address().to_owned());
@@ -63,6 +62,7 @@ pub mod tests {
     use holochain_core_types::{error::ZomeApiInternalResult, json::JsonString};
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use std::convert::TryFrom;
+    use test_utils::mock_signing::registered_test_agent;
 
     #[test]
     /// test that bytes passed to debug end up in the log
@@ -75,8 +75,8 @@ pub mod tests {
             ZomeApiGlobals::try_from(JsonString::from(zome_api_internal_result.value)).unwrap();
 
         assert_eq!(globals.dna_name, "TestApp");
-        // TODO #233 - Implement agent address
-        // assert_eq!(obj.agent_address, "QmScgMGDzP3d9kmePsXP7ZQ2MXis38BNRpCZBJEBveqLjD");
+        let expected_agent = registered_test_agent("jane");
+        assert_eq!(globals.agent_address.to_string(), expected_agent.key);
         // TODO (david.b) this should work:
         //assert_eq!(globals.agent_id_str, String::from(AgentId::generate_fake("jane")));
         // assert_eq!(

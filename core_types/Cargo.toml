@@ -1,22 +1,32 @@
 [package]
 name = "holochain_core_types"
-version = "0.0.3"
+version = "0.0.4-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+build = "build.rs"
 
 [dependencies]
 arrayref = "0.3.5"
 base64 = "0.10.0"
+chrono = "0.4"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
+lazy_static = "1.2"
 multihash = "0.8.0"
-futures-preview = { git = "https://github.com/holochain/futures-rs", branch = "pinned-to-alpha-11" }
+futures-preview = "=0.3.0-alpha.12"
+futures-core-preview = "=0.3.0-alpha.12"
+futures-channel-preview = "=0.3.0-alpha.12"
+futures-executor-preview = "=0.3.0-alpha.12"
+futures-io-preview = "=0.3.0-alpha.12"
+futures-sink-preview = "=0.3.0-alpha.12"
+futures-util-preview = "=0.3.0-alpha.12"
+
 reed-solomon = "0.2.1"
 rust-base58 = "0.0.4"
 snowflake = "1.2"
 objekt="0.1.1"
 holochain_core_types_derive = { path = "../core_types_derive" }
-uuid = { version = "0.7", features = ["v4"] }
+uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "^1.1"
 
 [dev-dependencies]

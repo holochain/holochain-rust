@@ -4,14 +4,15 @@ use holochain_core_types::{
     cas::content::AddressableContent,
     dna::Dna,
     entry::{entry_type::EntryType, Entry},
+    error::RibosomeRuntimeBits,
 };
 use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
     let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {
-        Some(RuntimeValue::I32(
-            holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as i32,
+        Some(RuntimeValue::I64(
+            holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as RibosomeRuntimeBits,
         ))
     })?;
 
@@ -19,8 +20,9 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
     if entry_type.is_app() {
         let result = dna.get_entry_type_def(entry_type_name);
         if result.is_none() {
-            return Err(Some(RuntimeValue::I32(
-                holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as i32,
+            return Err(Some(RuntimeValue::I64(
+                holochain_core_types::error::RibosomeErrorCode::UnknownEntryType
+                    as RibosomeRuntimeBits,
             )));
         }
     }
@@ -29,10 +31,11 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
 }
 
 /// ZomeApiFunction::entry_address function code
-/// args: [0] encoded MemoryAllocation as u32
+/// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: entry_type_name and entry_value as JsonString
-/// Returns an HcApiReturnCode as I32
+/// Returns an HcApiReturnCode as I64
 pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let entry = match Entry::try_from(args_str) {
@@ -41,7 +44,7 @@ pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     };
 
     // Check if entry_type is valid
-    let dna = runtime
+    let dna = zome_call_data
         .context
         .state()
         .unwrap()

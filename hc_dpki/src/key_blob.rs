@@ -81,7 +81,8 @@ impl KeyBundle {
         // encrypt buffer
         let encrypted_blob = password_encryption::pw_enc(&mut data_buf, passphrase, config)?;
         // Serialize and convert to base64
-        let serialized_blob = serde_json::to_string(&encrypted_blob).expect("Failed to serialize KeyBundle");
+        let serialized_blob =
+            serde_json::to_string(&encrypted_blob).expect("Failed to serialize KeyBundle");
         let encoded_blob = base64::encode(&serialized_blob);
         // Done
         Ok(KeyBlob {

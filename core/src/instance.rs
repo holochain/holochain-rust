@@ -2,12 +2,12 @@ use crate::{
     action::ActionWrapper, context::Context, scheduled_jobs, signal::Signal, state::State,
     workflows::application,
 };
-use clokwerk::{Scheduler, TimeUnits};
 #[cfg(test)]
 use crate::{
     network::actions::initialize_network::initialize_network_with_spoofed_dna,
     nucleus::actions::initialize::initialize_application,
 };
+use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 #[cfg(test)]
 use holochain_core_types::cas::content::Address;
 use holochain_core_types::{dna::Dna, error::HcResult};
@@ -19,7 +19,6 @@ use std::{
     thread,
     time::Duration,
 };
-use clokwerk::ScheduleHandle;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
@@ -53,7 +52,9 @@ impl Instance {
         let context = self.initialize_context(context);
         self.start_action_loop(context.clone(), rx_action, rx_observer);
         let mut scheduler = Scheduler::new();
-        scheduler.every(10.seconds()).run(scheduled_jobs::create_callback(context.clone()));
+        scheduler
+            .every(10.seconds())
+            .run(scheduled_jobs::create_callback(context.clone()));
         self.scheduler_handle = Some(Arc::new(scheduler.watch_thread(Duration::from_millis(5))));
         context
     }

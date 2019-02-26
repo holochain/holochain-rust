@@ -134,7 +134,7 @@ pub mod tests {
         make_cap_request_for_call(
             context.clone(),
             dummy_capability_token(),
-            Address::from(context.agent_id.key.clone()),
+            Address::from(context.agent_id.pub_sign_key.clone()),
             function,
             parameters,
         )
@@ -148,8 +148,8 @@ pub mod tests {
     ) -> CapabilityRequest {
         make_cap_request_for_call(
             context.clone(),
-            Address::from(context.agent_id.key.clone()),
-            Address::from(context.agent_id.key.clone()),
+            Address::from(context.agent_id.pub_sign_key.clone()),
+            Address::from(context.agent_id.pub_sign_key.clone()),
             function,
             parameters,
         )

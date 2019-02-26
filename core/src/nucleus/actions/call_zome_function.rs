@@ -155,7 +155,7 @@ pub fn validate_call(
 }
 
 fn is_token_the_agent(context: Arc<Context>, request: &CapabilityRequest) -> bool {
-    context.agent_id.key == request.cap_token.to_string()
+    context.agent_id.pub_sign_key == request.cap_token.to_string()
 }
 
 fn get_grant(context: &Arc<Context>, address: &Address) -> Option<CapTokenGrant> {
@@ -183,7 +183,7 @@ fn make_call_sig<J: Into<JsonString>>(
 ) -> Signature {
     Signature::from(format!(
         "{}:{}:{}",
-        context.agent_id.key,
+        context.agent_id.pub_sign_key,
         function,
         parameters.into()
     ))
@@ -198,7 +198,7 @@ pub fn verify_call_sig<J: Into<JsonString>>(
 ) -> bool {
     let mock_signature = Signature::from(format!(
         "{}:{}:{}",
-        context.agent_id.key,
+        context.agent_id.pub_sign_key,
         function,
         parameters.into()
     ));
@@ -327,7 +327,7 @@ pub mod tests {
     #[test]
     fn test_agent_as_token() {
         let context = test_context("alice", None);
-        let agent_token = Address::from(context.agent_id.key.clone());
+        let agent_token = Address::from(context.agent_id.pub_sign_key.clone());
         let cap_request = make_cap_request_for_call(
             context.clone(),
             agent_token.clone(),

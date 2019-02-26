@@ -227,8 +227,8 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
     let params_string = String::from(params.into());
     let cap_request =  make_cap_request_for_call(
         context.clone(),
-        Address::from(context.clone().agent_id.key.clone()),
-        Address::from(context.clone().agent_id.key.clone()),
+        Address::from(context.clone().agent_id.pub_sign_key.clone()),
+        Address::from(context.clone().agent_id.pub_sign_key.clone()),
         fn_name,
         params_string.clone(),
     );

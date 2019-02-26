@@ -1,6 +1,6 @@
 use holochain_core_types::{cas::content::Address, hash::HashString};
 
-use holochain_net_connection::json_protocol::MetaTuple;
+use crate::connection::json_protocol::MetaTuple;
 
 use std::collections::{HashMap, HashSet};
 

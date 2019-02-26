@@ -19,7 +19,7 @@ impl ZomeFnCall {
         let cap_call = make_cap_request_for_call(
             context.clone(),
             args.cap_token,
-            Address::from(context.agent_id.key.clone()),
+            Address::from(context.agent_id.pub_sign_key.clone()),
             &args.fn_name,
             args.fn_args.clone(),
         );
@@ -349,7 +349,7 @@ pub mod tests {
         test_reduce_call(&test_setup, cap_request, expected_failure.clone());
 
         // test assigned capability where the caller is the agent
-        let agent_token_str = test_setup.context.agent_id.key.clone();
+        let agent_token_str = test_setup.context.agent_id.pub_sign_key.clone();
         let cap_request = make_cap_request_for_call(
             test_setup.context.clone(),
             Address::from(agent_token_str.clone()),
@@ -434,8 +434,8 @@ pub mod tests {
             "test_zome",
             make_cap_request_for_call(
                 context.clone(),
-                Address::from(context.agent_id.key.clone()),
-                Address::from(context.agent_id.key.clone()),
+                Address::from(context.agent_id.pub_sign_key.clone()),
+                Address::from(context.agent_id.pub_sign_key.clone()),
                 "foo_function", //<- not the function in the zome_call!
                 "{}",
             ),
@@ -451,8 +451,8 @@ pub mod tests {
             "test_zome",
             make_cap_request_for_call(
                 context.clone(),
-                Address::from(context.agent_id.key.clone()),
-                Address::from(context.agent_id.key.clone()),
+                Address::from(context.agent_id.pub_sign_key.clone()),
+                Address::from(context.agent_id.pub_sign_key.clone()),
                 "test",
                 "{}",
             ),

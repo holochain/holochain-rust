@@ -206,7 +206,7 @@ pub mod tests {
     }
 
     pub fn setup_test(dna: Dna, netname: &str) -> TestSetup {
-        let netname = Some("test_get_round_trip");
+        let netname = Some(netname);
         let (instance, context) =
             test_instance_and_context(dna, netname).expect("Could not initialize test instance");
         TestSetup {

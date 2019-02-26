@@ -13,12 +13,15 @@ use crate::connection::{
 
 use std::{collections::HashMap, convert::TryFrom};
 
+use crate::tweetlog::TweetProxy;
+
 use serde_json;
 
 /// a NetWorker talking to the network via another process through an IPC connection.
 pub struct IpcNetWorker {
     handler: NetHandler,
     socket: TransportWss<std::net::TcpStream>,
+    ipc_uri: String,
 
     done: NetShutdown,
 
@@ -29,6 +32,8 @@ pub struct IpcNetWorker {
 
     bootstrap_nodes: Vec<String>,
     endpoint: String,
+
+    log: TweetProxy,
 }
 
 // Constructors
@@ -121,18 +126,25 @@ impl IpcNetWorker {
         bootstrap_nodes: Vec<String>,
         endpoint: String,
     ) -> NetResult<Self> {
+        let log = TweetProxy::new("IpcNetWorker");
+        log.i(&format!("connect to uri {}", ipc_uri));
+
         let mut socket = TransportWss::with_std_tcp_stream();
         wait_connect(&mut socket, &ipc_uri)?;
+
+        log.i("connection success");
 
         Ok(IpcNetWorker {
             handler,
             socket,
+            ipc_uri,
             done,
             is_ready: false,
             last_known_state: "undefined".to_string(),
             last_state_millis: 0.0_f64,
             bootstrap_nodes,
             endpoint,
+            log,
         })
     }
 }
@@ -193,14 +205,18 @@ impl NetWorker for IpcNetWorker {
         let (did_work, evt_lst) = self.socket.poll()?;
         for evt in evt_lst {
             match evt {
-                TransportEvent::TransportError(id, e) => {
-                    panic!("IPC WS ERROR {:?} {:?}", id, e);
+                TransportEvent::TransportError(_id, e) => {
+                    self.log.e(&format!("ipc ws error {:?}", e));
+                    self.socket.close_all()?;
+                    wait_connect(&mut self.socket, &self.ipc_uri)?;
                 }
                 TransportEvent::Connect(_id) => {
                     // don't need to do anything here
                 }
-                TransportEvent::Close(id) => {
-                    panic!("IPC WS CLOSED {:?}", id);
+                TransportEvent::Close(_id) => {
+                    self.log.e("ipc ws closed");
+                    self.socket.close_all()?;
+                    wait_connect(&mut self.socket, &self.ipc_uri)?;
                 }
                 TransportEvent::Message(_id, msg) => {
                     let msg: NamedBinaryData = rmp_serde::from_slice(&msg)?;

@@ -237,7 +237,7 @@ pub mod tests {
         //let (_, context) =
         //    test_instance_and_context(dna, None).expect("Could not initialize test instance");
         //let context = instance.initialize_context(test_context("janet", netname));
-        let test_setup = setup_test(dna);
+        let test_setup = setup_test(dna, "test_call_zome_function");
         let context = test_setup.context.clone();
         let token = context.get_public_token().unwrap();
 

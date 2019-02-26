@@ -1,6 +1,6 @@
 use constants::*;
 use holochain_net::tweetlog::*;
-use holochain_net_connection::{
+use holochain_net::connection::{
     json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
     net_connection::NetSend,
     NetResult,

@@ -1,5 +1,5 @@
 use super::NetResult;
-use crate::protocol::Protocol;
+use super::protocol::Protocol;
 
 /// closure for processing a Protocol message received from the network
 pub type NetHandler = Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send>;

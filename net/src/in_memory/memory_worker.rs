@@ -1,8 +1,8 @@
 //! provides fake in-memory p2p worker for use in scenario testing
 
-use crate::memory_server::*;
+use super::memory_server::*;
 use holochain_core_types::{cas::content::Address, json::JsonString};
-use holochain_net_connection::{
+use crate::connection::{
     json_protocol::JsonProtocol,
     net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
@@ -161,7 +161,7 @@ mod tests {
     use crate::p2p_config::P2pConfig;
 
     use holochain_core_types::cas::content::Address;
-    use holochain_net_connection::json_protocol::{JsonProtocol, TrackDnaData};
+    use crate::connection::json_protocol::{JsonProtocol, TrackDnaData};
 
     fn example_dna_address() -> Address {
         "blabladnaAddress".into()

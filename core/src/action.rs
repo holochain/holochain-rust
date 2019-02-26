@@ -19,7 +19,7 @@ use holochain_core_types::{
     validation::ValidationPackage,
 };
 use holochain_net::p2p_config::P2pConfig;
-use holochain_net_connection::json_protocol::{
+use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
 use snowflake;

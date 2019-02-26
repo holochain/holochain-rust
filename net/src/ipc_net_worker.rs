@@ -2,14 +2,14 @@
 
 use holochain_core_types::json::JsonString;
 
-use holochain_net_ipc::{
+use crate::ipc::{
     ipc_client::IpcClient,
     socket::{IpcSocket, MockIpcSocket, TestStruct, ZmqIpcSocket},
     spawn,
     util::get_millis,
 };
 
-use holochain_net_connection::{
+use crate::connection::{
     json_protocol::{ConfigData, ConnectData, JsonProtocol, StateData},
     net_connection::{NetHandler, NetSend, NetShutdown, NetWorker, NetWorkerFactory},
     net_relay::NetConnectionRelay,
@@ -330,10 +330,9 @@ impl IpcNetWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     use crate::p2p_config::P2pConfig;
-    use holochain_net_connection::protocol::{NamedBinaryData, PongData};
-    use holochain_net_ipc::socket::make_test_channels;
+    use crate::connection::protocol::{NamedBinaryData, PongData};
+    use crate::ipc::socket::make_test_channels;
 
     #[test]
     fn it_ipc_networker_zmq_create() {

@@ -40,7 +40,7 @@ use std::{
 };
 
 use holochain_net::p2p_config::P2pConfig;
-use holochain_net_ipc::spawn::{ipc_spawn, SpawnResult};
+use holochain_net::ipc::spawn::{ipc_spawn, SpawnResult};
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
 use static_file_server::StaticServer;
 

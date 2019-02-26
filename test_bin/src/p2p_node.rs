@@ -6,7 +6,7 @@ use holochain_net::{
     p2p_network::P2pNetwork,
     tweetlog::{TweetProxy, *},
 };
-use holochain_net_connection::{
+use holochain_net::connection::{
     json_protocol::{
         DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
         FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,

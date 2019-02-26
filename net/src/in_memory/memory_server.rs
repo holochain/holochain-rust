@@ -4,17 +4,21 @@
 
 #![allow(non_snake_case)]
 
-use crate::{error::NetworkError, memory_book::*, tweetlog::*};
-use holochain_core_types::cas::content::Address;
-use holochain_net_connection::{
-    json_protocol::{
-        DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
-        FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-        MessageData, MetaListData, PeerData,
+use super::memory_book::*;
+use crate::{
+    tweetlog::*,
+    error::NetworkError,
+    connection::{
+        json_protocol::{
+            DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
+            FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
+            MessageData, MetaListData, PeerData,
+        },
+        protocol::Protocol,
+        NetResult,
     },
-    protocol::Protocol,
-    NetResult,
 };
+use holochain_core_types::cas::content::Address;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     convert::TryFrom,

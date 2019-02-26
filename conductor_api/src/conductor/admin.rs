@@ -226,12 +226,7 @@ impl ConductorAdmin for Conductor {
 
     fn add_interface(&mut self, interface: InterfaceConfiguration) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
-        if new_config
-            .interfaces
-            .iter()
-            .find(|i| i.id == interface.id)
-            .is_some()
-        {
+        if new_config.interfaces.iter().any(|i| i.id == interface.id) {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Interface with ID '{}' already exists",
                 interface.id
@@ -248,11 +243,10 @@ impl ConductorAdmin for Conductor {
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
-        if new_config
+        if !new_config
             .interfaces
             .iter()
-            .find(|interface| interface.id == *id)
-            .is_none()
+            .any(|interface| interface.id == *id)
         {
             return Err(HolochainError::ErrorGeneric(format!(
                 "No such interface: '{}'",
@@ -291,8 +285,7 @@ impl ConductorAdmin for Conductor {
             )))?
             .instances
             .iter()
-            .find(|i| i.id == *instance_id)
-            .is_some()
+            .any(|i| i.id == *instance_id)
         {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Instance '{}' already in interface '{}'",
@@ -330,7 +323,7 @@ impl ConductorAdmin for Conductor {
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
-        if new_config
+        if !new_config
             .interface_by_id(interface_id)
             .ok_or(HolochainError::ErrorGeneric(format!(
                 "Interface with ID {} not found",
@@ -338,8 +331,7 @@ impl ConductorAdmin for Conductor {
             )))?
             .instances
             .iter()
-            .find(|i| i.id == *instance_id)
-            .is_none()
+            .any(|i| i.id == *instance_id)
         {
             return Err(HolochainError::ErrorGeneric(format!(
                 "No Instance '{}' in interface '{}'",
@@ -374,12 +366,7 @@ impl ConductorAdmin for Conductor {
 
     fn add_agent(&mut self, new_agent: AgentConfiguration) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
-        if new_config
-            .agents
-            .iter()
-            .find(|i| i.id == new_agent.id)
-            .is_some()
-        {
+        if new_config.agents.iter().any(|i| i.id == new_agent.id) {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Agent with ID '{}' already exists",
                 new_agent.id
@@ -397,7 +384,7 @@ impl ConductorAdmin for Conductor {
 
     fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
-        if new_config.agents.iter().find(|i| i.id == *id).is_none() {
+        if !new_config.agents.iter().any(|i| i.id == *id) {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Agent with ID '{}' does not exist",
                 id
@@ -447,8 +434,7 @@ impl ConductorAdmin for Conductor {
         if new_config
             .bridges
             .iter()
-            .find(|b| b.caller_id == new_bridge.caller_id && b.callee_id == new_bridge.callee_id)
-            .is_some()
+            .any(|b| b.caller_id == new_bridge.caller_id && b.callee_id == new_bridge.callee_id)
         {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Bridge from instance '{}' to instance '{}' already exists",
@@ -474,11 +460,10 @@ impl ConductorAdmin for Conductor {
         callee_id: &String,
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
-        if new_config
+        if !new_config
             .bridges
             .iter()
-            .find(|b| b.caller_id == *caller_id && b.callee_id == *callee_id)
-            .is_none()
+            .any(|b| b.caller_id == *caller_id && b.callee_id == *callee_id)
         {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Bridge from instance '{}' to instance '{}' does not exist",

@@ -46,8 +46,8 @@ pub trait Blobbable {
         passphrase: &mut SecBuf,
         config: Option<PwHashConfig>,
     ) -> HcResult<Self>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
 
     fn as_blob(
         &mut self,
@@ -82,8 +82,7 @@ pub trait Blobbable {
         blob: &KeyBlob,
         passphrase: &mut SecBuf,
         config: Option<PwHashConfig>,
-    ) -> HcResult<SecBuf>
-    {
+    ) -> HcResult<SecBuf> {
         // Check type
         if blob.blob_type != Self::blob_type() {
             return Err(HolochainError::ErrorGeneric(
@@ -137,15 +136,15 @@ impl Blobbable for Seed {
         // Construct
         Ok(Seed::new(seed_buf, blob.seed_type.clone()))
         // Construct
-//        match blob.seed_type {
-//            SeedType::Root => Ok(TypedSeed::Root(RootSeed::new(seed_buf))),
-//            SeedType::Device => Ok(TypedSeed::Device(DeviceSeed::new(seed_buf))),
-//            SeedType::DevicePin => Ok(TypedSeed::DevicePin(DevicePinSeed::new(seed_buf))),
-//            _ => Err(HolochainError::new(&format!(
-//                "Unblobbing seed of type '{:?}' not allowed",
-//                blob.seed_type
-//            ))),
-//        }
+        //        match blob.seed_type {
+        //            SeedType::Root => Ok(TypedSeed::Root(RootSeed::new(seed_buf))),
+        //            SeedType::Device => Ok(TypedSeed::Device(DeviceSeed::new(seed_buf))),
+        //            SeedType::DevicePin => Ok(TypedSeed::DevicePin(DevicePinSeed::new(seed_buf))),
+        //            _ => Err(HolochainError::new(&format!(
+        //                "Unblobbing seed of type '{:?}' not allowed",
+        //                blob.seed_type
+        //            ))),
+        //        }
     }
 
     ///  generate a persistence bundle with hint info
@@ -335,14 +334,9 @@ mod tests {
             .as_blob(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
-        let mut root_seed= Seed::from_blob(&blob, &mut passphrase, TEST_CONFIG).unwrap();
+        let mut root_seed = Seed::from_blob(&blob, &mut passphrase, TEST_CONFIG).unwrap();
         assert_eq!(SeedType::Root, root_seed.kind);
-        assert_eq!(
-            0,
-            root_seed
-                .buf
-                .compare(&mut initial_seed.buf)
-        );
+        assert_eq!(0, root_seed.buf.compare(&mut initial_seed.buf));
     }
 
     #[test]
@@ -356,7 +350,7 @@ mod tests {
             .as_blob(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
-        let seed= Seed::from_blob(&blob, &mut passphrase, TEST_CONFIG).unwrap();
+        let seed = Seed::from_blob(&blob, &mut passphrase, TEST_CONFIG).unwrap();
         let mut typed_seed = seed.into_typed().unwrap();
 
         match typed_seed {
@@ -368,9 +362,8 @@ mod tests {
                         .buf
                         .compare(&mut initial_device_pin_seed.seed_mut().buf)
                 );
-            },
+            }
             _ => unreachable!(),
         }
-
     }
 }

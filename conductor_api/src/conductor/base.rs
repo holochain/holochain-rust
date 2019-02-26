@@ -17,7 +17,10 @@ use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{key_blob::{KeyBlob, Blobbable}, key_bundle::KeyBundle};
+use holochain_dpki::{
+    key_blob::{Blobbable, KeyBlob},
+    key_bundle::KeyBundle,
+};
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;

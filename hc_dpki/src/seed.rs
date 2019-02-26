@@ -1,13 +1,9 @@
-use crate::{
-    key_bundle::KeyBundle,
-    password_encryption::*,
-    SEED_SIZE,
-};
+use crate::{key_bundle::KeyBundle, password_encryption::*, SEED_SIZE};
 use bip39::{Language, Mnemonic};
 use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_sodium::{kdf, pwhash, secbuf::SecBuf};
-use std::str;
 use serde_derive::{Deserialize, Serialize};
+use std::str;
 
 //--------------------------------------------------------------------------------------------------
 // SeedInitializer
@@ -112,7 +108,9 @@ impl Seed {
             SeedType::Root => Ok(TypedSeed::Root(RootSeed::new(self.buf))),
             SeedType::Device => Ok(TypedSeed::Device(DeviceSeed::new(self.buf))),
             SeedType::DevicePin => Ok(TypedSeed::DevicePin(DevicePinSeed::new(self.buf))),
-            _ => Err(HolochainError::ErrorGeneric("Seed does have specific behavior for its type".to_string())),
+            _ => Err(HolochainError::ErrorGeneric(
+                "Seed does have specific behavior for its type".to_string(),
+            )),
         }
     }
 
@@ -121,10 +119,9 @@ impl Seed {
     pub fn get_mnemonic(&mut self) -> HcResult<String> {
         let entropy = self.buf.read_lock();
         let e = &*entropy;
-        let mnemonic = Mnemonic::from_entropy(e, Language::English)
-            .map_err(|e| HolochainError::ErrorGeneric(format!(
-                "Error generating Mnemonic phrase: {}", e
-            )))?;
+        let mnemonic = Mnemonic::from_entropy(e, Language::English).map_err(|e| {
+            HolochainError::ErrorGeneric(format!("Error generating Mnemonic phrase: {}", e))
+        })?;
         Ok(mnemonic.phrase().to_string())
     }
 }
@@ -248,12 +245,7 @@ impl DevicePinSeed {
         }
         let mut app_seed_buf = SecBuf::with_secure(SEED_SIZE);
         let mut context = SecBuf::with_insecure_from_string("HCAPPLIC".to_string());
-        kdf::derive(
-            &mut app_seed_buf,
-            index,
-            &mut context,
-            &mut self.inner.buf,
-        )?;
+        kdf::derive(&mut app_seed_buf, index, &mut context, &mut self.inner.buf)?;
 
         Ok(KeyBundle::new_from_seed_buf(
             &mut app_seed_buf,
@@ -302,8 +294,20 @@ mod tests {
         let _ = root_seed.generate_device_seed(0).unwrap_err();
         let mut device_seed_1 = root_seed.generate_device_seed(1).unwrap();
         let mut device_seed_3_b = root_seed.generate_device_seed(3).unwrap();
-        assert!(device_seed_3.seed_mut().buf.compare(&mut device_seed_3_b.seed_mut().buf) == 0);
-        assert!(device_seed_3.seed_mut().buf.compare(&mut device_seed_1.seed_mut().buf) != 0);
+        assert!(
+            device_seed_3
+                .seed_mut()
+                .buf
+                .compare(&mut device_seed_3_b.seed_mut().buf)
+                == 0
+        );
+        assert!(
+            device_seed_3
+                .seed_mut()
+                .buf
+                .compare(&mut device_seed_1.seed_mut().buf)
+                != 0
+        );
     }
 
     #[test]

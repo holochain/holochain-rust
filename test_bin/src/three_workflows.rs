@@ -1,9 +1,11 @@
 use constants::*;
-use holochain_net::tweetlog::*;
-use holochain_net_connection::{
-    json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
-    net_connection::NetSend,
-    NetResult,
+use holochain_net::{
+    connection::{
+        json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
+        net_connection::NetSend,
+        NetResult,
+    },
+    tweetlog::*,
 };
 use p2p_node::P2pNode;
 

@@ -7,7 +7,7 @@ use crate::{
     },
 };
 use holochain_core_types::eav::Attribute;
-use holochain_net_connection::json_protocol::{DhtMetaData, EntryData};
+use holochain_net::connection::json_protocol::{DhtMetaData, EntryData};
 use std::{sync::Arc, thread};
 
 /// The network requests us to store (i.e. hold) the given entry.

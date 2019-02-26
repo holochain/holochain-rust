@@ -3,7 +3,7 @@
 
 use std::io::{Read, Write};
 
-use crate::connection::{
+use crate::ipc::connection::{
     ConnectionError,
     ConnectionResult,
     ConnectionId,

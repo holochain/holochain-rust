@@ -9,10 +9,8 @@ use wasm_bindgen::prelude::*;
 /// but we need something to prove out the wasm build
 #[wasm_bindgen]
 pub fn parse_agent_id(agent_id: &str) -> Result<Vec<u8>, JsValue> {
-    let kb = match KeyBuffer::with_corrected(agent_id) {
-        Ok(kb) => kb,
-        Err(e) => return Err(JsValue::from_str(&format!("{:?}", e))),
-    };
+    let kb =
+        KeyBuffer::with_corrected(agent_id).map_err(|e| JsValue::from_str(&format!("{:?}", e)))?;
     let mut out = kb.get_sig().to_vec();
     out.extend_from_slice(kb.get_enc());
     Ok(out)

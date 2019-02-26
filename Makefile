@@ -215,10 +215,10 @@ install_cli: build_cli
 	@echo -e "\033[0;93m## Installing hc command... ##\033[0m"
 	cd cli && $(CARGO) install -f --path .
 
-.PHONY: build_container_wasm
-build_container_wasm: ensure_wasm_target install_wasm_bindgen_cli
-	$(CARGO) build --release -p holochain_container_wasm --target wasm32-unknown-unknown
-	wasm-bindgen target/wasm32-unknown-unknown/release/holochain_container_wasm.wasm --out-dir container_wasm/npm_package/gen --nodejs
+.PHONY: build_conductor_wasm
+build_conductor_wasm: ensure_wasm_target install_wasm_bindgen_cli
+	$(CARGO) build --release -p holochain_conductor_wasm --target wasm32-unknown-unknown
+	wasm-bindgen target/wasm32-unknown-unknown/release/holochain_conductor_wasm.wasm --out-dir conductor_wasm/npm_package/gen --nodejs
 
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci

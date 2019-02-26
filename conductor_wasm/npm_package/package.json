@@ -1,5 +1,5 @@
 {
-  "name": "holochain_container_wasm",
+  "name": "holochain_conductor_wasm",
   "version": "0.0.3",
   "description": "webassembly build of holochain-rust designed to run in a browser for holo light-clients",
   "main": "lib/index.js",

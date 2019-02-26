@@ -2,7 +2,7 @@
 //! It allows us to easily mock it out for unit tests
 //! as well as manage context with lazy_static!
 
-use crate::{context, errors::*};
+use super::{context, errors::*};
 use std::sync::mpsc;
 use zmq;
 

@@ -3,10 +3,12 @@ use crate::{
     context::Context,
     network::{handler::create_handler, state::NetworkState},
 };
-use holochain_net::p2p_network::P2pNetwork;
-use holochain_net_connection::{
-    json_protocol::{JsonProtocol, TrackDnaData},
-    net_connection::NetSend,
+use holochain_net::{
+    connection::{
+        json_protocol::{JsonProtocol, TrackDnaData},
+        net_connection::NetSend,
+    },
+    p2p_network::P2pNetwork,
 };
 use std::sync::{Arc, Mutex};
 

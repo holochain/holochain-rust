@@ -209,96 +209,103 @@ _windows_template_lite: &_windows_template_lite
     - if [ ! -z "$WASM_PATH_2" ]; then cargo build --manifest-path ${TEST_PATH}${WASM_PATH_2}Cargo.toml --release --target wasm32-unknown-unknown --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH_2}target; fi;
 
   script:
-    - cargo test -p $TEST_P --release --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}target
+    - cargo test -p $TEST_P --release --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}target -- --nocapture
 
 jobs:
   # test builds are ordered from slowest to quickest
   # this allows us to keep walltimes down
   include:
-    - name: "windows hdk"
+    - name: "windows special"
       <<: *_windows_template_lite
       env:
-       - TEST_P=hdk
+       - TEST_P=holochain_core test_call_assigned
        - TEST_PATH=hdk-rust/
        - WASM_PATH=wasm-test/
 
-    - name: "windows wasm_utils"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_wasm_utils
-       - TEST_PATH=wasm_utils/
-       - WASM_PATH=wasm-test/integration-test/
+    # - name: "windows hdk"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=hdk
+    #    - TEST_PATH=hdk-rust/
+    #    - WASM_PATH=wasm-test/
 
-    - name: "windows conductor_api"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_conductor_api
-       - TEST_PATH=conductor_api/
-       - WASM_PATH=wasm-test/
-       - WASM_PATH_2=test-bridge-caller/
+    # - name: "windows wasm_utils"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_wasm_utils
+    #    - TEST_PATH=wasm_utils/
+    #    - WASM_PATH=wasm-test/integration-test/
 
-    - name: "windows core"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core
-       - TEST_PATH=core/
-       - WASM_PATH=src/nucleus/actions/wasm-test/
+    # - name: "windows conductor_api"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_conductor_api
+    #    - TEST_PATH=conductor_api/
+    #    - WASM_PATH=wasm-test/
+    #    - WASM_PATH_2=test-bridge-caller/
 
-    - name: "windows holochain_cas_implementations"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_cas_implementations
-       - TEST_PATH=cas_implementations/
+    # - name: "windows core"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_core
+    #    - TEST_PATH=core/
+    #    - WASM_PATH=src/nucleus/actions/wasm-test/
 
-    - name: "windows dna_c_binding"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_dna_c_binding
-       - TEST_PATH=dna_c_binding/
+    # - name: "windows holochain_cas_implementations"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_cas_implementations
+    #    - TEST_PATH=cas_implementations/
 
-    - name: "windows holochain_sodium"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_sodium
-       - TEST_PATH=sodium/
+    # - name: "windows dna_c_binding"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_dna_c_binding
+    #    - TEST_PATH=dna_c_binding/
 
-    - name: "windows hc"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=hc
-       - TEST_PATH=cli/
+    # - name: "windows holochain_sodium"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_sodium
+    #    - TEST_PATH=sodium/
 
-    - name: "windows core_types"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core_types
-       - TEST_PATH=core_types/
+    # - name: "windows hc"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=hc
+    #    - TEST_PATH=cli/
 
-    - name: "windows holochain_net"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_net
-       - TEST_PATH=net/
+    # - name: "windows core_types"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_core_types
+    #    - TEST_PATH=core_types/
 
-    - name: "C binding tests"
-      <<: *_trusty_bash
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          # faster to build this than manage a cache for the target
-          # - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-      script:
-        - make test_c_ci
-      before_cache:
-        - rm -rf $HOME/.cargo/registry/index
+    # - name: "windows holochain_net"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_net
+    #    - TEST_PATH=net/
+
+    # - name: "C binding tests"
+    #   <<: *_trusty_bash
+    #   # sudo is needed for codecov, && system library install which makes things 20-50s slower
+    #   # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+    #   sudo: true
+    #   # manually cache as we manually install rustup
+    #   # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+    #   cache:
+    #     timeout: 1000
+    #     directories:
+    #       - $HOME/.cargo
+    #       # faster to build this than manage a cache for the target
+    #       # - $TRAVIS_BUILD_DIR/target
+    #   install:
+    #     - export PATH=$HOME/.cargo/bin:$PATH
+    #   script:
+    #     - make test_c_ci
+    #   before_cache:
+    #     - rm -rf $HOME/.cargo/registry/index
 
     #- name: cold os x
     #  os: osx

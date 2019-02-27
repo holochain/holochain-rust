@@ -58,6 +58,8 @@ pub mod tests {
 
         let action_wrapper = ActionWrapper::new(Action::RemovePendingValidation(entry.address()));
 
-        reduce_remove_pending_validation(context, &mut state, &action_wrapper)
+        reduce_remove_pending_validation(context, &mut state, &action_wrapper);
+
+        assert!(!state.pending_validations.contains_key(&entry.address()));
     }
 }

@@ -14,7 +14,7 @@ use holochain_core_types::{
 };
 use std::{pin::Pin, sync::Arc};
 
-pub async fn hold_entry<'a>(
+pub async fn hold_entry(
     entry_wh: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<Address, HolochainError> {

@@ -5,9 +5,7 @@ use crate::{
         direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
     },
     nucleus::{
-        state::NucleusState,
-        validation::ValidationResult,
-        ExecuteZomeFnResponse, ZomeFnCall,
+        state::NucleusState, validation::ValidationResult, ExecuteZomeFnResponse, ZomeFnCall,
     },
     scheduled_jobs::pending_validations::PendingValidation,
 };

@@ -1,7 +1,8 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
-    network::entry_with_header::{EntryWithHeader,fetch_entry_with_header}
+    network::entry_with_header::{EntryWithHeader,fetch_entry_with_header},
+    agent::state
 };
 use holochain_core_types::{cas::content::{Address,AddressableContent}, entry::Entry, error::HolochainError};
 use std::convert::TryFrom;
@@ -27,12 +28,10 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         }
     };
 
-    let entry_with_header_result = fetch_entry_with_header(&entry.address(),&zome_call_data.context.clone());
-    if entry_with_header_result.is_err()
-    {
-        return ribosome_error_code!(Unspecified)
-    }
-    let entry_with_header = entry_with_header_result.unwrap();
+   // let entry_with_header_result = fetch_entry_with_header(&entry.address(),&zome_call_data.context.clone());
+    let header = state::create_new_chain_header(&entry,zome_call_data.context.clone(),&None);
+
+    let entry_with_header = EntryWithHeader{entry,header};
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> = zome_call_data
         .context

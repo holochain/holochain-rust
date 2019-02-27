@@ -19,12 +19,12 @@ pub async fn hold_remove_workflow<'a>(
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     let EntryWithHeader { entry, header } = &entry_with_header;
-
+    println!("get validation from source");
     // 1. Get validation package from source
     let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
-
+    println!("create validation data");
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
@@ -32,11 +32,12 @@ pub async fn hold_remove_workflow<'a>(
         action: EntryAction::Create,
     };
 
+    println!("validate entry");
     // 3. Validate the entry
     await!(validate_entry(entry.clone(), validation_data, &context))?;
 
     let link = header.link_update_delete().ok_or("Could not get link update from header".to_string())?;
-
+    println!("remove from link");
     // 3. If valid store the entry in the local DHT shard
     await!(remove_entry(&context.clone(),entry.clone(),link)?)
 }

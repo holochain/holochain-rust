@@ -122,12 +122,12 @@ pub fn validate_call(
     context: Arc<Context>,
     fn_call: &ZomeFnCall,
 ) -> Result<(String, DnaWasm), HolochainError> {
-    let state = context.state().ok_or(HolochainError::ErrorGeneric(
-        "Context not initialized".to_string(),
-    ))?;
-
     // make sure the dna, zome and function exists and return pretty errors if they don't
     let (dna_name, code) = {
+        let state = context.state().ok_or(HolochainError::ErrorGeneric(
+            "Context not initialized".to_string(),
+        ))?;
+
         let nucleus_state = state.nucleus();
         let dna = nucleus_state
             .dna()

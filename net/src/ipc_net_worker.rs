@@ -2,7 +2,9 @@
 
 use holochain_core_types::json::JsonString;
 
-use crate::ipc::{spawn, util::get_millis, Transport, TransportEvent, TransportWss, DEFAULT_HEARTBEAT_WAIT_MS};
+use crate::ipc::{
+    spawn, util::get_millis, Transport, TransportEvent, TransportWss, DEFAULT_HEARTBEAT_WAIT_MS,
+};
 
 use crate::connection::{
     json_protocol::{ConfigData, ConnectData, JsonProtocol, StateData},

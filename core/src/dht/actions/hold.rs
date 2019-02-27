@@ -15,16 +15,14 @@ use holochain_core_types::{
 use std::{pin::Pin, sync::Arc};
 
 pub async fn hold_entry<'a>(
-    entry_wh: EntryWithHeader,
+    entry_wh: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
+    let address = entry_wh.entry.address();
+    let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.to_owned()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
-    await!(HoldEntryFuture {
-        context: context,
-        address: entry_wh.entry.address(),
-    })
+    await!(HoldEntryFuture { context, address })
 }
 
 pub struct HoldEntryFuture {

@@ -14,7 +14,7 @@ pub fn add_pending_validation(
 ) {
     dispatch_action(
         context.action_channel(),
-        ActionWrapper::new(Action::AddPendingValidation(Box::new((
+        ActionWrapper::new(Action::AddPendingValidation(Arc::new((
             entry_with_header.to_owned(),
             dependencies.clone(),
         )))),

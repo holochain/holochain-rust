@@ -17,10 +17,10 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn hold_entry_workflow<'a>(
-    entry_with_header: EntryWithHeader,
+    entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let EntryWithHeader { entry, header } = &entry_with_header;
+    let EntryWithHeader { entry, header } = entry_with_header;
 
     // 1. Get validation package from source
     let maybe_validation_package = await!(get_validation_package(header.clone(), &context))

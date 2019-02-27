@@ -466,4 +466,3 @@ mod tests {
         cli.stop().unwrap();
     }
 }
-*/

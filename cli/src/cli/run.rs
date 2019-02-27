@@ -104,7 +104,7 @@ fn agent_configuration() -> AgentConfiguration {
         name: agent_id.nick,
         public_address: agent_id.pub_sign_key,
         key_file: agent_name,
-        holo_remote_key: None,
+        holo_remote_key: false,
     }
 }
 
@@ -275,7 +275,7 @@ mod tests {
                 public_address: "HcScjN8wBwrn3tuyg89aab3a69xsIgdzmX5P9537BqQZ5A7TEZu7qCY4Xzzjhma"
                     .to_string(),
                 key_file: "testAgent".to_string(),
-                holo_remote_key: None,
+                holo_remote_key: false,
             },
         );
     }

@@ -312,7 +312,8 @@ pub struct AgentConfiguration {
     pub key_file: String,
     /// If set to true conductor will ignore key_file and instead use the remote signer
     /// accessible through signing_service_uri to request signatures.
-    pub holo_remote_key: Option<bool>,
+    #[serde(default)]
+    pub holo_remote_key: bool,
 }
 
 impl From<AgentConfiguration> for AgentId {

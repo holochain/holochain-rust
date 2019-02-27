@@ -405,7 +405,7 @@ impl Conductor {
 
                 // Agent:
                 let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
-                let agent_id = if Some(true) == agent_config.holo_remote_key {
+                let agent_id = if agent_config.holo_remote_key {
                     // !!!!!!!!!!!!!!!!!!!!!!!
                     // Holo closed-alpha hack:
                     // !!!!!!!!!!!!!!!!!!!!!!!
@@ -441,7 +441,7 @@ impl Conductor {
                 // Conductor API
                 let mut api_builder = ConductorApiBuilder::new();
                 // Signing callback:
-                if Some(true) == agent_config.holo_remote_key {
+                if agent_config.holo_remote_key {
                     // !!!!!!!!!!!!!!!!!!!!!!!
                     // Holo closed-alpha hack:
                     // !!!!!!!!!!!!!!!!!!!!!!!
@@ -505,12 +505,7 @@ impl Conductor {
     /// passphrase prompts) before bootstrapping the whole config and have prompts appear
     /// in between other initialization output.
     pub fn check_load_key_for_agent(&mut self, agent_id: &String) -> Result<(), String> {
-        if Some(true)
-            == self
-                .config
-                .agent_by_id(agent_id)
-                .and_then(|a| a.holo_remote_key)
-        {
+        if Some(true) == self.config.agent_by_id(agent_id).map(|a| a.holo_remote_key) {
             // !!!!!!!!!!!!!!!!!!!!!!!
             // Holo closed-alpha hack:
             // !!!!!!!!!!!!!!!!!!!!!!!

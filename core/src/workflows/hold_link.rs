@@ -1,5 +1,4 @@
 use crate::{
-    action::{Action, ActionWrapper},
     context::Context,
     dht::actions::add_link::add_link,
     network::{
@@ -8,7 +7,9 @@ use crate::{
     nucleus::validation::validate_entry,
 };
 
-use crate::{instance::dispatch_action, nucleus::validation::ValidationError};
+use crate::nucleus::{
+    actions::add_pending_validation::add_pending_validation, validation::ValidationError,
+};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
@@ -52,13 +53,7 @@ pub async fn hold_link_workflow<'a>(
     await!(validate_entry(entry.clone(), validation_data, &context)).map_err(|err| {
         context.log(format!("debug/workflow/hold_link: invalid! {:?}", err));
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            dispatch_action(
-                context.action_channel(),
-                ActionWrapper::new(Action::AddPendingValidation(Box::new((
-                    entry_with_header.to_owned(),
-                    dependencies.clone(),
-                )))),
-            );
+            add_pending_validation(entry_with_header.to_owned(), dependencies.clone(), &context);
         }
         err
     })?;

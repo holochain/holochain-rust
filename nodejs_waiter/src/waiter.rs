@@ -201,7 +201,7 @@ impl Waiter {
                                 });
                                 checker.add(num_instances, move |aw| {
                                     *aw.action()
-                                        == Action::RemoveEntry((remove_entry.clone(),remove_entry.clone().deleted_entry_address()))
+                                        == Action::RemoveEntry((remove_entry.clone().address(),remove_entry.clone().deleted_entry_address()))
                                 });
                             },
                             // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s

@@ -4,7 +4,9 @@ use crate::{
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
-    nucleus::validation::validate_entry,
+    nucleus::{
+        actions::add_pending_validation::add_pending_validation, validation::validate_entry,
+    },
 };
 
 use holochain_core_types::{
@@ -21,9 +23,20 @@ pub async fn hold_entry_workflow<'a>(
     let EntryWithHeader { entry, header } = &entry_with_header;
 
     // 1. Get validation package from source
-    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
-    let validation_package = maybe_validation_package
-        .ok_or("Could not get validation package from source".to_string())?;
+    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))
+        .map_err(|err| {
+            let message = "Could not get validation package from source! -> Add to pending...";
+            context.log(format!("debug/workflow/hold_entry: {}", message));
+            context.log(format!("debug/workflow/hold_entry: Error was: {:?}", err));
+            add_pending_validation(entry_with_header.to_owned(), Vec::new(), &context);
+            HolochainError::ValidationFailed(message.to_string())
+        })?;
+    let validation_package = maybe_validation_package.ok_or({
+        let message = "Source did respond to request but did not deliver validation package! This is weird! Entry is not valid!";
+        context.log(format!("debug/workflow/hold_entry: {}", message));
+        HolochainError::ValidationFailed(message.to_string())
+    })?;
+    context.log(format!("debug/workflow/hold_entry: got validation package"));
 
     // 2. Create validation data struct
     let validation_data = ValidationData {

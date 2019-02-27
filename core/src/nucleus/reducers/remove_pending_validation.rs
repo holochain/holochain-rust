@@ -30,6 +30,7 @@ pub mod tests {
             reducers::add_pending_validation::reduce_add_pending_validation,
             state::tests::test_nucleus_state,
         },
+        scheduled_jobs::pending_validations::PendingValidationStruct,
     };
     use holochain_core_types::{
         cas::content::AddressableContent, chain_header::test_chain_header, entry::Entry,
@@ -47,10 +48,12 @@ pub mod tests {
             header: test_chain_header(),
         };
 
-        let action_wrapper = ActionWrapper::new(Action::AddPendingValidation(Arc::new((
-            entry_with_header.clone(),
-            Vec::new(),
-        ))));
+        let action_wrapper = ActionWrapper::new(Action::AddPendingValidation(Arc::new(
+            PendingValidationStruct {
+                entry_with_header,
+                dependencies: Vec::new(),
+            },
+        )));
 
         reduce_add_pending_validation(context.clone(), &mut state, &action_wrapper);
 

@@ -4,7 +4,7 @@ branches:
   only:
     - master
     - develop
-    - /^holochain-nodejs-(test-)*v\d+\.\d+\.\d+/
+    - /^holochain-nodejs-(test-)*v\d+\.\d+\.\d+-alpha/
     - /^release-(test-)*v\d+\.\d+\.\d+-alpha/
     - /^(test-)*v\d+\.\d+\.\d+-alpha/
 

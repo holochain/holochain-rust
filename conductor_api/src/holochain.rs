@@ -154,7 +154,7 @@ impl Holochain {
         }
     }
 
-    pub fn load(_path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
+    pub fn load(context: Arc<Context>) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.dht_storage.clone());
         let loaded_state = persister
             .load(context.clone())?
@@ -303,7 +303,7 @@ mod tests {
         let path = tempdir.path().to_str().unwrap().to_string();
 
         let (context, _, _) = test_context("bob");
-        let result = Holochain::load(path, context.clone());
+        let result = Holochain::load(context.clone());
         assert!(result.is_ok());
         let loaded_holo = result.unwrap();
         assert!(!loaded_holo.active);

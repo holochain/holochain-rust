@@ -946,7 +946,7 @@ fn create_ipc_config(
             "backend_kind": "IPC",
             "backend_config":
             {
-                "socketType": "zmq",
+                "socketType": "websockets",
                 "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {

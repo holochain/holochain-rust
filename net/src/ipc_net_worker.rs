@@ -314,12 +314,6 @@ impl IpcNetWorker {
 
         Ok(())
     }
-
-    pub const ZMQ_URI_CONFIG: &'static str = r#"{
-                "socketType": "zmq",
-                "ipcUri": "tcp://127.0.0.1:0",
-                "blockConnect": false
-            }"#;
 }
 
 #[cfg(test)]
@@ -330,40 +324,6 @@ mod tests {
         ipc::socket::make_test_channels,
         p2p_config::P2pConfig,
     };
-
-    #[test]
-    fn it_ipc_networker_zmq_create() {
-        IpcNetWorker::new(
-            Box::new(|_r| Ok(())),
-            &JsonString::from(IpcNetWorker::ZMQ_URI_CONFIG).into(),
-            P2pConfig::default_end_user_config().to_string(),
-        )
-        .unwrap();
-    }
-
-    #[test]
-    fn it_ipc_networker_spawn() {
-        if let Err(e) = IpcNetWorker::new(
-            Box::new(|_r| Ok(())),
-            &json!({
-                "socketType": "zmq",
-                "spawn": {
-                    "cmd": "cargo",
-                    "args": [],
-                    "workDir": ".",
-                    "env": {}
-                },
-                "blockConnect": false
-            })
-            .into(),
-            P2pConfig::default_end_user_config().to_string(),
-        ) {
-            let e = format!("{:?}", e);
-            assert!(e.contains("Invalid argument"), "res: {}", e);
-        } else {
-            panic!("expected error");
-        }
-    }
 
     #[test]
     fn it_ipc_networker_flow() {

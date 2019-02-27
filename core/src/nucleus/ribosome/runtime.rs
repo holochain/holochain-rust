@@ -17,8 +17,8 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
-use std::{convert::TryFrom, sync::Arc};
-use wasmi::{Externals, RuntimeArgs, RuntimeValue, Trap, TrapKind};
+use std::{convert::TryFrom, fmt, sync::Arc};
+use wasmi::{Externals, HostError, RuntimeArgs, RuntimeValue, Trap, TrapKind};
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -36,6 +36,7 @@ pub struct CallbackCallData {
     pub context: Arc<Context>,
     /// Name of the DNA that is being hosted.
     pub dna_name: String,
+    /// The callback function call that initiated the Ribosome.
     pub call: CallbackFnCall,
 }
 
@@ -45,6 +46,16 @@ pub enum WasmCallData {
     CallbackCall(CallbackCallData),
     DirectCall(String),
 }
+
+#[derive(Debug)]
+struct BadCallError();
+impl fmt::Display for BadCallError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Bad calling context")
+    }
+}
+
+impl HostError for BadCallError {}
 
 impl WasmCallData {
     pub fn new_zome_call(context: Arc<Context>, dna_name: String, call: ZomeFnCall) -> Self {
@@ -100,14 +111,14 @@ impl Runtime {
     pub fn zome_call_data(&self) -> Result<ZomeCallData, Trap> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.clone()),
-            _ => Err(Trap::new(TrapKind::DivisionByZero)),
+            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError())))),
         }
     }
 
     pub fn callback_call_data(&self) -> Result<CallbackCallData, Trap> {
         match &self.data {
             WasmCallData::CallbackCall(ref data) => Ok(data.clone()),
-            _ => Err(Trap::new(TrapKind::ElemUninitialized)),
+            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError())))),
         }
     }
 
@@ -127,7 +138,7 @@ impl Runtime {
                 fn_name: data.call.fn_name.clone(),
                 parameters: data.call.parameters.clone(),
             }),
-            _ => Err(Trap::new(TrapKind::TableAccessOutOfBounds)),
+            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError())))),
         }
     }
 
@@ -135,7 +146,7 @@ impl Runtime {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.context.clone()),
             WasmCallData::CallbackCall(ref data) => Ok(data.context.clone()),
-            _ => Err(Trap::new(TrapKind::MemoryAccessOutOfBounds)),
+            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError())))),
         }
     }
 

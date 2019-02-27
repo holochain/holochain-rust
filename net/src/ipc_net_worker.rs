@@ -317,11 +317,13 @@ impl IpcNetWorker {
 }
 
 #[cfg(test)]
+// test channels were lost in:
+// https://github.com/holochain/holochain-rust/pull/1055/commits/6c7ad192fe5c87b48d45312d70e3f0d30773f115
+#[cfg(feature = "broken-tests")]
 mod tests {
-    use super::*;
+    use std::sync::mpsc;
     use crate::{
         connection::protocol::{NamedBinaryData, PongData},
-        ipc::socket::make_test_channels,
         p2p_config::P2pConfig,
     };
 

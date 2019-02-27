@@ -21,6 +21,6 @@ pub fn run_pending_validations(context: Arc<Context>) {
         .for_each(|(_, boxed)| match boxed.0.entry.entry_type() {
             EntryType::LinkAdd => retry_validation(boxed.clone(), context.clone()),
             EntryType::LinkRemove => retry_validation(boxed.clone(), context.clone()),
-            _ => panic!("Pending validations are (currently) comming "),
+            _ => panic!("Pending validations are (currently) only implemented for links"),
         });
 }

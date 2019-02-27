@@ -37,6 +37,12 @@ enum WssStreamState<T: Read + Write + std::fmt::Debug> {
     Ready(WssStream<T>),
 }
 
+/// how often should we send a heartbeat if we have not received msgs
+pub const DEFAULT_HEARTBEAT_MS: usize = 2000;
+
+/// when should we close a connection due to not receiving remote msgs
+pub const DEFAULT_HEARTBEAT_WAIT_MS: usize = 5000;
+
 // represents an individual connection
 #[derive(Debug)]
 struct TransportInfo<T: Read + Write + std::fmt::Debug> {
@@ -105,7 +111,7 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
 
     /// close all currently tracked connections
     fn close_all(&mut self) -> TransportResult<()> {
-        let mut err: TransportResult<()> = Ok(());
+        let mut errors: Vec<TransportError> = Vec::new();
 
         while !self.stream_sockets.is_empty() {
             let key = self
@@ -116,12 +122,16 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
                 .to_string();
             if let Some(mut info) = self.stream_sockets.remove(&key) {
                 if let Err(e) = self.priv_close_one(&mut info) {
-                    err = Err(e.into());
+                    errors.push(e.into());
                 }
             }
         }
 
-        err
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors.into())
+        }
     }
 
     /// get a list of all open transport ids
@@ -132,11 +142,7 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
     /// this should be called frequently on the event loop
     /// looks for incoming messages or processes ping/pong/close events etc
     fn poll(&mut self) -> TransportResult<(DidWork, Vec<TransportEvent>)> {
-        let mut did_work = false;
-
-        if self.priv_process_stream_sockets()? {
-            did_work = true
-        }
+        let did_work = self.priv_process_stream_sockets()?;
 
         Ok((did_work, self.event_queue.drain(..).collect()))
     }
@@ -146,10 +152,9 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
         for id in id_list {
             if let Some(info) = self.stream_sockets.get_mut(&id.to_string()) {
                 info.send_queue.push(payload.to_vec());
-            } else {
-                return Err(TransportError(format!("bad id: {}", id)));
             }
         }
+
         Ok(())
     }
 
@@ -207,11 +212,11 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                 self.event_queue.push(TransportEvent::Close(info.id));
                 continue;
             }
-            if info.last_msg.elapsed().as_millis() > 2000 {
+            if info.last_msg.elapsed().as_millis() as usize > DEFAULT_HEARTBEAT_MS {
                 if let WssStreamState::Ready(socket) = &mut info.socket {
                     socket.write_message(tungstenite::Message::Ping(vec![]))?;
                 }
-            } else if info.last_msg.elapsed().as_millis() > 5000 {
+            } else if info.last_msg.elapsed().as_millis() as usize > DEFAULT_HEARTBEAT_WAIT_MS {
                 self.event_queue.push(TransportEvent::Close(info.id));
                 info.socket = WssStreamState::None;
                 continue;

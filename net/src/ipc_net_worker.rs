@@ -2,7 +2,7 @@
 
 use holochain_core_types::json::JsonString;
 
-use crate::ipc::{spawn, util::get_millis, Transport, TransportEvent, TransportWss};
+use crate::ipc::{spawn, util::get_millis, Transport, TransportEvent, TransportWss, DEFAULT_HEARTBEAT_WAIT_MS};
 
 use crate::connection::{
     json_protocol::{ConfigData, ConnectData, JsonProtocol, StateData},
@@ -158,7 +158,7 @@ fn wait_connect(
     socket.connect(&uri)?;
 
     let start = std::time::Instant::now();
-    while start.elapsed().as_millis() < 5000 {
+    while (start.elapsed().as_millis() as usize) < DEFAULT_HEARTBEAT_WAIT_MS {
         let (_did_work, evt_lst) = socket.poll()?;
         for evt in evt_lst {
             match evt {
@@ -313,118 +313,5 @@ impl IpcNetWorker {
         }
 
         Ok(())
-    }
-}
-
-#[cfg(test)]
-// test channels were lost in:
-// https://github.com/holochain/holochain-rust/pull/1055/commits/6c7ad192fe5c87b48d45312d70e3f0d30773f115
-#[cfg(feature = "broken-tests")]
-mod tests {
-    use crate::{
-        connection::protocol::{NamedBinaryData, PongData},
-        p2p_config::P2pConfig,
-    };
-    use std::sync::mpsc;
-
-    #[test]
-    fn it_ipc_networker_flow() {
-        let (handler_send, handler_recv) = mpsc::channel::<Protocol>();
-        let (test_struct, test_send, test_recv) = make_test_channels().unwrap();
-
-        let pong = Protocol::Pong(PongData {
-            orig: get_millis() - 4.0,
-            recv: get_millis() - 2.0,
-        });
-        let data: NamedBinaryData = (&pong).into();
-        test_send
-            .send(vec![vec![], vec![], b"pong".to_vec(), data.data])
-            .unwrap();
-
-        let mut cli = Box::new(
-            IpcNetWorker::new_test(
-                Box::new(move |r| {
-                    handler_send.send(r?)?;
-                    Ok(())
-                }),
-                test_struct,
-            )
-            .unwrap(),
-        );
-
-        cli.tick().unwrap();
-
-        let res = handler_recv.recv().unwrap();
-
-        assert_eq!(pong, res);
-
-        let json = Protocol::Json(
-            json!({
-                "method": "state",
-                "state": "need_config"
-            })
-            .into(),
-        );
-        let data: NamedBinaryData = (&json).into();
-        test_send
-            .send(vec![vec![], vec![], b"json".to_vec(), data.data])
-            .unwrap();
-
-        cli.tick().unwrap();
-
-        let res = handler_recv.recv().unwrap();
-
-        assert_eq!(json, res);
-
-        let res = test_recv.recv().unwrap();
-        let res = String::from_utf8_lossy(&res[3]).to_string();
-        assert!(res.contains("requestState"));
-
-        let res = test_recv.recv().unwrap();
-        let res = String::from_utf8_lossy(&res[3]).to_string();
-        assert!(res.contains("requestDefaultConfig"));
-
-        let json = Protocol::Json(
-            json!({
-                "method": "defaultConfig",
-                "config": "test_config"
-            })
-            .into(),
-        );
-        let data: NamedBinaryData = (&json).into();
-        test_send
-            .send(vec![vec![], vec![], b"json".to_vec(), data.data])
-            .unwrap();
-
-        cli.tick().unwrap();
-
-        handler_recv.recv().unwrap();
-
-        let res = test_recv.recv().unwrap();
-        let res = String::from_utf8_lossy(&res[3]).to_string();
-        assert!(res.contains("setConfig"));
-
-        let json = Protocol::Json(
-            json!({
-                "method": "state",
-                "state": "ready",
-                "id": "test_id",
-                "bindings": ["test_binding_1"]
-            })
-            .into(),
-        );
-        let data: NamedBinaryData = (&json).into();
-        test_send
-            .send(vec![vec![], vec![], b"json".to_vec(), data.data])
-            .unwrap();
-
-        cli.tick().unwrap();
-
-        handler_recv.recv().unwrap();
-
-        let res = handler_recv.recv().unwrap();
-        assert_eq!(Protocol::P2pReady, res);
-
-        cli.stop().unwrap();
     }
 }

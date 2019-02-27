@@ -8,7 +8,7 @@ mod transport_wss;
 
 pub use transport::{DidWork, Transport, TransportError, TransportEvent, TransportResult};
 
-pub use transport_wss::TransportWss;
+pub use transport_wss::{TransportWss, DEFAULT_HEARTBEAT_MS, DEFAULT_HEARTBEAT_WAIT_MS};
 
 #[macro_use]
 pub mod errors;

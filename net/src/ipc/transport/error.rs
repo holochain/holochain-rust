@@ -19,6 +19,12 @@ impl std::error::Error for TransportError {
     }
 }
 
+impl From<Vec<TransportError>> for TransportError {
+    fn from(errors: Vec<TransportError>) -> Self {
+        Self(format!("{:?}", errors))
+    }
+}
+
 impl From<url::ParseError> for TransportError {
     fn from(error: url::ParseError) -> Self {
         Self(format!("{:?}", error))

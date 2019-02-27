@@ -1,3 +1,4 @@
+mod add_pending_validation;
 pub mod init_application;
 pub mod return_initialization_result;
 pub mod return_validation_package;
@@ -9,6 +10,7 @@ use crate::{
     context::Context,
     nucleus::{
         reducers::{
+            add_pending_validation::reduce_add_pending_validation,
             init_application::reduce_init_application,
             return_initialization_result::reduce_return_initialization_result,
             return_validation_package::reduce_return_validation_package,
@@ -24,6 +26,7 @@ use std::sync::Arc;
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
+        Action::AddPendingValidation(_) => Some(reduce_add_pending_validation),
         Action::ReturnInitializationResult(_) => Some(reduce_return_initialization_result),
         Action::InitApplication(_) => Some(reduce_init_application),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),

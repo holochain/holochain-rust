@@ -126,18 +126,20 @@ pub fn validate_call(
         "Context not initialized".to_string(),
     ))?;
 
-    let nucleus_state = state.nucleus();
-
     // make sure the dna, zome and function exists and return pretty errors if they don't
-    let dna = nucleus_state
-        .dna()
-        .ok_or_else(|| HolochainError::DnaMissing)?;
-    let zome = dna
-        .get_zome(&fn_call.zome_name)
-        .map_err(|e| HolochainError::Dna(e))?;
-    let _ = dna
-        .get_function_with_zome_name(&fn_call.zome_name, &fn_call.fn_name)
-        .map_err(|e| HolochainError::Dna(e))?;
+    let (dna_name, code) = {
+        let nucleus_state = state.nucleus();
+        let dna = nucleus_state
+            .dna()
+            .ok_or_else(|| HolochainError::DnaMissing)?;
+        let zome = dna
+            .get_zome(&fn_call.zome_name)
+            .map_err(|e| HolochainError::Dna(e))?;
+        let _ = dna
+            .get_function_with_zome_name(&fn_call.zome_name, &fn_call.fn_name)
+            .map_err(|e| HolochainError::Dna(e))?;
+        (dna.name.clone(), zome.code.clone())
+    };
 
     if check_capability(context.clone(), fn_call)
         || (is_token_the_agent(context.clone(), &fn_call.cap)
@@ -148,7 +150,7 @@ pub fn validate_call(
                 fn_call.parameters.clone(),
             ))
     {
-        Ok((dna.name.clone(), zome.code.clone()))
+        Ok((dna_name, code))
     } else {
         Err(HolochainError::CapabilityCheckFailed)
     }

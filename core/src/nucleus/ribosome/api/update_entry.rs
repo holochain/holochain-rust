@@ -3,7 +3,6 @@ use crate::{
     nucleus::{ribosome::{api::ZomeApiResult, Runtime},
     actions::{build_validation_package::*, validate::*}},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
-    network::entry_with_header::{EntryWithHeader,fetch_entry_with_header}
 };
 use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
@@ -64,19 +63,11 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         .expect("Modified entry should be in chain");
 
     // Create Chain Entry
-    let entry = Entry::from(entry_args.new_entry.clone());
-    let entry_with_header_result = fetch_entry_with_header(&entry.address(), &zome_call_data.context.clone());
-    if entry_with_header_result.is_err()
-    {
-        return ribosome_error_code!(Unspecified);
-    }
 
-    let mut entry_with_header = entry_with_header_result.unwrap();
-    entry_with_header.header.set_link_update_delete(Some(chain_header_address));
-    let res : Result<Address, HolochainError> = zome_call_data
-        .context
+    let res : Result<Address, HolochainError> = zome_call_data.context
         .block_on(author_entry(
-            &entry_with_header.clone(),
+        &latest_entry,
+        Some(chain_header_address.clone()),
             &zome_call_data.context.clone(),
         ));
 

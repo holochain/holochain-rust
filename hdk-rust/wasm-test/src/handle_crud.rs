@@ -193,10 +193,9 @@ pub fn handle_remove_entry_ok() -> JsonString {
 
     // Delete it
     hdk::debug("**** Delete it").ok();
-    let res = hdk::remove_entry(&addr_v1);
-    hdk::sleep(Duration::from_millis(45000)).unwrap();
-    assert!(res.is_ok());
-
+    hdk::remove_entry(&addr_v1).unwrap();
+    hdk::sleep(Duration::from_millis(50000)).unwrap();
+    
     // Get it should fail
     hdk::debug("**** Get it should fail").ok();
     let res = hdk::get_entry(&addr_v1);
@@ -209,16 +208,17 @@ pub fn handle_remove_entry_ok() -> JsonString {
 
     // Delete it again should fail
     hdk::debug("**** Delete it again should fail").ok();
-    let res = hdk::remove_entry(&addr_v1);
-    hdk::sleep(Duration::from_millis(45000)).unwrap();
-    assert!(res.is_err());
+    hdk::remove_entry(&addr_v1).unwrap();
+  
 
+    hdk::sleep(Duration::from_millis(50000)).unwrap();
+  
     // Get entry_result
     let res = hdk::get_entry_result(
         &addr_v1,
         GetEntryOptions::new(StatusRequestKind::All, false, false, Default::default()),
     );
-    hdk::debug(format!("**** get_entry_result: {:?}", res)).ok();
+    
     match res {
         Ok(result) => match result.result {
             GetEntryResultType::Single(item) => item.into(),

@@ -1,14 +1,12 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
-    network::entry_with_header::{EntryWithHeader,fetch_entry_with_header}
 };
 
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
-    cas::content::AddressableContent
 };
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
@@ -38,20 +36,10 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     let link_remove = LinkData::from_link(&link, LinkActionKind::REMOVE);
     let entry = Entry::LinkRemove(link_remove);
 
-    let agent_state = &zome_call_data.context.state().unwrap().agent();
-    let header_result = agent_state.top_chain_header();
-    if header_result.is_none()
-    {
-        return ribosome_error_code!(Unspecified);
-    }
-    let header = header_result.unwrap();
-    
-    let entry_with_header = EntryWithHeader{entry,header};
-
     // Wait for future to be resolved
     let result: Result<(), HolochainError> = zome_call_data
         .context
-        .block_on(author_entry(&entry_with_header,&zome_call_data.context))
+        .block_on(author_entry(&entry, None, &zome_call_data.context))
         .map(|_| ());
 
     runtime.store_result(result)

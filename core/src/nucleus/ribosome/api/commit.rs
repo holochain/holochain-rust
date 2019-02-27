@@ -1,10 +1,9 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
-    network::entry_with_header::{EntryWithHeader,fetch_entry_with_header},
     agent::state
 };
-use holochain_core_types::{cas::content::{Address,AddressableContent}, entry::Entry, error::HolochainError};
+use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -27,15 +26,10 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
-
-   // let entry_with_header_result = fetch_entry_with_header(&entry.address(),&zome_call_data.context.clone());
-    let header = state::create_new_chain_header(&entry,zome_call_data.context.clone(),&None);
-
-    let entry_with_header = EntryWithHeader{entry,header};
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> = zome_call_data
         .context
-        .block_on(author_entry(&entry_with_header,&zome_call_data.context));
+        .block_on(author_entry(&entry, None, &zome_call_data.context));
 
     runtime.store_result(task_result)
 }

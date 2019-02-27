@@ -109,11 +109,6 @@ impl ChainHeader {
         self.link_update_delete.clone()
     }
 
-    pub fn set_link_update_delete(&mut self,address : Option<Address>)
-    {
-        self.link_update_delete = address
-    }
-
     /// entry_signature getter
     pub fn provenances(&self) -> &Vec<Provenance> {
         &self.provenances

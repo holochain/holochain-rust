@@ -1,7 +1,7 @@
 use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
-    network::{actions::publish::publish,entry_with_header::EntryWithHeader},
+    network::actions::publish::publish,
     nucleus::actions::{
         build_validation_package::build_validation_package, validate::validate_entry,
     },
@@ -9,16 +9,17 @@ use crate::{
 
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
+    entry::Entry,
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 
 pub async fn author_entry<'a>(
-    entry_with_header: &'a EntryWithHeader,
+    entry: &'a Entry,
+    maybe_crud_link: Option<Address>,
     context: &'a Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let EntryWithHeader{entry, header} = entry_with_header;
     let address = entry.address();
     context.log(format!(
         "debug/workflow/authoring_entry: {} with content: {:?}",
@@ -46,7 +47,7 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: committing...",
         address
     ));
-    let addr = await!(commit_entry(entry.clone(), header.link_update_delete(), &context))?;
+    let addr = await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
     context.log(format!(
         "debug/workflow/authoring_entry/{}: committed",
         address

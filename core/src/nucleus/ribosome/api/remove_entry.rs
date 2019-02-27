@@ -2,7 +2,6 @@ use crate::{
     nucleus::{ribosome::{api::ZomeApiResult, Runtime},
     actions::{build_validation_package::*, validate::*}},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
-    network::entry_with_header::{EntryWithHeader,fetch_entry_with_header}
 };
 use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
@@ -46,7 +45,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         &zome_call_data.context,
         &get_args,
     ));
-    println!("maybe entry result {:?}",maybe_entry_result.clone());
+   
     if let Err(_err) = maybe_entry_result {
         return ribosome_error_code!(Unspecified);
     }
@@ -56,23 +55,16 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     }
     let deleted_entry_address = entry_result.latest().unwrap().address();
 
-    let mut entry_with_header_result = fetch_entry_with_header(&deleted_entry_address,&zome_call_data.context.clone());
-    println!("fetch result {:?}",entry_with_header_result.clone());
-    if entry_with_header_result.is_err()
-    {
-        return ribosome_error_code!(Unspecified)
-    }
 
-    let entry_with_header = entry_with_header_result.unwrap();
 
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
-    let deletion_entry_with_header = EntryWithHeader{entry:deletion_entry.clone(),header:entry_with_header.header.clone()};
 
     let res: Result<(), HolochainError> = zome_call_data
         .context
         .block_on(author_entry(
-            &deletion_entry_with_header,
+            &deletion_entry.clone(),
+            Some(deleted_entry_address.clone()),
             &zome_call_data.context.clone(),
         ))
         .map(|_| ());

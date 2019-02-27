@@ -4,7 +4,7 @@ use holochain_core::{
     nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
-use holochain_core_types::{cas::content::AddressableContent, entry::Entry};
+use holochain_core_types::entry::Entry;
 use neon::{context::Context, prelude::*};
 use std::{
     cell::RefCell,
@@ -201,7 +201,7 @@ impl Waiter {
                                 });
                                 checker.add(num_instances, move |aw| {
                                     *aw.action()
-                                        == Action::RemoveEntry((entry.clone().address(),remove_entry.clone().deleted_entry_address()))
+                                        == Action::RemoveEntry((remove_entry.clone().deleted_entry_address(),remove_entry.clone().deleted_entry_address()))
                                 });
                             },
                             // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s

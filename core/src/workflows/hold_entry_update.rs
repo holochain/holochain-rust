@@ -8,7 +8,7 @@ use crate::{
 };
 
 use holochain_core_types::{
-    cas::content::{Address,AddressableContent},
+    cas::content::Address,
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
     

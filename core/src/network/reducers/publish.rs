@@ -6,8 +6,7 @@ use crate::{
         entry_with_header::{fetch_entry_with_header, EntryWithHeader},
         reducers::send,
         state::NetworkState,
-    },
-    nucleus::actions::get_entry::get_entry_crud_meta_from_dht,
+    }
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -114,12 +113,10 @@ fn reduce_publish_inner(
     network_state.initialized()?;
 
     let entry_with_header = fetch_entry_with_header(&address, &context)?;
-    let (_, maybe_link_update_delete) = get_entry_crud_meta_from_dht(context, address.clone())?
-        .expect("Entry should have crud-status metadata in DHT.");
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            if(entry_with_header.header.link_update_delete().is_some())
+            if entry_with_header.header.link_update_delete().is_some()
             {
                 publish_update_delete_meta(
                  network_state,

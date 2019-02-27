@@ -33,7 +33,6 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let link = input.to_link();
     let link_add = LinkData::from_link(&link, LinkActionKind::ADD);
     let entry = Entry::LinkAdd(link_add);
-    let agent_state = &zome_call_data.context.state().unwrap().agent();
     // Wait for future to be resolved
     let result: Result<(), HolochainError> = zome_call_data
         .context

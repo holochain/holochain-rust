@@ -1,7 +1,6 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
-    agent::state
 };
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use std::convert::TryFrom;

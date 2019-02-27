@@ -9,28 +9,15 @@
 //! The main export you should care about is ZmqIpcClient.
 //!
 
-// wss
-extern crate tungstenite;
-extern crate url;
-extern crate native_tls;
+mod transport;
+mod transport_wss;
 
-mod connection;
-mod connection_wss;
+pub use transport::{DidWork, Transport, TransportError, TransportEvent, TransportResult};
 
-pub use connection::{
-    ConnectionError,
-    ConnectionResult,
-    DidWork,
-    ConnectionEvent,
-    Connection};
-
-pub use connection_wss::ConnectionWss;
+pub use transport_wss::TransportWss;
 
 #[macro_use]
 pub mod errors;
-pub mod context;
-pub mod socket;
 pub mod util;
 
-pub mod ipc_client;
 pub mod spawn;

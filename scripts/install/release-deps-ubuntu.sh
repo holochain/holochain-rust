@@ -13,4 +13,4 @@ sudo apt-get install -y \
 # libzmq
 sudo apt-get install -y \
   libzmq3-dev \
-  libsodium23
+  libsodium23=1.0.16-2

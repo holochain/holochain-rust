@@ -9,19 +9,16 @@ pub mod validation_package;
 use crate::{
     context::Context,
     nucleus::{
-        actions::call_zome_function::make_cap_request_for_call,
         ribosome::{
             self,
             callback::{genesis::genesis, receive::receive},
-            capabilities::CapabilityRequest,
             runtime::WasmCallData,
             Defn,
         },
-        ZomeFnCall,
+        CallbackFnCall,
     },
 };
 use holochain_core_types::{
-    cas::content::Address,
     dna::wasm::DnaWasm,
     entry::Entry,
     error::{HolochainError, RibosomeEncodedValue},
@@ -170,14 +167,14 @@ impl From<RibosomeEncodedValue> for CallbackResult {
 
 pub(crate) fn run_callback(
     context: Arc<Context>,
-    fc: ZomeFnCall,
+    call: CallbackFnCall,
     wasm: &DnaWasm,
     dna_name: String,
 ) -> CallbackResult {
     match ribosome::run_dna(
         wasm.code.clone(),
-        Some(fc.clone().parameters.into_bytes()),
-        WasmCallData::new_zome_call(context, dna_name, fc),
+        Some(call.clone().parameters.into_bytes()),
+        WasmCallData::new_callback_call(context, dna_name, call),
     ) {
         Ok(call_result) => {
             if call_result.is_null() {
@@ -190,29 +187,14 @@ pub(crate) fn run_callback(
     }
 }
 
-pub fn make_internal_capability_request(
-    context: Arc<Context>,
-    function: &str,
-    parameters: JsonString,
-) -> CapabilityRequest {
-    make_cap_request_for_call(
-        context.clone(),
-        Address::from(context.agent_id.pub_sign_key.clone()),
-        Address::from(context.agent_id.pub_sign_key.clone()),
-        function,
-        parameters,
-    )
-}
-
 pub fn call(
     context: Arc<Context>,
     zome: &str,
     function: &Callback,
     params: &CallbackParams,
 ) -> CallbackResult {
-    let zome_call = ZomeFnCall::new(
+    let call = CallbackFnCall::new(
         zome,
-        make_internal_capability_request(context.clone(), function.as_str(), params.into()),
         &function.as_str().to_string(),
         params.clone(),
     );
@@ -225,7 +207,7 @@ pub fn call(
             if wasm.code.is_empty() {
                 CallbackResult::NotImplemented("call/2".into())
             } else {
-                run_callback(context.clone(), zome_call, wasm, dna.name.clone())
+                run_callback(context.clone(), call, wasm, dna.name.clone())
             }
         }
     }

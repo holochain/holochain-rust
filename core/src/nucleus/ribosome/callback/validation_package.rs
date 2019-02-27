@@ -3,10 +3,10 @@ use crate::{
     nucleus::{
         ribosome::{
             self,
-            callback::{links_utils, make_internal_capability_request, CallbackResult},
+            callback::{links_utils, CallbackResult},
             runtime::WasmCallData,
         },
-        ZomeFnCall,
+        CallbackFnCall,
     },
 };
 use holochain_core_types::{
@@ -37,20 +37,15 @@ pub fn get_validation_package_definition(
                 .get_wasm(&zome_name)
                 .ok_or(HolochainError::ErrorGeneric(String::from("no wasm found")))?;
 
-            let call = ZomeFnCall::new(
+            let call = CallbackFnCall::new(
                 &zome_name,
-                make_internal_capability_request(
-                    context.clone(),
-                    "__hdk_get_validation_package_for_entry_type",
-                    app_entry_type.clone().into(),
-                ),
                 "__hdk_get_validation_package_for_entry_type",
                 app_entry_type.to_string(),
             );
             ribosome::run_dna(
                 wasm.code.clone(),
                 Some(app_entry_type.to_string().into_bytes()),
-                WasmCallData::new_zome_call(context, dna.name, call),
+                WasmCallData::new_callback_call(context, dna.name, call),
             )?
         }
         EntryType::LinkAdd => {
@@ -81,13 +76,8 @@ pub fn get_validation_package_definition(
                 direction: link_definition_path.direction,
             };
 
-            let call = ZomeFnCall::new(
+            let call = CallbackFnCall::new(
                 &link_definition_path.zome_name,
-                make_internal_capability_request(
-                    context.clone(),
-                    "__hdk_get_validation_package_for_link",
-                    params.clone().into(),
-                ),
                 "__hdk_get_validation_package_for_link",
                 params,
             );
@@ -95,7 +85,7 @@ pub fn get_validation_package_definition(
             ribosome::run_dna(
                 wasm.code.clone(),
                 Some(call.parameters.into_bytes()),
-                WasmCallData::new_zome_call(context.clone(), dna.name, call),
+                WasmCallData::new_callback_call(context.clone(), dna.name, call),
             )?
         }
         EntryType::LinkRemove => {
@@ -126,13 +116,8 @@ pub fn get_validation_package_definition(
                 direction: link_definition_path.direction,
             };
 
-            let call = ZomeFnCall::new(
+            let call = CallbackFnCall::new(
                 &link_definition_path.zome_name,
-                make_internal_capability_request(
-                    context.clone(),
-                    "__hdk_get_validation_package_for_link",
-                    params.clone().into(),
-                ),
                 "__hdk_get_validation_package_for_link",
                 params,
             );
@@ -140,7 +125,7 @@ pub fn get_validation_package_definition(
             ribosome::run_dna(
                 wasm.code.clone(),
                 Some(call.parameters.into_bytes()),
-                WasmCallData::new_zome_call(context.clone(), dna.name.clone(), call),
+                WasmCallData::new_callback_call(context.clone(), dna.name.clone(), call),
             )?
         }
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),

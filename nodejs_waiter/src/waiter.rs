@@ -191,7 +191,7 @@ impl Waiter {
                                     _ => false,
                                 });
                             }
-                            Entry::Deletion(remove_entry) => {
+                            Entry::Deletion(deletion_entry) => {
                                 // Pair every `EntryRemove` with N `Hold`s
                                 checker.add(num_instances, move |aw| match aw.action() {
                                     Action::Hold(EntryWithHeader { entry, header: _ }) => {
@@ -201,7 +201,7 @@ impl Waiter {
                                 });
                                 checker.add(num_instances, move |aw| {
                                     *aw.action()
-                                        == Action::RemoveEntry((remove_entry.clone().deleted_entry_address(),remove_entry.clone().deleted_entry_address()))
+                                        == Action::RemoveEntry((deletion_entry.clone().deleted_entry_address(),deletion_entry.clone().deleted_entry_address()))
                                 });
                             },
                             // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s

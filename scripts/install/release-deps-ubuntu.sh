@@ -12,4 +12,5 @@ sudo apt-get install -y \
 
 # libzmq
 sudo apt-get install -y \
-  libzmq3-dev
+  libzmq3-dev \
+  libsodium-dev

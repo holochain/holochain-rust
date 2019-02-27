@@ -5,9 +5,9 @@ use crate::{
         direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
     },
     nucleus::{
-        state::{NucleusState, ValidationResult},
-        ExecuteZomeFnResponse, ZomeFnCall,
+        state::NucleusState, validation::ValidationResult, ExecuteZomeFnResponse, ZomeFnCall,
     },
+    scheduled_jobs::pending_validations::PendingValidation,
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -203,6 +203,10 @@ pub enum Action {
             Result<ValidationPackage, HolochainError>,
         ),
     ),
+
+    /// An entry could not be validated yet because dependencies are still missing.
+    /// This adds the entry to nucleus state's pending list.
+    AddPendingValidation(PendingValidation),
 }
 
 /// function signature for action handler functions

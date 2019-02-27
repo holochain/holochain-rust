@@ -4,6 +4,7 @@ pub mod actions;
 pub mod reducers;
 pub mod ribosome;
 pub mod state;
+pub mod validation;
 
 pub use crate::{
     context::Context,
@@ -77,6 +78,28 @@ impl ZomeFnCall {
 }
 
 pub type ZomeFnResult = HcResult<JsonString>;
+
+/// Struct holding data for requesting the execution of a callback function
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct CallbackFnCall {
+    id: snowflake::ProcessUniqueId,
+    pub zome_name: String,
+    pub fn_name: String,
+    pub parameters: JsonString,
+}
+
+impl CallbackFnCall {
+    pub fn new<J: Into<JsonString>>(zome: &str, function: &str, parameters: J) -> Self {
+        CallbackFnCall {
+            // @TODO can we defer to the ActionWrapper id?
+            // @see https://github.com/holochain/holochain-rust/issues/198
+            id: snowflake::ProcessUniqueId::new(),
+            zome_name: zome.to_string(),
+            fn_name: function.to_string(),
+            parameters: parameters.into(),
+        }
+    }
+}
 
 #[cfg(test)]
 pub mod tests {

@@ -56,7 +56,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         let zome_call = ZomeFnCall::from_args(zome_call_data.context.clone(), input.clone());
 
         // Don't allow recursive calls
-        if zome_call.same_fn_as(&zome_call_data.zome_call) {
+        if zome_call.same_fn_as(&zome_call_data.call) {
             return ribosome_error_code!(RecursiveCallForbidden);
         }
         local_call(runtime, input)
@@ -68,24 +68,22 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 }
 
 fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
-    let zome_call_data = runtime.zome_call_data().map_err(|_| {
+    let context = runtime.context().map_err(|_| {
         HolochainError::ErrorGeneric(
             "expecting zome call data in local call not null call".to_string(),
         )
     })?;
     // ZomeFnCallArgs to ZomeFnCall
-    let context = zome_call_data.context;
     let zome_call = ZomeFnCall::from_args(context.clone(), input);
     context.block_on(call_zome_function(zome_call, &context))
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
-    let zome_call_data = runtime.zome_call_data().map_err(|_| {
+    let context = runtime.context().map_err(|_| {
         HolochainError::ErrorGeneric(
             "expecting zome call data in bridge call not null call".to_string(),
         )
     })?;
-    let context = zome_call_data.context;
     let conductor_api = context.conductor_api.clone();
 
     let method = format!(

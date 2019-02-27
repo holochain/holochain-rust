@@ -4,7 +4,6 @@
 pub mod genesis;
 pub mod links_utils;
 pub mod receive;
-pub mod validate_entry;
 pub mod validation_package;
 
 use crate::{

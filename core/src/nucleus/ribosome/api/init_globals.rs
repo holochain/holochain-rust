@@ -13,20 +13,20 @@ use wasmi::RuntimeArgs;
 /// Not expecting any complex input
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let call_data = runtime.call_data()?;
     // Create the ZomeApiGlobals struct with some default values
     let mut globals = ZomeApiGlobals {
-        dna_name: zome_call_data.dna_name.to_string(),
+        dna_name: call_data.dna_name.to_string(),
         dna_address: Address::from(""),
-        agent_id_str: JsonString::from(zome_call_data.context.agent_id.clone()).to_string(),
-        agent_address: Address::from(zome_call_data.context.agent_id.address()),
+        agent_id_str: JsonString::from(call_data.context.agent_id.clone()).to_string(),
+        agent_address: Address::from(call_data.context.agent_id.address()),
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
         public_token: Address::from(""),
     };
 
     // Update fields
-    if let Some(state) = zome_call_data.context.state() {
+    if let Some(state) = call_data.context.state() {
         // Update dna_address
         if let Some(dna) = state.nucleus().dna() {
             globals.dna_address = dna.address()
@@ -49,7 +49,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
             }
         }
         // Update public_token
-        let maybe_token = zome_call_data.context.get_public_token();
+        let maybe_token = call_data.context.get_public_token();
         if maybe_token.is_some() {
             globals.public_token = maybe_token.unwrap();
         }

@@ -2,8 +2,9 @@ use crate::{
     agent::actions::commit::commit_entry,
     dht::actions::remove_entry::remove_entry,
     nucleus::{
-        actions::{build_validation_package::*, validate::*},
+        actions::build_validation_package::build_validation_package,
         ribosome::{api::ZomeApiResult, Runtime},
+        validation::validate_entry,
     },
     workflows::get_entry_result::get_entry_result_workflow,
 };
@@ -23,8 +24,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected Address argument
 /// Stores/returns a RibosomeEncodedValue
 pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
-    let context = zome_call_data.context;
+    let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let try_address = Address::try_from(args_str.clone());
@@ -73,6 +73,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             // 2. Validate the entry
             .and_then(|validation_data| {
                 validate_entry(deletion_entry.clone(), validation_data, &context)
+                    .map_err(|validation_error| HolochainError::from(validation_error))
             })
             // 3. Commit the valid entry to chain and DHT
             .and_then(|_| {

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The current git-commit hash is now included in the compile code of the core, and is checked against the same hash that was used to compile the wasm and a warning issued if it's not.  [PR#1050](https://github.com/holochain/holochain-rust/pull/1036)
 - Adds PUBLIC_TOKEN global variable for use in hdk::call in calling public functions. [PR#895](https://github.com/holochain/holochain-rust/pull/895)
 - Adds an [ADR](doc/architecture/decisions/0017-capabilities.md) for capabilities.
+- Validation of link entries gets retried now if base or target of the link were not yet accessible on the validating node. This fixes a bug where links have been invalid due to network timing issues [PR#1054](https://github.com/holochain/holochain-rust/pull/1054).
 ### Fixed
 
 ## [0.0.4-alpha] - 2019-02-15

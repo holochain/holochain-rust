@@ -6,7 +6,7 @@ use crate::{
             memory::WasmPageManager,
             Defn,
         },
-        ZomeFnCall,
+        CallbackFnCall, ZomeFnCall,
     },
 };
 use holochain_core_types::{
@@ -27,30 +27,63 @@ pub struct ZomeCallData {
     /// Name of the DNA that is being hosted.
     pub dna_name: String,
     /// The zome function call that initiated the Ribosome.
-    pub zome_call: ZomeFnCall,
+    pub call: ZomeFnCall,
+}
+
+#[derive(Clone)]
+pub struct CallbackCallData {
+    /// Context of Holochain. Required for operating.
+    pub context: Arc<Context>,
+    /// Name of the DNA that is being hosted.
+    pub dna_name: String,
+    pub call: CallbackFnCall,
 }
 
 #[derive(Clone)]
 pub enum WasmCallData {
     ZomeCall(ZomeCallData),
+    CallbackCall(CallbackCallData),
     DirectCall(String),
 }
 
 impl WasmCallData {
-    pub fn new_zome_call(context: Arc<Context>, dna_name: String, zome_call: ZomeFnCall) -> Self {
+    pub fn new_zome_call(context: Arc<Context>, dna_name: String, call: ZomeFnCall) -> Self {
         WasmCallData::ZomeCall(ZomeCallData {
             context,
             dna_name,
-            zome_call,
+            call,
+        })
+    }
+
+    pub fn new_callback_call(
+        context: Arc<Context>,
+        dna_name: String,
+        call: CallbackFnCall,
+    ) -> Self {
+        WasmCallData::CallbackCall(CallbackCallData {
+            context,
+            dna_name,
+            call,
         })
     }
 
     pub fn fn_name(&self) -> String {
         match self {
-            WasmCallData::ZomeCall(data) => data.zome_call.fn_name.clone(),
+            WasmCallData::ZomeCall(data) => data.call.fn_name.clone(),
+            WasmCallData::CallbackCall(data) => data.call.fn_name.clone(),
             WasmCallData::DirectCall(name) => name.to_string(),
         }
     }
+}
+
+/// Struct holding data of any call (callback or zome)
+#[derive(Clone)]
+pub struct CallData {
+    pub context: Arc<Context>,
+    pub dna_name: String,
+    pub zome_name: String,
+    pub fn_name: String,
+    pub parameters: JsonString,
 }
 
 /// Object holding data to pass around to invoked Zome API functions
@@ -67,7 +100,42 @@ impl Runtime {
     pub fn zome_call_data(&self) -> Result<ZomeCallData, Trap> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.clone()),
-            WasmCallData::DirectCall(_) => Err(Trap::new(TrapKind::Unreachable)),
+            _ => Err(Trap::new(TrapKind::DivisionByZero)),
+        }
+    }
+
+    pub fn callback_call_data(&self) -> Result<CallbackCallData, Trap> {
+        match &self.data {
+            WasmCallData::CallbackCall(ref data) => Ok(data.clone()),
+            _ => Err(Trap::new(TrapKind::ElemUninitialized)),
+        }
+    }
+
+    pub fn call_data(&self) -> Result<CallData, Trap> {
+        match &self.data {
+            WasmCallData::ZomeCall(ref data) => Ok(CallData {
+                context: data.context.clone(),
+                dna_name: data.dna_name.clone(),
+                zome_name: data.call.zome_name.clone(),
+                fn_name: data.call.fn_name.clone(),
+                parameters: data.call.parameters.clone(),
+            }),
+            WasmCallData::CallbackCall(ref data) => Ok(CallData {
+                context: data.context.clone(),
+                dna_name: data.dna_name.clone(),
+                zome_name: data.call.zome_name.clone(),
+                fn_name: data.call.fn_name.clone(),
+                parameters: data.call.parameters.clone(),
+            }),
+            _ => Err(Trap::new(TrapKind::TableAccessOutOfBounds)),
+        }
+    }
+
+    pub fn context(&self) -> Result<Arc<Context>, Trap> {
+        match &self.data {
+            WasmCallData::ZomeCall(ref data) => Ok(data.context.clone()),
+            WasmCallData::CallbackCall(ref data) => Ok(data.context.clone()),
+            _ => Err(Trap::new(TrapKind::MemoryAccessOutOfBounds)),
         }
     }
 

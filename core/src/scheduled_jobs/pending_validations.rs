@@ -2,7 +2,10 @@ use crate::{
     context::Context, network::entry_with_header::EntryWithHeader,
     workflows::hold_link::hold_link_workflow,
 };
-use holochain_core_types::{cas::content::Address, entry::entry_type::EntryType};
+use holochain_core_types::{
+    cas::content::{Address, AddressableContent},
+    entry::entry_type::EntryType,
+};
 use std::{sync::Arc, thread};
 
 pub type PendingValidation = Box<(EntryWithHeader, Vec<Address>)>;
@@ -18,9 +21,16 @@ pub fn run_pending_validations(context: Arc<Context>) {
         .nucleus()
         .pending_validations
         .iter()
-        .for_each(|(_, boxed)| match boxed.0.entry.entry_type() {
-            EntryType::LinkAdd => retry_validation(boxed.clone(), context.clone()),
-            EntryType::LinkRemove => retry_validation(boxed.clone(), context.clone()),
-            _ => panic!("Pending validations are (currently) only implemented for links"),
+        .for_each(|(_, boxed)| {
+            context.log(dbg!(format!(
+                "debug/scheduled_jobs/run_pending_validations: found pending validation for {}: {}",
+                boxed.0.entry.entry_type(),
+                boxed.0.entry.address()
+            )));
+            match boxed.0.entry.entry_type() {
+                EntryType::LinkAdd => retry_validation(boxed.clone(), context.clone()),
+                EntryType::LinkRemove => retry_validation(boxed.clone(), context.clone()),
+                _ => panic!("Pending validations are (currently) only implemented for links"),
+            }
         });
 }

@@ -3,7 +3,6 @@ pub mod call_zome_function;
 pub mod get_entry;
 pub mod initialize;
 pub mod run_validation_callback;
-//pub mod validate;
 
 #[cfg(test)]
 pub mod tests {

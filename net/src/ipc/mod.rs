@@ -8,14 +8,6 @@
 //!
 //! The main export you should care about is ZmqIpcClient.
 //!
-#![warn(unused_extern_crates)]
-#[macro_use]
-extern crate failure;
-extern crate holochain_net_connection;
-#[macro_use]
-extern crate lazy_static;
-extern crate snowflake;
-extern crate zmq;
 
 // wss
 extern crate tungstenite;

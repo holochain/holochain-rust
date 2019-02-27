@@ -1,7 +1,7 @@
 //! This module uses lazy_static! to make the zmq::Context easier to work with
 //! Just make sure to call IpcClient::destroy_context() when ready
 
-use crate::errors::*;
+use super::errors::*;
 use std;
 use zmq;
 

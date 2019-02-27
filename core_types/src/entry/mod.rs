@@ -134,7 +134,7 @@ impl AddressableContent for Entry {
 pub struct EntryWithMeta {
     pub entry: Entry,
     pub crud_status: CrudStatus,
-    pub maybe_crud_link: Option<Address>,
+    pub maybe_link_update_delete: Option<Address>,
 }
 
 /// dummy entry value

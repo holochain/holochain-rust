@@ -114,7 +114,7 @@ fn reduce_publish_inner(
     network_state.initialized()?;
 
     let entry_with_header = fetch_entry_with_header(&address, &context)?;
-    let (_, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address.clone())?
+    let (_, maybe_link_update_delete) = get_entry_crud_meta_from_dht(context, address.clone())?
         .expect("Entry should have crud-status metadata in DHT.");
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),

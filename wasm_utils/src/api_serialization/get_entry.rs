@@ -121,7 +121,7 @@ impl EntryHistory {
         let address = entry_with_meta.entry.address();
         let item = GetEntryResultItem::new(Some((entry_with_meta, headers)));
         self.items.push(item);
-        if let Some(new_address) = entry_with_meta.maybe_crud_link.clone() {
+        if let Some(new_address) = entry_with_meta.maybe_link_update_delete.clone() {
             self.crud_links.insert(address, new_address);
         }
     }
@@ -229,7 +229,7 @@ mod tests {
             &EntryWithMeta {
                 entry: test_entry(),
                 crud_status: CrudStatus::Live,
-                maybe_crud_link: None,
+                maybe_link_update_delete: None,
             },
             vec![test_chain_header()],
         );
@@ -245,7 +245,7 @@ mod tests {
             &EntryWithMeta {
                 entry: test_entry_a(),
                 crud_status: CrudStatus::Modified,
-                maybe_crud_link: None,
+                maybe_link_update_delete: None,
             },
             vec![test_chain_header()],
         );
@@ -253,7 +253,7 @@ mod tests {
             &EntryWithMeta {
                 entry: test_entry_b(),
                 crud_status: CrudStatus::Live,
-                maybe_crud_link: None,
+                maybe_link_update_delete: None,
             },
             vec![test_chain_header()],
         );
@@ -268,7 +268,7 @@ mod tests {
             &EntryWithMeta {
                 entry: test_entry(),
                 crud_status: CrudStatus::Live,
-                maybe_crud_link: None,
+                maybe_link_update_delete: None,
             },
             vec![test_chain_header()],
         );
@@ -281,7 +281,7 @@ mod tests {
             &EntryWithMeta {
                 entry: test_entry(),
                 crud_status: CrudStatus::Live,
-                maybe_crud_link: None,
+                maybe_link_update_delete: None,
             },
             vec![test_chain_header()],
         );

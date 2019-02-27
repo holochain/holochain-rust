@@ -251,7 +251,7 @@ pub mod tests {
         let entry_with_meta = EntryWithMeta {
             entry: entry.clone(),
             crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
+            maybe_link_update_delete: None,
         };
         // let header = create_new_chain_header(&entry, context.clone(), &None);
         let entry_result =

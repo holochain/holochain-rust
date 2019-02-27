@@ -78,11 +78,11 @@ pub async fn get_entry_result_workflow<'a>(
             }
 
             // Follow crud-link if possible
-            if entry_with_meta.maybe_crud_link.is_some()
+            if entry_with_meta.maybe_link_update_delete.is_some()
                 && entry_with_meta.crud_status != CrudStatus::Deleted
                 && args.options.status_request != StatusRequestKind::Initial
             {
-                maybe_address = Some(entry_with_meta.maybe_crud_link.unwrap());
+                maybe_address = Some(entry_with_meta.maybe_link_update_delete.unwrap());
             }
         }
     }

@@ -90,7 +90,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         }
     }
     // Get crud-link
-    let mut maybe_crud_link = None;
+    let mut maybe_link_update_delete = None;
     let link_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
         Some(address).into(),
         Some(Attribute::CrudLink).into(),
@@ -103,10 +103,10 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         link_eavs.len()
     );
     if link_eavs.len() == 1 {
-        maybe_crud_link = Some(link_eavs.iter().next().unwrap().value());
+        maybe_link_update_delete = Some(link_eavs.iter().next().unwrap().value());
     }
     // Done
-    Ok(Some((crud_status, maybe_crud_link)))
+    Ok(Some((crud_status, maybe_link_update_delete)))
 }
 
 /// FetchEntry Action Creator
@@ -124,12 +124,12 @@ pub fn get_entry_with_meta<'a>(
         Ok(Some(entry)) => entry,
     };
     // 2. try to get the entry's metadata
-    let (crud_status, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address)?
+    let (crud_status, maybe_link_update_delete) = get_entry_crud_meta_from_dht(context, address)?
         .expect("Entry should have crud-status metadata");
     let item = EntryWithMeta {
         entry,
         crud_status,
-        maybe_crud_link,
+        maybe_link_update_delete,
     };
     Ok(Some(item))
 }

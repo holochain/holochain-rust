@@ -19,13 +19,13 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected Address argument
 /// Stores/returns a RibosomeEncodedValue
 pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    println!("invoked");
+ 
     let zome_call_data = runtime.zome_call_data()?;
-    println!("zome call adat");
+
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let try_address = Address::try_from(args_str.clone());
-    println!("try address{:?}",try_address.clone());
+ 
     // Exit on error
     if try_address.is_err() {
         zome_call_data.context.log(format!(

@@ -191,15 +191,19 @@ impl Waiter {
                                     _ => false,
                                 });
                             }
-                            Entry::Deletion(deleted_entry) => {
+                            Entry::Deletion(remove_entry) => {
+                                // Pair every `LinkRemove` with N `Hold`s
                                 checker.add(num_instances, move |aw| match aw.action() {
-                                    Action::RemoveEntry(_) => {
-                                        deleted_entry.clone().deleted_entry_address()
-                                            == committed_entry.address()
+                                    Action::Hold(EntryWithHeader { entry, header: _ }) => {
+                                        *entry == committed_entry
                                     }
                                     _ => false,
                                 });
-                            }
+                                checker.add(num_instances, move |aw| {
+                                    *aw.action()
+                                        == Action::RemoveEntry((remove_entry.clone(),remove_entry.clone().deleted_entry_address()))
+                                });
+                            },
                             // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s
                             Entry::LinkAdd(link_add) => {
                                 checker.add(num_instances, move |aw| match aw.action() {

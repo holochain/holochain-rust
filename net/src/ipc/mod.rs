@@ -1,6 +1,6 @@
-//! Networking / P2P IPC Abstraction
+//! IPC Abstraction for P2P networking
 //!
-//! This crate allows holochain to connect to a running P2P client node
+//! This module allows holochain to connect to a running P2P client node
 //! over WebSocket-based socket connection.
 
 mod transport;

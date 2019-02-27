@@ -20,7 +20,7 @@ const instanceInvalid = Config.instance(agent, dnaInvalid, 'ingrid')
 test('can run a scenario', t => {
     const scenario = new Scenario([instanceValid])
     scenario.run((stop, {valorie}) => {
-        t.equal(valorie.agentId, "geQa11ADJKJpTAcwEI_o7A7HDgDWwKoFHPV4-Pj7DRWtqXFHzhjaAqTTYOQPsrtbsKfatOGxNHHVnaCBNKEBSTaSf0gh")
+        t.equal(valorie.agentId, "HcSCjaqeDMMwaa3evjVVzb3RcCH8s5apz6habwxAwIcs37mz9D6QXdIWY499Yja")
         t.end()
         stop()
     }).catch(t.fail)

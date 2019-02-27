@@ -11,7 +11,7 @@ use crate::{
 };
 use holochain_core_types::{cas::content::Address, crud_status::CrudStatus, eav::Attribute,entry::entry_type::EntryType};
 use holochain_net_connection::json_protocol::{DhtMetaData, EntryData};
-use std::{sync::Arc, thread};
+use std::{sync::Arc, thread,str::FromStr};
 
 /// The network requests us to store (i.e. hold) the given entry.
 pub fn handle_store_entry(dht_data: EntryData, context: Arc<Context>) {
@@ -70,7 +70,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
                 context.log(format!("err/net/dht: {}", error))
             }
         });
-    } else if attr == "Deleted" {
+    } else if CrudStatus::from_str(&attr).expect("Could not convert deleted attribute to CrudStatus") == CrudStatus::Deleted {
         context.log("debug/net/handle: HandleStoreMeta: got CRUD STATUS. processing...");
     // FIXME: block_on hold crud_status metadata in DHT?
     let entry_with_header: EntryWithHeader = serde_json::from_str(
@@ -87,7 +87,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
             }
     });
        
-    } else if attr == "Modified"  {
+    } else if CrudStatus::from_str(&attr).expect("Could not convert modified attribute to CrudStatus") == CrudStatus::Modified  {
         context.log("debug/net/handle: HandleStoreMeta: got CRUD LINK. processing...");
         // FIXME: block_on hold crud_link metadata in DHT?
 

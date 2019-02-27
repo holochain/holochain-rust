@@ -124,7 +124,7 @@ fn reduce_publish_inner(
                 publish_update_delete_meta(
                  network_state,
                 entry_with_header.entry.address(),
-                String::from("Modified"),
+                String::from(CrudStatus::Modified),
                 &entry_with_header.clone(),
                  )
             }
@@ -141,7 +141,7 @@ fn reduce_publish_inner(
             publish_update_delete_meta(
                 network_state,
                 entry_with_header.entry.address(),
-                String::from("Deleted"),
+                String::from(CrudStatus::Deleted),
                 &entry_with_header.clone(),
             )
         }),

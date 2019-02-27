@@ -42,12 +42,12 @@ pub async fn hold_link_workflow<'a>(
             context.log(format!("debug/workflow/hold_link: {}", message));
             context.log(format!("debug/workflow/hold_link: Error was: {:?}", err));
             add_pending_validation(entry_with_header.to_owned(), Vec::new(), context);
-            HolochainError::ValidationFailed(message.to_string())
+            HolochainError::ValidationPending
         })?;
     let validation_package = maybe_validation_package.ok_or({
         let message = "Source did respond to request but did not deliver validation package! This is weird! Entry is not valid!";
         context.log(format!("debug/workflow/hold_link: {}", message));
-        HolochainError::ValidationFailed(message.to_string())
+        HolochainError::ValidationPending
     })?;
     context.log(format!("debug/workflow/hold_link: got validation package"));
 
@@ -65,7 +65,7 @@ pub async fn hold_link_workflow<'a>(
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             add_pending_validation(entry_with_header.to_owned(), dependencies.clone(), &context);
         }
-        err
+        HolochainError::ValidationPending
     })?;
     context.log(format!("debug/workflow/hold_link: is valid!"));
 

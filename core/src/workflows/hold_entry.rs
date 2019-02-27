@@ -10,7 +10,6 @@ use crate::{
 };
 
 use holochain_core_types::{
-    cas::content::Address,
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
@@ -19,7 +18,7 @@ use std::sync::Arc;
 pub async fn hold_entry_workflow<'a>(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
-) -> Result<Address, HolochainError> {
+) -> Result<(), HolochainError> {
     let EntryWithHeader { entry, header } = entry_with_header;
 
     // 1. Get validation package from source
@@ -29,12 +28,12 @@ pub async fn hold_entry_workflow<'a>(
             context.log(format!("debug/workflow/hold_entry: {}", message));
             context.log(format!("debug/workflow/hold_entry: Error was: {:?}", err));
             add_pending_validation(entry_with_header.to_owned(), Vec::new(), &context);
-            HolochainError::ValidationFailed(message.to_string())
+            HolochainError::ValidationPending
         })?;
     let validation_package = maybe_validation_package.ok_or({
         let message = "Source did respond to request but did not deliver validation package! This is weird! Entry is not valid!";
         context.log(format!("debug/workflow/hold_entry: {}", message));
-        HolochainError::ValidationFailed(message.to_string())
+        HolochainError::ValidationPending
     })?;
     context.log(format!("debug/workflow/hold_entry: got validation package"));
 
@@ -49,7 +48,9 @@ pub async fn hold_entry_workflow<'a>(
     await!(validate_entry(entry.clone(), validation_data, &context))?;
 
     // 3. If valid store the entry in the local DHT shard
-    await!(hold_entry(entry_with_header, context))
+    await!(hold_entry(entry_with_header, context))?;
+
+    Ok(())
 }
 
 #[cfg(test)]

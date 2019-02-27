@@ -146,7 +146,6 @@ pub mod tests {
         },
         workflows::author_entry::author_entry,
     };
-    use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::Address,
         dna::{
@@ -224,7 +223,7 @@ pub mod tests {
         let zome_call = ZomeFnCall::new("test_zome", cap_request, "test", "{}");
 
         let context = &test_setup.context;
-        let result = test_setup.context.block_on(call_zome_function(zome_call, context));
+        let result = context.block_on(call_zome_function(zome_call, context));
         assert_eq!(expected, Ok(result));
     }
 
@@ -326,7 +325,10 @@ pub mod tests {
         let grant =
             CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        let addr = test_setup.context.block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        let addr = test_setup
+            .context
+            .block_on(author_entry(&grant_entry, None, &test_setup.context))
+            .unwrap();
         let cap_request = make_cap_request_for_call(
             test_setup.context.clone(),
             addr,
@@ -371,7 +373,10 @@ pub mod tests {
         )
         .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        let grant_addr = test_setup.context.block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        let grant_addr = test_setup
+            .context
+            .block_on(author_entry(&grant_entry, None, &test_setup.context))
+            .unwrap();
         let cap_request = make_cap_request_for_call(
             test_setup.context.clone(),
             grant_addr.clone(),
@@ -489,7 +494,9 @@ pub mod tests {
         let grant =
             CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        let grant_addr = block_on(author_entry(&grant_entry, None, &context)).unwrap();
+        let grant_addr = context
+            .block_on(author_entry(&grant_entry, None, &context))
+            .unwrap();
 
         // make the call with a valid capability call from a random source should succeed
         let zome_call = ZomeFnCall::new(

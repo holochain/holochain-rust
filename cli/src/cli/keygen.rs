@@ -1,9 +1,6 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
-use holochain_dpki::{
-    key_bundle::{KeyBundle, SeedType},
-    SEED_SIZE,
-};
+use holochain_dpki::{key_blob::Blobbable, key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
 use holochain_sodium::secbuf::SecBuf;
 use rpassword;
 use std::{
@@ -33,8 +30,8 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     let mut seed = SecBuf::with_secure(SEED_SIZE);
     seed.randomize();
 
-    let mut keybundle =
-        KeyBundle::new_from_seed(&mut seed, SeedType::Mock).expect("Failed to generate keybundle");
+    let mut keybundle = KeyBundle::new_from_seed_buf(&mut seed, SeedType::Mock)
+        .expect("Failed to generate keybundle");
     let passphrase_bytes = passphrase.as_bytes();
     let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
     passphrase_buf

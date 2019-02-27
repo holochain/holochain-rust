@@ -41,7 +41,7 @@ These dependencies need to be installed in order to compile, and use `holochain`
 
 To install the latest version of the Holochain conductor, run the following command in a terminal
 ```shell
-$ cargo install holochain --force --git https://github.com/holochain/holochain-rust.git --branch develop
+$ cargo install holochain --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.5-alpha
 ```
 
 The Conductor should then be available from your command line using the `holochain` command.

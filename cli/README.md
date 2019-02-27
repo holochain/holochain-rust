@@ -44,7 +44,7 @@ These dependencies need to be installed in order to compile, and use `hc`:
 
 To install the latest version of the Holochain command line, run the following command in a terminal
 ```shell
-$ cargo install hc --force --git https://github.com/holochain/holochain-rust.git --branch develop
+$ cargo install hc --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.5-alpha
 ```
 
 The command line tools are now available in your command line using the `hc` command.

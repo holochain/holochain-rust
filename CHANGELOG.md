@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The current git-commit hash is now included in the compile code of the core, and is checked against the same hash that was used to compile the wasm and a warning issued if it's not.  [PR#1050](https://github.com/holochain/holochain-rust/pull/1036)
 ### Fixed
 
-## [0.0.4-alpha] - 2019-02-15
+## [0.0.5-alpha] - 2019-03-01
 
 ### Fixed
 - Futures handling and zome function execution refactored which enables using complex API functions like `commit_entry` in callbacks such as `receive`.  This also fixes long standing flaky tests and blocking behaviors we have been experiencing. [#991](https://github.com/holochain/holochain-rust/pull/991)

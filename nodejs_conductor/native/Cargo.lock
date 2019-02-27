@@ -620,12 +620,12 @@ dependencies = [
 
 [[package]]
 name = "holochain-node"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
- "holochain_conductor_api 0.0.4-alpha",
- "holochain_core 0.0.4-alpha",
- "holochain_core_types 0.0.4-alpha",
- "holochain_node_test_waiter 0.0.4-alpha",
+ "holochain_conductor_api 0.0.5-alpha",
+ "holochain_core 0.0.5-alpha",
+ "holochain_core_types 0.0.5-alpha",
+ "holochain_node_test_waiter 0.0.5-alpha",
  "neon 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "neon-build 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "neon-serde 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -636,10 +636,10 @@ dependencies = [
 
 [[package]]
 name = "holochain_cas_implementations"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
  "glob 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_core_types 0.0.4-alpha",
+ "holochain_core_types 0.0.5-alpha",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "multihash 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -649,14 +649,14 @@ dependencies = [
 
 [[package]]
 name = "holochain_common"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
  "directories 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "holochain_conductor_api"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "boolinator 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -665,14 +665,14 @@ dependencies = [
  "directories 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "dirs 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "fs_extra 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_cas_implementations 0.0.4-alpha",
- "holochain_common 0.0.4-alpha",
- "holochain_core 0.0.4-alpha",
- "holochain_core_types 0.0.4-alpha",
- "holochain_dpki 0.0.4-alpha",
- "holochain_net 0.0.4-alpha",
- "holochain_net_ipc 0.0.4-alpha",
- "holochain_sodium 0.0.4-alpha",
+ "holochain_cas_implementations 0.0.5-alpha",
+ "holochain_common 0.0.5-alpha",
+ "holochain_core 0.0.5-alpha",
+ "holochain_core_types 0.0.5-alpha",
+ "holochain_dpki 0.0.5-alpha",
+ "holochain_net 0.0.5-alpha",
+ "holochain_net_ipc 0.0.5-alpha",
+ "holochain_sodium 0.0.5-alpha",
  "hyper 0.12.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper-staticfile 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -694,7 +694,7 @@ dependencies = [
 
 [[package]]
 name = "holochain_core"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -709,15 +709,15 @@ dependencies = [
  "futures-sink-preview 0.3.0-alpha.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-util-preview 0.3.0-alpha.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "globset 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_cas_implementations 0.0.4-alpha",
- "holochain_common 0.0.4-alpha",
- "holochain_core_types 0.0.4-alpha",
- "holochain_core_types_derive 0.0.4-alpha",
- "holochain_dpki 0.0.4-alpha",
- "holochain_net 0.0.4-alpha",
- "holochain_net_connection 0.0.4-alpha",
- "holochain_sodium 0.0.4-alpha",
- "holochain_wasm_utils 0.0.4-alpha",
+ "holochain_cas_implementations 0.0.5-alpha",
+ "holochain_common 0.0.5-alpha",
+ "holochain_core_types 0.0.5-alpha",
+ "holochain_core_types_derive 0.0.5-alpha",
+ "holochain_dpki 0.0.5-alpha",
+ "holochain_net 0.0.5-alpha",
+ "holochain_net_connection 0.0.5-alpha",
+ "holochain_sodium 0.0.5-alpha",
+ "holochain_wasm_utils 0.0.5-alpha",
  "jsonrpc-lite 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-ws-server 10.1.0 (git+https://github.com/paritytech/jsonrpc)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -737,7 +737,7 @@ dependencies = [
 
 [[package]]
 name = "holochain_core_types"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
  "arrayref 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -749,7 +749,7 @@ dependencies = [
  "futures-preview 0.3.0-alpha.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-sink-preview 0.3.0-alpha.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-util-preview 0.3.0-alpha.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_core_types_derive 0.0.4-alpha",
+ "holochain_core_types_derive 0.0.5-alpha",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "multihash 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "objekt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -765,7 +765,7 @@ dependencies = [
 
 [[package]]
 name = "holochain_core_types_derive"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
  "quote 0.6.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -775,12 +775,12 @@ dependencies = [
 
 [[package]]
 name = "holochain_dpki"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
  "arrayref 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_core_types 0.0.4-alpha",
- "holochain_sodium 0.0.4-alpha",
+ "holochain_core_types 0.0.5-alpha",
+ "holochain_sodium 0.0.5-alpha",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -789,13 +789,13 @@ dependencies = [
 
 [[package]]
 name = "holochain_net"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_core_types 0.0.4-alpha",
- "holochain_core_types_derive 0.0.4-alpha",
- "holochain_net_connection 0.0.4-alpha",
- "holochain_net_ipc 0.0.4-alpha",
+ "holochain_core_types 0.0.5-alpha",
+ "holochain_core_types_derive 0.0.5-alpha",
+ "holochain_net_connection 0.0.5-alpha",
+ "holochain_net_ipc 0.0.5-alpha",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -805,11 +805,11 @@ dependencies = [
 
 [[package]]
 name = "holochain_net_connection"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_core_types 0.0.4-alpha",
- "holochain_core_types_derive 0.0.4-alpha",
+ "holochain_core_types 0.0.5-alpha",
+ "holochain_core_types_derive 0.0.5-alpha",
  "rmp-serde 0.13.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_bytes 0.10.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -819,10 +819,10 @@ dependencies = [
 
 [[package]]
 name = "holochain_net_ipc"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_net_connection 0.0.4-alpha",
+ "holochain_net_connection 0.0.5-alpha",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -832,21 +832,21 @@ dependencies = [
 
 [[package]]
 name = "holochain_node_test_waiter"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
  "colored 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_core 0.0.4-alpha",
- "holochain_core_types 0.0.4-alpha",
- "holochain_dpki 0.0.4-alpha",
- "holochain_sodium 0.0.4-alpha",
+ "holochain_core 0.0.5-alpha",
+ "holochain_core_types 0.0.5-alpha",
+ "holochain_dpki 0.0.5-alpha",
+ "holochain_sodium 0.0.5-alpha",
  "neon 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "holochain_sodium"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
- "holochain_core_types 0.0.4-alpha",
+ "holochain_core_types 0.0.5-alpha",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.48 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust_sodium-sys 0.10.3",
@@ -854,10 +854,10 @@ dependencies = [
 
 [[package]]
 name = "holochain_wasm_utils"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 dependencies = [
- "holochain_core_types 0.0.4-alpha",
- "holochain_core_types_derive 0.0.4-alpha",
+ "holochain_core_types 0.0.5-alpha",
+ "holochain_core_types_derive 0.0.5-alpha",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",

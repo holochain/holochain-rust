@@ -29,7 +29,7 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, EntryType},
         Entry, EntryWithMeta,
     },
-    error::{CoreError, HolochainError, RibosomeEncodingBits, RibosomeEncodedValue},
+    error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     hash::HashString,
     json::JsonString,
 };

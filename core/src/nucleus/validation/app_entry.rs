@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     nucleus::{
         actions::run_validation_callback::run_validation_callback,
-        state::{ValidationError, ValidationResult},
+        validation::{ValidationError, ValidationResult},
         ZomeFnCall,
     },
 };

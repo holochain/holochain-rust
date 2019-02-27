@@ -1,6 +1,8 @@
-use crate::{context::Context, nucleus::state::ValidationResult};
+use crate::context::Context;
 use holochain_core_types::{
+    cas::content::Address,
     entry::{entry_type::EntryType, Entry},
+    error::HolochainError,
     validation::ValidationData,
 };
 use std::sync::Arc;
@@ -10,7 +12,47 @@ mod header_address;
 mod link_entry;
 mod provenances;
 
-use crate::nucleus::state::ValidationError;
+#[derive(Clone, Debug, PartialEq)]
+/// A failed validation.
+pub enum ValidationError {
+    /// `Fail` means the validation function did run successfully and recognized the entry
+    /// as invalid. The String parameter holds the non-zero return value of the app validation
+    /// function.
+    Fail(String),
+
+    /// The entry could not get validated because known dependencies (like base and target
+    /// for links) were not present yet.
+    UnresolvedDependencies(Vec<Address>),
+
+    /// A validation function for the given entry could not be found.
+    /// This can happen if the entry's type is not defined in the DNA (which can only happen
+    /// if somebody is sending wrong entries..) or there is no native implementation for a
+    /// system entry type yet.
+    NotImplemented,
+
+    /// An error occurred that is out of the scope of validation (no state?, I/O errors..)
+    Error(String),
+}
+
+/// Result of validating an entry.
+/// Either Ok(()) if the entry is valid,
+/// or any specialization of ValidationError.
+pub type ValidationResult = Result<(), ValidationError>;
+
+impl From<ValidationError> for HolochainError {
+    fn from(ve: ValidationError) -> Self {
+        match ve {
+            ValidationError::Fail(reason) => HolochainError::ValidationFailed(reason),
+            ValidationError::UnresolvedDependencies(_) => {
+                HolochainError::ValidationFailed("Missing dependencies".to_string())
+            }
+            ValidationError::NotImplemented => {
+                HolochainError::NotImplemented("Validation not implemented".to_string())
+            }
+            ValidationError::Error(e) => HolochainError::ErrorGeneric(e),
+        }
+    }
+}
 
 /// Main validation workflow.
 /// This is the high-level validate function that wraps the whole validation process and is what should

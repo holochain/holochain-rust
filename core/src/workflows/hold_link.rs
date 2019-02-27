@@ -8,7 +8,7 @@ use crate::{
     nucleus::validation::validate_entry,
 };
 
-use crate::{instance::dispatch_action, nucleus::state::ValidationError};
+use crate::{instance::dispatch_action, nucleus::validation::ValidationError};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,

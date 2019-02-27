@@ -3,7 +3,7 @@ use crate::{
     nucleus::{
         actions::run_validation_callback::run_validation_callback,
         ribosome::callback::links_utils,
-        state::{ValidationError, ValidationResult},
+        validation::{ValidationError, ValidationResult},
         ZomeFnCall,
     },
 };

@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     nucleus::{
         ribosome::{self, runtime::WasmCallData},
-        state::{ValidationError, ValidationResult},
+        validation::{ValidationError, ValidationResult},
         ZomeFnCall,
     },
 };

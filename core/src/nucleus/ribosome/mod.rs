@@ -4,7 +4,7 @@ pub mod api;
 pub mod callback;
 pub mod memory;
 mod run_dna;
-mod runtime;
+pub mod runtime;
 
 pub use self::{run_dna::*, runtime::*};
 

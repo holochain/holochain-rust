@@ -7,13 +7,13 @@ const toml = `
 id = "test/agent/1"
 name = "Holo Tester 1"
 key_file = "holo_tester1.key"
-public_address = "jtXczt_fyYXJWvmb-BR4Gsf-QCnnLybzZCwGKis_-T0WEiRtv64xt102HHmsYmJTQRWMqmrLWhr40rt11W0aI3S7VIZD"
+public_address = "HcScJdXW5uHo9y8jryEwW8N59akhrgxh93acu33qe53ximagfiWu98j7J6Ofiur"
 
 [[agents]]
 id = "test/agent/2"
 name = "Holo Tester 2"
 key_file = "holo_tester2.key"
-public_address = "QOnZBLAxv01QT5arAKVwk7P4XDnApsItDqtxoMENACux4_PrFegIdgbEp2h-sz3vGWCQUBygskcXOJ_Da7d_JkvPzRbV"
+public_address = "HcScJdXW5uHo9y8jryEwW8N59akhrgxh93acu33qe53ximagfiWu98j7J6Ofiur"
 
 [[dnas]]
 id = "test/dna"

@@ -4,7 +4,7 @@ use crate::{
     network::{actions::ActionResponse, reducers::send, state::NetworkState},
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
-use holochain_net_connection::json_protocol::{FetchMetaData, FetchMetaResultData, JsonProtocol};
+use holochain_net::connection::json_protocol::{FetchMetaData, FetchMetaResultData, JsonProtocol};
 use std::sync::Arc;
 
 /// Send back to network a HandleFetchMetaResult, no matter what.

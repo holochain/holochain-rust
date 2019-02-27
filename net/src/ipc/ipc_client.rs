@@ -1,7 +1,7 @@
 //! implements a net_connection::NetWorker for messaging with an ipc p2p node
 
-use crate::{socket::IpcSocket, util::get_millis};
-use holochain_net_connection::{
+use super::{socket::IpcSocket, util::get_millis};
+use crate::connection::{
     net_connection::{NetHandler, NetWorker},
     protocol::{NamedBinaryData, PingData, PongData, Protocol},
     NetResult,
@@ -177,7 +177,7 @@ mod tests {
 
     use std::sync::mpsc;
 
-    use crate::socket::{make_test_channels, MockIpcSocket};
+    use crate::ipc::socket::{make_test_channels, MockIpcSocket};
 
     #[test]
     fn it_ipc_message_flow() {

@@ -994,8 +994,10 @@ pub fn query_result(
 ///    genesis: || { Ok(()) }
 ///
 ///    receive: |payload| {
-///        // simply pass back the received value, appended to a modifier
-///        format!("Received: {}", payload)
+///        // if you want to serialize data as json to pass, use the json! serde macro
+///        json!({
+///            "key": "value"
+///        }).to_string()
 ///    }
 ///
 ///    functions: [

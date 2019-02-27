@@ -35,14 +35,14 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let link = input.to_link();
     let link_add = LinkData::from_link(&link, LinkActionKind::ADD);
     let entry = Entry::LinkAdd(link_add);
-
-     let mut entry_with_header_result = fetch_entry_with_header(&entry.address(),&zome_call_data.context.clone());
-    if entry_with_header_result.is_err()
+    let agent_state = &zome_call_data.context.state().unwrap().agent();
+    let header_result = agent_state.top_chain_header();
+    if header_result.is_none()
     {
-        return ribosome_error_code!(Unspecified)
+        return ribosome_error_code!(Unspecified);
     }
-    
-    let entry_with_header = entry_with_header_result.unwrap();
+    let header = header_result.unwrap();
+    let entry_with_header = EntryWithHeader{entry,header};
 
     // Wait for future to be resolved
     let result: Result<(), HolochainError> = zome_call_data

@@ -3,9 +3,7 @@ use crate::{
     nucleus::{
         ribosome::{
             self,
-            callback::{
-                Callback, CallbackParams, CallbackResult,
-            },
+            callback::{Callback, CallbackParams, CallbackResult},
             runtime::WasmCallData,
             Defn,
         },

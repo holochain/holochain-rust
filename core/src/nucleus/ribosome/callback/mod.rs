@@ -193,11 +193,7 @@ pub fn call(
     function: &Callback,
     params: &CallbackParams,
 ) -> CallbackResult {
-    let call = CallbackFnCall::new(
-        zome,
-        &function.as_str().to_string(),
-        params.clone(),
-    );
+    let call = CallbackFnCall::new(zome, &function.as_str().to_string(), params.clone());
 
     let dna = context.get_dna().expect("Callback called without DNA set!");
 

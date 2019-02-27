@@ -180,9 +180,9 @@ impl From<base64::DecodeError> for HolochainError {
     }
 }
 
-impl From<reed_solomon::DecoderError> for HolochainError {
-    fn from(error: reed_solomon::DecoderError) -> Self {
-        HolochainError::ErrorGeneric(format!("reed_solomon decode error: {:?}", error))
+impl From<std::str::Utf8Error> for HolochainError {
+    fn from(error: std::str::Utf8Error) -> Self {
+        HolochainError::ErrorGeneric(format!("std::str::Utf8Error error: {}", error.to_string()))
     }
 }
 
@@ -195,6 +195,12 @@ impl From<FutureCanceled> for HolochainError {
 impl From<NoneError> for HolochainError {
     fn from(_: NoneError) -> Self {
         HolochainError::ErrorGeneric("Expected Some and got None".to_string())
+    }
+}
+
+impl From<hcid::HcidError> for HolochainError {
+    fn from(error: hcid::HcidError) -> Self {
+        HolochainError::ErrorGeneric(format!("{:?}", error))
     }
 }
 

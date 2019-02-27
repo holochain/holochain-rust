@@ -76,7 +76,10 @@ pub mod tests {
 
         assert_eq!(globals.dna_name, "TestApp");
         let expected_agent = registered_test_agent("jane");
-        assert_eq!(globals.agent_address.to_string(), expected_agent.key);
+        assert_eq!(
+            globals.agent_address.to_string(),
+            expected_agent.pub_sign_key
+        );
         // TODO (david.b) this should work:
         //assert_eq!(globals.agent_id_str, String::from(AgentId::generate_fake("jane")));
         // assert_eq!(

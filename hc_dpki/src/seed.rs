@@ -204,7 +204,7 @@ impl DeviceSeed {
         pin: &mut SecBuf,
         config: Option<PwHashConfig>,
     ) -> HcResult<DevicePinSeed> {
-        let mut hash = SecBuf::with_insecure(pwhash::HASHBYTES);
+        let mut hash = SecBuf::with_secure(pwhash::HASHBYTES);
         pw_hash(pin, &mut self.inner.buf, &mut hash, config)?;
         Ok(DevicePinSeed::new(hash))
     }

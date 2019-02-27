@@ -459,11 +459,9 @@ fn can_invalidate_invalid_commit() {
         })
         .to_string(),
     );
-    println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"211\\\"}\"}}"),
+    assert!(
+        result.unwrap().to_string().contains("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"")
     );
 }
 

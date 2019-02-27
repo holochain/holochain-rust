@@ -23,7 +23,7 @@
 //!     json::JsonString,
 //!     signature::Signature,
 //! };
-//! use holochain_dpki::{key_bundle::{KeyBundle, SeedType}, SEED_SIZE};
+//! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
 //! use holochain_sodium::secbuf::SecBuf;
 //!
 //! use std::sync::{Arc, Mutex};
@@ -44,7 +44,7 @@
 //! let mut seed = SecBuf::with_insecure(SEED_SIZE);
 //! seed.randomize();
 //!
-//! let keybundle = KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap();
+//! let keybundle = KeyBundle::new_from_seed_buf(&mut seed, SeedType::Mock).unwrap();
 //!
 //! // The keybundle's public part is the agent's address
 //! let agent = AgentId::new("bob", keybundle.get_id());

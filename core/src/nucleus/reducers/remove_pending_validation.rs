@@ -31,7 +31,10 @@ pub mod tests {
             state::tests::test_nucleus_state,
         },
     };
-    use holochain_core_types::{chain_header::test_chain_header, entry::Entry, json::RawString};
+    use holochain_core_types::{
+        cas::content::AddressableContent, chain_header::test_chain_header, entry::Entry,
+        json::RawString,
+    };
 
     #[test]
     fn test_reduce_remove_pending_validation() {

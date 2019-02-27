@@ -322,7 +322,6 @@ impl IpcNetWorker {
             }"#;
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;

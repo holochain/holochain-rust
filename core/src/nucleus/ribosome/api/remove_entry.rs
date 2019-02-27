@@ -63,18 +63,16 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         return ribosome_error_code!(Unspecified)
     }
 
-    let mut entry_with_header = entry_with_header_result.unwrap();
+    let entry_with_header = entry_with_header_result.unwrap();
 
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
-    entry_with_header.set_entry(deletion_entry.clone());
-    println!("deletion ebtry {:?}",deletion_entry.clone());
-    println!("entry type {:?}",deletion_entry.clone().entry_type());
-;
+    let deletion_entry_with_header = EntryWithHeader{entry:deletion_entry.clone(),header:entry_with_header.header.clone()};
+
     let res: Result<(), HolochainError> = zome_call_data
         .context
         .block_on(author_entry(
-            &entry_with_header,
+            &deletion_entry_with_header,
             &zome_call_data.context.clone(),
         ))
         .map(|_| ());

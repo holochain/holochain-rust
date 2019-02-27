@@ -11,6 +11,7 @@ use holochain_core_types::{
     cas::content::{Address,AddressableContent},
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
+    entry::Entry
 };
 use std::sync::Arc;
 
@@ -36,10 +37,11 @@ pub async fn hold_remove_workflow<'a>(
     // 3. Validate the entry
     await!(validate_entry(entry.clone(), validation_data, &context))?;
 
-    let link = header.link_update_delete().ok_or("Could not get link update from header".to_string())?;
+
+    let deletion_entry = unwrap_to!(entry => Entry::Deletion);
     println!("remove from link");
     // 3. If valid store the entry in the local DHT shard
-    await!(remove_entry(&context.clone(),entry.clone(),link)?)
+    await!(remove_entry(&context.clone(),entry.clone(),deletion_entry.clone().deleted_entry_address())?)
 }
 
 

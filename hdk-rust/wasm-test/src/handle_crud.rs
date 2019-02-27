@@ -6,6 +6,10 @@ use holochain_wasm_utils::{
 };
 use TestEntryType;
 
+use std::{
+    time::Duration
+};
+
 //
 pub(crate) fn handle_update_entry_ok() -> JsonString {
     // Commit v1 entry
@@ -190,6 +194,7 @@ pub fn handle_remove_entry_ok() -> JsonString {
     // Delete it
     hdk::debug("**** Delete it").ok();
     let res = hdk::remove_entry(&addr_v1);
+    hdk::sleep(Duration::from_millis(45000)).unwrap();
     assert!(res.is_ok());
 
     // Get it should fail
@@ -205,6 +210,7 @@ pub fn handle_remove_entry_ok() -> JsonString {
     // Delete it again should fail
     hdk::debug("**** Delete it again should fail").ok();
     let res = hdk::remove_entry(&addr_v1);
+    hdk::sleep(Duration::from_millis(45000)).unwrap();
     assert!(res.is_err());
 
     // Get entry_result

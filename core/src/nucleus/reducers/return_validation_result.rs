@@ -15,4 +15,5 @@ pub fn reduce_return_validation_result(
     state
         .validation_results
         .insert((id.clone(), hash.clone()), validation_result.clone());
+    state.pending_validations.remove(hash);
 }

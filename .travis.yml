@@ -69,6 +69,8 @@ _linux_nodejs_template: &_linux_nodejs_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
+  before_install:
+    - sudo apt-get install -y libsodium-dev
   before_script:
     - . ./scripts/install/release-deps-ubuntu.sh
 

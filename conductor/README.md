@@ -8,20 +8,7 @@ This crate implements a reference Conductor for serving Holochain DNAs.
 
 ## Install
 
-Our recommended pattern for the installation of the conductor is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.  Note, on Mac and Linux as well as installing the binaries you will need to install the `zmq` dependency e.g.:
-
-On MacOS:
-
-```
-brew install zmq
-```
-
-On Ubuntu:
-
-```
-apt-get install libzmq3-dev
-```
-
+Our recommended pattern for the installation of the conductor is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
 
 ### Building From Source
 
@@ -33,10 +20,6 @@ These dependencies need to be installed in order to compile, and use `holochain`
   - `rustup default nightly-2019-01-24`
   - Also, if you are going to be developing Zomes in Rust, install the WASM build target for Rust, by running:
   - `rustup target add wasm32-unknown-unknown --toolchain nightly-2019-01-24`
-- [Zmq](http://zeromq.org/intro:get-the-software)
-  - zeromq is a "distributed messaging" software package utilized in the networking stack of Holochain
-  - the link above has common platform installation instructions
-  - without ZMQ the installation command that follows will fail
 
 
 To install the latest version of the Holochain conductor, run the following command in a terminal

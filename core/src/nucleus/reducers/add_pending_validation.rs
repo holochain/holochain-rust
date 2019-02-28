@@ -42,7 +42,7 @@ pub mod tests {
             header: test_chain_header(),
         };
 
-        let action_wrapper = ActionWrapper::new(Action::AddPendingValidation(Box::new((
+        let action_wrapper = ActionWrapper::new(Action::AddPendingValidation(Arc::new((
             entry_with_header.clone(),
             Vec::new(),
         ))));

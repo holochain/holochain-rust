@@ -17,7 +17,10 @@ use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{key_blob::KeyBlob, key_bundle::KeyBundle};
+use holochain_dpki::{
+    key_blob::{Blobbable, KeyBlob},
+    key_bundle::KeyBundle,
+};
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
@@ -792,7 +795,7 @@ pub mod tests {
             .expect("SecBuf must be writeable");
 
         // Create KeyBundle from seed
-        KeyBundle::new_from_seed(&mut seed, holochain_dpki::key_bundle::SeedType::Mock).unwrap()
+        KeyBundle::new_from_seed_buf(&mut seed, holochain_dpki::seed::SeedType::Mock).unwrap()
     }
 
     pub fn test_toml() -> String {

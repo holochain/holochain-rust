@@ -295,12 +295,7 @@ impl Context {
                 .to_owned();
 
             // Get CAS
-            let cas = self
-                .state()
-                .unwrap()
-                .agent()
-                .chain_store()
-                .content_storage();
+            let cas = state.agent().chain_store().content_storage();
 
             // Get according Token Grant entry from CAS
             let entry = get_entry_from_cas(&cas, &addr).ok()??;

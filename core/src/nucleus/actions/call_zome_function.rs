@@ -316,7 +316,6 @@ pub mod tests {
         nucleus::{actions::tests::test_dna, ribosome::capabilities::CapabilityRequest, tests::*},
         workflows::author_entry::author_entry,
     };
-    use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::Address,
         entry::{
@@ -403,7 +402,9 @@ pub mod tests {
         let grant =
             CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant.clone());
-        let grant_addr = block_on(author_entry(&grant_entry, None, &context)).unwrap();
+        let grant_addr = context
+            .block_on(author_entry(&grant_entry, None, &context))
+            .unwrap();
         let maybe_grant = get_grant(&context, &grant_addr);
         assert_eq!(maybe_grant, Some(grant));
     }

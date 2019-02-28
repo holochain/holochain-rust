@@ -6,7 +6,10 @@ use crate::{
 use std::sync::Arc;
 
 use crate::{instance::Instance, nucleus::actions::initialize::initialize_application};
-use holochain_core_types::{dna::Dna, error::{HcResult, HolochainError}};
+use holochain_core_types::{
+    dna::Dna,
+    error::{HcResult, HolochainError},
+};
 
 pub async fn initialize(
     instance: &Instance,

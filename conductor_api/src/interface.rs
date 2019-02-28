@@ -552,13 +552,17 @@ impl ConductorApiBuilder {
             let name = Self::get_as_string("name", &params_map)?;
             let public_address = Self::get_as_string("public_address", &params_map)?;
             let key_file = Self::get_as_string("key_file", &params_map)?;
+            let holo_remote_key = params_map
+                .get("holo_remote_key")
+                .map(|k| k.as_bool())
+                .unwrap_or_default();
 
             let agent = AgentConfiguration {
                 id,
                 name,
                 public_address,
                 key_file,
-                holo_remote_key: None,
+                holo_remote_key,
             };
             conductor_call!(|c| c.add_agent(agent))?;
             Ok(json!({"success": true}))
@@ -619,13 +623,13 @@ impl ConductorApiBuilder {
     ///     Params:
     ///     - `id` ID used to refer to this bundle
     ///     - `root_dir` Directory to host on the HTTP server
-    ///     
+    ///
     /// - `admin/ui/uninstall`
     ///     Uninstall and remove from the config a UI bundle by ID. This will also stop and remove
     ///     any ui interfaces that are serving this bundle
     ///     Params:
     ///     - `id` ID of the UI bundle to remove
-    ///     
+    ///
     /// - `admin/ui/list`
     ///     List all the currently installed UI bundles
     ///
@@ -639,25 +643,25 @@ impl ConductorApiBuilder {
     ///     - `port` Port to host the HTTP server on
     ///     - `bundle` UI bundle to serve on this port
     ///     - `dna_interface` DNA interface this UI can connect to (Optional)
-    ///     
+    ///
     /// - `admin/ui_interface/remove`
     ///     Remove an interface by ID
     ///     Params:
     ///     - `id` ID of the UI interface to remove
-    ///     
+    ///
     /// - `admin/ui_interface/list`
     ///     List all the UI interfaces
-    ///     
+    ///
     /// - `admin/ui_interface/start`
     ///     Start a UI interface given an ID
     ///     Params:
     ///     - `id` ID of the UI interface to start
-    ///     
+    ///
     /// - `admin/ui_interface/stop`
     ///     Stop a UI interface given an ID
     ///     Params:
-    ///     - `id` ID of the UI interface to stop    
-    ///     
+    ///     - `id` ID of the UI interface to stop
+    ///
     pub fn with_admin_ui_functions(mut self) -> Self {
         self.io.add_method("admin/ui/install", move |params| {
             let params_map = Self::unwrap_params_map(params)?;

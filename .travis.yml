@@ -51,8 +51,8 @@ _unix_nodejs_conductor_template: &_unix_nodejs_conductor_template
     - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
     - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.10.1
     - export PATH=$HOME/.yarn/bin:$PATH
-    - sudo apt-get install -y libsodium23
   script:
+    script:
     - make build_nodejs_conductor
   # manually cache as we manually install rustup
   # https://docs.travis-ci.com/user/caching/#rust-cargo-cache

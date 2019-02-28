@@ -8,7 +8,11 @@ use crate::{
 };
 use holochain_core_types::{cas::content::AddressableContent, error::HolochainError};
 use json_patch;
-use std::{fs, path::PathBuf, sync::Arc};
+use std::{
+    fs,
+    path::PathBuf,
+    sync::{Arc, RwLock},
+};
 
 pub trait ConductorAdmin {
     fn install_dna_from_file(
@@ -164,7 +168,7 @@ impl ConductorAdmin for Conductor {
         let mut new_config = self.config.clone();
         let storage_path = self.instance_storage_dir_path().join(id.clone());
         fs::create_dir_all(&storage_path)?;
-        let new_instance = InstanceConfiguration {
+        let new_instance_config = InstanceConfiguration {
             id: id.to_string(),
             dna: dna_id.to_string(),
             agent: agent_id.to_string(),
@@ -177,9 +181,11 @@ impl ConductorAdmin for Conductor {
                     .into(),
             },
         };
-        self.start_instance(id)?;
-        new_config.instances.push(new_instance);
+        new_config.instances.push(new_instance_config);
         new_config.check_consistency()?;
+        let instance = self.instantiate_from_config(id, &new_config, None)?;
+        self.instances
+            .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;
         self.save_config()?;
         Ok(())

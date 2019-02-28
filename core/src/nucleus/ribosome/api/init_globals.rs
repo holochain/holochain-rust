@@ -48,12 +48,13 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
                 globals.agent_address = globals.agent_latest_hash.clone();
             }
         }
-        // Update public_token
-        let maybe_token = call_data.context.get_public_token();
-        if maybe_token.is_some() {
-            globals.public_token = maybe_token.unwrap();
-        }
     };
+
+    // Update public_token
+    let maybe_token = call_data.context.get_public_token();
+    if maybe_token.is_some() {
+        globals.public_token = maybe_token.unwrap();
+    }
 
     // Store it in wasm memory
     runtime.store_result(Ok(globals))

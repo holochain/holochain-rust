@@ -96,10 +96,10 @@ pub(crate) fn pw_dec(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
-    const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
+    pub const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
         pwhash::OPSLIMIT_INTERACTIVE,
         pwhash::MEMLIMIT_INTERACTIVE,
         pwhash::ALG_ARGON2ID13,

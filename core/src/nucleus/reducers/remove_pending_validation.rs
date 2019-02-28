@@ -5,9 +5,10 @@ use crate::{
 };
 use std::sync::Arc;
 
-/// Reduce AddPendingValidation Action.
-/// Inserts boxed EntryWithHeader and dependencies into state, referenced with
+/// Reduce RemovePendingValidation Action.
+/// Removes boxed EntryWithHeader and dependencies from state, referenced with
 /// the entry's address.
+/// Corresponds to a prior AddPendingValidation Action.
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 pub fn reduce_remove_pending_validation(

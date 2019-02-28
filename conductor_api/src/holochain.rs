@@ -256,8 +256,6 @@ mod tests {
         )
     }
 
-    use std::{fs::File, io::prelude::*};
-
     fn example_api_wasm_path() -> String {
         format!(
             "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
@@ -296,6 +294,8 @@ mod tests {
     // TODO: This test is not really testing if loading works. But we need a test for that.
     // Persistence relies completely on the CAS, so the path would need to be used by
     // creating a FileStorage CAS in the context that is passed to Holochain::load:
+
+    //use std::{fs::File, io::prelude::*};
     #[cfg(feature = "broken-tests")]
     fn can_load() {
         let tempdir = tempdir().unwrap();

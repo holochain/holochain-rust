@@ -52,7 +52,7 @@ _unix_nodejs_conductor_template: &_unix_nodejs_conductor_template
     - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.10.1
     - export PATH=$HOME/.yarn/bin:$PATH
   script:
-    - make build_nodejs_conductor
+    - RUST_SODIUM_DISABLE_PIE=2 make build_nodejs_conductor
   # manually cache as we manually install rustup
   # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
   cache:

@@ -210,6 +210,9 @@ pub enum Action {
     /// An entry could not be validated yet because dependencies are still missing.
     /// This adds the entry to nucleus state's pending list.
     AddPendingValidation(PendingValidation),
+
+    /// Clear an entry from the pending validation list
+    RemovePendingValidation(Address),
 }
 
 /// function signature for action handler functions

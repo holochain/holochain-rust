@@ -191,6 +191,7 @@ impl From<HolochainError> for RibosomeErrorCode {
             HolochainError::InvalidOperationOnSysEntry => RibosomeErrorCode::UnknownEntryType,
             HolochainError::CapabilityCheckFailed => RibosomeErrorCode::Unspecified,
             HolochainError::ValidationFailed(_) => RibosomeErrorCode::CallbackFailed,
+            HolochainError::ValidationPending => RibosomeErrorCode::Unspecified,
             HolochainError::Ribosome(e) => e,
             HolochainError::RibosomeFailed(_) => RibosomeErrorCode::CallbackFailed,
             HolochainError::ConfigError(_) => RibosomeErrorCode::Unspecified,

@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds PUBLIC_TOKEN global variable for use in hdk::call in calling public functions. [PR#895](https://github.com/holochain/holochain-rust/pull/895)
 - Adds an [ADR](doc/architecture/decisions/0017-capabilities.md) for capabilities.
 - Validation of link entries gets retried now if base or target of the link were not yet accessible on the validating node. This fixes a bug where links have been invalid due to network timing issues [PR#1054](https://github.com/holochain/holochain-rust/pull/1054).
+- Validation of any entry gets retried now if the validation package could not be retrieved from the source [PR#1059](https://github.com/holochain/holochain-rust/pull/1059).
 ### Fixed
 
 ## [0.0.4-alpha] - 2019-02-15

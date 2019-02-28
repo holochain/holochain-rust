@@ -32,11 +32,13 @@ impl Default for NucleusStatus {
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct NucleusState {
     // Persisted fields:
-    pub dna: Option<Dna>,
     pub status: NucleusStatus,
     pub pending_validations: HashMap<Address, PendingValidation>,
 
     // Transient fields:
+    pub dna: Option<Dna>, //DNA is transient here because it is stored in the chain and gets
+    //read from there when loading an instance/chain.
+
     // @TODO eventually drop stale calls
     // @see https://github.com/holochain/holochain-rust/issues/166
     // @TODO should this use the standard ActionWrapper/ActionResponse format?
@@ -90,7 +92,6 @@ impl NucleusState {
 
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct NucleusStateSnapshot {
-    pub dna: Option<Dna>,
     pub status: NucleusStatus,
     pub pending_validations: HashMap<Address, PendingValidation>,
 }
@@ -98,7 +99,6 @@ pub struct NucleusStateSnapshot {
 impl From<&State> for NucleusStateSnapshot {
     fn from(state: &State) -> Self {
         NucleusStateSnapshot {
-            dna: state.nucleus().dna(),
             status: state.nucleus().status(),
             pending_validations: state.nucleus().pending_validations.clone(),
         }
@@ -108,7 +108,7 @@ impl From<&State> for NucleusStateSnapshot {
 impl From<NucleusStateSnapshot> for NucleusState {
     fn from(snapshot: NucleusStateSnapshot) -> Self {
         NucleusState {
-            dna: snapshot.dna,
+            dna: None,
             status: snapshot.status,
             zome_calls: HashMap::new(),
             validation_results: HashMap::new(),

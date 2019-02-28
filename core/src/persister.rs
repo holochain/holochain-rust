@@ -102,7 +102,7 @@ mod tests {
         File::create(temp_path.clone()).unwrap();
         let mut persistance = SimplePersister::new(context.dht_storage.clone());
         let state = context.state().unwrap().clone();
-        persistance.save(state.clone()).unwrap();
+        persistance.save(&state).unwrap();
         let state_from_file = persistance.load(context).unwrap().unwrap();
         assert_eq!(state.agent(), state_from_file.agent());
         assert_eq!(state.nucleus(), state_from_file.nucleus());

@@ -264,14 +264,15 @@ impl Instance {
     }
 
     pub fn save(&self) {
-        let _ = self
-            .persister
-            .as_ref()
-            .expect("Save called without persister. Instance not initialized?")
-            .lock()
-            .unwrap()
-            .save(&self.state())
-            .map_err(|err| println!("Could not save instance! Error: {:?}", err));
+        if let Some(ref persister) = self.persister {
+            let _ = persister
+                .lock()
+                .unwrap()
+                .save(&self.state())
+                .map_err(|err| println!("Could not save instance! Error: {:?}", err));
+        } else {
+            println!("Instance::save() called without persister set.");
+        }
     }
 }
 

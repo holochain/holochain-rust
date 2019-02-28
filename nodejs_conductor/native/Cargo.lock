@@ -50,6 +50,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "ascii"
+version = "0.8.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "autocfg"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -183,6 +188,11 @@ dependencies = [
  "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "chunked_transfer"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "cloudabi"
@@ -647,9 +657,11 @@ dependencies = [
 name = "holochain_conductor_api"
 version = "0.0.4-alpha"
 dependencies = [
+ "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "boolinator 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "colored 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "directories 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "dirs 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "fs_extra 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -664,8 +676,9 @@ dependencies = [
  "hyper 0.12.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper-staticfile 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-http-server 10.1.0 (git+https://github.com/paritytech/jsonrpc)",
- "jsonrpc-ws-server 10.1.0 (git+https://github.com/paritytech/jsonrpc)",
+ "jsonrpc-core 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
+ "jsonrpc-http-server 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
+ "jsonrpc-ws-server 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "maplit 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "petgraph 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -675,6 +688,7 @@ dependencies = [
  "serde_derive 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_regex 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tiny_http 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -687,6 +701,7 @@ dependencies = [
  "bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "boolinator 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-channel-preview 0.3.0-alpha.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-core-preview 0.3.0-alpha.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -705,8 +720,8 @@ dependencies = [
  "holochain_net_connection 0.0.4-alpha",
  "holochain_sodium 0.0.4-alpha",
  "holochain_wasm_utils 0.0.4-alpha",
+ "jsonrpc-core 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
  "jsonrpc-lite 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-ws-server 10.1.0 (git+https://github.com/paritytech/jsonrpc)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-derive 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -822,6 +837,7 @@ name = "holochain_node_test_waiter"
 version = "0.0.4-alpha"
 dependencies = [
  "colored 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_core 0.0.4-alpha",
  "holochain_core_types 0.0.4-alpha",
  "holochain_dpki 0.0.4-alpha",
@@ -954,8 +970,8 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-core"
-version = "10.1.0"
-source = "git+https://github.com/paritytech/jsonrpc#28156b92f5cb79635300703b3e103ca39cefa565"
+version = "10.0.1"
+source = "git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter#715a2f49897c7d5f082e7a112dfa6fcef50eeb17"
 dependencies = [
  "futures 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -966,12 +982,12 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-http-server"
-version = "10.1.0"
-source = "git+https://github.com/paritytech/jsonrpc#28156b92f5cb79635300703b3e103ca39cefa565"
+version = "10.0.1"
+source = "git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter#715a2f49897c7d5f082e7a112dfa6fcef50eeb17"
 dependencies = [
  "hyper 0.12.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core 10.1.0 (git+https://github.com/paritytech/jsonrpc)",
- "jsonrpc-server-utils 10.1.0 (git+https://github.com/paritytech/jsonrpc)",
+ "jsonrpc-core 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
+ "jsonrpc-server-utils 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicase 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -989,12 +1005,12 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-server-utils"
-version = "10.1.0"
-source = "git+https://github.com/paritytech/jsonrpc#28156b92f5cb79635300703b3e103ca39cefa565"
+version = "10.0.1"
+source = "git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter#715a2f49897c7d5f082e7a112dfa6fcef50eeb17"
 dependencies = [
  "bytes 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "globset 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core 10.1.0 (git+https://github.com/paritytech/jsonrpc)",
+ "jsonrpc-core 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 1.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1005,12 +1021,12 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-ws-server"
-version = "10.1.0"
-source = "git+https://github.com/paritytech/jsonrpc#28156b92f5cb79635300703b3e103ca39cefa565"
+version = "10.0.1"
+source = "git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter#715a2f49897c7d5f082e7a112dfa6fcef50eeb17"
 dependencies = [
  "error-chain 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core 10.1.0 (git+https://github.com/paritytech/jsonrpc)",
- "jsonrpc-server-utils 10.1.0 (git+https://github.com/paritytech/jsonrpc)",
+ "jsonrpc-core 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
+ "jsonrpc-server-utils 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-ws 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2013,6 +2029,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tiny_http"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "ascii 0.8.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "chunked_transfer 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "tokio"
 version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2407,6 +2435,7 @@ dependencies = [
 "checksum argon2rs 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)" = "3f67b0b6a86dae6e67ff4ca2b6201396074996379fba2b92ff649126f37cb392"
 "checksum arrayref 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "0d382e583f07208808f6b1249e60848879ba3543f57c32277bf52d69c2f0f0ee"
 "checksum arrayvec 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)" = "92c7fb76bc8826a8b33b4ee5bb07a247a81e76764ab4d55e8f73e3a4d8808c71"
+"checksum ascii 0.8.7 (registry+https://github.com/rust-lang/crates.io-index)" = "97be891acc47ca214468e09425d02cef3af2c94d0d82081cd02061f996802f14"
 "checksum autocfg 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a6d640bee2da49f60a4068a7fae53acde8982514ab7bae8b8cea9e88cbcfd799"
 "checksum backtrace 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)" = "b5b493b66e03090ebc4343eb02f94ff944e0cbc9ac6571491d170ba026741eb5"
 "checksum backtrace-sys 0.1.28 (registry+https://github.com/rust-lang/crates.io-index)" = "797c830ac25ccc92a7f8a7b9862bde440715531514594a6154e3d4a54dd769b6"
@@ -2426,6 +2455,7 @@ dependencies = [
 "checksum cc 1.0.29 (registry+https://github.com/rust-lang/crates.io-index)" = "4390a3b5f4f6bce9c1d0c00128379df433e53777fdd30e92f16a529332baec4e"
 "checksum cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "082bb9b28e00d3c9d39cc03e64ce4cea0f1bb9b3fde493f0cbc008472d22bdf4"
 "checksum chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "45912881121cb26fad7c38c17ba7daa18764771836b34fab7d3fbd93ed633878"
+"checksum chunked_transfer 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "498d20a7aaf62625b9bf26e637cf7736417cde1d0c99f1d04d1170229a85cf87"
 "checksum cloudabi 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ddfc5b9aa5d4507acaf872de71051dfd0e309860e88966e1051e462a077aac4f"
 "checksum colored 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6e9a455e156a4271e12fd0246238c380b1e223e3736663c7a18ed8b6362028a9"
 "checksum constant_time_eq 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "8ff012e225ce166d4422e0e78419d901719760f62ae2b7969ca6b564d1b54a9e"
@@ -2486,11 +2516,11 @@ dependencies = [
 "checksum iovec 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "dbe6e417e7d0975db6512b90796e8ce223145ac4e33c377e4a42882a0e88bb08"
 "checksum itoa 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "1306f3464951f30e30d12373d31c79fbd52d236e5e896fd92f96ec7babbbe60b"
 "checksum json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "3bde23771b4f5b9900635b0415485323b6d39afa979dcd5541218d67bb9107b4"
-"checksum jsonrpc-core 10.1.0 (git+https://github.com/paritytech/jsonrpc)" = "<none>"
-"checksum jsonrpc-http-server 10.1.0 (git+https://github.com/paritytech/jsonrpc)" = "<none>"
+"checksum jsonrpc-core 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)" = "<none>"
+"checksum jsonrpc-http-server 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)" = "<none>"
 "checksum jsonrpc-lite 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a98d245f26984add78277a5306ca0cf774863d4eddb4912b31d94ee3fa1a22d4"
-"checksum jsonrpc-server-utils 10.1.0 (git+https://github.com/paritytech/jsonrpc)" = "<none>"
-"checksum jsonrpc-ws-server 10.1.0 (git+https://github.com/paritytech/jsonrpc)" = "<none>"
+"checksum jsonrpc-server-utils 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)" = "<none>"
+"checksum jsonrpc-ws-server 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)" = "<none>"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 "checksum lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a374c89b9db55895453a74c1e38861d9deec0b01b405a82516e9d5de4820dea1"
 "checksum lazycell 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b294d6fa9ee409a054354afc4352b0b9ef7ca222c69b8812cbea9e7d2bf3783f"
@@ -2607,6 +2637,7 @@ dependencies = [
 "checksum thread_local 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "c6b53e329000edc2b34dbe8545fd20e55a333362d0a321909685a19bd28c3f1b"
 "checksum time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "db8dcfca086c1143c9270ac42a2bbd8a7ee477b78ac8e45b19abfb0cbede4b6f"
 "checksum tiny-keccak 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e9175261fbdb60781fcd388a4d6cc7e14764a2b629a7ad94abb439aed223a44f"
+"checksum tiny_http 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1661fa0a44c95d01604bd05c66732a446c657efb62b5164a7a083a3b552b4951"
 "checksum tokio 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)" = "e0500b88064f08bebddd0c0bed39e19f5c567a5f30975bee52b0c0d3e2eeb38c"
 "checksum tokio-codec 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5c501eceaf96f0e1793cf26beb63da3d11c738c4a943fdf3746d81d64684c39f"
 "checksum tokio-current-thread 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "331c8acc267855ec06eb0c94618dcbbfea45bed2d20b77252940095273fb58f6"

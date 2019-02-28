@@ -10,7 +10,7 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     sync::{
-        mpsc::{Receiver, RecvTimeoutError, SyncSender},
+        mpsc::{Receiver, SyncSender},
         Arc, Mutex,
     },
     time::Duration,
@@ -313,7 +313,7 @@ impl Task for MainBackgroundTask {
             // involves adding some kind of control variant to the Signal enum
             match self.signal_rx.recv_timeout(Duration::from_millis(250)) {
                 Ok(sig) => self.waiter.borrow_mut().process_signal(sig),
-                Err(RecvTimeoutError::Timeout) => continue,
+                Err(crossbeam_channel::RecvTimeoutError::Timeout) => continue,
                 Err(err) => return Err(err.to_string()),
             }
         }

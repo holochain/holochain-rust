@@ -113,7 +113,7 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: Arc<RwLock<IoHandler>>,
-    signal_tx: Option<SyncSender<Signal>>,
+    signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
 impl Context {
@@ -138,7 +138,7 @@ impl Context {
             persister,
             state: None,
             action_channel: None,
-            signal_tx: signal_tx,
+            signal_tx,
             observer_channel: None,
             chain_storage,
             dht_storage,
@@ -155,7 +155,7 @@ impl Context {
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: Option<SyncSender<ActionWrapper>>,
-        signal_tx: Option<SyncSender<Signal>>,
+        signal_tx: Option<crossbeam_channel::Sender<Signal>>,
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
@@ -247,7 +247,7 @@ impl Context {
             .expect("Action channel not initialized")
     }
 
-    pub fn signal_tx(&self) -> Option<&SyncSender<Signal>> {
+    pub fn signal_tx(&self) -> Option<&crossbeam_channel::Sender<Signal>> {
         self.signal_tx.as_ref()
     }
 

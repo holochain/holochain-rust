@@ -146,7 +146,7 @@ pub fn run(
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
 
     conductor
-        .load_config(None)
+        .load_config()
         .map_err(|err| format_err!("{}", err))?;
 
     conductor.start_all_interfaces();

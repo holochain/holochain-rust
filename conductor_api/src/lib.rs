@@ -79,7 +79,7 @@
 ///         .check_consistency()
 ///         .map_err(|string| HolochainError::ConfigError(string))?;
 ///     let mut conductor = Conductor::from_config(config);
-///     conductor.load_config(None)?;
+///     conductor.load_config()?;
 ///     Ok(conductor)
 /// }
 ///
@@ -100,6 +100,7 @@ extern crate holochain_net_ipc;
 extern crate holochain_sodium;
 
 extern crate chrono;
+extern crate crossbeam_channel;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;

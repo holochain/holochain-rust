@@ -670,7 +670,7 @@ pattern = '.*'"#
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config(None).unwrap();
+        conductor.load_config().unwrap();
         conductor
     }
 

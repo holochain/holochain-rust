@@ -85,6 +85,8 @@ fn reduce_store_entry_common(
         create_crud_status_eav(&entry.address(), CrudStatus::Live)
             .map(|status_eav| {
                 let meta_res = (*meta_storage.write().unwrap()).add_eavi(&status_eav);
+                println!("added entry {:?}",entry.clone());
+                println!("added status_eav{:?}",status_eav.clone());
                 meta_res
                     .map(|_| Some(new_store))
                     .map_err(|err| {
@@ -280,6 +282,7 @@ fn reduce_remove_entry_inner(
     let entry = Entry::try_from(json_entry).expect("Stored content should be a valid entry.");
     // pre-condition: entry_type must not by sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {
+        println!("is sys in here");
         return Err(HolochainError::ErrorGeneric(String::from(
             "trying to remove a system entry type",
         )));
@@ -324,10 +327,12 @@ fn reduce_remove_entry_inner(
     if let Err(err) = res {
         return Err(err);
     }
+
     // Update crud-link
     let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
         .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
     let res = (*meta_storage.write().unwrap()).add_eavi(&crud_link_eav);
+    println!("crudlink eav {:?}",crud_link_eav.clone());
     res.map(|_| latest_deleted_address.clone())
 }
 

@@ -171,7 +171,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
 //
 pub fn handle_remove_entry_ok() -> JsonString {
     // Commit v1 entry
-    hdk::debug("**** Commit v1 entry").ok();
+    //hdk::debug("**** Commit v1 entry").ok();
     let entry_v1 = hdk_test_entry();
     let hopefully_address = hdk::commit_entry(&entry_v1);
     let addr_v1 = match hopefully_address {
@@ -180,7 +180,7 @@ pub fn handle_remove_entry_ok() -> JsonString {
     };
 
     // Get it
-    hdk::debug("**** Get it").ok();
+    //hdk::debug("**** Get it").ok();
     let res = hdk::get_entry(&addr_v1);
     let entry_test = match res.clone() {
         Err(_) => return res.into(),
@@ -189,28 +189,29 @@ pub fn handle_remove_entry_ok() -> JsonString {
             Some(entry) => entry,
         },
     };
+    println!("res {:?}", res.clone());
     assert_eq!(entry_test, entry_v1);
 
     // Delete it
-    hdk::debug("**** Delete it").ok();
+    //hdk::debug("**** Delete it").ok();
     hdk::remove_entry(&addr_v1).unwrap();
-    hdk::sleep(Duration::from_millis(50000)).unwrap();
+    hdk::sleep(Duration::from_millis(100000)).unwrap();
     
     // Get it should fail
-    hdk::debug("**** Get it should fail").ok();
+    //hdk::debug("**** Get it should fail").ok();
     let res = hdk::get_entry(&addr_v1);
+    println!("res {:?}", res.clone());
     assert_eq!(res.unwrap(), None);
 
     // Get initial should work
-    hdk::debug("**** Get initial should work").ok();
+    //hdk::debug("**** Get initial should work").ok();
     let res = hdk::get_entry_initial(&addr_v1);
+    println!("res {:?}", res.clone());
     assert_eq!(res.unwrap(), Some(entry_v1));
 
     // Delete it again should fail
-    hdk::debug("**** Delete it again should fail").ok();
+    //hdk::debug("**** Delete it again should fail").ok();
     hdk::remove_entry(&addr_v1).unwrap();
-  
-
     hdk::sleep(Duration::from_millis(50000)).unwrap();
   
     // Get entry_result
@@ -218,7 +219,8 @@ pub fn handle_remove_entry_ok() -> JsonString {
         &addr_v1,
         GetEntryOptions::new(StatusRequestKind::All, false, false, Default::default()),
     );
-    
+    println!("res {:?}", res.clone());
+    hdk::sleep(Duration::from_millis(50000)).unwrap();
     match res {
         Ok(result) => match result.result {
             GetEntryResultType::Single(item) => item.into(),

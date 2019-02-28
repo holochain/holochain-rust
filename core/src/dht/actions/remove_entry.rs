@@ -15,12 +15,12 @@ use std::{pin::Pin, sync::Arc};
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
 pub fn remove_entry(
     context: &Arc<Context>,
-    deleted_entry: Entry,
+    deleted_address: Address,
     deletion_address: Address,
 ) -> Result<RemoveEntryFuture, HolochainError> {
     let action_wrapper = ActionWrapper::new(Action::RemoveEntry((
-        deleted_entry.address().clone(),
-        deletion_address.clone(),
+        deleted_address,
+        deletion_address,
     )));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     Ok(RemoveEntryFuture {

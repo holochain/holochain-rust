@@ -22,6 +22,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
 
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
+    println!("maybe entry with meta {:?}",maybe_entry_with_meta.clone());
     if maybe_entry_with_meta.is_some() {
         return Ok(maybe_entry_with_meta);
     }
@@ -52,6 +53,7 @@ pub async fn get_entry_result_workflow<'a>(
             &address,
             &args.options.timeout
         ))?;
+        println!("maybe entry {:?}",maybe_entry_with_meta.clone());
         // Entry found
         if let Some(entry_with_meta) = maybe_entry_with_meta {
             // Erase history if request is for latest
@@ -74,6 +76,7 @@ pub async fn get_entry_result_workflow<'a>(
             entry_result.push(&entry_with_meta, headers);
 
             if args.options.status_request == StatusRequestKind::Initial {
+                println!("break here");
                 break;
             }
 
@@ -86,6 +89,7 @@ pub async fn get_entry_result_workflow<'a>(
             }
         }
     }
+    println!("entry result{:?}",entry_result.clone());
     Ok(entry_result)
 }
 

@@ -10,7 +10,8 @@ use crate::{
 use holochain_core_types::{
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
-    entry::Entry
+    entry::Entry,
+    cas::content::AddressableContent
 };
 use std::sync::Arc;
 
@@ -39,8 +40,9 @@ pub async fn hold_remove_workflow<'a>(
 
     let deletion_entry = unwrap_to!(entry => Entry::Deletion);
     println!("remove from link");
+    let deleted_entry_address = deletion_entry.clone().deleted_entry_address();
     // 3. If valid store the entry in the local DHT shard
-    await!(remove_entry(&context.clone(),entry.clone(),deletion_entry.clone().deleted_entry_address())?)
+    await!(remove_entry(&context.clone(),deletion_entry.clone().deleted_entry_address(),entry.address().clone())?)
 }
 
 

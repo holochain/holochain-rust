@@ -17,9 +17,14 @@ pub async fn initialize(
     let instance_context = instance.initialize_context(context.clone());
     await!(get_dna_and_agent(&instance_context)
         .map_ok(|_| ())
-        .or_else(
-            |_| initialize_application(dna.unwrap_or(Dna::new()), &instance_context).map_ok(|_| ())
-        ))?;
+        .or_else(|err| {
+            context.log(format!(
+                "application/initialize: Couldn't get DNA and agent from chain: {:?}",
+                err
+            ));
+            context.log("application/initialize: Initializing new chain...");
+            initialize_application(dna.unwrap_or(Dna::new()), &instance_context).map_ok(|_| ())
+        }))?;
     await!(initialize_network::initialize_network(&instance_context))?;
     Ok(instance_context)
 }

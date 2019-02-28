@@ -195,7 +195,7 @@ pub fn handle_remove_entry_ok() -> JsonString {
     // Delete it
     //hdk::debug("**** Delete it").ok();
     hdk::remove_entry(&addr_v1).unwrap();
-    hdk::sleep(Duration::from_millis(100000)).unwrap();
+    hdk::sleep(Duration::from_millis(5000)).unwrap();
     
     // Get it should fail
     //hdk::debug("**** Get it should fail").ok();
@@ -211,8 +211,9 @@ pub fn handle_remove_entry_ok() -> JsonString {
 
     // Delete it again should fail
     //hdk::debug("**** Delete it again should fail").ok();
-    hdk::remove_entry(&addr_v1).unwrap();
-    hdk::sleep(Duration::from_millis(50000)).unwrap();
+    let res = hdk::remove_entry(&addr_v1);
+    hdk::sleep(Duration::from_millis(5000)).unwrap();
+    assert_eq!(res.is_err(),true);
   
     // Get entry_result
     let res = hdk::get_entry_result(

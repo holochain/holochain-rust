@@ -22,7 +22,7 @@ pub trait Persister: Send {
     // snowflake is only unique across a single process, not a reboot save/load round trip
     // we'd need real UUIDs for persistant uniqueness
     // @see https://github.com/holochain/holochain-rust/issues/203
-    fn save(&mut self, state: State) -> Result<(), HolochainError>;
+    fn save(&mut self, state: &State) -> Result<(), HolochainError>;
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError>;
 }
 
@@ -38,18 +38,18 @@ impl PartialEq for SimplePersister {
 }
 
 impl Persister for SimplePersister {
-    fn save(&mut self, state: State) -> Result<(), HolochainError> {
+    fn save(&mut self, state: &State) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();
         let mut store = lock.write().unwrap();
-        let agent_snapshot = AgentStateSnapshot::try_from(&state)?;
-        let nucleus_snapshot = NucleusStateSnapshot::from(&state);
+        let agent_snapshot = AgentStateSnapshot::try_from(state)?;
+        let nucleus_snapshot = NucleusStateSnapshot::from(state);
         store.add(&agent_snapshot)?;
         store.add(&nucleus_snapshot)?;
         Ok(())
     }
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
         let lock = &*self.storage.clone();
-        let store = lock.write().unwrap();
+        let store = lock.read().unwrap();
 
         let agent_snapshot: Option<AgentStateSnapshot> = store
             .fetch(&Address::from(AGENT_SNAPSHOT_ADDRESS))?

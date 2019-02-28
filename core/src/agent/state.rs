@@ -233,13 +233,6 @@ fn reduce_commit_entry(
     state
         .actions
         .insert(action_wrapper.clone(), ActionResponse::Commit(result));
-
-    #[allow(unused_must_use)]
-    context.state().map(|global_state_lock| {
-        let persis_lock = context.clone().persister.clone();
-        let persister = &mut *persis_lock.lock().unwrap();
-        persister.save(global_state_lock.clone());
-    });
 }
 
 /// maps incoming action to the correct handler

@@ -248,6 +248,6 @@ define_zome! {
 }
 ```
 
-In this example, `hc_public` is the reserved trait name which create a `Public` Capbility-type grant at genesis time for access to the `read_post` function.  Additionally it names an `authoring` trait the `create_post` and `update_post` functions.
+In this example, `hc_public` is the reserved trait name which create a `Public` Capability-type grant at genesis time for access to the `read_post` function.  Additionally it names an `authoring` trait the `create_post` and `update_post` functions.
 
 Continue reading to learn all about the API Functions and examples of how to use them.

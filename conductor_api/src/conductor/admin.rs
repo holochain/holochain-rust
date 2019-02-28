@@ -177,6 +177,7 @@ impl ConductorAdmin for Conductor {
                     .into(),
             },
         };
+        self.start_instance(id)?;
         new_config.instances.push(new_instance);
         new_config.check_consistency()?;
         self.config = new_config;

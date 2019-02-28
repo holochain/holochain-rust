@@ -89,7 +89,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
     } else if CrudStatus::from_str(&attr).expect("Could not convert modified attribute to CrudStatus") == CrudStatus::Modified  {
         context.log("debug/net/handle: HandleStoreMeta: got CRUD LINK. processing...");
         // FIXME: block_on hold crud_link metadata in DHT?
-
+        println!("modified");
         let entry_with_header: EntryWithHeader = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])

@@ -203,6 +203,7 @@ pub(crate) fn reduce_update_entry(
     let new_status_eav_option = create_crud_status_eav(latest_old_address, CrudStatus::Modified)
         .map(|new_status_eav| {
             let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav);
+            println!("crud status created {:?}",res.clone());
             res.map(|_| None)
                 .map_err(|err| {
                     closure_store
@@ -223,6 +224,7 @@ pub(crate) fn reduce_update_entry(
         create_crud_link_eav(latest_old_address, new_address)
             .map(|crud_link_eav| {
                 let res = (*meta_storage.write().unwrap()).add_eavi(&crud_link_eav);
+                println!("crud link created {:?}",res.clone());
                 let res_option = res.clone().ok();
                 res_option
                     .and_then(|_| {

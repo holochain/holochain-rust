@@ -5,6 +5,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     error::HolochainError,
+    entry::Entry
 };
 use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
 use std::convert::TryFrom;
@@ -15,7 +16,9 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: UpdateEntryArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+
+    println!("invoke update entry");
+      let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let entry_args = match UpdateEntryArgs::try_from(args_str.clone()) {
@@ -58,10 +61,11 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         .expect("Modified entry should be in chain");
 
     // Create Chain Entry
+     let entry = Entry::from(entry_args.new_entry.clone());
 
     let res : Result<Address, HolochainError> = zome_call_data.context
         .block_on(author_entry(
-        &latest_entry,
+        &entry,
         Some(chain_header_address.clone()),
             &zome_call_data.context.clone(),
         ));

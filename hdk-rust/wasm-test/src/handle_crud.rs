@@ -29,6 +29,8 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     );
     let res = hdk::update_entry(entry_v2.clone(), &addr_v1);
     let addr_v2 = res.unwrap();
+
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     // get latest from latest
     hdk::debug("**** get latest from latest").ok();
     let res = hdk::get_entry(&addr_v2);
@@ -58,6 +60,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     );
     let res = hdk::update_entry(entry_v3.clone(), &addr_v1);
     let addr_v3 = res.unwrap();
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     // get latest from v1
     hdk::debug("**** get latest from v1").ok();
     let res = hdk::get_entry(&addr_v1);
@@ -75,6 +78,8 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
         TestEntryType { stuff: "v4".into() }.into(),
     );
     let res = hdk::update_entry(entry_v4.clone(), &addr_v3);
+
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     let addr_v4 = res.unwrap();
     // get latest from v1
     let res = hdk::get_entry(&addr_v1);

@@ -16,10 +16,10 @@ use std::{pin::Pin, sync::Arc};
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
 pub fn update_entry(
     context: &Arc<Context>,
-    old_entry: Entry,
+    old_address: Address,
     new_address: Address,
 ) -> Result<UpdateEntryFuture, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::UpdateEntry((old_entry.address(),new_address)));
+    let action_wrapper = ActionWrapper::new(Action::UpdateEntry((old_address,new_address)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     Ok(UpdateEntryFuture {
         context: context.clone(),

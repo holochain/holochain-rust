@@ -5,9 +5,9 @@ use crate::{
         direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
     },
     nucleus::{
-        state::{NucleusState, ValidationResult},
-        ExecuteZomeFnResponse, ZomeFnCall,
+        state::NucleusState, validation::ValidationResult, ExecuteZomeFnResponse, ZomeFnCall,
     },
+    scheduled_jobs::pending_validations::PendingValidation,
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -18,9 +18,11 @@ use holochain_core_types::{
     link::Link,
     validation::ValidationPackage,
 };
-use holochain_net::p2p_config::P2pConfig;
-use holochain_net_connection::json_protocol::{
-    FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
+use holochain_net::{
+    connection::json_protocol::{
+        FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
+    },
+    p2p_config::P2pConfig,
 };
 use snowflake;
 use std::{
@@ -201,6 +203,13 @@ pub enum Action {
             Result<ValidationPackage, HolochainError>,
         ),
     ),
+
+    /// An entry could not be validated yet because dependencies are still missing.
+    /// This adds the entry to nucleus state's pending list.
+    AddPendingValidation(PendingValidation),
+
+    /// Clear an entry from the pending validation list
+    RemovePendingValidation(Address),
 }
 
 /// function signature for action handler functions

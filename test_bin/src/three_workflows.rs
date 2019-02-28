@@ -1,9 +1,11 @@
 use constants::*;
-use holochain_net::tweetlog::*;
-use holochain_net_connection::{
-    json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
-    net_connection::NetSend,
-    NetResult,
+use holochain_net::{
+    connection::{
+        json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
+        net_connection::NetSend,
+        NetResult,
+    },
+    tweetlog::*,
 };
 use p2p_node::P2pNode;
 
@@ -16,7 +18,7 @@ pub fn setup_three_nodes(
     camille: &mut P2pNode,
     can_connect: bool,
 ) -> NetResult<()> {
-    // Send TrackDna message on both nodes
+    // Send TrackDna message on all nodes
     // alex
     alex.send(
         JsonProtocol::TrackDna(TrackDnaData {
@@ -157,6 +159,9 @@ pub fn setup_three_nodes(
     let _msg_count = alex.listen(100);
     let _msg_count = billy.listen(100);
     let _msg_count = camille.listen(100);
+
+    log_i!("setup_three_nodes() COMPLETE \n\n\n");
+
     // Done
     Ok(())
 }
@@ -172,22 +177,21 @@ pub fn hold_and_publish_test(
     // Setup
     println!("Testing: hold_entry_list_test()");
     setup_three_nodes(alex, billy, camille, can_connect)?;
-    log_i!("setup_three_nodes() COMPLETE");
 
     // Have alex hold some data
-    alex.hold_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1);
+    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, false)?;
     // Alex: Look for the hold_list request received from network module and reply
-    alex.reply_to_first_HandleGetHoldingEntryList();
+    alex.reply_to_first_HandleGetPublishingEntryList();
 
     // Might receive a HandleFetchEntry request from network module:
     // hackmode would want the data right away
     let has_received = alex.wait_HandleFetchEntry_and_reply();
-    if has_received {
-        // billy might receive HandleStoreEntry
-        let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))), 2000);
-    }
+    assert!(has_received);
+
     // Have billy author the same data
     billy.author_entry(&ENTRY_ADDRESS_2, &ENTRY_CONTENT_2, true)?;
+
+    let _msg_count = camille.listen(3000);
 
     // Camille requests that entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());

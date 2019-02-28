@@ -2,14 +2,12 @@ use crate::{cli::package, error::DefaultResult, util};
 use colored::*;
 use failure::Error;
 use std::{
-    fs,
     io::ErrorKind,
     path::PathBuf,
     process::{Command, Stdio},
 };
 
 pub const TEST_DIR_NAME: &str = "test";
-pub const DIST_DIR_NAME: &str = "dist";
 
 pub fn test(
     path: &PathBuf,
@@ -45,22 +43,15 @@ pub fn test(
         }
     };
 
-    // create dist folder
-    let dist_path = path.join(&DIST_DIR_NAME);
-
-    if !dist_path.exists() {
-        fs::create_dir(dist_path.as_path())?;
-    }
-
     if !skip_build {
         // build the package file, within the dist folder
-        let bundle_file_path = dist_path.join(package::DEFAULT_BUNDLE_FILE_NAME);
+        let file_path = util::std_package_path(path)?;
         println!(
             "{} files for testing to file: {:?}",
             "Packaging".green().bold(),
-            bundle_file_path
+            &file_path
         );
-        package(true, Some(bundle_file_path.to_path_buf()))?;
+        package(true, PathBuf::from(file_path))?;
     }
 
     // build tests
@@ -96,6 +87,7 @@ pub fn test(
 }
 
 #[cfg(test)]
+#[cfg(feature = "broken-tests")]
 pub mod tests {
     use super::*;
     use crate::cli::init::{init, tests::gen_dir};

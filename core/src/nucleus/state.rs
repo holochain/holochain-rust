@@ -1,10 +1,14 @@
-use crate::nucleus::ZomeFnCall;
+use crate::{
+    nucleus::{validation::ValidationResult, ZomeFnCall},
+    scheduled_jobs::pending_validations::PendingValidation,
+};
 use holochain_core_types::{
     cas::content::Address, dna::Dna, error::HolochainError, json::JsonString,
     validation::ValidationPackage,
 };
 use snowflake;
 use std::collections::HashMap;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum NucleusStatus {
     New,
@@ -18,8 +22,6 @@ impl Default for NucleusStatus {
         NucleusStatus::New
     }
 }
-
-pub type ValidationResult = Result<(), String>;
 
 /// The state-slice for the Nucleus.
 /// Holds the dynamic parts of the DNA, i.e. zome calls and validation requests.
@@ -35,6 +37,7 @@ pub struct NucleusState {
     pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
     pub validation_packages:
         HashMap<snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>>,
+    pub pending_validations: HashMap<Address, PendingValidation>,
 }
 
 impl NucleusState {
@@ -45,6 +48,7 @@ impl NucleusState {
             zome_calls: HashMap::new(),
             validation_results: HashMap::new(),
             validation_packages: HashMap::new(),
+            pending_validations: HashMap::new(),
         }
     }
 

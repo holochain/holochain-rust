@@ -2,7 +2,7 @@
 //! P2pNetwork instances take a json configuration string
 //! and at load-time instantiate the configured "backend"
 
-use holochain_net_connection::{
+use crate::connection::{
     net_connection::{NetHandler, NetSend, NetWorker, NetWorkerFactory},
     net_connection_thread::NetConnectionThread,
     protocol::Protocol,
@@ -10,7 +10,9 @@ use holochain_net_connection::{
 };
 use std::{thread::sleep, time::Duration};
 
-use super::{ipc_net_worker::IpcNetWorker, memory_worker::InMemoryWorker, p2p_config::*};
+use crate::{
+    in_memory::memory_worker::InMemoryWorker, ipc_net_worker::IpcNetWorker, p2p_config::*,
+};
 
 /// Facade handling a p2p module responsable for the network connection
 /// Holds a NetConnectionThread and implements itself the NetSend Trait
@@ -84,18 +86,6 @@ impl NetSend for P2pNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn it_should_create_zmq_socket() {
-        let p2p_config = P2pConfig::new(
-            P2pBackendKind::IPC,
-            crate::ipc_net_worker::IpcNetWorker::ZMQ_URI_CONFIG,
-            Some(P2pConfig::default_end_user_config()),
-        );
-        let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &p2p_config).unwrap();
-        res.send(Protocol::P2pReady).unwrap();
-        res.stop().unwrap();
-    }
 
     #[test]
     fn it_should_create_memory_network() {

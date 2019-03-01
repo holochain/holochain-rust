@@ -256,12 +256,6 @@ jobs:
        - TEST_P=holochain_dna_c_binding
        - TEST_PATH=dna_c_binding/
 
-    - name: "windows holochain_net_connection"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_net_connection
-       - TEST_PATH=net_connection/
-
     - name: "windows holochain_sodium"
       <<: *_windows_template_lite
       env:
@@ -285,12 +279,6 @@ jobs:
       env:
        - TEST_P=holochain_net
        - TEST_PATH=net/
-
-    - name: "windows holochain_net_ipc"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_net_ipc
-       - TEST_PATH=net_ipc/
 
     - name: "C binding tests"
       <<: *_trusty_bash

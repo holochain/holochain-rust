@@ -12,8 +12,6 @@ extern crate test_utils;
 extern crate unwrap_to;
 #[macro_use]
 extern crate num_derive;
-#[macro_use]
-extern crate serde_json;
 
 #[macro_use]
 extern crate holochain_wasm_utils;
@@ -33,6 +31,7 @@ pub mod logger;
 pub mod network;
 pub mod nucleus;
 pub mod persister;
+pub mod scheduled_jobs;
 pub mod signal;
 pub mod state;
 pub mod workflows;

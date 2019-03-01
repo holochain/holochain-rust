@@ -31,7 +31,6 @@ use crate::nucleus::ribosome::{
 
 use num_traits::FromPrimitive;
 use std::str::FromStr;
-
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 pub type ZomeApiResult = Result<Option<RuntimeValue>, Trap>;
@@ -194,7 +193,7 @@ pub mod tests {
         instance::{tests::test_instance_and_context, Instance},
         nucleus::{
             ribosome::{self, runtime::WasmCallData, Defn},
-            tests::{test_capability_call, test_capability_name},
+            tests::test_capability_request,
             ZomeFnCall,
         },
     };
@@ -380,7 +379,7 @@ pub mod tests {
     ) -> JsonString {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
-            Some(test_capability_call()),
+            test_capability_request(context.clone(), &test_function_name(), test_parameters()),
             &test_function_name(),
             test_parameters(),
         );
@@ -402,11 +401,7 @@ pub mod tests {
         args_bytes: Vec<u8>,
     ) -> (JsonString, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
-        let dna = test_utils::create_test_dna_with_wasm(
-            &test_zome_name(),
-            &test_capability_name(),
-            wasm.clone(),
-        );
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
         let dna_name = &dna.name.to_string().clone();
         let (instance, context) =

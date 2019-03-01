@@ -4,7 +4,7 @@ const path = require('path');
 const { Config, Conductor } = require('..')
 
 const dnaValid = Config.dna(
-    path.join(__dirname, "test-bundle.json"),
+    path.join(__dirname, "test.dna.json"),
     'dna-valid'
 )
 const dnaInvalid = Config.dna(

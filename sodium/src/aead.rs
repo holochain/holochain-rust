@@ -114,21 +114,20 @@ pub fn dec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::random::random_secbuf;
 
     #[test]
     fn it_should_with_auth_aead_encrypt_and_decrypt() {
         let mut message = SecBuf::with_secure(8);
-        random_secbuf(&mut message);
+        message.randomize();
 
         let mut secret = SecBuf::with_secure(32);
-        random_secbuf(&mut secret);
+        secret.randomize();
 
         let mut adata = SecBuf::with_secure(16);
-        random_secbuf(&mut adata);
+        adata.randomize();
 
         let mut nonce = SecBuf::with_insecure(16);
-        random_secbuf(&mut nonce);
+        nonce.randomize();
 
         let mut cipher = SecBuf::with_insecure(message.len() + ABYTES);
 
@@ -165,13 +164,13 @@ mod tests {
     #[test]
     fn it_should_with_none_aead_encrypt_and_decrypt() {
         let mut message = SecBuf::with_secure(16);
-        random_secbuf(&mut message);
+        message.randomize();
 
         let mut secret = SecBuf::with_secure(32);
-        random_secbuf(&mut secret);
+        secret.randomize();
 
         let mut nonce = SecBuf::with_insecure(NONCEBYTES);
-        random_secbuf(&mut nonce);
+        nonce.randomize();
 
         let cip_len = message.len() + ABYTES;
         let mut cipher = SecBuf::with_insecure(cip_len);
@@ -186,7 +185,7 @@ mod tests {
             &mut nonce,
             &mut cipher,
         )
-        .unwrap();;
+        .unwrap();
         let message = message.read_lock();
         let decrypted_message = decrypted_message.read_lock();
         assert_eq!(
@@ -197,19 +196,19 @@ mod tests {
     #[test]
     fn it_should_with_bad_aead_encrypt_and_decrypt() {
         let mut message = SecBuf::with_secure(16);
-        random_secbuf(&mut message);
+        message.randomize();
 
         let mut secret = SecBuf::with_secure(32);
-        random_secbuf(&mut secret);
+        secret.randomize();
 
         let mut adata = SecBuf::with_secure(16);
-        random_secbuf(&mut adata);
+        adata.randomize();
 
         let mut adata1 = SecBuf::with_secure(16);
-        random_secbuf(&mut adata1);
+        adata1.randomize();
 
         let mut nonce = SecBuf::with_insecure(NONCEBYTES);
-        random_secbuf(&mut nonce);
+        nonce.randomize();
 
         let cip_len = message.len() + ABYTES;
         let mut cipher = SecBuf::with_insecure(cip_len);
@@ -220,7 +219,7 @@ mod tests {
             &mut nonce,
             &mut cipher,
         )
-        .unwrap();;
+        .unwrap();
         let dec_len = cip_len - ABYTES;
         let mut decrypted_message = SecBuf::with_insecure(dec_len);
         dec(
@@ -230,7 +229,7 @@ mod tests {
             &mut nonce,
             &mut cipher,
         )
-        .unwrap();;
+        .unwrap();
         let decrypted_message = decrypted_message.read_lock();
         assert_eq!(
             "[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",

@@ -21,11 +21,8 @@ serde_json = "^1.0"
 holochain_conductor_api = { path = "../../conductor_api" }
 holochain_core = { path = "../../core" }
 holochain_core_types = { path = "../../core_types" }
-holochain_dpki = { path = "../../hc_dpki" }
 holochain_node_test_waiter = { path = "../../nodejs_waiter" }
-holochain_sodium = { path = "../../sodium" }
 neon-serde = "0.1.1"
 
 [patch.crates-io]
 rust_sodium-sys = { path = "../../rust_sodium-sys" }
-zmq-sys = { path = "../../zmq-sys" }

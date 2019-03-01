@@ -13,12 +13,12 @@ The following are the options for configuring `hc run`, should you need somethin
 
 `-b`/`--package`
 
-Package your DNA before running it. Recall that to [package]() is to build the `bundle.json` file from the source files. `hc run` always looks for a `bundle.json` file in the root of your DNA folder, so make sure that one exists there when trying to use it. `hc run --package` will do this, or run `hc package` beforehand.
+Package your DNA before running it. Recall that to [package]() is to build the `yourapp.dna.json` file from the source files. `hc run` always looks for a DNA package file in the root of your DNA folder that should have the same name as the directory itself with suffix:  `.dna.json`, so make sure that one exists there when trying to use it. `hc run --package` will do this, or run `hc package` beforehand.
 
 **example**
 ```shell
 hc run --package
-``` 
+```
 
 ### Storage
 
@@ -69,10 +69,8 @@ hc run --port 3400
 
 Select whether the Conductor should network with other nodes that are running instances of the same DNA. By default this does not occur, instead the instance runs in isolation from the network, allowing only the developer to locally access it.
 
-This option requires more configuration, which can be read about in the 
+This option requires more configuration, which can be read about in the
 [configuring networking article](./hc_configuring_networking.md).
 
 ### Stopping the Server
 Once you are done with the server, to quit type `exit` then press `Enter`, or press `Ctrl-C`.
-
-

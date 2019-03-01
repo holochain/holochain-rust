@@ -129,7 +129,7 @@ impl<'a, T: Eq> Default for EavFilter<'a, T> {
 
 impl<'a, T: Eq> From<Option<T>> for EavFilter<'a, T> {
     fn from(val: Option<T>) -> EavFilter<'a, T> {
-        val.map(|v| EavFilter::single(v)).unwrap_or_default()
+        val.map(EavFilter::single).unwrap_or_default()
     }
 }
 

@@ -129,17 +129,6 @@ impl Dna {
         zome.traits.get(trait_name)
     }
 
-    /// Return a Function declaration from a Zome
-    pub fn get_function<'a>(
-        &'a self,
-        zome: &'a zome::Zome,
-        function_name: &str,
-    ) -> Option<&'a FnDeclaration> {
-        zome.fn_declarations
-            .iter()
-            .find(|ref fn_decl| fn_decl.name == function_name)
-    }
-
     /// Return a Zome Function declaration from a Zome name and Function name.
     pub fn get_function_with_zome_name(
         &self,
@@ -148,23 +137,18 @@ impl Dna {
     ) -> Result<&FnDeclaration, DnaError> {
         let zome = self.get_zome(zome_name)?;
 
-        // Function must exist in Zome
-        let fn_decl = self.get_function(zome, &fn_name);
-        if fn_decl.is_none() {
-            return Err(DnaError::ZomeFunctionNotFound(format!(
+        zome.get_function(&fn_name).ok_or_else(|| {
+            DnaError::ZomeFunctionNotFound(format!(
                 "Zome function '{}' not found in Zome '{}'",
                 &fn_name, &zome_name
-            )));
-        }
-        // Everything OK
-        Ok(fn_decl.unwrap())
+            ))
+        })
     }
 
-    /// Find a Zome and return it's WASM bytecode for a specified Capability
+    /// Find a Zome and return it's WASM bytecode
     pub fn get_wasm_from_zome_name<T: Into<String>>(&self, zome_name: T) -> Option<&wasm::DnaWasm> {
         let zome_name = zome_name.into();
-        let zome = self.get_zome(&zome_name).ok()?;
-        Some(&zome.code)
+        self.get_zome(&zome_name).ok().map(|ref zome| &zome.code)
     }
 
     /// Return a Zome's Trait functions from a Zome name and trait name.
@@ -175,16 +159,12 @@ impl Dna {
     ) -> Result<&TraitFns, DnaError> {
         let zome = self.get_zome(zome_name)?;
 
-        // Trait must exist in Zome
-        let trait_fns = self.get_trait(zome, &trait_name);
-        if trait_fns.is_none() {
-            return Err(DnaError::TraitNotFound(format!(
+        self.get_trait(zome, &trait_name).ok_or_else(|| {
+            DnaError::TraitNotFound(format!(
                 "Trait '{}' not found in Zome '{}'",
                 &trait_name, &zome_name
-            )));
-        }
-        // Everything OK
-        Ok(trait_fns.unwrap())
+            ))
+        })
     }
 
     /// Return the name of the zome holding a specified app entry_type
@@ -197,7 +177,7 @@ impl Dna {
         assert!(EntryType::has_valid_app_name(&entry_type_name));
         // Browse through the zomes
         for (zome_name, zome) in &self.zomes {
-            for (zome_entry_type_name, _) in &zome.entry_types {
+            for zome_entry_type_name in zome.entry_types.keys() {
                 if *zome_entry_type_name
                     == EntryType::App(AppEntryType::from(entry_type_name.to_string()))
                 {
@@ -213,7 +193,7 @@ impl Dna {
         // pre-condition: must be a valid app entry_type name
         assert!(EntryType::has_valid_app_name(entry_type_name));
         // Browse through the zomes
-        for (_zome_name, zome) in &self.zomes {
+        for zome in self.zomes.values() {
             for (zome_entry_type_name, entry_type_def) in &zome.entry_types {
                 if *zome_entry_type_name
                     == EntryType::App(AppEntryType::from(entry_type_name.to_string()))
@@ -362,18 +342,12 @@ pub mod tests {
             format!("{:?}", trait_fns),
             "TraitFns { functions: [\"test\"] }"
         );
-    }
-
-    #[test]
-    fn test_dna_get_function() {
-        let dna = test_dna();
-        let zome = dna.get_zome("test").unwrap();
-        let result = dna.get_function(zome, "foo func");
-        assert!(result.is_none());
-        let fun = dna.get_function(zome, "test").unwrap();
+        let trait_fns = dna
+            .get_trait_fns_with_zome_name("test", "hc_public")
+            .unwrap();
         assert_eq!(
-            format!("{:?}", fun),
-            "FnDeclaration { name: \"test\", inputs: [], outputs: [] }"
+            format!("{:?}", trait_fns),
+            "TraitFns { functions: [\"test\"] }"
         );
     }
 

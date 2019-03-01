@@ -27,7 +27,7 @@ pub const SALTBYTES: usize = rust_sodium_sys::crypto_pwhash_SALTBYTES as usize;
 ///
 /// @param {i8} algorithm - which hashing algorithm
 ///
-/// @param {SecBuf} salt - predefined salt (randomomiz it if you dont want to generate it )
+/// @param {SecBuf} salt - predefined salt (randomized it if you dont want to generate it )
 ///
 /// @param {SecBuf} hash - the hash generated
 pub fn hash(
@@ -44,7 +44,7 @@ pub fn hash(
     let mut hash = hash.write_lock();
     let hash_len = hash.len() as libc::c_ulonglong;
     let pw_len = password.len() as libc::c_ulonglong;
-    unsafe {
+    let res = unsafe {
         rust_sodium_sys::crypto_pwhash(
             raw_ptr_char!(hash),
             hash_len,
@@ -54,23 +54,26 @@ pub fn hash(
             ops_limit as libc::c_ulonglong,
             mem_limit,
             alg as libc::c_int,
-        );
+        )
+    };
+    match res {
+        0 => Ok(()),
+        -1 => Err(SodiumError::OutOfMemory),
+        _ => unreachable!(),
     }
-    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::random::random_secbuf;
 
     #[test]
     fn it_should_generate_with_random_salt() {
         let mut password = SecBuf::with_secure(HASHBYTES);
         let mut pw1_hash = SecBuf::with_secure(HASHBYTES);
         let mut random_salt = SecBuf::with_insecure(SALTBYTES);
-        random_secbuf(&mut password);
-        random_secbuf(&mut random_salt);
+        password.randomize();
+        random_salt.randomize();
         hash(
             &mut password,
             OPSLIMIT_SENSITIVE,
@@ -109,9 +112,9 @@ mod tests {
         let mut password = SecBuf::with_secure(HASHBYTES);
         let mut pw1_hash = SecBuf::with_secure(HASHBYTES);
         let mut pw2_hash = SecBuf::with_secure(HASHBYTES);
-        random_secbuf(&mut password);
+        password.randomize();
         let mut salt = SecBuf::with_insecure(SALTBYTES);
-        random_secbuf(&mut salt);
+        salt.randomize();
         hash(
             &mut password,
             OPSLIMIT_SENSITIVE,

@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install --yes\
   qt5-default \
   python2.7 \
   gosu \
-  libzmq3-dev \
   git
 
 # install nodejs

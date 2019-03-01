@@ -118,6 +118,7 @@ impl Zome {
             .collect()
     }
 
+    /// Add a function declaration to a Zome
     pub fn add_fn_declaration(
         &mut self,
         name: String,
@@ -139,14 +140,11 @@ impl Zome {
     }
 
     // Helper function for finding out if a given function call is public
-    pub fn is_fn_public(&self, fn_name: &String) -> bool {
-        let pub_trait = ReservedTraitNames::Public.as_str().to_string();
-        self.traits
-            .iter()
-            .find(|(trait_name, trait_fns)| {
-                trait_name.to_string() == pub_trait && trait_fns.functions.contains(fn_name)
-            })
-            .is_some()
+    pub fn is_fn_public(&self, fn_name: &str) -> bool {
+        let pub_trait = ReservedTraitNames::Public.as_str();
+        self.traits.iter().any(|(trait_name, trait_fns)| {
+            trait_name == pub_trait && trait_fns.functions.contains(&fn_name.to_owned())
+        })
     }
 }
 
@@ -218,5 +216,18 @@ pub mod tests {
 
         let expected = "[FnDeclaration { name: \"hello\", inputs: [], outputs: [FnParameter { parameter_type: \"String\", name: \"greeting\" }] }]";
         assert_eq!(expected, format!("{:?}", zome.fn_declarations),);
+    }
+
+    #[test]
+    fn test_zome_get_function() {
+        let mut zome = Zome::default();
+        zome.add_fn_declaration(String::from("test"), vec![], vec![]);
+        let result = zome.get_function("foo func");
+        assert!(result.is_none());
+        let fun = zome.get_function("test").unwrap();
+        assert_eq!(
+            format!("{:?}", fun),
+            "FnDeclaration { name: \"test\", inputs: [], outputs: [] }"
+        );
     }
 }

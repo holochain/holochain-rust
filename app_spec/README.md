@@ -40,7 +40,7 @@ You should see the tests all passing successfully.
 
 In order to get from the source directory tree to a Holochain DNA package, and then test that, several steps need to be taken which are all automated.
 
-This includes compiling any Rust code projects to WASM, and then assembling a DNA file (.hcpkg) with all configuration snippets and the WASM in it.
+This includes compiling any Rust code projects to WASM, and then assembling a DNA file (.dna.json) with all configuration snippets and the WASM in it.
 
 It will error at this point if for some reason it can't successfully build the WASM, or the DNA file.
 

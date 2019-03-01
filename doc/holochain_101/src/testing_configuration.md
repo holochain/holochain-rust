@@ -41,25 +41,25 @@ ___
 
 **Type** `string`
 
-**Description** The path to a `bundle.json` file containing a valid DNA configuration
+**Description** The path to a `.dna.json` file containing a valid DNA configuration
 ___
 **Name** dnaName *Optional*
 
 **Type** `string`
 
-**Description** The path to a `bundle.json` file containing a valid DNA configuration
+**Description** The path to a `.dna.json` file containing a valid DNA configuration
 
 **Default** The same as the given `dnaPath`
 ___
 
 #### Example
 ```javascript
-const dnaConfig = Config.dna('path/to/bundle.json')
+const dnaConfig = Config.dna('path/to/your.dna.json')
 console.log(dnaConfig)
 /*
 {
-    path: 'path/to/bundle.json',
-    name: 'path/to/bundle.json'
+    path: 'path/to/your.dna.json',
+    name: 'path/to/your.dna.json'
 }
 */
 ```
@@ -95,7 +95,7 @@ ___
 #### Example
 ```javascript
 const agentConfig = Config.agent('alice')
-const dnaConfig = Config.dna('path/to/bundle.json')
+const dnaConfig = Config.dna('path/to/your.dna.json')
 const instanceConfig = Config.instance(agentConfig, dnaConfig)
 console.log(dnaConfig)
 /*
@@ -104,8 +104,8 @@ console.log(dnaConfig)
         name: 'alice'
     },
     dna: {
-        path: 'path/to/bundle.json',
-        name: 'path/to/bundle.json'
+        path: 'path/to/your.dna.json',
+        name: 'path/to/your.dna.json'
     },
     name: 'alice'
 }
@@ -140,7 +140,7 @@ ___
 #### Example
 ```javascript
 const agentConfig = Config.agent('alice')
-const dnaConfig = Config.dna('path/to/bundle.json')
+const dnaConfig = Config.dna('path/to/your.dna.json')
 const instanceConfig = Config.instance(agentConfig, dnaConfig)
 const conductorConfig = Config.conductor([instanceConfig])
 ```
@@ -148,7 +148,7 @@ const conductorConfig = Config.conductor([instanceConfig])
 #### Example With conductorOptions
 ```javascript
 const agentConfig = Config.agent('alice')
-const dnaConfig = Config.dna('path/to/bundle.json')
+const dnaConfig = Config.dna('path/to/your.dna.json')
 const instanceConfig = Config.instance(agentConfig, dnaConfig)
 const conductorConfig = Config.conductor([instanceConfig], { debugLog: true })
 ```
@@ -165,11 +165,11 @@ const bobName = "bob"
 const agentAlice = Config.agent(aliceName)
 const agentBob = Config.agent(bobName)
 // ...and one DNA...
-const dnaPath = "path/to/happ.hcpkg"
+const dnaPath = "path/to/happ.dna.json"
 const dna = Config.dna(dnaPath)
 // ...then make instances out of them...
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
-// ...and finally throw them all together 
+// ...and finally throw them all together
 const config = Config.conductor([instanceAlice, instanceBob])
 ```

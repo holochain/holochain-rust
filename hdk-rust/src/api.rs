@@ -8,7 +8,6 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    dna::capabilities::CapabilityCall,
     entry::Entry,
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
     time::Timeout,
@@ -43,31 +42,35 @@ use std::{
 //--------------------------------------------------------------------------------------------------
 
 lazy_static! {
-  /// The `name` property as taken from the DNA.
-  pub static ref DNA_NAME: &'static str = &GLOBALS.dna_name;
+    /// The `name` property as taken from the DNA.
+    pub static ref DNA_NAME: &'static str = &GLOBALS.dna_name;
 
-  /// The address of the DNA the Zome is embedded within.
-  /// This is often useful as a fixed value that is known by all
-  /// participants running the DNA.
-  pub static ref DNA_ADDRESS: &'static Address = &GLOBALS.dna_address;
+    /// The address of the DNA the Zome is embedded within.
+    /// This is often useful as a fixed value that is known by all
+    /// participants running the DNA.
+    pub static ref DNA_ADDRESS: &'static Address = &GLOBALS.dna_address;
 
-  /// The identity string used when the chain was first initialized.
-  pub static ref AGENT_ID_STR: &'static str = &GLOBALS.agent_id_str;
+    /// The identity string used when the chain was first initialized.
+    pub static ref AGENT_ID_STR: &'static str = &GLOBALS.agent_id_str;
 
-  /// The hash of your public key.
-  /// This is your node address on the DHT.
-  /// It can be used for node-to-node messaging with `send` and `receive` functions.
-  pub static ref AGENT_ADDRESS: &'static Address = &GLOBALS.agent_address;
+    /// The hash of your public key.
+    /// This is your node address on the DHT.
+    /// It can be used for node-to-node messaging with `send` and `receive` functions.
+    pub static ref AGENT_ADDRESS: &'static Address = &GLOBALS.agent_address;
 
-  /// The hash of the first identity entry on your chain (The second entry on your chain).
-  /// This is your peer's identity on the DHT.
-  pub static ref AGENT_INITIAL_HASH: &'static HashString = &GLOBALS.agent_initial_hash;
+    /// The hash of the first identity entry on your chain (The second entry on your chain).
+    /// This is your peer's identity on the DHT.
+    pub static ref AGENT_INITIAL_HASH: &'static HashString = &GLOBALS.agent_initial_hash;
 
-  #[doc(hidden)]
-  /// The hash of the most recent identity entry that has been committed to your chain.
-  /// Starts with the same value as AGENT_INITIAL_HASH.
-  /// After a call to `update_agent` it will have the value of the hash of the newly committed identity entry.
-  pub static ref AGENT_LATEST_HASH: &'static HashString = &GLOBALS.agent_latest_hash;
+    #[doc(hidden)]
+    /// The hash of the most recent identity entry that has been committed to your chain.
+    /// Starts with the same value as AGENT_INITIAL_HASH.
+    /// After a call to `update_agent` it will have the value of the hash of the newly committed identity entry.
+    pub static ref AGENT_LATEST_HASH: &'static HashString = &GLOBALS.agent_latest_hash;
+
+    /// The Address of the public token (if any)
+    pub static ref PUBLIC_TOKEN: &'static Address = &GLOBALS.public_token;
+
 }
 
 impl From<DNA_NAME> for JsonString {
@@ -103,6 +106,12 @@ impl From<AGENT_INITIAL_HASH> for JsonString {
 impl From<AGENT_LATEST_HASH> for JsonString {
     fn from(agent_latest_hash: AGENT_LATEST_HASH) -> JsonString {
         JsonString::from(HashString::from(agent_latest_hash.to_string()))
+    }
+}
+
+impl From<PUBLIC_TOKEN> for JsonString {
+    fn from(public_token: PUBLIC_TOKEN) -> JsonString {
+        JsonString::from(Address::from(public_token.to_string()))
     }
 }
 
@@ -369,6 +378,7 @@ impl Dispatch {
 /// # use std::convert::TryInto;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
+/// # use hdk::holochain_core_types::cas::content::Address;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
@@ -412,7 +422,7 @@ impl Dispatch {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     hdk::call(hdk::THIS_INSTANCE, "summer", "test_token", "sum", call_input.into())
+///     hdk::call(hdk::THIS_INSTANCE, "summer", Address::from(hdk::PUBLIC_TOKEN.to_string()), "sum", call_input.into())
 /// }
 ///
 /// define_zome! {
@@ -440,14 +450,14 @@ impl Dispatch {
 pub fn call<S: Into<String>>(
     instance_handle: S,
     zome_name: S,
-    cap_token: S,
+    cap_token: Address,
     fn_name: S,
     fn_args: JsonString,
 ) -> ZomeApiResult<JsonString> {
     Dispatch::Call.with_input(ZomeFnCallArgs {
         instance_handle: instance_handle.into(),
         zome_name: zome_name.into(),
-        cap: Some(CapabilityCall::new(Address::from(cap_token.into()), None)),
+        cap_token: cap_token,
         fn_name: fn_name.into(),
         fn_args: String::from(fn_args),
     })
@@ -1087,8 +1097,10 @@ pub fn query_result(
 ///    genesis: || { Ok(()) }
 ///
 ///    receive: |payload| {
-///        // simply pass back the received value, appended to a modifier
-///        format!("Received: {}", payload)
+///        // if you want to serialize data as json to pass, use the json! serde macro
+///        json!({
+///            "key": "value"
+///        }).to_string()
 ///    }
 ///
 ///    functions: [

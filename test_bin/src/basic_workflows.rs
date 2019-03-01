@@ -1,10 +1,12 @@
 use constants::*;
 use holochain_core_types::cas::content::Address;
-use holochain_net::tweetlog::TWEETLOG;
-use holochain_net_connection::{
-    json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
-    net_connection::NetSend,
-    NetResult,
+use holochain_net::{
+    connection::{
+        json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
+        net_connection::NetSend,
+        NetResult,
+    },
+    tweetlog::TWEETLOG,
 };
 use p2p_node::P2pNode;
 
@@ -21,13 +23,13 @@ fn confirm_published_data(
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    if result_a.is_some() {
-        log_i!("got HandleStoreEntry on node A: {:?}", result_a);
-    }
+    // #fulldht
+    assert!(result_a.is_some());
+    log_i!("got HandleStoreEntry on node A: {:?}", result_a);
+
     let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    if result_a.is_some() {
-        log_i!("got HandleStoreEntry on node B: {:?}", result_b);
-    }
+    assert!(result_b.is_some());
+    log_i!("got HandleStoreEntry on node B: {:?}", result_b);
 
     let fetch_data = billy.request_entry(address.clone());
 
@@ -57,13 +59,12 @@ fn confirm_published_metadata(
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
-    if result_a.is_some() {
-        log_i!("got HandleStoreMeta on node A: {:?}", result_a);
-    }
+    // #fulldht
+    assert!(result_a.is_some());
+    log_i!("got HandleStoreMeta on node A: {:?}", result_a);
     let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
-    if result_a.is_some() {
-        log_i!("got HandleStoreMeta on node B: {:?}", result_b);
-    }
+    assert!(result_b.is_some());
+    log_i!("got HandleStoreMeta on node B: {:?}", result_b);
 
     // Billy asks for that metadata on the network.
     let fetch_meta = billy.request_meta(address.clone(), META_LINK_ATTRIBUTE.to_string());
@@ -173,6 +174,8 @@ pub fn setup_two_nodes(
     let _msg_count = alex.listen(100);
     let _msg_count = billy.listen(100);
 
+    log_i!("setup_two_nodes() COMPLETE \n\n\n");
+
     // Done
     Ok(())
 }
@@ -195,7 +198,10 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         JsonProtocol::HandleSendMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!("\"hello\"".to_string(), msg.content.to_string());
+    assert_eq!(
+        "{\"entry\":{\"content\":\"hello\"}}".to_string(),
+        msg.content.to_string()
+    );
 
     // Send a message back from billy to alex
     billy.send_reponse(
@@ -212,7 +218,7 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         _ => unreachable!(),
     };
     assert_eq!(
-        "\"echo: \\\"hello\\\"\"".to_string(),
+        "\"echo: {\\\"entry\\\":{\\\"content\\\":\\\"hello\\\"}}\"".to_string(),
         msg.content.to_string()
     );
 
@@ -226,7 +232,6 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     // Setup
     println!("Testing: meta_test()");
     setup_two_nodes(alex, billy, can_connect)?;
-    log_i!("setup_two_nodes COMPLETE");
 
     // Send data & metadata on same address
     confirm_published_data(alex, billy, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1)?;
@@ -263,13 +268,13 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     // wait for gossip
     // Check if billy is asked to store it
     let result = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    if result.is_some() {
-        log_i!("Billy got HandleStoreEntry: {:?}", result);
-    }
+    // #fulldht
+    assert!(result.is_some());
+    log_i!("Billy got HandleStoreEntry: {:?}", result);
+
     let result = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
-    if result.is_some() {
-        log_i!("Billy got HandleStoreEntry: {:?}", result);
-    }
+    assert!(result.is_some());
+    log_i!("Billy got HandleStoreEntry: {:?}", result);
 
     // Billy sends FetchEntry message
     let fetch_data = billy.request_entry(ENTRY_ADDRESS_3.clone());
@@ -299,20 +304,19 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
     // Setup
     println!("Testing: dht_test()");
     setup_two_nodes(alex, billy, can_connect)?;
-    log_i!("setup_two_nodes COMPLETE");
 
     // Alex publish data on the network
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    if result_a.is_some() {
-        log_i!("got HandleStoreEntry on node A: {:?}", result_a);
-    }
+    // #fulldht
+    assert!(result_a.is_some());
+    log_i!("got HandleStoreEntry on node A: {:?}", result_a);
+
     let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    if result_a.is_some() {
-        log_i!("got HandleStoreEntry on node B: {:?}", result_b);
-    }
+    assert!(result_b.is_some());
+    log_i!("got HandleStoreEntry on node B: {:?}", result_b);
 
     // Billy asks for that data
     let fetch_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
@@ -365,7 +369,6 @@ pub fn untrack_alex_test(
     // Setup
     println!("Testing: untrack_alex_test()");
     setup_two_nodes(alex, billy, can_connect)?;
-    log_i!("setup_two_nodes COMPLETE");
 
     // Send Untrack
     alex.send(
@@ -400,7 +403,6 @@ pub fn untrack_billy_test(
     // Setup
     println!("Testing: untrack_billy_test()");
     setup_two_nodes(alex, billy, can_connect)?;
-    log_i!("setup_two_nodes COMPLETE");
 
     // Send Untrack
     billy
@@ -440,7 +442,6 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
     // Setup
     println!("Testing: untrack_billy_test()");
     setup_two_nodes(alex, billy, can_connect)?;
-    log_i!("setup_two_nodes COMPLETE");
 
     // Billy untracks DNA
     billy
@@ -507,7 +508,10 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
         JsonProtocol::HandleSendMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!("\"hello\"".to_string(), msg.content.to_string());
+    assert_eq!(
+        "{\"entry\":{\"content\":\"hello\"}}".to_string(),
+        msg.content.to_string()
+    );
 
     // Send a message back from billy to alex
     billy.send_reponse(
@@ -524,7 +528,7 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
         _ => unreachable!(),
     };
     assert_eq!(
-        "\"echo: \\\"hello\\\"\"".to_string(),
+        "\"echo: {\\\"entry\\\":{\\\"content\\\":\\\"hello\\\"}}\"".to_string(),
         msg.content.to_string()
     );
 

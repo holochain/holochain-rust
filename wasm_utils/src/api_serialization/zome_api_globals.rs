@@ -10,4 +10,5 @@ pub struct ZomeApiGlobals {
     pub agent_address: Address,
     pub agent_initial_hash: HashString,
     pub agent_latest_hash: HashString,
+    pub public_token: Address,
 }

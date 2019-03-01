@@ -51,7 +51,9 @@ impl From<AttributeError> for HolochainError {
     fn from(err: AttributeError) -> HolochainError {
         let msg = match err {
             AttributeError::Unrecognized(a) => format!("Unknown attribute: {}", a),
-            AttributeError::ParseError => format!("Could not parse attribute, bad regex match"),
+            AttributeError::ParseError => {
+                String::from("Could not parse attribute, bad regex match")
+            }
         };
         HolochainError::ErrorGeneric(msg)
     }
@@ -219,7 +221,7 @@ impl EntityAttributeValueIndex {
     }
 
     pub fn index(&self) -> Index {
-        self.index.clone()
+        self.index
     }
 
     pub fn set_index(&mut self, new_index: i64) {

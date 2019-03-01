@@ -13,7 +13,7 @@ name = "Holo Tester 2"
 public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
 
 [[dnas]]
-file = "example-config/app_spec.hcpkg"
+file = "../app_spec/dist/app_spec.dna.json"
 hash = "Qm328wyq38924y"
 id = "app spec rust"
 
@@ -32,7 +32,7 @@ dna = "app spec rust"
 id = "app spec instance 2"
 
 [instances.storage]
-path = "example-config/tmp-storage"
+path = "example-config/tmp-storage-2"
 type = "file"
 
 [[interfaces]]

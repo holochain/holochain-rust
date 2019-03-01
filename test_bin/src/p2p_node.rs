@@ -2,19 +2,19 @@
 
 use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net::{
+    connection::{
+        json_protocol::{
+            DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
+            FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
+            MessageData, MetaKey, MetaListData, MetaTuple,
+        },
+        net_connection::NetSend,
+        protocol::Protocol,
+        NetResult,
+    },
     p2p_config::*,
     p2p_network::P2pNetwork,
     tweetlog::{TweetProxy, *},
-};
-use holochain_net_connection::{
-    json_protocol::{
-        DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
-        FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-        MessageData, MetaKey, MetaListData, MetaTuple,
-    },
-    net_connection::NetSend,
-    protocol::Protocol,
-    NetResult,
 };
 use multihash::Hash;
 use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
@@ -946,7 +946,7 @@ fn create_ipc_config(
             "backend_kind": "IPC",
             "backend_config":
             {
-                "socketType": "zmq",
+                "socketType": "ws",
                 "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {

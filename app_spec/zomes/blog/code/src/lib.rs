@@ -5,6 +5,7 @@ extern crate hdk;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
@@ -19,7 +20,6 @@ use hdk::{
     },
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
 };
-
 use blog::Env;
 
 define_zome! {
@@ -30,6 +30,12 @@ define_zome! {
 
     genesis: || {
         Ok(())
+    }
+
+    receive: |message| {
+        json!({
+            "message": message
+        }).to_string()
     }
 
     functions: [
@@ -50,6 +56,12 @@ define_zome! {
             inputs: |num1: u32, num2: u32|,
             outputs: |sum: ZomeApiResult<JsonString>|,
             handler: blog::handle_check_sum
+        }
+
+        check_send: {
+            inputs: |to_agent: Address, message: String|,
+            outputs: |response: ZomeApiResult<String>|,
+            handler: blog::handle_check_send
         }
 
         post_address: {
@@ -127,7 +139,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [show_env, check_sum, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
+        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
     }
-
 }

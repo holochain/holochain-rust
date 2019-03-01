@@ -139,6 +139,24 @@ define_zome! {
 
 `functions` is where the function declarations will be made.
 
+### Adding Traits:
+
+Here are some sample traits
+
+```rust
+...
+
+define_zome! {
+    ...
+    traits: {
+        hc_public [read_post]
+        authoring [create_post, update_post]
+    }
+}
+```
+
+In this example, `hc_public` is the reserved trait name which creates a `Public` Capbility-type grant at genesis time for access to the `read_post` function.  Additionally it names an `authoring` trait for the `create_post` and `update_post` functions.
+
 ### Adding a Zome Function
 
 In order to add a Zome function, there are two primary steps that are involved.

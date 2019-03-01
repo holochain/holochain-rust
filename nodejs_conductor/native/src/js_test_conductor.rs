@@ -17,10 +17,10 @@ use holochain_conductor_api::{
 use holochain_core::{
     action::Action,
     signal::{signal_channel, Signal, SignalReceiver},
+    nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    dna::capabilities::CapabilityCall,
     entry::Entry,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
@@ -158,13 +158,21 @@ declare_types! {
                 if !tc.is_started {
                     panic!("TestConductor: cannot use call() before start()");
                 }
-                let cap = Some(CapabilityCall::new(
-                    Address::from(""), //FIXME
-                    None,
-                ));
                 let instance_arc = tc.conductor.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
+                let cap = {
+                    let context = instance.context();
+                    let token = context.get_public_token().unwrap();
+                    let caller = Address::from("fake");
+                    make_cap_request_for_call(
+                        context.clone(),
+                        token,
+                        caller,
+                        &fn_name,
+                        params.clone(),
+                    )
+                };
                 instance.call(&zome, cap, &fn_name, &params)
             };
 

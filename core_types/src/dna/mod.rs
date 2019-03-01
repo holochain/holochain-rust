@@ -24,7 +24,6 @@
 //! ```
 
 pub mod bridges;
-pub mod capabilities;
 pub mod dna;
 pub mod entry_types;
 pub mod fn_declarations;

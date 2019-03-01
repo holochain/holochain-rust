@@ -4,7 +4,7 @@ use crate::{
     nucleus::{
         ribosome::{self, runtime::WasmCallData},
         validation::{ValidationError, ValidationResult},
-        ZomeFnCall,
+        CallbackFnCall,
     },
 };
 use futures::{
@@ -22,7 +22,7 @@ use std::{pin::Pin, sync::Arc, thread};
 /// Returns a future that waits for the result to appear in the nucleus state.
 pub async fn run_validation_callback(
     address: Address,
-    zome_call: ZomeFnCall,
+    call: CallbackFnCall,
     context: &Arc<Context>,
 ) -> ValidationResult {
     let id = snowflake::ProcessUniqueId::new();
@@ -36,7 +36,7 @@ pub async fn run_validation_callback(
         .name
         .clone();
     let wasm = context
-        .get_wasm(&zome_call.zome_name)
+        .get_wasm(&call.zome_name)
         .ok_or(ValidationError::NotImplemented)?;
 
     let clone_address = address.clone();
@@ -44,8 +44,8 @@ pub async fn run_validation_callback(
     thread::spawn(move || {
         let validation_result: ValidationResult = match ribosome::run_dna(
             wasm.code.clone(),
-            Some(zome_call.clone().parameters.into_bytes()),
-            WasmCallData::new_zome_call(cloned_context.clone(), dna_name, zome_call),
+            Some(call.clone().parameters.into_bytes()),
+            WasmCallData::new_callback_call(cloned_context.clone(), dna_name, call),
         ) {
             Ok(call_result) => match call_result.is_null() {
                 true => Ok(()),

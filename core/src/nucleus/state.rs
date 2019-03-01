@@ -1,5 +1,5 @@
 use crate::{
-    nucleus::{validation::ValidationResult, ZomeFnCall},
+    nucleus::{actions::initialize::Initialization, validation::ValidationResult, ZomeFnCall},
     scheduled_jobs::pending_validations::PendingValidation,
     state::State,
 };
@@ -17,7 +17,7 @@ use std::{collections::HashMap, convert::TryFrom};
 pub enum NucleusStatus {
     New,
     Initializing,
-    Initialized,
+    Initialized(Initialization),
     InitializationFailed(String),
 }
 
@@ -71,7 +71,17 @@ impl NucleusState {
     }
 
     pub fn has_initialized(&self) -> bool {
-        self.status == NucleusStatus::Initialized
+        match self.status {
+            NucleusStatus::Initialized(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn initialization(&self) -> Option<Initialization> {
+        match self.status {
+            NucleusStatus::Initialized(ref init) => Some(init.clone()),
+            _ => None,
+        }
     }
 
     pub fn has_initialization_failed(&self) -> bool {

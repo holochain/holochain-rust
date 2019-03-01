@@ -13,8 +13,9 @@ pub fn storage_path(path: &Path, folder_name: &str) -> HcResult<PathBuf> {
 pub fn create_path_if_not_exists(path: &Path) -> HcResult<()> {
     if !path.exists() {
         return DirBuilder::new()
+            .recursive(true) // create parent dirs if necessary
             .create(path)
-            .map_err(|_| HolochainError::IoError("Could not create directory".to_string()));
+            .map_err(|_| HolochainError::IoError(format!("Could not create directory: {:?}", path)));
     }
     Ok(())
 }

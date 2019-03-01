@@ -210,7 +210,6 @@ impl Waiter {
                             }
                             Entry::Deletion(deletion_entry) => {
                                 // Pair every `EntryRemove` with N `Hold`s
-                                let hold_entry = committed_entry.clone();
                                 checker.add(num_instances, move |aw| {
                         
                                     *aw.action()

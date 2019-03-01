@@ -205,7 +205,6 @@ impl Waiter {
                                         == Action::RemoveEntry((
                                             committed_entry.address(),
                                             deletion_entry.clone().deleted_entry_address(),
-                                            
                                         ))
                                 });
                             }

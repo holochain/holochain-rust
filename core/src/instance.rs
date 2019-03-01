@@ -5,7 +5,7 @@ use crate::{
 #[cfg(test)]
 use crate::{
     network::actions::initialize_network::initialize_network_with_spoofed_dna,
-    nucleus::actions::initialize::initialize_application,
+    nucleus::actions::initialize::initialize_chain,
 };
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 #[cfg(test)]
@@ -92,7 +92,7 @@ impl Instance {
         let context = self.inner_setup(context);
         context.block_on(
             async {
-                await!(initialize_application(dna.clone(), &context))?;
+                await!(initialize_chain(dna.clone(), &context))?;
                 await!(initialize_network_with_spoofed_dna(
                     spoofed_dna_address,
                     &context
@@ -518,12 +518,12 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::InitApplication(_) => true,
+                Action::InitializeChain(_) => true,
                 _ => false,
             })
             .is_none()
         {
-            println!("Waiting for InitApplication");
+            println!("Waiting for InitializeChain");
             sleep(Duration::from_millis(10))
         }
 
@@ -536,6 +536,7 @@ pub mod tests {
                     assert!(
                         entry.entry_type() == EntryType::AgentId
                             || entry.entry_type() == EntryType::Dna
+                            || entry.entry_type() == EntryType::CapTokenGrant
                     );
                     true
                 }
@@ -634,7 +635,7 @@ pub mod tests {
 
         let dna = Dna::new();
 
-        let action = ActionWrapper::new(Action::InitApplication(dna.clone()));
+        let action = ActionWrapper::new(Action::InitializeChain(dna.clone()));
         let context = instance.inner_setup(test_context("jane", netname));
 
         // the initial state is not intialized
@@ -656,7 +657,7 @@ pub mod tests {
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
 
         let instance = test_instance(dna, None);
 
@@ -670,7 +671,6 @@ pub mod tests {
     fn test_genesis_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            "test_cap",
             Some(
                 r#"
             (module
@@ -699,7 +699,6 @@ pub mod tests {
     fn test_genesis_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            "test_cap",
             Some(
                 r#"
             (module
@@ -730,7 +729,7 @@ pub mod tests {
         let netname = Some("can_commit_dna");
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex", netname);
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let dna_entry = Entry::Dna(dna);
         let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None)));
 

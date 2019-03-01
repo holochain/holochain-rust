@@ -3,7 +3,7 @@ use crate::{
     nucleus::{
         actions::run_validation_callback::run_validation_callback,
         validation::{ValidationError, ValidationResult},
-        ZomeFnCall,
+        CallbackFnCall,
     },
 };
 use holochain_core_types::{
@@ -31,7 +31,7 @@ pub async fn validate_app_entry(
         validation_data: validation_data.clone(),
     };
 
-    let zome_call = ZomeFnCall::new(&zome_name, None, "__hdk_validate_app_entry", params);
+    let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
 
-    await!(run_validation_callback(entry.address(), zome_call, context))
+    await!(run_validation_callback(entry.address(), call, context))
 }

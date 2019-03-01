@@ -1,11 +1,13 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::{author_update_entry::author_update_entry, get_entry_result::get_entry_result_workflow},
+    workflows::{
+        author_update_entry::author_update_entry, get_entry_result::get_entry_result_workflow,
+    },
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
+    entry::Entry,
     error::HolochainError,
-    entry::Entry
 };
 use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
 use std::convert::TryFrom;
@@ -16,9 +18,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: UpdateEntryArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-
-   
-      let zome_call_data = runtime.zome_call_data()?;
+    let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let entry_args = match UpdateEntryArgs::try_from(args_str.clone()) {
@@ -58,21 +58,19 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         .iter(&agent_state.top_chain_header())
         .find(|header| header.entry_address() == &latest_entry.address())
         .map(|header| header.address().clone());
-    
-    if chain_header_address.is_none()
-    {
+
+    if chain_header_address.is_none() {
         return ribosome_error_code!(Unspecified);
     }
     // Create Chain Entry
-    let entry = Entry::from(entry_args.new_entry.clone()); 
+    let entry = Entry::from(entry_args.new_entry.clone());
 
-    let res : Result<Address, HolochainError> = zome_call_data.context
-        .block_on(author_update_entry(
-        &entry,
-        Some(latest_entry.clone().address()),
+    let res: Result<Address, HolochainError> =
+        zome_call_data.context.block_on(author_update_entry(
+            &entry,
+            Some(latest_entry.clone().address()),
             &zome_call_data.context.clone(),
         ));
-        
 
     runtime.store_result(res)
 }

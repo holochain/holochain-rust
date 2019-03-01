@@ -47,7 +47,11 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: committing...",
         address
     ));
-    let addr = await!(commit_entry(entry.clone(), maybe_link_update_delete, &context))?;
+    let addr = await!(commit_entry(
+        entry.clone(),
+        maybe_link_update_delete,
+        &context
+    ))?;
     context.log(format!(
         "debug/workflow/authoring_entry/{}: committed",
         address

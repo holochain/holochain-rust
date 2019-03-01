@@ -6,7 +6,7 @@ use crate::{
         entry_with_header::{fetch_entry_with_header, EntryWithHeader},
         reducers::send,
         state::NetworkState,
-    }
+    },
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -37,8 +37,6 @@ fn publish_entry(
     )
 }
 
-
-
 /// Send to network:
 ///  - a PublishDhtMeta message for the crud-status
 ///  - a PublishDhtMeta message for the crud-link
@@ -46,7 +44,7 @@ fn publish_update_delete_meta(
     network_state: &mut NetworkState,
     entry_address: Address,
     crud_status: String,
-    entry_with_header : &EntryWithHeader
+    entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
     // publish crud-status
     send(
@@ -116,18 +114,14 @@ fn reduce_publish_inner(
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            if entry_with_header.header.link_update_delete().is_some()
-            {
-
+            if entry_with_header.header.link_update_delete().is_some() {
                 publish_update_delete_meta(
-                 network_state,
-                entry_with_header.entry.address(),
-                String::from(CrudStatus::Modified),
-                &entry_with_header.clone(),
-                 )
-            }
-            else 
-            {
+                    network_state,
+                    entry_with_header.entry.address(),
+                    String::from(CrudStatus::Modified),
+                    &entry_with_header.clone(),
+                )
+            } else {
                 Ok(())
             }
         }),

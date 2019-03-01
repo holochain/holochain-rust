@@ -8,10 +8,9 @@ use crate::{
 };
 
 use holochain_core_types::{
-    cas::content::{Address,AddressableContent},
+    cas::content::{Address, AddressableContent},
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
-    
 };
 use std::sync::Arc;
 
@@ -26,22 +25,24 @@ pub async fn hold_update_workflow<'a>(
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
 
-
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Dht,
         action: EntryAction::Modify,
     };
-     
 
-    let link = header.link_update_delete().ok_or("Could not get link update from header".to_string())?;
- 
+    let link = header
+        .link_update_delete()
+        .ok_or("Could not get link update from header".to_string())?;
+
     // 3. Validate the entry
     await!(validate_entry(entry.clone(), validation_data, &context))?;
- 
+
     // 3. If valid store the entry in the local DHT shard
-    await!(update_entry(&context.clone(),link,entry.address().clone())?)
+    await!(update_entry(
+        &context.clone(),
+        link,
+        entry.address().clone()
+    )?)
 }
-
-

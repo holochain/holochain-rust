@@ -53,7 +53,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     }
 }
 
-
 pub(crate) fn reduce_hold_entry(
     context: Arc<Context>,
     old_store: &DhtStore,
@@ -267,7 +266,7 @@ fn reduce_remove_entry_inner(
 ) -> Result<Address, HolochainError> {
     // pre-condition: Must already have entry in local content_storage
     let content_storage = &new_store.content_storage().clone();
-   
+
     let maybe_json_entry = content_storage
         .read()
         .unwrap()
@@ -276,7 +275,7 @@ fn reduce_remove_entry_inner(
     let json_entry = maybe_json_entry.ok_or_else(|| {
         HolochainError::ErrorGeneric(String::from("trying to remove a missing entry"))
     })?;
-    
+
     let entry = Entry::try_from(json_entry).expect("Stored content should be a valid entry.");
     // pre-condition: entry_type must not by sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {

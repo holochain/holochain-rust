@@ -3,7 +3,7 @@ use crate::{
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
 use holochain_core_types::{
-    cas::content::{Address,AddressableContent},
+    cas::content::{Address, AddressableContent},
     entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
 };
@@ -16,13 +16,12 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected Address argument
 /// Stores/returns a RibosomeEncodedValue
 pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-   
     let zome_call_data = runtime.zome_call_data()?;
 
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let try_address = Address::try_from(args_str.clone());
- 
+
     // Exit on error
     if try_address.is_err() {
         zome_call_data.context.log(format!(
@@ -42,7 +41,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         &zome_call_data.context,
         &get_args,
     ));
-   
+
     if let Err(_err) = maybe_entry_result {
         return ribosome_error_code!(Unspecified);
     }
@@ -51,8 +50,6 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         return ribosome_error_code!(Unspecified);
     }
     let deleted_entry_address = entry_result.latest().unwrap().address();
-
-
 
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));

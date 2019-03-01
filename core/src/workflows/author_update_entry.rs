@@ -47,17 +47,20 @@ pub async fn author_update_entry<'a>(
         "debug/workflow/authoring_entry/{}: committing...",
         address
     ));
-    let addr = await!(commit_entry(entry.clone(), maybe_link_update_delete.clone(), &context))?;
+    let addr = await!(commit_entry(
+        entry.clone(),
+        maybe_link_update_delete.clone(),
+        &context
+    ))?;
     context.log(format!(
         "debug/workflow/authoring_entry/{}: committed",
         address
     ));
 
-
     // 4. Publish the valid entry to DHT. This will call Hold to itself
     //TODO: missing a general public/private sharing check here, for now just
     // using the entry_type can_publish() function which isn't enough
-    
+
     if entry.entry_type().can_publish() {
         context.log(format!(
             "debug/workflow/authoring_entry/{}: publishing...",

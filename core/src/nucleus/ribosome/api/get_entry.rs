@@ -11,7 +11,6 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: GetEntryArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-
     let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);

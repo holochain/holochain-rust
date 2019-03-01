@@ -18,10 +18,8 @@ pub fn remove_entry(
     deleted_address: Address,
     deletion_address: Address,
 ) -> Result<RemoveEntryFuture, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::RemoveEntry((
-        deleted_address,
-        deletion_address,
-    )));
+    let action_wrapper =
+        ActionWrapper::new(Action::RemoveEntry((deleted_address, deletion_address)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     Ok(RemoveEntryFuture {
         context: context.clone(),

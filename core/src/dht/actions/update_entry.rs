@@ -19,7 +19,7 @@ pub fn update_entry(
     old_address: Address,
     new_address: Address,
 ) -> Result<UpdateEntryFuture, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::UpdateEntry((old_address,new_address)));
+    let action_wrapper = ActionWrapper::new(Action::UpdateEntry((old_address, new_address)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     Ok(UpdateEntryFuture {
         context: context.clone(),

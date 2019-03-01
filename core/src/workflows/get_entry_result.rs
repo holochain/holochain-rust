@@ -75,7 +75,6 @@ pub async fn get_entry_result_workflow<'a>(
             entry_result.push(&entry_with_meta, headers);
 
             if args.options.status_request == StatusRequestKind::Initial {
-    
                 break;
             }
 

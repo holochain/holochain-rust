@@ -197,8 +197,8 @@ impl Waiter {
                         
                                     *aw.action()
                                         == Action::UpdateEntry((
-                                            committed_entry.address(),
-                                            link_update_delete.clone().expect("Should not ail as link_update is some")
+                                            link_update_delete.clone().expect("Should not ail as link_update is some"),
+                                            committed_entry.address()
                                         ))
                                     });
                                 }
@@ -221,8 +221,9 @@ impl Waiter {
                         
                                     *aw.action()
                                         == Action::RemoveEntry((
-                                            deletion_entry.clone().deleted_entry_address(),
                                             committed_entry.address(),
+                                            deletion_entry.clone().deleted_entry_address()
+                                        
                                         ))
                                 });
                             }

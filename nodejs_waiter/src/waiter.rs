@@ -81,6 +81,7 @@ impl CallFxChecker {
     pub fn run_checks(&mut self, aw: &ActionWrapper) -> bool {
         let was_empty = self.conditions.is_empty();
         for condition in &mut self.conditions {
+            println!("action wrwapper {:?}",aw.clone());
             condition.run(aw)
         }
         self.conditions.retain(|condition| !condition.satisfied());

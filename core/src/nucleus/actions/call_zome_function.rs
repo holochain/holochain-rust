@@ -194,7 +194,9 @@ impl Future for CallResultFuture {
                 None => Poll::Pending,
             }
         } else {
-            Poll::Pending
+            Poll::Ready(Err(HolochainError::ErrorGeneric(
+                "State not initialized".to_string(),
+            )))
         }
     }
 }

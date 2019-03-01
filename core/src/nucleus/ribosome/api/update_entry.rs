@@ -57,8 +57,12 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         .chain_store()
         .iter(&agent_state.top_chain_header())
         .find(|header| header.entry_address() == &latest_entry.address())
-        .map(|header| header.address().clone())
-        .expect("Modified entry should be in chain");
+        .map(|header| header.address().clone());
+    
+    if chain_header_address.is_none()
+    {
+        return ribosome_error_code!(Unspecified);
+    }
     // Create Chain Entry
     let entry = Entry::from(entry_args.new_entry.clone()); 
 

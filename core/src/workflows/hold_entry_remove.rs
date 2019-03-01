@@ -42,7 +42,7 @@ pub async fn hold_remove_workflow<'a>(
 
     let deleted_entry_address = deletion_entry.clone().deleted_entry_address();
     // 3. If valid store the entry in the local DHT shard
-    await!(remove_entry(&context.clone(),deletion_entry.clone().deleted_entry_address(),entry.address().clone())?)
+    await!(remove_entry(&context.clone(),deleted_entry_address,entry.address().clone())?)
 }
 
 

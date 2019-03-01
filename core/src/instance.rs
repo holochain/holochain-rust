@@ -1,11 +1,11 @@
 use crate::{
-    action::ActionWrapper, context::Context, scheduled_jobs, signal::Signal, state::State,
-    workflows::application,
+    action::ActionWrapper, context::Context, persister::Persister, scheduled_jobs, signal::Signal,
+    state::State, workflows::application,
 };
 #[cfg(test)]
 use crate::{
     network::actions::initialize_network::initialize_network_with_spoofed_dna,
-    nucleus::actions::initialize::initialize_application,
+    nucleus::actions::initialize::initialize_chain,
 };
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 #[cfg(test)]
@@ -14,7 +14,7 @@ use holochain_core_types::{dna::Dna, error::HcResult};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, Sender, SyncSender},
-        Arc, RwLock, RwLockReadGuard,
+        Arc, Mutex, RwLock, RwLockReadGuard,
     },
     thread,
     time::Duration,
@@ -31,6 +31,7 @@ pub struct Instance {
     action_channel: Option<SyncSender<ActionWrapper>>,
     observer_channel: Option<SyncSender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
+    persister: Option<Arc<Mutex<Persister>>>,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -50,7 +51,6 @@ impl Instance {
     pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
         let (rx_action, rx_observer) = self.initialize_channels();
         let context = self.initialize_context(context);
-        self.start_action_loop(context.clone(), rx_action, rx_observer);
         let mut scheduler = Scheduler::new();
         scheduler
             .every(10.seconds())
@@ -58,6 +58,11 @@ impl Instance {
         self.scheduler_handle = Some(Arc::new(
             scheduler.watch_thread(Duration::from_millis(1000)),
         ));
+
+        self.persister = Some(context.persister.clone());
+
+        self.start_action_loop(context.clone(), rx_action, rx_observer);
+
         context
     }
 
@@ -87,7 +92,7 @@ impl Instance {
         let context = self.inner_setup(context);
         context.block_on(
             async {
-                await!(initialize_application(dna.clone(), &context))?;
+                await!(initialize_chain(dna.clone(), &context))?;
                 await!(initialize_network_with_spoofed_dna(
                     spoofed_dna_address,
                     &context
@@ -207,6 +212,7 @@ impl Instance {
             *state = new_state;
         }
 
+        self.save();
         self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers
@@ -237,6 +243,7 @@ impl Instance {
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
+            persister: None,
         }
     }
 
@@ -246,6 +253,7 @@ impl Instance {
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
+            persister: None,
         }
     }
 
@@ -253,6 +261,18 @@ impl Instance {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
+    }
+
+    pub fn save(&self) {
+        if let Some(ref persister) = self.persister {
+            let _ = persister
+                .lock()
+                .unwrap()
+                .save(&self.state())
+                .map_err(|err| println!("Could not save instance! Error: {:?}", err));
+        } else {
+            println!("Instance::save() called without persister set.");
+        }
     }
 }
 
@@ -445,7 +465,7 @@ pub mod tests {
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
-        let state = State::new_with_agent(Arc::new(context.clone()), Arc::new(agent_state));
+        let state = State::new_with_agent(Arc::new(context.clone()), agent_state);
         let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -498,12 +518,12 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::InitApplication(_) => true,
+                Action::InitializeChain(_) => true,
                 _ => false,
             })
             .is_none()
         {
-            println!("Waiting for InitApplication");
+            println!("Waiting for InitializeChain");
             sleep(Duration::from_millis(10))
         }
 
@@ -516,6 +536,7 @@ pub mod tests {
                     assert!(
                         entry.entry_type() == EntryType::AgentId
                             || entry.entry_type() == EntryType::Dna
+                            || entry.entry_type() == EntryType::CapTokenGrant
                     );
                     true
                 }
@@ -614,7 +635,7 @@ pub mod tests {
 
         let dna = Dna::new();
 
-        let action = ActionWrapper::new(Action::InitApplication(dna.clone()));
+        let action = ActionWrapper::new(Action::InitializeChain(dna.clone()));
         let context = instance.inner_setup(test_context("jane", netname));
 
         // the initial state is not intialized
@@ -636,7 +657,7 @@ pub mod tests {
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
 
         let instance = test_instance(dna, None);
 
@@ -650,7 +671,6 @@ pub mod tests {
     fn test_genesis_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            "test_cap",
             Some(
                 r#"
             (module
@@ -679,7 +699,6 @@ pub mod tests {
     fn test_genesis_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            "test_cap",
             Some(
                 r#"
             (module
@@ -710,7 +729,7 @@ pub mod tests {
         let netname = Some("can_commit_dna");
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex", netname);
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let dna_entry = Entry::Dna(dna);
         let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None)));
 

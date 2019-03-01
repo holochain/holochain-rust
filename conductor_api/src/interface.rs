@@ -1,9 +1,10 @@
 use crate::holo_signing_service::request_signing_service;
 use base64;
-use holochain_core::state::State;
-use holochain_core_types::{
-    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityCall,
+use holochain_core::{
+    nucleus::actions::call_zome_function::make_cap_request_for_call, state::State,
 };
+
+use holochain_core_types::{agent::AgentId, cas::content::Address};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
@@ -169,13 +170,26 @@ impl ConductorApiBuilder {
                             let mut hc = hc_lock_inner.write().unwrap();
                             let params_string = serde_json::to_string(&params)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                            let response = hc
-                                .call(
-                                    &zome_name,
-                                    Some(CapabilityCall::new(Address::from("fake_token"), None)),
+
+                            let cap_request = {
+                                // TODO: get the token from the parameters.  If not there assume public token.
+                                // currently we are always getting the public token.
+                                let context = hc.context();
+                                let token = context.get_public_token().ok_or(
+                                    jsonrpc_core::Error::invalid_params("public token not found"),
+                                )?;
+                                let caller = Address::from("fake");
+                                make_cap_request_for_call(
+                                    context.clone(),
+                                    token,
+                                    caller,
                                     &func_name,
-                                    &params_string,
+                                    params_string.clone(),
                                 )
+                            };
+
+                            let response = hc
+                                .call(&zome_name, cap_request, &func_name, &params_string)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
                             Ok(Value::String(response.to_string()))
                         })

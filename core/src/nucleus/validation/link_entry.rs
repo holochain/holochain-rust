@@ -4,7 +4,7 @@ use crate::{
         actions::run_validation_callback::run_validation_callback,
         ribosome::callback::links_utils,
         validation::{ValidationError, ValidationResult},
-        ZomeFnCall,
+        CallbackFnCall,
     },
 };
 use holochain_core_types::{
@@ -49,12 +49,11 @@ pub async fn validate_link_entry(
         direction: link_definition_path.direction,
         validation_data,
     };
-    let zome_call = ZomeFnCall::new(
+    let call = CallbackFnCall::new(
         &link_definition_path.zome_name,
-        None,
         "__hdk_validate_link",
         params,
     );
 
-    await!(run_validation_callback(address, zome_call, context))
+    await!(run_validation_callback(address, call, context))
 }

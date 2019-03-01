@@ -334,7 +334,7 @@ mod tests {
                 "Entry validation could not be completed",
             ),
         ] {
-            assert_eq!(output, &format!("{}", input));
+            assert_eq!(output, &input.to_string());
         }
     }
 

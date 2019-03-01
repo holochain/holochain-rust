@@ -349,7 +349,7 @@ macro_rules! define_zome {
                 let _ = debug(RawString::from(
                     info.payload().downcast_ref::<String>().unwrap().clone(),
                 ));
-                //let _ = debug(RawString::from(format!("{}", info.message().unwrap().clone())));
+
                 let _ = if let Some(location) = info.location() {
                     debug(RawString::from(format!(
                         "panic occurred in file '{}' at line {}",

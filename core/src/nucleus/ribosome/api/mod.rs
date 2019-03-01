@@ -13,6 +13,7 @@ pub mod query;
 pub mod remove_entry;
 pub mod remove_link;
 pub mod send;
+pub mod sign;
 pub mod sleep;
 pub mod update_entry;
 
@@ -22,7 +23,7 @@ use crate::nucleus::ribosome::{
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
         get_links::invoke_get_links, init_globals::invoke_init_globals,
         link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
-        remove_link::invoke_remove_link, send::invoke_send, sleep::invoke_sleep,
+        remove_link::invoke_remove_link, send::invoke_send, sign::invoke_sign, sleep::invoke_sleep,
         update_entry::invoke_update_entry,
     },
     runtime::Runtime,
@@ -92,6 +93,8 @@ pub enum ZomeApiFunction {
     Send,
     Sleep,
     RemoveLink,
+
+    Sign,
 }
 
 impl Defn for ZomeApiFunction {
@@ -113,6 +116,7 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::Send => "hc_send",
             ZomeApiFunction::Sleep => "hc_sleep",
             ZomeApiFunction::RemoveLink => "hc_remove_link",
+            ZomeApiFunction::Sign => "hc_sign",
         }
     }
 
@@ -146,6 +150,7 @@ impl FromStr for ZomeApiFunction {
             "hc_send" => Ok(ZomeApiFunction::Send),
             "hc_sleep" => Ok(ZomeApiFunction::Sleep),
             "hc_remove_link" => Ok(ZomeApiFunction::RemoveLink),
+            "hc_sign" => Ok(ZomeApiFunction::Sign),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -180,6 +185,7 @@ impl ZomeApiFunction {
             ZomeApiFunction::Send => invoke_send,
             ZomeApiFunction::Sleep => invoke_sleep,
             ZomeApiFunction::RemoveLink => invoke_remove_link,
+            ZomeApiFunction::Sign => invoke_sign,
         }
     }
 }
@@ -431,6 +437,7 @@ pub mod tests {
             ("hc_send", ZomeApiFunction::Send),
             ("hc_sleep", ZomeApiFunction::Sleep),
             ("hc_remove_link", ZomeApiFunction::RemoveLink),
+            ("hc_sign", ZomeApiFunction::Sign),
         ] {
             assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
         }
@@ -462,6 +469,7 @@ pub mod tests {
             (ZomeApiFunction::Send, "hc_send"),
             (ZomeApiFunction::Sleep, "hc_sleep"),
             (ZomeApiFunction::RemoveLink, "hc_remove_link"),
+            (ZomeApiFunction::Sign, "hc_sign"),
         ] {
             assert_eq!(output, input.as_str());
         }
@@ -484,6 +492,7 @@ pub mod tests {
             ("hc_send", 13),
             ("hc_sleep", 14),
             ("hc_remove_link", 15),
+            ("hc_sign", 16),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -506,6 +515,7 @@ pub mod tests {
             (13, ZomeApiFunction::Send),
             (14, ZomeApiFunction::Sleep),
             (15, ZomeApiFunction::RemoveLink),
+            (16, ZomeApiFunction::Sign),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

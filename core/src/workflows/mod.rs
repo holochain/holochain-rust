@@ -1,5 +1,6 @@
 pub mod application;
 pub mod author_entry;
+pub mod author_update_entry;
 pub mod get_entry_result;
 pub mod handle_custom_direct_message;
 pub mod hold_entry;

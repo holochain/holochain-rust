@@ -15,6 +15,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     // Commit v1 entry
     hdk::debug("**** Commit v1 entry").ok();
     let res = hdk::commit_entry(&hdk_test_entry());
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     let addr_v1 = res.unwrap();
     // get it
     hdk::debug("**** Get it").ok();

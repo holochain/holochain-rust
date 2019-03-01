@@ -27,7 +27,7 @@ use std::{pin::Pin, sync::Arc, time::*};
 /// this consists of any public tokens that were granted for use by the container to
 /// map any public calls by zome, and an optional payload for the app developer to use as
 /// desired
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Initialization {
     public_token: Option<Address>,
     payload: Option<String>,

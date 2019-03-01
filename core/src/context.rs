@@ -2,6 +2,7 @@ use crate::{
     action::ActionWrapper,
     instance::Observer,
     logger::Logger,
+    nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
     state::State,
@@ -18,6 +19,7 @@ use holochain_core_types::{
     },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
+    entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
 
@@ -276,6 +278,37 @@ impl Context {
                 "Bridge call failed".to_string(),
             )),
         }
+    }
+
+    /// returns the public capability token (if any)
+    pub fn get_public_token(&self) -> Option<Address> {
+        self.state().and_then(|state| {
+            let top = state.agent().top_chain_header()?;
+
+            // Get address of first Token Grant entry (return early if none)
+            let addr = state
+                .agent()
+                .chain_store()
+                .iter_type(&Some(top), &EntryType::CapTokenGrant)
+                .nth(0)?
+                .entry_address()
+                .to_owned();
+
+            // Get CAS
+            let cas = state.agent().chain_store().content_storage();
+
+            // Get according Token Grant entry from CAS
+            let entry = get_entry_from_cas(&cas, &addr).ok()??;
+
+            // Make sure entry is a public grant and return it
+            if let Entry::CapTokenGrant(grant) = entry {
+                if grant.cap_type() == CapabilityType::Public {
+                    return Some(addr);
+                }
+            }
+
+            None
+        })
     }
 }
 

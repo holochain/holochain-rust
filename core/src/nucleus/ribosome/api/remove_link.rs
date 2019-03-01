@@ -17,14 +17,14 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match LinkEntriesArgs::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            zome_call_data.context.log(format!(
+            context.log(format!(
                 "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
             ));
@@ -37,9 +37,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     let entry = Entry::LinkRemove(link_remove);
 
     // Wait for future to be resolved
-    let result: Result<(), HolochainError> = zome_call_data
-        .context
-        .block_on(author_entry(&entry, None, &zome_call_data.context))
+    let result: Result<(), HolochainError> = context
+        .block_on(author_entry(&entry, None, &context))
         .map(|_| ());
 
     runtime.store_result(result)

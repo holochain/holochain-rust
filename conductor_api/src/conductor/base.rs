@@ -429,11 +429,17 @@ impl Conductor {
                 };
 
                 // Storage:
-                if let StorageConfiguration::File { path } = instance_config.storage {
-                    context_builder = context_builder.with_file_storage(path).map_err(|hc_err| {
-                        format!("Error creating context: {}", hc_err.to_string())
-                    })?
-                };
+                match instance_config.storage {
+                    StorageConfiguration::File { path } => {
+                        context_builder =
+                            context_builder.with_file_storage(path).map_err(|hc_err| {
+                                format!("Error creating context: {}", hc_err.to_string())
+                            })?
+                    }
+                    StorageConfiguration::Memory => {
+                        context_builder = context_builder.with_memory_storage()
+                    }
+                }
 
                 if config.logger.logger_type == "debug" {
                     context_builder = context_builder.with_logger(Arc::new(Mutex::new(
@@ -498,7 +504,24 @@ impl Conductor {
                     ))
                 })?;
 
-                Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
+                let context = Arc::new(context);
+                Holochain::load(context.clone())
+                    .and_then(|hc| {
+                        notify(format!(
+                            "Successfully loaded instance {} from storage",
+                            id.clone()
+                        ));
+                        Ok(hc)
+                    })
+                    .or_else(|loading_error| {
+                        notify(format!(
+                            "Failed to load instance {} from storage: {:?}",
+                            id.clone(),
+                            loading_error
+                        ));
+                        notify("Initializing new chain...".to_string());
+                        Holochain::new(dna, context).map_err(|hc_err| hc_err.to_string())
+                    })
             })
     }
 
@@ -748,7 +771,10 @@ pub mod tests {
     use super::*;
     extern crate tempfile;
     use crate::config::load_configuration;
-    use holochain_core::{action::Action, signal::signal_channel};
+    use holochain_core::{
+        action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,
+        signal::signal_channel,
+    };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
     use holochain_sodium::secbuf::SecBuf;
@@ -1017,7 +1043,7 @@ pub mod tests {
         let _conductor = test_conductor_with_signals(signal_tx);
 
         test_utils::expect_action(&signal_rx, |action| match action {
-            Action::InitApplication(_) => true,
+            Action::InitializeChain(_) => true,
             _ => false,
         })
         .unwrap();
@@ -1137,7 +1163,7 @@ pub mod tests {
 
     fn callee_dna() -> Dna {
         let wat = &callee_wat();
-        let mut dna = create_test_dna_with_wat("greeter", "test_cap", Some(wat));
+        let mut dna = create_test_dna_with_wat("greeter", Some(wat));
         dna.uuid = String::from("basic_bridge_call");
         dna.zomes.get_mut("greeter").unwrap().add_fn_declaration(
             String::from("hello"),
@@ -1180,18 +1206,20 @@ pub mod tests {
             .start_all_instances()
             .expect("Instances must be spawnable");
         let caller_instance = conductor.instances["bridge-caller"].clone();
-        let result = caller_instance
-            .write()
-            .unwrap()
-            .call(
-                "test_zome",
-                Some(dna::capabilities::CapabilityCall::new(
-                    Address::from("fake_token"),
-                    None,
-                )),
+        let mut instance = caller_instance.write().unwrap();
+
+        let cap_call = {
+            let context = instance.context();
+            make_cap_request_for_call(
+                context.clone(),
+                Address::from(context.clone().agent_id.pub_sign_key.clone()),
+                Address::from(context.clone().agent_id.pub_sign_key.clone()),
                 "call_bridge",
-                "{}",
+                "{}".to_string(),
             )
+        };
+        let result = instance
+            .call("test_zome", cap_call, "call_bridge", "{}")
             .unwrap();
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
@@ -1231,5 +1259,4 @@ pub mod tests {
                 .to_string()),
         );
     }
-
 }

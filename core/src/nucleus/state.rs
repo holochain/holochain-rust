@@ -1,19 +1,23 @@
 use crate::{
-    nucleus::{validation::ValidationResult, ZomeFnCall},
+    nucleus::{actions::initialize::Initialization, validation::ValidationResult, ZomeFnCall},
     scheduled_jobs::pending_validations::PendingValidation,
+    state::State,
 };
 use holochain_core_types::{
-    cas::content::Address, dna::Dna, error::HolochainError, json::JsonString,
+    cas::content::{Address, AddressableContent, Content},
+    dna::Dna,
+    error::HolochainError,
+    json::JsonString,
     validation::ValidationPackage,
 };
 use snowflake;
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::TryFrom};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
     New,
     Initializing,
-    Initialized,
+    Initialized(Initialization),
     InitializationFailed(String),
 }
 
@@ -27,8 +31,14 @@ impl Default for NucleusStatus {
 /// Holds the dynamic parts of the DNA, i.e. zome calls and validation requests.
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct NucleusState {
-    pub dna: Option<Dna>,
+    // Persisted fields:
     pub status: NucleusStatus,
+    pub pending_validations: HashMap<Address, PendingValidation>,
+
+    // Transient fields:
+    pub dna: Option<Dna>, //DNA is transient here because it is stored in the chain and gets
+    //read from there when loading an instance/chain.
+
     // @TODO eventually drop stale calls
     // @see https://github.com/holochain/holochain-rust/issues/166
     // @TODO should this use the standard ActionWrapper/ActionResponse format?
@@ -37,7 +47,6 @@ pub struct NucleusState {
     pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
     pub validation_packages:
         HashMap<snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>>,
-    pub pending_validations: HashMap<Address, PendingValidation>,
 }
 
 impl NucleusState {
@@ -62,7 +71,17 @@ impl NucleusState {
     }
 
     pub fn has_initialized(&self) -> bool {
-        self.status == NucleusStatus::Initialized
+        match self.status {
+            NucleusStatus::Initialized(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn initialization(&self) -> Option<Initialization> {
+        match self.status {
+            NucleusStatus::Initialized(ref init) => Some(init.clone()),
+            _ => None,
+        }
     }
 
     pub fn has_initialization_failed(&self) -> bool {
@@ -78,6 +97,49 @@ impl NucleusState {
     }
     pub fn status(&self) -> NucleusStatus {
         self.status.clone()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
+pub struct NucleusStateSnapshot {
+    pub status: NucleusStatus,
+    pub pending_validations: HashMap<Address, PendingValidation>,
+}
+
+impl From<&State> for NucleusStateSnapshot {
+    fn from(state: &State) -> Self {
+        NucleusStateSnapshot {
+            status: state.nucleus().status(),
+            pending_validations: state.nucleus().pending_validations.clone(),
+        }
+    }
+}
+
+impl From<NucleusStateSnapshot> for NucleusState {
+    fn from(snapshot: NucleusStateSnapshot) -> Self {
+        NucleusState {
+            dna: None,
+            status: snapshot.status,
+            zome_calls: HashMap::new(),
+            validation_results: HashMap::new(),
+            validation_packages: HashMap::new(),
+            pending_validations: snapshot.pending_validations,
+        }
+    }
+}
+
+pub static NUCLEUS_SNAPSHOT_ADDRESS: &'static str = "NucleusState";
+impl AddressableContent for NucleusStateSnapshot {
+    fn address(&self) -> Address {
+        NUCLEUS_SNAPSHOT_ADDRESS.into()
+    }
+
+    fn content(&self) -> Content {
+        self.to_owned().into()
+    }
+
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Self::try_from(content.to_owned())
     }
 }
 

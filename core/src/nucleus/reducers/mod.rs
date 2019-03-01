@@ -1,5 +1,6 @@
 mod add_pending_validation;
 pub mod init_application;
+mod remove_pending_validation;
 pub mod return_initialization_result;
 pub mod return_validation_package;
 pub mod return_validation_result;
@@ -11,7 +12,8 @@ use crate::{
     nucleus::{
         reducers::{
             add_pending_validation::reduce_add_pending_validation,
-            init_application::reduce_init_application,
+            init_application::reduce_initialize_chain,
+            remove_pending_validation::reduce_remove_pending_validation,
             return_initialization_result::reduce_return_initialization_result,
             return_validation_package::reduce_return_validation_package,
             return_validation_result::reduce_return_validation_result,
@@ -27,8 +29,9 @@ use std::sync::Arc;
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
         Action::AddPendingValidation(_) => Some(reduce_add_pending_validation),
+        Action::RemovePendingValidation(_) => Some(reduce_remove_pending_validation),
         Action::ReturnInitializationResult(_) => Some(reduce_return_initialization_result),
-        Action::InitApplication(_) => Some(reduce_init_application),
+        Action::InitializeChain(_) => Some(reduce_initialize_chain),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         Action::ReturnValidationPackage(_) => Some(reduce_return_validation_package),

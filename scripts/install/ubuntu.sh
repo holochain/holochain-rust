@@ -10,10 +10,6 @@ sudo apt-get install -y \
   pkg-config \
   python2.7
 
-# libzmq
-sudo apt-get install -y \
-  libzmq3-dev
-
 # hc deps
 sudo apt-get install -y qt5-default;
 

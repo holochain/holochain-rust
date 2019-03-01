@@ -48,7 +48,7 @@ pub fn ipc_spawn(
         p2p_bindings: Vec::new(),
     };
 
-    // transport info (zmq uri) for connecting to the ipc socket
+    // transport info (uri) for connecting to the ipc socket
     let re_ipc = regex::Regex::new("(?m)^#IPC-BINDING#:(.+)$")?;
 
     // transport info (multiaddr) for any p2p interface bindings

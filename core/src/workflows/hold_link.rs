@@ -1,5 +1,4 @@
 use crate::{
-    action::{Action, ActionWrapper},
     context::Context,
     dht::actions::add_link::add_link,
     network::{
@@ -8,7 +7,9 @@ use crate::{
     nucleus::validation::validate_entry,
 };
 
-use crate::{instance::dispatch_action, nucleus::validation::ValidationError};
+use crate::nucleus::{
+    actions::add_pending_validation::add_pending_validation, validation::ValidationError,
+};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
@@ -35,10 +36,20 @@ pub async fn hold_link_workflow<'a>(
     context.log(format!(
         "debug/workflow/hold_link: getting validation package..."
     ));
-    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
-    let validation_package = maybe_validation_package
-        .ok_or("Could not get validation package from source".to_string())?;
-    context.log(format!("debug/workflow/hold_link: got validation package!"));
+    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))
+        .map_err(|err| {
+            let message = "Could not get validation package from source! -> Add to pending...";
+            context.log(format!("debug/workflow/hold_link: {}", message));
+            context.log(format!("debug/workflow/hold_link: Error was: {:?}", err));
+            add_pending_validation(entry_with_header.to_owned(), Vec::new(), context);
+            HolochainError::ValidationPending
+        })?;
+    let validation_package = maybe_validation_package.ok_or({
+        let message = "Source did respond to request but did not deliver validation package! This is weird! Entry is not valid!";
+        context.log(format!("debug/workflow/hold_link: {}", message));
+        HolochainError::ValidationFailed("Entry not backed by source".to_string())
+    })?;
+    context.log(format!("debug/workflow/hold_link: got validation package"));
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
@@ -52,15 +63,9 @@ pub async fn hold_link_workflow<'a>(
     await!(validate_entry(entry.clone(), validation_data, &context)).map_err(|err| {
         context.log(format!("debug/workflow/hold_link: invalid! {:?}", err));
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            dispatch_action(
-                context.action_channel(),
-                ActionWrapper::new(Action::AddPendingValidation(Box::new((
-                    entry_with_header.to_owned(),
-                    dependencies.clone(),
-                )))),
-            );
+            add_pending_validation(entry_with_header.to_owned(), dependencies.clone(), &context);
         }
-        err
+        HolochainError::ValidationPending
     })?;
     context.log(format!("debug/workflow/hold_link: is valid!"));
 
@@ -93,11 +98,9 @@ pub mod tests {
     /// hold_link_workflow is then expected to fail in its validation step
     fn test_reject_invalid_link_on_hold_workflow() {
         // Hacked DNA that regards everything as valid
-        let hacked_dna =
-            create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_valid()));
+        let hacked_dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_valid()));
         // Original DNA that regards nothing as valid
-        let mut dna =
-            create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_invalid()));
+        let mut dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_invalid()));
         dna.uuid = String::from("test_reject_invalid_link_on_hold_workflow");
 
         // Address of the original DNA

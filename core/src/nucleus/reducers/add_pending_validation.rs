@@ -17,9 +17,9 @@ pub fn reduce_add_pending_validation(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let boxed = unwrap_to!(action => Action::AddPendingValidation);
-    let address = boxed.0.entry.address();
-    state.pending_validations.insert(address, boxed.clone());
+    let pending = unwrap_to!(action => Action::AddPendingValidation);
+    let address = pending.entry_with_header.entry.address();
+    state.pending_validations.insert(address, pending.clone());
 }
 
 #[cfg(test)]
@@ -28,6 +28,7 @@ pub mod tests {
     use crate::{
         instance::tests::test_context, network::entry_with_header::EntryWithHeader,
         nucleus::state::tests::test_nucleus_state,
+        scheduled_jobs::pending_validations::PendingValidationStruct,
     };
     use holochain_core_types::{chain_header::test_chain_header, entry::Entry, json::RawString};
 
@@ -42,10 +43,12 @@ pub mod tests {
             header: test_chain_header(),
         };
 
-        let action_wrapper = ActionWrapper::new(Action::AddPendingValidation(Arc::new((
-            entry_with_header.clone(),
-            Vec::new(),
-        ))));
+        let action_wrapper = ActionWrapper::new(Action::AddPendingValidation(Arc::new(
+            PendingValidationStruct {
+                entry_with_header,
+                dependencies: Vec::new(),
+            },
+        )));
 
         reduce_add_pending_validation(context, &mut state, &action_wrapper);
 

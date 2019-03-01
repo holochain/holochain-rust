@@ -203,8 +203,9 @@ impl Waiter {
                                 checker.add(num_instances, move |aw| {
                                     *aw.action()
                                         == Action::RemoveEntry((
-                                            deletion_entry.clone().deleted_entry_address(),
                                             committed_entry.address(),
+                                            deletion_entry.clone().deleted_entry_address(),
+                                            
                                         ))
                                 });
                             }

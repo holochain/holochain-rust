@@ -79,4 +79,3 @@ pub async fn author_update_entry<'a>(
     }
     Ok(addr)
 }
-

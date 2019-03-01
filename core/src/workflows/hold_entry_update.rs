@@ -44,5 +44,5 @@ pub async fn hold_update_workflow<'a>(
         &context.clone(),
         link,
         entry.address().clone()
-    )?)
+    ))
 }

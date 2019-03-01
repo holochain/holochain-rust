@@ -18,13 +18,13 @@ pub fn update_entry(
     context: &Arc<Context>,
     old_address: Address,
     new_address: Address,
-) -> Result<UpdateEntryFuture, HolochainError> {
+) -> UpdateEntryFuture {
     let action_wrapper = ActionWrapper::new(Action::UpdateEntry((old_address, new_address)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    Ok(UpdateEntryFuture {
+    UpdateEntryFuture {
         context: context.clone(),
         action: action_wrapper,
-    })
+    }
 }
 
 /// RemoveEntryFuture resolves to ActionResponse

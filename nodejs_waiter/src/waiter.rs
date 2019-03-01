@@ -81,7 +81,6 @@ impl CallFxChecker {
     pub fn run_checks(&mut self, aw: &ActionWrapper) -> bool {
         let was_empty = self.conditions.is_empty();
         for condition in &mut self.conditions {
-            println!("action wrwapper {:?}",aw.clone());
             condition.run(aw)
         }
         self.conditions.retain(|condition| !condition.satisfied());
@@ -212,12 +211,6 @@ impl Waiter {
                             Entry::Deletion(deletion_entry) => {
                                 // Pair every `EntryRemove` with N `Hold`s
                                 let hold_entry = committed_entry.clone();
-                                checker.add(num_instances, move |aw| match aw.action() {
-                                    Action::Hold(EntryWithHeader { entry, header: _ }) => {
-                                        *entry == hold_entry.clone()
-                                    }
-                                    _ => false,
-                                });
                                 checker.add(num_instances, move |aw| {
                         
                                     *aw.action()

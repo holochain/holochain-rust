@@ -193,9 +193,10 @@ impl Waiter {
                             }
                             Entry::Deletion(deletion_entry) => {
                                 // Pair every `EntryRemove` with N `Hold`s
+                                let hold_entry = committed_entry.clone();
                                 checker.add(num_instances, move |aw| match aw.action() {
                                     Action::Hold(EntryWithHeader { entry, header: _ }) => {
-                                        *entry == committed_entry.clone()
+                                        *entry == hold_entry.clone()
                                     }
                                     _ => false,
                                 });
@@ -203,7 +204,7 @@ impl Waiter {
                                     *aw.action()
                                         == Action::RemoveEntry((
                                             deletion_entry.clone().deleted_entry_address(),
-                                            committed_entry.clone().address(),
+                                            committed_entry.address(),
                                         ))
                                 });
                             }

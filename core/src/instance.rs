@@ -1,6 +1,6 @@
 use crate::{
-    action::ActionWrapper, context::Context, scheduled_jobs, signal::Signal, state::State,
-    workflows::application,
+    action::ActionWrapper, context::Context, persister::Persister, scheduled_jobs, signal::Signal,
+    state::State, workflows::application,
 };
 #[cfg(test)]
 use crate::{
@@ -14,7 +14,7 @@ use holochain_core_types::{dna::Dna, error::HcResult};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, Sender, SyncSender},
-        Arc, RwLock, RwLockReadGuard,
+        Arc, Mutex, RwLock, RwLockReadGuard,
     },
     thread,
     time::Duration,
@@ -31,6 +31,7 @@ pub struct Instance {
     action_channel: Option<SyncSender<ActionWrapper>>,
     observer_channel: Option<SyncSender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
+    persister: Option<Arc<Mutex<Persister>>>,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -50,7 +51,6 @@ impl Instance {
     pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
         let (rx_action, rx_observer) = self.initialize_channels();
         let context = self.initialize_context(context);
-        self.start_action_loop(context.clone(), rx_action, rx_observer);
         let mut scheduler = Scheduler::new();
         scheduler
             .every(10.seconds())
@@ -58,6 +58,11 @@ impl Instance {
         self.scheduler_handle = Some(Arc::new(
             scheduler.watch_thread(Duration::from_millis(1000)),
         ));
+
+        self.persister = Some(context.persister.clone());
+
+        self.start_action_loop(context.clone(), rx_action, rx_observer);
+
         context
     }
 
@@ -207,6 +212,7 @@ impl Instance {
             *state = new_state;
         }
 
+        self.save();
         self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers
@@ -237,6 +243,7 @@ impl Instance {
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
+            persister: None,
         }
     }
 
@@ -246,6 +253,7 @@ impl Instance {
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
+            persister: None,
         }
     }
 
@@ -253,6 +261,18 @@ impl Instance {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
+    }
+
+    pub fn save(&self) {
+        if let Some(ref persister) = self.persister {
+            let _ = persister
+                .lock()
+                .unwrap()
+                .save(&self.state())
+                .map_err(|err| println!("Could not save instance! Error: {:?}", err));
+        } else {
+            println!("Instance::save() called without persister set.");
+        }
     }
 }
 
@@ -445,7 +465,7 @@ pub mod tests {
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
-        let state = State::new_with_agent(Arc::new(context.clone()), Arc::new(agent_state));
+        let state = State::new_with_agent(Arc::new(context.clone()), agent_state);
         let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());
         Arc::new(context)

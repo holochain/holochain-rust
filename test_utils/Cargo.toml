@@ -17,5 +17,5 @@ tempfile = "3"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 crossbeam-channel = "0.3.8"
 lazy_static = "1.2"
-jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
+jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 base64 = "0.10"

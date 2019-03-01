@@ -22,7 +22,6 @@ pub async fn get_entry_with_meta_workflow<'a>(
 
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
-    println!("maybe entry with meta {:?}",maybe_entry_with_meta.clone());
     if maybe_entry_with_meta.is_some() {
         return Ok(maybe_entry_with_meta);
     }

@@ -126,7 +126,6 @@ pub fn get_entry_with_meta<'a>(
     // 2. try to get the entry's metadata
     let (crud_status, maybe_link_update_delete) = get_entry_crud_meta_from_dht(context, address)?
         .expect("Entry should have crud-status metadata");
-    println!("Crud status for entry {:?}",crud_status.clone());
     let item = EntryWithMeta {
         entry,
         crud_status,

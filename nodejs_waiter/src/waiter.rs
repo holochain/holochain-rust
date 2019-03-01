@@ -4,7 +4,7 @@ use holochain_core::{
     nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
-use holochain_core_types::entry::Entry;
+use holochain_core_types::{entry::Entry,cas::content::AddressableContent};
 use neon::{context::Context, prelude::*};
 use std::{
     cell::RefCell,
@@ -203,7 +203,7 @@ impl Waiter {
                                     *aw.action()
                                         == Action::RemoveEntry((
                                             deletion_entry.clone().deleted_entry_address(),
-                                            deletion_entry.clone().deleted_entry_address(),
+                                            committed_entry.clone().address(),
                                         ))
                                 });
                             }

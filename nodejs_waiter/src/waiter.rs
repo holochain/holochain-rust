@@ -186,7 +186,7 @@ impl Waiter {
                                 // entry is committed multiple times?
                                 let hold_entry = committed_entry.clone();
                                 checker.add(num_instances, move |aw| match aw.action() {
-                                    Action::Hold(EntryWithHeader { entry, header }) => {
+                                    Action::Hold(EntryWithHeader { entry, header:_ }) => {
                                         *entry == hold_entry
                                     }
                                     _ => false,

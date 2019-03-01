@@ -16,7 +16,7 @@ const scenario1 = new Scenario([instanceAlice], { debugLog: false })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: false })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: false })
 
-/*
+
 scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
@@ -137,7 +137,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   
     t.equals(result.Ok, null)
   })
-*/
+
 
 scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
@@ -159,7 +159,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   t.deepEqual(JSON.parse(updatedPost.Ok.App[1]), { content: "Hello Holo", date_created: "now" })
 })
 
-/*
+
  scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
   const content = "Holo world"
   const in_reply_to = "bad"
@@ -298,4 +298,3 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   t.equal(value.content, initialContent)
 })
 
-*/

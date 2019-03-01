@@ -186,22 +186,25 @@ impl Waiter {
                                 // entry is committed multiple times?
                                 let hold_entry = committed_entry.clone();
                                 checker.add(num_instances, move |aw| match aw.action() {
-                                    Action::Hold(EntryWithHeader { entry, header: _ }) => {
+                                    Action::Hold(EntryWithHeader { entry, header }) => {
                                         *entry == hold_entry
                                     }
                                     _ => false,
                                 });
                                 if link_update_delete.is_some() {
+                                    println!("aw action {:?}", aw.action().clone());
+                                    println!("link_update_delete {:?}", link_update_delete.clone());
                                     checker.add(num_instances, move |aw| {
                                         *aw.action()
                                             == Action::UpdateEntry((
-                                                committed_entry.address(),
                                                 link_update_delete.clone().expect(
                                                     "Should not fail as link_update is some",
                                                 ),
+                                                committed_entry.address(),
                                             ))
                                     });
                                 } else {
+                                    println!("link_update_delete is none");
                                     ()
                                 }
                             }

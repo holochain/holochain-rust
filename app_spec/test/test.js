@@ -12,11 +12,12 @@ const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 const instanceCarol = Config.instance(agentCarol, dna)
 
-const scenario1 = new Scenario([instanceAlice], { debugLog: true })
-const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
-const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
+const scenario1 = new Scenario([instanceAlice], { debugLog: false })
+const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: false })
+const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: false })
 
-/*scenario2.runTape('agentId', async (t, { alice, bob }) => {
+/*
+scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
 })
@@ -116,7 +117,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
 
-  })*/
+  })
 
   scenario2.runTape('delete_entry_post', async (t, { alice,bob }) => {
     const content = "Hello Holo world 321"
@@ -127,7 +128,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
     t.ok(createResult.Ok)
 
     const deletionParams = { post_address: createResult.Ok }
-    const deletionResult = bob.callSync("blog", "delete_entry_post", deletionParams)
+    const deletionResult = await bob.callSync("blog", "delete_entry_post", deletionParams)
 
     t.equals(deletionResult.Ok, null)
 
@@ -136,8 +137,9 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   
     t.equals(result.Ok, null)
   })
+*/
 
-/*scenario2.runTape('update_post', async (t, { alice, bob }) => {
+scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
   const in_reply_to = null
   const params = { content, in_reply_to }
@@ -146,7 +148,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   t.ok(createResult.Ok)
 
   const updateParams = { post_address: createResult.Ok, new_content: "Hello Holo" }
-  const result = bob.callSync("blog", "update_post", updateParams)
+  const result = await bob.callSync("blog", "update_post", updateParams)
 
   t.equals(result.Ok, null)
 
@@ -157,6 +159,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   t.deepEqual(JSON.parse(updatedPost.Ok.App[1]), { content: "Hello Holo", date_created: "now" })
 })
 
+/*
  scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
   const content = "Holo world"
   const in_reply_to = "bad"
@@ -293,4 +296,6 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})*/
+})
+
+*/

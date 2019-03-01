@@ -139,11 +139,7 @@ enum Cli {
         about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\\Users\\Alice\\AppData\\Roaming\\holochain\\holochain\\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)"
     )]
     KeyGen {
-        #[structopt(
-        long,
-        short,
-        help = "Don't ask for passphrase"
-        )]
+        #[structopt(long, short, help = "Don't ask for passphrase")]
         silent: bool,
     },
 }
@@ -208,7 +204,8 @@ fn run() -> HolochainResult<()> {
             } else {
                 None
             };
-            cli::keygen(None, passphrase).map_err(|e| HolochainError::Default(format_err!("{}", e)))?
+            cli::keygen(None, passphrase)
+                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
     }
 

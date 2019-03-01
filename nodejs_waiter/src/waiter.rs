@@ -195,7 +195,7 @@ impl Waiter {
                                 // Pair every `EntryRemove` with N `Hold`s
                                 checker.add(num_instances, move |aw| match aw.action() {
                                     Action::Hold(EntryWithHeader { entry, header: _ }) => {
-                                        *entry == committed_entry
+                                        *entry == committed_entry.clone()
                                     }
                                     _ => false,
                                 });

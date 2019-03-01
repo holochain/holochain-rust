@@ -59,12 +59,8 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         .find(|header| header.entry_address() == &latest_entry.address())
         .map(|header| header.address().clone())
         .expect("Modified entry should be in chain");
-    println!("chain_header_address {:?}",chain_header_address.clone());
     // Create Chain Entry
     let entry = Entry::from(entry_args.new_entry.clone()); 
-    println!("entry to insert {:?}",entry.clone());
-    println!("entries and stuff{:?}", maybe_entry_result.clone().unwrap());
-    println!("latest entry {:?}",latest_entry.clone());
 
     let res : Result<Address, HolochainError> = zome_call_data.context
         .block_on(author_update_entry(

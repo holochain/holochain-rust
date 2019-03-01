@@ -53,8 +53,7 @@ pub async fn get_entry_result_workflow<'a>(
             &address,
             &args.options.timeout
         ))?;
-        println!("maybe entry {:?}",maybe_entry_with_meta.clone());
-        println!("maybe entry address {:?}",maybe_entry_with_meta.clone().unwrap().entry.address());
+
         // Entry found
         if let Some(entry_with_meta) = maybe_entry_with_meta {
             // Erase history if request is for latest
@@ -77,7 +76,7 @@ pub async fn get_entry_result_workflow<'a>(
             entry_result.push(&entry_with_meta, headers);
 
             if args.options.status_request == StatusRequestKind::Initial {
-                println!("break here");
+    
                 break;
             }
 
@@ -90,7 +89,7 @@ pub async fn get_entry_result_workflow<'a>(
             }
         }
     }
-    println!("entry result{:?}",entry_result.clone());
+
     Ok(entry_result)
 }
 

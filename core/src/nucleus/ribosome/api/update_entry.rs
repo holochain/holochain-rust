@@ -1,8 +1,9 @@
 use crate::{
     agent::actions::{commit::commit_entry, update_entry::update_entry},
     nucleus::{
-        actions::{build_validation_package::*, validate::*},
+        actions::build_validation_package::build_validation_package,
         ribosome::{api::ZomeApiResult, Runtime},
+        validation::validate_entry,
     },
     workflows::get_entry_result::get_entry_result_workflow,
 };
@@ -81,6 +82,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             // 2. Validate the entry
             .and_then(|validation_data| {
                 validate_entry(entry.clone(), validation_data, &zome_call_data.context)
+                    .map_err(|validation_error| HolochainError::from(validation_error))
             })
             // 3. Commit the valid entry to chain and DHT
             .and_then(|_| {

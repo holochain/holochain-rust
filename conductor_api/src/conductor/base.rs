@@ -17,7 +17,10 @@ use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{key_blob::KeyBlob, key_bundle::KeyBundle};
+use holochain_dpki::{
+    key_blob::{Blobbable, KeyBlob},
+    key_bundle::KeyBundle,
+};
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
@@ -426,11 +429,17 @@ impl Conductor {
                 };
 
                 // Storage:
-                if let StorageConfiguration::File { path } = instance_config.storage {
-                    context_builder = context_builder.with_file_storage(path).map_err(|hc_err| {
-                        format!("Error creating context: {}", hc_err.to_string())
-                    })?
-                };
+                match instance_config.storage {
+                    StorageConfiguration::File { path } => {
+                        context_builder =
+                            context_builder.with_file_storage(path).map_err(|hc_err| {
+                                format!("Error creating context: {}", hc_err.to_string())
+                            })?
+                    }
+                    StorageConfiguration::Memory => {
+                        context_builder = context_builder.with_memory_storage()
+                    }
+                }
 
                 if config.logger.logger_type == "debug" {
                     context_builder = context_builder.with_logger(Arc::new(Mutex::new(
@@ -495,7 +504,24 @@ impl Conductor {
                     ))
                 })?;
 
-                Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
+                let context = Arc::new(context);
+                Holochain::load(context.clone())
+                    .and_then(|hc| {
+                        notify(format!(
+                            "Successfully loaded instance {} from storage",
+                            id.clone()
+                        ));
+                        Ok(hc)
+                    })
+                    .or_else(|loading_error| {
+                        notify(format!(
+                            "Failed to load instance {} from storage: {:?}",
+                            id.clone(),
+                            loading_error
+                        ));
+                        notify("Initializing new chain...".to_string());
+                        Holochain::new(dna, context).map_err(|hc_err| hc_err.to_string())
+                    })
             })
     }
 
@@ -792,7 +818,7 @@ pub mod tests {
             .expect("SecBuf must be writeable");
 
         // Create KeyBundle from seed
-        KeyBundle::new_from_seed(&mut seed, holochain_dpki::key_bundle::SeedType::Mock).unwrap()
+        KeyBundle::new_from_seed_buf(&mut seed, holochain_dpki::seed::SeedType::Mock).unwrap()
     }
 
     pub fn test_toml() -> String {

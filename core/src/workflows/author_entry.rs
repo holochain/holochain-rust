@@ -2,8 +2,8 @@ use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
     network::actions::publish::publish,
-    nucleus::actions::{
-        build_validation_package::build_validation_package, validate::validate_entry,
+    nucleus::{
+        actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
 };
 

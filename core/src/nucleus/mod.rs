@@ -4,6 +4,7 @@ pub mod actions;
 pub mod reducers;
 pub mod ribosome;
 pub mod state;
+pub mod validation;
 
 use holochain_core_types::{
     cas::content::Address, dna::capabilities::CapabilityCall, error::HcResult, json::JsonString,

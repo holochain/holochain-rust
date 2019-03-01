@@ -85,8 +85,6 @@ fn reduce_store_entry_common(
         create_crud_status_eav(&entry.address(), CrudStatus::Live)
             .map(|status_eav| {
                 let meta_res = (*meta_storage.write().unwrap()).add_eavi(&status_eav);
-                println!("added entry {:?}",entry.clone());
-                println!("added status_eav{:?}",status_eav.clone());
                 meta_res
                     .map(|_| Some(new_store))
                     .map_err(|err| {
@@ -270,7 +268,7 @@ fn reduce_remove_entry_inner(
 ) -> Result<Address, HolochainError> {
     // pre-condition: Must already have entry in local content_storage
     let content_storage = &new_store.content_storage().clone();
-    println!("content storage");
+   
     let maybe_json_entry = content_storage
         .read()
         .unwrap()
@@ -279,7 +277,7 @@ fn reduce_remove_entry_inner(
     let json_entry = maybe_json_entry.ok_or_else(|| {
         HolochainError::ErrorGeneric(String::from("trying to remove a missing entry"))
     })?;
-    println!("json entry exists");
+    
     let entry = Entry::try_from(json_entry).expect("Stored content should be a valid entry.");
     // pre-condition: entry_type must not by sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {
@@ -301,7 +299,7 @@ fn reduce_remove_entry_inner(
         return Err(err);
     }
     let status_eavs = maybe_status_eav.unwrap();
-    println!("status eav{:?}",status_eavs.clone());
+
     assert!(!status_eavs.is_empty(), "Entry should have a Status");
     // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
     // For now checks if crud-status other than Live are present
@@ -323,7 +321,7 @@ fn reduce_remove_entry_inner(
     }
     let new_status_eav = result.expect("should unwrap eav");
     let meta_storage = &new_store.meta_storage().clone();
-    println!("new status eav {:?}",new_status_eav.clone());
+
     let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav);
     if let Err(err) = res {
         return Err(err);
@@ -333,7 +331,7 @@ fn reduce_remove_entry_inner(
     let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
         .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
     let res = (*meta_storage.write().unwrap()).add_eavi(&crud_link_eav);
-    println!("crudlink eav {:?}",crud_link_eav.clone());
+
     res.map(|_| latest_deleted_address.clone())
 }
 

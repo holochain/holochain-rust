@@ -116,10 +116,9 @@ fn reduce_publish_inner(
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            println!("entry with header {:?}",entry_with_header.clone());
             if entry_with_header.header.link_update_delete().is_some()
             {
-                println!("publishing update meta");
+
                 publish_update_delete_meta(
                  network_state,
                 entry_with_header.entry.address(),

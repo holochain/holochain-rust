@@ -20,9 +20,7 @@ pub async fn hold_update_workflow<'a>(
     context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
     let EntryWithHeader { entry, header } = &entry_with_header;
-    println!("update entry {:?}",entry.clone());
-    println!("update address {:?}",entry.clone().address());
-    println!("getting validation package");
+
     // 1. Get validation package from source
     let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
     let validation_package = maybe_validation_package

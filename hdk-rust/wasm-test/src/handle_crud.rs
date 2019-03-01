@@ -255,7 +255,7 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
         TestEntryType { stuff: "v2".into() }.into(),
     );
     let res = hdk::update_entry(entry_v2.clone(), &addr_v1);
-    hdk::sleep(Duration::from_millis(15000)).unwrap();
+    hdk::sleep(Duration::from_millis(17000)).unwrap();
     let addr_v2 = res.unwrap();
     // Get v2
     hdk::debug("**** get v2").ok();
@@ -266,7 +266,7 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     // Delete it
     hdk::debug("**** delete it").ok();
     let res = hdk::remove_entry(&addr_v1);
-    hdk::sleep(Duration::from_millis(15000)).unwrap();
+    hdk::sleep(Duration::from_millis(17000)).unwrap();
     assert!(res.is_ok());
     // Get v2 should fail
     hdk::debug("**** get v2 should fail").ok();
@@ -283,12 +283,12 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     // Delete v2 again should fail
     hdk::debug("**** delete v2 again should fail").ok();
     let res = hdk::remove_entry(&addr_v2);
-    hdk::sleep(Duration::from_millis(15000)).unwrap();
+    hdk::sleep(Duration::from_millis(17000)).unwrap();
     assert!(res.is_err());
     // Delete v1 again should fail
     hdk::debug("**** delete v1 again should fail").ok();
     let res = hdk::remove_entry(&addr_v1);
-    hdk::sleep(Duration::from_millis(15000)).unwrap();
+    hdk::sleep(Duration::from_millis(17000)).unwrap();
     assert!(res.is_err());
 
     // Get history from initial

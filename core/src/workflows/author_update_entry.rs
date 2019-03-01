@@ -53,9 +53,7 @@ pub async fn author_update_entry<'a>(
         address
     ));
 
-    println!("addr {:?}",addr.clone());
-    println!("entry {:?}",entry.clone().address());
-    println!("chain address {:?}",maybe_link_update_delete.clone());
+
     // 4. Publish the valid entry to DHT. This will call Hold to itself
     //TODO: missing a general public/private sharing check here, for now just
     // using the entry_type can_publish() function which isn't enough

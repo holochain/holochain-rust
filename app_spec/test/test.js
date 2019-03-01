@@ -146,11 +146,11 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   t.ok(createResult.Ok)
 
   const updateParams = { post_address: createResult.Ok, new_content: "Hello Holo" }
-  const result = alice.callSync("blog", "update_post", updateParams)
+  const result = bob.callSync("blog", "update_post", updateParams)
 
   t.equals(result.Ok, null)
 
-  const updatedPost = bob.call("blog", "get_post", { post_address: createResult.Ok })
+  const updatedPost = alice.call("blog", "get_post", { post_address: createResult.Ok })
 
   t.ok(updatedPost.Ok)
 

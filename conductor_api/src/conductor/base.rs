@@ -429,11 +429,17 @@ impl Conductor {
                 };
 
                 // Storage:
-                if let StorageConfiguration::File { path } = instance_config.storage {
-                    context_builder = context_builder.with_file_storage(path).map_err(|hc_err| {
-                        format!("Error creating context: {}", hc_err.to_string())
-                    })?
-                };
+                match instance_config.storage {
+                    StorageConfiguration::File { path } => {
+                        context_builder =
+                            context_builder.with_file_storage(path).map_err(|hc_err| {
+                                format!("Error creating context: {}", hc_err.to_string())
+                            })?
+                    }
+                    StorageConfiguration::Memory => {
+                        context_builder = context_builder.with_memory_storage()
+                    }
+                }
 
                 if config.logger.logger_type == "debug" {
                     context_builder = context_builder.with_logger(Arc::new(Mutex::new(
@@ -498,7 +504,24 @@ impl Conductor {
                     ))
                 })?;
 
-                Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
+                let context = Arc::new(context);
+                Holochain::load(context.clone())
+                    .and_then(|hc| {
+                        notify(format!(
+                            "Successfully loaded instance {} from storage",
+                            id.clone()
+                        ));
+                        Ok(hc)
+                    })
+                    .or_else(|loading_error| {
+                        notify(format!(
+                            "Failed to load instance {} from storage: {:?}",
+                            id.clone(),
+                            loading_error
+                        ));
+                        notify("Initializing new chain...".to_string());
+                        Holochain::new(dna, context).map_err(|hc_err| hc_err.to_string())
+                    })
             })
     }
 

@@ -32,7 +32,7 @@ dna = "app spec rust"
 id = "app spec instance 2"
 
 [instances.storage]
-path = "example-config/tmp-storage"
+path = "example-config/tmp-storage-2"
 type = "file"
 
 [[interfaces]]

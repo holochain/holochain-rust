@@ -8,22 +8,32 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::entry_type::EntryType,
     error::error::HolochainError,
+    json::JsonString,
 };
 use std::{sync::Arc, thread};
 
-pub type PendingValidation = Arc<(EntryWithHeader, Vec<Address>)>;
+pub type PendingValidation = Arc<PendingValidationStruct>;
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
+pub struct PendingValidationStruct {
+    pub entry_with_header: EntryWithHeader,
+    pub dependencies: Vec<Address>,
+}
 
 fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
     thread::spawn(move || {
-        let result = match pending.0.entry.entry_type() {
+        let result = match pending.entry_with_header.entry.entry_type() {
             EntryType::LinkAdd | EntryType::LinkRemove => {
-                context.block_on(hold_link_workflow(&pending.0, &context))
+                context.block_on(hold_link_workflow(&pending.entry_with_header, &context))
             }
-            _ => context.block_on(hold_entry_workflow(&pending.0, context.clone())),
+            _ => context.block_on(hold_entry_workflow(
+                &pending.entry_with_header,
+                context.clone(),
+            )),
         };
 
         if Err(HolochainError::ValidationPending) != result {
-            remove_pending_validation(pending.0.entry.address(), &context);
+            remove_pending_validation(pending.entry_with_header.entry.address(), &context);
         }
     });
 }
@@ -39,8 +49,8 @@ pub fn run_pending_validations(context: Arc<Context>) {
     pending_validations.iter().for_each(|(_, pending)| {
         context.log(dbg!(format!(
             "debug/scheduled_jobs/run_pending_validations: found pending validation for {}: {}",
-            pending.0.entry.entry_type(),
-            pending.0.entry.address()
+            pending.entry_with_header.entry.entry_type(),
+            pending.entry_with_header.entry.address()
         )));
         retry_validation(pending.clone(), context.clone());
     });

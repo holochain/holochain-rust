@@ -5,7 +5,10 @@ use crate::{
         direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
     },
     nucleus::{
-        state::NucleusState, validation::ValidationResult, ExecuteZomeFnResponse, ZomeFnCall,
+        actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
+        state::NucleusState,
+        validation::ValidationResult,
+        ZomeFnCall,
     },
     scheduled_jobs::pending_validations::PendingValidation,
 };
@@ -173,13 +176,13 @@ pub enum Action {
     // ----------------
     // Nucleus actions:
     // ----------------
-    /// initialize an application from a Dna
+    /// initialize a chain from Dna
     /// not the same as genesis
     /// may call genesis internally
-    InitApplication(Dna),
-    /// return the result of an InitApplication action
-    /// the result is Some arbitrary string
-    ReturnInitializationResult(Option<String>),
+    InitializeChain(Dna),
+    /// return the result of an InitializeChain action
+    /// the result is an initialization structure which include the generated public token if any
+    ReturnInitializationResult(Result<Initialization, String>),
 
     /// Gets dispatched when a zome function call starts.
     /// There is no reducer for this action so this does not change state

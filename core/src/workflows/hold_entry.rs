@@ -74,11 +74,9 @@ pub mod tests {
     /// hold_entry_workflow is then expected to fail in its validation step
     fn test_reject_invalid_entry_on_hold_workflow() {
         // Hacked DNA that regards everything as valid
-        let hacked_dna =
-            create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_valid()));
+        let hacked_dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_valid()));
         // Original DNA that regards nothing as valid
-        let mut dna =
-            create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_invalid()));
+        let mut dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_invalid()));
         dna.uuid = String::from("test_reject_invalid_entry_on_hold_workflow");
 
         // Address of the original DNA

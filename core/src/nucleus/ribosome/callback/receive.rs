@@ -7,7 +7,7 @@ use crate::{
             runtime::WasmCallData,
             Defn,
         },
-        ZomeFnCall,
+        CallbackFnCall,
     },
 };
 use holochain_core_types::{error::HolochainError, json::JsonString};
@@ -20,16 +20,15 @@ pub fn receive(
     context: Arc<Context>,
     zome: &str,
     // we ignore params for genesis
-    params: &CallbackParams,
+    parameters: &CallbackParams,
 ) -> CallbackResult {
-    let params = match params {
+    let params = match parameters {
         CallbackParams::Receive(payload) => payload,
         _ => return CallbackResult::NotImplemented("receive/1".into()),
     };
 
-    let zome_call = ZomeFnCall::new(
+    let call = CallbackFnCall::new(
         zome,
-        None,
         &Callback::Receive.as_str().to_string(),
         params.clone(),
     );
@@ -47,8 +46,8 @@ pub fn receive(
 
     match ribosome::run_dna(
         wasm.code.clone(),
-        Some(zome_call.clone().parameters.into_bytes()),
-        WasmCallData::new_zome_call(context, dna.name, zome_call),
+        Some(call.clone().parameters.into_bytes()),
+        WasmCallData::new_callback_call(context, dna.name, call),
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),
         Err(_) => CallbackResult::NotImplemented("receive/4".into()),

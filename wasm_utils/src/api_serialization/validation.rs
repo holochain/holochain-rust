@@ -6,7 +6,7 @@ use holochain_core_types::{
     validation::ValidationData,
 };
 
-#[derive(Deserialize, Debug, Serialize, DefaultJson)]
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct EntryValidationArgs {
     pub entry_type: EntryType,
     pub entry: Entry,

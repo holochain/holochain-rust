@@ -25,6 +25,30 @@ pub(crate) fn get_entry_from_cas(
     Ok(entry)
 }
 
+pub fn get_entry_from_agent_chain(
+    context: &Arc<Context>,
+    address: &Address,
+) -> Result<Option<Entry>, HolochainError> {
+    let agent = context.state().unwrap().agent();
+    let top_header = agent.top_chain_header();
+    let maybe_header = &agent
+        .chain_store()
+        .iter(&top_header)
+        .filter(|header| header.entry_address() == address)
+        .next();
+
+    if maybe_header.is_none() {
+        return Ok(None);
+    }
+    let cas = context
+        .state()
+        .unwrap()
+        .agent()
+        .chain_store()
+        .content_storage();
+    get_entry_from_cas(&cas.clone(), address)
+}
+
 pub(crate) fn get_entry_from_agent(
     context: &Arc<Context>,
     address: &Address,
@@ -140,7 +164,7 @@ pub mod tests {
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
 
     #[test]
-    fn get_entry_from_dht_cas() {
+    fn test_get_entry_from_dht_cas() {
         let entry = test_entry();
         let context = test_context_with_state(None);
         let result = super::get_entry_from_dht(&context, &entry.address());
@@ -150,4 +174,10 @@ pub mod tests {
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }
+    /*
+        #[test]
+        fn test_get_entry_from_agent_chain() {
+    // write this test when its easier to get a mutable agent state
+        }
+    */
 }

@@ -2,6 +2,7 @@
 
 pub mod api;
 pub mod callback;
+pub mod capabilities;
 pub mod memory;
 mod run_dna;
 pub mod runtime;

@@ -20,7 +20,14 @@ use holochain_core_types::{
 };
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
-use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryFrom,
+    env,
+    fs::File,
+    io::prelude::*,
+    path::PathBuf,
+};
 use toml;
 
 /// Main conductor configuration struct
@@ -101,6 +108,17 @@ impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.
     pub fn check_consistency(&self) -> Result<(), String> {
+        let instance_set: HashSet<_> = self.instances.iter().map(|c| c.id.clone()).collect();
+        let interface_set: HashSet<_> = self.interfaces.iter().map(|c| c.id.clone()).collect();
+
+        if self.instances.len() > instance_set.len() {
+            return Err("Duplicate instance IDs detected".to_string());
+        }
+
+        if self.interfaces.len() > interface_set.len() {
+            return Err("Duplicate interface IDs detected".to_string());
+        }
+
         for ref instance in self.instances.iter() {
             self.agent_by_id(&instance.agent).is_some().ok_or_else(|| {
                 format!(

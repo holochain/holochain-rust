@@ -256,7 +256,7 @@ fn launch_two_nodes_test_with_ipc_mock(
         n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath,
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec!["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM".to_string()],
     );
     let mut billy = P2pNode::new_with_uri_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -292,7 +292,7 @@ fn launch_two_nodes_test(
         n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec!["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM".to_string()],
     );
     let mut billy = P2pNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -300,7 +300,7 @@ fn launch_two_nodes_test(
         n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath,
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec!["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM".to_string()],
     );
 
     log_i!("");
@@ -371,7 +371,7 @@ fn launch_three_nodes_test_with_ipc_mock(
         n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath,
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec!["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM".to_string()],
     );
     let mut billy = P2pNode::new_with_uri_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -413,7 +413,7 @@ fn launch_three_nodes_test(
         n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec!["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM".to_string()],
     );
     let mut billy = P2pNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -421,7 +421,7 @@ fn launch_three_nodes_test(
         n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec!["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM".to_string()],
     );
     let mut camille = P2pNode::new_with_spawn_ipc_network(
         CAMILLE_AGENT_ID.to_string(),
@@ -429,7 +429,7 @@ fn launch_three_nodes_test(
         n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath,
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec!["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM".to_string()],
     );
 
     log_i!("");

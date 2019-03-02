@@ -22,7 +22,7 @@ pub async fn author_update_entry<'a>(
 ) -> Result<Address, HolochainError> {
     let address = entry.address();
     context.log(format!(
-        "debug/workflow/authoring_entry: {} with content: {:?}",
+        "debug/workflow/authoring_update_entry: {} with content: {:?}",
         address, entry
     ));
 
@@ -36,7 +36,7 @@ pub async fn author_update_entry<'a>(
 
     // 2. Validate the entry
     context.log(format!(
-        "debug/workflow/authoring_entry/{}: validating...",
+        "debug/workflow/authoring_update_entry/{}: validating...",
         address
     ));
     await!(validate_entry(entry.clone(), validation_data, &context))?;
@@ -44,7 +44,7 @@ pub async fn author_update_entry<'a>(
 
     // 3. Commit the entry
     context.log(format!(
-        "debug/workflow/authoring_entry/{}: committing...",
+        "debug/workflow/authoring_update_entry/{}: committing...",
         address
     ));
     let addr = await!(commit_entry(
@@ -53,7 +53,7 @@ pub async fn author_update_entry<'a>(
         &context
     ))?;
     context.log(format!(
-        "debug/workflow/authoring_entry/{}: committed",
+        "debug/workflow/authoring_update_entry/{}: committed",
         address
     ));
 
@@ -63,17 +63,17 @@ pub async fn author_update_entry<'a>(
 
     if entry.entry_type().can_publish() {
         context.log(format!(
-            "debug/workflow/authoring_entry/{}: publishing...",
+            "debug/workflow/authoring_update_entry/{}: publishing...",
             address
         ));
         await!(publish(addr.clone(), &context))?;
         context.log(format!(
-            "debug/workflow/authoring_entry/{}: published!",
+            "debug/workflow/authoring_update_entry/{}: published!",
             address
         ));
     } else {
         context.log(format!(
-            "debug/workflow/authoring_entry/{}: entry is private, no publishing",
+            "debug/workflow/authoring_update_entry/{}: entry is private, no publishing",
             address
         ));
     }

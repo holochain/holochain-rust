@@ -29,6 +29,8 @@ pub mod tests {
     use std::path::{Path, PathBuf};
     extern crate tempfile;
     use self::tempfile::tempdir;
+    extern crate users;
+    use self::users::get_current_uid;
 
     #[test]
     fn test_storage_path() {
@@ -42,7 +44,11 @@ pub mod tests {
         let bad_path = storage_path(Path::new("/*?abc"), "bar").unwrap();
         let result = create_path_if_not_exists(&bad_path);
         match result {
-            Ok(()) => unreachable!(),
+            Ok(()) => assert!(
+                get_current_uid() == 0,
+                "Creation of / path should only work for root, not UID {}",
+                get_current_uid()
+            ),
             Err(err) => assert!(
                 (err.to_string()
                     == "Could not create directory: \"/*?abc\\\\.hc\\\\storage\\\\bar\"")

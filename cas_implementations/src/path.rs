@@ -15,7 +15,9 @@ pub fn create_path_if_not_exists(path: &Path) -> HcResult<()> {
         return DirBuilder::new()
             .recursive(true) // create parent dirs if necessary
             .create(path)
-            .map_err(|_| HolochainError::IoError(format!("Could not create directory: {:?}", path)));
+            .map_err(|_| {
+                HolochainError::IoError(format!("Could not create directory: {:?}", path))
+            });
     }
     Ok(())
 }

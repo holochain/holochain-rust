@@ -27,10 +27,10 @@ use rpassword;
 use std::{
     clone::Clone,
     collections::HashMap,
-    option::NoneError,
     convert::TryFrom,
     fs::{self, File},
     io::prelude::*,
+    option::NoneError,
     path::PathBuf,
     sync::{
         mpsc::{channel, Sender, SyncSender},

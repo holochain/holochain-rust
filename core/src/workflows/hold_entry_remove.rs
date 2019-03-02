@@ -44,5 +44,5 @@ pub async fn hold_remove_workflow<'a>(
         &context.clone(),
         deleted_entry_address,
         entry.address().clone()
-    )?)
+    ))
 }

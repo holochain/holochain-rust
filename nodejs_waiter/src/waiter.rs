@@ -4,7 +4,7 @@ use holochain_core::{
     nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
-use holochain_core_types::entry::Entry;
+use holochain_core_types::{cas::content::AddressableContent, entry::Entry};
 use neon::{context::Context, prelude::*};
 use std::{
     cell::RefCell,
@@ -179,38 +179,23 @@ impl Waiter {
                     },
 
                     (Some(checker), Action::Commit((committed_entry, _))) => {
-                        match committed_entry.clone() {
-                            // Pair every `Commit` with N `Hold`s
-                            Entry::App(_, _) => {
-                                // TODO: is there a possiblity that this can get messed up if the same
-                                // entry is committed multiple times?
-                                checker.add(num_instances, move |aw| match aw.action() {
-                                    Action::Hold(EntryWithHeader { entry, header: _ }) => {
-                                        *entry == committed_entry
-                                    }
-                                    _ => false,
-                                });
+                        // TODO: is there a possiblity that this can get messed up if the same
+                        // entry is committed multiple times?
+                        let committed_entry_clone = committed_entry.clone();
+                        checker.add(num_instances, move |aw| match aw.action() {
+                            Action::Hold(EntryWithHeader { entry, header: _ }) => {
+                                *entry == committed_entry_clone
                             }
-                            // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s
+                            _ => false,
+                        });
+
+                        match committed_entry.clone() {
                             Entry::LinkAdd(link_add) => {
-                                checker.add(num_instances, move |aw| match aw.action() {
-                                    Action::Hold(EntryWithHeader { entry, header: _ }) => {
-                                        *entry == committed_entry
-                                    }
-                                    _ => false,
-                                });
                                 checker.add(num_instances, move |aw| {
                                     *aw.action() == Action::AddLink(link_add.clone().link().clone())
                                 });
                             }
                             Entry::LinkRemove(link_remove) => {
-                                // Pair every `LinkRemove` with N `Hold`s
-                                checker.add(num_instances, move |aw| match aw.action() {
-                                    Action::Hold(EntryWithHeader { entry, header: _ }) => {
-                                        *entry == committed_entry
-                                    }
-                                    _ => false,
-                                });
                                 checker.add(num_instances, move |aw| {
                                     *aw.action()
                                         == Action::RemoveLink(link_remove.clone().link().clone())
@@ -218,6 +203,13 @@ impl Waiter {
                             }
                             _ => (),
                         }
+                    }
+
+                    (Some(checker), Action::AddPendingValidation(pending)) => {
+                        let address = pending.entry_with_header.entry.address();
+                        checker.add(1, move |aw| {
+                            *aw.action() == Action::RemovePendingValidation(address.clone())
+                        });
                     }
 
                     // Don't need to check for message stuff since hdk::send is blocking

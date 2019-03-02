@@ -27,6 +27,7 @@ use rpassword;
 use std::{
     clone::Clone,
     collections::HashMap,
+    option::NoneError,
     convert::TryFrom,
     fs::{self, File},
     io::prelude::*,
@@ -514,11 +515,15 @@ impl Conductor {
                         Ok(hc)
                     })
                     .or_else(|loading_error| {
-                        notify(format!(
-                            "Failed to load instance {} from storage: {:?}",
-                            id.clone(),
-                            loading_error
-                        ));
+                        // NoneError just means it didn't find a pre-existing state
+                        // that's not a problem and so isn't logged as such
+                        if loading_error != HolochainError::from(NoneError) {
+                            notify(format!(
+                                "Failed to load instance {} from storage: {:?}",
+                                id.clone(),
+                                loading_error
+                            ));
+                        }
                         notify("Initializing new chain...".to_string());
                         Holochain::new(dna, context).map_err(|hc_err| hc_err.to_string())
                     })

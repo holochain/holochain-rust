@@ -26,7 +26,6 @@ pub fn create_path_if_not_exists(path: &Path) -> HcResult<()> {
 pub mod tests {
     use super::create_path_if_not_exists;
     use crate::path::storage_path;
-    use holochain_core_types::error::HolochainError;
     use std::path::{Path, PathBuf};
     extern crate tempfile;
     use self::tempfile::tempdir;
@@ -44,11 +43,11 @@ pub mod tests {
         let result = create_path_if_not_exists(&bad_path);
         match result {
             Ok(()) => unreachable!(),
-            Err(err) => assert_eq!(
-                err,
-                HolochainError::IoError(
-                    "Could not create directory: \"/*?abc/.hc/storage/bar\"".to_string()
-                )
+            Err(err) => assert!(
+                (err.to_string()
+                    == "Could not create directory: \"/*?abc\\\\.hc\\\\storage\\\\bar\"")
+                    || (err.to_string()
+                        == "Could not create directory: \"/*?abc/.hc/storage/bar\"")
             ),
         };
         let dir = tempdir().unwrap();

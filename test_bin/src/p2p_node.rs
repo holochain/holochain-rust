@@ -127,6 +127,7 @@ pub struct P2pNode {
     pub authored_meta_store: MetaStore,
 
     pub logger: TweetProxy,
+    network_ready: bool,
 }
 
 /// Query logs
@@ -544,7 +545,13 @@ impl P2pNode {
             authored_entry_store: HashMap::new(),
             authored_meta_store: MetaStore::new(),
             logger: TweetProxy::new("p2pnode"),
+            network_ready: false,
         }
+    }
+
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn is_network_ready(&self) -> bool{
+        self.network_ready
     }
 
     /// Constructor for an in-memory P2P Network
@@ -589,6 +596,9 @@ impl P2pNode {
     #[cfg_attr(tarpaulin, skip)]
     pub fn try_recv(&mut self) -> NetResult<JsonProtocol> {
         let data = self.receiver.try_recv()?;
+
+        self.recv_msg_log.push(data.clone());
+
         // logging depending on received type
         match data {
             Protocol::NamedBinary(_) => {
@@ -599,13 +609,17 @@ impl P2pNode {
                 let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
                 self.logger.d(&dbg_msg);
             }
+            Protocol::P2pReady => {
+                let dbg_msg = format!("<< ({}) recv ** P2pReady **", self.agent_id);
+                self.logger.d(&dbg_msg);
+                self.network_ready = true;
+                bail!("received P2pReady");
+            }
             _ => {
                 let dbg_msg = format!("<< ({}) recv <other>", self.agent_id);
                 self.logger.t(&dbg_msg);
             }
         };
-
-        self.recv_msg_log.push(data.clone());
 
         match JsonProtocol::try_from(&data) {
             Ok(r) => {

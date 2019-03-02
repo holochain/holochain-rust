@@ -46,7 +46,9 @@ pub mod tests {
             Ok(()) => unreachable!(),
             Err(err) => assert_eq!(
                 err,
-                HolochainError::IoError("Could not create directory".to_string())
+                HolochainError::IoError(
+                    "Could not create directory: \"/*?abc/.hc/storage/bar\"".to_string()
+                )
             ),
         };
         let dir = tempdir().unwrap();

@@ -193,7 +193,7 @@ impl Waiter {
                                 });
                                 if link_update_delete.is_some() {
                                     println!("aw action {:?}", aw.action().clone());
-                                    println!("link_update_delete {:?}", link_update_delete.clone());
+                                    println!("link_update_delete is {:?}", link_update_delete.clone());
                                     checker.add(num_instances, move |aw| {
                                         *aw.action()
                                             == Action::UpdateEntry((
@@ -254,7 +254,8 @@ impl Waiter {
                             }
                             _ => (),
                         }
-                    }
+                    },
+                    
 
                     // Don't need to check for message stuff since hdk::send is blocking
 

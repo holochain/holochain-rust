@@ -464,7 +464,7 @@ pub mod tests {
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
-        let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
+        let agent_state = AgentState::new_with_top_chain_header(chain_store, Some(chain_header));
         let state = State::new_with_agent(Arc::new(context.clone()), agent_state);
         let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());

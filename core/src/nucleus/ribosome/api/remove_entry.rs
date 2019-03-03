@@ -1,8 +1,6 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
-        actions::build_validation_package::build_validation_package,
-        validation::validate_entry,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -55,12 +53,11 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
 
-    let res: Result<(), HolochainError> = zome_call_data
-        .context
+    let res: Result<(), HolochainError> = context
         .block_on(author_entry(
             &deletion_entry.clone(),
             Some(deleted_entry_address.clone()),
-            &zome_call_data.context.clone(),
+            &context.clone(),
         ))
         .map(|_| ());
 

@@ -4,7 +4,7 @@ use crate::{
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
-    nucleus::actions::validate::validate_entry,
+    nucleus::validation::validate_entry,
 };
 
 use holochain_core_types::{

@@ -218,7 +218,7 @@ fn reduce_commit_entry(
     let action = action_wrapper.action();
     let (entry, maybe_link_update_delete) = unwrap_to!(action => Action::Commit);
 
-    let result = create_new_chain_header(&entry, context.clone(), &maybe_crud_link)
+    let result = create_new_chain_header(&entry, context.clone(), &maybe_link_update_delete)
         .and_then(|chain_header| {
             let storage = &state.chain_store.content_storage().clone();
             storage.write().unwrap().add(entry)?;

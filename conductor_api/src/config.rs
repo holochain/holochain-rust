@@ -104,20 +104,37 @@ impl Default for LoggerConfiguration {
     }
 }
 
+/// Check for duplicate items in a list of strings
+fn detect_dupes<'a, I: Iterator<Item = &'a String>>(
+    name: &'static str,
+    items: I,
+) -> Result<(), String> {
+    let mut set = HashSet::<&str>::new();
+    let mut dupes = Vec::<String>::new();
+    for item in items {
+        if !set.insert(item) {
+            dupes.push(item.to_string())
+        }
+    }
+    if !dupes.is_empty() {
+        Err(format!(
+            "Duplicate {} IDs detected: {}",
+            name,
+            dupes.join(", ")
+        ))
+    } else {
+        Ok(())
+    }
+}
+
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.
-    pub fn check_consistency(&self) -> Result<(), String> {
-        let instance_set: HashSet<_> = self.instances.iter().map(|c| c.id.clone()).collect();
-        let interface_set: HashSet<_> = self.interfaces.iter().map(|c| c.id.clone()).collect();
-
-        if self.instances.len() > instance_set.len() {
-            return Err("Duplicate instance IDs detected".to_string());
-        }
-
-        if self.interfaces.len() > interface_set.len() {
-            return Err("Duplicate interface IDs detected".to_string());
-        }
+    pub fn check_consistency<'a>(&'a self) -> Result<(), String> {
+        detect_dupes("agent", self.agents.iter().map(|c| &c.id))?;
+        detect_dupes("dna", self.dnas.iter().map(|c| &c.id))?;
+        detect_dupes("instance", self.instances.iter().map(|c| &c.id))?;
+        detect_dupes("interface", self.interfaces.iter().map(|c| &c.id))?;
 
         for ref instance in self.instances.iter() {
             self.agent_by_id(&instance.agent).is_some().ok_or_else(|| {

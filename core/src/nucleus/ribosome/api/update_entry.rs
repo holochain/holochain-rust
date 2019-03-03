@@ -51,12 +51,13 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Create Chain Entry
     let entry = Entry::from(entry_args.new_entry.clone());
 
-    let res: Result<Address, HolochainError> =
-        context.block_on(author_update_entry(
+    let res: Result<Address, HolochainError> = context
+        .block_on(author_update_entry(
             &entry,
             Some(latest_entry.clone().address()),
             &context.clone(),
-        )).map_err(|validation_error| HolochainError::from(validation_error));
+        ))
+        .map_err(|validation_error| HolochainError::from(validation_error));
 
     runtime.store_result(res)
 }

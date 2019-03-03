@@ -27,7 +27,7 @@ scenario1.runTape('show_env', async (t, { alice }) => {
   t.equal(result.Ok.dna_address, alice.dnaAddress)
   t.equal(result.Ok.dna_name, "HDK-spec-rust")
   t.equal(result.Ok.agent_address, alice.agentId)
-  t.equal(result.Ok.agent_id, '{"nick":"alice","key":"' + alice.agentId + '"}')
+  t.equal(result.Ok.agent_id, '{"nick":"alice","pub_sign_key":"' + alice.agentId + '"}')
 })
 
 scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {
@@ -49,13 +49,13 @@ scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {
   t.deepEqual(sources3, expected)
 })
 
-scenario1.runTape('call', async (t, { alice }) => {
+scenario1.runTape('cross zome call', async (t, { alice }) => {
 
   const num1 = 2
   const num2 = 2
   const params = { num1, num2 }
   const result = alice.call("blog", "check_sum", params)
-
+  t.notOk(result.Err)
   t.equal(result.Ok, 4)
 })
 

@@ -14,16 +14,13 @@ use holochain_core_types::{
 };
 use std::{pin::Pin, sync::Arc};
 
-pub async fn hold_entry<'a>(
-    entry_wh: EntryWithHeader,
+pub async fn hold_entry(
+    entry_wh: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
-    dispatch_action(context.action_channel(), action_wrapper);
-    await!(HoldEntryFuture {
-        context: context,
-        address: entry_wh.entry.address(),
-    })
+    let address = entry_wh.entry.address();
+    let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.to_owned()));
+    await!(HoldEntryFuture { context, address })
 }
 
 pub struct HoldEntryFuture {
@@ -54,7 +51,9 @@ impl Future for HoldEntryFuture {
                 Poll::Pending
             }
         } else {
-            Poll::Pending
+            Poll::Ready(Err(HolochainError::ErrorGeneric(
+                "State not initialized".to_string(),
+            )))
         }
     }
 }

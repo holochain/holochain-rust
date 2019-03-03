@@ -8,20 +8,19 @@ use crate::{
     logger::DebugLogger,
     Holochain,
 };
-use boolinator::Boolinator;
 use holochain_common::paths::DNA_EXTENSION;
 use holochain_core::{
     logger::{ChannelLogger, Logger},
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::{AgentId, KeyBuffer},
-    cas::content::AddressableContent,
-    dna::Dna,
-    error::HolochainError,
+    agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{bundle::KeyBundle, keypair::Keypair};
+use holochain_dpki::{
+    key_blob::{Blobbable, KeyBlob},
+    key_bundle::KeyBundle,
+};
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
@@ -39,9 +38,10 @@ use std::{
     thread,
 };
 
-use holochain_net::p2p_config::P2pConfig;
-use holochain_net_connection::net_connection::NetShutdown;
-use holochain_net_ipc::spawn::{ipc_spawn, SpawnResult};
+use holochain_net::{
+    ipc::spawn::{ipc_spawn, SpawnResult},
+    p2p_config::P2pConfig,
+};
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
 use static_file_server::StaticServer;
 
@@ -80,7 +80,7 @@ pub fn mount_conductor_from_config(config: Configuration) {
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
-    agent_keys: HashMap<String, Arc<Mutex<Keypair>>>,
+    agent_keys: HashMap<String, Arc<Mutex<KeyBundle>>>,
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
@@ -90,19 +90,21 @@ pub struct Conductor {
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
     p2p_config: Option<P2pConfig>,
-    network_child_process: NetShutdown,
+    network_spawn: Option<SpawnResult>,
 }
 
 impl Drop for Conductor {
     fn drop(&mut self) {
-        if let Some(kill) = self.network_child_process.take() {
-            kill();
+        if let Some(ref mut network_spawn) = self.network_spawn {
+            if let Some(kill) = network_spawn.kill.take() {
+                kill();
+            }
         }
     }
 }
 
 type SignalSender = SyncSender<Signal>;
-pub type KeyLoader = Arc<Box<FnMut(&PathBuf) -> Result<Keypair, HolochainError> + Send + Sync>>;
+pub type KeyLoader = Arc<Box<FnMut(&PathBuf) -> Result<KeyBundle, HolochainError> + Send + Sync>>;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
     Arc<Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
@@ -128,7 +130,7 @@ impl Conductor {
             signal_tx: None,
             logger: DebugLogger::new(rules),
             p2p_config: None,
-            network_child_process: None,
+            network_spawn: None,
         }
     }
 
@@ -138,6 +140,13 @@ impl Conductor {
         }
         self.signal_tx = Some(signal_tx);
         self
+    }
+
+    pub fn p2p_bindings(&self) -> Option<Vec<String>> {
+        match self.network_spawn {
+            None => None,
+            Some(ref spawn) => Some(spawn.p2p_bindings.clone()),
+        }
     }
 
     pub fn config(&self) -> Configuration {
@@ -239,7 +248,7 @@ impl Conductor {
         self.instances = HashMap::new();
     }
 
-    pub fn spawn_network(&mut self) -> Result<String, HolochainError> {
+    pub fn spawn_network(&mut self) -> Result<SpawnResult, HolochainError> {
         let network_config = self
             .config
             .clone()
@@ -252,11 +261,7 @@ impl Conductor {
             "Spawning network with working directory: {}",
             network_config.n3h_persistence_path
         );
-        let SpawnResult {
-            kill,
-            ipc_binding,
-            p2p_bindings: _,
-        } = ipc_spawn(
+        let spawn_result = ipc_spawn(
             "node".to_string(),
             vec![format!(
                 "{}/packages/n3h/bin/n3h",
@@ -272,15 +277,17 @@ impl Conductor {
             true,
         )
         .map_err(|error| {
-            println!("Error spawning network process! {:?}", error);
+            println!("Error while spawning network process: {:?}", error);
             HolochainError::ErrorGeneric(error.to_string())
         })?;
-        self.network_child_process = kill;
-        println!("Network spawned with binding: {:?}", ipc_binding);
-        Ok(ipc_binding)
+        println!(
+            "Network spawned with bindings:\n\t - ipc: {}\n\t - p2p: {:?}",
+            spawn_result.ipc_binding, spawn_result.p2p_bindings
+        );
+        Ok(spawn_result)
     }
 
-    fn instance_p2p_config(&self) -> P2pConfig {
+    fn get_p2p_config(&self) -> P2pConfig {
         self.p2p_config.clone().unwrap_or_else(|| {
             // This should never happen, but we'll throw out an in-memory server config rather than crashing,
             // just to be nice (TODO make proper logging statement)
@@ -299,10 +306,16 @@ impl Conductor {
         // ipc_uri for it and save it for future calls to `load_config`
         // or we use that uri value that was created from previous calls!
         let net_config = self.config.network.clone().unwrap();
-        let uri = net_config
-            .n3h_ipc_uri
-            .clone()
-            .or_else(|| self.spawn_network().ok());
+        let uri = match net_config.n3h_ipc_uri.clone() {
+            Some(uri) => Some(uri),
+            None => {
+                self.network_spawn = self.spawn_network().ok();
+                match self.network_spawn {
+                    None => None,
+                    Some(ref spawn) => Some(spawn.ipc_binding.clone()),
+                }
+            }
+        };
         P2pConfig::new_ipc_uri(
             uri,
             &net_config.bootstrap_nodes,
@@ -399,18 +412,16 @@ impl Conductor {
                     // !!!!!!!!!!!!!!!!!!!!!!!
                     // Holo closed-alpha hack:
                     // !!!!!!!!!!!!!!!!!!!!!!!
-                    let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
-                    AgentId::new(&agent_config.name, &pub_key)
+                    AgentId::new(&agent_config.name, agent_config.public_address)
                 } else {
-                    let keypair = self.get_key_for_agent(&instance_config.agent)?;
-                    let keypair = keypair.lock().unwrap();
-                    let pub_key = KeyBuffer::with_corrected(&keypair.get_id())?;
-                    AgentId::new(&agent_config.name, &pub_key)
+                    let keybundle_arc = self.get_keybundle_for_agent(&instance_config.agent)?;
+                    let keybundle = keybundle_arc.lock().unwrap();
+                    AgentId::new(&agent_config.name, keybundle.get_id())
                 };
 
                 context_builder = context_builder.with_agent(agent_id.clone());
 
-                context_builder = context_builder.with_p2p_config(self.instance_p2p_config());
+                context_builder = context_builder.with_p2p_config(self.get_p2p_config());
 
                 // Signal config:
                 if let Some(tx) = signal_tx {
@@ -418,11 +429,17 @@ impl Conductor {
                 };
 
                 // Storage:
-                if let StorageConfiguration::File { path } = instance_config.storage {
-                    context_builder = context_builder.with_file_storage(path).map_err(|hc_err| {
-                        format!("Error creating context: {}", hc_err.to_string())
-                    })?
-                };
+                match instance_config.storage {
+                    StorageConfiguration::File { path } => {
+                        context_builder =
+                            context_builder.with_file_storage(path).map_err(|hc_err| {
+                                format!("Error creating context: {}", hc_err.to_string())
+                            })?
+                    }
+                    StorageConfiguration::Memory => {
+                        context_builder = context_builder.with_memory_storage()
+                    }
+                }
 
                 if config.logger.logger_type == "debug" {
                     context_builder = context_builder.with_logger(Arc::new(Mutex::new(
@@ -446,7 +463,7 @@ impl Conductor {
                     );
                 } else {
                     api_builder = api_builder.with_agent_signature_callback(
-                        self.get_key_for_agent(&instance_config.agent)?,
+                        self.get_keybundle_for_agent(&instance_config.agent)?,
                     );
                 }
 
@@ -459,9 +476,9 @@ impl Conductor {
                         .expect("config.check_consistency()? jumps out if config is broken");
                     let callee_instance = self.instances.get(&bridge.callee_id).expect(
                         r#"
-                            We have to create instances ordered by bridge dependencies such that we
-                            can expect the callee to be present here because we need it to create
-                            the bridge API"#,
+                    We have to create instances ordered by bridge dependencies such that we
+                    can expect the callee to be present here because we need it to create
+                    the bridge API"#,
                     );
 
                     api_builder = api_builder
@@ -487,7 +504,24 @@ impl Conductor {
                     ))
                 })?;
 
-                Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
+                let context = Arc::new(context);
+                Holochain::load(context.clone())
+                    .and_then(|hc| {
+                        notify(format!(
+                            "Successfully loaded instance {} from storage",
+                            id.clone()
+                        ));
+                        Ok(hc)
+                    })
+                    .or_else(|loading_error| {
+                        notify(format!(
+                            "Failed to load instance {} from storage: {:?}",
+                            id.clone(),
+                            loading_error
+                        ));
+                        notify("Initializing new chain...".to_string());
+                        Holochain::new(dna, context).map_err(|hc_err| hc_err.to_string())
+                    })
             })
     }
 
@@ -508,39 +542,43 @@ impl Conductor {
             // !!!!!!!!!!!!!!!!!!!!!!!
             return Ok(());
         }
-        self.get_key_for_agent(agent_id)?;
+        self.get_keybundle_for_agent(agent_id)?;
         Ok(())
     }
 
     /// Get reference to key for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
-    fn get_key_for_agent(&mut self, agent_id: &String) -> Result<Arc<Mutex<Keypair>>, String> {
+    fn get_keybundle_for_agent(
+        &mut self,
+        agent_id: &String,
+    ) -> Result<Arc<Mutex<KeyBundle>>, String> {
         if !self.agent_keys.contains_key(agent_id) {
             let agent_config = self
                 .config
                 .agent_by_id(agent_id)
                 .ok_or(format!("Agent '{}' not found", agent_id))?;
             let key_file_path = PathBuf::from(agent_config.key_file.clone());
-            let keypair =
+            let keybundle =
                 Arc::get_mut(&mut self.key_loader).unwrap()(&key_file_path).map_err(|_| {
                     HolochainError::ConfigError(format!(
                         "Could not load key file \"{}\"",
                         agent_config.key_file,
                     ))
                 })?;
-            (agent_config.public_address == keypair.get_id()).ok_or(format!(
-                "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
-                key_file_path.to_str().unwrap(),
-                keypair.get_id(),
-                agent_config.public_address,
-            ))?;
+            if agent_config.public_address != keybundle.get_id() {
+                return Err(format!(
+                    "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
+                    key_file_path.to_str().unwrap(),
+                    keybundle.get_id(),
+                    agent_config.public_address,
+                ));
+            }
             self.agent_keys
-                .insert(agent_id.clone(), Arc::new(Mutex::new(keypair)));
+                .insert(agent_id.clone(), Arc::new(Mutex::new(keybundle)));
         }
-
-        let keypair_ref = self.agent_keys.get(agent_id).unwrap();
-        Ok(keypair_ref.clone())
+        let keybundle_ref = self.agent_keys.get(agent_id).unwrap();
+        Ok(keybundle_ref.clone())
     }
 
     fn start_interface(&mut self, config: &InterfaceConfiguration) -> Result<(), String> {
@@ -563,14 +601,14 @@ impl Conductor {
     }
 
     /// Default KeyLoader that actually reads files from the filesystem
-    fn load_key(file: &PathBuf) -> Result<Keypair, HolochainError> {
+    fn load_key(file: &PathBuf) -> Result<KeyBundle, HolochainError> {
         notify(format!("Reading agent key from {}", file.display()));
 
         // Read key file
         let mut file = File::open(file)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let bundle: KeyBundle = serde_json::from_str(&contents)?;
+        let blob: KeyBlob = serde_json::from_str(&contents)?;
 
         // Prompt for passphrase
         let mut passphrase_string = rpassword::read_password_from_tty(Some("Passphrase: "))?;
@@ -580,14 +618,15 @@ impl Conductor {
         let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
         passphrase_buf
             .write(0, passphrase_bytes.as_slice())
-            .expect("SecBuf must be writeable");
+            .expect("Failed to write passphrase in a SecBuf");
 
         // Overwrite the unsafe passphrase memory with zeros
         for byte in passphrase_bytes.iter_mut() {
             *byte = 0u8;
         }
 
-        Keypair::from_bundle(&bundle, &mut passphrase_buf, None)
+        // Unblob into KeyBundle
+        KeyBundle::from_blob(&blob, &mut passphrase_buf, None)
     }
 
     fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {
@@ -732,9 +771,12 @@ pub mod tests {
     use super::*;
     extern crate tempfile;
     use crate::config::load_configuration;
-    use holochain_core::{action::Action, signal::signal_channel};
+    use holochain_core::{
+        action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,
+        signal::signal_channel,
+    };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
-    use holochain_dpki::keypair::{Keypair, SEEDSIZE};
+    use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
     use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
@@ -759,27 +801,27 @@ pub mod tests {
 
     pub fn test_key_loader() -> KeyLoader {
         let loader = Box::new(|path: &PathBuf| match path.to_str().unwrap().as_ref() {
-            "holo_tester1.key" => Ok(test_key(1)),
-            "holo_tester2.key" => Ok(test_key(2)),
-            "holo_tester3.key" => Ok(test_key(3)),
+            "holo_tester1.key" => Ok(test_keybundle(1)),
+            "holo_tester2.key" => Ok(test_keybundle(2)),
+            "holo_tester3.key" => Ok(test_keybundle(3)),
             unknown => Err(HolochainError::ErrorGeneric(format!(
                 "No test key for {}",
                 unknown
             ))),
         })
-            as Box<FnMut(&PathBuf) -> Result<Keypair, HolochainError> + Send + Sync>;
+            as Box<FnMut(&PathBuf) -> Result<KeyBundle, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
-    pub fn test_key(index: u8) -> Keypair {
-        // Create deterministic seed:
-        let mut seed = SecBuf::with_insecure(SEEDSIZE);
-        let mock_seed: Vec<u8> = (1..SEEDSIZE).map(|e| e as u8 + index).collect();
+    pub fn test_keybundle(index: u8) -> KeyBundle {
+        // Create deterministic seed
+        let mut seed = SecBuf::with_insecure(SEED_SIZE);
+        let mock_seed: Vec<u8> = (1..SEED_SIZE).map(|e| e as u8 + index).collect();
         seed.write(0, mock_seed.as_slice())
             .expect("SecBuf must be writeable");
 
-        // Create keypair from seed:
-        Keypair::new_from_seed(&mut seed).unwrap()
+        // Create KeyBundle from seed
+        KeyBundle::new_from_seed_buf(&mut seed, holochain_dpki::seed::SeedType::Mock).unwrap()
     }
 
     pub fn test_toml() -> String {
@@ -875,9 +917,9 @@ pub mod tests {
     callee_id = "test-instance-1"
     handle = "test-callee"
     "#,
-            test_key(1).get_id(),
-            test_key(2).get_id(),
-            test_key(3).get_id()
+            test_keybundle(1).get_id(),
+            test_keybundle(2).get_id(),
+            test_keybundle(3).get_id()
         )
     }
 
@@ -1001,7 +1043,7 @@ pub mod tests {
         let _conductor = test_conductor_with_signals(signal_tx);
 
         test_utils::expect_action(&signal_rx, |action| match action {
-            Action::InitApplication(_) => true,
+            Action::InitializeChain(_) => true,
             _ => false,
         })
         .unwrap();
@@ -1121,7 +1163,7 @@ pub mod tests {
 
     fn callee_dna() -> Dna {
         let wat = &callee_wat();
-        let mut dna = create_test_dna_with_wat("greeter", "test_cap", Some(wat));
+        let mut dna = create_test_dna_with_wat("greeter", Some(wat));
         dna.uuid = String::from("basic_bridge_call");
         dna.zomes.get_mut("greeter").unwrap().add_fn_declaration(
             String::from("hello"),
@@ -1164,18 +1206,20 @@ pub mod tests {
             .start_all_instances()
             .expect("Instances must be spawnable");
         let caller_instance = conductor.instances["bridge-caller"].clone();
-        let result = caller_instance
-            .write()
-            .unwrap()
-            .call(
-                "test_zome",
-                Some(dna::capabilities::CapabilityCall::new(
-                    Address::from("fake_token"),
-                    None,
-                )),
+        let mut instance = caller_instance.write().unwrap();
+
+        let cap_call = {
+            let context = instance.context();
+            make_cap_request_for_call(
+                context.clone(),
+                Address::from(context.clone().agent_id.pub_sign_key.clone()),
+                Address::from(context.clone().agent_id.pub_sign_key.clone()),
                 "call_bridge",
-                "{}",
+                "{}".to_string(),
             )
+        };
+        let result = instance
+            .call("test_zome", cap_call, "call_bridge", "{}")
             .unwrap();
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
@@ -1209,7 +1253,10 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        assert_eq!(conductor.load_config(), Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'dlyr9y0wpQplNX_Dv8oO_HHk8G8zEvFupuuIU-jKlaL-rykxWZgD4Oq2ZpF2VL7wzN1Z97X5s_8z0a-xVbyrRnwBlWf8\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!".to_string()));
+        assert_eq!(
+            conductor.load_config(),
+            Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
+                .to_string()),
+        );
     }
-
 }

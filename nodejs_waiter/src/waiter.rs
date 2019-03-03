@@ -367,9 +367,13 @@ impl Task for MainBackgroundTask {
 #[cfg(test)]
 mod tests {
     use super::{Action::*, *};
-    use holochain_core::nucleus::ExecuteZomeFnResponse;
+    use holochain_core::nucleus::{
+        actions::call_zome_function::ExecuteZomeFnResponse,
+        ribosome::capabilities::CapabilityRequest,
+    };
     use holochain_core_types::{
-        chain_header::test_chain_header, entry::Entry, json::JsonString, link::link_data::LinkData,
+        cas::content::Address, chain_header::test_chain_header, entry::Entry, json::JsonString,
+        link::link_data::LinkData, signature::Signature,
     };
     use std::sync::mpsc::sync_channel;
 
@@ -402,7 +406,16 @@ mod tests {
     // }
 
     fn zf_call(name: &str) -> ZomeFnCall {
-        ZomeFnCall::new(name, None, name, "")
+        ZomeFnCall::new(
+            name,
+            CapabilityRequest::new(
+                Address::from("token"),
+                Address::from("caller"),
+                Signature::fake(),
+            ),
+            name,
+            "",
+        )
     }
 
     fn zf_response(call: ZomeFnCall) -> ExecuteZomeFnResponse {

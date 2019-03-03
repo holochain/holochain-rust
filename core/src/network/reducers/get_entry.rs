@@ -4,7 +4,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::error::HolochainError;
-use holochain_net_connection::json_protocol::{FetchEntryData, JsonProtocol};
+use holochain_net::connection::json_protocol::{FetchEntryData, JsonProtocol};
 use std::sync::Arc;
 
 fn reduce_fetch_entry_inner(

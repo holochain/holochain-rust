@@ -1,6 +1,8 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
+        actions::build_validation_package::build_validation_package,
+        validation::validate_entry,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -16,7 +18,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected Address argument
 /// Stores/returns a RibosomeEncodedValue
 pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
 
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
@@ -24,7 +26,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
 
     // Exit on error
     if try_address.is_err() {
-        zome_call_data.context.log(format!(
+        context.log(format!(
             "err/zome: invoke_remove_entry failed to deserialize Address: {:?}",
             args_str
         ));
@@ -37,10 +39,9 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         address: deleted_entry_address,
         options: Default::default(),
     };
-    let maybe_entry_result = zome_call_data.context.block_on(get_entry_result_workflow(
-        &zome_call_data.context,
-        &get_args,
-    ));
+    let maybe_entry_result = context
+        .clone()
+        .block_on(get_entry_result_workflow(&context, &get_args));
 
     if let Err(_err) = maybe_entry_result {
         return ribosome_error_code!(Unspecified);

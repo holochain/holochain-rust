@@ -11,7 +11,7 @@ use crate::{
     },
     error::HolochainError,
     json::JsonString,
-    signature::Signature,
+    signature::{Provenance, Signature},
     time::{test_iso_8601, Iso8601},
 };
 use std::convert::TryInto;
@@ -41,8 +41,6 @@ pub struct ChainHeader {
     /// ISO8601 time stamp
     timestamp: Iso8601,
 }
-
-type Provenance = (Address, Signature);
 
 impl PartialEq for ChainHeader {
     fn eq(&self, other: &ChainHeader) -> bool {

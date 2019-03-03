@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use holochain_core_types::{crud_status::CrudStatus, eav::Attribute};
-use holochain_net_connection::json_protocol::{DhtMetaData, EntryData};
+use holochain_net::connection::json_protocol::{DhtMetaData, EntryData};
 use std::{str::FromStr, sync::Arc, thread};
 
 /// The network requests us to store (i.e. hold) the given entry.
@@ -16,7 +16,7 @@ pub fn handle_store_entry(dht_data: EntryData, context: Arc<Context>) {
     let entry_with_header: EntryWithHeader =
         serde_json::from_str(&serde_json::to_string(&dht_data.entry_content).unwrap()).unwrap();
     thread::spawn(move || {
-        match context.block_on(hold_entry_workflow(entry_with_header, context.clone())) {
+        match context.block_on(hold_entry_workflow(&entry_with_header, context.clone())) {
             Err(error) => context.log(format!("err/net/dht: {}", error)),
             _ => (),
         }

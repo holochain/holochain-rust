@@ -292,7 +292,7 @@ pub mod tests {
 
         let sys_entry = test_sys_entry();
         let expected = JsonString::from(format!(
-            "{{\"AgentId\":{{\"nick\":\"{}\",\"key\":\"{}\"}}}}",
+            "{{\"AgentId\":{{\"nick\":\"{}\",\"pub_sign_key\":\"{}\"}}}}",
             "bob",
             crate::agent::GOOD_ID,
         ));

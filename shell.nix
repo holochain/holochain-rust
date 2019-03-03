@@ -114,7 +114,6 @@ stdenv.mkDerivation rec {
     hc-fmt
     hc-fmt-check
 
-    zeromq4
     libsodium
 
     # dev tooling

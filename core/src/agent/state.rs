@@ -123,10 +123,10 @@ impl AgentStateSnapshot {
     }
 }
 
-impl TryFrom<State> for AgentStateSnapshot {
+impl TryFrom<&State> for AgentStateSnapshot {
     type Error = HolochainError;
 
-    fn try_from(state: State) -> Result<Self, Self::Error> {
+    fn try_from(state: &State) -> Result<Self, Self::Error> {
         let agent = &*(state.agent());
         let top_chain = agent
             .top_chain_header()
@@ -167,7 +167,7 @@ pub fn create_new_chain_header(
     entry: &Entry,
     context: Arc<Context>,
     crud_link: &Option<Address>,
-) -> ChainHeader {
+) -> Result<ChainHeader, HolochainError> {
     let agent_state = context
         .state()
         .expect("create_new_chain_header called without state")
@@ -176,14 +176,15 @@ pub fn create_new_chain_header(
         .get_agent_address()
         .unwrap_or(context.agent_id.address());
     let signature = Signature::from(
-        context
-            .sign(entry.address().to_string())
-            .expect("Must be able to create signatures!"),
+        context.sign(entry.address().to_string())?,
+        // Temporarily replaced by error handling for Holo hack signing.
+        // TODO: pull in the expect below after removing the Holo signing hack again
+        //.expect("Must be able to create signatures!"),
     );
     let duration_since_epoch = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("System time must not be before UNIX EPOCH");
-    ChainHeader::new(
+    Ok(ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
         &vec![(agent_address, signature)],
@@ -198,7 +199,7 @@ pub fn create_new_chain_header(
             .and_then(|chain_header| Some(chain_header.address())),
         crud_link,
         &Iso8601::from(duration_since_epoch.as_secs()),
-    )
+    ))
 }
 
 /// Do a Commit Action against an agent state.
@@ -216,28 +217,18 @@ fn reduce_commit_entry(
 ) {
     let action = action_wrapper.action();
     let (entry, maybe_link_update_delete) = unwrap_to!(action => Action::Commit);
-    let chain_header = create_new_chain_header(&entry, context.clone(), &maybe_link_update_delete);
 
-    fn response(
-        state: &mut AgentState,
-        entry: &Entry,
-        chain_header: &ChainHeader,
-    ) -> Result<Address, HolochainError> {
-        let storage = &state.chain_store.content_storage().clone();
-        storage.write().unwrap().add(entry)?;
-        storage.write().unwrap().add(chain_header)?;
-        Ok(entry.address())
-    }
-    let result = response(state, &entry, &chain_header);
-    state.top_chain_header = Some(chain_header);
-    let con = context.clone();
-
-    #[allow(unused_must_use)]
-    con.state().map(|global_state_lock| {
-        let persis_lock = context.clone().persister.clone();
-        let persister = &mut *persis_lock.lock().unwrap();
-        persister.save(global_state_lock.clone());
-    });
+    let result = create_new_chain_header(&entry, context.clone(), &maybe_crud_link)
+        .and_then(|chain_header| {
+            let storage = &state.chain_store.content_storage().clone();
+            storage.write().unwrap().add(entry)?;
+            storage.write().unwrap().add(&chain_header)?;
+            Ok((chain_header, entry.address()))
+        })
+        .and_then(|(chain_header, address)| {
+            state.top_chain_header = Some(chain_header);
+            Ok(address)
+        });
 
     state
         .actions
@@ -271,7 +262,7 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot, *};
+    use super::*;
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         instance::tests::test_context, state::State,
@@ -319,7 +310,7 @@ pub mod tests {
         let mut agent_state = test_agent_state();
         let netname = Some("test_reduce_commit_entry");
         let context = test_context("bob", netname);
-        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
+        let state = State::new_with_agent(context, agent_state.clone());
         let mut context = test_context("bob", netname);
         Arc::get_mut(&mut context)
             .unwrap()
@@ -415,13 +406,13 @@ pub mod tests {
         let agent_state = test_agent_state();
         let netname = Some("test_create_new_chain_header");
         let context = test_context("bob", netname);
-        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
+        let state = State::new_with_agent(context, agent_state.clone());
         let mut context = test_context("bob", netname);
         Arc::get_mut(&mut context)
             .unwrap()
             .set_state(Arc::new(RwLock::new(state)));
 
-        let header = create_new_chain_header(&test_entry(), context.clone(), &None);
+        let header = create_new_chain_header(&test_entry(), context.clone(), &None).unwrap();
         println!("{:?}", header);
         assert_eq!(
             header,

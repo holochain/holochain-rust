@@ -15,7 +15,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net_connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
+use holochain_net::connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
 use std::sync::Arc;
 
 /// Send to network a PublishDhtData message

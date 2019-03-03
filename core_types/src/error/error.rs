@@ -90,10 +90,12 @@ pub enum HolochainError {
     InvalidOperationOnSysEntry,
     CapabilityCheckFailed,
     ValidationFailed(String),
+    ValidationPending,
     Ribosome(RibosomeErrorCode),
     RibosomeFailed(String),
     ConfigError(String),
     Timeout,
+    InitializationFailed(String),
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -119,10 +121,12 @@ impl fmt::Display for HolochainError {
             }
             CapabilityCheckFailed => write!(f, "Caller does not have Capability to make that call"),
             ValidationFailed(fail_msg) => write!(f, "{}", fail_msg),
+            ValidationPending => write!(f, "Entry validation could not be completed"),
             Ribosome(err_code) => write!(f, "{}", err_code.as_str()),
             RibosomeFailed(fail_msg) => write!(f, "{}", fail_msg),
             ConfigError(err_msg) => write!(f, "{}", err_msg),
             Timeout => write!(f, "timeout"),
+            InitializationFailed(err_msg) => write!(f, "{}", err_msg),
         }
     }
 }
@@ -180,9 +184,9 @@ impl From<base64::DecodeError> for HolochainError {
     }
 }
 
-impl From<reed_solomon::DecoderError> for HolochainError {
-    fn from(error: reed_solomon::DecoderError) -> Self {
-        HolochainError::ErrorGeneric(format!("reed_solomon decode error: {:?}", error))
+impl From<std::str::Utf8Error> for HolochainError {
+    fn from(error: std::str::Utf8Error) -> Self {
+        HolochainError::ErrorGeneric(format!("std::str::Utf8Error error: {}", error.to_string()))
     }
 }
 
@@ -195,6 +199,12 @@ impl From<FutureCanceled> for HolochainError {
 impl From<NoneError> for HolochainError {
     fn from(_: NoneError) -> Self {
         HolochainError::ErrorGeneric("Expected Some and got None".to_string())
+    }
+}
+
+impl From<hcid::HcidError> for HolochainError {
+    fn from(error: hcid::HcidError) -> Self {
+        HolochainError::ErrorGeneric(format!("{:?}", error))
     }
 }
 
@@ -319,6 +329,10 @@ mod tests {
                 "Caller does not have Capability to make that call",
             ),
             (HolochainError::Timeout, "timeout"),
+            (
+                HolochainError::ValidationPending,
+                "Entry validation could not be completed",
+            ),
         ] {
             assert_eq!(output, &format!("{}", input));
         }

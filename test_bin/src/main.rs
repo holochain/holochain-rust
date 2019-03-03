@@ -4,7 +4,6 @@
 extern crate holochain_core_types;
 #[macro_use]
 extern crate holochain_net;
-extern crate holochain_net_connection;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
@@ -23,8 +22,7 @@ pub mod publish_hold_workflows;
 pub mod three_workflows;
 
 use constants::*;
-use holochain_net::tweetlog::*;
-use holochain_net_connection::NetResult;
+use holochain_net::{connection::NetResult, tweetlog::*};
 use p2p_node::P2pNode;
 use std::{collections::HashMap, fs::File};
 

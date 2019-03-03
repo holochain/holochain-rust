@@ -164,7 +164,6 @@ declare_types! {
                 let cap = {
                     let context = instance.context();
                     let token = context.get_public_token().unwrap();
-                    let caller = Address::from("fake");
                     make_cap_request_for_call(
                         context.clone(),
                         token,

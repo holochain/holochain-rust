@@ -18,7 +18,7 @@ impl CapabilityRequest {
     pub fn new(token: Address, requester: Address, signature: Signature) -> Self {
         CapabilityRequest {
             cap_token: token,
-            provenance: (requester, signature),
+            provenance: Provenance::new(requester, signature),
         }
     }
 }
@@ -38,7 +38,7 @@ pub mod tests {
         assert_eq!(
             CapabilityRequest {
                 cap_token: Address::from("123"),
-                provenance: (Address::from("requester"), Signature::fake()),
+                provenance: Provenance::new(Address::from("requester"), Signature::fake()),
             },
             cap_call
         );

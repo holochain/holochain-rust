@@ -142,7 +142,10 @@ pub fn test_chain_header_with_sig(sig: &'static str) -> ChainHeader {
 }
 
 pub fn test_provenances(sig: &'static str) -> Vec<Provenance> {
-    vec![(test_agent_id().address(), Signature::from(sig))]
+    vec![Provenance::new(
+        test_agent_id().address(),
+        Signature::from(sig),
+    )]
 }
 
 #[cfg(test)]

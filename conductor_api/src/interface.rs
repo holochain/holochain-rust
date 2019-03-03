@@ -4,7 +4,7 @@ use holochain_core::{
     nucleus::actions::call_zome_function::make_cap_request_for_call, state::State,
 };
 
-use holochain_core_types::{agent::AgentId, cas::content::Address};
+use holochain_core_types::agent::AgentId;
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
@@ -173,16 +173,14 @@ impl ConductorApiBuilder {
 
                             let cap_request = {
                                 // TODO: get the token from the parameters.  If not there assume public token.
-                                // currently we are always getting the public token.
+                                // currently we are always getting the public token and signing it ourself
                                 let context = hc.context();
                                 let token = context.get_public_token().ok_or(
                                     jsonrpc_core::Error::invalid_params("public token not found"),
                                 )?;
-                                let caller = Address::from("fake");
                                 make_cap_request_for_call(
                                     context.clone(),
                                     token,
-                                    caller,
                                     &func_name,
                                     params_string.clone(),
                                 )

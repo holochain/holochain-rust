@@ -12,7 +12,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
     json::*,
-    signature::Signature,
+    signature::{Provenance, Signature},
     time::Iso8601,
 };
 use holochain_wasm_utils::api_serialization::get_entry::*;
@@ -187,7 +187,7 @@ pub fn create_new_chain_header(
     Ok(ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
-        &vec![(agent_address, signature)],
+        &vec![Provenance::new(agent_address, signature)],
         &agent_state
             .top_chain_header
             .clone()
@@ -419,7 +419,7 @@ pub mod tests {
             ChainHeader::new(
                 &test_entry().entry_type(),
                 &test_entry().address(),
-                &[(
+                &[Provenance::new(
                     context.agent_id.address(),
                     Signature::from(mock_signer(
                         test_entry().address().to_string(),

@@ -10,8 +10,8 @@ pub fn validate_provenances(validation_data: &ValidationData) -> ValidationResul
         .provenances()
         .iter()
         .map(|provenance| {
-            let author_id = &provenance.0;
-            let signature = &provenance.1;
+            let author_id = &provenance.source();
+            let signature = &provenance.signature();
             let signature_string: String = signature.clone().into();
             let signature_bytes: Vec<u8> = base64::decode(&signature_string).map_err(|_| {
                 ValidationError::Fail("Signature syntactically invalid".to_string())

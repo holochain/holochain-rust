@@ -1,8 +1,6 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::{
-        author_entry::author_entry, get_entry_result::get_entry_result_workflow,
-    },
+    workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},

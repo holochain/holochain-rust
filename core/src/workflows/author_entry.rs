@@ -9,9 +9,9 @@ use crate::{
 
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::{Entry,entry_to_entry_action},
+    entry::{entry_to_entry_action, Entry},
     error::HolochainError,
-    validation::{EntryAction,EntryLifecycle, ValidationData},
+    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 
@@ -31,7 +31,7 @@ pub async fn author_entry<'a>(
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
-        action: entry_to_entry_action(entry,maybe_link_update_delete.clone())?,
+        action: entry_to_entry_action(entry, maybe_link_update_delete.clone())?,
     };
 
     // 2. Validate the entry

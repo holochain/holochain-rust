@@ -4,7 +4,7 @@ branches:
   only:
     - master
     - develop
-    - /^holochain-nodejs-(test-\d+)*v\d+\.\d+\.\d+-alpha/
+    - /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
     - /^release-(test-)*v\d+\.\d+\.\d+-alpha/
     - /^(test-)*v\d+\.\d+\.\d+-alpha/
 
@@ -80,7 +80,7 @@ _macosx_nodejs_template: &_macosx_nodejs_template
     - . ./scripts/install/release-deps-osx.sh
 
 _to_deploy_template: &_to_deploy_template
-  if: tag =~ /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+/
+  if: tag =~ /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
 
 _env_node_8_deploy_template: &_env_node_8_deploy_template
   env:

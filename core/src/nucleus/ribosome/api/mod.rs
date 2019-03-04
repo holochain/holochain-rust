@@ -208,7 +208,7 @@ pub mod tests {
     use test_utils;
     use wabt;
 
-    /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
+    /// generates the wasm to dispatch any zome API function with a single memory managed runtime
     /// and bytes argument
     pub fn test_zome_api_function_wasm(canonical_name: &str) -> Vec<u8> {
         Wat2Wasm::new()

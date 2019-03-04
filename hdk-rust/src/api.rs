@@ -737,9 +737,8 @@ pub fn remove_link<S: Into<String>>(
 }
 
 /// sign ( priv_id_str, base64payload ) -> ( base64signature )
-pub fn sign<S: Into<String>>(priv_id: S, payload: S) -> ZomeApiResult<String> {
+pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     Dispatch::Sign.with_input(SignArgs {
-        priv_id: priv_id.into(),
         payload: payload.into(),
     })
 }

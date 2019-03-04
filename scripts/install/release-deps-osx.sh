@@ -2,4 +2,4 @@
 
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 
-brew install zmq libsodium23
+brew install zmq libsodium

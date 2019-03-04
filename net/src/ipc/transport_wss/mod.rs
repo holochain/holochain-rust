@@ -1,6 +1,8 @@
 //! abstraction for working with Websocket connections
 //! based on any rust io Read/Write Stream
 
+mod tcp;
+
 use std::io::{Read, Write};
 
 use crate::ipc::transport::{
@@ -63,18 +65,6 @@ pub struct TransportWss<T: Read + Write + std::fmt::Debug> {
     stream_sockets: SocketMap<T>,
     event_queue: Vec<TransportEvent>,
     n_id: u64,
-}
-
-impl TransportWss<std::net::TcpStream> {
-    /// convenience function for creating a websocket "Transport"
-    /// instance that is based of the rust std TcpStream
-    pub fn with_std_tcp_stream() -> Self {
-        TransportWss::new(|uri| {
-            let socket = std::net::TcpStream::connect(uri)?;
-            socket.set_nonblocking(true)?;
-            Ok(socket)
-        })
-    }
 }
 
 impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {

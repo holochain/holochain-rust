@@ -3,7 +3,8 @@
 use holochain_core_types::json::JsonString;
 
 use crate::ipc::{
-    spawn, util::get_millis, Transport, TransportEvent, TransportWss, DEFAULT_HEARTBEAT_WAIT_MS,
+    spawn, util::get_millis, Transport, TransportEvent, TransportWss,
+    transport::TransportId,
 };
 
 use crate::connection::{
@@ -25,7 +26,7 @@ pub struct IpcNetWorker {
     handler: NetHandler,
     socket: TransportWss<std::net::TcpStream>,
     ipc_uri: String,
-
+    transport_id: TransportId,
     done: NetShutdown,
 
     is_network_ready: bool,
@@ -39,7 +40,7 @@ pub struct IpcNetWorker {
 
 /// Constructors
 impl IpcNetWorker {
-    /// Constructor with config as a json string
+    /// Public Constructor with config as a json string
     pub fn new(
         handler: NetHandler,
         config: &JsonString,
@@ -54,49 +55,46 @@ impl IpcNetWorker {
             .iter()
             .map(|s| s.as_str().unwrap().to_string())
             .collect();
-        if config["ipcUri"].as_str().is_none() {
-            // No 'ipcUri' config so use 'spawn' config
-            if config["spawn"].as_object().is_none() {
-                bail!("config.spawn or ipcUri is required");
-            }
-            let spawn_config = config["spawn"].as_object().unwrap();
-            if !(spawn_config["cmd"].is_string()
-                && spawn_config["args"].is_array()
-                && spawn_config["workDir"].is_string()
-                && spawn_config["env"].is_object())
-            {
-                bail!("config.spawn requires 'cmd', 'args', 'workDir', and 'env'");
-            }
-            let env: HashMap<String, String> = spawn_config["env"]
-                .as_object()
+        // Create a new IpcNetWorker that connects to the ptovided 'ipcUri'
+        if let Some(uri) = config["ipcUri"].as_str() {
+            return IpcNetWorker::priv_new(handler, uri.to_string(), None, bootstrap_nodes);
+        }
+        // No 'ipcUri' provided in config so use 'spawn' config instead
+        // Check 'spawn' config
+        if config["spawn"].as_object().is_none() {
+            bail!("config.spawn or config.ipcUri is required");
+        }
+        let spawn_config = config["spawn"].as_object().unwrap();
+        if !(spawn_config["cmd"].is_string()
+            && spawn_config["args"].is_array()
+            && spawn_config["workDir"].is_string()
+            && spawn_config["env"].is_object())
+        {
+            bail!("config.spawn requires 'cmd', 'args', 'workDir', and 'env'");
+        }
+        let env: HashMap<String, String> = spawn_config["env"]
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string()))
+            .collect();
+        // create a new IpcNetWorker witch spawns the n3h process
+        return IpcNetWorker::priv_new_with_spawn(
+            handler,
+            spawn_config["cmd"].as_str().unwrap().to_string(),
+            spawn_config["args"]
+                .as_array()
                 .unwrap()
                 .iter()
-                .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string()))
-                .collect();
-            // create a new IpcNetWorker witch spawns the n3h process
-            return IpcNetWorker::priv_new_with_spawn(
-                handler,
-                spawn_config["cmd"].as_str().unwrap().to_string(),
-                spawn_config["args"]
-                    .as_array()
-                    .unwrap()
-                    .iter()
-                    .map(|i| i.as_str().unwrap_or_default().to_string())
-                    .collect(),
-                spawn_config["workDir"].as_str().unwrap().to_string(),
-                enduser_config,
-                env,
-                bootstrap_nodes,
-            );
-        }
-        // create a new IpcNetWorker that connects to the given 'ipcUri'
-        let uri = config["ipcUri"].as_str().unwrap().to_string();
-        IpcNetWorker::priv_new(handler, uri, None, bootstrap_nodes)
+                .map(|i| i.as_str().unwrap_or_default().to_string())
+                .collect(),
+            spawn_config["workDir"].as_str().unwrap().to_string(),
+            enduser_config,
+            env,
+            bootstrap_nodes,
+        );
     }
-}
 
-/// Private Constructors
-impl IpcNetWorker {
     /// Constructor with IpcNetWorker instance pointing to a process that we spawn here
     fn priv_new_with_spawn(
         handler: NetHandler,
@@ -128,14 +126,15 @@ impl IpcNetWorker {
 
         let mut socket = TransportWss::with_std_tcp_stream();
         // wait_connect(&mut socket, &ipc_uri)?;
-        socket.wait_connect(&ipc_uri)?;
+        let transport_id = socket.wait_connect(&ipc_uri)?;
 
-        log.i("connection success");
+        log.i(&format!("connection success. tId = {}", transport_id));
 
         Ok(IpcNetWorker {
             handler,
             socket,
             ipc_uri,
+            transport_id,
             done,
             is_network_ready: false,
             last_known_state: "undefined".to_string(),
@@ -151,32 +150,7 @@ impl IpcNetWorker {
 //    uri: &str,
 //) -> NetResult<Vec<TransportEvent>> {
 
-impl TransportWss<std::net::TcpStream> {
-    fn wait_connect(
-        &mut self,
-        uri: &str,
-    ) -> NetResult<Vec<TransportEvent>> {
-        let mut out = Vec::new();
 
-        self.connect(&uri)?;
-
-        let start = std::time::Instant::now();
-        while (start.elapsed().as_millis() as usize) < DEFAULT_HEARTBEAT_WAIT_MS {
-            let (_did_work, evt_lst) = self.poll()?;
-            for evt in evt_lst {
-                match evt {
-                    TransportEvent::Connect(_id) => {
-                        return Ok(out);
-                    }
-                    _ => out.push(evt),
-                }
-            }
-            std::thread::sleep(std::time::Duration::from_millis(3));
-        }
-
-        bail!("ipc connection timeout");
-    }
-}
 
 impl NetWorker for IpcNetWorker {
     /// stop the net worker

@@ -15,6 +15,3 @@ uuid = { version = "0.7", features = ["v4"] }
 [dev-dependencies]
 holochain_core_types = { path = "../core_types" }
 tempfile = "3"
-
-[target.'cfg(not(windows))'.dev-dependencies]
-users = "0.8"

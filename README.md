@@ -130,13 +130,16 @@ The nightly version we test/develop against can always be found in the .travis.y
 
 ### NixOS
 
-If you have `nix-shell` then feel free to use our `.nix` files.
+If you have `nix-shell` then feel free to use our `shell.nix` file.
 
-`shell.core.nix` and `shell.tools.nix` are split to mirror the versioning behaviour in the makefile.
+Not everything in the Makefile is implemented in nix, and a lot of things don't need to be.
+Notably the cross-platform and defensive installation of dependencies is not included.
 
-Not everything in the Makefile is implemented in nix, and a lot of things don't need to be. Notably the cross-platform and defensive installation of dependencies is not included.
+The nix shell contains a suite of handy bash scripts that don't exist in the Makefile.
 
 If you have a nix friendly system, this is the fastest way to develop and test.
+
+The standard docker environment is an alpine + NixOS build.
 
 #### Running tests
 

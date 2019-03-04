@@ -13,7 +13,7 @@ public_address = "HcScJdXW5uHo9y8jryEwW8N59akhrgxh93acu33qe53ximagfiWu98j7J6Ofiu
 id = "test/agent/2"
 name = "Holo Tester 2"
 key_file = "holo_tester2.key"
-public_address = "QOnZBLAxv01QT5arAKVwk7P4XDnApsItDqtxoMENACux4_PrFegIdgbEp2h-sz3vGWCQUBygskcXOJ_Da7d_JkvPzRbV"
+public_address = "HcScIrhJ5ECmano9jwiE9FWmacTybe7u9bpDURFGZixr7k5sVdAR4ABMpnywu5a"
 
 [[dnas]]
 id = "test/dna"

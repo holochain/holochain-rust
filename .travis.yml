@@ -114,7 +114,7 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       - wget https://download.libsodium.org/libsodium/releases/libsodium-1.0.16.tar.gz
       - tar -zxvf libsodium-1.0.16.targ.gz
       - yarn install --ignore-scripts
-      - node publish.js
+      - cd $TRAVIS_BUILD_DIR/nodejs_conductor && node ./publish.js
   # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
   deploy:
       provider: releases

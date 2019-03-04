@@ -43,7 +43,7 @@ pub const DEFAULT_HEARTBEAT_MS: usize = 2000;
 /// when should we close a connection due to not receiving remote msgs
 pub const DEFAULT_HEARTBEAT_WAIT_MS: usize = 5000;
 
-// represents an individual connection
+/// Represents an individual connection
 #[derive(Debug)]
 struct TransportInfo<T: Read + Write + std::fmt::Debug> {
     id: TransportId,

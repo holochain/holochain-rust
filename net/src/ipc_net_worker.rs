@@ -21,26 +21,25 @@ use serde_json;
 
 /// a NetWorker talking to the network via another process through an IPC connection.
 pub struct IpcNetWorker {
+    /// Function that will forwarded the incoming network messages
     handler: NetHandler,
     socket: TransportWss<std::net::TcpStream>,
     ipc_uri: String,
 
     done: NetShutdown,
 
-    is_ready: bool,
-
+    is_network_ready: bool,
     last_known_state: String,
     last_state_millis: f64,
 
     bootstrap_nodes: Vec<String>,
-    endpoint: String,
 
     log: TweetProxy,
 }
 
-// Constructors
+/// Constructors
 impl IpcNetWorker {
-    // Constructor with config as a json string
+    /// Constructor with config as a json string
     pub fn new(
         handler: NetHandler,
         config: &JsonString,
@@ -92,8 +91,7 @@ impl IpcNetWorker {
         }
         // create a new IpcNetWorker that connects to the given 'ipcUri'
         let uri = config["ipcUri"].as_str().unwrap().to_string();
-        let endpoint = uri.clone();
-        IpcNetWorker::priv_new(handler, uri, None, bootstrap_nodes, endpoint)
+        IpcNetWorker::priv_new(handler, uri, None, bootstrap_nodes)
     }
 }
 
@@ -114,10 +112,8 @@ impl IpcNetWorker {
         // Get spawn result info
         let ipc_binding = spawn_result.ipc_binding;
         let kill = spawn_result.kill;
-        let endpoint = ipc_binding.clone();
-
         // Done
-        IpcNetWorker::priv_new(handler, ipc_binding, kill, bootstrap_nodes, endpoint)
+        IpcNetWorker::priv_new(handler, ipc_binding, kill, bootstrap_nodes)
     }
 
     /// Constructor without config
@@ -126,13 +122,13 @@ impl IpcNetWorker {
         ipc_uri: String,
         done: NetShutdown,
         bootstrap_nodes: Vec<String>,
-        endpoint: String,
     ) -> NetResult<Self> {
         let log = TweetProxy::new("IpcNetWorker");
         log.i(&format!("connect to uri {}", ipc_uri));
 
         let mut socket = TransportWss::with_std_tcp_stream();
-        wait_connect(&mut socket, &ipc_uri)?;
+        // wait_connect(&mut socket, &ipc_uri)?;
+        socket.wait_connect(&ipc_uri)?;
 
         log.i("connection success");
 
@@ -141,39 +137,45 @@ impl IpcNetWorker {
             socket,
             ipc_uri,
             done,
-            is_ready: false,
+            is_network_ready: false,
             last_known_state: "undefined".to_string(),
             last_state_millis: 0.0_f64,
             bootstrap_nodes,
-            endpoint,
             log,
         })
     }
 }
 
-fn wait_connect(
-    socket: &mut TransportWss<std::net::TcpStream>,
-    uri: &str,
-) -> NetResult<Vec<TransportEvent>> {
-    let mut out = Vec::new();
+//fn wait_connect(
+//    socket: &mut TransportWss<std::net::TcpStream>,
+//    uri: &str,
+//) -> NetResult<Vec<TransportEvent>> {
 
-    socket.connect(&uri)?;
+impl TransportWss<std::net::TcpStream> {
+    fn wait_connect(
+        &mut self,
+        uri: &str,
+    ) -> NetResult<Vec<TransportEvent>> {
+        let mut out = Vec::new();
 
-    let start = std::time::Instant::now();
-    while (start.elapsed().as_millis() as usize) < DEFAULT_HEARTBEAT_WAIT_MS {
-        let (_did_work, evt_lst) = socket.poll()?;
-        for evt in evt_lst {
-            match evt {
-                TransportEvent::Connect(_id) => {
-                    return Ok(out);
+        self.connect(&uri)?;
+
+        let start = std::time::Instant::now();
+        while (start.elapsed().as_millis() as usize) < DEFAULT_HEARTBEAT_WAIT_MS {
+            let (_did_work, evt_lst) = self.poll()?;
+            for evt in evt_lst {
+                match evt {
+                    TransportEvent::Connect(_id) => {
+                        return Ok(out);
+                    }
+                    _ => out.push(evt),
                 }
-                _ => out.push(evt),
             }
+            std::thread::sleep(std::time::Duration::from_millis(3));
         }
-        std::thread::sleep(std::time::Duration::from_millis(3));
-    }
 
-    bail!("ipc connection timeout");
+        bail!("ipc connection timeout");
+    }
 }
 
 impl NetWorker for IpcNetWorker {
@@ -210,7 +212,8 @@ impl NetWorker for IpcNetWorker {
                 TransportEvent::TransportError(_id, e) => {
                     self.log.e(&format!("ipc ws error {:?}", e));
                     self.socket.close_all()?;
-                    wait_connect(&mut self.socket, &self.ipc_uri)?;
+                    //wait_connect(&mut self.socket, &self.ipc_uri)?;
+                    self.socket.wait_connect(&self.ipc_uri)?;
                 }
                 TransportEvent::Connect(_id) => {
                     // don't need to do anything here
@@ -218,7 +221,8 @@ impl NetWorker for IpcNetWorker {
                 TransportEvent::Close(_id) => {
                     self.log.e("ipc ws closed");
                     self.socket.close_all()?;
-                    wait_connect(&mut self.socket, &self.ipc_uri)?;
+                    self.socket.wait_connect(&self.ipc_uri)?;
+                    //wait_connect(&mut self.socket, &self.ipc_uri)?;
                 }
                 TransportEvent::Message(_id, msg) => {
                     let msg: NamedBinaryData = rmp_serde::from_slice(&msg)?;
@@ -244,8 +248,8 @@ impl NetWorker for IpcNetWorker {
                     // When p2p module is ready:
                     // - Notify handler that the p2p module is ready
                     // - Try connecting to boostrap nodes
-                    if !self.is_ready && &self.last_known_state == "ready" {
-                        self.is_ready = true;
+                    if !self.is_network_ready && &self.last_known_state == "ready" {
+                        self.is_network_ready = true;
                         (self.handler)(Ok(Protocol::P2pReady))?;
                         self.priv_send_connects()?;
                     }
@@ -258,7 +262,7 @@ impl NetWorker for IpcNetWorker {
 
     /// Getter
     fn endpoint(&self) -> Option<String> {
-        Some(self.endpoint.clone())
+        Some(self.ipc_uri.clone())
     }
 }
 

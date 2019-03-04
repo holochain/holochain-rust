@@ -551,7 +551,7 @@ impl P2pNode {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn is_network_ready(&self) -> bool{
+    pub fn is_network_ready(&self) -> bool {
         self.is_network_ready
     }
 

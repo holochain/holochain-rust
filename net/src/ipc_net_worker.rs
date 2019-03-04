@@ -3,8 +3,7 @@
 use holochain_core_types::json::JsonString;
 
 use crate::ipc::{
-    spawn, util::get_millis, Transport, TransportEvent, TransportWss,
-    transport::TransportId,
+    spawn, transport::TransportId, util::get_millis, Transport, TransportEvent, TransportWss,
 };
 
 use crate::connection::{

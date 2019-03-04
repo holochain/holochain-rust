@@ -97,7 +97,8 @@ impl NetConnectionThread {
                 thread::sleep(time::Duration::from_micros(sleep_duration_us));
             }
             // Stop the worker
-            worker.stop()
+            worker
+                .stop()
                 .unwrap_or_else(|e| eprintln!("Error occured in p2p network module: {:?}", e));
         });
 

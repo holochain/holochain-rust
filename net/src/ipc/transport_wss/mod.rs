@@ -67,7 +67,6 @@ impl<T: Read + Write + std::fmt::Debug> TransportInfo<T> {
     }
 }
 
-
 /// a factory callback for generating base streams of type T
 pub type StreamFactory<T> = fn(uri: &str) -> TransportResult<T>;
 

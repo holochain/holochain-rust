@@ -81,7 +81,6 @@ fn confirm_published_metadata(
     Ok(())
 }
 
-
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
@@ -96,9 +95,9 @@ pub fn setup_one_node(
             dna_address: DNA_ADDRESS.clone(),
             agent_id: ALEX_AGENT_ID.to_string(),
         })
-            .into(),
+        .into(),
     )
-        .expect("Failed sending TrackDnaData on alex");
+    .expect("Failed sending TrackDnaData on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
@@ -138,7 +137,6 @@ pub fn setup_one_node(
     // Done
     Ok(())
 }
-
 
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'

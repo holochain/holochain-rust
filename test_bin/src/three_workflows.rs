@@ -162,7 +162,8 @@ pub fn setup_three_nodes(
 
     let mut time_ms: usize = 0;
     while !(alex.is_network_ready() && billy.is_network_ready() && camille.is_network_ready())
-        && time_ms < 1000 {
+        && time_ms < 1000
+    {
         let _msg_count = alex.listen(100);
         let _msg_count = billy.listen(100);
         let _msg_count = camille.listen(100);

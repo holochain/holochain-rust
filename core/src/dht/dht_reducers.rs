@@ -279,7 +279,7 @@ fn reduce_remove_entry_inner(
     let entry = Entry::try_from(json_entry).expect("Stored content should be a valid entry.");
     // pre-condition: entry_type must not by sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {
-        println!("is sys in here");
+ 
         return Err(HolochainError::ErrorGeneric(String::from(
             "trying to remove a system entry type",
         )));
@@ -287,16 +287,13 @@ fn reduce_remove_entry_inner(
     // pre-condition: Current status must be Live
     // get current status
     let meta_storage = &new_store.meta_storage().clone();
-    let status_eav = meta_storage.read().unwrap().fetch_eavi(&EaviQuery::new(
+    let status_eavs = meta_storage.read().unwrap().fetch_eavi(&EaviQuery::new(
         Some(latest_deleted_address.clone()).into(),
         Some(Attribute::CrudStatus).into(),
         None.into(),
         IndexFilter::LatestByAttribute,
     ))?;
-    if let Err(err) = maybe_status_eav {
-        return Err(err);
-    }
-
+  
     //TODO clean up some of the early returns in this
     // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
     // For now checks if crud-status other than Live are present
@@ -332,16 +329,7 @@ fn reduce_remove_entry_inner(
     res.map(|_| latest_deleted_address.clone())
 }
 
-//
-#[allow(dead_code)]
-pub(crate) fn reduce_get_links(
-    _context: Arc<Context>,
-    _old_store: &DhtStore,
-    _action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    // FIXME
-    None
-}
+
 
 //
 #[allow(dead_code)]

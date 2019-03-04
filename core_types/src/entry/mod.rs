@@ -101,6 +101,7 @@ pub fn entry_to_entry_action(entry : &Entry, maybe_link_update_delete : Option<A
         Entry::Deletion(_)  => Ok(EntryAction::Delete),
         Entry::LinkAdd(_) => Ok(EntryAction::Create),
         Entry::LinkRemove(_) => Ok(EntryAction::Delete),
+        Entry::CapTokenGrant(_) => Ok(EntryAction::Create),
         _ => Err(HolochainError::NotImplemented("Not implemented".to_string()))
     }
 }

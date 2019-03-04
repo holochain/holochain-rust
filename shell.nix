@@ -9,10 +9,32 @@ let
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
 
-  hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
+  hc-cargo-flush = nixpkgs.writeShellScriptBin "hc-cargo-flush"
   ''
    rm -rf ~/.cargo/registry;
    rm -rf ~/.cargo/git;
+   find . -wholename "**/.cargo" | xargs -I {} rm -rf {};
+   find . -wholename "**/target" | xargs -I {} rm -rf {};
+  '';
+  hc-cargo-lock-flush = nixpkgs.writeShellScriptBin "hc-cargo-lock-flush"
+  ''
+  find . -name "Cargo.lock" | xargs -I {} rm {};
+  '';
+  hc-cargo-lock-build = nixpkgs.writeShellScriptBin "hc-cargo-lock-build"
+  ''
+  find . \
+  -name "Cargo.toml" \
+  -not -path "**/.cargo/**" \
+  -not -path "./nodejs_*" \
+  | xargs -I {} \
+  bash -c 'cd `dirname {}` && cargo build && cargo build --release'
+  '';
+  hc-cargo-lock-refresh = nixpkgs.writeShellScriptBin "hc-cargo-lock-refresh"
+  ''
+  hc-cargo-flush;
+  hc-cargo-lock-flush;
+  hc-cargo-lock-build;
+  hc-install-node-conductor;
   '';
 
   hc-install-node-conductor = nixpkgs.writeShellScriptBin "hc-install-node-conductor"
@@ -95,7 +117,11 @@ stdenv.mkDerivation rec {
     nodejs-8_x
     yarn
 
-    hc-flush-cargo-registry
+    hc-cargo-flush
+
+    hc-cargo-lock-flush
+    hc-cargo-lock-build
+    hc-cargo-lock-refresh
 
     hc-build-wasm
     hc-test

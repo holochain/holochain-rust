@@ -27,7 +27,7 @@ scenario1.runTape('show_env', async (t, { alice }) => {
   t.equal(result.Ok.dna_address, alice.dnaAddress)
   t.equal(result.Ok.dna_name, "HDK-spec-rust")
   t.equal(result.Ok.agent_address, alice.agentId)
-  t.equal(result.Ok.agent_id, '{"nick":"alice","key":"' + alice.agentId + '"}')
+  t.equal(result.Ok.agent_id, '{"nick":"alice","pub_sign_key":"' + alice.agentId + '"}')
 })
 
 scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {

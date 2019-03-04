@@ -129,6 +129,7 @@ impl IpcNetWorker {
         let transport_id = socket.wait_connect(&ipc_uri)?;
 
         log.i(&format!("connection success. tId = {}", transport_id));
+        // log.i(&format!("ids = {:?}", socket.transport_id_list().unwrap()));
 
         Ok(IpcNetWorker {
             handler,
@@ -155,7 +156,7 @@ impl IpcNetWorker {
 impl NetWorker for IpcNetWorker {
     /// stop the net worker
     fn stop(mut self: Box<Self>) -> NetResult<()> {
-        self.socket.close_all()?;
+        self.socket.close(self.transport_id)?;
         if let Some(done) = self.done {
             done();
         }
@@ -185,17 +186,17 @@ impl NetWorker for IpcNetWorker {
             match evt {
                 TransportEvent::TransportError(_id, e) => {
                     self.log.e(&format!("ipc ws error {:?}", e));
-                    self.socket.close_all()?;
+                    self.socket.close(self.transport_id.clone())?;
                     //wait_connect(&mut self.socket, &self.ipc_uri)?;
-                    self.socket.wait_connect(&self.ipc_uri)?;
+                    self.transport_id = self.socket.wait_connect(&self.ipc_uri)?;
                 }
                 TransportEvent::Connect(_id) => {
                     // don't need to do anything here
                 }
                 TransportEvent::Close(_id) => {
                     self.log.e("ipc ws closed");
-                    self.socket.close_all()?;
-                    self.socket.wait_connect(&self.ipc_uri)?;
+                    self.socket.close(self.transport_id.clone())?;
+                    self.transport_id = self.socket.wait_connect(&self.ipc_uri)?;
                     //wait_connect(&mut self.socket, &self.ipc_uri)?;
                 }
                 TransportEvent::Message(_id, msg) => {

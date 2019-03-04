@@ -3,23 +3,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 ### Changed
-- Node JS version relaxed to 8.x in nix shell
-- develop docker tag now uses nix
-- legacy docker files removed
-- nixos friendly shebang added to bash scripts
-- file name for cli packaging changed: [PR#1036](https://github.com/holochain/holochain-rust/pull/1036)
+
+### Removed
+
+### Added
+
+### Fixed
+
+## [0.0.5-alpha] - 2019-03-01
+
+### Changed
+- Relaxes Node JS version to 8.x in nix-shell [PR#955](https://github.com/holochain/holochain-rust/pull/955)
+- Updates develop docker tag to use nix [PR#955](https://github.com/holochain/holochain-rust/pull/955)
+- Updates bash script shebang to be nixos friendly [PR#955](https://github.com/holochain/holochain-rust/pull/955)
+- Changes file name for cli packaging [PR#1036](https://github.com/holochain/holochain-rust/pull/1036)
   - `bundle.json` & `.hcpkg` unified to `YOUR_DNA_NAME.dna.json`
   - `.build` files renamed to `.hcbuild`
   - `hc package` now builds to `dist` directory by default, to match how `hc test` works
 ### Removed
+- Removes legacy docker files [PR#955](https://github.com/holochain/holochain-rust/pull/955)
 ### Added
-- Adds a panic handler to HDK-Rust and that reroutes infos about panics happening inside the WASM Ribosome to the instances logger [PR#1029](https://github.com/holochain/holochain-rust/pull/1029).
-- mac os x install script installs cmake and qt
-- The current git-commit hash is now included in the compile code of the core, and is checked against the same hash that was used to compile the wasm and a warning issued if it's not.  [PR#1050](https://github.com/holochain/holochain-rust/pull/1036)
+- Adds a panic handler to HDK-Rust and that reroutes infos about panics happening inside the WASM Ribosome to the instances logger [PR#1029](https://github.com/holochain/holochain-rust/pull/1029)
+- Adds cmake and qt to mac os x install script [PR#955](https://github.com/holochain/holochain-rust/pull/955)
+- Adds the current git-commit hash to the compile code of the core, and checks (with warning) for the same hash that was used to compile the wasm [PR#1050](https://github.com/holochain/holochain-rust/pull/1036)
 ### Fixed
 
-## [0.0.5-alpha] - 2019-03-01
+## [0.0.4-alpha] - 2019-02-15
 
 ### Fixed
 - Futures handling and zome function execution refactored which enables using complex API functions like `commit_entry` in callbacks such as `receive`.  This also fixes long standing flaky tests and blocking behaviors we have been experiencing. [#991](https://github.com/holochain/holochain-rust/pull/991)
@@ -31,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renames the term Container and all references to it to Conductor [#942](https://github.com/holochain/holochain-rust/pull/942)
 - Renames the `holochain_container` executable to simply `holochain`
 - Renames the `cmd` crate (which implements the `hc` command line tool) to `cli` [#940](https://github.com/holochain/holochain-rust/pull/940)
-- Encoded values in ribosome function's input/output are u64 (up from u32)
+- Encoded values in ribosome function's input/output are u64 (up from u32) [#915](https://github.com/holochain/holochain-rust/pull/915)
 - Updated dependencies:
   * Rust nightly to `2019-01-24`
   * futures to `0.3.0-alpha.12`
@@ -39,8 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Adds centralized documentation for environment variables in use by Holochain [#990](https://github.com/holochain/holochain-rust/pull/990)
 - Adds command `hc keygen` which creates a new key pair, asks for a passphrase and writes an encrypted key bundle file to `~/.holochain/keys`. [#974](https://github.com/holochain/holochain-rust/pull/974)
-- Adds an environment variable NETWORKING_CONFIG_FILE for specifing the location of the json file containing the network settings used by n3h.
-- Adds an environment variable HC_SIMPLE_LOGGER_MUTE for use in testing which silences logging output so CI logs won't be too big.
+- Adds an environment variable `NETWORKING_CONFIG_FILE` for specifing the location of the json file containing the network settings used by n3h. [#976](https://github.com/holochain/holochain-rust/pull/976)
+- Adds an environment variable `HC_SIMPLE_LOGGER_MUTE` for use in testing which silences logging output so CI logs won't be too big. [#960](https://github.com/holochain/holochain-rust/pull/960)
 - Adds Zome API function `hdk::sleep(std::time::Duration)` which works the same as `std::thread::sleep`.[#935](https://github.com/holochain/holochain-rust/pull/935)
 - All structs/values to all HDK functions must implement `Into<JsonString>` and `TryFrom<JsonString>` (derive `DefaultJson` to do this automatically)
 - HDK globals `AGENT_ADDRESS`, `AGENT_ID_STR`, `DNA_NAME` and `DNA_ADDRESS` are now set to real, correct values.

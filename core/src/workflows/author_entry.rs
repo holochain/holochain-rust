@@ -11,7 +11,7 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::{entry_to_entry_action, Entry},
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 

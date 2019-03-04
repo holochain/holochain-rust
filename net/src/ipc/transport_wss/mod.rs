@@ -100,6 +100,10 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
             send_queue: Vec::new(),
             stateful_socket: WssStreamState::Connecting(socket),
         };
+        {
+            //println!("Connect: socket = {:?}", socket);
+            println!("Connect: info = {:?}", info);
+        }
         self.stream_sockets.insert(id.clone(), info);
         Ok(id)
     }

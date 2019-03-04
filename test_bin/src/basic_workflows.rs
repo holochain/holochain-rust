@@ -246,8 +246,8 @@ pub fn setup_two_nodes(
 
     // Make sure we received everything we needed from network module
     // TODO: Make a more robust function that waits for certain messages in msg log (with timeout that panics)
-//    let _msg_count = alex.listen(100);
-//    let _msg_count = billy.listen(100);
+    let _msg_count = alex.listen(100);
+    let _msg_count = billy.listen(100);
 
     let mut time_ms: usize = 0;
     while !(alex.is_network_ready() && billy.is_network_ready()) && time_ms < 1000 {

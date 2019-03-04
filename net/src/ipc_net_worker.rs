@@ -24,7 +24,7 @@ use serde_json;
 pub struct IpcNetWorker {
     /// Function that will forwarded the incoming network messages
     handler: NetHandler,
-    socket: TransportWss<std::net::TcpStream>,
+    wss_socket: TransportWss<std::net::TcpStream>,
     ipc_uri: String,
     transport_id: TransportId,
     done: NetShutdown,
@@ -133,7 +133,7 @@ impl IpcNetWorker {
 
         Ok(IpcNetWorker {
             handler,
-            socket,
+            wss_socket: socket,
             ipc_uri,
             transport_id,
             done,
@@ -156,7 +156,7 @@ impl IpcNetWorker {
 impl NetWorker for IpcNetWorker {
     /// stop the net worker
     fn stop(mut self: Box<Self>) -> NetResult<()> {
-        self.socket.close(self.transport_id)?;
+        self.wss_socket.close(self.transport_id)?;
         if let Some(done) = self.done {
             done();
         }
@@ -168,7 +168,7 @@ impl NetWorker for IpcNetWorker {
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
         let data: NamedBinaryData = data.into();
         let data = rmp_serde::to_vec_named(&data)?;
-        self.socket.send_all(&data)?;
+        self.wss_socket.send_all(&data)?;
 
         Ok(())
     }
@@ -181,22 +181,22 @@ impl NetWorker for IpcNetWorker {
             self.priv_request_state()?;
         }
 
-        let (did_work, evt_lst) = self.socket.poll()?;
+        let (did_work, evt_lst) = self.wss_socket.poll()?;
         for evt in evt_lst {
             match evt {
                 TransportEvent::TransportError(_id, e) => {
                     self.log.e(&format!("ipc ws error {:?}", e));
-                    self.socket.close(self.transport_id.clone())?;
+                    self.wss_socket.close(self.transport_id.clone())?;
                     //wait_connect(&mut self.socket, &self.ipc_uri)?;
-                    self.transport_id = self.socket.wait_connect(&self.ipc_uri)?;
+                    self.transport_id = self.wss_socket.wait_connect(&self.ipc_uri)?;
                 }
                 TransportEvent::Connect(_id) => {
                     // don't need to do anything here
                 }
                 TransportEvent::Close(_id) => {
                     self.log.e("ipc ws closed");
-                    self.socket.close(self.transport_id.clone())?;
-                    self.transport_id = self.socket.wait_connect(&self.ipc_uri)?;
+                    self.wss_socket.close(self.transport_id.clone())?;
+                    self.transport_id = self.wss_socket.wait_connect(&self.ipc_uri)?;
                     //wait_connect(&mut self.socket, &self.ipc_uri)?;
                 }
                 TransportEvent::Message(_id, msg) => {

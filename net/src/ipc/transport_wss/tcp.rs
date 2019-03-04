@@ -4,7 +4,7 @@
 
 use crate::ipc::{
     transport::{
-        DidWork, Transport, TransportError, TransportEvent, TransportId, TransportIdRef,
+        Transport, TransportError, TransportEvent, TransportId,
         TransportResult,
     },
     transport_wss::{

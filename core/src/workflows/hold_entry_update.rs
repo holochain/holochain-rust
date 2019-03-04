@@ -28,7 +28,7 @@ pub async fn hold_update_workflow<'a>(
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
-        lifecycle: EntryLifecycle::Dht,
+        lifecycle: EntryLifecycle::Meta,
         action: EntryAction::Modify,
     };
 

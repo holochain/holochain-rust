@@ -54,7 +54,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let res: Result<Address, HolochainError> = context
         .block_on(author_update_entry(
             &entry,
-            Some(latest_entry.clone().address()),
+            latest_entry.clone().address(),
             &context.clone(),
         ))
         .map_err(|validation_error| HolochainError::from(validation_error));

@@ -17,7 +17,7 @@ use std::sync::Arc;
 
 pub async fn author_update_entry<'a>(
     entry: &'a Entry,
-    maybe_link_update_delete: Option<Address>,
+    link_update_delete: Address,
     context: &'a Arc<Context>,
 ) -> Result<Address, HolochainError> {
     let address = entry.address();
@@ -49,7 +49,7 @@ pub async fn author_update_entry<'a>(
     ));
     let addr = await!(commit_entry(
         entry.clone(),
-        maybe_link_update_delete.clone(),
+        Some(link_update_delete.clone()),
         &context
     ))?;
     context.log(format!(

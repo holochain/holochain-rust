@@ -1,7 +1,7 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::{
-        author_update_entry::author_update_entry, get_entry_result::get_entry_result_workflow,
+        author_entry::author_entry, get_entry_result::get_entry_result_workflow,
     },
 };
 use holochain_core_types::{
@@ -52,9 +52,9 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let entry = Entry::from(entry_args.new_entry.clone());
 
     let res: Result<Address, HolochainError> = context
-        .block_on(author_update_entry(
+        .block_on(author_entry(
             &entry,
-            latest_entry.clone().address(),
+            Some(latest_entry.clone().address()),
             &context.clone(),
         ))
         .map_err(|validation_error| HolochainError::from(validation_error));

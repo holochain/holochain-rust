@@ -99,7 +99,6 @@ impl NetConnectionThread {
             // Stop the worker
             worker.stop()
                 .unwrap_or_else(|e| eprintln!("Error occured in p2p network module: {:?}", e));
-                //.unwrap_or_else(|e| panic!("{:?}", e));
         });
 
         // Retrieve endpoint from spawned thread

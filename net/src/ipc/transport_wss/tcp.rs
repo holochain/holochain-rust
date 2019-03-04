@@ -30,7 +30,6 @@ impl TransportWss<std::net::TcpStream> {
     ) -> TransportResult<TransportId> {
         // Launch connection attempt
         let transport_id = self.connect(&uri)?;
-
         // Wait for a successful response
         let mut out = Vec::new();
         let start = std::time::Instant::now();

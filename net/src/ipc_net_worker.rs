@@ -124,16 +124,14 @@ impl IpcNetWorker {
         let log = TweetProxy::new("IpcNetWorker");
         log.i(&format!("connect to uri {}", ipc_uri));
 
-        let mut socket = TransportWss::with_std_tcp_stream();
-        // wait_connect(&mut socket, &ipc_uri)?;
-        let transport_id = socket.wait_connect(&ipc_uri)?;
+        let mut wss_socket = TransportWss::with_std_tcp_stream();
+        let transport_id = wss_socket.wait_connect(&ipc_uri)?;
 
         log.i(&format!("connection success. tId = {}", transport_id));
-        // log.i(&format!("ids = {:?}", socket.transport_id_list().unwrap()));
 
         Ok(IpcNetWorker {
             handler,
-            wss_socket: socket,
+            wss_socket,
             ipc_uri,
             transport_id,
             done,
@@ -145,13 +143,6 @@ impl IpcNetWorker {
         })
     }
 }
-
-//fn wait_connect(
-//    socket: &mut TransportWss<std::net::TcpStream>,
-//    uri: &str,
-//) -> NetResult<Vec<TransportEvent>> {
-
-
 
 impl NetWorker for IpcNetWorker {
     /// stop the net worker
@@ -187,7 +178,6 @@ impl NetWorker for IpcNetWorker {
                 TransportEvent::TransportError(_id, e) => {
                     self.log.e(&format!("ipc ws error {:?}", e));
                     self.wss_socket.close(self.transport_id.clone())?;
-                    //wait_connect(&mut self.socket, &self.ipc_uri)?;
                     self.transport_id = self.wss_socket.wait_connect(&self.ipc_uri)?;
                 }
                 TransportEvent::Connect(_id) => {
@@ -197,7 +187,6 @@ impl NetWorker for IpcNetWorker {
                     self.log.e("ipc ws closed");
                     self.wss_socket.close(self.transport_id.clone())?;
                     self.transport_id = self.wss_socket.wait_connect(&self.ipc_uri)?;
-                    //wait_connect(&mut self.socket, &self.ipc_uri)?;
                 }
                 TransportEvent::Message(_id, msg) => {
                     let msg: NamedBinaryData = rmp_serde::from_slice(&msg)?;

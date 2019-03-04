@@ -127,7 +127,8 @@ pub struct P2pNode {
     pub authored_meta_store: MetaStore,
 
     pub logger: TweetProxy,
-    network_ready: bool,
+
+    is_network_ready: bool,
 }
 
 /// Query logs
@@ -545,13 +546,13 @@ impl P2pNode {
             authored_entry_store: HashMap::new(),
             authored_meta_store: MetaStore::new(),
             logger: TweetProxy::new("p2pnode"),
-            network_ready: false,
+            is_network_ready: false,
         }
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn is_network_ready(&self) -> bool{
-        self.network_ready
+        self.is_network_ready
     }
 
     /// Constructor for an in-memory P2P Network
@@ -612,7 +613,7 @@ impl P2pNode {
             Protocol::P2pReady => {
                 let dbg_msg = format!("<< ({}) recv ** P2pReady **", self.agent_id);
                 self.logger.d(&dbg_msg);
-                self.network_ready = true;
+                self.is_network_ready = true;
                 bail!("received P2pReady");
             }
             _ => {

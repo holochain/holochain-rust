@@ -107,7 +107,7 @@ pub fn setup_one_node(
 
     // get ipcServer IDs for each node from the IpcServer's state
     if can_connect {
-        let mut node1_binding = String::new();
+        let mut _node1_binding = String::new();
 
         alex.send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on alex");
@@ -116,32 +116,16 @@ pub fn setup_one_node(
             .unwrap();
 
         one_let!(JsonProtocol::GetStateResult(state) = alex_state {
-            node1_binding = state.id
+            _node1_binding = state.id
         });
 
         // Connect nodes between them
-        log_i!("node1_binding = {}", node1_binding);
-
-        // Connecting to self should fail
-//        alex.send(
-//            JsonProtocol::Connect(ConnectData {
-//                peer_address: node1_binding.into(),
-//            })
-//                .into(),
-//        )?;
-
-        // Make sure Peers are connected
-//        let result_a = alex
-//            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
-//            .unwrap();
-//        log_i!("got connect result A: {:?}", result_a);
-//        one_let!(JsonProtocol::PeerConnected(d) = result_a {
-//            assert_eq!(d.agent_id, BILLY_AGENT_ID);
-//        });
+        log_i!("node1_binding = {}", _node1_binding);
     }
 
     // Make sure we received everything we needed from network module
     // TODO: Make a more robust function that waits for certain messages in msg log (with timeout that panics)
+    let _msg_count = alex.listen(100);
 
     let mut time_ms: usize = 0;
     while !alex.is_network_ready() && time_ms < 1000 {
@@ -431,18 +415,17 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
 /// Sending a Message before doing a 'TrackDna' should fail
 pub fn no_setup_test(alex: &mut P2pNode, billy: &mut P2pNode, _connect: bool) -> NetResult<()> {
     // Send a message from alex to billy
-    // let before_count = alex.count_recv_json_messages();
+    let before_count = billy.count_recv_json_messages();
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
 
     // Alex should receive a FailureResult
     let res = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 500);
     assert!(res.is_some());
 
-    // Billy should not receive it.
+    // Billy should not receive anything
     let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
-//    // Alex should also not receive anything back
-//    assert_eq!(before_count, alex.count_recv_json_messages());
+    assert_eq!(before_count, billy.count_recv_json_messages());
     Ok(())
 }
 

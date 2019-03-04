@@ -113,6 +113,8 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       - cd $TRAVIS_BUILD_DIR
       - wget https://download.libsodium.org/libsodium/releases/libsodium-1.0.16.tar.gz
       - tar -zxvf ./libsodium-1.0.16.tar.gz
+      - ls
+      - echo $RUST_SODIUM_LIB_DIR
       - cd $TRAVIS_BUILD_DIR/nodejs_conductor
       - yarn install --ignore-scripts
       - node ./publish.js

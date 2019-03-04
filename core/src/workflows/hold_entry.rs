@@ -9,6 +9,7 @@ use crate::{
     },
 };
 
+use crate::scheduled_jobs::pending_validations::ValidatingWorkflow;
 use holochain_core_types::{
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
@@ -27,7 +28,12 @@ pub async fn hold_entry_workflow<'a>(
             let message = "Could not get validation package from source! -> Add to pending...";
             context.log(format!("debug/workflow/hold_entry: {}", message));
             context.log(format!("debug/workflow/hold_entry: Error was: {:?}", err));
-            add_pending_validation(entry_with_header.to_owned(), Vec::new(), &context);
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                Vec::new(),
+                ValidatingWorkflow::HoldEntry,
+                &context,
+            );
             HolochainError::ValidationPending
         })?;
     let validation_package = maybe_validation_package.ok_or({

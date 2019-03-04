@@ -287,54 +287,60 @@ fn reduce_remove_entry_inner(
     // pre-condition: Current status must be Live
     // get current status
     let meta_storage = &new_store.meta_storage().clone();
-    let status_eavs = meta_storage.read().unwrap().fetch_eavi(&EaviQuery::new(
+    let status_eav = meta_storage.read().unwrap().fetch_eavi(&EaviQuery::new(
         Some(latest_deleted_address.clone()).into(),
         Some(Attribute::CrudStatus).into(),
         None.into(),
         IndexFilter::LatestByAttribute,
     ))?;
-    
-    //should have a status
-    if status_eavs.is_empty()
-    {
-        Err(HolochainError::ErrorGeneric(String::from(
-            "Status should be present",
-        )))
-    }
-    else 
-    {
-        // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
-        // For now checks if crud-status other than Live are present
-        let statuses = status_eavs
-            .into_iter()
-            .filter(|e| CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live))
-            .collect::<BTreeSet<EntityAttributeValueIndex>>();
-        //make sure there is no live crud
-        if statuses.is_empty()
-        {
-            let new_status_eav = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted)?;
-
-            let meta_storage = &new_store.meta_storage().clone();
-
-            let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav)?;
-
-            // Update crud-link
-            let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
-            .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
-            let res = (*meta_storage.write().unwrap()).add_eavi(&crud_link_eav);
-
-            res.map(|_| latest_deleted_address.clone())
-        }
-        else 
-        {
-            Err(HolochainError::ErrorGeneric(String::from(
-                "entry_status != CrudStatus::Live",
-            )))
-        }
-
+    if let Err(err) = maybe_status_eav {
+        return Err(err);
     }
 
-  
+    //TODO clean up some of the early returns in this
+    // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
+    // For now checks if crud-status other than Live are present
+    let status_eavs = status_eavs
+        .into_iter()
+        .filter(|e| CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live))
+        .collect::<BTreeSet<EntityAttributeValueIndex>>();
+    if !status_eavs.is_empty() {
+        return Err(HolochainError::ErrorGeneric(String::from(
+            "entry_status != CrudStatus::Live",
+        )));
+    }
+    // Update crud-status
+    let result = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted);
+    if result.is_err() {
+        return Err(HolochainError::ErrorGeneric(String::from(
+            "Could not create eav",
+        )));
+    }
+    let new_status_eav = result.expect("should unwrap eav");
+    let meta_storage = &new_store.meta_storage().clone();
+
+    let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav);
+    if let Err(err) = res {
+        return Err(err);
+    }
+
+    // Update crud-link
+    let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
+        .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
+    let res = (*meta_storage.write().unwrap()).add_eavi(&crud_link_eav);
+
+    res.map(|_| latest_deleted_address.clone())
+}
+
+//
+#[allow(dead_code)]
+pub(crate) fn reduce_get_links(
+    _context: Arc<Context>,
+    _old_store: &DhtStore,
+    _action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    // FIXME
+    None
 }
 
 //

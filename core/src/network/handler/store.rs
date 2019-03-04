@@ -25,7 +25,7 @@ pub fn handle_store_entry(dht_data: EntryData, context: Arc<Context>) {
 
 /// The network requests us to store meta information (links/CRUD/etc) for an
 /// entry that we hold.
-pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>)  {
+pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
     let attr = dht_meta_data.clone().attribute;
     // @TODO: If network crates will switch to using the `Attribute` enum,
     // we can match on the enum directly
@@ -66,7 +66,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>)  {
         == CrudStatus::Deleted
     {
         context.log("debug/net/handle: HandleStoreMeta: got CRUD STATUS. processing...");
-       
+
         let entry_with_header: EntryWithHeader = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])

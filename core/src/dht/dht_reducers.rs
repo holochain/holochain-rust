@@ -279,7 +279,6 @@ fn reduce_remove_entry_inner(
     let entry = Entry::try_from(json_entry).expect("Stored content should be a valid entry.");
     // pre-condition: entry_type must not by sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {
- 
         return Err(HolochainError::ErrorGeneric(String::from(
             "trying to remove a system entry type",
         )));
@@ -293,7 +292,7 @@ fn reduce_remove_entry_inner(
         None.into(),
         IndexFilter::LatestByAttribute,
     ))?;
-  
+
     //TODO clean up some of the early returns in this
     // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
     // For now checks if crud-status other than Live are present
@@ -328,8 +327,6 @@ fn reduce_remove_entry_inner(
 
     res.map(|_| latest_deleted_address.clone())
 }
-
-
 
 //
 #[allow(dead_code)]

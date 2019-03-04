@@ -10,7 +10,7 @@ use crate::{
         validation::ValidationResult,
         ZomeFnCall,
     },
-    scheduled_jobs::pending_validations::PendingValidation,
+    scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -212,7 +212,7 @@ pub enum Action {
     AddPendingValidation(PendingValidation),
 
     /// Clear an entry from the pending validation list
-    RemovePendingValidation(Address),
+    RemovePendingValidation((Address, ValidatingWorkflow)),
 }
 
 /// function signature for action handler functions

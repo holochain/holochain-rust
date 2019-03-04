@@ -31,7 +31,7 @@ pub mod tests {
             reducers::add_pending_validation::reduce_add_pending_validation,
             state::tests::test_nucleus_state,
         },
-        scheduled_jobs::pending_validations::PendingValidationStruct,
+        scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
     };
     use holochain_core_types::{
         cas::content::AddressableContent, chain_header::test_chain_header, entry::Entry,
@@ -53,17 +53,25 @@ pub mod tests {
             PendingValidationStruct {
                 entry_with_header,
                 dependencies: Vec::new(),
+                workflow: ValidatingWorkflow::HoldEntry,
             },
         )));
 
         reduce_add_pending_validation(context.clone(), &mut state, &action_wrapper);
 
-        assert!(state.pending_validations.contains_key(&entry.address()));
+        assert!(state
+            .pending_validations
+            .contains_key(&(entry.address(), ValidatingWorkflow::HoldEntry)));
 
-        let action_wrapper = ActionWrapper::new(Action::RemovePendingValidation(entry.address()));
+        let action_wrapper = ActionWrapper::new(Action::RemovePendingValidation((
+            entry.address(),
+            ValidatingWorkflow::HoldEntry,
+        )));
 
         reduce_remove_pending_validation(context, &mut state, &action_wrapper);
 
-        assert!(!state.pending_validations.contains_key(&entry.address()));
+        assert!(!state
+            .pending_validations
+            .contains_key(&(entry.address(), ValidatingWorkflow::HoldEntry)));
     }
 }

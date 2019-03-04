@@ -13,7 +13,7 @@ use std::{sync::Arc, thread};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, DefaultJson)]
 pub enum ValidatingWorkflow {
     HoldEntry,
     HoldLink,
@@ -32,14 +32,20 @@ fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
             ValidatingWorkflow::HoldLink => {
                 context.block_on(hold_link_workflow(&pending.entry_with_header, &context))
             }
-            ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
-                &pending.entry_with_header,
-                context.clone(),
-            )),
+            ValidatingWorkflow::HoldEntry => {
+                context.block_on(hold_entry_workflow(
+                    &pending.entry_with_header,
+                    context.clone(),
+                ))
+            },
         };
 
         if Err(HolochainError::ValidationPending) != result {
-            remove_pending_validation(pending.entry_with_header.entry.address(), &context);
+            remove_pending_validation(
+                pending.entry_with_header.entry.address(),
+                pending.workflow.clone(),
+                &context,
+            );
         }
     });
 }

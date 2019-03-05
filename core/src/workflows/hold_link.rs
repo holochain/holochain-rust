@@ -56,9 +56,15 @@ pub async fn hold_link_workflow<'a>(
         })?;
     println!("HOLD LINK 3");
     let validation_package = maybe_validation_package.ok_or({
-        let message = "Source did respond to request but did not deliver validation package! This is weird! Entry is not valid!";
+        let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
         context.log(format!("debug/workflow/hold_link: {}", message));
-        HolochainError::ValidationFailed("Entry not backed by source".to_string())
+        add_pending_validation(
+            entry_with_header.to_owned(),
+            Vec::new(),
+            ValidatingWorkflow::HoldLink,
+            &context,
+        );
+        HolochainError::ValidationPending
     })?;
     context.log(format!("debug/workflow/hold_link: got validation package"));
 

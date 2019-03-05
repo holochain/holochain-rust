@@ -12,7 +12,7 @@ First, [Rust](https://www.rust-lang.org/en-US/install.html) must be installed on
 
 Being a Rust library, `hdk-rust` can be added as a dependency to any Rust crate. When you generate Rust based Zomes with [hc](https://github.com/holochain/holochain-rust/tree/develop/cli) it will automatically be added as a dependency, and imported into your code.
 
-To see the documentation for usage, check out https://developer.holochain.org/api
+To see the documentation for usage, check out [https://developer.holochain.org/api](https://developer.holochain.org/api)
 
 ### Specification for App Development
 As new features, or changes to the HDK (and the API) are being designed, use cases will be added to an example app and put as changes to a pull request to the app_spec directory of this repo. The example app also integrates the feature set available in Holochain's main branch.

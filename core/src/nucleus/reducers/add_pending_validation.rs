@@ -32,7 +32,7 @@ pub mod tests {
     use crate::{
         instance::tests::test_context,
         network::entry_with_header::EntryWithHeader,
-        nucleus::state::tests::test_nucleus_state,
+        nucleus::state::{PendingValidationKey, tests::test_nucleus_state},
         scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
     };
     use holochain_core_types::{chain_header::test_chain_header, entry::Entry, json::RawString};
@@ -60,6 +60,6 @@ pub mod tests {
 
         assert!(state
             .pending_validations
-            .contains_key(&(entry.address(), ValidatingWorkflow::HoldEntry)));
+            .contains_key(&PendingValidationKey::new(entry.address(), ValidatingWorkflow::HoldEntry)));
     }
 }

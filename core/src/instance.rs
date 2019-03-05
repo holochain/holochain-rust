@@ -263,15 +263,13 @@ impl Instance {
             .expect("owners of the state RwLock shouldn't panic")
     }
 
-    pub fn save(&self) {
-        if let Some(ref persister) = self.persister {
-            let _ = persister
-                .lock()
-                .unwrap()
-                .save(&self.state())
-                .map_err(|err| println!("Could not save instance! Error: {:?}", err));
-        } else {
-            println!("Instance::save() called without persister set.");
+    pub fn save(&self) -> HcResult<()> {
+        self.persister
+            .as_ref()
+            .ok_or(HolochainError::new("Instance::save() called without persister set."))?
+            .try_lock()
+            .map_err(|_|HolochainError::new("Could not get lock on persister"))?
+            .save(&self.state())
         }
     }
 }

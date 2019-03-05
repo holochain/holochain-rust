@@ -146,7 +146,7 @@ impl IpcNetWorker {
 impl NetWorker for IpcNetWorker {
     /// stop the net worker
     fn stop(mut self: Box<Self>) -> NetResult<()> {
-        self.wss_socket.close(self.transport_id)?;
+        self.wss_socket.close_all()?;
         if let Some(done) = self.done {
             done();
         }

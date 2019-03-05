@@ -122,7 +122,7 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       - node ./publish.js
   # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
   before_deploy:
-      - ls nodejs_conductor/bin-package
+      # - ls nodejs_conductor/bin-package
       - ls
   deploy:
       provider: releases

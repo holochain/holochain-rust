@@ -1,7 +1,7 @@
 {
   "backend_kind": "IPC",
   "backend_config": {
-    "socketType": "zmq",
+    "socketType": "ws",
     "spawn": {
       "cmd": "node",
       "env": {

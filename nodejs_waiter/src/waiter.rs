@@ -178,7 +178,8 @@ impl Waiter {
                         }
                     },
 
-                    (Some(checker), Action::Commit((committed_entry, _))) => {
+                    (Some(checker), Action::Commit((committed_entry, link_update_delete))) => {
+                        // Pair every `Commit` with N `Hold`s of that same entry, regardless of type
                         // TODO: is there a possiblity that this can get messed up if the same
                         // entry is committed multiple times?
                         let committed_entry_clone = committed_entry.clone();
@@ -190,6 +191,29 @@ impl Waiter {
                         });
 
                         match committed_entry.clone() {
+                            Entry::App(_, _) => {
+                                if link_update_delete.is_some() {
+                                    checker.add(num_instances, move |aw| {
+                                        *aw.action()
+                                            == Action::UpdateEntry((
+                                                link_update_delete.clone().expect(
+                                                    "Should not fail as link_update is some",
+                                                ),
+                                                committed_entry.address(),
+                                            ))
+                                    });
+                                }
+                            }
+                            Entry::Deletion(deletion_entry) => {
+                                checker.add(num_instances, move |aw| {
+                                    *aw.action()
+                                        == Action::RemoveEntry((
+                                            deletion_entry.clone().deleted_entry_address(),
+                                            committed_entry.address(),
+                                        ))
+                                });
+                            }
+
                             Entry::LinkAdd(link_add) => {
                                 checker.add(num_instances, move |aw| {
                                     *aw.action() == Action::AddLink(link_add.clone().link().clone())

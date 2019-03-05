@@ -9,22 +9,18 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
-use std::{
-    pin::Pin,
-    sync::{mpsc::SyncSender, Arc},
-};
+use std::{pin::Pin, sync::Arc};
 
 /// Update Entry Action Creator
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
 pub fn update_entry(
     context: &Arc<Context>,
-    action_channel: &SyncSender<ActionWrapper>,
     old_address: Address,
     new_address: Address,
 ) -> UpdateEntryFuture {
     let action_wrapper = ActionWrapper::new(Action::UpdateEntry((old_address, new_address)));
-    dispatch_action(action_channel, action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper.clone());
     UpdateEntryFuture {
         context: context.clone(),
         action: action_wrapper,

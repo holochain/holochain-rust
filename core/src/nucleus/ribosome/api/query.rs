@@ -143,14 +143,7 @@ fn get_entry_from_chain(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Entry, HolochainError> {
-    let entry = match get_entry_from_agent(context, address)? {
-        Some(entry) => entry,
-        None => {
-            return Err(HolochainError::ErrorGeneric(format!(
-                "Failed to obtain Entry for Address {}",
-                address
-            )));
-        }
-    };
-    Ok(entry)
+    get_entry_from_agent(context, address)?.ok_or_else(|| {
+        HolochainError::ErrorGeneric(format!("Failed to obtain Entry for Address {}", address))
+    })
 }

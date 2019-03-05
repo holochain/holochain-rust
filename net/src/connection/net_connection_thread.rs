@@ -67,7 +67,7 @@ impl NetConnectionThread {
                         // Have the worker handle it
                         did_something = true;
                         worker.receive(data).unwrap_or_else(|e| {
-                            eprintln!("Error occured in p2p network module: {:?}", e)
+                            eprintln!("Error occured in p2p network module, on receive: {:?}", e)
                         });
                         Ok(())
                     })
@@ -82,7 +82,9 @@ impl NetConnectionThread {
                         }
                         Ok(())
                     })
-                    .unwrap_or_else(|e| eprintln!("Error occured in p2p network module: {:?}", e));
+                    .unwrap_or_else(|e| {
+                        eprintln!("Error occured in p2p network module, on tick: {:?}", e)
+                    });
 
                 // Increase sleep duration if nothing was received or sent
                 if did_something {
@@ -97,7 +99,9 @@ impl NetConnectionThread {
                 thread::sleep(time::Duration::from_micros(sleep_duration_us));
             }
             // Stop the worker
-            worker.stop().unwrap_or_else(|e| panic!("{:?}", e));
+            worker.stop().unwrap_or_else(|e| {
+                eprintln!("Error occured in p2p network module on stop: {:?}", e)
+            });
         });
 
         // Retrieve endpoint from spawned thread

@@ -4,7 +4,7 @@ use holochain_core::{
     nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
-use holochain_core_types::entry::Entry;
+use holochain_core_types::{cas::content::AddressableContent, entry::Entry};
 use neon::{context::Context, prelude::*};
 use std::{
     cell::RefCell,
@@ -178,17 +178,48 @@ impl Waiter {
                         }
                     },
 
-                    (Some(checker), Action::Commit((committed_entry, _))) => {
+                    (Some(checker), Action::Commit((committed_entry, link_update_delete))) => {
                         match committed_entry.clone() {
                             // Pair every `Commit` with N `Hold`s
                             Entry::App(_, _) => {
                                 // TODO: is there a possiblity that this can get messed up if the same
                                 // entry is committed multiple times?
+                                let hold_entry = committed_entry.clone();
                                 checker.add(num_instances, move |aw| match aw.action() {
                                     Action::Hold(EntryWithHeader { entry, header: _ }) => {
-                                        *entry == committed_entry
+                                        *entry == hold_entry
                                     }
                                     _ => false,
+                                });
+                                if link_update_delete.is_some() {
+                                    checker.add(num_instances, move |aw| {
+                                        *aw.action()
+                                            == Action::UpdateEntry((
+                                                link_update_delete.clone().expect(
+                                                    "Should not fail as link_update is some",
+                                                ),
+                                                committed_entry.address(),
+                                            ))
+                                    });
+                                } else {
+                                    ()
+                                }
+                            }
+                            Entry::Deletion(deletion_entry) => {
+                                // Pair every `EntryRemove` with N `Hold`s
+                                let hold_entry = committed_entry.clone();
+                                checker.add(num_instances, move |aw| match aw.action() {
+                                    Action::Hold(EntryWithHeader { entry, header: _ }) => {
+                                        *entry == hold_entry.clone()
+                                    }
+                                    _ => false,
+                                });
+                                checker.add(num_instances, move |aw| {
+                                    *aw.action()
+                                        == Action::RemoveEntry((
+                                            deletion_entry.clone().deleted_entry_address(),
+                                            committed_entry.address(),
+                                        ))
                                 });
                             }
                             // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s

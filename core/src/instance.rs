@@ -45,9 +45,7 @@ pub struct Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
-    pub fn default_channel_buffer_size() -> usize {
-        100
-    }
+    pub const DEFAULT_CHANNEL_BUF_SIZE: usize = 100;
 
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
@@ -140,10 +138,8 @@ impl Instance {
 
     /// Returns recievers for actions and observers that get added to this instance
     fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
-        let (tx_action, rx_action) =
-            sync_channel::<ActionWrapper>(Self::default_channel_buffer_size());
-        let (tx_observer, rx_observer) =
-            sync_channel::<Observer>(Self::default_channel_buffer_size());
+        let (tx_action, rx_action) = sync_channel::<ActionWrapper>(Self::DEFAULT_CHANNEL_BUF_SIZE);
+        let (tx_observer, rx_observer) = sync_channel::<Observer>(Self::DEFAULT_CHANNEL_BUF_SIZE);
         self.action_channel = Some(tx_action.clone());
         self.observer_channel = Some(tx_observer.clone());
 
@@ -480,7 +476,7 @@ pub mod tests {
 
     #[test]
     fn default_buffer_size_test() {
-        assert_eq!(Context::default_channel_buffer_size(), 100);
+        assert_eq!(Context::DEFAULT_CHANNEL_BUF_SIZE, 100);
     }
 
     #[cfg_attr(tarpaulin, skip)]
@@ -773,7 +769,7 @@ pub mod tests {
         let commit_agent_action = ActionWrapper::new(Action::Commit((agent_entry.clone(), None)));
 
         // Set up instance and process the action
-        let instance = Instance::new(test_context("jason", netname));
+        let instance = Instance::new(context.clone());
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);

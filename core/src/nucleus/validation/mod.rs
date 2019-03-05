@@ -11,6 +11,7 @@ mod app_entry;
 mod header_address;
 mod link_entry;
 mod provenances;
+mod remove_entry;
 
 #[derive(Clone, Debug, PartialEq)]
 /// A failed validation.
@@ -101,7 +102,11 @@ pub async fn validate_entry(
 
         // Deletion entries are not validated currently and always valid
         // TODO: Specify how Deletion can be commited to chain.
-        EntryType::Deletion => Ok(()),
+        EntryType::Deletion => await!(remove_entry::validate_remove_entry(
+            entry.clone(),
+            validation_data,
+            context
+        )),
 
         // a grant should always be private, so it should always pass
         EntryType::CapTokenGrant => Ok(()),

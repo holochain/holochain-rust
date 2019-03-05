@@ -19,6 +19,7 @@ use std::{
     thread,
     time::Duration,
 };
+use holochain_core_types::error::error::HolochainError;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
@@ -270,7 +271,6 @@ impl Instance {
             .try_lock()
             .map_err(|_|HolochainError::new("Could not get lock on persister"))?
             .save(&self.state())
-        }
     }
 }
 

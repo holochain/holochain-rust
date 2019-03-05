@@ -63,7 +63,10 @@ pub mod tests {
 
         assert!(state
             .pending_validations
-            .contains_key(&PendingValidationKey::new(entry.address(), ValidatingWorkflow::HoldEntry)));
+            .contains_key(&PendingValidationKey::new(
+                entry.address(),
+                ValidatingWorkflow::HoldEntry
+            )));
 
         let action_wrapper = ActionWrapper::new(Action::RemovePendingValidation((
             entry.address(),
@@ -74,6 +77,9 @@ pub mod tests {
 
         assert!(!state
             .pending_validations
-            .contains_key(&PendingValidationKey::new(entry.address(), ValidatingWorkflow::HoldEntry)));
+            .contains_key(&PendingValidationKey::new(
+                entry.address(),
+                ValidatingWorkflow::HoldEntry
+            )));
     }
 }

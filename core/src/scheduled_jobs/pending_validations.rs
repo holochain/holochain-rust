@@ -9,7 +9,7 @@ use holochain_core_types::{
     error::error::HolochainError,
     json::JsonString,
 };
-use std::{sync::Arc, thread};
+use std::{fmt, sync::Arc, thread};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
@@ -17,6 +17,15 @@ pub type PendingValidation = Arc<PendingValidationStruct>;
 pub enum ValidatingWorkflow {
     HoldEntry,
     HoldLink,
+}
+
+impl fmt::Display for ValidatingWorkflow {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ValidatingWorkflow::HoldEntry => write!(f, "HoldEntryWorkflow"),
+            ValidatingWorkflow::HoldLink => write!(f, "HoldLinkWorkflow"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]

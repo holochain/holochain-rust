@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    nucleus::state::NucleusState,
+    nucleus::state::{NucleusState, PendingValidationKey},
 };
 use holochain_core_types::cas::content::AddressableContent;
 use std::sync::Arc;
@@ -22,7 +22,7 @@ pub fn reduce_add_pending_validation(
     let workflow = pending.workflow.clone();
     state
         .pending_validations
-        .insert((address, workflow), pending.clone());
+        .insert(PendingValidationKey::new(address, workflow), pending.clone());
 }
 
 #[cfg(test)]

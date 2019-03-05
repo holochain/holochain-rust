@@ -4,6 +4,7 @@ use crate::{
     nucleus::state::NucleusState,
 };
 use std::sync::Arc;
+use crate::nucleus::state::PendingValidationKey;
 
 /// Reduce RemovePendingValidation Action.
 /// Removes boxed EntryWithHeader and dependencies from state, referenced with
@@ -17,8 +18,8 @@ pub fn reduce_remove_pending_validation(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let address = unwrap_to!(action => Action::RemovePendingValidation);
-    state.pending_validations.remove(address);
+    let (address, workflow) = unwrap_to!(action => Action::RemovePendingValidation).clone();
+    state.pending_validations.remove(&PendingValidationKey::new(address, workflow));
 }
 
 #[cfg(test)]

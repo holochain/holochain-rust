@@ -1,18 +1,11 @@
 use crate::{
-    agent::actions::{commit::commit_entry, update_entry::update_entry},
-    nucleus::{
-        actions::build_validation_package::build_validation_package,
-        ribosome::{api::ZomeApiResult, Runtime},
-        validation::validate_entry,
-    },
-    workflows::get_entry_result::get_entry_result_workflow,
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
-use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
 use std::convert::TryFrom;
@@ -47,52 +40,22 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     if let Err(_err) = maybe_entry_result {
         return ribosome_error_code!(Unspecified);
     }
-    let entry_result = maybe_entry_result.unwrap();
+    let entry_result = maybe_entry_result.clone().unwrap();
     if !entry_result.found() {
         return ribosome_error_code!(Unspecified);
     }
     let latest_entry = entry_result.latest().unwrap();
 
-    // Get latest entry's ChainHeader
-    let agent_state = &context.state().unwrap().agent();
-    let chain_header_address = agent_state
-        .chain_store()
-        .iter(&agent_state.top_chain_header())
-        .find(|header| header.entry_address() == &latest_entry.address())
-        .map(|header| header.address().clone())
-        .expect("Modified entry should be in chain");
-
     // Create Chain Entry
     let entry = Entry::from(entry_args.new_entry.clone());
 
-    // Wait for future to be resolved
-    let task_result: Result<Address, HolochainError> = context.block_on(
-        // 1. Build the context needed for validation of the entry
-        build_validation_package(&entry, context.clone())
-            .and_then(|validation_package| {
-                future::ready(Ok(ValidationData {
-                    package: validation_package,
-                    lifecycle: EntryLifecycle::Chain,
-                    action: EntryAction::Modify,
-                }))
-            })
-            // 2. Validate the entry
-            .and_then(|validation_data| {
-                validate_entry(entry.clone(), validation_data, &context)
-                    .map_err(|validation_error| HolochainError::from(validation_error))
-            })
-            // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| commit_entry(entry.clone(), Some(chain_header_address), &context))
-            // 4. Update the entry in DHT metadata
-            .and_then(|new_address| {
-                update_entry(
-                    &context,
-                    context.action_channel(),
-                    latest_entry.address().clone(),
-                    new_address,
-                )
-            }),
-    );
+    let res: Result<Address, HolochainError> = context
+        .block_on(author_entry(
+            &entry,
+            Some(latest_entry.clone().address()),
+            &context.clone(),
+        ))
+        .map_err(|validation_error| HolochainError::from(validation_error));
 
-    runtime.store_result(task_result)
+    runtime.store_result(res)
 }

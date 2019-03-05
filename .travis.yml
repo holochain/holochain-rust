@@ -6,7 +6,7 @@ branches:
     - develop
     - /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
     - /^release-(test-)*v\d+\.\d+\.\d+-alpha/
-    - /^(test-)*v\d+\.\d+\.\d+-alpha/
+    - /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
 
 _trusty_nodejs: &_trusty_nodejs
   dist: trusty

@@ -456,7 +456,7 @@ pub struct NetworkConfig {
     #[serde(default)]
     pub bootstrap_nodes: Vec<String>,
     /// Global logging level output by N3H
-    #[serde(default)]
+    #[serde(default = "default_n3h_log_level")]
     pub n3h_log_level: String,
     /// Absolute path to the local installation/repository of n3h
     #[serde(default)]
@@ -472,10 +472,10 @@ pub struct NetworkConfig {
     /// If this is set the conductor does not spawn n3h itself and ignores the path
     /// configs above. Default is None.
     #[serde(default)]
-    pub maybe_n3h_ipc_uri: Option<String>,
+    pub n3h_ipc_uri: Option<String>,
     /// filepath to the json file holding the network settings for n3h
     #[serde(default)]
-    pub maybe_networking_config_file: Option<String>,
+    pub networking_config_file: Option<String>,
 }
 
 // note that this behaviour is documented within
@@ -685,8 +685,8 @@ pub mod tests {
                 n3h_path: String::from("/Users/cnorris/.holochain/n3h"),
                 n3h_mode: String::from("HACK"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
-                maybe_n3h_ipc_uri: None,
-                maybe_networking_config_file: Some(String::from(
+                n3h_ipc_uri: None,
+                networking_config_file: Some(String::from(
                     "/Users/cnorris/.holochain/network_config.json"
                 )),
             }

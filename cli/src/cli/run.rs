@@ -211,8 +211,8 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
         n3h_path              : maybe_n3h_path.unwrap_or_else(default_n3h_path),
         n3h_mode              : EnvVar::N3hMode.value().ok().unwrap_or_else(default_n3h_mode),
         n3h_persistence_path  : EnvVar::N3hWorkDir.value().ok().unwrap_or_else(default_n3h_persistence_path),
-        maybe_n3h_ipc_uri           : Default::default(),
-        maybe_networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
+        n3h_ipc_uri           : Default::default(),
+        networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
     })
 }
 

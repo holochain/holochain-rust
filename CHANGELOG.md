@@ -4,7 +4,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
-- New network setting N3H_LOG_LEVEL
+- New network setting via environment variable HC_N3H_LOG_LEVEL [#1085](https://github.com/holochain/holochain-rust/pull/1085)
 - Node JS version relaxed to 8.x in nix shell
 - develop docker tag now uses nix
 - legacy docker files removed

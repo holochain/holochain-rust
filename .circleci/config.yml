@@ -96,6 +96,7 @@ jobs:
  cold.ubuntu:
   docker:
    - image: ubuntu
+  resource_class: large
   steps:
    - checkout
    - run: . ./scripts/install/auto.sh

@@ -154,7 +154,7 @@ _cli_deploy_template: &_cli_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
-  if: tag =~ /^(test-)*v\d+\.\d+\.\d+-alpha/
+  if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
   before_script:
     - . ./scripts/install/release-deps-auto.sh
   script:
@@ -178,7 +178,7 @@ _conductor_deploy_template: &_conductor_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
-  if: tag =~ /^(test-)*v\d+\.\d+\.\d+-alpha/
+  if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
   before_script:
     - . ./scripts/install/release-deps-auto.sh
   script:

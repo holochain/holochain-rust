@@ -231,8 +231,9 @@ impl Waiter {
 
                     (Some(checker), Action::AddPendingValidation(pending)) => {
                         let address = pending.entry_with_header.entry.address();
+                        let workflow = pending.workflow.clone();
                         checker.add(1, move |aw| {
-                            *aw.action() == Action::RemovePendingValidation(address.clone())
+                            *aw.action() == Action::RemovePendingValidation((address.clone(), workflow.clone()))
                         });
                     }
 

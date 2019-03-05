@@ -213,7 +213,9 @@ impl Instance {
             *state = new_state;
         }
 
-        self.save();
+        if let Err(e) = self.save() {
+            context.log(format!("err/instance/process_action: could not save state: {:?}", e));
+        }
         self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers

@@ -64,6 +64,10 @@ fn main() {
             );
         }
     } else {
+        println!(
+            "cargo:warning=Downloading/building libsodium version {} from {}.",
+            VERSION, DOWNLOAD_BASE_URL
+        );
         get_libsodium();
     }
 }
@@ -350,7 +354,7 @@ fn get_libsodium() {
     if !cflags.is_empty() {
         configure_cmd.env("CFLAGS", &cflags);
     }
-    println!("cargo:warning=libsodium CFLAGS used: {}", cflags);
+    //println!("cargo:warning=libsodium CFLAGS used: {}", cflags);
     println!("cargo:rerun-if-env-changed=RUST_SODIUM_DISABLE_PIE");
     if env::var("RUST_SODIUM_DISABLE_PIE").is_ok() {
         configure_cmd.arg("--disable-pie");

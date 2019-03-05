@@ -15,13 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - replace libzmq (zeromq) with websockets for ipc communication to networking module
 ### Removed
 ### Added
+- Ability to sign data via `hdk::sign` using the agent key [PR#1080](https://github.com/holochain/holochain-rust/pull/1080).
 - Adds a panic handler to HDK-Rust and that reroutes infos about panics happening inside the WASM Ribosome to the instances logger [PR#1029](https://github.com/holochain/holochain-rust/pull/1029).
 - mac os x install script installs cmake and qt
-- The current git-commit hash is now included in the compile code of the core, and is checked against the same hash that was used to compile the wasm and a warning issued if it's not.  [PR#1050](https://github.com/holochain/holochain-rust/pull/1036)
+- The current git-commit hash is now included in the compile code of the core, and is checked against the same hash that was used to compile the wasm and a warning issued if it's not.  [PR#1050](https://github.com/holochain/holochain-rust/pull/1050)
 - Adds PUBLIC_TOKEN global variable for use in hdk::call in calling public functions. [PR#895](https://github.com/holochain/holochain-rust/pull/895)
 - Adds an [ADR](doc/architecture/decisions/0017-capabilities.md) for capabilities.
 - Validation of link entries gets retried now if base or target of the link were not yet accessible on the validating node. This fixes a bug where links have been invalid due to network timing issues [PR#1054](https://github.com/holochain/holochain-rust/pull/1054).
 - Validation of any entry gets retried now if the validation package could not be retrieved from the source [PR#1059](https://github.com/holochain/holochain-rust/pull/1059).
+- Added CrudStatus working over network [#1048](https://github.com/holochain/holochain-rust/pull/1048)
 - Adds utils submodule of hdk which contains the following helper functions:
   + get_links_and_load_type - calls try_from for a given type when getting links
   + get_as_type - Similar but for a single entry

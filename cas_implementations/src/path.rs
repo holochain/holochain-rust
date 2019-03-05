@@ -6,7 +6,6 @@ pub fn storage_path(path: &Path, folder_name: &str) -> PathBuf {
 
 #[cfg(test)]
 pub mod tests {
-
     use crate::path::storage_path;
     use std::path::{Path, PathBuf};
 

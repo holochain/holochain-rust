@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - replace libzmq (zeromq) with websockets for ipc communication to networking module
 ### Removed
 ### Added
+- Ability to sign data via `hdk::sign` using the agent key [PR#1080](https://github.com/holochain/holochain-rust/pull/1080).
 - Adds a panic handler to HDK-Rust and that reroutes infos about panics happening inside the WASM Ribosome to the instances logger [PR#1029](https://github.com/holochain/holochain-rust/pull/1029).
 - mac os x install script installs cmake and qt
 - The current git-commit hash is now included in the compile code of the core, and is checked against the same hash that was used to compile the wasm and a warning issued if it's not.  [PR#1050](https://github.com/holochain/holochain-rust/pull/1050)

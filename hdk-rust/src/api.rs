@@ -22,6 +22,7 @@ use holochain_wasm_utils::{
         get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
         link_entries::LinkEntriesArgs,
         send::{SendArgs, SendOptions},
+        sign::SignArgs,
         QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
@@ -210,6 +211,7 @@ pub enum Dispatch {
     Send,
     Sleep,
     RemoveLink,
+    Sign,
 }
 
 impl Dispatch {
@@ -217,14 +219,8 @@ impl Dispatch {
         &self,
         input: I,
     ) -> ZomeApiResult<O> {
-        let mut mem_stack = match unsafe { G_MEM_STACK } {
-            Some(mem_stack) => mem_stack,
-            None => {
-                return Err(ZomeApiError::Internal(
-                    "debug failed to load mem_stack".to_string(),
-                ));
-            }
-        };
+        let mut mem_stack = unsafe { G_MEM_STACK }
+            .ok_or_else(|| ZomeApiError::Internal("debug failed to load mem_stack".to_string()))?;
 
         let wasm_allocation = mem_stack.write_json(input)?;
 
@@ -247,28 +243,24 @@ impl Dispatch {
                 Dispatch::Send => hc_send,
                 Dispatch::Sleep => hc_sleep,
                 Dispatch::RemoveLink => hc_remove_link,
+                Dispatch::Sign => hc_sign,
             })(encoded_input)
         };
 
-        let result: ZomeApiInternalResult = match load_ribosome_encoded_json(encoded_output) {
-            Ok(r) => r,
-            Err(e) => {
+        let result: ZomeApiInternalResult =
+            load_ribosome_encoded_json(encoded_output).or_else(|e| {
                 mem_stack.deallocate(wasm_allocation)?;
-                return Err(e.into());
-            }
-        };
+                Err(ZomeApiError::from(e))
+            })?;
 
         // Free result & input allocations
         mem_stack.deallocate(wasm_allocation)?;
 
         // Done
         if result.ok {
-            match JsonString::from(result.value).try_into() {
-                Ok(v) => Ok(v),
-                Err(_) => Err(ZomeApiError::from(String::from(
-                    "Failed to deserialize return value",
-                ))),
-            }
+            JsonString::from(result.value)
+                .try_into()
+                .map_err(|_| ZomeApiError::from(String::from("Failed to deserialize return value")))
         } else {
             Err(ZomeApiError::from(result.error))
         }
@@ -312,6 +304,8 @@ impl Dispatch {
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -332,7 +326,7 @@ impl Dispatch {
 ///
 /// fn handle_sum(num1: u32, num2: u32) -> JsonString {
 ///     let sum = num1 + num2;
-///     json!({"sum": format!("{}",sum)}).into()
+///     json!({"sum": sum.to_string()}).into()
 /// }
 ///
 /// define_zome! {
@@ -393,6 +387,8 @@ impl Dispatch {
 /// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -744,6 +740,13 @@ pub fn remove_link<S: Into<String>>(
     })
 }
 
+/// sign ( priv_id_str, base64payload ) -> ( base64signature )
+pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
+    Dispatch::Sign.with_input(SignArgs {
+        payload: payload.into(),
+    })
+}
+
 /// NOT YET AVAILABLE
 // Returns a DNA property, which are defined by the DNA developer.
 // They are custom values that are defined in the DNA file
@@ -795,11 +798,6 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// ```
 pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
     Dispatch::EntryAddress.with_input(entry)
-}
-
-/// NOT YET AVAILABLE
-pub fn sign<S: Into<String>>(_doc: S) -> ZomeApiResult<String> {
-    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// NOT YET AVAILABLE
@@ -1067,6 +1065,8 @@ pub fn query_result(
 /// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]

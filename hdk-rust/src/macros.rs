@@ -101,6 +101,8 @@ macro_rules! load_string {
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -349,7 +351,7 @@ macro_rules! define_zome {
                 let _ = debug(RawString::from(
                     info.payload().downcast_ref::<String>().unwrap().clone(),
                 ));
-                //let _ = debug(RawString::from(format!("{}", info.message().unwrap().clone())));
+
                 let _ = if let Some(location) = info.location() {
                     debug(RawString::from(format!(
                         "panic occurred in file '{}' at line {}",

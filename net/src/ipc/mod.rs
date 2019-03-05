@@ -13,5 +13,4 @@ pub use transport_wss::{TransportWss, DEFAULT_HEARTBEAT_MS, DEFAULT_HEARTBEAT_WA
 #[macro_use]
 pub mod errors;
 pub mod util;
-
 pub mod spawn;

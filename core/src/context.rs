@@ -246,7 +246,6 @@ impl Context {
         pin_utils::pin_mut!(future);
 
         loop {
-            print!(".");
             let _ = match future.as_mut().poll(noop_local_waker_ref()) {
                 Poll::Ready(result) => return result,
                 _ => sleep(Duration::from_millis(10)),

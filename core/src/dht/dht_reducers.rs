@@ -315,7 +315,7 @@ fn reduce_remove_entry_inner(
     let new_status_eav = result.expect("should unwrap eav");
     let meta_storage = &new_store.meta_storage().clone();
 
-    let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav);
+     let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav)?;
     if let Err(err) = res {
         return Err(err);
     }

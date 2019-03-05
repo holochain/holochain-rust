@@ -26,7 +26,6 @@ pub async fn hold_link_workflow<'a>(
 ) -> Result<(), HolochainError> {
     let EntryWithHeader { entry, header } = &entry_with_header;
 
-    println!("HOLD LINK 1");
     let link_add = match entry {
         Entry::LinkAdd(link_add) => link_add,
         _ => Err(HolochainError::ErrorGeneric(
@@ -35,7 +34,6 @@ pub async fn hold_link_workflow<'a>(
     };
     let link = link_add.link().clone();
 
-    println!("HOLD LINK 2");
     context.log(format!("debug/workflow/hold_link: {:?}", link));
     // 1. Get validation package from source
     context.log(format!(
@@ -54,7 +52,6 @@ pub async fn hold_link_workflow<'a>(
             );
             HolochainError::ValidationPending
         })?;
-    println!("HOLD LINK 3");
     let validation_package = maybe_validation_package.ok_or({
         let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
         context.log(format!("debug/workflow/hold_link: {}", message));
@@ -68,15 +65,12 @@ pub async fn hold_link_workflow<'a>(
     })?;
     context.log(format!("debug/workflow/hold_link: got validation package"));
 
-    println!("HOLD LINK 4");
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Meta,
         action: EntryAction::Create,
     };
-
-    println!("HOLD LINK 5");
 
     // 3. Validate the entry
     context.log(format!("debug/workflow/hold_link: validate..."));
@@ -94,7 +88,6 @@ pub async fn hold_link_workflow<'a>(
     })?;
     context.log(format!("debug/workflow/hold_link: is valid!"));
 
-    println!("HOLD LINK 6");
     // 3. If valid store the entry in the local DHT shard
     await!(add_link(&link, &context))?;
     context.log(format!("debug/workflow/hold_link: added! {:?}", link));

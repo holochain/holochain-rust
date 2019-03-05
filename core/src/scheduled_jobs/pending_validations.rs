@@ -32,12 +32,10 @@ fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
             ValidatingWorkflow::HoldLink => {
                 context.block_on(hold_link_workflow(&pending.entry_with_header, &context))
             }
-            ValidatingWorkflow::HoldEntry => {
-                context.block_on(hold_entry_workflow(
-                    &pending.entry_with_header,
-                    context.clone(),
-                ))
-            },
+            ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
+                &pending.entry_with_header,
+                context.clone(),
+            )),
         };
 
         if Err(HolochainError::ValidationPending) != result {

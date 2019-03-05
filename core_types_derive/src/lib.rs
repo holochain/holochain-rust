@@ -18,7 +18,7 @@ fn impl_default_json_macro(ast: &syn::DeriveInput) -> TokenStream {
                 match ::serde_json::to_string(v) {
                     Ok(s) => Ok(JsonString::from(s)),
                     Err(e) => {
-                        println!("Error serializing to JSON: {:?}", e);
+                        eprintln!("Error serializing to JSON: {:?}", e);
                         Err(HolochainError::SerializationError(e.to_string()))
                     },
                 }.expect(&format!("could not Jsonify {}: {:?}", stringify!(#name), v))

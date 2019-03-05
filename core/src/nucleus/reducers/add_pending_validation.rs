@@ -20,9 +20,10 @@ pub fn reduce_add_pending_validation(
     let pending = unwrap_to!(action => Action::AddPendingValidation);
     let address = pending.entry_with_header.entry.address();
     let workflow = pending.workflow.clone();
-    state
-        .pending_validations
-        .insert(PendingValidationKey::new(address, workflow), pending.clone());
+    state.pending_validations.insert(
+        PendingValidationKey::new(address, workflow),
+        pending.clone(),
+    );
 }
 
 #[cfg(test)]

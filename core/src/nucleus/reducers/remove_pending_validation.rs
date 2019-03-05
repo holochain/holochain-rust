@@ -1,10 +1,9 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    nucleus::state::NucleusState,
+    nucleus::state::{NucleusState, PendingValidationKey},
 };
 use std::sync::Arc;
-use crate::nucleus::state::PendingValidationKey;
 
 /// Reduce RemovePendingValidation Action.
 /// Removes boxed EntryWithHeader and dependencies from state, referenced with
@@ -19,7 +18,9 @@ pub fn reduce_remove_pending_validation(
 ) {
     let action = action_wrapper.action();
     let (address, workflow) = unwrap_to!(action => Action::RemovePendingValidation).clone();
-    state.pending_validations.remove(&PendingValidationKey::new(address, workflow));
+    state
+        .pending_validations
+        .remove(&PendingValidationKey::new(address, workflow));
 }
 
 #[cfg(test)]

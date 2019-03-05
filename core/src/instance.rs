@@ -10,7 +10,10 @@ use crate::{
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 #[cfg(test)]
 use holochain_core_types::cas::content::Address;
-use holochain_core_types::{dna::Dna, error::HcResult};
+use holochain_core_types::{
+    dna::Dna,
+    error::{error::HolochainError, HcResult},
+};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, Sender, SyncSender},
@@ -19,7 +22,6 @@ use std::{
     thread,
     time::Duration,
 };
-use holochain_core_types::error::error::HolochainError;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
@@ -214,7 +216,10 @@ impl Instance {
         }
 
         if let Err(e) = self.save() {
-            context.log(format!("err/instance/process_action: could not save state: {:?}", e));
+            context.log(format!(
+                "err/instance/process_action: could not save state: {:?}",
+                e
+            ));
         }
         self.maybe_emit_action_signal(context, action_wrapper.clone());
 
@@ -269,9 +274,11 @@ impl Instance {
     pub fn save(&self) -> HcResult<()> {
         self.persister
             .as_ref()
-            .ok_or(HolochainError::new("Instance::save() called without persister set."))?
+            .ok_or(HolochainError::new(
+                "Instance::save() called without persister set.",
+            ))?
             .try_lock()
-            .map_err(|_|HolochainError::new("Could not get lock on persister"))?
+            .map_err(|_| HolochainError::new("Could not get lock on persister"))?
             .save(&self.state())
     }
 }

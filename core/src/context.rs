@@ -238,17 +238,16 @@ impl Context {
     }
 
     /// Custom future executor that enables nested futures and nested calls of `block_on`.
-    /// This used to make use of the redux action loop and the observers to have the given
-    /// future be polled everytime the instance's state got changed.
-    /// Because handling a large number of sync channels can fail, this is now just sleeps
-    /// 10 milliseconds and then polls again.
+    /// This makes use of the redux action loop and the observers.
+    /// The given future gets polled everytime the instance's state got changed.
     pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output {
+        let tick_rx = self.create_observer();
         pin_utils::pin_mut!(future);
 
         loop {
             let _ = match future.as_mut().poll(noop_local_waker_ref()) {
                 Poll::Ready(result) => return result,
-                _ => sleep(Duration::from_millis(10)),
+                _ => tick_rx.recv_timeout(Duration::from_millis(10)),
             };
         }
     }

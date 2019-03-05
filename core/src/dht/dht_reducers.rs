@@ -317,7 +317,6 @@ fn reduce_remove_entry_inner(
 
      let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav)?;
     if let Err(err) = res {
-    }
 
     // Update crud-link
     let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)

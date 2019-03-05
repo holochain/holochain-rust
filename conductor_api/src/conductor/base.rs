@@ -30,6 +30,7 @@ use std::{
     convert::TryFrom,
     fs::{self, File},
     io::prelude::*,
+    option::NoneError,
     path::PathBuf,
     sync::{
         mpsc::{channel, Sender, SyncSender},
@@ -514,11 +515,17 @@ impl Conductor {
                         Ok(hc)
                     })
                     .or_else(|loading_error| {
-                        notify(format!(
-                            "Failed to load instance {} from storage: {:?}",
-                            id.clone(),
-                            loading_error
-                        ));
+                        // NoneError just means it didn't find a pre-existing state
+                        // that's not a problem and so isn't logged as such
+                        if loading_error == HolochainError::from(NoneError) {
+                            notify("No chain found in the store".to_string());
+                        } else {
+                            notify(format!(
+                                "Failed to load instance {} from storage: {:?}",
+                                id.clone(),
+                                loading_error
+                            ));
+                        }
                         notify("Initializing new chain...".to_string());
                         Holochain::new(dna, context).map_err(|hc_err| hc_err.to_string())
                     })
@@ -610,23 +617,28 @@ impl Conductor {
         file.read_to_string(&mut contents)?;
         let blob: KeyBlob = serde_json::from_str(&contents)?;
 
-        // Prompt for passphrase
-        let mut passphrase_string = rpassword::read_password_from_tty(Some("Passphrase: "))?;
+        // Try default passphrase:
+        let mut default_passphrase =
+            SecBuf::with_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
+        KeyBundle::from_blob(&blob, &mut default_passphrase, None).or_else(|_| {
+            // Prompt for passphrase
+            let mut passphrase_string = rpassword::read_password_from_tty(Some("Passphrase: "))?;
 
-        // Move passphrase in secure memory
-        let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
-        let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
-        passphrase_buf
-            .write(0, passphrase_bytes.as_slice())
-            .expect("Failed to write passphrase in a SecBuf");
+            // Move passphrase in secure memory
+            let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
+            let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
+            passphrase_buf
+                .write(0, passphrase_bytes.as_slice())
+                .expect("Failed to write passphrase in a SecBuf");
 
-        // Overwrite the unsafe passphrase memory with zeros
-        for byte in passphrase_bytes.iter_mut() {
-            *byte = 0u8;
-        }
+            // Overwrite the unsafe passphrase memory with zeros
+            for byte in passphrase_bytes.iter_mut() {
+                *byte = 0u8;
+            }
 
-        // Unblob into KeyBundle
-        KeyBundle::from_blob(&blob, &mut passphrase_buf, None)
+            // Unblob into KeyBundle
+            KeyBundle::from_blob(&blob, &mut passphrase_buf, None)
+        })
     }
 
     fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {

@@ -117,12 +117,13 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       - ./configure
       - make && make check
       - sudo make install
-      - ls
-      - echo $RUST_SODIUM_LIB_DIR
       - cd $TRAVIS_BUILD_DIR/nodejs_conductor
       - yarn install --ignore-scripts
       - node ./publish.js
   # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
+  before_deploy:
+      - ls nodejs_conductor/bin-package
+      - ls
   deploy:
       provider: releases
       api_key:

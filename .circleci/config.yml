@@ -21,7 +21,7 @@ jobs:
  app-spec-tests:
   docker:
    - image: holochain/holochain-rust:circle.zz.end
-  resource_class: large
+  resource_class: xlarge
   steps:
    - checkout
 

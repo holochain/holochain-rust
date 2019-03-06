@@ -41,6 +41,14 @@ pub enum ValidationPackageDefinition {
     Custom(String),
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub enum EntryValidationData
+{
+    Create(Entry),
+    Modify(Entry,Entry),
+    Delete(Entry,Entry)
+}
+
 /// This structs carries information contextual for the process
 /// of validating an entry of link and is passed in to the according
 /// callbacks.
@@ -58,10 +66,10 @@ pub struct ValidationData {
     /// this validation callback?
     pub lifecycle: EntryLifecycle,
     /// Does the entry get committed, modified or deleted?
-    pub action: EntryAction,
+    pub entry_validation: EntryValidationData,
 }
 
-impl Default for ValidationData {
+/*impl Default for ValidationData {
     fn default() -> Self {
         Self {
             package: ValidationPackage {
@@ -74,7 +82,7 @@ impl Default for ValidationData {
             action: EntryAction::default(),
         }
     }
-}
+}*/
 
 impl ValidationData {
     /// The list of authors that have signed this entry.

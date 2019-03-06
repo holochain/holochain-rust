@@ -25,7 +25,7 @@ use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;
 use std::convert::TryFrom;
-use validation::EntryAction;
+use validation::{EntryAction,EntryValidationData};
 
 pub type AppEntryValue = JsonString;
 
@@ -90,23 +90,7 @@ impl TryFrom<JsonString> for Option<Entry> {
     }
 }
 
-pub fn entry_to_entry_action(
-    entry: &Entry,
-    maybe_link_update_delete: Option<Address>,
-) -> Result<EntryAction, HolochainError> {
-    match entry {
-        Entry::App(_, _) => Ok(maybe_link_update_delete
-            .map(|_| EntryAction::Modify)
-            .unwrap_or(EntryAction::Create)),
-        Entry::Deletion(_) => Ok(EntryAction::Delete),
-        Entry::LinkAdd(_) => Ok(EntryAction::Create),
-        Entry::LinkRemove(_) => Ok(EntryAction::Delete),
-        Entry::CapTokenGrant(_) => Ok(EntryAction::Create),
-        _ => Err(HolochainError::NotImplemented(
-            "Not implemented".to_string(),
-        )),
-    }
-}
+
 
 impl Entry {
     pub fn entry_type(&self) -> EntryType {

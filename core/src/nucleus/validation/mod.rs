@@ -1,11 +1,14 @@
-use crate::context::Context;
+use crate::{context::Context,
+workflows::get_entry_result::get_entry_result_workflow};
 use holochain_core_types::{
     cas::content::Address,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
-    validation::ValidationData,
+    validation::{ValidationData,EntryValidationData}
 };
+use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 use std::sync::Arc;
+use futures_util::future::FutureExt;
 
 mod app_entry;
 mod header_address;
@@ -121,4 +124,50 @@ pub async fn validate_entry(
 
         _ => Err(ValidationError::NotImplemented),
     }
+}
+
+
+pub fn entry_to_validation_data(
+    context : Arc<Context>,
+    entry: &Entry,
+    maybe_link_update_delete: Option<Address>,
+) -> Result<EntryValidationData, HolochainError> {
+    match entry {
+        Entry::App(_, _) => maybe_link_update_delete
+            .map(|link_update|
+            {
+                get_latest_entry_for_entry_validation(context.clone(),link_update)
+                .map(|latest|{
+                    Ok(EntryValidationData::Modify(latest.clone(),entry.clone()))
+                }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find Entry".to_string())))
+            } )
+            .unwrap_or(Ok(EntryValidationData::Create(entry.clone()))),
+        Entry::Deletion(deletion_entry) => {
+            let deletion_address = deletion_entry.clone().deleted_entry_address();
+            get_latest_entry_for_entry_validation(context.clone(),deletion_address)
+                .map(|latest|{
+                    Ok(EntryValidationData::Delete(latest.clone(),entry.clone()))
+                }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find Entry".to_string())))
+        }
+        Entry::LinkAdd(_) => Ok(EntryValidationData::Create(entry.clone())),
+        Entry::LinkRemove(_) => Ok(EntryValidationData::Create(entry.clone())),
+        Entry::CapTokenGrant(_) => Ok(EntryValidationData::Create(entry.clone())),
+        _ => Err(HolochainError::NotImplemented(
+            "Not implemented".to_string(),
+        )),
+    }
+}
+
+
+//high order function to get latest entry for the validation purposes
+fn get_latest_entry_for_entry_validation(context : Arc<Context>,address : Address) ->Result<Entry,HolochainError>
+{
+    let entry_args = &GetEntryArgs {
+                address: address,
+                options: Default::default(),
+                };
+    let entry_result = context.block_on(get_entry_result_workflow(&context.clone(),entry_args))?;
+    let latest = entry_result.latest().ok_or(HolochainError::ErrorGeneric("Could not Get Latest".to_string()))?;
+    Ok(latest)
+
 }

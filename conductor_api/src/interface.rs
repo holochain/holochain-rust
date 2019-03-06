@@ -28,6 +28,20 @@ use serde_json::map::Map;
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
 
+/// An identifier for an instance that is usable by UI in making calls to the conductor
+/// this type allows us to implement this identifier differently, i.e. as a DNA/agent ID pair, etc
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Hash, Eq)]
+pub struct PublicInstanceIdentifier(String);
+
+/// A mapper type between the public identifier and the conductor config identifier string
+pub type PublicInstanceMap = HashMap<PublicInstanceIdentifier, String>;
+
+impl From<String> for PublicInstanceIdentifier {
+    fn from(s: String) -> PublicInstanceIdentifier {
+        PublicInstanceIdentifier(s)
+    }
+}
+
 pub trait DispatchRpc {
     fn handler(self) -> IoHandler;
 }
@@ -77,6 +91,7 @@ macro_rules! conductor_call {
 /// with spawn() to retrieve the IoHandler.
 pub struct ConductorApiBuilder {
     instances: InstanceMap,
+    instances_map: PublicInstanceMap,
     instance_configs: HashMap<String, InstanceConfiguration>,
     io: Box<IoHandler>,
 }
@@ -85,6 +100,7 @@ impl ConductorApiBuilder {
     pub fn new() -> Self {
         ConductorApiBuilder {
             instances: HashMap::new(),
+            instances_map: HashMap::new(),
             instance_configs: HashMap::new(),
             io: Box::new(IoHandler::new()),
         }
@@ -93,7 +109,59 @@ impl ConductorApiBuilder {
     /// Finish the building and retrieve the populated handler
     pub fn spawn(mut self) -> IoHandler {
         self.setup_info_api();
+        self.setup_call_api();
         *self.io
+    }
+
+    /// Adds a "call" method for making zome function calls
+    fn setup_call_api(&mut self) {
+        let instances = self.instances.clone();
+        let instances_map = self.instances_map.clone();
+        self.io.add_method("call", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let public_id_str = Self::get_as_string("id", &params_map)?;
+            let id = instances_map
+                .get(&PublicInstanceIdentifier::from(public_id_str))
+                .ok_or(jsonrpc_core::Error::invalid_params(
+                    "instance identifier invalid",
+                ))?;
+            let instance = instances
+                .get(id)
+                .ok_or(jsonrpc_core::Error::invalid_params("unknown instance"))?;
+            let hc_lock = instance.clone();
+            let hc_lock_inner = hc_lock.clone();
+            let mut hc = hc_lock_inner.write().unwrap();
+            let call_params = params_map.get("params");
+            let params_string = serde_json::to_string(&call_params)
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            let func_name = Self::get_as_string("function", &params_map)?;
+            let zome_name = Self::get_as_string("zome", &params_map)?;
+
+            let cap_request = {
+                // TODO: get the token from the parameters.  If not there assume public token.
+                // currently we are always getting the public token.
+                let context = hc.context();
+                let token =
+                    context
+                        .get_public_token()
+                        .ok_or(jsonrpc_core::Error::invalid_params(
+                            "public token not found",
+                        ))?;
+                let caller = Address::from("fake");
+                make_cap_request_for_call(
+                    context.clone(),
+                    token,
+                    caller,
+                    &func_name,
+                    params_string.clone(),
+                )
+            };
+
+            let response = hc
+                .call(&zome_name, cap_request, &func_name, &params_string)
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            Ok(Value::String(response.to_string()))
+        });
     }
 
     /// Adds a "info/instances" method that returns a JSON object describing all registered
@@ -170,7 +238,7 @@ impl ConductorApiBuilder {
                             let mut hc = hc_lock_inner.write().unwrap();
                             let params_string = serde_json::to_string(&params)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-
+                            println!("ZOME CALLING USING interface/zome/function ROUTE HAS BEEN DEPRECATED.  USE call INSTEAD");
                             let cap_request = {
                                 // TODO: get the token from the parameters.  If not there assume public token.
                                 // currently we are always getting the public token.
@@ -200,6 +268,10 @@ impl ConductorApiBuilder {
         };
         self.instances
             .insert(instance_name.clone(), instance.clone());
+        self.instances_map.insert(
+            PublicInstanceIdentifier::from(instance_name.clone()),
+            instance_name.clone(),
+        );
         self
     }
 

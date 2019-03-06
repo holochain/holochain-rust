@@ -9,8 +9,11 @@ use crate::{
     },
 };
 
-use crate::scheduled_jobs::pending_validations::ValidatingWorkflow;
+use crate::{
+    nucleus::validation::ValidationError, scheduled_jobs::pending_validations::ValidatingWorkflow,
+};
 use holochain_core_types::{
+    cas::content::AddressableContent,
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
@@ -57,10 +60,35 @@ pub async fn hold_entry_workflow<'a>(
     };
 
     // 3. Validate the entry
-    await!(validate_entry(entry.clone(), validation_data, &context))?;
+    await!(validate_entry(entry.clone(), validation_data, &context)).map_err(|err| {
+        context.log(format!(
+            "err/workflow/hold_entry: {} is NOT valid! {:?}",
+            entry_with_header.entry.address(),
+            err,
+        ));
+        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                dependencies.clone(),
+                ValidatingWorkflow::HoldEntry,
+                &context,
+            );
+        }
+        HolochainError::ValidationPending
+    })?;
+
+    context.log(format!(
+        "debug/workflow/hold_entry: is valid! {}",
+        entry_with_header.entry.address()
+    ));
 
     // 3. If valid store the entry in the local DHT shard
-    await!(hold_entry(entry_with_header, context))?;
+    await!(hold_entry(entry_with_header, context.clone()))?;
+
+    context.log(format!(
+        "debug/workflow/hold_entry: HOLDING: {}",
+        entry_with_header.entry.address()
+    ));
 
     Ok(())
 }

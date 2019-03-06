@@ -951,6 +951,7 @@ fn create_ipc_config(
                         "N3H_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_MODE"],
                         "N3H_WORK_DIR": dir.clone(),
                         "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
+                        "N3H_LOG_LEVEL": p2p_config.backend_config["spawn"]["env"]["N3H_LOG_LEVEL"],
                     }
                 },
             }})).expect("Failled making valid P2pConfig with filepath")
@@ -974,6 +975,7 @@ fn create_ipc_config(
                         "N3H_MODE": "HACK",
                         "N3H_WORK_DIR": dir.clone(),
                         "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
+                        "N3H_LOG_LEVEL": "t"
                 }
             },
             }}))

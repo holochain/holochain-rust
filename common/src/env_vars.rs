@@ -16,7 +16,7 @@
 //! - **HC_N3H_BOOTSTRAP_NODE** *string* Set an external p2p bound ip4 address for another node, to bootstrap the networking discovery process.
 //! Without this, a second node will of a network will be unable to find any others. See [configuring networking]([here](https://developer.holochain.org/guide/latest/hc_configuring_networking.html)
 //! for details.
-//! - **HC_N3H_LOG_LEVEL** *char* Set the logging level used globally by N3H. Must be one of the following: 't', 'd', 'i', 'w', 'e'
+//! - **HC_N3H_LOG_LEVEL** *char* Set the logging level used globally by N3H. Must be one of the following: 't', 'd', 'i', 'w', 'e'. Each value represents its corresponding industry standard log level: Trace, Debug, Info, Warning, Error.
 //! - **NETWORKING_CONFIG_FILE** *string* Path to a JSON file containing configuration for the n3h networking module. More on this soon. Recommended to
 //! not use this as this time.
 //!

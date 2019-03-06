@@ -37,7 +37,12 @@ export RUST_BACKTRACE=1
 # There are 3 methods to obtain the libsodium encryption library required by holochain-rust,
 # selectable by setting/clearing various RUST_SODIUM_...  environment variables (see:
 # https://github.com/maidsafe/rust_sodium).  These selections are implemented and enforced in
-# rust_sodium-sys/build.rs
+# rust_sodium-sys/build.rs.  The default is to download/compile libsodium 1.0.17 (06-Jan-2019).
+
+# 0) DEFAULT: Downloaded/compiled by holochain-rust build: select by clearing RUST_SODIUM_LIB_DIR
+# and RUST_SODIUM_USE_PKG_CONFIG.  Some systems require libsodium to be configured and built with
+# `--disable-pie`; select this here by setting RUST_SODIUM_DISABLE_PIE.
+#export RUST_SODIUM_DISABLE_PIE=1
 
 # 1) System installed: select by setting RUST_SODIUM_LIB_DIR. We need to find the location of the
 # system's libsodium dynamic library: at least version 1.0.12 is required.  On Mac, `brew install
@@ -46,17 +51,12 @@ export RUST_BACKTRACE=1
 # add `buster` to /etc/apt/sources...), or Debian Buster (testing, libsodium 1.0.17): `apt-get -t
 # buster -u install libsodium-dev`.  On other Linux distros, ensure at least libsodium 1.0.12+ is
 # installed.
-RUST_SODIUM_LIB=$(shell find /usr/local/lib /usr/lib /lib -name 'libsodium.so' -o -name 'libsodium.dylib' | head -1)
-export RUST_SODIUM_LIB_DIR=$(dir $(RUST_SODIUM_LIB))
-export RUST_SODIUM_SHARED=1
+#RUST_SODIUM_LIB=$(shell find /usr/local/lib /usr/lib /lib -name 'libsodium.so' -o -name 'libsodium.dylib' | head -1)
+#export RUST_SODIUM_LIB_DIR=$(dir $(RUST_SODIUM_LIB))
+#export RUST_SODIUM_SHARED=1
 
 # 2) Rust `pkg_config::probe_library`-detected: select by setting RUST_SODIUM_USE_PKG_CONFIG.
 #export RUST_SODIUM_USE_PKG_CONFIG=1
-
-# 3) Downloaded/compiled by holochain-rust build: select by clearing RUST_SODIUM_LIB_DIR and
-# RUST_SODIUM_USE_PKG_CONFIG.  Some systems require libsodium to be configured and built with
-# `--disable-pie`; select this here by setting RUST_SODIUM_DISABLE_PIE.
-#export RUST_SODIUM_DISABLE_PIE=1
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))

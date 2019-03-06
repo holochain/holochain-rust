@@ -354,7 +354,7 @@ fn get_libsodium() {
     if !cflags.is_empty() {
         configure_cmd.env("CFLAGS", &cflags);
     }
-    //println!("cargo:warning=libsodium CFLAGS used: {}", cflags);
+    println!("cargo:warning=libsodium CFLAGS used: {}", cflags);
     println!("cargo:rerun-if-env-changed=RUST_SODIUM_DISABLE_PIE");
     if env::var("RUST_SODIUM_DISABLE_PIE").is_ok() {
         println!("cargo:warning=libsodium --disable-pie used");

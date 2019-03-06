@@ -83,13 +83,13 @@ let
 
 in
 with nixpkgs;
-stdenv.mkDerivation rec {
+stdenvNoCC.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
 
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
-    binutils gcc gnumake openssl pkgconfig coreutils
+    binutils gcc8 gnumake openssl pkgconfig coreutils
 
     cmake
     python

@@ -57,7 +57,6 @@ struct TransportInfo<T: Read + Write + std::fmt::Debug> {
 
 impl<T: Read + Write + std::fmt::Debug> TransportInfo<T> {
     pub fn close(&mut self) -> TransportResult<()> {
-        println!("TransportInfo::close() for {:?}", self);
         if let WssStreamState::Ready(socket) = &mut self.stateful_socket {
             socket.close(None)?;
             socket.write_pending()?;

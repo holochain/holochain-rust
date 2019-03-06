@@ -3,6 +3,7 @@ let
   nixpkgs = import <nixpkgs> {
     overlays = [ moz_overlay ];
   };
+  inherit (nixpkgs.lib) optionals;
 
   date = "2019-01-24";
   wasmTarget = "wasm32-unknown-unknown";
@@ -17,8 +18,11 @@ let
 
   hc-install-node-conductor = nixpkgs.writeShellScriptBin "hc-install-node-conductor"
   ''
-   export RUST_SODIUM_LIB_DIR=/nix/store/l1nbc3vgr37lswxny8pwhkq4m937y2g4-libsodium-1.0.16;
-   export RUST_SODIUM_SHARED=1;
+   # Default: Download/Build libsodium according to rust_sodium-sys/build.rs
+   #export RUST_SODIUM_DISABLE_PIE=1
+   # To use system libsodium 1.0.16, uncomment:
+   #export RUST_SODIUM_LIB_DIR=/nix/store/l1nbc3vgr37lswxny8pwhkq4m937y2g4-libsodium-1.0.16;
+   #export RUST_SODIUM_SHARED=1;
    . ./scripts/build_nodejs_conductor.sh;
   '';
 
@@ -114,7 +118,8 @@ stdenv.mkDerivation rec {
     hc-fmt
     hc-fmt-check
 
-    libsodium
+    # Default to download/build libsodium (same as for all other builds/platforms)
+    # libsodium
 
     # dev tooling
     git
@@ -124,7 +129,13 @@ stdenv.mkDerivation rec {
     circleci-cli
     hc-codecov
     ci
-  ];
+  ]
+  ++ optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [
+    # For building libsodium on macOS.
+    CoreFoundation
+    CoreServices
+    Security
+  ]);
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   # https://llogiq.github.io/2017/06/01/perf-pitfalls.html

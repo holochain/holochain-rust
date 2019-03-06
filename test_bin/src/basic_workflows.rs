@@ -84,6 +84,63 @@ fn confirm_published_metadata(
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
+pub fn setup_one_node(
+    alex: &mut P2pNode,
+    _billy: &mut P2pNode,
+    can_connect: bool,
+) -> NetResult<()> {
+    // Send TrackDna message on both nodes
+    alex.send(
+        JsonProtocol::TrackDna(TrackDnaData {
+            dna_address: DNA_ADDRESS.clone(),
+            agent_id: ALEX_AGENT_ID.to_string(),
+        })
+        .into(),
+    )
+    .expect("Failed sending TrackDnaData on alex");
+    // Check if PeerConnected is received
+    let connect_result_1 = alex
+        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .unwrap();
+    log_i!("self connected result 1: {:?}", connect_result_1);
+
+    // get ipcServer IDs for each node from the IpcServer's state
+    if can_connect {
+        let mut _node1_binding = String::new();
+
+        alex.send(JsonProtocol::GetState.into())
+            .expect("Failed sending RequestState on alex");
+        let alex_state = alex
+            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .unwrap();
+
+        one_let!(JsonProtocol::GetStateResult(state) = alex_state {
+            _node1_binding = state.id
+        });
+
+        // Connect nodes between them
+        log_i!("node1_binding = {}", _node1_binding);
+    }
+
+    // Make sure we received everything we needed from network module
+    // TODO: Make a more robust function that waits for certain messages in msg log (with timeout that panics)
+    let _msg_count = alex.listen(100);
+
+    let mut time_ms: usize = 0;
+    while !alex.is_network_ready() && time_ms < 1000 {
+        let _msg_count = alex.listen(100);
+        time_ms += 100;
+    }
+
+    log_i!("setup_one_node() COMPLETE \n\n\n");
+
+    // Done
+    Ok(())
+}
+
+/// Do normal setup: 'TrackDna' & 'Connect',
+/// and check that we received 'PeerConnected'
+#[cfg_attr(tarpaulin, skip)]
 pub fn setup_two_nodes(
     alex: &mut P2pNode,
     billy: &mut P2pNode,
@@ -173,6 +230,13 @@ pub fn setup_two_nodes(
     // TODO: Make a more robust function that waits for certain messages in msg log (with timeout that panics)
     let _msg_count = alex.listen(100);
     let _msg_count = billy.listen(100);
+
+    let mut time_ms: usize = 0;
+    while !(alex.is_network_ready() && billy.is_network_ready()) && time_ms < 1000 {
+        let _msg_count = alex.listen(100);
+        let _msg_count = billy.listen(100);
+        time_ms += 100;
+    }
 
     log_i!("setup_two_nodes() COMPLETE \n\n\n");
 
@@ -349,14 +413,16 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
 /// Sending a Message before doing a 'TrackDna' should fail
 pub fn no_setup_test(alex: &mut P2pNode, billy: &mut P2pNode, _connect: bool) -> NetResult<()> {
     // Send a message from alex to billy
-    let before_count = alex.count_recv_json_messages();
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
 
-    // Billy should not receive it.
+    // Alex should receive a FailureResult
+    let _res = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 500);
+    // in-memory can't send a failure result back
+    // assert!(_res.is_some());
+
+    // Billy should not receive anything
     let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
-    // Alex should also not receive anything back
-    assert_eq!(before_count, alex.count_recv_json_messages());
     Ok(())
 }
 

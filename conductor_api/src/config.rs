@@ -490,6 +490,9 @@ pub struct NetworkConfig {
     /// List of URIs that point to other nodes to bootstrap p2p connections.
     #[serde(default)]
     pub bootstrap_nodes: Vec<String>,
+    /// Global logging level output by N3H
+    #[serde(default = "default_n3h_log_level")]
+    pub n3h_log_level: String,
     /// Absolute path to the local installation/repository of n3h
     #[serde(default)]
     pub n3h_path: String,
@@ -515,6 +518,13 @@ pub struct NetworkConfig {
 // if this logic changes
 pub fn default_n3h_mode() -> String {
     String::from("HACK")
+}
+
+// note that this behaviour is documented within
+// holochain_common::env_vars module and should be updated
+// if this logic changes
+pub fn default_n3h_log_level() -> String {
+    String::from("i")
 }
 
 // note that this behaviour is documented within
@@ -682,6 +692,7 @@ pub mod tests {
     n3h_path = "/Users/cnorris/.holochain/n3h"
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     networking_config_file = "/Users/cnorris/.holochain/network_config.json"
+    n3h_log_level = "d"
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -705,6 +716,7 @@ pub mod tests {
                 bootstrap_nodes: vec![String::from(
                     "/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"
                 )],
+                n3h_log_level: String::from("d"),
                 n3h_path: String::from("/Users/cnorris/.holochain/n3h"),
                 n3h_mode: String::from("HACK"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),

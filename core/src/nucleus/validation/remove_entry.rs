@@ -34,7 +34,7 @@ pub async fn validate_remove_entry(entry: Entry,
         if entity_to_delete_header.provenances().iter().find(|prov| deletion_entry_header.provenances().iter().find(|prov2|prov.0==prov2.0).is_some()).is_some()
         {
             println!("entry here");
-            let app_entry_type = match entry_to_delete
+            let app_entry_type = match entry_to_delete.clone()
             {
             Entry::App(app_entry_type,_) => Ok(app_entry_type),
             _ => Err(ValidationError::Fail("Entry type should be App Type".to_string()))
@@ -46,6 +46,8 @@ pub async fn validate_remove_entry(entry: Entry,
             .ok_or(ValidationError::NotImplemented)?;
             println!("get zome name {:?}",zome_name.clone());
             let params = EntryValidationArgs {
+            entry_type : entry_to_delete.clone().entry_type(),
+            entry : entry_to_delete,
             validation_data: validation_data.clone(),
             };
             println!("validation call back params{:?}",params.clone());

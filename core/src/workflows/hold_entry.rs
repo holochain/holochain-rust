@@ -5,7 +5,7 @@ use crate::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
     nucleus::{
-        actions::add_pending_validation::add_pending_validation, validation::validate_entry,
+        actions::add_pending_validation::add_pending_validation, validation::{validate_entry,entry_to_validation_data}
     },
 };
 
@@ -41,7 +41,7 @@ pub async fn hold_entry_workflow<'a>(
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Dht,
-        action: EntryAction::Create,
+        entry_validation: entry_to_validation_data(context.clone(), entry,None)?
     };
 
     // 3. Validate the entry

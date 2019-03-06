@@ -4,7 +4,7 @@ use crate::{
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
-    nucleus::validation::validate_entry,
+    nucleus::validation::{validate_entry,entry_to_validation_data}
 };
 
 use holochain_core_types::{
@@ -25,16 +25,19 @@ pub async fn hold_update_workflow<'a>(
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
 
+    // get link from header
+    let link = header
+        .link_update_delete()
+        .ok_or("Could not get link update from header".to_string())?;
+
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Meta,
-        action: EntryAction::Modify,
+        entry_validation:entry_to_validation_data(context.clone(), entry,Some(link.clone()))?
     };
 
-    let link = header
-        .link_update_delete()
-        .ok_or("Could not get link update from header".to_string())?;
+
 
     // 3. Validate the entry
     await!(validate_entry(entry.clone(), validation_data, &context))?;

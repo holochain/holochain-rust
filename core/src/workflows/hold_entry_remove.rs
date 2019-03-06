@@ -4,7 +4,7 @@ use crate::{
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
-    nucleus::validation::validate_entry,
+    nucleus::validation::{validate_entry,entry_to_validation_data}
 };
 
 use holochain_core_types::{
@@ -30,7 +30,7 @@ pub async fn hold_remove_workflow<'a>(
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Meta,
-        action: EntryAction::Delete,
+        entry_validation: entry_to_validation_data(context.clone(), entry,None)?
     };
 
     // 3. Validate the entry

@@ -3,13 +3,13 @@ use crate::{
     context::Context,
     network::actions::publish::publish,
     nucleus::{
-        actions::build_validation_package::build_validation_package, validation::validate_entry,
+        actions::build_validation_package::build_validation_package, validation::{validate_entry,entry_to_validation_data}
     },
 };
 
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::{entry_to_entry_action, Entry},
+    entry::{ Entry},
     error::HolochainError,
     validation::{EntryLifecycle, ValidationData},
 };
@@ -31,7 +31,7 @@ pub async fn author_entry<'a>(
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
-        action: entry_to_entry_action(entry, maybe_link_update_delete.clone())?,
+        entry_validation: entry_to_validation_data(context.clone(), entry,maybe_link_update_delete.clone())?,
     };
 
     // 2. Validate the entry

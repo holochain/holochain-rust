@@ -8,7 +8,7 @@ use crate::{
 };
 
 use crate::nucleus::{
-    actions::add_pending_validation::add_pending_validation, validation::ValidationError,
+    actions::add_pending_validation::add_pending_validation, validation::{ValidationError,entry_to_validation_data}
 };
 use holochain_core_types::{
     entry::Entry,
@@ -55,7 +55,7 @@ pub async fn hold_link_workflow<'a>(
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Meta,
-        action: EntryAction::Create,
+        entry_validation: entry_to_validation_data(context.clone(), entry,None)?
     };
 
     // 3. Validate the entry

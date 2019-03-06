@@ -116,19 +116,19 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 321"
   const in_reply_to = null
   const params = { content, in_reply_to }
-  const createResult = alice.call("blog", "create_post", params)
+  const createResult = await alice.callSync("blog", "create_post", params)
 
   t.ok(createResult.Ok)
 
   const deletionParams = { post_address: createResult.Ok }
   const deletionResult = await alice.callSync("blog", "delete_entry_post", deletionParams)
 
-  t.equals(deletionResult.Ok, null)
+  t.notOk(deletionResult.Ok)
 
   const paramsGet = { post_address: createResult.Ok }
   const result = bob.call("blog", "get_post", paramsGet)
 
-  t.equals(result.Ok, null)
+  t.notOk(result.Ok)
 })
 
 scenario2.runTape('update_post', async (t, { alice, bob }) => {

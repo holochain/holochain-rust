@@ -25,7 +25,6 @@ use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;
 use std::convert::TryFrom;
-use validation::{EntryAction,EntryValidationData};
 
 pub type AppEntryValue = JsonString;
 

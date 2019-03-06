@@ -39,7 +39,7 @@ use holochain_wasm_utils::{
         json::{JsonString, RawString},
     },
 };
-use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodingBits;
+use holochain_wasm_utils::holochain_core_types::{validation::EntryValidationData,error::RibosomeEncodingBits};
 use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
@@ -463,9 +463,17 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |entry: TestEntryType, _validation_data: hdk::ValidationData| {
-                (entry.stuff != "FAIL")
-                    .ok_or_else(|| "FAIL content is not allowed".to_string())
+            validation: |test_entry: TestEntryType, validation_data: hdk::ValidationData| {
+                match validation_data.entry_validation
+                {
+                    EntryValidationData::Create(entry) => 
+                    {
+                        (test_entry.stuff != "FAIL").ok_or_else(|| "FAIL content is not allowed".to_string())
+                    },
+                    _=> Ok(()),
+
+                }
+                
             },
 
             links: [

@@ -138,7 +138,7 @@ pub fn entry_to_validation_data(
             {
                 get_latest_entry_for_entry_validation(context.clone(),link_update)
                 .map(|latest|{
-                    Ok(EntryValidationData::Modify(latest.clone(),entry.clone()))
+                    Ok(EntryValidationData::Modify(entry.clone(),latest.clone()))
                 }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find Entry".to_string())))
             } )
             .unwrap_or(Ok(EntryValidationData::Create(entry.clone()))),
@@ -146,7 +146,7 @@ pub fn entry_to_validation_data(
             let deletion_address = deletion_entry.clone().deleted_entry_address();
             get_latest_entry_for_entry_validation(context.clone(),deletion_address)
                 .map(|latest|{
-                    Ok(EntryValidationData::Delete(latest.clone(),entry.clone()))
+                    Ok(EntryValidationData::Delete(entry.clone(),latest.clone()))
                 }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find Entry".to_string())))
         }
         Entry::LinkAdd(_) => Ok(EntryValidationData::Create(entry.clone())),

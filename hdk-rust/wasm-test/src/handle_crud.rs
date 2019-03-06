@@ -15,7 +15,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     // Commit v1 entry
     hdk::debug("**** Commit v1 entry").ok();
     let res = hdk::commit_entry(&hdk_test_entry());
-    hdk::sleep(Duration::from_millis(2500)).unwrap();
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     let addr_v1 = res.unwrap();
     // get it
     hdk::debug("**** Get it").ok();
@@ -31,7 +31,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     let res = hdk::update_entry(entry_v2.clone(), &addr_v1);
     let addr_v2 = res.unwrap();
 
-    hdk::sleep(Duration::from_millis(2500)).unwrap();
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     // get latest from latest
     hdk::debug("**** get latest from latest").ok();
     let res = hdk::get_entry(&addr_v2);
@@ -61,7 +61,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     );
     let res = hdk::update_entry(entry_v3.clone(), &addr_v1);
     let addr_v3 = res.unwrap();
-    hdk::sleep(Duration::from_millis(2500)).unwrap();
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     // get latest from v1
     hdk::debug("**** get latest from v1").ok();
     let res = hdk::get_entry(&addr_v1);
@@ -80,7 +80,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     );
     let res = hdk::update_entry(entry_v4.clone(), &addr_v3);
 
-    hdk::sleep(Duration::from_millis(2500)).unwrap();
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     let addr_v4 = res.unwrap();
     // get latest from v1
     let res = hdk::get_entry(&addr_v1);
@@ -201,7 +201,7 @@ pub fn handle_remove_entry_ok() -> JsonString {
     // Delete it
     //hdk::debug("**** Delete it").ok();
     hdk::remove_entry(&addr_v1).unwrap();
-    hdk::sleep(Duration::from_millis(2500)).unwrap();
+    hdk::sleep(Duration::from_millis(60000)).unwrap();
     
     // Get it should fail
     //hdk::debug("**** Get it should fail").ok();
@@ -218,7 +218,7 @@ pub fn handle_remove_entry_ok() -> JsonString {
     // Delete it again should fail
     //hdk::debug("**** Delete it again should fail").ok();
     let res = hdk::remove_entry(&addr_v1);
-    hdk::sleep(Duration::from_millis(2500)).unwrap();
+    hdk::sleep(Duration::from_millis(60000)).unwrap();
     assert_eq!(res.is_err(),true);
   
     // Get entry_result
@@ -226,7 +226,7 @@ pub fn handle_remove_entry_ok() -> JsonString {
         &addr_v1,
         GetEntryOptions::new(StatusRequestKind::All, false, false, Default::default()),
     );
-    hdk::sleep(Duration::from_millis(2500)).unwrap();
+    hdk::sleep(Duration::from_millis(40000)).unwrap();
     match res {
         Ok(result) => match result.result {
             GetEntryResultType::Single(item) => item.into(),
@@ -255,7 +255,7 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
         TestEntryType { stuff: "v2".into() }.into(),
     );
     let res = hdk::update_entry(entry_v2.clone(), &addr_v1);
-    hdk::sleep(Duration::from_millis(2500)).unwrap();
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     let addr_v2 = res.unwrap();
     // Get v2
     hdk::debug("**** get v2").ok();
@@ -266,7 +266,7 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     // Delete it
     hdk::debug("**** delete it").ok();
     let res = hdk::remove_entry(&addr_v1);
-    hdk::sleep(Duration::from_millis(2500)).unwrap();
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     assert!(res.is_ok());
     // Get v2 should fail
     hdk::debug("**** get v2 should fail").ok();
@@ -283,12 +283,12 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     // Delete v2 again should fail
     hdk::debug("**** delete v2 again should fail").ok();
     let res = hdk::remove_entry(&addr_v2);
-    hdk::sleep(Duration::from_millis(2500)).unwrap();
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     assert!(res.is_err());
     // Delete v1 again should fail
     hdk::debug("**** delete v1 again should fail").ok();
     let res = hdk::remove_entry(&addr_v1);
-    hdk::sleep(Duration::from_millis(2500)).unwrap();
+    hdk::sleep(Duration::from_millis(35000)).unwrap();
     assert!(res.is_err());
 
     // Get history from initial

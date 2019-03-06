@@ -64,6 +64,7 @@ pub async fn run_validation_callback(
             Err(error) => Err(ValidationError::Error(error.to_string())),
         };
 
+        println!("validation result {:?}",validation_result.clone());
         cloned_context
             .action_channel()
             .send(ActionWrapper::new(Action::ReturnValidationResult((

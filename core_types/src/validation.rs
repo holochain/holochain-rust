@@ -6,7 +6,6 @@ use crate::{
     cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
     json::JsonString,
 };
-use chain_header::test_chain_header;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub struct ValidationPackage {

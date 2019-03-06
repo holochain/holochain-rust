@@ -26,8 +26,6 @@ pub async fn validate_app_entry(
         .ok_or(ValidationError::NotImplemented)?;
 
     let params = EntryValidationArgs {
-        entry: entry.clone(),
-        entry_type: entry.entry_type(),
         validation_data: validation_data.clone(),
     };
 

@@ -2,12 +2,12 @@ use crate::{context::Context,
 workflows::get_entry_result::get_entry_result_workflow};
 use holochain_core_types::{
     cas::content::Address,
-    entry::{entry_type::EntryType, Entry},
+    entry::{entry_type::{EntryType,AppEntryType}, Entry},
     error::HolochainError,
     validation::{ValidationData,EntryValidationData}
 };
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
-use std::sync::Arc;
+use std::{sync::Arc,convert::TryFrom};
 use futures_util::future::FutureExt;
 
 mod app_entry;
@@ -125,6 +125,8 @@ pub async fn validate_entry(
         _ => Err(ValidationError::NotImplemented),
     }
 }
+
+
 
 
 pub fn entry_to_validation_data(

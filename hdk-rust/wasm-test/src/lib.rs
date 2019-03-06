@@ -463,7 +463,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |test_entry: TestEntryType, validation_data: hdk::ValidationData| {
+            validation: |validation_data: hdk::ValidationData| {
                 match validation_data.entry_validation
                 {
                     EntryValidationData::Create(entry) => 

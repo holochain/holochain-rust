@@ -1,5 +1,4 @@
 use holochain_core_types::{
-    entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     json::*,
     link::Link,
@@ -8,8 +7,6 @@ use holochain_core_types::{
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct EntryValidationArgs {
-    pub entry_type: EntryType,
-    pub entry: Entry,
     pub validation_data: ValidationData,
 }
 

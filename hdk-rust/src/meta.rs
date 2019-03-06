@@ -12,6 +12,7 @@ use holochain_core_types::{
     entry::entry_type::{AppEntryType, EntryType},
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     json::JsonString,
+    validation::EntryValidationData
 };
 use holochain_wasm_utils::{
     api_serialization::validation::{
@@ -23,7 +24,7 @@ use holochain_wasm_utils::{
         ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
     },
 };
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap,convert::TryFrom};
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -78,6 +79,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     unsafe { zome_setup(&mut zd) };
 
     let name = allocation.read_to_string();
+    
 
     match zd
         .entry_types
@@ -112,15 +114,21 @@ pub extern "C" fn __hdk_validate_app_entry(
         Err(e) => return RibosomeEncodedValue::from(e).into(),
     };
 
+    let entry_type_to_app_entry = match entry_validation_to_app_entry_type(input.validation_data.clone().entry_validation)
+    {
+        Ok(v) => v,
+        Err(e) => return RibosomeEncodedValue::from(e).into()
+    };
+    
     match zd
         .entry_types
         .into_iter()
-        .find(|ref validating_entry_type| validating_entry_type.name == input.entry_type)
+        .find(|ref validating_entry_type| validating_entry_type.name == entry_type_to_app_entry)
     {
         None => RibosomeErrorCode::CallbackFailed as RibosomeEncodingBits,
         Some(mut entry_type_definition) => {
             let validation_result =
-                (*entry_type_definition.validator)(input.entry, input.validation_data);
+                (*entry_type_definition.validator)(input.validation_data);
 
             match validation_result {
                 Ok(()) => RibosomeEncodedValue::Success.into(),
@@ -129,6 +137,20 @@ pub extern "C" fn __hdk_validate_app_entry(
                         .into()
                 }
             }
+        }
+    }
+}
+
+fn entry_validation_to_app_entry_type(entry_validation : EntryValidationData) ->Result<EntryType,HolochainError>
+{
+    match entry_validation
+    {
+        EntryValidationData::Create(entry) => {
+            Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?))
+        },
+        EntryValidationData::Delete(_,entry) => Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?)),
+        EntryValidationData::Modify(latest,_) =>{
+            Ok(EntryType::App(AppEntryType::try_from(latest.entry_type())?))
         }
     }
 }

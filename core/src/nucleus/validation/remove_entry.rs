@@ -46,8 +46,6 @@ pub async fn validate_remove_entry(entry: Entry,
             .ok_or(ValidationError::NotImplemented)?;
             println!("get zome name {:?}",zome_name.clone());
             let params = EntryValidationArgs {
-            entry_type : entry_to_delete.clone().entry_type(),
-            entry : entry_to_delete,
             validation_data: validation_data.clone(),
             };
             println!("validation call back params{:?}",params.clone());

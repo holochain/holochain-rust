@@ -183,17 +183,21 @@ impl Waiter {
                         // TODO: is there a possiblity that this can get messed up if the same
                         // entry is committed multiple times?
                         let committed_entry_clone = committed_entry.clone();
-                        checker.add(num_instances, move |aw| match aw.action() {
-                            Action::Hold(EntryWithHeader { entry, header: _ }) => {
-                                *entry == committed_entry_clone
+                        checker.add(num_instances, move |aw| {
+                            println!("WAITER: Action::Commit -> Action::Hold");
+                            match aw.action() {
+                                Action::Hold(EntryWithHeader { entry, header: _ }) => {
+                                    *entry == committed_entry_clone
+                                }
+                                _ => false,
                             }
-                            _ => false,
                         });
 
                         match committed_entry.clone() {
                             Entry::App(_, _) => {
                                 if link_update_delete.is_some() {
                                     checker.add(num_instances, move |aw| {
+                                        println!("WAITER: Entry::LinkRemove -> Action::RemoveLink");
                                         *aw.action()
                                             == Action::UpdateEntry((
                                                 link_update_delete.clone().expect(
@@ -206,6 +210,7 @@ impl Waiter {
                             }
                             Entry::Deletion(deletion_entry) => {
                                 checker.add(num_instances, move |aw| {
+                                    println!("WAITER: Entry::Deletion -> Action::RemoveEntry");
                                     *aw.action()
                                         == Action::RemoveEntry((
                                             deletion_entry.clone().deleted_entry_address(),
@@ -216,11 +221,13 @@ impl Waiter {
 
                             Entry::LinkAdd(link_add) => {
                                 checker.add(num_instances, move |aw| {
+                                    println!("WAITER: Entry::LinkAdd -> Action::AddLink");
                                     *aw.action() == Action::AddLink(link_add.clone().link().clone())
                                 });
                             }
                             Entry::LinkRemove(link_remove) => {
                                 checker.add(num_instances, move |aw| {
+                                    println!("WAITER: Entry::LinkRemove -> Action::RemoveLink");
                                     *aw.action()
                                         == Action::RemoveLink(link_remove.clone().link().clone())
                                 });
@@ -233,6 +240,7 @@ impl Waiter {
                         let address = pending.entry_with_header.entry.address();
                         let workflow = pending.workflow.clone();
                         checker.add(1, move |aw| {
+                            println!("WAITER: Action::AddPendingValidation -> Action::RemovePendingValidation");
                             *aw.action()
                                 == Action::RemovePendingValidation((
                                     address.clone(),

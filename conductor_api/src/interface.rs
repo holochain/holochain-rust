@@ -392,12 +392,24 @@ impl ConductorApiBuilder {
                 let id = Self::get_as_string("id", &params_map)?;
                 let path = Self::get_as_string("path", &params_map)?;
                 let copy = Self::get_as_bool("copy", &params_map).unwrap_or(false);
+                let expected_hash = match params_map.get("expected_hash") {
+                    Some(value) => Some(
+                        value
+                            .as_str()
+                            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                                "`{}` is not a valid json string",
+                                &value
+                            )))?
+                            .into(),
+                    ),
+                    None => None,
+                };
                 let properties = params_map.get("properties");
                 conductor_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
                     id.to_string(),
                     copy,
-                    None,
+                    expected_hash,
                     properties
                 ))?;
                 Ok(json!({"success": true}))

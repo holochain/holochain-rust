@@ -138,7 +138,7 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   //get initial entry
   const GetInitialParamsResult = alice.call("blog", "get_initial_post", { post_address: createResult.Ok })
   console.log("GetInitial " + GetInitialParamsResult);
-  t.deepEqual(JSON.parse(GetInitialParamsResult.Ok.App[1]),{content: "Hello Holo", date_created: "now" });
+  t.deepEqual(JSON.parse(GetInitialParamsResult.Ok.App[1]),{content: "Hello Holo world 321", date_created: "now" });
   
   const paramsGet = { post_address: createResult.Ok }
   const result = bob.call("blog", "get_post", paramsGet)

@@ -127,12 +127,12 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const deletionParams = { post_address: createResult.Ok }
   const deletionResult = await alice.callSync("blog", "delete_entry_post", deletionParams)
 
-  t.notOk(deletionResult.Ok)
+  t.Ok(deletionResult.Err)
 
 
   //delete should fail
-  const deletionResult = await alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
-  t.notOk(deletionResult.Ok)
+  const failedDelete = await alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
+  t.notOk(failedDelete.Ok)
 
   //get initial entry
   const GetInitialParamsResult = alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })

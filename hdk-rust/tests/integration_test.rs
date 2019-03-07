@@ -733,10 +733,6 @@ fn can_check_call_with_args() {
     //assert_eq!(result.unwrap(), JsonString::from(expected),);
 }
 
-
-
-
-
 #[test]
 fn can_send_and_receive() {
     let (mut hc, _) = start_holochain_instance("can_send_and_receive", "alice");

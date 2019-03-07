@@ -109,7 +109,7 @@ define_zome! {
         get_initial_post: {
             inputs: |post_address: Address|,
             outputs: |post: ZomeApiResult<Option<Entry>>|,
-            handler : handle_get_initial_post
+            handler : blog::handle_get_initial_post
         }
 
         my_posts: {

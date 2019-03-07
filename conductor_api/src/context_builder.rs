@@ -145,38 +145,53 @@ impl ContextBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    extern crate tempfile;
+    use self::tempfile::tempdir;
     use holochain_net::p2p_config::P2pBackendKind;
-    use tempfile::tempdir;
+    use test_utils::mock_signing::mock_conductor_api;
 
     #[test]
     fn vanilla() {
-        let context = ContextBuilder::new().spawn();
-        assert_eq!(context.agent_id, AgentId::generate_fake("alice"));
+        let agent = AgentId::generate_fake("alice");
+        let context = ContextBuilder::new()
+            .with_conductor_api(mock_conductor_api(agent.clone()))
+            .spawn();
+        assert_eq!(context.agent_id, agent);
         assert_eq!(P2pBackendKind::MEMORY, context.p2p_config.backend_kind);
     }
 
     #[test]
     fn with_agent() {
         let agent = AgentId::generate_fake("alice");
-        let context = ContextBuilder::new().with_agent(agent.clone()).spawn();
+        let context = ContextBuilder::new()
+            .with_agent(agent.clone())
+            .with_conductor_api(mock_conductor_api(agent.clone()))
+            .spawn();
         assert_eq!(context.agent_id, agent);
     }
 
     #[test]
     fn with_network_config() {
         let net = P2pConfig::new_with_unique_memory_backend();
-        let context = ContextBuilder::new().with_p2p_config(net.clone()).spawn();
+        let context = ContextBuilder::new()
+            .with_p2p_config(net.clone())
+            .with_conductor_api(mock_conductor_api(AgentId::generate_fake("alice")))
+            .spawn();
         assert_eq!(context.p2p_config, net);
     }
 
     #[test]
     fn smoke_tests() {
-        let _ = ContextBuilder::new().with_memory_storage().spawn();
+        let _ = ContextBuilder::new()
+            .with_memory_storage()
+            .with_conductor_api(mock_conductor_api(AgentId::generate_fake("alice")))
+            .spawn();
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let _ = ContextBuilder::new()
             .with_file_storage(temp_path)
             .expect("Filestorage should get instantiated with tempdir")
+            .with_conductor_api(mock_conductor_api(AgentId::generate_fake("alice")))
             .spawn();
     }
 }

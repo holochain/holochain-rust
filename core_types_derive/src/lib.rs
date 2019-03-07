@@ -1,5 +1,6 @@
 #![recursion_limit = "128"]
 #![cfg_attr(tarpaulin, skip)]
+#![warn(unused_extern_crates)]
 
 extern crate proc_macro;
 extern crate syn;

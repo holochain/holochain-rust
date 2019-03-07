@@ -3,9 +3,9 @@ use holochain_conductor_api::{
         AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
         LoggerConfiguration, StorageConfiguration,
     },
+    key_loaders::test_keybundle,
     logger::LogRules,
 };
-use holochain_core_types::agent::AgentId;
 use neon::prelude::*;
 use std::{collections::HashMap, path::PathBuf};
 
@@ -64,12 +64,13 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
         let agent_name = instance.agent.name;
         let mut dna_data = instance.dna;
         let agent_config = agent_configs.entry(agent_name.clone()).or_insert_with(|| {
-            let agent_key = AgentId::generate_fake(&agent_name);
+            let keybundle = test_keybundle(&agent_name);
             let config = AgentConfiguration {
                 id: agent_name.clone(),
                 name: agent_name.clone(),
-                public_address: agent_key.key,
-                key_file: format!("fake/key/{}", agent_name),
+                public_address: keybundle.get_id(),
+                key_file: agent_name.clone(),
+                holo_remote_key: None,
             };
             config
         });

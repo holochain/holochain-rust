@@ -1,21 +1,18 @@
 [package]
 name = "holochain_core"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-holochain_net = { path = "../net" }
-chrono = "0.4"
-wasmi = "0.3"
-snowflake = "1.2"
-rust-base58 = "0.0.4"
+base64 = "0.10"
 serde = "1.0"
 serde_derive = "1.0"
+chrono = "0.4"
 serde_json = { version = "1.0", features = ["preserve_order"] }
-multihash = "0.8.0"
+snowflake = "1.2"
 bitflags = "1.0"
-holochain_wasm_utils = { path = "../wasm_utils"}
+wasmi = "0.3"
 failure = "0.1.3"
 futures-preview = "=0.3.0-alpha.12"
 futures-core-preview = "=0.3.0-alpha.12"
@@ -28,15 +25,16 @@ lazy_static = "1.2"
 unwrap_to = "0.1.0"
 num-traits = "0.2"
 num-derive = "0.2"
-config = "0.8"
 regex = "1"
 toml = "0.4.8"
+holochain_net = { path = "../net" }
+holochain_wasm_utils = { path = "../wasm_utils"}
 holochain_common = { path = "../common" }
-holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
+holochain_core_types = { path = "../core_types" }
 holochain_cas_implementations = { path = "../cas_implementations" }
-holochain_net_connection = { path = "../net_connection" }
-base64 = "0.10"
+holochain_dpki = { path = "../hc_dpki" }
+holochain_sodium = { path = "../sodium" }
 boolinator = "2.4.0"
 jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
 jsonrpc-lite = "0.5.0"

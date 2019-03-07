@@ -75,14 +75,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
             "expecting zome call data in bridge call not null call".to_string(),
         )
     })?;
-    let conductor_api =
-        zome_call_data
-            .context
-            .conductor_api
-            .clone()
-            .ok_or(HolochainError::ConfigError(
-                "No conductor API in context".to_string(),
-            ))?;
+    let conductor_api = zome_call_data.context.conductor_api.clone();
 
     let method = format!(
         "{}/{}/{}",
@@ -119,8 +112,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    extern crate test_utils;
-    extern crate wabt;
+    use test_utils;
 
     use crate::{
         context::Context,
@@ -279,7 +271,7 @@ pub mod tests {
         let expected = Ok(Err(HolochainError::RibosomeFailed(
             "Zome function failure: Argument deserialization failed".to_string(),
         )));
-        let agent_token_str = test_setup.context.agent_id.key.clone();
+        let agent_token_str = test_setup.context.agent_id.pub_sign_key.clone();
         test_reduce_call(
             &test_setup,
             &agent_token_str,
@@ -317,7 +309,7 @@ pub mod tests {
         let expected = Ok(Err(HolochainError::RibosomeFailed(
             "Zome function failure: Argument deserialization failed".to_string(),
         )));
-        let agent_token_str = test_setup.context.agent_id.key.clone();
+        let agent_token_str = test_setup.context.agent_id.pub_sign_key.clone();
         test_reduce_call(
             &test_setup,
             &agent_token_str,

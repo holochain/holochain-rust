@@ -1,11 +1,11 @@
 [package]
 name = "holochain_sodium"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 authors = ["neonphog <neonphog@gmail.com>","zo-el<zo@el.org>"]
 edition = "2018"
 
 [dependencies]
 lazy_static = "1.2.0"
 libc = "~0.2.40"
-rust_sodium-sys = "=0.10.3"
+rust_sodium-sys = { path = "../rust_sodium-sys" }
 holochain_core_types = { path = "../core_types" }

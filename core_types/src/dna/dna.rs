@@ -148,23 +148,18 @@ impl Dna {
     ) -> Result<&FnDeclaration, DnaError> {
         let zome = self.get_zome(zome_name)?;
 
-        // Function must exist in Zome
-        let fn_decl = self.get_function(zome, &fn_name);
-        if fn_decl.is_none() {
-            return Err(DnaError::ZomeFunctionNotFound(format!(
+        self.get_function(zome, &fn_name).ok_or_else(|| {
+            DnaError::ZomeFunctionNotFound(format!(
                 "Zome function '{}' not found in Zome '{}'",
                 &fn_name, &zome_name
-            )));
-        }
-        // Everything OK
-        Ok(fn_decl.unwrap())
+            ))
+        })
     }
 
     /// Find a Zome and return it's WASM bytecode for a specified Capability
     pub fn get_wasm_from_zome_name<T: Into<String>>(&self, zome_name: T) -> Option<&wasm::DnaWasm> {
         let zome_name = zome_name.into();
-        let zome = self.get_zome(&zome_name).ok()?;
-        Some(&zome.code)
+        self.get_zome(&zome_name).ok().map(|ref zome| &zome.code)
     }
 
     /// Return a Zome's Trait functions from a Zome name and trait name.
@@ -175,16 +170,12 @@ impl Dna {
     ) -> Result<&TraitFns, DnaError> {
         let zome = self.get_zome(zome_name)?;
 
-        // Trait must exist in Zome
-        let trait_fns = self.get_trait(zome, &trait_name);
-        if trait_fns.is_none() {
-            return Err(DnaError::TraitNotFound(format!(
+        self.get_trait(zome, &trait_name).ok_or_else(|| {
+            DnaError::TraitNotFound(format!(
                 "Trait '{}' not found in Zome '{}'",
                 &trait_name, &zome_name
-            )));
-        }
-        // Everything OK
-        Ok(trait_fns.unwrap())
+            ))
+        })
     }
 
     /// Return the name of the zome holding a specified app entry_type
@@ -197,7 +188,7 @@ impl Dna {
         assert!(EntryType::has_valid_app_name(&entry_type_name));
         // Browse through the zomes
         for (zome_name, zome) in &self.zomes {
-            for (zome_entry_type_name, _) in &zome.entry_types {
+            for zome_entry_type_name in zome.entry_types.keys() {
                 if *zome_entry_type_name
                     == EntryType::App(AppEntryType::from(entry_type_name.to_string()))
                 {
@@ -213,7 +204,7 @@ impl Dna {
         // pre-condition: must be a valid app entry_type name
         assert!(EntryType::has_valid_app_name(entry_type_name));
         // Browse through the zomes
-        for (_zome_name, zome) in &self.zomes {
+        for zome in self.zomes.values() {
             for (zome_entry_type_name, entry_type_def) in &zome.entry_types {
                 if *zome_entry_type_name
                     == EntryType::App(AppEntryType::from(entry_type_name.to_string()))

@@ -1,4 +1,3 @@
-extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
@@ -146,7 +145,7 @@ pub async fn call_zome_function(
 fn is_token_the_agent(context: Arc<Context>, cap: &Option<CapabilityCall>) -> bool {
     match cap {
         None => false,
-        Some(call) => context.agent_id.key == call.cap_token.to_string(),
+        Some(call) => context.agent_id.pub_sign_key == call.cap_token.to_string(),
     }
 }
 
@@ -211,7 +210,7 @@ pub mod tests {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
         let (_, context) =
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
-        let agent_token = Address::from(context.agent_id.key.clone());
+        let agent_token = Address::from(context.agent_id.pub_sign_key.clone());
         let cap_call = CapabilityCall::new(agent_token, None);
         assert!(is_token_the_agent(context.clone(), &Some(cap_call)));
         let cap_call = CapabilityCall::new(Address::from(""), None);

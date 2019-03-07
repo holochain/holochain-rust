@@ -24,7 +24,7 @@ ___
 
 #### Example
 ```javascript
-const dna = Config.dna("path/to/happ.hcpkg")
+const dna = Config.dna("path/to/happ.dna.json")
 const instanceAlice = Config.instance(Config.agent("alice"), dna)
 const instanceBob = Config.instance(Config.agent("bob"), dna)
 const scenario = new Scenario([instanceAlice])
@@ -32,7 +32,7 @@ const scenario = new Scenario([instanceAlice])
 
 #### With conductorOptions Example
 ```javascript
-const dna = Config.dna("path/to/happ.hcpkg")
+const dna = Config.dna("path/to/happ.dna.json")
 const instanceAlice = Config.instance(Config.agent("alice"), dna)
 const instanceBob = Config.instance(Config.agent("bob"), dna)
 const scenario = new Scenario([instanceAlice], { debugLog: true })
@@ -70,7 +70,7 @@ Scenario.setTape(require('tape'))
 const agentAlice = Config.agent("alice")
 const agentBob = Config.agent("bob")
 // ...and one DNA...
-const dna = Config.dna("path/to/happ.hcpkg")
+const dna = Config.dna("path/to/happ.dna.json")
 // ...then make instances out of them...
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
@@ -78,4 +78,3 @@ const instanceBob = Config.instance(agentBob, dna)
 // Now we can construct a `scenario` object which lets us run as many scenario tests as we want involving the two instances we set up:
 const scenario = new Scenario([instanceAlice, instanceBob])
 ```
-

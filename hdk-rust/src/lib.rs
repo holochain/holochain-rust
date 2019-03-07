@@ -13,7 +13,7 @@
 //! Throughout the development process it will be helpful to click around through this reference, but
 //! the most useful places to start reading are the [define_zome! macro](macro.define_zome.html), and the list of exposed functions
 //! that Holochain offers: [the API](api/index.html).
-
+#![warn(unused_extern_crates)]
 #![feature(try_from)]
 #![feature(never_type)]
 pub extern crate serde;

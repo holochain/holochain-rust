@@ -1,11 +1,10 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_dpki::{
-    bundle::KeyBundle,
-    keypair::{Keypair, SEEDSIZE},
-    util::PwHashConfig,
+    key_bundle::{KeyBundle, SeedType},
+    SEED_SIZE,
 };
-use holochain_sodium::{pwhash, random::random_secbuf, secbuf::SecBuf};
+use holochain_sodium::secbuf::SecBuf;
 use rpassword;
 use std::{
     fs::{create_dir_all, File},
@@ -31,41 +30,35 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         passphrase1
     });
 
-    let mut seed = SecBuf::with_secure(SEEDSIZE);
-    random_secbuf(&mut seed);
-    let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
+    let mut seed = SecBuf::with_secure(SEED_SIZE);
+    seed.randomize();
+
+    let mut keybundle =
+        KeyBundle::new_from_seed(&mut seed, SeedType::Mock).expect("Failed to generate keybundle");
     let passphrase_bytes = passphrase.as_bytes();
     let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
     passphrase_buf
         .write(0, passphrase_bytes)
         .expect("SecBuf must be writeable");
 
-    let bundle: KeyBundle = keypair
-        .get_bundle(
-            &mut passphrase_buf,
-            "hint".to_string(),
-            Some(PwHashConfig(
-                pwhash::OPSLIMIT_INTERACTIVE,
-                pwhash::MEMLIMIT_INTERACTIVE,
-                pwhash::ALG_ARGON2ID13,
-            )),
-        )
-        .unwrap();
+    let blob = keybundle
+        .as_blob(&mut passphrase_buf, "hint".to_string(), None)
+        .expect("Failed to encrypt with passphrase.");
 
     let path = if None == path {
         let p = keys_directory();
         create_dir_all(p.clone())?;
-        p.join(keypair.pub_keys.clone())
+        p.join(keybundle.get_id().clone())
     } else {
         path.unwrap()
     };
 
     let mut file = File::create(path.clone())?;
-    file.write_all(serde_json::to_string(&bundle).unwrap().as_bytes())?;
+    file.write_all(serde_json::to_string(&blob).unwrap().as_bytes())?;
     println!("");
     println!("Succesfully created new agent keys.");
     println!("");
-    println!("Public address: {}", keypair.pub_keys);
+    println!("Public address: {}", keybundle.get_id());
     println!("Bundle written to: {}.", path.to_str().unwrap());
     println!("");
     println!("You can set this file in a conductor config as key_file for an agent.");
@@ -75,7 +68,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use holochain_dpki::bundle::KeyBundle;
+    use holochain_dpki::key_blob::KeyBlob;
     use std::{
         fs::{remove_file, File},
         path::PathBuf,
@@ -92,19 +85,11 @@ pub mod test {
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
 
-        let bundle: KeyBundle = serde_json::from_str(&contents).unwrap();
+        let blob: KeyBlob = serde_json::from_str(&contents).unwrap();
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        let keypair = Keypair::from_bundle(
-            &bundle,
-            &mut passphrase,
-            Some(PwHashConfig(
-                pwhash::OPSLIMIT_INTERACTIVE,
-                pwhash::MEMLIMIT_INTERACTIVE,
-                pwhash::ALG_ARGON2ID13,
-            )),
-        );
+        let keybundle = KeyBundle::from_blob(&blob, &mut passphrase, None);
 
-        assert!(keypair.is_ok());
+        assert!(keybundle.is_ok());
 
         let _ = remove_file(path);
     }

@@ -1,7 +1,9 @@
 use basic_workflows::setup_two_nodes;
 use constants::*;
-use holochain_net::tweetlog::*;
-use holochain_net_connection::{json_protocol::JsonProtocol, NetResult};
+use holochain_net::{
+    connection::{json_protocol::JsonProtocol, NetResult},
+    tweetlog::*,
+};
 use p2p_node::P2pNode;
 
 /// Test the following workflow after normal setup:
@@ -113,43 +115,6 @@ pub fn publish_meta_list_test(
     Ok(())
 }
 
-/// Reply with some data in hold_list
-#[cfg_attr(tarpaulin, skip)]
-pub fn hold_entry_list_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    can_connect: bool,
-) -> NetResult<()> {
-    // Setup
-    println!("Testing: hold_entry_list_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
-    // Have alex hold some data
-    alex.hold_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1);
-    // Alex: Look for the hold_list request received from network module and reply
-    alex.reply_to_first_HandleGetHoldingEntryList();
-    // Might receive a HandleFetchEntry request from network module:
-    // hackmode would want the data right away
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    if has_received {
-        // billy might receive HandleDhtStore
-        let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))), 2000);
-    }
-    // Have billy request that data
-    billy.request_entry(ENTRY_ADDRESS_1.clone());
-    // Alex or billy might receive HandleFetchEntry request as this moment
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    if !has_received {
-        let _has_received = billy.wait_HandleFetchEntry_and_reply();
-    }
-    // Billy should receive the data
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
-        .unwrap();
-    log_i!("got result: {:?}", result);
-    // Done
-    Ok(())
-}
-
 /// Reply with some meta in hold_meta_list
 #[cfg_attr(tarpaulin, skip)]
 pub fn hold_meta_list_test(
@@ -228,7 +193,6 @@ pub fn double_publish_meta_list_test(
     // Setup
     println!("Testing: double_publish_meta_list_test()");
     setup_two_nodes(alex, billy, can_connect)?;
-    log_i!("setup_two_nodes() COMPLETE");
 
     // Author meta and reply to HandleGetPublishingMetaList
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
@@ -359,17 +323,3 @@ pub fn many_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
     // Done
     Ok(())
 }
-
-//#[cfg_attr(tarpaulin, skip)]
-//pub fn publish_same_entry_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
-//    // Setup
-//    println!("Testing: publish_same_entry_test()");
-//    setup_normal(alex, billy, can_connect)?;
-//
-//    // author an entry without publishing it
-//    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
-//    billy.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
-//
-//    // Done
-//    Ok(())
-//}

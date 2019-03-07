@@ -1,31 +1,24 @@
-extern crate holochain_cas_implementations;
+#![warn(unused_extern_crates)]
 extern crate holochain_common;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dpki;
-extern crate holochain_net;
 extern crate holochain_sodium;
 extern crate holochain_wasm_utils;
 extern crate structopt;
 #[macro_use]
 extern crate failure;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate assert_cmd;
 extern crate base64;
 extern crate colored;
-extern crate dir_diff;
 extern crate semver;
 extern crate toml;
 #[macro_use]
 extern crate serde_json;
 extern crate ignore;
 extern crate rpassword;
-extern crate rustyline;
-extern crate tempfile;
-extern crate uuid;
 
 mod cli;
 mod config_files;
@@ -42,7 +35,7 @@ enum Cli {
     #[structopt(
         name = "package",
         alias = "p",
-        about = "Builds DNA source files into a single bundle.json DNA file"
+        about = "Builds DNA source files into a single .dna.json DNA file"
     )]
     Package {
         #[structopt(
@@ -149,6 +142,7 @@ enum Cli {
 }
 
 fn main() {
+    holochain_sodium::check_init();
     run().unwrap_or_else(|err| {
         eprintln!("{}", err);
 
@@ -159,8 +153,15 @@ fn main() {
 fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
+    let project_path =
+        std::env::current_dir().map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
     match args {
         Cli::Package { strip_meta, output } => {
+            let output = if output.is_some() {
+                output.unwrap()
+            } else {
+                util::std_package_path(&project_path).map_err(HolochainError::Default)?
+            };
             cli::package(strip_meta, output).map_err(HolochainError::Default)?
         }
         Cli::Unpack { path, to } => cli::unpack(&path, &to).map_err(HolochainError::Default)?,
@@ -174,8 +175,16 @@ fn run() -> HolochainResult<()> {
             persist,
             networked,
             interface,
-        } => cli::run(package, port, persist, networked, interface)
-            .map_err(HolochainError::Default)?,
+        } => {
+            let dna_path =
+                util::std_package_path(&project_path).map_err(HolochainError::Default)?;
+            let interface_type = cli::get_interface_type_string(interface);
+            let conductor_config =
+                cli::hc_run_configuration(&dna_path, port, persist, networked, &interface_type)
+                    .map_err(HolochainError::Default)?;
+            cli::run(dna_path, package, port, interface_type, conductor_config)
+                .map_err(HolochainError::Default)?
+        }
         Cli::Test {
             dir,
             testfile,

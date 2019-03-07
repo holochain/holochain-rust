@@ -4,9 +4,9 @@ branches:
   only:
     - master
     - develop
-    - /^holochain-nodejs-(test-)*v\d+\.\d+\.\d+/
+    - /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
     - /^release-(test-)*v\d+\.\d+\.\d+-alpha/
-    - /^(test-)*v\d+\.\d+\.\d+-alpha/
+    - /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
 
 _trusty_nodejs: &_trusty_nodejs
   dist: trusty
@@ -51,8 +51,8 @@ _unix_nodejs_conductor_template: &_unix_nodejs_conductor_template
     - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
     - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.10.1
     - export PATH=$HOME/.yarn/bin:$PATH
-  script:
-    - make build_nodejs_conductor
+  # script:
+  #   - RUST_SODIUM_DISABLE_PIE=2 make build_nodejs_conductor
   # manually cache as we manually install rustup
   # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
   cache:
@@ -80,22 +80,28 @@ _macosx_nodejs_template: &_macosx_nodejs_template
     - . ./scripts/install/release-deps-osx.sh
 
 _to_deploy_template: &_to_deploy_template
-  if: tag =~ /^holochain-nodejs-(test-)*v\d+\.\d+\.\d+/
+  if: tag =~ /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
 
 _env_node_8_deploy_template: &_env_node_8_deploy_template
   env:
   - TRAVIS_NODE_VERSION="8"
   - PERFORM_NODE_DEPLOY=1
+  - RUST_SODIUM_SHARED=1
+  - RUST_SODIUM_LIB_DIR=${TRAVIS_BUILD_DIR}/libsodium-1.0.16
 
 _env_node_10_deploy_template: &_env_node_10_deploy_template
   env:
   - TRAVIS_NODE_VERSION="10"
   - PERFORM_NODE_DEPLOY=1
+  - RUST_SODIUM_SHARED=1
+  - RUST_SODIUM_LIB_DIR=${TRAVIS_BUILD_DIR}/libsodium-1.0.16
 
 _env_node_11_deploy_template: &_env_node_11_deploy_template
   env:
   - TRAVIS_NODE_VERSION="11"
   - PERFORM_NODE_DEPLOY=1
+  - RUST_SODIUM_SHARED=1
+  - RUST_SODIUM_LIB_DIR=${TRAVIS_BUILD_DIR}/libsodium-1.0.16
 
 _nodejs_deploy_template: &_nodejs_deploy_template
   cache:
@@ -104,8 +110,20 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       directories:
           - node_modules
   script:
-      - ./scripts/build_nodejs_conductor.sh
+      - cd $TRAVIS_BUILD_DIR
+      - wget https://download.libsodium.org/libsodium/releases/libsodium-1.0.16.tar.gz
+      - tar -zxvf ./libsodium-1.0.16.tar.gz
+      - cd $TRAVIS_BUILD_DIR/libsodium-1.0.16
+      - ./configure
+      - make && make check
+      - sudo make install
+      - cd $TRAVIS_BUILD_DIR/nodejs_conductor
+      - yarn install --ignore-scripts
+      - node ./publish.js
   # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
+  before_deploy:
+   # windows doesn't like absolute paths so set the working dir here
+   - cd $TRAVIS_BUILD_DIR
   deploy:
       provider: releases
       api_key:
@@ -137,7 +155,7 @@ _cli_deploy_template: &_cli_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
-  if: tag =~ /^(test-)*v\d+\.\d+\.\d+-alpha/
+  if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
   before_script:
     - . ./scripts/install/release-deps-auto.sh
   script:
@@ -161,7 +179,7 @@ _conductor_deploy_template: &_conductor_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
-  if: tag =~ /^(test-)*v\d+\.\d+\.\d+-alpha/
+  if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
   before_script:
     - . ./scripts/install/release-deps-auto.sh
   script:
@@ -256,12 +274,6 @@ jobs:
        - TEST_P=holochain_dna_c_binding
        - TEST_PATH=dna_c_binding/
 
-    - name: "windows holochain_net_connection"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_net_connection
-       - TEST_PATH=net_connection/
-
     - name: "windows holochain_sodium"
       <<: *_windows_template_lite
       env:
@@ -286,12 +298,6 @@ jobs:
        - TEST_P=holochain_net
        - TEST_PATH=net/
 
-    - name: "windows holochain_net_ipc"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_net_ipc
-       - TEST_PATH=net_ipc/
-
     - name: "C binding tests"
       <<: *_trusty_bash
       # sudo is needed for codecov, && system library install which makes things 20-50s slower
@@ -312,12 +318,11 @@ jobs:
       before_cache:
         - rm -rf $HOME/.cargo/registry/index
 
-# temporarily turned off so CI is green on deploy
-#    - name: cold os x
-#      os: osx
-#      script:
-#       - . ./scripts/install/auto.sh
-#       - make test
+    #- name: cold os x
+    #  os: osx
+    #  script:
+    #    - . ./scripts/install/auto.sh
+    #    - make test
 
     # holochain-cli releases section
     - name: "CLI DEPLOY - 64 bit Linux"

@@ -99,7 +99,7 @@ impl Context {
         signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
-            agent_id,
+            agent_id: agent_id.clone(),
             logger,
             persister,
             state: None,

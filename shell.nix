@@ -71,6 +71,7 @@ let
    bash <(curl -s https://codecov.io/bash);
   '';
 
+
   # simulates all supported ci tests in a local circle ci environment
   ci = nixpkgs.writeShellScriptBin "ci"
   ''

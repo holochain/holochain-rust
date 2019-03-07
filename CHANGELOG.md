@@ -30,7 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   + get_as_type - Similar but for a single entry
   + link_entries_bidir - Same as link_entries but creates link in both directions
   + commit_and_link - Save a line and commit and link in a single function
+
 ### Fixed
+- Scenario tests are more lenient to SyntaxError, TypeError, and other JS errors: buggy tests now merely fail rather than hanging indefinitely
 
 ## [0.0.4-alpha] - 2019-02-15
 

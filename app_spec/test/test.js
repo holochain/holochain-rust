@@ -244,6 +244,39 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   
 })
 
+
+scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
+  const content = "Hello Holo world 123"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+
+  //commit version 1
+  const createResult = await alice.callSync("blog", "create_post", params)
+  t.ok(createResult.Ok)
+   //get entry
+  const updatedPostV1 = alice.call("blog", "get_post", { post_address: createResult.Ok })
+  t.ok(updatedPostV1.Ok)
+  t.deepEqual(JSON.parse(updatedPostV1.Ok.App[1]), { content: "Hello Holo world 123", date_created: "now" })
+
+  //delete
+  const removeParamsV2 = { post_address: createResult.Ok }
+  const removeResultV2 = await bob.callSync("blog", "delete_entry_post", removeParamsV2)
+  t.notOk(removeResultV2.Ok)
+
+  //get v2 using initial adders
+  const Postv2Initial = alice.call("blog", "get_initial_post", { post_address: createResult.Ok })
+  t.ok(Postv2Initial.Ok)
+  t.deepEqual(JSON.parse(Postv2Initial.Ok.App[1]), { content: "Hello Holo world 123", date_created: "now" })
+
+  //failed delete
+  const failedDelete = await alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
+  console.log("failed delete " + failedDelete);
+  t.deepEqual(failedDelete.Err,{ Internal: 'Unspecified' });
+
+
+  
+})
+
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
   const content = "Holo world"
   const in_reply_to = "bad"

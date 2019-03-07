@@ -238,9 +238,6 @@ fn start_holochain_instance<T: Into<String>>(
         "check_sys_entry_address",
         "check_call",
         "check_call_with_args",
-        "update_entry_ok",
-        "remove_entry_ok",
-        "remove_modified_entry_ok",
         "send_message",
         "sleep",
         "remove_link",
@@ -738,23 +735,7 @@ fn can_check_call_with_args() {
 
 
 
-#[test]
-// flaky test
-#[cfg(feature = "broken-tests")]
-fn can_update_entry() {
-    let (mut hc, _) = start_holochain_instance("can_update_entry", "alice");
-    let result = make_test_call(&mut hc, "update_entry_ok", r#"{}"#);
-    assert!(result.is_ok(), "result = {:?}", result);
-}
 
-#[test]
-// flaky test
-#[cfg(feature = "broken-tests")]
-fn can_remove_modified_entry() {
-    let (mut hc, _) = start_holochain_instance("can_remove_modified_entry", "alice");
-    let result = make_test_call(&mut hc, "remove_modified_entry_ok", r#"{}"#);
-    assert!(result.is_ok(), "result = {:?}", result);
-}
 
 #[test]
 fn can_send_and_receive() {

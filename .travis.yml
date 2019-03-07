@@ -132,7 +132,7 @@ _windows_nodejs_conductor_template: &_windows_nodejs_conductor_template
       - sh ./scripts/build_nodejs_conductor.sh
 # nodejs specific deployment templates stop here
 
-# holochain-clie deploy template
+# holochain-cli deploy template
 _cli_deploy_template: &_cli_deploy_template
   dist: bionic
   language: rust
@@ -140,6 +140,7 @@ _cli_deploy_template: &_cli_deploy_template
   if: tag =~ /^(test-)*v\d+\.\d+\.\d+-alpha/
   before_script:
     - . ./scripts/install/release-deps-auto.sh
+    - export HC_SCAFFOLD_VERSION='tag="$TRAVIS_TAG"'
   script:
     - cargo rustc --manifest-path cli/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir cli-$TRAVIS_TAG-$TARGET

@@ -277,6 +277,7 @@ impl ConductorApiBuilder {
     ///     Params:
     ///     * `id`: [string] internal handle/name of the newly created DNA config
     ///     * `path`: [string] local file path to DNA file
+    ///     * `expected_hash`: [string] (optional) the hash of this DNA. If this does not match the actual hash, installation will fail.
     ///
     ///  * `admin/dna/uninstall`
     ///     Uninstalls a DNA from the conductor config. Recursively also removes (and stops)

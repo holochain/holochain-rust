@@ -141,8 +141,8 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   
   const entryWithOptionsGet = { post_address: createResult.Ok}
   const entryWithOptionsGetResult = alice.call("blog", "get_post_with_options", entryWithOptionsGet);
-  t.notOk(entryWithOptionsGetResult.Ok);
-  t.deepEqual(entryWithOptionsGetResult.Ok.All.crud_links.length,2);
+  t.deepEqual(entryWithOptionsGetResult.Ok.result.All.crud_links.length,2);
+  t.deepEqual(entryWithOptionsGetResult.Ok.result.entry,{content: "Hello Holo world 321", date_created: "now" })
 })
 
 scenario2.runTape('update_post', async (t, { alice, bob }) => {

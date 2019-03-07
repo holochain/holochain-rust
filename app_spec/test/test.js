@@ -162,7 +162,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   //update to version 2
   const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo V2" }
   const UpdateResultV2 = await bob.callSync("blog", "update_post", updateParamsV2)
-  t.Ok(UpdateResultV2.Ok)
+  t.ok(UpdateResultV2.Ok)
 
   //get v2 using initial adderss
   const updatedPostv2Initial = alice.call("blog", "get_post", { post_address: createResult.Ok })

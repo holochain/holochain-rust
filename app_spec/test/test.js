@@ -222,17 +222,17 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
      t.deepEqual(entryHistoryAll.Ok.Post[0].meta,createResult.Ok);
      t.deepEqual(entryHistoryAll.Ok.Post[0].crud_status,"Modified");
 
-     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[1].entry),{ content: "Hello Holo V2", date_created: "now" });
-     t.deepEqual(entryHistoryV4.Ok.Post[1].meta,createResult.Ok);
-     t.deepEqual(entryHistoryV4.Ok.Post[1].crud_status,"Modified");
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.Post[1].entry),{ content: "Hello Holo V2", date_created: "now" });
+     t.deepEqual(entryHistoryAll.Ok.Post[1].meta,createResult.Ok);
+     t.deepEqual(entryHistoryAll.Ok.Post[1].crud_status,"Modified");
 
-     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[2].entry),{ content: "Hello Holo V3", date_created: "now" });
-     t.deepEqual(entryHistoryV4.Ok.Post[2].meta,createResult.Ok);
-     t.deepEqual(entryHistoryV4.Ok.Post[2].crud_status,"Modified");
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.Post[2].entry),{ content: "Hello Holo V3", date_created: "now" });
+     t.deepEqual(entryHistoryAll.Ok.Post[2].meta,createResult.Ok);
+     t.deepEqual(entryHistoryAll.Ok.Post[2].crud_status,"Modified");
 
-     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[3].entry),{ content: "Hello Holo V4", date_created: "now" });
-     t.deepEqual(entryHistoryV4.Ok.Post[3].meta,createResult.Ok);
-     t.deepEqual(entryHistoryV4.Ok.Post[3].crud_status,"Live");
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.Post[3].entry),{ content: "Hello Holo V4", date_created: "now" });
+     t.deepEqual(entryHistoryAll.Ok.Post[3].meta,createResult.Ok);
+     t.deepEqual(entryHistoryAll.Ok.Post[3].crud_status,"Live");
 
 
 

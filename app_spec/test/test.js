@@ -162,7 +162,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   //update to version 2
   const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo V2" }
   const UpdateResultV2 = await bob.callSync("blog", "update_post", updateParamsV2)
-  t.notOk(UpdateResultV2.Ok)
+  t.Ok(UpdateResultV2.Ok)
 
   //get v2 using initial adderss
   const updatedPostv2Initial = alice.call("blog", "get_post", { post_address: createResult.Ok })
@@ -188,7 +188,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   //update to version 3
   const updateParamsV3 = { post_address: createResult.Ok, new_content: "Hello Holo V3" }
   const UpdateResultV3 = await bob.callSync("blog", "update_post", updateParamsV3)
-  t.notOk(UpdateResultV3.Ok)
+  t.Ok(UpdateResultV3.Ok)
 
   //get v2 using initial adderss
   const updatedPostV3Initial = alice.call("blog", "get_post", { post_address: createResult.Ok })
@@ -203,7 +203,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
    //update to version 4
    const updateParamsV4 = { post_address: createResult.Ok, new_content: "Hello Holo V3" }
    const UpdateResultV4 = await bob.callSync("blog", "update_post", updateParamsV4)
-   t.notOk(UpdateResultV4.Ok)
+   t.ok(UpdateResultV4.Ok)
    
   //get history entry v4
    const entryHistoryV4Params = { post_address: UpdateResultV4.Ok}

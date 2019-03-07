@@ -102,6 +102,14 @@ jobs:
    - run: . ./scripts/install/auto.sh
    - run: make test
 
+ cold.mac:
+  macos:
+   xcode: "10.2.0"
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
+
 workflows:
  version: 2
  tests:
@@ -114,6 +122,11 @@ workflows:
  cold:
   jobs:
    - cold.ubuntu:
+      filters:
+       branches:
+        only:
+         - develop
+   - cold.mac:
       filters:
        branches:
         only:

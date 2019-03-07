@@ -97,8 +97,6 @@ pub mod tests {
     #[test]
     // flagged as broken for:
     // 1. taking 60+ seconds
-    // NOTE, before re-enabling make sure to add an environment variable
-    // HC_SCAFFOLD_VERSION='branch="develop"' when you run the test.
     #[cfg(feature = "broken-tests")]
     fn test_command_basic_test() {
         let temp_dir = gen_dir();

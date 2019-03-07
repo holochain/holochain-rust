@@ -48,9 +48,14 @@ These dependencies need to be installed in order to compile, and use `hc`:
   - without ZMQ the installation command that follows will fail
 
 
-To install the latest version of the Holochain command line, run the following command in a terminal
+To install the cutting edge version of the Holochain conductor, run the following command in a terminal
 ```shell
-$ cargo install hc --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.5-alpha
+$ cargo install holochain --force --git https://github.com/holochain/holochain-rust.git --branch develop
+```
+
+To install the latest released version of the Holochain conductor, run the following command in a terminal
+```shell
+$ cargo install holochain --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.5-alpha
 ```
 
 The command line tools are now available in your command line using the `hc` command.

@@ -34,8 +34,27 @@ test('can start and stop a conductor via `run`', t => {
     ).catch(t.fail)
 })
 
+test('can start and stop a conductor via `run` (with an async function)', t => {
+    const result = Conductor.run(
+        configValid,
+        async (stop, conductor) => {
+            stop()
+            t.end()
+        }
+    ).catch(t.fail)
+})
+
 test('conductor throws if it cannot start', t => {
     const result = Conductor.run(configInvalid, (stop) => {
+        t.fail("should have thrown exception!")
+    }).catch(err => {
+        t.equal(String(err).indexOf('Error: unable to start conductor'), 0)
+        t.end()
+    })
+})
+
+test('conductor throws if it cannot start (with async function)', t => {
+    const result = Conductor.run(configInvalid, async (stop) => {
         t.fail("should have thrown exception!")
     }).catch(err => {
         t.equal(String(err).indexOf('Error: unable to start conductor'), 0)

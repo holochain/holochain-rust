@@ -6,12 +6,9 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
     let payload = runtime.load_json_string_from_args(args);
-
-    zome_call_data
-        .context
-        .log(format!("debug/dna: '{}'", payload));
+    context.log(format!("debug/dna: '{}'", payload));
 
     ribosome_success!()
 }
@@ -49,7 +46,7 @@ pub mod tests {
         assert_eq!(JsonString::null(), call_result,);
         let expected_in_log =
        "\"debug/dna: \\\'foo\\\'\", \"debug/zome: Zome Function \\\'test\\\' returned: Success\"";
-        let log_contents = format!("{}", (*context.logger.lock().unwrap()).dump());
+        let log_contents = (*context.logger.lock().unwrap()).dump().to_string();
         assert!(log_contents.contains(expected_in_log));
     }
 }

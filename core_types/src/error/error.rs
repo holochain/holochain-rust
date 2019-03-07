@@ -90,10 +90,12 @@ pub enum HolochainError {
     InvalidOperationOnSysEntry,
     CapabilityCheckFailed,
     ValidationFailed(String),
+    ValidationPending,
     Ribosome(RibosomeErrorCode),
     RibosomeFailed(String),
     ConfigError(String),
     Timeout,
+    InitializationFailed(String),
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -119,10 +121,12 @@ impl fmt::Display for HolochainError {
             }
             CapabilityCheckFailed => write!(f, "Caller does not have Capability to make that call"),
             ValidationFailed(fail_msg) => write!(f, "{}", fail_msg),
+            ValidationPending => write!(f, "Entry validation could not be completed"),
             Ribosome(err_code) => write!(f, "{}", err_code.as_str()),
             RibosomeFailed(fail_msg) => write!(f, "{}", fail_msg),
             ConfigError(err_msg) => write!(f, "{}", err_msg),
             Timeout => write!(f, "timeout"),
+            InitializationFailed(err_msg) => write!(f, "{}", err_msg),
         }
     }
 }
@@ -325,8 +329,12 @@ mod tests {
                 "Caller does not have Capability to make that call",
             ),
             (HolochainError::Timeout, "timeout"),
+            (
+                HolochainError::ValidationPending,
+                "Entry validation could not be completed",
+            ),
         ] {
-            assert_eq!(output, &format!("{}", input));
+            assert_eq!(output, &input.to_string());
         }
     }
 

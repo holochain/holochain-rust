@@ -20,7 +20,3 @@ sudo apt-get install -y \
   libssl-dev \
   pkg-config \
   python2.7
-
-# libzmq
-sudo apt-get install -y \
-  libzmq3-dev

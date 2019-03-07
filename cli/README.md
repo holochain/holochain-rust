@@ -8,6 +8,10 @@ This crate implements a set of tools for building and running Holochain DNA from
 
 ## Install
 
+### Prepackaged installation
+
+Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
+
 ### Scripted installation
 
 The install scripts provided by holochain core (see README) install all the dependencies required for holochain cli.
@@ -42,10 +46,6 @@ These dependencies need to be installed in order to compile, and use `hc`:
 - [Node.js](https://nodejs.org) version 8 or higher
   - Tests for Holochain apps are now written in Javascript and executed in Nodejs
   - To read further, check out [the holochain-nodejs module](https://www.npmjs.com/package/@holochain/holochain-nodejs)
-- [Zmq](http://zeromq.org/intro:get-the-software)
-  - zeromq is a "distributed messaging" software package utilized in the networking stack of Holochain
-  - the link above has common platform installation instructions
-  - without ZMQ the installation command that follows will fail
 
 
 To install the cutting edge version of the Holochain conductor, run the following command in a terminal

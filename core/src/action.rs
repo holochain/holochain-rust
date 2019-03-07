@@ -5,13 +5,17 @@ use crate::{
         direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
     },
     nucleus::{
-        state::{NucleusState, ValidationResult},
-        ExecuteZomeFnResponse, ZomeFnCall,
+        actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
+        state::NucleusState,
+        validation::ValidationResult,
+        ZomeFnCall,
     },
+    scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
 };
 use holochain_core_types::{
     cas::content::Address,
     chain_header::ChainHeader,
+    crud_status::CrudStatus,
     dna::Dna,
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
@@ -102,6 +106,9 @@ pub enum Action {
     /// Does not validate, assumes link is valid.
     AddLink(Link),
 
+    //action for updating crudstatus
+    CrudStatus((EntryWithHeader, CrudStatus)),
+
     //Removes a link for the local DHT
     RemoveLink(Link),
 
@@ -173,13 +180,13 @@ pub enum Action {
     // ----------------
     // Nucleus actions:
     // ----------------
-    /// initialize an application from a Dna
+    /// initialize a chain from Dna
     /// not the same as genesis
     /// may call genesis internally
-    InitApplication(Dna),
-    /// return the result of an InitApplication action
-    /// the result is Some arbitrary string
-    ReturnInitializationResult(Option<String>),
+    InitializeChain(Dna),
+    /// return the result of an InitializeChain action
+    /// the result is an initialization structure which include the generated public token if any
+    ReturnInitializationResult(Result<Initialization, String>),
 
     /// Gets dispatched when a zome function call starts.
     /// There is no reducer for this action so this does not change state
@@ -203,6 +210,13 @@ pub enum Action {
             Result<ValidationPackage, HolochainError>,
         ),
     ),
+
+    /// An entry could not be validated yet because dependencies are still missing.
+    /// This adds the entry to nucleus state's pending list.
+    AddPendingValidation(PendingValidation),
+
+    /// Clear an entry from the pending validation list
+    RemovePendingValidation((Address, ValidatingWorkflow)),
 }
 
 /// function signature for action handler functions

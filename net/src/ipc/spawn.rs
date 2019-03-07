@@ -2,7 +2,10 @@
 //! This process is expected to output some specific messages on its stdout
 //! that we can process to know its launch state
 
-use crate::connection::{net_connection::NetShutdown, NetResult};
+use crate::{
+    connection::{net_connection::NetShutdown, NetResult},
+    tweetlog::TWEETLOG,
+};
 
 use std::{
     collections::HashMap,
@@ -48,7 +51,7 @@ pub fn ipc_spawn(
         p2p_bindings: Vec::new(),
     };
 
-    // transport info (zmq uri) for connecting to the ipc socket
+    // transport info (uri) for connecting to the ipc socket
     let re_ipc = regex::Regex::new("(?m)^#IPC-BINDING#:(.+)$")?;
 
     // transport info (multiaddr) for any p2p interface bindings
@@ -95,7 +98,7 @@ pub fn ipc_spawn(
     // close the pipe since we can never read from it again...
     child.stdout = None;
 
-    println!("READY! {} {:?}", out.ipc_binding, out.p2p_bindings);
+    log_i!("READY! {} {:?}", out.ipc_binding, out.p2p_bindings);
 
     // Set shutdown function to kill the sub-process
     out.kill = Some(Box::new(move || {

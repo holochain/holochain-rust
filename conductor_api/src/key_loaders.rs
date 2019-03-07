@@ -1,9 +1,6 @@
 use crate::conductor::base::KeyLoader;
 use holochain_core_types::error::HolochainError;
-use holochain_dpki::{
-    key_bundle::{KeyBundle, SeedType},
-    SEED_SIZE,
-};
+use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
 use holochain_sodium::{hash::sha256, secbuf::SecBuf};
 use std::{path::PathBuf, sync::Arc};
 
@@ -24,5 +21,5 @@ pub fn test_keybundle(name: &String) -> KeyBundle {
     sha256(&mut name, &mut seed).expect("Could not hash test agent name");
 
     // Create KeyBundle from seed
-    KeyBundle::new_from_seed(&mut seed, SeedType::Mock).unwrap()
+    KeyBundle::new_from_seed_buf(&mut seed, SeedType::Mock).unwrap()
 }

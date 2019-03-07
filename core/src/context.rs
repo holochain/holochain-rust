@@ -2,6 +2,7 @@ use crate::{
     action::ActionWrapper,
     instance::Observer,
     logger::Logger,
+    nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
     state::State,
@@ -18,6 +19,7 @@ use holochain_core_types::{
     },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
+    entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
 
@@ -57,9 +59,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn default_channel_buffer_size() -> usize {
-        100
-    }
+    pub const DEFAULT_CHANNEL_BUF_SIZE: usize = 100;
 
     // test_check_conductor_api() is used to inject a conductor_api with a working
     // mock of agent/sign to be used in tests.
@@ -277,6 +277,37 @@ impl Context {
             )),
         }
     }
+
+    /// returns the public capability token (if any)
+    pub fn get_public_token(&self) -> Option<Address> {
+        self.state().and_then(|state| {
+            let top = state.agent().top_chain_header()?;
+
+            // Get address of first Token Grant entry (return early if none)
+            let addr = state
+                .agent()
+                .chain_store()
+                .iter_type(&Some(top), &EntryType::CapTokenGrant)
+                .nth(0)?
+                .entry_address()
+                .to_owned();
+
+            // Get CAS
+            let cas = state.agent().chain_store().content_storage();
+
+            // Get according Token Grant entry from CAS
+            let entry = get_entry_from_cas(&cas, &addr).ok()??;
+
+            // Make sure entry is a public grant and return it
+            if let Entry::CapTokenGrant(grant) = entry {
+                if grant.cap_type() == CapabilityType::Public {
+                    return Some(addr);
+                }
+            }
+
+            None
+        })
+    }
 }
 
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
@@ -320,7 +351,7 @@ pub mod tests {
 
     #[test]
     fn default_buffer_size_test() {
-        assert_eq!(Context::default_channel_buffer_size(), 100);
+        assert_eq!(Context::DEFAULT_CHANNEL_BUF_SIZE, 100);
     }
 
     #[test]

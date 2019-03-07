@@ -123,10 +123,10 @@ impl AgentStateSnapshot {
     }
 }
 
-impl TryFrom<State> for AgentStateSnapshot {
+impl TryFrom<&State> for AgentStateSnapshot {
     type Error = HolochainError;
 
-    fn try_from(state: State) -> Result<Self, Self::Error> {
+    fn try_from(state: &State) -> Result<Self, Self::Error> {
         let agent = &*(state.agent());
         let top_chain = agent
             .top_chain_header()
@@ -216,9 +216,9 @@ fn reduce_commit_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (entry, maybe_crud_link) = unwrap_to!(action => Action::Commit);
+    let (entry, maybe_link_update_delete) = unwrap_to!(action => Action::Commit);
 
-    let result = create_new_chain_header(&entry, context.clone(), &maybe_crud_link)
+    let result = create_new_chain_header(&entry, context.clone(), &maybe_link_update_delete)
         .and_then(|chain_header| {
             let storage = &state.chain_store.content_storage().clone();
             storage.write().unwrap().add(entry)?;
@@ -233,13 +233,6 @@ fn reduce_commit_entry(
     state
         .actions
         .insert(action_wrapper.clone(), ActionResponse::Commit(result));
-
-    #[allow(unused_must_use)]
-    context.state().map(|global_state_lock| {
-        let persis_lock = context.clone().persister.clone();
-        let persister = &mut *persis_lock.lock().unwrap();
-        persister.save(global_state_lock.clone());
-    });
 }
 
 /// maps incoming action to the correct handler
@@ -269,7 +262,7 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot, *};
+    use super::*;
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         instance::tests::test_context, state::State,
@@ -317,7 +310,7 @@ pub mod tests {
         let mut agent_state = test_agent_state();
         let netname = Some("test_reduce_commit_entry");
         let context = test_context("bob", netname);
-        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
+        let state = State::new_with_agent(context, agent_state.clone());
         let mut context = test_context("bob", netname);
         Arc::get_mut(&mut context)
             .unwrap()
@@ -413,7 +406,7 @@ pub mod tests {
         let agent_state = test_agent_state();
         let netname = Some("test_create_new_chain_header");
         let context = test_context("bob", netname);
-        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
+        let state = State::new_with_agent(context, agent_state.clone());
         let mut context = test_context("bob", netname);
         Arc::get_mut(&mut context)
             .unwrap()

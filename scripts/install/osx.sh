@@ -3,8 +3,6 @@
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 
 brew install cmake
-brew install zmq
-brew upgrade zeromq
 brew install qt5
 # https://superuser.com/questions/256232/how-can-i-get-qmake-on-mac-os-x#comment1880535_422785
 # https://superuser.com/a/1153338

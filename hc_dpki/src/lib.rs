@@ -20,4 +20,5 @@ pub mod key_blob;
 pub mod key_bundle;
 pub mod keypair;
 pub mod password_encryption;
+pub mod seed;
 pub mod utils;

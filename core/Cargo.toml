@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 base64 = "0.10"
-serde = "1.0"
+serde = { version = "1.0", features = ["rc"] }
 serde_derive = "1.0"
 chrono = "0.4"
 serde_json = { version = "1.0", features = ["preserve_order"] }
@@ -41,6 +41,7 @@ jsonrpc-lite = "0.5.0"
 globset = "0.4.2"
 pretty_assertions = "0.5.1"
 pin-utils = "0.1.0-alpha.4"
+clokwerk = "0.1.0"
 
 [dev-dependencies]
 wabt = "0.7.2"

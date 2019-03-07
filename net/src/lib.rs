@@ -1,7 +1,6 @@
 #![feature(fnbox)]
 #![feature(try_from)]
 #![feature(vec_remove_item)]
-#![warn(unused_extern_crates)]
 
 //! holochain_net is a library that defines an abstract networking layer for
 //! different network transports, providing a configurable interface
@@ -21,6 +20,13 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
+// wss
+extern crate native_tls;
+extern crate tungstenite;
+extern crate url;
+
+#[macro_use]
+pub mod tweetlog;
 pub mod connection;
 pub mod error;
 pub mod in_memory;
@@ -28,4 +34,3 @@ pub mod ipc;
 pub mod ipc_net_worker;
 pub mod p2p_config;
 pub mod p2p_network;
-pub mod tweetlog;

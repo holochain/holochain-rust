@@ -155,10 +155,12 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   t.ok(createResult.Ok)
    //get v1
   const updatedPostV1 = alice.call("blog", "get_post", { post_address: createResult.Ok })
+  const UpdatePostV1Content = { content: "Hello Holo world 123", date_created: "now" };
   t.ok(updatedPostV1.Ok)
-  t.deepEqual(JSON.parse(updatedPostV1.Ok.App[1]), { content: "Hello Holo world 123", date_created: "now" })
+  t.deepEqual(JSON.parse(updatedPostV1.Ok.App[1]),UpdatePostV1Content)
 
   //update to version 2
+  const updatePostContentV2 = { content: "Hello Holo V2", date_created: "now" };
   const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo V2" }
   const UpdateResultV2 = await bob.callSync("blog", "update_post", updateParamsV2)
   t.ok(UpdateResultV2.Ok)
@@ -166,12 +168,12 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   //get v2 using initial adderss
   const updatedPostv2Initial = alice.call("blog", "get_post", { post_address: createResult.Ok })
   t.ok(updatedPostv2Initial.Ok)
-  t.deepEqual(JSON.parse(updatedPostv2Initial.Ok.App[1]), { content: "Hello Holo V2", date_created: "now" })
+  t.deepEqual(JSON.parse(updatedPostv2Initial.Ok.App[1]), updatePostContentV2)
 
   //get v2 latest address
   const updatedPostv2Latest = alice.call("blog", "get_post", { post_address: UpdateResultV2.Ok })
   t.ok(updatedPostv2Latest.Ok)
-  t.deepEqual(JSON.parse(updatedPostv2Latest.Ok.App[1]), { content: "Hello Holo V2", date_created: "now" })
+  t.deepEqual(JSON.parse(updatedPostv2Latest.Ok.App[1]), updatePostContentV2)
 
 
    //get v2 using initial adderss
@@ -182,9 +184,10 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
    //get v2 latest address
    const GetInitialPostV2Latest = alice.call("blog", "get_initial_post", { post_address: UpdateResultV2.Ok })
    t.ok(GetInitialPostV2Latest.Ok)
-   t.deepEqual(JSON.parse(GetInitialPostV2Latest.Ok.App[1]), { content: "Hello Holo V2", date_created: "now" })
+   t.deepEqual(JSON.parse(GetInitialPostV2Latest.Ok.App[1]),updatePostContentV2)
 
   //update to version 3
+  const UpdatePostV3Content = { content: "Hello Holo V3", date_created: "now" };
   const updateParamsV3 = { post_address: createResult.Ok, new_content: "Hello Holo V3" }
   const UpdateResultV3 = await bob.callSync("blog", "update_post", updateParamsV3)
   t.ok(UpdateResultV3.Ok)
@@ -192,14 +195,15 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   //get v2 using initial adderss
   const updatedPostV3Initial = alice.call("blog", "get_post", { post_address: createResult.Ok })
   t.ok(updatedPostV3Initial.Ok)
-  t.deepEqual(JSON.parse(updatedPostV3Initial.Ok.App[1]), { content: "Hello Holo V3", date_created: "now" })
+  t.deepEqual(JSON.parse(updatedPostV3Initial.Ok.App[1]), UpdatePostV3Content)
 
   //get v2 latest address
   const updatedPostV3Latest = alice.call("blog", "get_post", { post_address: UpdateResultV2.Ok })
   t.ok(updatedPostV3Latest.Ok)
-  t.deepEqual(JSON.parse(updatedPostV3Latest.Ok.App[1]), { content: "Hello Holo V3", date_created: "now" })
+  t.deepEqual(JSON.parse(updatedPostV3Latest.Ok.App[1]), UpdatePostV3Content)
 
    //update to version 4
+   const updatePostV4Content = { content: "Hello Holo V4", date_created: "now" };
    const updateParamsV4 = { post_address: createResult.Ok, new_content: "Hello Holo V4" }
    const UpdateResultV4 = await bob.callSync("blog", "update_post", updateParamsV4)
    t.ok(UpdateResultV4.Ok)
@@ -208,7 +212,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
    const entryHistoryV4Params = { post_address: UpdateResultV4.Ok}
    const entryHistoryV4 =  alice.call("blog", "get_history_post", entryHistoryV4Params)
    t.deepEqual(entryHistoryV4.Ok.items.length,1);
-   t.deepEqual(JSON.parse(entryHistoryV4.Ok.items[0].entry.App[1]),{ content: "Hello Holo V4", date_created: "now" });
+   t.deepEqual(JSON.parse(entryHistoryV4.Ok.items[0].entry.App[1]),updatePostV4Content);
    t.deepEqual(entryHistoryV4.Ok.items[0].meta.address,UpdateResultV4.Ok);
    t.deepEqual(entryHistoryV4.Ok.items[0].meta.crud_status,"live");
 
@@ -222,17 +226,17 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
      t.deepEqual(entryHistoryAll.Ok.items[0].meta.crud_status,"modified");
      t.deepEqual(entryHistoryAll.Ok.crud_links[createResult.Ok],UpdateResultV2.Ok)
 
-     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[1].entry.App[1]),{ content: "Hello Holo V2", date_created: "now" });
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[1].entry.App[1]),updatePostContentV2);
      t.deepEqual(entryHistoryAll.Ok.items[1].meta.address,UpdateResultV2.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[1].meta.crud_status,"modified");
      t.deepEqual(entryHistoryAll.Ok.crud_links[UpdateResultV2.Ok],UpdateResultV3.Ok)
 
-     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[2].entry.App[1]),{ content: "Hello Holo V3", date_created: "now" });
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[2].entry.App[1]),UpdatePostV3Content);
      t.deepEqual(entryHistoryAll.Ok.items[2].meta.address,UpdateResultV3.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[2].meta.crud_status,"modified");
      t.deepEqual(entryHistoryAll.Ok.crud_links[UpdateResultV3.Ok],UpdateResultV4.Ok)
 
-     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[3].entry.App[1]),{ content: "Hello Holo V4", date_created: "now" });
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[3].entry.App[1]),updatePostV4Content);
      t.deepEqual(entryHistoryAll.Ok.items[3].meta.address,UpdateResultV4.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[3].meta.crud_status,"live");
      t.notOk(entryHistoryAll.Ok.crud_links[UpdateResultV4.Ok])

@@ -150,20 +150,93 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
   const in_reply_to = null
   const params = { content, in_reply_to }
+
+  //commit version 1
   const createResult = await alice.callSync("blog", "create_post", params)
-
   t.ok(createResult.Ok)
+   //get v1
+  const updatedPostV1 = alice.call("blog", "get_post", { post_address: createResult.Ok })
+  t.ok(updatedPostV1.Ok)
+  t.deepEqual(JSON.parse(updatedPostV1.Ok.App[1]), { content: "Hello Holo world 123", date_created: "now" })
 
-  const updateParams = { post_address: createResult.Ok, new_content: "Hello Holo" }
-  const result = await bob.callSync("blog", "update_post", updateParams)
+  //update to version 2
+  const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo V2" }
+  const UpdateResultV2 = await bob.callSync("blog", "update_post", updateParamsV2)
+  t.notOk(UpdateResultV2.Ok)
 
-  t.deepEqual(result, { Ok: null })
+  //get v2 using initial adderss
+  const updatedPostv2Initial = alice.call("blog", "get_post", { post_address: createResult.Ok })
+  t.ok(updatedPostv2Initial.Ok)
+  t.deepEqual(JSON.parse(updatedPostv2Initial.Ok.App[1]), { content: "Hello Holo V2", date_created: "now" })
 
-  const updatedPost = alice.call("blog", "get_post", { post_address: createResult.Ok })
+  //get v2 latest address
+  const updatedPostv2Latest = alice.call("blog", "get_post", { post_address: UpdateResultV2.Ok })
+  t.ok(updatedPostv2Latest.Ok)
+  t.deepEqual(JSON.parse(updatedPostv2Latest.Ok.App[1]), { content: "Hello Holo V2", date_created: "now" })
 
-  t.ok(updatedPost.Ok)
 
-  t.deepEqual(JSON.parse(updatedPost.Ok.App[1]), { content: "Hello Holo", date_created: "now" })
+   //get v2 using initial adderss
+   const GetInitialPostV1Initial = alice.call("blog", "get_initial_post", { post_address: createResult.Ok })
+   t.ok(GetInitialPostV1Initial.Ok)
+   t.deepEqual(JSON.parse(GetInitialPostV1Initial.Ok.App[1]), { content: "Hello Holo world 123", date_created: "now" })
+ 
+   //get v2 latest address
+   const GetInitialPostV2Latest = alice.call("blog", "get_initial_post", { post_address: UpdateResultV2.Ok })
+   t.ok(GetInitialPostV2Latest.Ok)
+   t.deepEqual(JSON.parse(GetInitialPostV2Latest.Ok.App[1]), { content: "Hello Holo V2", date_created: "now" })
+
+  //update to version 3
+  const updateParamsV3 = { post_address: createResult.Ok, new_content: "Hello Holo V3" }
+  const UpdateResultV3 = await bob.callSync("blog", "update_post", updateParamsV3)
+  t.notOk(UpdateResultV3.Ok)
+
+  //get v2 using initial adderss
+  const updatedPostV3Initial = alice.call("blog", "get_post", { post_address: createResult.Ok })
+  t.ok(updatedPostV3Initial.Ok)
+  t.deepEqual(JSON.parse(updatedPostV3Initial.Ok.App[1]), { content: "Hello Holo V3", date_created: "now" })
+
+  //get v2 latest address
+  const updatedPostV3Latest = alice.call("blog", "get_post", { post_address: UpdateResultV2.Ok })
+  t.ok(updatedPostV3Latest.Ok)
+  t.deepEqual(JSON.parse(updatedPostV3Latest.Ok.App[1]), { content: "Hello Holo V3", date_created: "now" })
+
+   //update to version 4
+   const updateParamsV4 = { post_address: createResult.Ok, new_content: "Hello Holo V3" }
+   const UpdateResultV4 = await bob.callSync("blog", "update_post", updateParamsV4)
+   t.notOk(UpdateResultV4.Ok)
+   
+  //get history entry v4
+   const entryHistoryV4Params = { post_address: UpdateResultV4.Ok}
+   const entryHistoryV4 = await bob.callSync("blog", "get_history_post", entryHistoryV4Params)
+   t.deepEqual(entryHistoryV4.Ok.Post.length(),1);
+   t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[0].entry),{ content: "Hello Holo world 123", date_created: "now" });
+   t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[0].meta),createResult.Ok);
+   t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[0].crud_status),"Live");
+
+    //get history entry all
+     const entryHistoryAllParams = { post_address: createResult.Ok}
+     const entryHistoryAll = await bob.callSync("blog", "get_history_post", entryHistoryAllParams)
+
+     t.deepEqual(entryHistoryAll.Ok.Post.length(),4);
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.Post[0].entry),{ content: "Hello Holo world 123", date_created: "now" });
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.Post[0].meta),createResult.Ok);
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.Post[0].crud_status),"Modified");
+
+     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[1].entry),{ content: "Hello Holo V2", date_created: "now" });
+     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[1].meta),createResult.Ok);
+     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[1].crud_status),"Modified");
+
+     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[2].entry),{ content: "Hello Holo V3", date_created: "now" });
+     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[2].meta),createResult.Ok);
+     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[2].crud_status),"Modified");
+
+     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[3].entry),{ content: "Hello Holo V4", date_created: "now" });
+     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[3].meta),createResult.Ok);
+     t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[3].crud_status),"Modified");
+
+
+
+  
 })
 
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {

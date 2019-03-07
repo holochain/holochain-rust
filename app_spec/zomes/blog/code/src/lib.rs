@@ -90,7 +90,7 @@ define_zome! {
 
         update_post: {
             inputs: |post_address: Address, new_content: String|,
-            outputs: |result: ZomeApiResult<()>|,
+            outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_update_post
         }
 
@@ -110,6 +110,12 @@ define_zome! {
             inputs: |post_address: Address|,
             outputs: |post: ZomeApiResult<Option<Entry>>|,
             handler : blog::handle_get_initial_post
+        }
+
+        get_history_post : {
+            inputs: |post_address: Address|,
+            outputs: |post: ZomeApiResult<Option<EntryHistory>>|,
+            handler : blog::handle_get_history_post
         }
 
         my_posts: {

@@ -736,19 +736,7 @@ fn can_check_call_with_args() {
     //assert_eq!(result.unwrap(), JsonString::from(expected),);
 }
 
-#[test]
-// flaky test
-#[cfg(feature = "broken-tests")]
-fn can_remove_entry() {
-    let (mut hc, _) = start_holochain_instance("can_remove_entry", "alice");
-    let result = make_test_call(&mut hc, "remove_entry_ok", r#"{}"#);
-    assert!(result.is_ok(), "result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from("{\"items\":[{\"meta\":{\"address\":\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\",\"entry_type\":{\"App\":\"testEntryType\"},\"crud_status\":\"deleted\"},\"entry\":{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]},\"headers\":[]}],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
-        ),
-    );
-}
+
 
 #[test]
 // flaky test

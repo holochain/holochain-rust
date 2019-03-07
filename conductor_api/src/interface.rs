@@ -397,6 +397,7 @@ impl ConductorApiBuilder {
                     PathBuf::from(path),
                     id.to_string(),
                     copy,
+                    None,
                     properties
                 ))?;
                 Ok(json!({"success": true}))

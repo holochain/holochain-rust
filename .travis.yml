@@ -79,6 +79,10 @@ _macosx_nodejs_template: &_macosx_nodejs_template
   before_script:
     - . ./scripts/install/release-deps-osx.sh
 
+_not_deploy_template: &_not_deploy_template
+  if: tag != /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/ AND \
+      tag != /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
+
 _to_deploy_template: &_to_deploy_template
   if: tag =~ /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
 
@@ -234,6 +238,7 @@ jobs:
   # this allows us to keep walltimes down
   include:
     - name: "windows hdk"
+      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=hdk
@@ -241,6 +246,7 @@ jobs:
        - WASM_PATH=wasm-test/
 
     - name: "windows wasm_utils"
+      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_wasm_utils
@@ -248,6 +254,7 @@ jobs:
        - WASM_PATH=wasm-test/integration-test/
 
     - name: "windows conductor_api"
+      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_conductor_api
@@ -256,6 +263,7 @@ jobs:
        - WASM_PATH_2=test-bridge-caller/
 
     - name: "windows core"
+      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_core
@@ -263,42 +271,49 @@ jobs:
        - WASM_PATH=src/nucleus/actions/wasm-test/
 
     - name: "windows holochain_cas_implementations"
+      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_cas_implementations
        - TEST_PATH=cas_implementations/
 
     - name: "windows dna_c_binding"
+      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_dna_c_binding
        - TEST_PATH=dna_c_binding/
 
     - name: "windows holochain_sodium"
+      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_sodium
        - TEST_PATH=sodium/
 
     - name: "windows hc"
+      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=hc
        - TEST_PATH=cli/
 
     - name: "windows core_types"
+      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_core_types
        - TEST_PATH=core_types/
 
     - name: "windows holochain_net"
+      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_net
        - TEST_PATH=net/
 
     - name: "C binding tests"
+      <<: *_not_deploy_template
       <<: *_trusty_bash
       # sudo is needed for codecov, && system library install which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system

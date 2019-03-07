@@ -39,7 +39,12 @@ These dependencies need to be installed in order to compile, and use `holochain`
   - without ZMQ the installation command that follows will fail
 
 
-To install the latest version of the Holochain conductor, run the following command in a terminal
+To install the cutting edge version of the Holochain conductor, run the following command in a terminal
+```shell
+$ cargo install holochain --force --git https://github.com/holochain/holochain-rust.git --branch develop
+```
+
+To install the latest released version of the Holochain conductor, run the following command in a terminal
 ```shell
 $ cargo install holochain --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.5-alpha
 ```

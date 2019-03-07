@@ -243,7 +243,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
      const entryWithOptionsGet = { post_address: createResult.Ok}
      const entryWithOptionsGetResult = alice.call("blog", "get_post_with_options_latest", entryWithOptionsGet);
 
-     t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.App[1]),{ content: "Hello Holo V4", date_created: "now" });
+     t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.App[1]),updatePostV4Content);
 
 
 

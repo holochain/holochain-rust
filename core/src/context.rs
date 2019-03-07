@@ -99,12 +99,12 @@ impl Context {
         signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
-            agent_id: agent_id.clone(),
+            agent_id,
             logger,
             persister,
             state: None,
             action_channel: None,
-            signal_tx: signal_tx,
+            signal_tx,
             observer_channel: None,
             chain_storage,
             dht_storage,

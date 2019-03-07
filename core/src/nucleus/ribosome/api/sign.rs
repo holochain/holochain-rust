@@ -1,4 +1,5 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use holochain_wasm_utils::api_serialization::sign::SignArgs;
 use wasmi::RuntimeArgs;
 
 /// ZomeApiFunction::Sign function code
@@ -7,9 +8,21 @@ use wasmi::RuntimeArgs;
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
-    let args_str = dbg!(runtime.load_json_string_from_args(&args));
+    let args_str = runtime.load_json_string_from_args(&args);
 
-    let signature = runtime.context()?.sign(args_str.into());
+    let sign_args = match SignArgs::try_from(args_str.clone()) {
+        Ok(entry_input) => entry_input,
+        // Exit on error
+        Err(_) => {
+            context.log(format!(
+                "err/zome: invoke_sign failed to deserialize SerializedEntry: {:?}",
+                args_str
+            ));
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
+    };
+
+    let signature = runtime.context()?.sign(sign_args.payload);
 
     runtime.store_result(signature)
 }

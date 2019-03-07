@@ -207,7 +207,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
    
   //get history entry v4
    const entryHistoryV4Params = { post_address: UpdateResultV4.Ok}
-   const entryHistoryV4 = await bob.callSync("blog", "get_history_post", entryHistoryV4Params)
+   const entryHistoryV4 =  bob.call("blog", "get_history_post", entryHistoryV4Params)
    t.deepEqual(entryHistoryV4.Ok.Post.length(),1);
    t.deepEqual(JSON.parse(entryHistoryV4.Ok.Post[0].entry),{ content: "Hello Holo world 123", date_created: "now" });
    t.deepEqual(entryHistoryV4.Ok.Post[0].meta,createResult.Ok);
@@ -215,7 +215,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
 
     //get history entry all
      const entryHistoryAllParams = { post_address: createResult.Ok}
-     const entryHistoryAll = await bob.callSync("blog", "get_history_post", entryHistoryAllParams)
+     const entryHistoryAll = bob.call("blog", "get_history_post", entryHistoryAllParams)
 
      t.deepEqual(entryHistoryAll.Ok.Post.length(),4);
      t.deepEqual(JSON.parse(entryHistoryAll.Ok.Post[0].entry),{ content: "Hello Holo world 123", date_created: "now" });

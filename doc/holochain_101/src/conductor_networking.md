@@ -9,6 +9,10 @@
 #### `bootstrap_nodes`: `array of string` Optional
 List of URIs that point to other nodes to bootstrap p2p connections.
 
+#### `n3h_log_level`: `char`
+Set the logging level used globally by N3H. Must be one of the following: 't', 'd', 'i', 'w', 'e'
+Each value corresponding to the industry standard log level: Trace, Debug, Info, Warning, Error.
+
 #### `n3h_path`: `string`
 Absolute path to the local installation/repository of n3h. Default is to a subdirectory of the $HOME directory on the device: `$HOME/.hc/net/n3h`
 

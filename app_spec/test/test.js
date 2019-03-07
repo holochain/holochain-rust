@@ -65,7 +65,7 @@ scenario2.runTape('send', async (t, { alice, bob }) => {
 
   //t.deepEqual(result.Ok, "Received : ping")
   //the line above results in `undefined`, so I switched to result to get the actual error, below:
-  t.deepEqual(result, {Ok: { message: "ping" }})
+  t.deepEqual(result, { Ok: { message: "ping" } })
 })
 
 scenario1.runTape('hash_post', async (t, { alice }) => {
@@ -91,64 +91,58 @@ scenario1.runTape('create_post', async (t, { alice }) => {
 scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   //create post
- const alice_create_post_result = await alice.callSync("blog", "create_post",
+  const alice_create_post_result = await alice.callSync("blog", "create_post",
     { "content": "Posty", "in_reply_to": "" }
   )
-
 
   const bob_create_post_result = await bob.callSync("blog", "posts_by_agent",
     { "agent": alice.agentId }
   )
 
-
-
-   t.ok(bob_create_post_result.Ok)
-   t.equal(bob_create_post_result.Ok.addresses.length, 1);
+  t.ok(bob_create_post_result.Ok)
+  t.equal(bob_create_post_result.Ok.addresses.length, 1);
 
   //remove link by alicce
-    await alice.callSync("blog", "delete_post",
-    { "content": "Posty", "in_reply_to": "" }
-  )
+  await alice.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
 
   // get posts by bob
-  const bob_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent":alice.agentId })
+  const bob_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
 
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
+})
 
-  })
+scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
+  const content = "Hello Holo world 321"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+  const createResult = await alice.callSync("blog", "create_post", params)
 
-  scenario1.runTape('delete_entry_post', async (t, { alice }) => {
-    const content = "Hello Holo world 321"
-    const in_reply_to = null
-    const params = { content, in_reply_to }
-    const createResult = alice.call("blog", "create_post", params)
+  t.ok(createResult.Ok)
 
-    t.ok(createResult.Ok)
+  const deletionParams = { post_address: createResult.Ok }
+  const deletionResult = await alice.callSync("blog", "delete_entry_post", deletionParams)
 
-    const deletionParams = { post_address: createResult.Ok }
-    const deletionResult = alice.call("blog", "delete_entry_post", deletionParams)
+  t.notOk(deletionResult.Ok)
 
-    t.equals(deletionResult.Ok, null)
+  const paramsGet = { post_address: createResult.Ok }
+  const result = bob.call("blog", "get_post", paramsGet)
 
-    const paramsGet = { post_address: createResult.Ok }
-    const result = alice.call("blog", "get_post", paramsGet)
+  t.notOk(result.Ok)
+})
 
-    t.equals(result.Ok, null)
-  })
-
-scenario1.runTape('update_post', async (t, { alice }) => {
+scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
   const in_reply_to = null
   const params = { content, in_reply_to }
-  const createResult = alice.call("blog", "create_post", params)
+  const createResult = await alice.callSync("blog", "create_post", params)
 
   t.ok(createResult.Ok)
 
   const updateParams = { post_address: createResult.Ok, new_content: "Hello Holo" }
-  const result = alice.call("blog", "update_post", updateParams)
+  const result = await bob.callSync("blog", "update_post", updateParams)
 
-  t.equals(result.Ok, null)
+  t.deepEqual(result, { Ok: null })
 
   const updatedPost = alice.call("blog", "get_post", { post_address: createResult.Ok })
 
@@ -157,7 +151,7 @@ scenario1.runTape('update_post', async (t, { alice }) => {
   t.deepEqual(JSON.parse(updatedPost.Ok.App[1]), { content: "Hello Holo", date_created: "now" })
 })
 
- scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
+scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
   const content = "Holo world"
   const in_reply_to = "bad"
   const params = { content, in_reply_to }
@@ -175,17 +169,17 @@ scenario1.runTape('update_post', async (t, { alice }) => {
 scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
 
   const result_bob_delete = await bob.callSync("blog", "delete_post",
-    { "content": "Bad"}
+    { "content": "Bad" }
   )
 
-   // bad in_reply_to is an error condition
-   t.ok(result_bob_delete.Err)
-   t.notOk(result_bob_delete.Ok)
-   const error = JSON.parse(result_bob_delete.Err.Internal)
-   t.deepEqual(error.kind, { ErrorGeneric: "Target for link not found" })
-   t.ok(error.file)
-   t.ok(error.line)
-  })
+  // bad in_reply_to is an error condition
+  t.ok(result_bob_delete.Err)
+  t.notOk(result_bob_delete.Ok)
+  const error = JSON.parse(result_bob_delete.Err.Internal)
+  t.deepEqual(error.kind, { ErrorGeneric: "Target for link not found" })
+  t.ok(error.file)
+  t.ok(error.line)
+})
 
 scenario1.runTape('post max content size 280 characters', async (t, { alice }) => {
 

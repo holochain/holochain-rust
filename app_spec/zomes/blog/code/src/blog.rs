@@ -164,7 +164,7 @@ pub fn handle_get_initial_post(post_address: Address) ->ZomeApiResult<Option<Ent
     hdk::get_entry_initial(&post_address)
 }
 
-pub fn handle_get_history_post(post_address : Address) -> ZomeApiError<Option<EntryHistory>>
+pub fn handle_get_history_post(post_address : Address) -> ZomeApiResult<Option<EntryHistory>>
 {
     hdk::get_entry_history(&post_address)
 }

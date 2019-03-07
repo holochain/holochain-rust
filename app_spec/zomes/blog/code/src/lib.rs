@@ -18,7 +18,7 @@ use hdk::{
     holochain_core_types::{
         cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
     },
-    holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
+    holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::EntryHistory}
 };
 use blog::Env;
 

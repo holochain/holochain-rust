@@ -7,6 +7,7 @@ use hdk::{
     holochain_wasm_utils::api_serialization::{
         get_entry::{GetEntryOptions, GetEntryResultType},
         get_links::{GetLinksOptions, GetLinksResult},
+        get_entry::EntryHistory
     },
     AGENT_ADDRESS, AGENT_ID_STR, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
 };

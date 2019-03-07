@@ -169,7 +169,7 @@ pub fn handle_get_history_post(post_address : Address) -> ZomeApiResult<Option<E
     hdk::get_entry_history(&post_address)
 }
 
-pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<()> {
+pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<Address> {
     let old_entry = hdk::get_entry(&post_address)?;
 
     if let Some(Entry::App(_, json_string)) = old_entry {
@@ -179,7 +179,7 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
             Post::new(&new_content, &post.date_created).into(),
         );
 
-        hdk::update_entry(updated_post_entry, &post_address)?
+        hdk::update_entry(updated_post_entry, &post_address)
     } else {
         Err(ZomeApiError::Internal("failed to update post".into()))
     }

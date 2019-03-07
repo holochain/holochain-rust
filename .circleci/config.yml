@@ -105,10 +105,10 @@ jobs:
  cold.mac:
   macos:
    xcode: "10.2.0"
-   steps:
-    - checkout
-    - run: . ./scripts/install/auto.sh
-    - run: make test
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
 
 workflows:
  version: 2

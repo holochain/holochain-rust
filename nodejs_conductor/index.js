@@ -72,10 +72,16 @@ Conductor.run = function (config, fn) {
     return new Promise((fulfill, reject) => {
         try {
             conductor._start(callbackFromPromise(fulfill, reject))
+            const promise = fn(() => conductor._stop(), conductor)
+            if (promise && promise.catch) {
+                // If the function returned a promise, pass on its potential rejection
+                // to the outer promise
+                // promise.catch(reject)
+            }
+            // Otherwise, it should have thrown a normal Exception, which will be caught here
         } catch (e) {
             reject(e)
         }
-        fn(() => conductor._stop(), conductor).catch(reject)
     })
 }
 

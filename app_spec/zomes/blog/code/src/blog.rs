@@ -5,7 +5,7 @@ use hdk::{
         cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{
-        get_entry::{GetEntryOptions, GetEntryResultType,EntryHistory, StatusRequestKind},
+        get_entry::{GetEntryOptions, GetEntryResultType,EntryHistory, StatusRequestKind,GetEntryResult},
         get_links::{GetLinksOptions, GetLinksResult}
     },
     AGENT_ADDRESS, AGENT_ID_STR, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
@@ -169,8 +169,8 @@ pub fn handle_get_post_with_options_latest(post_address : Address) -> ZomeApiRes
         &post_address,
         GetEntryOptions::new(StatusRequestKind::All, false, false, Default::default()),
     )?;
-    let latest = res.latest().ok_or(HolochainError::ErrorGeneric("Could not write this"))?;
-    latest.clone()
+    let latest = res.latest().ok_or(ZomeApiError::Internal("Could not write this".into()))?;
+    Ok(latest)
 }
 
 pub fn handle_my_post_with_options(post_address : Address) ->ZomeApiResult<GetEntryResult>

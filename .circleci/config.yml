@@ -102,6 +102,14 @@ jobs:
    - run: . ./scripts/install/auto.sh
    - run: make test
 
+ cold.mac:
+  macos:
+   xcode: "10.2.0"
+   steps:
+    - checkout
+    - run: . ./scripts/install/auto.sh
+    - run: make test
+
 workflows:
  version: 2
  tests:
@@ -118,6 +126,7 @@ workflows:
        branches:
         only:
          - develop
+   - cold.mac:
 
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow

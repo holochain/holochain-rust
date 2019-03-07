@@ -126,7 +126,7 @@ workflows:
        branches:
         only:
          - develop
-   - cold.mac:
+   - cold.mac
 
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow

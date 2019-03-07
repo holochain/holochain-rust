@@ -201,7 +201,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   t.deepEqual(JSON.parse(updatedPostV3Latest.Ok.App[1]), { content: "Hello Holo V3", date_created: "now" })
 
    //update to version 4
-   const updateParamsV4 = { post_address: createResult.Ok, new_content: "Hello Holo V3" }
+   const updateParamsV4 = { post_address: createResult.Ok, new_content: "Hello Holo V4" }
    const UpdateResultV4 = await bob.callSync("blog", "update_post", updateParamsV4)
    t.ok(UpdateResultV4.Ok)
    

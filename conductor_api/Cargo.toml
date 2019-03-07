@@ -1,6 +1,6 @@
 [package]
 name = "holochain_conductor_api"
-version = "0.0.4-alpha"
+version = "0.0.5-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]

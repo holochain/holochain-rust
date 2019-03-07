@@ -76,7 +76,7 @@ Conductor.run = function (config, fn) {
             if (promise && promise.catch) {
                 // If the function returned a promise, pass on its potential rejection
                 // to the outer promise
-                // promise.catch(reject)
+                promise.catch(reject)
             }
             // Otherwise, it should have thrown a normal Exception, which will be caught here
         } catch (e) {

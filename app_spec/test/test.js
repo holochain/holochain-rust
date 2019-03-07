@@ -133,11 +133,12 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   //delete should fail
   const failedDelete = await alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
   console.log("failed delete " + failedDelete);
-  t.notOk(failedDelete.Err)
+  t.deepEqual(Json.parse(failedDelete.Err),{ Internal: 'Unspecified' });
 
   //get initial entry
   const GetInitialParamsResult = alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
   console.log("GetInitial " + GetInitialParamsResult);
+  t.ok(GetInitialParamsResult.Ok);
   t.deepEqual(JSON.parse(GetInitialParamsResult.Ok.App[1]),{content: "Hello Holo", date_created: "now" });
   
   const paramsGet = { post_address: createResult.Ok }

@@ -209,30 +209,30 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
    const entryHistoryV4Params = { post_address: UpdateResultV4.Ok}
    const entryHistoryV4 =  alice.call("blog", "get_history_post", entryHistoryV4Params)
    t.deepEqual(entryHistoryV4.Ok.items.length,1);
-   t.deepEqual(JSON.parse(entryHistoryV4.Ok.items[0].entry.App[1]),{ content: "Hello Holo world V4", date_created: "now" });
-   t.deepEqual(entryHistoryV4.Ok.items[0].meta.address,createResult.Ok);
+   t.deepEqual(JSON.parse(entryHistoryV4.Ok.items[0].entry.App[1]),{ content: "Hello Holo V4", date_created: "now" });
+   t.deepEqual(entryHistoryV4.Ok.items[0].meta.address,UpdateResultV4.Ok);
    t.deepEqual(entryHistoryV4.Ok.items[0].meta.crud_status,"Live");
 
     //get history entry all
      const entryHistoryAllParams = { post_address: createResult.Ok}
      const entryHistoryAll = alice.call("blog", "get_history_post", entryHistoryAllParams)
 
-     t.deepEqual(entryHistoryAll.Ok.itemslength,4);
+     t.deepEqual(entryHistoryAll.Ok.items.length,4);
      t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[0].entry.App[1]),{ content: "Hello Holo world 123", date_created: "now" });
      t.deepEqual(entryHistoryAll.Ok.items[0].meta.address,createResult.Ok);
-     t.deepEqual(entryHistoryAll.Ok.items[0].meta.crud_status,"Modified");
+     t.deepEqual(entryHistoryAll.Ok.items[0].meta.crud_status,"modified");
 
      t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[1].entry.App[1]),{ content: "Hello Holo V2", date_created: "now" });
      t.deepEqual(entryHistoryAll.Ok.items[1].meta.address,createResult.Ok);
-     t.deepEqual(entryHistoryAll.Ok.items[1].meta.crud_status,"Modified");
+     t.deepEqual(entryHistoryAll.Ok.items[1].meta.crud_status,"modified");
 
      t.deepEqual(JSON.parse(entryHistoryAll.Ok.itemst[2].entry.App[1]),{ content: "Hello Holo V3", date_created: "now" });
      t.deepEqual(entryHistoryAll.Ok.items[2].meta.address,createResult.Ok);
-     t.deepEqual(entryHistoryAll.Ok.items[2].meta.crud_status,"Modified");
+     t.deepEqual(entryHistoryAll.Ok.items[2].meta.crud_status,"modified");
 
      t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[3].entry.App[1]),{ content: "Hello Holo V4", date_created: "now" });
      t.deepEqual(entryHistoryAll.Ok.items[3].meta.address,createResult.Ok);
-     t.deepEqual(entryHistoryAll.Ok.items[3].meta.crud_status,"Live");
+     t.deepEqual(entryHistoryAll.Ok.items[3].meta.crud_status,"live");
 
 
 

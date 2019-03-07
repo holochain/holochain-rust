@@ -246,7 +246,7 @@ impl Dispatch {
                 Dispatch::Sleep => hc_sleep,
                 Dispatch::RemoveLink => hc_remove_link,
                 Dispatch::Sign => hc_sign,
-                Dispatch::Sign => hc_verify_signature,
+                Dispatch::VerifySignature => hc_verify_signature,
             })(encoded_input)
         };
 

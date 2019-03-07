@@ -52,6 +52,12 @@ impl From<String> for JsonString {
     }
 }
 
+impl From<bool> for JsonString {
+    fn from(u: bool) -> JsonString {
+        default_to_json(u)
+    }
+}
+
 impl From<u32> for JsonString {
     fn from(u: u32) -> JsonString {
         default_to_json(u)
@@ -73,6 +79,13 @@ impl From<u64> for JsonString {
 impl From<u128> for JsonString {
     fn from(u: u128) -> JsonString {
         default_to_json(u)
+    }
+}
+
+impl TryFrom<JsonString> for bool {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
     }
 }
 

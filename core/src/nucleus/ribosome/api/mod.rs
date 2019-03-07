@@ -16,6 +16,7 @@ pub mod send;
 pub mod sign;
 pub mod sleep;
 pub mod update_entry;
+pub mod verify_signature;
 
 use crate::nucleus::ribosome::{
     api::{
@@ -24,7 +25,7 @@ use crate::nucleus::ribosome::{
         get_links::invoke_get_links, init_globals::invoke_init_globals,
         link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
         remove_link::invoke_remove_link, send::invoke_send, sign::invoke_sign, sleep::invoke_sleep,
-        update_entry::invoke_update_entry,
+        update_entry::invoke_update_entry, verify_signature::invoke_verify_signature,
     },
     runtime::Runtime,
     Defn,
@@ -95,6 +96,7 @@ pub enum ZomeApiFunction {
     RemoveLink,
 
     Sign,
+    VerifySignature,
 }
 
 impl Defn for ZomeApiFunction {
@@ -117,13 +119,12 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::Sleep => "hc_sleep",
             ZomeApiFunction::RemoveLink => "hc_remove_link",
             ZomeApiFunction::Sign => "hc_sign",
+            ZomeApiFunction::VerifySignature => "hc_verify_signature",
         }
     }
 
     fn str_to_index(s: &str) -> usize {
-        ZomeApiFunction::from_str(s)
-            .map(|i| i as usize)
-            .unwrap_or(ZomeApiFunction::MissingNo as usize)
+        ZomeApiFunction::from_str(s).unwrap_or(ZomeApiFunction::MissingNo) as usize
     }
 
     fn from_index(i: usize) -> Self {
@@ -186,6 +187,7 @@ impl ZomeApiFunction {
             ZomeApiFunction::Sleep => invoke_sleep,
             ZomeApiFunction::RemoveLink => invoke_remove_link,
             ZomeApiFunction::Sign => invoke_sign,
+            ZomeApiFunction::VerifySignature => invoke_verify_signature,
         }
     }
 }

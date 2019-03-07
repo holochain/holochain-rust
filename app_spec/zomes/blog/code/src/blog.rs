@@ -160,7 +160,7 @@ pub fn handle_delete_entry_post(post_address: Address) -> ZomeApiResult<()> {
 
 pub fn handle_get_initial_post(post_address: Address) ->ZomeApiResult<Option<Entry>>
 {
-    hdk::get_entry_initial(&post_address)?
+    hdk::get_entry_initial(&post_address)
 }
 
 pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<()> {

@@ -274,6 +274,7 @@ impl Conductor {
                 String::from("N3H_MODE") => network_config.n3h_mode.clone(),
                 String::from("N3H_WORK_DIR") => network_config.n3h_persistence_path.clone(),
                 String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
+                String::from("N3H_LOG_LEVEL") => network_config.n3h_log_level.clone(),
             },
             true,
         )
@@ -300,7 +301,7 @@ impl Conductor {
     fn initialize_p2p_config(&mut self) -> P2pConfig {
         // if there's no NetworkConfig we won't spawn a network process
         // and instead configure instances to use a unique in-memory network
-        if let None = self.config.network {
+        if self.config.network.is_none() {
             return P2pConfig::new_with_unique_memory_backend();
         }
         // if there is a config then either we need to spawn a process and get the

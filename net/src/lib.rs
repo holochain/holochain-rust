@@ -25,6 +25,8 @@ extern crate native_tls;
 extern crate tungstenite;
 extern crate url;
 
+#[macro_use]
+pub mod tweetlog;
 pub mod connection;
 pub mod error;
 pub mod in_memory;
@@ -32,4 +34,3 @@ pub mod ipc;
 pub mod ipc_net_worker;
 pub mod p2p_config;
 pub mod p2p_network;
-pub mod tweetlog;

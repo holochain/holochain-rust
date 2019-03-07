@@ -21,7 +21,7 @@ jobs:
  app-spec-tests:
   docker:
    - image: holochain/holochain-rust:circle.zz.end
-  resource_class: large
+  resource_class: xlarge
   steps:
    - checkout
 
@@ -96,6 +96,7 @@ jobs:
  cold.ubuntu:
   docker:
    - image: ubuntu
+  resource_class: large
   steps:
    - checkout
    - run: . ./scripts/install/auto.sh

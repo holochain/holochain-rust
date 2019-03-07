@@ -59,9 +59,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn default_channel_buffer_size() -> usize {
-        100
-    }
+    pub const DEFAULT_CHANNEL_BUF_SIZE: usize = 100;
 
     // test_check_conductor_api() is used to inject a conductor_api with a working
     // mock of agent/sign to be used in tests.
@@ -351,7 +349,7 @@ pub mod tests {
 
     #[test]
     fn default_buffer_size_test() {
-        assert_eq!(Context::default_channel_buffer_size(), 100);
+        assert_eq!(Context::DEFAULT_CHANNEL_BUF_SIZE, 100);
     }
 
     #[test]

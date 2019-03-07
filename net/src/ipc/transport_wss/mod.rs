@@ -1,6 +1,8 @@
 //! abstraction for working with Websocket connections
 //! based on any rust io Read/Write Stream
 
+mod tcp;
+
 use std::io::{Read, Write};
 
 use crate::ipc::transport::{
@@ -43,14 +45,25 @@ pub const DEFAULT_HEARTBEAT_MS: usize = 2000;
 /// when should we close a connection due to not receiving remote msgs
 pub const DEFAULT_HEARTBEAT_WAIT_MS: usize = 5000;
 
-// represents an individual connection
+/// Represents an individual connection
 #[derive(Debug)]
 struct TransportInfo<T: Read + Write + std::fmt::Debug> {
     id: TransportId,
     url: url::Url,
     last_msg: std::time::Instant,
     send_queue: Vec<Vec<u8>>,
-    socket: WssStreamState<T>,
+    stateful_socket: WssStreamState<T>,
+}
+
+impl<T: Read + Write + std::fmt::Debug> TransportInfo<T> {
+    pub fn close(&mut self) -> TransportResult<()> {
+        if let WssStreamState::Ready(socket) = &mut self.stateful_socket {
+            socket.close(None)?;
+            socket.write_pending()?;
+        }
+        self.stateful_socket = WssStreamState::None;
+        Ok(())
+    }
 }
 
 /// a factory callback for generating base streams of type T
@@ -63,18 +76,6 @@ pub struct TransportWss<T: Read + Write + std::fmt::Debug> {
     stream_sockets: SocketMap<T>,
     event_queue: Vec<TransportEvent>,
     n_id: u64,
-}
-
-impl TransportWss<std::net::TcpStream> {
-    /// convenience function for creating a websocket "Transport"
-    /// instance that is based of the rust std TcpStream
-    pub fn with_std_tcp_stream() -> Self {
-        TransportWss::new(|uri| {
-            let socket = std::net::TcpStream::connect(uri)?;
-            socket.set_nonblocking(true)?;
-            Ok(socket)
-        })
-    }
 }
 
 impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
@@ -95,7 +96,7 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
             url: uri,
             last_msg: std::time::Instant::now(),
             send_queue: Vec::new(),
-            socket: WssStreamState::Connecting(socket),
+            stateful_socket: WssStreamState::Connecting(socket),
         };
         self.stream_sockets.insert(id.clone(), info);
         Ok(id)
@@ -104,7 +105,7 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
     /// close a currently tracked connection
     fn close(&mut self, id: TransportId) -> TransportResult<()> {
         if let Some(mut info) = self.stream_sockets.remove(&id) {
-            self.priv_close_one(&mut info)?;
+            info.close()?;
         }
         Ok(())
     }
@@ -121,7 +122,7 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
                 .expect("should not be None")
                 .to_string();
             if let Some(mut info) = self.stream_sockets.remove(&key) {
-                if let Err(e) = self.priv_close_one(&mut info) {
+                if let Err(e) = info.close() {
                     errors.push(e.into());
                 }
             }
@@ -178,6 +179,34 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
         }
     }
 
+    /// connect and wait for a Connect event response
+    pub fn wait_connect(&mut self, uri: &str) -> TransportResult<TransportId> {
+        // Launch connection attempt
+        let transport_id = self.connect(&uri)?;
+        // Wait for a successful response
+        let mut out = Vec::new();
+        let start = std::time::Instant::now();
+        while (start.elapsed().as_millis() as usize) < DEFAULT_HEARTBEAT_WAIT_MS {
+            let (_did_work, evt_lst) = self.poll()?;
+            for evt in evt_lst {
+                match evt {
+                    TransportEvent::Connect(id) => {
+                        if id == transport_id {
+                            return Ok(id);
+                        }
+                    }
+                    _ => out.push(evt),
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(3));
+        }
+        // Timed out
+        Err(TransportError::new(format!(
+            "ipc wss connection attempt timed out for '{}'. Received events: {:?}",
+            transport_id, out
+        )))
+    }
+
     // -- private -- //
 
     // generate a unique id for
@@ -185,15 +214,6 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
         let out = format!("ws{}", self.n_id);
         self.n_id += 1;
         return out;
-    }
-
-    fn priv_close_one(&mut self, info: &mut TransportInfo<T>) -> TransportResult<()> {
-        if let WssStreamState::Ready(socket) = &mut info.socket {
-            socket.close(None)?;
-            socket.write_pending()?;
-        }
-        info.socket = WssStreamState::None;
-        Ok(())
     }
 
     // see if any work needs to be done on our stream sockets
@@ -208,17 +228,17 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                 self.event_queue
                     .push(TransportEvent::TransportError(info.id.clone(), e));
             }
-            if let WssStreamState::None = info.socket {
+            if let WssStreamState::None = info.stateful_socket {
                 self.event_queue.push(TransportEvent::Close(info.id));
                 continue;
             }
             if info.last_msg.elapsed().as_millis() as usize > DEFAULT_HEARTBEAT_MS {
-                if let WssStreamState::Ready(socket) = &mut info.socket {
+                if let WssStreamState::Ready(socket) = &mut info.stateful_socket {
                     socket.write_message(tungstenite::Message::Ping(vec![]))?;
                 }
             } else if info.last_msg.elapsed().as_millis() as usize > DEFAULT_HEARTBEAT_WAIT_MS {
                 self.event_queue.push(TransportEvent::Close(info.id));
-                info.socket = WssStreamState::None;
+                info.stateful_socket = WssStreamState::None;
                 continue;
             }
             self.stream_sockets.insert(id, info);
@@ -234,7 +254,7 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
         info: &mut TransportInfo<T>,
     ) -> TransportResult<()> {
         // move the socket out, to be replaced
-        let socket = std::mem::replace(&mut info.socket, WssStreamState::None);
+        let socket = std::mem::replace(&mut info.stateful_socket, WssStreamState::None);
 
         match socket {
             WssStreamState::None => {
@@ -249,23 +269,23 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                     .danger_accept_invalid_hostnames(true)
                     .build()
                     .expect("failed to build TlsConnector");
-                info.socket =
+                info.stateful_socket =
                     self.priv_tls_handshake(connector.connect(info.url.as_str(), socket))?;
                 return Ok(());
             }
             WssStreamState::TlsMidHandshake(socket) => {
-                info.socket = self.priv_tls_handshake(socket.handshake())?;
+                info.stateful_socket = self.priv_tls_handshake(socket.handshake())?;
                 return Ok(());
             }
             WssStreamState::TlsReady(socket) => {
                 info.last_msg = std::time::Instant::now();
                 *did_work = true;
-                info.socket = self
+                info.stateful_socket = self
                     .priv_ws_handshake(&info.id, tungstenite::client(info.url.clone(), socket))?;
                 return Ok(());
             }
             WssStreamState::WssMidHandshake(socket) => {
-                info.socket = self.priv_ws_handshake(&info.id, socket.handshake())?;
+                info.stateful_socket = self.priv_ws_handshake(&info.id, socket.handshake())?;
                 return Ok(());
             }
             WssStreamState::Ready(mut socket) => {
@@ -278,7 +298,7 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                 match socket.read_message() {
                     Err(tungstenite::error::Error::Io(e)) => {
                         if e.kind() == std::io::ErrorKind::WouldBlock {
-                            info.socket = WssStreamState::Ready(socket);
+                            info.stateful_socket = WssStreamState::Ready(socket);
                             return Ok(());
                         }
                         return Err(e.into());
@@ -303,7 +323,7 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                             self.event_queue
                                 .push(TransportEvent::Message(info.id.clone(), msg));
                         }
-                        info.socket = WssStreamState::Ready(socket);
+                        info.stateful_socket = WssStreamState::Ready(socket);
                         return Ok(());
                     }
                 }

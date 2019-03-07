@@ -40,7 +40,9 @@ impl PartialEq for SimplePersister {
 impl Persister for SimplePersister {
     fn save(&mut self, state: &State) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();
-        let mut store = lock.write().unwrap();
+        let mut store = lock
+            .try_write()
+            .map_err(|_| HolochainError::new("Could not get write lock on storage"))?;
         let agent_snapshot = AgentStateSnapshot::try_from(state)?;
         let nucleus_snapshot = NucleusStateSnapshot::from(state);
         store.add(&agent_snapshot)?;

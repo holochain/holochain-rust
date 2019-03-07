@@ -188,41 +188,41 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
     // if this logic changes
-    let n3h_path = EnvVar::N3hPath.value().ok();
+    let maybe_n3h_path = EnvVar::N3hPath.value().ok();
 
     // create an n3h network config if the --networked flag is set
     // or if a value where to find n3h has been put into the
     // HC_N3H_PATH environment variable
-    if networked || n3h_path.is_some() {
-        // note that this behaviour is documented within
-        // holochain_common::env_vars module and should be updated
-        // if this logic changes
-        let n3h_mode = EnvVar::N3hMode.value().ok();
-        let n3h_persistence_path = EnvVar::N3hWorkDir.value().ok();
-        let n3h_bootstrap_node = EnvVar::N3hBootstrapNode.value().ok();
-        let mut n3h_bootstrap = Vec::new();
-
-        if n3h_bootstrap_node.is_some() {
-            n3h_bootstrap.push(n3h_bootstrap_node.unwrap())
-        }
-
-        // Load end_user config file
-        // note that this behaviour is documented within
-        // holochain_common::env_vars module and should be updated
-        // if this logic changes
-        let networking_config_filepath = EnvVar::NetworkingConfigFile.value().ok();
-
-        Some(NetworkConfig {
-            bootstrap_nodes: n3h_bootstrap,
-            n3h_path: n3h_path.unwrap_or_else(default_n3h_path),
-            n3h_mode: n3h_mode.unwrap_or_else(default_n3h_mode),
-            n3h_persistence_path: n3h_persistence_path.unwrap_or_else(default_n3h_persistence_path),
-            n3h_ipc_uri: Default::default(),
-            networking_config_file: networking_config_filepath,
-        })
-    } else {
-        None
+    if maybe_n3h_path.is_none() && !networked {
+        return None;
     }
+
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
+    let mut bootstrap_nodes = Vec::new();
+    if let Ok(node) = EnvVar::N3hBootstrapNode.value() {
+        bootstrap_nodes.push(node);
+    };
+
+    Some(NetworkConfig {
+        bootstrap_nodes,
+        n3h_log_level: EnvVar::N3hLogLevel
+            .value()
+            .ok()
+            .unwrap_or_else(default_n3h_log_level),
+        n3h_path: maybe_n3h_path.unwrap_or_else(default_n3h_path),
+        n3h_mode: EnvVar::N3hMode
+            .value()
+            .ok()
+            .unwrap_or_else(default_n3h_mode),
+        n3h_persistence_path: EnvVar::N3hWorkDir
+            .value()
+            .ok()
+            .unwrap_or_else(default_n3h_persistence_path),
+        n3h_ipc_uri: Default::default(),
+        networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
+    })
 }
 
 #[cfg(test)]
@@ -363,6 +363,7 @@ mod tests {
             networking,
             Some(NetworkConfig {
                 bootstrap_nodes: Vec::new(),
+                n3h_log_level: default_n3h_log_level(),
                 n3h_path: default_n3h_path(),
                 n3h_mode: default_n3h_mode(),
                 n3h_persistence_path: default_n3h_persistence_path(),

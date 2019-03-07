@@ -151,6 +151,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post]
+        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post,get_history_post]
     }
 }

@@ -164,9 +164,10 @@ pub fn handle_get_initial_post(post_address: Address) ->ZomeApiResult<Option<Ent
     hdk::get_entry_initial(&post_address)
 }
 
-pub fn handle_get_history_post(post_address : Address) -> ZomeApiResult<Option<EntryHistory>>
+pub fn handle_get_history_post(post_address : Address) -> ZomeApiResult<EntryHistory>
 {
-    hdk::get_entry_history(&post_address)
+    let history = hdk::get_entry_history(&post_address).ok_or(ZomeApiError::Internal("Could not get History".into()));
+    Ok(history)
 }
 
 pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<Address> {

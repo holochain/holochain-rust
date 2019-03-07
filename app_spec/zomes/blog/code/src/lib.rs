@@ -114,7 +114,7 @@ define_zome! {
 
         get_history_post : {
             inputs: |post_address: Address|,
-            outputs: |post: ZomeApiResult<Option<EntryHistory>>|,
+            outputs: |post: ZomeApiResult<EntryHistory>|,
             handler : blog::handle_get_history_post
         }
 

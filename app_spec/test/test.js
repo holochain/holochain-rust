@@ -141,8 +141,8 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   
   const entryWithOptionsGet = { post_address: createResult.Ok}
   const entryWithOptionsGetResult = alice.call("blog", "get_post_with_options", entryWithOptionsGet);
-  
-  t.deepEqual(entryWithOptionsGetResult.Ok.crud_links,2);
+  t.notOk(entryWithOptionsGetResult.Ok);
+  t.deepEqual(entryWithOptionsGetResult.Ok.All.crud_links.length,2);
 })
 
 scenario2.runTape('update_post', async (t, { alice, bob }) => {

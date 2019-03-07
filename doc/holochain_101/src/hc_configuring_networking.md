@@ -11,13 +11,9 @@ HC_N3H_PATH=/home/eric/holochain/n3h hc run
 
 Assuming n3h was installed properly you should see something like this:
 ```shell
-SPAWN ("node" "/home/eric/holochain/n3h/packages/n3h/bin/n3h")
-(@hackmode@) [t] bound to tcp://127.0.0.1:42341
-(@hackmode@) [i] p2p bound [
-  "/ip4/127.0.0.1/tcp/34199/ipfs/QmTg9qMFBosfWD8yeLbcNUwT8UgwNKoT9mGEfm9vXKEHzS",
-  "/ip4/192.168.1.5/tcp/34199/ipfs/QmTg9qMFBosfWD8yeLbcNUwT8UgwNKoT9mGEfm9vXKEHzS"
-]
-(@hackmode@) [t] running
+Network spawned with bindings:
+	 - ipc: wss://127.0.0.1:64518/
+	 - p2p: ["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"]
 ...
 ```
 
@@ -36,7 +32,7 @@ Specify a different port than the first node to run on. Since the port for the f
 
 Running the command could look like this:
 ``` shell
-HC_AGENT=testAgent2 HC_N3H_BOOTSTRAP_NODE=/ip4/192.168.1.5/tcp/43919/ipfs/QmUhYXbBKcfL8KWx8DMpmhcHeWmmyyLHUe7jFnP5PdLdr4 HC_N3H_PATH=/home/eric/holochain/n3h hc run --port 8889
+HC_AGENT=testAgent2 HC_N3H_BOOTSTRAP_NODE=wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM HC_N3H_PATH=/home/eric/holochain/n3h hc run --port 8889
 ```
 
 In the terminal logs that follow, you should see:

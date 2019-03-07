@@ -26,7 +26,6 @@ pub mod tests {
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMeta},
         link::link_data::LinkData,
-        time::Timeout,
     };
     use holochain_wasm_utils::api_serialization::get_entry::{
         GetEntryArgs, GetEntryOptions, GetEntryResultType,

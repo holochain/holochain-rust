@@ -221,18 +221,23 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
      t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[0].entry.App[1]),{ content: "Hello Holo world 123", date_created: "now" });
      t.deepEqual(entryHistoryAll.Ok.items[0].meta.address,createResult.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[0].meta.crud_status,"modified");
+     t.deepEqual(entryHistoryAll.crud_links[createResult.Ok],UpdateResultV2.Ok)
 
      t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[1].entry.App[1]),{ content: "Hello Holo V2", date_created: "now" });
      t.deepEqual(entryHistoryAll.Ok.items[1].meta.address,UpdateResultV2.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[1].meta.crud_status,"modified");
+     t.deepEqual(entryHistoryAll.crud_links[UpdateResultV2.Ok],UpdateResultV3.Ok)
 
-     t.deepEqual(JSON.parse(entryHistoryAll.Ok.itemst[2].entry.App[1]),{ content: "Hello Holo V3", date_created: "now" });
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[2].entry.App[1]),{ content: "Hello Holo V3", date_created: "now" });
      t.deepEqual(entryHistoryAll.Ok.items[2].meta.address,UpdateResultV3.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[2].meta.crud_status,"modified");
+     t.deepEqual(entryHistoryAll.crud_links[UpdateResultV3.Ok],UpdateResultV4.Ok)
 
      t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[3].entry.App[1]),{ content: "Hello Holo V4", date_created: "now" });
      t.deepEqual(entryHistoryAll.Ok.items[3].meta.address,UpdateResultV4.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[3].meta.crud_status,"live");
+     t.notOk(entryHistoryAll.crud_links[UpdateResultV4.Ok])
+
 
 
 

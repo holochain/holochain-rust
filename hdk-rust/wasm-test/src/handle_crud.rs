@@ -1,7 +1,7 @@
 use hdk_test_app_entry_type;
 use hdk_test_entry;
 use holochain_wasm_utils::{
-    api_serialization::get_entry::{GetEntryOptions, GetEntryResultType, StatusRequestKind},
+    api_serialization::get_entry::{GetEntryOptions, GetEntryResult,GetEntryResultType, StatusRequestKind},
     holochain_core_types::{crud_status::CrudStatus, entry::Entry, json::JsonString},
 };
 use std::time::Duration;

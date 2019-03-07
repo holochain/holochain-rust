@@ -18,7 +18,7 @@ use hdk::{
     holochain_core_types::{
         cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
     },
-    holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::EntryHistory}
+    holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}
 };
 use blog::Env;
 
@@ -124,6 +124,18 @@ define_zome! {
             handler: blog::handle_my_posts
         }
 
+        get_post_with_options_latest :{
+            inputs: |post_address: Address|,
+            outputs: |post: ZomeApiResult<Entry>|,
+            handler:  blog::handle_get_post_with_options_latest
+        }
+
+        get_post_with_options :{
+            inputs: |post_address: Address|,
+            outputs: |post: ZomeApiResult<GetEntryResult>|,
+            handler:  blog::handle_my_post_with_options
+        }
+
         my_posts_immediate_timeout: {
             inputs: | |,
             outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
@@ -151,6 +163,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post,get_history_post]
+        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post,get_history_post,get_post_with_options]
     }
 }

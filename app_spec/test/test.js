@@ -140,8 +140,8 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   t.deepEqual(JSON.parse(GetInitialParamsResult.Ok.App[1]),{content: "Hello Holo world 321", date_created: "now" });
   
   const entryWithOptionsGet = { post_address: createResult.Ok}
-  const entryWithOptionsGet = alice.call("blog", "get_post_with_options", entryWithOptionsGet);
-  t.notOk(result.Ok)
+  const entryWithOptionsGetResult = alice.call("blog", "get_post_with_options", entryWithOptionsGet);
+  t.notOk(entryWithOptionsGetResult.Ok)
 })
 
 scenario2.runTape('update_post', async (t, { alice, bob }) => {
@@ -237,9 +237,9 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
      t.notOk(entryHistoryAll.Ok.crud_links[UpdateResultV4.Ok])
 
      const entryWithOptionsGet = { post_address: createResult.Ok}
-     const entryWithOptionsGet = alice.call("blog", "get_post_with_options_latest", entryWithOptionsGet);
+     const entryWithOptionsGetResult = alice.call("blog", "get_post_with_options_latest", entryWithOptionsGet);
 
-     t.deepEqual(JSON.parse(entryWithOptionsGet.Ok.App[1]),{ content: "Hello Holo V4", date_created: "now" });
+     t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.App[1]),{ content: "Hello Holo V4", date_created: "now" });
 
 
 

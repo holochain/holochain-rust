@@ -4,10 +4,7 @@ use holochain_core::{
     nucleus::actions::call_zome_function::make_cap_request_for_call, state::State,
 };
 
-use holochain_core_types::{
-    agent::AgentId,
-    cas::content::Address,
-};
+use holochain_core_types::{agent::AgentId, cas::content::Address};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
@@ -1072,6 +1069,5 @@ pub mod tests {
             response_str,
             r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
         );
-
     }
 }

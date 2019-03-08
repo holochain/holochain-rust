@@ -21,8 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - link_entries_bidir - Same as link_entries but creates link in both directions
   - commit_and_link - Save a line and commit and link in a single function
 - The `admin/dna/install_from_file` RPC method now takes an optional `expected_hash`, which performs an integrity check of the DNA file before installing it in the conductor [PR#1093](https://github.com/holochain/holochain-rust/pull/1093).
-- Moved Crud Status tests to app_spec [#1096]
-(https://github.com/holochain/holochain-rust/pull/1096)
+- Moved Crud Status tests to app_spec [#1096](https://github.com/holochain/holochain-rust/pull/1096)
+
 
 ### Fixed
 - Validation of link entries gets retried now if base or target of the link were not yet accessible on the validating node. This fixes a bug where links have been invalid due to network timing issues [PR#1054](https://github.com/holochain/holochain-rust/pull/1054).

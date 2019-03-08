@@ -123,13 +123,11 @@ impl AgentStateSnapshot {
     }
 }
 
-impl TryFrom<&State> for AgentStateSnapshot {
-    type Error = HolochainError;
-
-    fn try_from(state: &State) -> Result<Self, Self::Error> {
+impl From<&State> for AgentStateSnapshot {
+    fn from(state: &State) -> Self {
         let agent = &*(state.agent());
         let top_chain = agent.top_chain_header();
-        Ok(AgentStateSnapshot::new(top_chain))
+        AgentStateSnapshot::new(top_chain)
     }
 }
 

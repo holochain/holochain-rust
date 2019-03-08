@@ -1,10 +1,16 @@
 use crate::holo_signing_service::request_signing_service;
 use base64;
 use holochain_core::{
-    nucleus::actions::call_zome_function::make_cap_request_for_call, state::State,
+    nucleus::{
+        actions::call_zome_function::make_cap_request_for_call,
+        ribosome::capabilities::CapabilityRequest,
+    },
+    state::State,
 };
 
-use holochain_core_types::{agent::AgentId, cas::content::Address};
+use holochain_core_types::{
+    agent::AgentId, cas::content::Address, json::JsonString, signature::Provenance,
+};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
@@ -147,7 +153,27 @@ impl ConductorApiBuilder {
                     })?,
                     Ok(token) => Address::from(token),
                 };
-                make_cap_request_for_call(context.clone(), token, &func_name, params_string.clone())
+
+                let maybe_provenance = params_map.get("provenance");
+                match maybe_provenance {
+                    None => make_cap_request_for_call(
+                        context.clone(),
+                        token,
+                        &func_name,
+                        params_string.clone(),
+                    ),
+                    Some(json_provenance) => {
+                        let provenance =
+                            Provenance::try_from(JsonString::from(json_provenance.to_string()))
+                                .map_err(|e| {
+                                    jsonrpc_core::Error::invalid_params(format!(
+                                        "invalid provenance: {}",
+                                        e
+                                    ))
+                                })?;
+                        CapabilityRequest::new(token, provenance.source(), provenance.signature())
+                    }
+                }
             };
 
             let response = hc
@@ -1062,6 +1088,42 @@ pub mod tests {
                     "zome" : "greeter",
                     "function" : "hello",
                     "token" : "bogus token",
+                })),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({
+                    "instance_id" : "test-instance-1",
+                    "zome" : "greeter",
+                    "function" : "hello",
+                    "provenance" : {"bad_provenance" : "bogus"},
+                })),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"invalid provenance param: missing field `source` at line 1 column 26"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({
+                    "instance_id" : "test-instance-1",
+                    "zome" : "greeter",
+                    "function" : "hello",
+                    "token" : "bogus token",
+                    "provenance" : {
+                        "source" : "some_source",
+                        "signature" : "some_signature",
+                    },
                 })),
             ))
             .expect("Invalid call to handler");

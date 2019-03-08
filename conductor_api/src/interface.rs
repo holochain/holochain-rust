@@ -134,8 +134,8 @@ impl ConductorApiBuilder {
             let call_params = params_map.get("params");
             let params_string = serde_json::to_string(&call_params)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-            let func_name = Self::get_as_string("function", &params_map)?;
             let zome_name = Self::get_as_string("zome", &params_map)?;
+            let func_name = Self::get_as_string("function", &params_map)?;
 
             let cap_request = {
                 // TODO: get the token from the parameters.  If not there assume public token.
@@ -905,7 +905,7 @@ pub mod tests {
         (conductor.config(), instances)
     }
 
-    fn create_call_str(method: &str, params: Option<&str>) -> String {
+    fn create_call_str(method: &str, params: Option<serde_json::Value>) -> String {
         json!({"jsonrpc": "2.0", "id": "0", "method": method, "params": params}).to_string()
     }
 
@@ -973,4 +973,82 @@ pub mod tests {
             r#"[{"id":"test-instance-1","dna":"bridge-callee","agent":"test-agent-1"}]"#
         );
     }
+
+    #[test]
+    fn test_rpc_call_method() {
+        let (config, instances) = example_config_and_instances();
+        let handler = ConductorApiBuilder::new()
+            .with_instances(instances.clone())
+            .with_instance_configs(config.instances)
+            .spawn();
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str("call", None))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"expected params map"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str("call", Some(json!({}))))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"`id` param not provided"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({"id" : "bad instance id"})),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"instance identifier invalid"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({"id" : "test-instance-1"})),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"`zome` param not provided"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({
+                    "id" : "test-instance-1",
+                    "zome" : "greeter"
+                })),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"`function` param not provided"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({
+                    "id" : "test-instance-1",
+                    "zome" : "greeter",
+                    "function" : "hello",
+
+                })),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
+        );
+    }
+
 }

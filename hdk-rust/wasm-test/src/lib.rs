@@ -10,8 +10,6 @@ extern crate boolinator;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-pub mod handle_crud;
-
 use boolinator::Boolinator;
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},

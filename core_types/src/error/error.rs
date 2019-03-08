@@ -4,6 +4,7 @@ use crate::{
     json::*,
 };
 use futures::channel::oneshot::Canceled as FutureCanceled;
+use hash::HashString;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -96,6 +97,7 @@ pub enum HolochainError {
     ConfigError(String),
     Timeout,
     InitializationFailed(String),
+    DnaHashMismatch(HashString, HashString),
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -127,6 +129,11 @@ impl fmt::Display for HolochainError {
             ConfigError(err_msg) => write!(f, "{}", err_msg),
             Timeout => write!(f, "timeout"),
             InitializationFailed(err_msg) => write!(f, "{}", err_msg),
+            DnaHashMismatch(hash1, hash2) => write!(
+                f,
+                "DNA hash does not match expected hash!\n{} != {}",
+                hash1, hash2
+            ),
         }
     }
 }
@@ -334,7 +341,7 @@ mod tests {
                 "Entry validation could not be completed",
             ),
         ] {
-            assert_eq!(output, &format!("{}", input));
+            assert_eq!(output, &input.to_string());
         }
     }
 

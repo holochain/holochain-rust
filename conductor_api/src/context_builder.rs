@@ -1,7 +1,6 @@
 use holochain_cas_implementations::{
     cas::{file::FilesystemStorage, memory::MemoryStorage},
     eav::{file::EavFileStorage, memory::EavMemoryStorage},
-    path::create_path_if_not_exists,
 };
 
 use holochain_core::{
@@ -17,6 +16,7 @@ use holochain_core_types::{
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
+    fs,
     path::{Path, PathBuf},
     sync::{Arc, Mutex, RwLock},
 };
@@ -81,8 +81,8 @@ impl ContextBuilder {
         let base_path: PathBuf = path.as_ref().into();
         let cas_path = base_path.join("cas");
         let eav_path = base_path.join("eav");
-        create_path_if_not_exists(&cas_path)?;
-        create_path_if_not_exists(&eav_path)?;
+        fs::create_dir_all(&cas_path)?;
+        fs::create_dir_all(&eav_path)?;
 
         let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
         let eav_storage = Arc::new(RwLock::new(EavFileStorage::new(eav_path)?));

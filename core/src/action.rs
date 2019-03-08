@@ -10,11 +10,12 @@ use crate::{
         validation::ValidationResult,
         ZomeFnCall,
     },
-    scheduled_jobs::pending_validations::PendingValidation,
+    scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
 };
 use holochain_core_types::{
     cas::content::Address,
     chain_header::ChainHeader,
+    crud_status::CrudStatus,
     dna::Dna,
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
@@ -104,6 +105,9 @@ pub enum Action {
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.
     AddLink(Link),
+
+    //action for updating crudstatus
+    CrudStatus((EntryWithHeader, CrudStatus)),
 
     //Removes a link for the local DHT
     RemoveLink(Link),
@@ -212,7 +216,7 @@ pub enum Action {
     AddPendingValidation(PendingValidation),
 
     /// Clear an entry from the pending validation list
-    RemovePendingValidation(Address),
+    RemovePendingValidation((Address, ValidatingWorkflow)),
 }
 
 /// function signature for action handler functions

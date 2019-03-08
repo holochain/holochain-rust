@@ -243,12 +243,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
      const entryWithOptionsGet = { post_address: createResult.Ok}
      const entryWithOptionsGetResult = alice.call("blog", "get_post_with_options_latest", entryWithOptionsGet);
 
-     t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.App[1]),updatePostV4Content);
-
-
-
-
-  
+     t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.App[1]),updatePostV4Content);  
 })
 
 
@@ -279,9 +274,6 @@ scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
   const failedDelete = await alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
   console.log("failed delete " + failedDelete);
   t.deepEqual(failedDelete.Err,{ Internal: 'Unspecified' });
-
-
-  
 })
 
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {

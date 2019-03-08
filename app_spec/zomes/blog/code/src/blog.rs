@@ -54,7 +54,7 @@ pub fn handle_get_sources(address: Address) -> ZomeApiResult<Vec<Address>> {
         Ok(result
             .headers
             .into_iter()
-            .map(|header| header.provenances().first().unwrap().clone().0)
+            .map(|header| header.provenances().first().unwrap().clone().source())
             .collect())
     } else {
         unimplemented!()

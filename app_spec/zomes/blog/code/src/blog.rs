@@ -169,7 +169,7 @@ pub fn handle_get_post_with_options_latest(post_address : Address) -> ZomeApiRes
         &post_address,
         GetEntryOptions::new(StatusRequestKind::All, false, false, Default::default()),
     )?;
-    let latest = res.latest().ok_or(ZomeApiError::Internal("Could not write this".into()))?;
+    let latest = res.latest().ok_or(ZomeApiError::Internal("Could not get latest".into()))?;
     Ok(latest)
 }
 

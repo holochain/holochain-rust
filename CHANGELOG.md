@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - get_as_type - Similar but for a single entry
   - link_entries_bidir - Same as link_entries but creates link in both directions
   - commit_and_link - Save a line and commit and link in a single function
+- Moved Crud Status tests to app_spec
+(https://github.com/holochain/holochain-rust/pull/1096)
 
 ### Fixed
 - Validation of link entries gets retried now if base or target of the link were not yet accessible on the validating node. This fixes a bug where links have been invalid due to network timing issues [PR#1054](https://github.com/holochain/holochain-rust/pull/1054).

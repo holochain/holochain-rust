@@ -91,7 +91,7 @@ macro_rules! conductor_call {
 /// with spawn() to retrieve the IoHandler.
 pub struct ConductorApiBuilder {
     instances: InstanceMap,
-    instances_map: PublicInstanceMap,
+    instance_ids_map: PublicInstanceMap,
     instance_configs: HashMap<String, InstanceConfiguration>,
     io: Box<IoHandler>,
 }
@@ -100,7 +100,7 @@ impl ConductorApiBuilder {
     pub fn new() -> Self {
         ConductorApiBuilder {
             instances: HashMap::new(),
-            instances_map: HashMap::new(),
+            instance_ids_map: HashMap::new(),
             instance_configs: HashMap::new(),
             io: Box::new(IoHandler::new()),
         }
@@ -116,11 +116,11 @@ impl ConductorApiBuilder {
     /// Adds a "call" method for making zome function calls
     fn setup_call_api(&mut self) {
         let instances = self.instances.clone();
-        let instances_map = self.instances_map.clone();
+        let instance_ids_map = self.instance_ids_map.clone();
         self.io.add_method("call", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let public_id_str = Self::get_as_string("id", &params_map)?;
-            let id = instances_map
+            let public_id_str = Self::get_as_string("instance_id", &params_map)?;
+            let id = instance_ids_map
                 .get(&PublicInstanceIdentifier::from(public_id_str))
                 .ok_or(jsonrpc_core::Error::invalid_params(
                     "instance identifier invalid",
@@ -268,7 +268,7 @@ impl ConductorApiBuilder {
         };
         self.instances
             .insert(instance_name.clone(), instance.clone());
-        self.instances_map.insert(
+        self.instance_ids_map.insert(
             PublicInstanceIdentifier::from(instance_name.clone()),
             instance_name.clone(),
         );
@@ -995,13 +995,13 @@ pub mod tests {
             .expect("Invalid call to handler");
         assert_eq!(
             response_str,
-            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"`id` param not provided"},"id":"0"}"#
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"`instance_id` param not provided"},"id":"0"}"#
         );
 
         let response_str = handler
             .handle_request_sync(&create_call_str(
                 "call",
-                Some(json!({"id" : "bad instance id"})),
+                Some(json!({"instance_id" : "bad instance id"})),
             ))
             .expect("Invalid call to handler");
         assert_eq!(
@@ -1012,7 +1012,7 @@ pub mod tests {
         let response_str = handler
             .handle_request_sync(&create_call_str(
                 "call",
-                Some(json!({"id" : "test-instance-1"})),
+                Some(json!({"instance_id" : "test-instance-1"})),
             ))
             .expect("Invalid call to handler");
         assert_eq!(
@@ -1024,7 +1024,7 @@ pub mod tests {
             .handle_request_sync(&create_call_str(
                 "call",
                 Some(json!({
-                    "id" : "test-instance-1",
+                    "instance_id" : "test-instance-1",
                     "zome" : "greeter"
                 })),
             ))
@@ -1038,7 +1038,7 @@ pub mod tests {
             .handle_request_sync(&create_call_str(
                 "call",
                 Some(json!({
-                    "id" : "test-instance-1",
+                    "instance_id" : "test-instance-1",
                     "zome" : "greeter",
                     "function" : "hello",
 
@@ -1050,5 +1050,4 @@ pub mod tests {
             r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
         );
     }
-
 }

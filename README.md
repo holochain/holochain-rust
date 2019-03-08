@@ -8,7 +8,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/holochain.svg?style=social&label=Follow)](https://twitter.com/holochain)
 
 Travis: [![Build Status](https://travis-ci.com/holochain/holochain-rust.svg?branch=master)](https://travis-ci.com/holochain/holochain-rust)
-Circle CI: [![CircleCI](https://circleci.com/gh/holochain/holochain-rust/tree/master.svg?style=svg)](https://circleci.com/gh/holochain/holochain-rust/tree/master)
+Circle CI: [![CircleCI](https://circleci.com/gh/holochain/holochain-rust.svg?style=svg)](https://circleci.com/gh/holochain/holochain-rust)
 Codecov: [![Codecov](https://img.shields.io/codecov/c/github/holochain/holochain-rust.svg)](https://codecov.io/gh/holochain/holochain-rust/branch/master)
 License: [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 

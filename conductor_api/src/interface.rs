@@ -4,7 +4,10 @@ use holochain_core::{
     nucleus::actions::call_zome_function::make_cap_request_for_call, state::State,
 };
 
-use holochain_core_types::agent::AgentId;
+use holochain_core_types::{
+    agent::AgentId,
+    cas::content::Address,
+};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
@@ -138,23 +141,16 @@ impl ConductorApiBuilder {
             let func_name = Self::get_as_string("function", &params_map)?;
 
             let cap_request = {
-                // TODO: get the token from the parameters.  If not there assume public token.
-                // currently we are always getting the public token.
                 let context = hc.context();
-                let token =
-                    context
-                        .get_public_token()
-                        .ok_or(jsonrpc_core::Error::invalid_params(
-                            "public token not found",
-                        ))?;
-                let caller = Address::from("fake");
-                make_cap_request_for_call(
-                    context.clone(),
-                    token,
-                    caller,
-                    &func_name,
-                    params_string.clone(),
-                )
+                // Get the token from the parameters.  If not there assume public token.
+                let maybe_token = Self::get_as_string("token", &params_map);
+                let token = match maybe_token {
+                    Err(_err) => context.get_public_token().ok_or_else(|| {
+                        jsonrpc_core::Error::invalid_params("public token not found")
+                    })?,
+                    Ok(token) => Address::from(token),
+                };
+                make_cap_request_for_call(context.clone(), token, &func_name, params_string.clone())
             };
 
             let response = hc
@@ -1053,7 +1049,6 @@ pub mod tests {
                     "instance_id" : "test-instance-1",
                     "zome" : "greeter",
                     "function" : "hello",
-
                 })),
             ))
             .expect("Invalid call to handler");
@@ -1061,5 +1056,22 @@ pub mod tests {
             response_str,
             r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
         );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({
+                    "instance_id" : "test-instance-1",
+                    "zome" : "greeter",
+                    "function" : "hello",
+                    "token" : "bogus token",
+                })),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
+        );
+
     }
 }

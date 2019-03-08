@@ -11,10 +11,7 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
-use std::{
-    convert::TryFrom,
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
 /// trait that defines the persistence functionality that holochain_core requires
 pub trait Persister: Send {
@@ -41,7 +38,7 @@ impl Persister for SimplePersister {
     fn save(&mut self, state: &State) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();
         let mut store = lock.write().unwrap();
-        let agent_snapshot = AgentStateSnapshot::try_from(state)?;
+        let agent_snapshot = AgentStateSnapshot::from(state);
         let nucleus_snapshot = NucleusStateSnapshot::from(state);
         store.add(&agent_snapshot)?;
         store.add(&nucleus_snapshot)?;

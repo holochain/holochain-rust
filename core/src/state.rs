@@ -157,7 +157,7 @@ impl State {
     ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(context.dht_storage.clone()),
-            agent_snapshot.top_chain_header().clone(),
+            agent_snapshot.top_chain_header().map(|h| h.to_owned()),
         );
         let nucleus_state = NucleusState::from(nucleus_snapshot);
         Ok(State::new_with_agent_and_nucleus(

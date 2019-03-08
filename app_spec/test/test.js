@@ -196,7 +196,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   t.ok(updatedPostV3Initial.Ok)
   t.deepEqual(JSON.parse(updatedPostV3Initial.Ok.App[1]), UpdatePostV3Content)
 
-  //get v2 latest address
+  //get v3 using address of v2
   const updatedPostV3Latest = alice.call("blog", "get_post", { post_address: UpdateResultV2.Ok })
   t.ok(updatedPostV3Latest.Ok)
   t.deepEqual(JSON.parse(updatedPostV3Latest.Ok.App[1]), UpdatePostV3Content)

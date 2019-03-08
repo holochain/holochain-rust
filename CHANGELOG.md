@@ -14,13 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to sign data via `hdk::sign` using the agent key [PR#1080](https://github.com/holochain/holochain-rust/pull/1080).
 - Adds PUBLIC_TOKEN global variable for use in hdk::call in calling public functions. [PR#895](https://github.com/holochain/holochain-rust/pull/895)
 - Adds an [ADR](doc/architecture/decisions/0017-capabilities.md) for capabilities.
-- Added CrudStatus working over network [#1048](https://github.com/holochain/holochain-rust/pull/1048)
+- Adds CrudStatus working over network [#1048](https://github.com/holochain/holochain-rust/pull/1048)
 - Adds utils submodule of hdk which contains the following helper functions:
   - get_links_and_load_type - calls try_from for a given type when getting links
   - get_as_type - Similar but for a single entry
   - link_entries_bidir - Same as link_entries but creates link in both directions
   - commit_and_link - Save a line and commit and link in a single function
 - Adds a `call` route to the json rpc for the conductor for making zome calls [PR#1090](https://github.com/holochain/holochain-rust/pull/1090).  Please note this route deprecates the `instance_id/zome/function` which will be removed in the future.
+- Adds the ability to pass in the token and provenance in zome calls for generating the capability request for the call. [PR#1077](https://github.com/holochain/holochain-rust/pull/1077)
 - The `admin/dna/install_from_file` RPC method now takes an optional `expected_hash`, which performs an integrity check of the DNA file before installing it in the conductor [PR#1093](https://github.com/holochain/holochain-rust/pull/1093).
 
 ### Fixed

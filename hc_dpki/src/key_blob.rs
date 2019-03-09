@@ -332,12 +332,12 @@ mod tests {
     }
 
     #[test]
-    fn it_should_blob_device_pin_seed() {
+    fn it_should_blob_indexed_pin_seed() {
         let mut passphrase = test_generate_random_seed();
         let mut seed_buf = test_generate_random_seed();
-        let mut initial_device_pin_seed = DevicePinSeed::new(seed_buf);
+        let mut initial_indexed_pin_seed = IndexedPinSeed::new(seed_buf);
 
-        let blob = initial_device_pin_seed
+        let blob = initial_indexed_pin_seed
             .seed_mut()
             .as_blob(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
@@ -346,13 +346,13 @@ mod tests {
         let mut typed_seed = seed.into_typed().unwrap();
 
         match typed_seed {
-            TypedSeed::DevicePin(mut device_pin_seed) => {
+            TypedSeed::IndexedPin(mut indexed_pin_seed) => {
                 assert_eq!(
                     0,
-                    device_pin_seed
+                    indexed_pin_seed
                         .seed_mut()
                         .buf
-                        .compare(&mut initial_device_pin_seed.seed_mut().buf)
+                        .compare(&mut initial_indexed_pin_seed.seed_mut().buf)
                 );
             }
             _ => unreachable!(),

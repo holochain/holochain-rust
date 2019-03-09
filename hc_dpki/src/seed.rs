@@ -26,10 +26,10 @@ pub enum SeedType {
     Root,
     /// Revocation seed
     Revocation,
-    /// Device specific seed
-    Device,
-    /// Derivative of a Device seed with a PIN
-    DevicePin,
+    /// Indexed seed
+    Indexed,
+    /// Derivative of a Indexed seed with a PIN
+    IndexedPin,
     /// Application specific seed
     Application,
     /// Seed for a one use only key
@@ -38,11 +38,32 @@ pub enum SeedType {
     Mock,
 }
 
+pub struct SeedContext {
+    inner: String,
+}
+
+impl SeedContext {
+    pub fn new(data: String) -> Self {
+        //TODO: check length and truncate or add extra?
+        SeedContext { inner: data }
+    }
+
+    pub fn to_sec_buf(&self) -> SecBuf {
+        SecBuf::with_insecure_from_string(self.inner.clone())
+    }
+}
+
+impl From<&str> for SeedContext {
+    fn from(data: &str) -> SeedContext {
+        SeedContext::new(data.to_string())
+    }
+}
+
 /// Enum of all the different behaviors a Seed can have
 pub enum TypedSeed {
     Root(RootSeed),
-    Device(DeviceSeed),
-    DevicePin(DevicePinSeed),
+    Indexed(IndexedSeed),
+    IndexedPin(IndexedPinSeed),
 }
 
 /// Common Trait for TypedSeeds
@@ -106,8 +127,8 @@ impl Seed {
     pub fn into_typed(self) -> HcResult<TypedSeed> {
         match self.kind {
             SeedType::Root => Ok(TypedSeed::Root(RootSeed::new(self.buf))),
-            SeedType::Device => Ok(TypedSeed::Device(DeviceSeed::new(self.buf))),
-            SeedType::DevicePin => Ok(TypedSeed::DevicePin(DevicePinSeed::new(self.buf))),
+            SeedType::Indexed => Ok(TypedSeed::Indexed(IndexedSeed::new(self.buf))),
+            SeedType::IndexedPin => Ok(TypedSeed::IndexedPin(IndexedPinSeed::new(self.buf))),
             _ => Err(HolochainError::ErrorGeneric(
                 "Seed does have specific behavior for its type".to_string(),
             )),
@@ -152,34 +173,38 @@ impl RootSeed {
         }
     }
 
-    /// Generate Device Seed
-    /// @param {number} index - device index, must not be zero
-    pub fn generate_device_seed(&mut self, index: u64) -> HcResult<DeviceSeed> {
+    /// Generate Indexed Seed
+    /// @param {number} index - the index number in this seed group, must not be zero
+    pub fn generate_indexed_seed(
+        &mut self,
+        seed_context: &SeedContext,
+        index: u64,
+    ) -> HcResult<IndexedSeed> {
         if index == 0 {
             return Err(HolochainError::ErrorGeneric("Invalid index".to_string()));
         }
-        let mut device_seed_buf = SecBuf::with_secure(SEED_SIZE);
-        let mut context = SecBuf::with_insecure_from_string("HCDEVICE".to_string());
+        let mut indexed_seed_buf = SecBuf::with_secure(SEED_SIZE);
+        let mut context = seed_context.to_sec_buf();
         kdf::derive(
-            &mut device_seed_buf,
+            &mut indexed_seed_buf,
             index,
             &mut context,
             &mut self.inner.buf,
         )?;
-        Ok(DeviceSeed::new(device_seed_buf))
+        Ok(IndexedSeed::new(indexed_seed_buf))
     }
 }
 
 //--------------------------------------------------------------------------------------------------
-// DeviceSeed
+// IndexedSeed
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
-pub struct DeviceSeed {
+pub struct IndexedSeed {
     inner: Seed,
 }
 
-impl SeedTrait for DeviceSeed {
+impl SeedTrait for IndexedSeed {
     fn seed(&self) -> &Seed {
         &self.inner
     }
@@ -188,38 +213,38 @@ impl SeedTrait for DeviceSeed {
     }
 }
 
-impl DeviceSeed {
+impl IndexedSeed {
     /// Construct from a 32 bytes seed buffer
     pub fn new(seed_buf: SecBuf) -> Self {
-        DeviceSeed {
-            inner: Seed::new_with_initializer(SeedInitializer::Seed(seed_buf), SeedType::Device),
+        IndexedSeed {
+            inner: Seed::new_with_initializer(SeedInitializer::Seed(seed_buf), SeedType::Indexed),
         }
     }
 
-    /// generate a device pin seed by applying pwhash of pin with this seed as the salt
+    /// generate a indexed pin seed by applying pwhash of pin with this seed as the salt
     /// @param {string} pin - should be >= 4 characters 1-9
-    /// @return {DevicePinSeed} Resulting Device Pin Seed
-    pub fn generate_device_pin_seed(
+    /// @return {IndexedPinSeed} Resulting Indexed Pin Seed
+    pub fn generate_indexed_pin_seed(
         &mut self,
         pin: &mut SecBuf,
         config: Option<PwHashConfig>,
-    ) -> HcResult<DevicePinSeed> {
+    ) -> HcResult<IndexedPinSeed> {
         let mut hash = SecBuf::with_secure(pwhash::HASHBYTES);
         pw_hash(pin, &mut self.inner.buf, &mut hash, config)?;
-        Ok(DevicePinSeed::new(hash))
+        Ok(IndexedPinSeed::new(hash))
     }
 }
 
 //--------------------------------------------------------------------------------------------------
-// DevicePinSeed
+// IndexedPinSeed
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
-pub struct DevicePinSeed {
+pub struct IndexedPinSeed {
     inner: Seed,
 }
 
-impl SeedTrait for DevicePinSeed {
+impl SeedTrait for IndexedPinSeed {
     fn seed(&self) -> &Seed {
         &self.inner
     }
@@ -228,23 +253,27 @@ impl SeedTrait for DevicePinSeed {
     }
 }
 
-impl DevicePinSeed {
+impl IndexedPinSeed {
     /// Construct from a 32 bytes seed buffer
     pub fn new(seed_buf: SecBuf) -> Self {
-        DevicePinSeed {
-            inner: Seed::new_with_initializer(SeedInitializer::Seed(seed_buf), SeedType::DevicePin),
+        IndexedPinSeed {
+            inner: Seed::new_with_initializer(
+                SeedInitializer::Seed(seed_buf),
+                SeedType::IndexedPin,
+            ),
         }
     }
 
     /// generate an application KeyBundle given an index based on this seed
-    /// @param {number} index - device index, must not be zero
+    /// @param {number} index - must not be zero
     /// @return {KeyBundle} Resulting keybundle
     pub fn generate_application_key(&mut self, index: u64) -> HcResult<KeyBundle> {
         if index == 0 {
             return Err(HolochainError::ErrorGeneric("Invalid index".to_string()));
         }
         let mut app_seed_buf = SecBuf::with_secure(SEED_SIZE);
-        let mut context = SecBuf::with_insecure_from_string("HCAPPLIC".to_string());
+        let context = SeedContext::from("HCAPPLIC");
+        let mut context = context.to_sec_buf();
         kdf::derive(&mut app_seed_buf, index, &mut context, &mut self.inner.buf)?;
 
         Ok(KeyBundle::new_from_seed_buf(
@@ -285,42 +314,44 @@ mod tests {
     }
 
     #[test]
-    fn it_should_create_a_device_seed() {
+    fn it_should_create_a_indexed_seed() {
         let seed_buf = test_generate_random_seed(32);
+        let context = SeedContext::from("HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
 
-        let mut device_seed_3 = root_seed.generate_device_seed(3).unwrap();
-        assert_eq!(SeedType::Device, device_seed_3.seed().kind);
-        let _ = root_seed.generate_device_seed(0).unwrap_err();
-        let mut device_seed_1 = root_seed.generate_device_seed(1).unwrap();
-        let mut device_seed_3_b = root_seed.generate_device_seed(3).unwrap();
+        let mut indexed_seed_3 = root_seed.generate_indexed_seed(&context, 3).unwrap();
+        assert_eq!(SeedType::Indexed, indexed_seed_3.seed().kind);
+        let _ = root_seed.generate_indexed_seed(&context, 0).unwrap_err();
+        let mut indexed_seed_1 = root_seed.generate_indexed_seed(&context, 1).unwrap();
+        let mut indexed_seed_3_b = root_seed.generate_indexed_seed(&context, 3).unwrap();
         assert!(
-            device_seed_3
+            indexed_seed_3
                 .seed_mut()
                 .buf
-                .compare(&mut device_seed_3_b.seed_mut().buf)
+                .compare(&mut indexed_seed_3_b.seed_mut().buf)
                 == 0
         );
         assert!(
-            device_seed_3
+            indexed_seed_3
                 .seed_mut()
                 .buf
-                .compare(&mut device_seed_1.seed_mut().buf)
+                .compare(&mut indexed_seed_1.seed_mut().buf)
                 != 0
         );
     }
 
     #[test]
-    fn it_should_create_a_device_pin_seed() {
+    fn it_should_create_a_indexed_pin_seed() {
         let seed_buf = test_generate_random_seed(32);
         let mut pin = test_generate_random_seed(32);
 
+        let context = SeedContext::from("HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
-        let mut device_seed = root_seed.generate_device_seed(3).unwrap();
-        let device_pin_seed = device_seed
-            .generate_device_pin_seed(&mut pin, TEST_CONFIG)
+        let mut indexed_seed = root_seed.generate_indexed_seed(&context, 3).unwrap();
+        let indexed_pin_seed = indexed_seed
+            .generate_indexed_pin_seed(&mut pin, TEST_CONFIG)
             .unwrap();
-        assert_eq!(SeedType::DevicePin, device_pin_seed.seed().kind);
+        assert_eq!(SeedType::IndexedPin, indexed_pin_seed.seed().kind);
     }
 
     #[test]
@@ -328,9 +359,10 @@ mod tests {
         let seed_buf = test_generate_random_seed(32);
         let mut pin = test_generate_random_seed(32);
 
+        let context = SeedContext::from("HCDEVICE");
         let mut rs = RootSeed::new(seed_buf);
-        let mut ds = rs.generate_device_seed(3).unwrap();
-        let mut dps = ds.generate_device_pin_seed(&mut pin, TEST_CONFIG).unwrap();
+        let mut ds = rs.generate_indexed_seed(&context, 3).unwrap();
+        let mut dps = ds.generate_indexed_pin_seed(&mut pin, TEST_CONFIG).unwrap();
         let mut keybundle_5 = dps.generate_application_key(5).unwrap();
 
         assert_eq!(crate::SIGNATURE_SIZE, keybundle_5.sign_keys.private.len());
@@ -374,20 +406,20 @@ mod tests {
             TypedSeed::Root(typed_seed) => typed_seed,
             _ => unreachable!(),
         };
-        // Device
+        // Indexed
         let seed_buf = test_generate_random_seed(32);
-        let seed = Seed::new(seed_buf, SeedType::Device);
+        let seed = Seed::new(seed_buf, SeedType::Indexed);
         let unknown_seed = seed.into_typed().unwrap();
         let _ = match unknown_seed {
-            TypedSeed::Device(typed_seed) => typed_seed,
+            TypedSeed::Indexed(typed_seed) => typed_seed,
             _ => unreachable!(),
         };
-        // DevicePin
+        // IndexedPin
         let seed_buf = test_generate_random_seed(32);
-        let seed = Seed::new(seed_buf, SeedType::DevicePin);
+        let seed = Seed::new(seed_buf, SeedType::IndexedPin);
         let unknown_seed = seed.into_typed().unwrap();
         let _ = match unknown_seed {
-            TypedSeed::DevicePin(typed_seed) => typed_seed,
+            TypedSeed::IndexedPin(typed_seed) => typed_seed,
             _ => unreachable!(),
         };
         // App

@@ -74,6 +74,7 @@ impl KeyBundle {
 pub(crate) mod tests {
     use super::*;
     use crate::SIGNATURE_SIZE;
+    use crate::seed::generate_random_seed_buf;
     use holochain_sodium::pwhash;
 
     pub(crate) const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
@@ -82,14 +83,8 @@ pub(crate) mod tests {
         pwhash::ALG_ARGON2ID13,
     ));
 
-    pub(crate) fn test_generate_random_seed() -> SecBuf {
-        let mut seed = SecBuf::with_insecure(SEED_SIZE);
-        seed.randomize();
-        seed
-    }
-
     fn test_generate_random_bundle() -> KeyBundle {
-        let mut seed = test_generate_random_seed();
+        let mut seed = generate_random_seed_buf(SEED_SIZE);
         KeyBundle::new_from_seed_buf(&mut seed, SeedType::Mock).unwrap()
     }
 

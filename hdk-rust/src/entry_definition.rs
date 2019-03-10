@@ -204,13 +204,16 @@ macro_rules! entry {
             });
 
             let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
-                let e_type = hdk::meta::entry_validation_to_app_entry_type(validation_data.entry_validation)?;
+                let e_type = hdk::meta::entry_validation_to_app_entry_type(validation_data.clone().entry_validation)?;
+                let $validation_data = validation_data;
                 match e_type {
-                    hdk::holochain_core_types::entry::entry_type::EntryType::App(pp_entry_value) => {
-                        /*let entry: $native_type:ty = ::std::convert::TryInto::try_into(app_entry_value)?;
-                        let $entry = entry;*/
+                    hdk::holochain_core_types::entry::entry_type::EntryType::App(app_entry_value) => {
                         $entry_validation
                     },
+                    hdk::holochain_core_types::entry::entry_type::EntryType::Deletion =>
+                    {
+                        $entry_validation
+                    }
                     _ => {
                         Err(String::from("Schema validation failed"))?
                     }

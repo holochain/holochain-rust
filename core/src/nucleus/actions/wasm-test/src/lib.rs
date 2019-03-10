@@ -31,7 +31,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: | _validation_data: hdk::ValidationData| {
+            validation: | validation_data: hdk::ValidationData| {
                 /*(String::from(s) != String::from("FAIL"))
                     .ok_or_else(|| "FAIL content is not allowed".to_string())*/
                     Ok(())

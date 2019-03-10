@@ -35,7 +35,7 @@ use holochain_wasm_utils::{
             HolochainError,
             RibosomeErrorCode,
         },
-        json::{JsonString},
+        json::{JsonString,RawString},
     },
 };
 use holochain_wasm_utils::holochain_core_types::{validation::EntryValidationData,error::RibosomeEncodingBits};
@@ -462,12 +462,13 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |validation_data: hdk::ValidationData| {
-                match validation_data.entry_validation
+            validation: |valida: hdk::ValidationData| {
+                match valida.entry_validation
                 {
                     EntryValidationData::Create(entry) => 
                     {
-                        (test_entry.stuff != "FAIL").ok_or_else(|| "FAIL content is not allowed".to_string())
+                        /*(test_entry.stuff != "FAIL").ok_or_else(|| "FAIL content is not allowed".to_string())*/
+                        Ok(())
                     },
                     _=> Ok(()),
 
@@ -499,7 +500,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |_entry: TestEntryType, validation_data: hdk::ValidationData| {
+            validation: |validation_data: hdk::ValidationData| {
                 Err(serde_json::to_string(&validation_data).unwrap())
             }
         ),
@@ -514,7 +515,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |_entry: TestEntryType, validation_data: hdk::ValidationData| {
+            validation: |validation_data: hdk::ValidationData| {
                 Ok(())
             },
 

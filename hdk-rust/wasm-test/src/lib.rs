@@ -543,8 +543,10 @@ define_zome! {
                             None => Err("Target not found")?,
                         };
 
-                        (target.stuff.len() > base.stuff.len())
-                            .ok_or("Target stuff is not longer".to_string())
+                        Ok(())
+
+                        /*(target.stuff.len() > base.stuff.len())
+                            .ok_or("Target stuff is not longer".to_string())*/
                     }
 
                 )

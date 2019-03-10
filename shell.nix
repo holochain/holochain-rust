@@ -141,7 +141,7 @@ stdenv.mkDerivation rec {
     hc-fmt
     hc-fmt-check
 
-    libsodium
+    /* libsodium */
 
     # dev tooling
     git
@@ -169,6 +169,7 @@ stdenv.mkDerivation rec {
   # https://github.com/rust-lang/rustup.rs#environment-variables
   # https://github.com/NixOS/nix/issues/903
   RUSTUP_TOOLCHAIN = "nightly-${date}";
+  RUST_SODIUM_DISABLE_PIE = 1;
 
   shellHook = ''
    # needed for install cli and tarpaulin

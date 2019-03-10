@@ -21,6 +21,6 @@ exclude = [
   "nodejs_conductor/native",
   "rust_sodium-sys",
 ]
-
-[patch.crates-io]
-rust_sodium-sys = { path = "./rust_sodium-sys" }
+# 
+# [patch.crates-io]
+# rust_sodium-sys = { path = "./rust_sodium-sys" }

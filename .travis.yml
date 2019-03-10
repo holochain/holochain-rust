@@ -101,11 +101,6 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       cargo: true
       directories:
           - node_modules
-  script:
-      - cd $TRAVIS_BUILD_DIR
-      - cd $TRAVIS_BUILD_DIR/nodejs_conductor
-      - yarn install --ignore-scripts
-      - node ./publish.js
   # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
   before_deploy:
    # windows doesn't like absolute paths so set the working dir here
@@ -413,6 +408,7 @@ jobs:
         - NODIST_X64=1
         - TRAVIS_NODE_VERSION="8"
         - PERFORM_NODE_DEPLOY=1
+
     - name: "Windows - Node 10"
       <<: *_windows_template
       <<: *_to_deploy_template
@@ -423,6 +419,7 @@ jobs:
         - NODIST_X64=1
         - TRAVIS_NODE_VERSION="10"
         - PERFORM_NODE_DEPLOY=1
+
     - name: "Windows - Node 11"
       <<: *_windows_template
       <<: *_to_deploy_template
@@ -433,3 +430,12 @@ jobs:
         - NODIST_X64=1
         - TRAVIS_NODE_VERSION="11"
         - PERFORM_NODE_DEPLOY=1
+
+    - name: "Windows - Node 11 - DRY RUN"
+      <<: *_windows_template
+      <<: *_windows_nodejs_conductor_template
+      env:
+       - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+       - NODIST_X64=1
+       - TRAVIS_NODE_VERSION="11"
+       - PERFORM_NODE_DEPLOY=0

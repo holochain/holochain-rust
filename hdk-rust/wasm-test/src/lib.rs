@@ -12,7 +12,6 @@ extern crate holochain_core_types_derive;
 
 pub mod handle_crud;
 
-use boolinator::Boolinator;
 use handle_crud::{
     handle_remove_entry_ok, handle_remove_modified_entry_ok, handle_update_entry_ok,
 };
@@ -36,7 +35,7 @@ use holochain_wasm_utils::{
             HolochainError,
             RibosomeErrorCode,
         },
-        json::{JsonString, RawString},
+        json::{JsonString},
     },
 };
 use holochain_wasm_utils::holochain_core_types::{validation::EntryValidationData,error::RibosomeEncodingBits};

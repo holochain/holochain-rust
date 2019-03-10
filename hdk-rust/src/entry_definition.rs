@@ -9,6 +9,8 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 
+
+
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 
 pub type Validator = Box<FnMut(ValidationData) -> Result<(), String> + Sync>;
@@ -159,7 +161,7 @@ macro_rules! entry {
         $(native_type: $native_type:ty,)*
 
         validation_package: || $package_creator:expr,
-        validation: | $entry:ident : $entry_type:ty, $validation_data:ident : hdk::ValidationData | $entry_validation:expr
+        validation: | $validation_data:ident : hdk::ValidationData | $entry_validation:expr
 
         $(
             ,
@@ -201,12 +203,12 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|entry: hdk::holochain_core_types::entry::Entry, validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
-                let $validation_data = validation_data;
-                match entry {
-                    hdk::holochain_core_types::entry::Entry::App(_, app_entry_value) => {
-                        let entry: $entry_type = ::std::convert::TryInto::try_into(app_entry_value)?;
-                        let $entry = entry;
+            let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
+                let e_type = hdk::meta::entry_validation_to_app_entry_type(validation_data.entry_validation)?;
+                match e_type {
+                    hdk::holochain_core_types::entry::entry_type::EntryType::App(pp_entry_value) => {
+                        /*let entry: $native_type:ty = ::std::convert::TryInto::try_into(app_entry_value)?;
+                        let $entry = entry;*/
                         $entry_validation
                     },
                     _ => {

@@ -141,7 +141,7 @@ pub extern "C" fn __hdk_validate_app_entry(
     }
 }
 
-fn entry_validation_to_app_entry_type(entry_validation : EntryValidationData) ->Result<EntryType,HolochainError>
+pub fn entry_validation_to_app_entry_type(entry_validation : EntryValidationData) ->Result<EntryType,HolochainError>
 {
     match entry_validation
     {

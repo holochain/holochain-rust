@@ -1,4 +1,4 @@
-use crate::{key_bundle::KeyBundle, password_encryption::*, SEED_SIZE, CONTEXT_SIZE};
+use crate::{key_bundle::KeyBundle, password_encryption::*, SEED_SIZE, CONTEXT_SIZE, AGENT_ID_CTX_STR};
 use bip39::{Language, Mnemonic};
 use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_sodium::{kdf, pwhash, secbuf::SecBuf};
@@ -273,7 +273,7 @@ impl IndexedPinSeed {
             return Err(HolochainError::ErrorGeneric("Invalid index".to_string()));
         }
         let mut app_seed_buf = SecBuf::with_secure(SEED_SIZE);
-        let context = SeedContext::from("HCAPPLIC");
+        let context = SeedContext::from(AGENT_ID_CTX_STR);
         let mut context = context.to_sec_buf();
         kdf::derive(&mut app_seed_buf, index, &mut context, &mut self.inner.buf)?;
 

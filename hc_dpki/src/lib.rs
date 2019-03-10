@@ -8,6 +8,7 @@ extern crate lazy_static;
 
 pub const CONTEXT_SIZE: usize = 8;
 pub const SEED_SIZE: usize = 32;
+pub const AGENT_ID_CTX_STR: &str = "HCAGNTID";
 pub(crate) const SIGNATURE_SIZE: usize = 64;
 
 lazy_static! {

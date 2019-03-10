@@ -5,6 +5,10 @@ apt-get update
 apt-get install -y sudo
 sudo apt-get install -y build-essential curl git
 
+# needed for wabt-sys
+# https://circleci.com/gh/holochain/holochain-rust/10614
+sudo apt-get install -y cmake
+
 # needed for ubuntu xenial
 # https://circleci.com/gh/holochain/holochain-rust/10569
 # https://askubuntu.com/questions/104160/method-driver-usr-lib-apt-methods-https-could-not-be-found-update-error

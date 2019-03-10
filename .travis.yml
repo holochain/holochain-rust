@@ -68,7 +68,7 @@ _linux_nodejs_template: &_linux_nodejs_template
   language: rust
   rust: nightly-2019-01-24
   before_script:
-    - . ./scripts/install/release-deps-ubuntu.sh
+    - . ./scripts/install/auto.sh
 
 _macosx_nodejs_template: &_macosx_nodejs_template
   os: osx

@@ -7,7 +7,12 @@ apt-get install -y cmake curl sudo git
 # needed for ubuntu xenial
 # https://circleci.com/gh/holochain/holochain-rust/10569
 # https://askubuntu.com/questions/104160/method-driver-usr-lib-apt-methods-https-could-not-be-found-update-error
-sudo apt-get install apt-transport-https
+sudo apt-get install -y apt-transport-https
+
+# needed for debian stretch
+# https://circleci.com/gh/holochain/holochain-rust/10566
+# https://stackoverflow.com/questions/50757647/e-gnupg-gnupg2-and-gnupg1-do-not-seem-to-be-installed-but-one-of-them-is-requ
+sudo apt-get install gnupg
 
 apt-get install -y \
   libssl-dev \

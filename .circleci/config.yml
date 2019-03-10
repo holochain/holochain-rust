@@ -137,7 +137,7 @@ workflows:
    - app-spec-tests
    - cli-tests
 
- cold:
+ cold.ubuntu:
   jobs:
    - cold.ubuntu.bionic
       # filters:
@@ -145,7 +145,13 @@ workflows:
       #   only:
       #    - develop
    - cold.ubuntu.xenial
+
+ cold.debian:
+  jobs:
    - cold.debian.stable
+
+ cold.mac:
+  jobs:
    - cold.mac
       # filters:
       #  branches:

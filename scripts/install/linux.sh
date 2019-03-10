@@ -3,7 +3,10 @@
 # basics
 apt-get update
 apt-get install -y sudo
-sudo apt-get install -y build-essential curl git
+sudo apt-get install -y curl git
+
+# needed for rust_sodium-sys + neon
+sudo apt-get install -y build-essential
 
 # needed for wabt-sys
 # https://circleci.com/gh/holochain/holochain-rust/10614

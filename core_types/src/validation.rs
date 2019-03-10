@@ -5,6 +5,7 @@
 use crate::{
     cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
     json::JsonString,
+    link::Link
 };
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
@@ -45,7 +46,8 @@ pub enum EntryValidationData
 {
     Create(Entry),
     Modify(Entry,Entry),
-    Delete(Entry,Entry)
+    Delete(Entry,Entry),
+    Link(Entry,Link)
 }
 
 /// This structs carries information contextual for the process

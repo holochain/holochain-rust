@@ -152,6 +152,7 @@ fn entry_validation_to_app_entry_type(entry_validation : EntryValidationData) ->
         EntryValidationData::Modify(latest,_) =>{
             Ok(EntryType::App(AppEntryType::try_from(latest.entry_type())?))
         }
+        EntryValidationData::Link(entry,_) => Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?))
     }
 }
 

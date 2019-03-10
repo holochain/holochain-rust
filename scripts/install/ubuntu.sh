@@ -4,6 +4,11 @@
 apt-get update
 apt-get install -y cmake curl sudo git
 
+# needed for ubuntu xenial
+# https://circleci.com/gh/holochain/holochain-rust/10569
+# https://askubuntu.com/questions/104160/method-driver-usr-lib-apt-methods-https-could-not-be-found-update-error
+sudo apt-get install apt-transport-https
+
 apt-get install -y \
   libssl-dev \
   pkg-config \

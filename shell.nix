@@ -139,8 +139,6 @@ stdenv.mkDerivation rec {
     hc-fmt
     hc-fmt-check
 
-    /* libsodium */
-
     # dev tooling
     git
 

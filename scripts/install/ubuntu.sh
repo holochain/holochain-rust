@@ -4,7 +4,6 @@
 apt-get update
 apt-get install -y cmake curl sudo git
 
-# sodium deps
 apt-get install -y \
   libssl-dev \
   pkg-config \

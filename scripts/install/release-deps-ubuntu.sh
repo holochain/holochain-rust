@@ -12,10 +12,8 @@ echo "deb http://security.ubuntu.com/ubuntu bionic-security main restricted" | s
 echo "deb http://security.ubuntu.com/ubuntu bionic-security universe" | sudo tee -a /etc/apt/sources.list
 echo "deb http://security.ubuntu.com/ubuntu bionic-security multiverse" | sudo tee -a /etc/apt/sources.list
 sudo apt-get update
-sudo apt-get install -y libsodium23
 sudo apt-get install -y cmake curl
 
-# sodium deps
 sudo apt-get install -y \
   libssl-dev \
   pkg-config \

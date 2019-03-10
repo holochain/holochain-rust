@@ -2,7 +2,8 @@
 
 # basics
 apt-get update
-apt-get install -y cmake curl sudo git
+apt-get install -y sudo
+sudo apt-get install -y build-essential curl git
 
 # needed for ubuntu xenial
 # https://circleci.com/gh/holochain/holochain-rust/10569
@@ -14,7 +15,7 @@ sudo apt-get install -y apt-transport-https
 # https://stackoverflow.com/questions/50757647/e-gnupg-gnupg2-and-gnupg1-do-not-seem-to-be-installed-but-one-of-them-is-requ
 sudo apt-get install -y gnupg
 
-apt-get install -y \
+sudo apt-get install -y \
   libssl-dev \
   pkg-config \
   python2.7

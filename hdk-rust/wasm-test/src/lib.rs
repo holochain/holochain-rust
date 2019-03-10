@@ -12,6 +12,7 @@ extern crate holochain_core_types_derive;
 
 pub mod handle_crud;
 
+use boolinator::Boolinator;
 use handle_crud::{
     handle_remove_entry_ok, handle_remove_modified_entry_ok, handle_update_entry_ok,
 };
@@ -542,11 +543,8 @@ define_zome! {
                             }
                             None => Err("Target not found")?,
                         };
-
-                        Ok(())
-
-                        /*(target.stuff.len() > base.stuff.len())
-                            .ok_or("Target stuff is not longer".to_string())*/
+                        (target.stuff.len() > base.stuff.len())
+                            .ok_or("Target stuff is not longer".to_string())
                     }
 
                 )

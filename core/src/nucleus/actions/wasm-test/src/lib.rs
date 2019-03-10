@@ -8,12 +8,23 @@ extern crate serde_derive;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
+extern crate boolinator;
+
+use boolinator::Boolinator;
+
 
 use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
     error::HolochainError,
     json::{JsonString},
+    validation::EntryValidationData,
+    cas::content::AddressableContent
 };
+
+
+
+ 
+
 
 #[derive(Serialize, Deserialize, DefaultJson, Debug)]
 struct TestEntryType {
@@ -32,9 +43,19 @@ define_zome! {
             },
 
             validation: | validation_data: hdk::ValidationData| {
-                /*(String::from(s) != String::from("FAIL"))
-                    .ok_or_else(|| "FAIL content is not allowed".to_string())*/
-                    Ok(())
+                 match validation_data.entry_validation
+                 {
+                   EntryValidationData::Create(entry) =>
+                   {
+                        
+                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
+                        (test_entry.stuff != "FAIL")
+                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+                   }
+                   _ =>{
+                       Err("Failed to validate with wrong entry type".to_string())
+                   }
+                }
             }
         ),
 
@@ -48,9 +69,20 @@ define_zome! {
             },
 
             validation: |validation_data: hdk::ValidationData| {
-                /*(entry.stuff != "FAIL")
-                    .ok_or_else(|| "FAIL content is not allowed".to_string())*/
-                Ok(())
+                match validation_data.entry_validation
+                {
+                   EntryValidationData::Create(entry) =>
+                   {
+                        
+                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
+                        (test_entry.stuff != "FAIL")
+                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+                   }
+                   _ =>{
+                       Err("Failed to validate with wrong entry type".to_string())
+                   }
+                }
+               
             }
         ),
 
@@ -63,10 +95,20 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainEntries
             },
 
-            validation: |_validation_data: hdk::ValidationData| {
-                /*(entry.stuff != "FAIL")
-                    .ok_or_else(|| "FAIL content is not allowed".to_string())*/
-                    Ok(())
+            validation: |validation_data: hdk::ValidationData| {
+                 match validation_data.entry_validation
+                {
+                   EntryValidationData::Create(entry) =>
+                   {
+                        
+                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
+                        (test_entry.stuff != "FAIL")
+                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+                   }
+                   _ =>{
+                       Err("Failed to validate with wrong entry type".to_string())
+                   }
+                }
             }
         ),
 
@@ -79,10 +121,20 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainHeaders
             },
 
-            validation: |_validation_data: hdk::ValidationData| {
-                /*(entry.stuff != "FAIL")
-                    .ok_or_else(|| "FAIL content is not allowed".to_string())*/
-                Ok(())
+            validation: |validation_data: hdk::ValidationData| {
+                 match validation_data.entry_validation
+                {
+                   EntryValidationData::Create(entry) =>
+                   {
+                        
+                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
+                        (test_entry.stuff != "FAIL")
+                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+                   }
+                   _ =>{
+                       Err("Failed to validate with wrong entry type".to_string())
+                   }
+                }
             }
         ),
 
@@ -95,10 +147,20 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: | _validation_data: hdk::ValidationData| {
-                /*(entry.stuff != "FAIL")
-                    .ok_or_else(|| "FAIL content is not allowed".to_string())*/
-                    Ok(())
+            validation: | validation_data: hdk::ValidationData| {
+                 match validation_data.entry_validation
+                {
+                   EntryValidationData::Create(entry) =>
+                   {
+                        
+                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
+                        (test_entry.stuff != "FAIL")
+                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+                   }
+                   _ =>{
+                       Err("Failed to validate with wrong entry type".to_string())
+                   }
+                }
             }
         )
     ]

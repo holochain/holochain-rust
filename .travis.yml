@@ -51,8 +51,6 @@ _unix_nodejs_conductor_template: &_unix_nodejs_conductor_template
     - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
     - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.10.1
     - export PATH=$HOME/.yarn/bin:$PATH
-  # script:
-  #   - RUST_SODIUM_DISABLE_PIE=2 make build_nodejs_conductor
   # manually cache as we manually install rustup
   # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
   cache:
@@ -70,7 +68,7 @@ _linux_nodejs_template: &_linux_nodejs_template
   language: rust
   rust: nightly-2019-01-24
   before_script:
-    - . ./scripts/install/release-deps-ubuntu.sh
+    - . ./scripts/install/auto.sh
 
 _macosx_nodejs_template: &_macosx_nodejs_template
   os: osx
@@ -86,22 +84,16 @@ _env_node_8_deploy_template: &_env_node_8_deploy_template
   env:
   - TRAVIS_NODE_VERSION="8"
   - PERFORM_NODE_DEPLOY=1
-  - RUST_SODIUM_SHARED=1
-  - RUST_SODIUM_LIB_DIR=${TRAVIS_BUILD_DIR}/libsodium-1.0.16
 
 _env_node_10_deploy_template: &_env_node_10_deploy_template
   env:
   - TRAVIS_NODE_VERSION="10"
   - PERFORM_NODE_DEPLOY=1
-  - RUST_SODIUM_SHARED=1
-  - RUST_SODIUM_LIB_DIR=${TRAVIS_BUILD_DIR}/libsodium-1.0.16
 
 _env_node_11_deploy_template: &_env_node_11_deploy_template
   env:
   - TRAVIS_NODE_VERSION="11"
   - PERFORM_NODE_DEPLOY=1
-  - RUST_SODIUM_SHARED=1
-  - RUST_SODIUM_LIB_DIR=${TRAVIS_BUILD_DIR}/libsodium-1.0.16
 
 _nodejs_deploy_template: &_nodejs_deploy_template
   cache:
@@ -109,17 +101,6 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       cargo: true
       directories:
           - node_modules
-  script:
-      - cd $TRAVIS_BUILD_DIR
-      - wget https://download.libsodium.org/libsodium/releases/libsodium-1.0.16.tar.gz
-      - tar -zxvf ./libsodium-1.0.16.tar.gz
-      - cd $TRAVIS_BUILD_DIR/libsodium-1.0.16
-      - ./configure
-      - make && make check
-      - sudo make install
-      - cd $TRAVIS_BUILD_DIR/nodejs_conductor
-      - yarn install --ignore-scripts
-      - node ./publish.js
   # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
   before_deploy:
    # windows doesn't like absolute paths so set the working dir here
@@ -427,6 +408,7 @@ jobs:
         - NODIST_X64=1
         - TRAVIS_NODE_VERSION="8"
         - PERFORM_NODE_DEPLOY=1
+
     - name: "Windows - Node 10"
       <<: *_windows_template
       <<: *_to_deploy_template
@@ -437,6 +419,7 @@ jobs:
         - NODIST_X64=1
         - TRAVIS_NODE_VERSION="10"
         - PERFORM_NODE_DEPLOY=1
+
     - name: "Windows - Node 11"
       <<: *_windows_template
       <<: *_to_deploy_template
@@ -447,3 +430,12 @@ jobs:
         - NODIST_X64=1
         - TRAVIS_NODE_VERSION="11"
         - PERFORM_NODE_DEPLOY=1
+
+    - name: "Windows - Node 11 - DRY RUN"
+      <<: *_windows_template
+      <<: *_windows_nodejs_conductor_template
+      env:
+       - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+       - NODIST_X64=1
+       - TRAVIS_NODE_VERSION="11"
+       - PERFORM_NODE_DEPLOY=0

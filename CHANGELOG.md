@@ -6,8 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - replace libzmq (zeromq) with websockets for ipc communication to networking module
+- Changes `apt-get` dependencies installed for libsodium across linux OS [#1105](https://github.com/holochain/holochain-rust/pull/1105)
 
 ### Removed
+- Removes bespoke `rust_sodium-sys` crate (using upstream now) [#1105](https://github.com/holochain/holochain-rust/pull/1105)
 
 ### Added
 - New network setting via environment variable HC_N3H_LOG_LEVEL [#1085](https://github.com/holochain/holochain-rust/pull/1085)
@@ -24,12 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds the ability to pass in the token and provenance in zome calls for generating the capability request for the call. [PR#1077](https://github.com/holochain/holochain-rust/pull/1077)
 - The `admin/dna/install_from_file` RPC method now takes an optional `expected_hash`, which performs an integrity check of the DNA file before installing it in the conductor [PR#1093](https://github.com/holochain/holochain-rust/pull/1093).
 - Moved Crud Status tests to app_spec [#1096](https://github.com/holochain/holochain-rust/pull/1096)
+- Adds cold build tests + support for debian and ubuntu xenial [#1105](https://github.com/holochain/holochain-rust/pull/1105)
 
 
 ### Fixed
 - Validation of link entries gets retried now if base or target of the link were not yet accessible on the validating node. This fixes a bug where links have been invalid due to network timing issues [PR#1054](https://github.com/holochain/holochain-rust/pull/1054).
 - Validation of any entry gets retried now if the validation package could not be retrieved from the source [PR#1059](https://github.com/holochain/holochain-rust/pull/1059).
 - Scenario tests are more lenient to SyntaxError, TypeError, and other JS errors: buggy tests now merely fail rather than hanging indefinitely
+- Fixes docker builds for `holochain/holochain-rust:develop` [#1107](https://github.com/holochain/holochain-rust/pull/1107)
 
 ## [0.0.5-alpha] - 2019-03-01
 

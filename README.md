@@ -87,7 +87,7 @@ There are two components needed currently to run Holochain applications, the cor
 
 There are three approaches to building and testing Holochain: using `make`, `docker` or `nix`:
 
-### Make (ubuntu and macOS only)
+### Make (ubuntu, debian and macOS only)
 
 For Ubuntu/OSX you can install the prerequisites with:
 
@@ -97,6 +97,7 @@ cd path/to/holochain
 ```
 
 Note: the script will install [homebrew](https://brew.sh/) on mac os x
+Note: the script will install dependencies with `apt-get` on linux
 
 After the install script completes successfully, you can start local development using `make`
 
@@ -171,6 +172,14 @@ make build_nodejs_conductor
 
 ### Building for Android
 Note there is an article written on how to build Holochain for Android, read it [here](doc/holochain_101/src/building_for_android.md).
+
+## Upgrading
+
+Upgrading to a new tagged release of Holochain may include new/changed system dependencies.
+
+__We strongly recommend rerunning `./scripts/install/auto.sh` when upgrading core.__
+
+The script is designed to be idempotent. This means there is no harm re-running it.
 
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](/CONTRIBUTING.md) for our general practices and protocols on participating in the community, as well as specific expectations around things like code formatting, testing practices, continuous integration, etc.

@@ -4,7 +4,8 @@ use holochain_core_types::{
     cas::content::Address,
     entry::{entry_type::{EntryType,AppEntryType}, Entry},
     error::HolochainError,
-    validation::{ValidationData,EntryValidationData}
+    validation::{ValidationData,EntryValidationData},
+    link::Link
 };
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 use std::{sync::Arc,convert::TryFrom};
@@ -152,7 +153,7 @@ pub fn entry_to_validation_data(
                 }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find Entry".to_string())))
         }
         Entry::LinkAdd(link) => Ok(EntryValidationData::Link(entry.clone(),link.clone())),
-        Entry::LinkRemove(_) => Ok(EntryValidationData::Link(entry.clone(),link.clone())),
+        Entry::LinkRemove(link) => Ok(EntryValidationData::Link(entry.clone(),link.clone())),
         Entry::CapTokenGrant(_) => Ok(EntryValidationData::Create(entry.clone())),
         _ => Err(HolochainError::NotImplemented(
             "Not implemented".to_string(),

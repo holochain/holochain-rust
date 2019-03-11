@@ -96,6 +96,7 @@ jobs:
    - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end -t holochain/holochain-rust:develop .
    - run: docker push holochain/holochain-rust:circle.zz.end
    - run: docker push holochain/holochain-rust:develop
+   - run: docker push holochain/holochain-rust:latest
 
  cold.ubuntu.bionic:
   docker:

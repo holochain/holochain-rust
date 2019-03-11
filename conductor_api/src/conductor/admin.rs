@@ -6,7 +6,9 @@ use crate::{
     },
     error::HolochainInstanceError,
 };
-use holochain_core_types::{cas::content::AddressableContent, error::HolochainError};
+use holochain_core_types::{
+    cas::content::AddressableContent, error::HolochainError, hash::HashString,
+};
 use json_patch;
 use std::{fs, path::PathBuf, sync::Arc};
 
@@ -16,6 +18,7 @@ pub trait ConductorAdmin {
         path: PathBuf,
         id: String,
         copy: bool,
+        expected_hash: Option<HashString>,
         properties: Option<&serde_json::Value>,
     ) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
@@ -65,6 +68,7 @@ impl ConductorAdmin for Conductor {
         path: PathBuf,
         id: String,
         copy: bool,
+        expected_hash: Option<HashString>,
         properties: Option<&serde_json::Value>,
     ) -> Result<(), HolochainError> {
         let path_string = path
@@ -78,6 +82,12 @@ impl ConductorAdmin for Conductor {
                     e.to_string()
                 ))
             })?;
+
+        if let Some(hash) = expected_hash {
+            if dna.address() != hash {
+                return Err(HolochainError::DnaHashMismatch(dna.address(), hash));
+            }
+        }
 
         if let Some(props) = properties {
             if !copy {
@@ -673,6 +683,7 @@ pattern = '.*'"#
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 false,
+                None,
                 None
             ),
             Ok(()),
@@ -741,6 +752,7 @@ id = 'new-dna'"#,
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 true,
+                None,
                 None
             ),
             Ok(()),
@@ -780,6 +792,40 @@ id = 'new-dna'"#,
     }
 
     #[test]
+    fn test_install_dna_with_expected_hash() {
+        let test_name = "test_install_dna_with_expected_hash";
+        let mut conductor = create_test_conductor(test_name, 3000);
+        let mut new_dna_path = PathBuf::new();
+        new_dna_path.push("new-dna.dna.json");
+        let dna = Arc::get_mut(&mut conductor.dna_loader).unwrap()(&new_dna_path).unwrap();
+
+        assert_eq!(
+            conductor.install_dna_from_file(
+                new_dna_path.clone(),
+                String::from("new-dna"),
+                false,
+                Some(dna.address()),
+                None
+            ),
+            Ok(()),
+        );
+
+        assert_eq!(
+            conductor.install_dna_from_file(
+                new_dna_path.clone(),
+                String::from("new-dna"),
+                false,
+                Some("wrong-address".into()),
+                None
+            ),
+            Err(HolochainError::DnaHashMismatch(
+                dna.address(),
+                "wrong-address".into()
+            )),
+        );
+    }
+
+    #[test]
     fn test_install_dna_from_file_with_properties() {
         let test_name = "test_install_dna_from_file_with_properties";
         let mut conductor = create_test_conductor(test_name, 3000);
@@ -793,6 +839,7 @@ id = 'new-dna'"#,
                 new_dna_path.clone(),
                 String::from("new-dna-with-props"),
                 false,
+                None,
                 Some(&new_props)
             ),
             Err(HolochainError::ConfigError(
@@ -805,6 +852,7 @@ id = 'new-dna'"#,
                 new_dna_path.clone(),
                 String::from("new-dna-with-props"),
                 true,
+                None,
                 Some(&new_props)
             ),
             Ok(()),
@@ -854,7 +902,13 @@ id = 'new-dna'"#,
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
         conductor
-            .install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), false, None)
+            .install_dna_from_file(
+                new_dna_path.clone(),
+                String::from("new-dna"),
+                false,
+                None,
+                None,
+            )
             .expect("Could not install DNA");
 
         let add_result = conductor.add_instance(

@@ -10,12 +10,7 @@ extern crate boolinator;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-pub mod handle_crud;
-
 use boolinator::Boolinator;
-use handle_crud::{
-    handle_remove_entry_ok, handle_remove_modified_entry_ok, handle_update_entry_ok,
-};
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
 };
@@ -667,23 +662,6 @@ define_zome! {
         //     handler: handle_check_sys_entry_address
         // }
 
-        update_entry_ok: {
-            inputs: | |,
-            outputs: |result: JsonString|,
-            handler: handle_update_entry_ok
-        }
-
-        remove_entry_ok: {
-            inputs: | |,
-            outputs: |result: JsonString|,
-            handler: handle_remove_entry_ok
-        }
-
-        remove_modified_entry_ok: {
-            inputs: | |,
-            outputs: |result: JsonString|,
-            handler: handle_remove_modified_entry_ok
-        }
 
         send_tweet: {
             inputs: |author: String, content: String|,

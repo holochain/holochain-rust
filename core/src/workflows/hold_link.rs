@@ -7,8 +7,11 @@ use crate::{
     nucleus::validation::validate_entry,
 };
 
-use crate::nucleus::{
-    actions::add_pending_validation::add_pending_validation, validation::{ValidationError,entry_to_validation_data}
+use crate::{
+    nucleus::{
+        actions::add_pending_validation::add_pending_validation, validation::{ValidationError,entry_to_validation_data},
+    },
+    scheduled_jobs::pending_validations::ValidatingWorkflow,
 };
 use holochain_core_types::{
     entry::Entry,
@@ -41,13 +44,24 @@ pub async fn hold_link_workflow<'a>(
             let message = "Could not get validation package from source! -> Add to pending...";
             context.log(format!("debug/workflow/hold_link: {}", message));
             context.log(format!("debug/workflow/hold_link: Error was: {:?}", err));
-            add_pending_validation(entry_with_header.to_owned(), Vec::new(), context);
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                Vec::new(),
+                ValidatingWorkflow::HoldLink,
+                context,
+            );
             HolochainError::ValidationPending
         })?;
-    let validation_package = maybe_validation_package.ok_or({
-        let message = "Source did respond to request but did not deliver validation package! This is weird! Entry is not valid!";
+    let validation_package = maybe_validation_package.ok_or_else(|| {
+        let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
         context.log(format!("debug/workflow/hold_link: {}", message));
-        HolochainError::ValidationFailed("Entry not backed by source".to_string())
+        add_pending_validation(
+            entry_with_header.to_owned(),
+            Vec::new(),
+            ValidatingWorkflow::HoldLink,
+            &context,
+        );
+        HolochainError::ValidationPending
     })?;
     context.log(format!("debug/workflow/hold_link: got validation package"));
 
@@ -63,7 +77,12 @@ pub async fn hold_link_workflow<'a>(
     await!(validate_entry(entry.clone(), validation_data, &context)).map_err(|err| {
         context.log(format!("debug/workflow/hold_link: invalid! {:?}", err));
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            add_pending_validation(entry_with_header.to_owned(), dependencies.clone(), &context);
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                dependencies.clone(),
+                ValidatingWorkflow::HoldLink,
+                &context,
+            );
         }
         HolochainError::ValidationPending
     })?;

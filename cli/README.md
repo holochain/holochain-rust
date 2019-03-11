@@ -4,33 +4,17 @@
 [![PM](https://img.shields.io/badge/pm-waffle-blue.svg?style=flat-square)](https://waffle.io/holochain/org)
 [![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.org)
 
-This crate implements a set of tools for building and running Holochain DNA from the command line.
+This crate implements a set of development tools for building and running Holochain DNA from the command line.
 
 ## Install
 
-### Prepackaged installation
-
-Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
-
 ### Scripted installation
 
-The install scripts provided by holochain core (see README) install all the dependencies required for holochain cli.
+The install scripts provided by holochain core (see [README](../README.md)) install all the dependencies required for holochain cli.
 
 ### Manual installation
 
-Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.  Note, on Mac and Linux as well as installing the binaries you will need to install the `zmq` dependency e.g.:
-
-On MacOS:
-
-```
-brew install zmq
-```
-
-On Ubuntu:
-
-```
-apt-get install libzmq3-dev
-```
+An option for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
 
 ### Building From Source
 

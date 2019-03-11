@@ -139,24 +139,32 @@ workflows:
 
  cold.ubuntu:
   jobs:
-   - cold.ubuntu.bionic
-      # filters:
-      #  branches:
-      #   only:
-      #    - develop
-   - cold.ubuntu.xenial
+   - cold.ubuntu.bionic:
+      filters:
+       branches:
+        only:
+         - develop
+   - cold.ubuntu.xenial:
+      filters:
+       branches:
+        only:
+         - develop
 
  cold.debian:
   jobs:
-   - cold.debian.stable
+   - cold.debian.stable:
+      filters:
+       branches:
+        only:
+         - develop
 
  cold.mac:
   jobs:
-   - cold.mac
-      # filters:
-      #  branches:
-      #   only:
-      #    - develop
+   - cold.mac:
+      filters:
+       branches:
+        only:
+         - develop
 
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow

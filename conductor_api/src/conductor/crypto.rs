@@ -1,6 +1,7 @@
 use holochain_core_types::{
     agent::Base32,
     error::{HcResult, HolochainError},
+    signature::Signature,
 };
 use holochain_dpki::{
     key_blob::{Blobbable, KeyBlob},
@@ -66,21 +67,24 @@ impl KeyStore {
         Ok(dst_id)
     }
 
-    fn check_identifiers(
-        &self,
-        src_id_str: &str,
-        dst_id_str: &str,
-    ) -> HcResult<(Arc<Mutex<Secret>>, String)> {
+    fn check_src_identifier(&self, src_id_str: &str) -> HcResult<Arc<Mutex<Secret>>> {
         let src_id = src_id_str.to_string();
         if !self.keys.contains_key(&src_id) {
             return Err(HolochainError::ErrorGeneric(
                 "unknown source identifier".to_string(),
             ));
         }
-        let dst_id = self.check_dst_identifier(dst_id_str)?;
+        Ok(self.keys.get(&src_id).unwrap().clone()) // unwrap ok because we checked if src exists
+    }
 
-        let src_secret = self.keys.get(&src_id).unwrap(); // unwrap ok because we checked if src exists
-        Ok((src_secret.clone(), dst_id))
+    fn check_identifiers(
+        &self,
+        src_id_str: &str,
+        dst_id_str: &str,
+    ) -> HcResult<(Arc<Mutex<Secret>>, String)> {
+        let dst_id = self.check_dst_identifier(dst_id_str)?;
+        let src_secret = self.check_src_identifier(src_id_str)?;
+        Ok((src_secret, dst_id))
     }
 
     /// adds a derived seed into the keystore
@@ -112,15 +116,16 @@ impl KeyStore {
     }
 
     /// adds a keypair into the keystore based on a seed already in the keystore
+    /// returns the public key
     pub fn add_key_from_seed(
         &mut self,
         src_id_str: &str,
         dst_id_str: &str,
         context: &SeedContext,
         index: u64,
-    ) -> HcResult<()> {
+    ) -> HcResult<Base32> {
         let (src_secret, dst_id) = self.check_identifiers(src_id_str, dst_id_str)?;
-        let secret = {
+        let (secret, public_key) = {
             let mut src_secret = src_secret.lock().unwrap();
             let ref mut seed = match *src_secret {
                 Secret::RootSeed(ref mut src) => src.seed_mut(),
@@ -137,17 +142,48 @@ impl KeyStore {
 
             let key_bundle =
                 KeyBundle::new_from_seed_buf(&mut key_seed_buf, SeedType::Application)?;
-            Arc::new(Mutex::new(Secret::Key(key_bundle)))
+            let public_key = key_bundle.get_id();
+            (Arc::new(Mutex::new(Secret::Key(key_bundle))), public_key)
         };
         let _ = self.keys.insert(dst_id, secret);
 
-        Ok(())
+        Ok(public_key)
     }
+
+    /// adds a keypair into the keystore based on a seed already in the keystore
+    /// returns the public key
+    pub fn sign(
+        &mut self,
+        src_id_str: &str,
+        message: String,
+    ) -> HcResult<Signature> {
+        let src_secret = self.check_src_identifier(src_id_str)?;
+        let mut src_secret = src_secret.lock().unwrap();
+        match *src_secret {
+            Secret::Key(ref mut key_bundle) => {
+                let mut message_buf =
+                    SecBuf::with_insecure_from_string(message);
+
+                let mut signature_buf = key_bundle.sign(&mut message_buf)?;
+                let buf = signature_buf.read_lock();
+                // Return as base64 encoded string
+                let signature = base64::encode(&**buf);
+                Ok(Signature::from(signature))
+            },
+            _ => {
+                return Err(HolochainError::ErrorGeneric(
+                    "source secret is not a key".to_string(),
+                ));
+            }
+        }
+    }
+
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use base64;
 
     #[test]
     fn test_keystore_new() {
@@ -216,6 +252,8 @@ pub mod tests {
 
         let result = keystore.add_key_from_seed("my_root_seed", "my_keypair", &context, 1);
         assert!(!result.is_err());
+        let pubkey = result.unwrap();
+        assert!(format!("{}",pubkey).starts_with("Hc"));
 
         assert_eq!(
             keystore.add_key_from_seed("my_root_seed", "my_keypair", &context, 1),
@@ -223,6 +261,31 @@ pub mod tests {
                 "identifier already exists".to_string()
             ))
         );
+    }
+
+    #[test]
+    fn test_keystore_sign() {
+        let mut keystore = KeyStore::new();
+        let context = SeedContext::from(AGENT_ID_CTX_STR);
+
+        let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
+
+        let message = base64::encode("SOMEPAYLOAD");
+
+        assert_eq!(
+            keystore.sign("my_keypair", message.clone()),
+            Err(HolochainError::ErrorGeneric(
+                "unknown source identifier".to_string()
+            ))
+        );
+
+        let _ = keystore.add_key_from_seed("my_root_seed", "my_keypair", &context, 1);
+
+        let result = keystore.sign("my_keypair", message);
+        assert!(!result.is_err());
+
+        let signature = result.unwrap();
+        assert_eq!(signature.to_string().len(),64);
     }
 
 }

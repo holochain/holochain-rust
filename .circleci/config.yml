@@ -93,9 +93,27 @@ jobs:
    - run: docker push holochain/holochain-rust:circle.zz.end
    - run: docker push holochain/holochain-rust:develop
 
- cold.ubuntu:
+ cold.ubuntu.bionic:
   docker:
-   - image: ubuntu
+   - image: ubuntu:bionic
+  resource_class: large
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
+
+ cold.ubuntu.xenial:
+  docker:
+   - image: ubuntu:xenial
+  resource_class: large
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
+
+ cold.debian.stable:
+  docker:
+   - image: debian:stable
   resource_class: large
   steps:
    - checkout
@@ -119,18 +137,26 @@ workflows:
    - app-spec-tests
    - cli-tests
 
- cold:
+ cold.ubuntu:
   jobs:
-   - cold.ubuntu:
-      filters:
-       branches:
-        only:
-         - develop
-   - cold.mac:
-      filters:
-       branches:
-        only:
-         - develop
+   - cold.ubuntu.bionic
+      # filters:
+      #  branches:
+      #   only:
+      #    - develop
+   - cold.ubuntu.xenial
+
+ cold.debian:
+  jobs:
+   - cold.debian.stable
+
+ cold.mac:
+  jobs:
+   - cold.mac
+      # filters:
+      #  branches:
+      #   only:
+      #    - develop
 
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow

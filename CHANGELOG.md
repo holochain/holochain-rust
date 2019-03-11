@@ -5,7 +5,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- replace libzmq (zeromq) with websockets for ipc communication to networking module
+
+### Removed
+
+### Added
+
+### Fixed
+
+
+## [0.0.6-alpha] - 2019-03-11
+
+### Changed
+- replace libzmq (zeromq) with websockets for ipc communication to networking module [#1055](https://github.com/holochain/holochain-rust/pull/1055)
 - Changes `apt-get` dependencies installed for libsodium across linux OS [#1105](https://github.com/holochain/holochain-rust/pull/1105)
 
 ### Removed

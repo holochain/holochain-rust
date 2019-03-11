@@ -1,4 +1,6 @@
-use crate::{key_bundle::KeyBundle, password_encryption::*, SEED_SIZE, CONTEXT_SIZE, AGENT_ID_CTX_STR};
+use crate::{
+    key_bundle::KeyBundle, password_encryption::*, AGENT_ID_CTX_STR, CONTEXT_SIZE, SEED_SIZE,
+};
 use bip39::{Language, Mnemonic};
 use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_sodium::{kdf, pwhash, secbuf::SecBuf};
@@ -284,7 +286,6 @@ impl IndexedPinSeed {
     }
 }
 
-
 /// returns a random seed buf
 pub fn generate_random_seed_buf(size: usize) -> SecBuf {
     let mut seed = SecBuf::with_insecure(size);
@@ -299,17 +300,11 @@ pub fn generate_random_seed_buf(size: usize) -> SecBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::password_encryption::tests::TEST_CONFIG;
-
-    fn test_generate_random_seed(s: usize) -> SecBuf {
-        let mut seed_buf = SecBuf::with_insecure(s);
-        seed_buf.randomize();
-        seed_buf
-    }
+    use crate::{password_encryption::tests::TEST_CONFIG, SEED_SIZE};
 
     #[test]
     fn it_should_create_a_new_seed() {
-        let seed_buf = generate_random_seed_buf(32);
+        let seed_buf = generate_random_seed_buf(SEED_SIZE);
         let seed_type = SeedType::OneShot;
         let seed = Seed::new_with_initializer(SeedInitializer::Seed(seed_buf), seed_type.clone());
         assert_eq!(seed_type, seed.kind);
@@ -317,14 +312,14 @@ mod tests {
 
     #[test]
     fn it_should_create_a_new_root_seed() {
-        let seed_buf = generate_random_seed_buf(32);
+        let seed_buf = generate_random_seed_buf(SEED_SIZE);
         let root_seed = RootSeed::new(seed_buf);
         assert_eq!(SeedType::Root, root_seed.seed().kind);
     }
 
     #[test]
     fn it_should_create_a_indexed_seed() {
-        let seed_buf = generate_random_seed_buf(32);
+        let seed_buf = generate_random_seed_buf(SEED_SIZE);
         let context = SeedContext::from("HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
 
@@ -351,8 +346,8 @@ mod tests {
 
     #[test]
     fn it_should_create_a_indexed_pin_seed() {
-        let seed_buf = generate_random_seed_buf(32);
-        let mut pin = generate_random_seed_buf(32);
+        let seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let mut pin = generate_random_seed_buf(SEED_SIZE);
 
         let context = SeedContext::from("HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
@@ -365,8 +360,8 @@ mod tests {
 
     #[test]
     fn it_should_create_app_key_from_root_seed() {
-        let seed_buf = generate_random_seed_buf(32);
-        let mut pin = generate_random_seed_buf(32);
+        let seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let mut pin = generate_random_seed_buf(SEED_SIZE);
 
         let context = SeedContext::from("HCDEVICE");
         let mut rs = RootSeed::new(seed_buf);
@@ -389,7 +384,7 @@ mod tests {
 
     #[test]
     fn it_should_roundtrip_mnemonic() {
-        let mut seed_buf = SecBuf::with_insecure(32);
+        let mut seed_buf = SecBuf::with_insecure(SEED_SIZE);
         {
             let mut seed_buf = seed_buf.write_lock();
             seed_buf[0] = 12;
@@ -408,7 +403,7 @@ mod tests {
     #[test]
     fn it_should_change_into_typed() {
         // Root
-        let seed_buf = generate_random_seed_buf(32);
+        let seed_buf = generate_random_seed_buf(SEED_SIZE);
         let seed = Seed::new(seed_buf, SeedType::Root);
         let unknown_seed = seed.into_typed().unwrap();
         let _ = match unknown_seed {
@@ -416,7 +411,7 @@ mod tests {
             _ => unreachable!(),
         };
         // Indexed
-        let seed_buf = generate_random_seed_buf(32);
+        let seed_buf = generate_random_seed_buf(SEED_SIZE);
         let seed = Seed::new(seed_buf, SeedType::Indexed);
         let unknown_seed = seed.into_typed().unwrap();
         let _ = match unknown_seed {
@@ -424,7 +419,7 @@ mod tests {
             _ => unreachable!(),
         };
         // IndexedPin
-        let seed_buf = generate_random_seed_buf(32);
+        let seed_buf = generate_random_seed_buf(SEED_SIZE);
         let seed = Seed::new(seed_buf, SeedType::IndexedPin);
         let unknown_seed = seed.into_typed().unwrap();
         let _ = match unknown_seed {
@@ -432,7 +427,7 @@ mod tests {
             _ => unreachable!(),
         };
         // App
-        let seed_buf = generate_random_seed_buf(32);
+        let seed_buf = generate_random_seed_buf(SEED_SIZE);
         let seed = Seed::new(seed_buf, SeedType::Application);
         let maybe_seed = seed.into_typed();
         assert!(maybe_seed.is_err());

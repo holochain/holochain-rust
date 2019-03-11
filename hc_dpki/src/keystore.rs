@@ -1,13 +1,13 @@
-use holochain_core_types::{
-    agent::Base32,
-    error::{HcResult, HolochainError},
-    signature::Signature,
-};
-use holochain_dpki::{
+use crate::{
     key_blob::{Blobbable, KeyBlob},
     key_bundle::KeyBundle,
     seed::{generate_random_seed_buf, IndexedSeed, RootSeed, SeedContext, SeedTrait, SeedType},
     AGENT_ID_CTX_STR, SEED_SIZE,
+};
+use holochain_core_types::{
+    agent::Base32,
+    error::{HcResult, HolochainError},
+    signature::Signature,
 };
 
 use holochain_sodium::{kdf, pwhash, secbuf::SecBuf};
@@ -152,24 +152,19 @@ impl KeyStore {
 
     /// adds a keypair into the keystore based on a seed already in the keystore
     /// returns the public key
-    pub fn sign(
-        &mut self,
-        src_id_str: &str,
-        message: String,
-    ) -> HcResult<Signature> {
+    pub fn sign(&mut self, src_id_str: &str, message: String) -> HcResult<Signature> {
         let src_secret = self.check_src_identifier(src_id_str)?;
         let mut src_secret = src_secret.lock().unwrap();
         match *src_secret {
             Secret::Key(ref mut key_bundle) => {
-                let mut message_buf =
-                    SecBuf::with_insecure_from_string(message);
+                let mut message_buf = SecBuf::with_insecure_from_string(message);
 
                 let mut signature_buf = key_bundle.sign(&mut message_buf)?;
                 let buf = signature_buf.read_lock();
                 // Return as base64 encoded string
                 let signature = base64::encode(&**buf);
                 Ok(Signature::from(signature))
-            },
+            }
             _ => {
                 return Err(HolochainError::ErrorGeneric(
                     "source secret is not a key".to_string(),
@@ -177,7 +172,6 @@ impl KeyStore {
             }
         }
     }
-
 }
 
 #[cfg(test)]
@@ -253,7 +247,7 @@ pub mod tests {
         let result = keystore.add_key_from_seed("my_root_seed", "my_keypair", &context, 1);
         assert!(!result.is_err());
         let pubkey = result.unwrap();
-        assert!(format!("{}",pubkey).starts_with("Hc"));
+        assert!(format!("{}", pubkey).starts_with("Hc"));
 
         assert_eq!(
             keystore.add_key_from_seed("my_root_seed", "my_keypair", &context, 1),
@@ -285,6 +279,6 @@ pub mod tests {
         assert!(!result.is_err());
 
         let signature = result.unwrap();
-        assert_eq!(String::from(signature).len(),88); //88 is the size of a base64ized signature buf
+        assert_eq!(String::from(signature).len(), 88); //88 is the size of a base64ized signature buf
     }
 }

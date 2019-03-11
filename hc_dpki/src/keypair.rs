@@ -171,20 +171,15 @@ impl EncryptingKeyPair {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn test_generate_random_seed() -> SecBuf {
-        let mut seed = SecBuf::with_insecure(SEED_SIZE);
-        seed.randomize();
-        seed
-    }
+    use crate::{seed::generate_random_seed_buf, SEED_SIZE};
 
     fn test_generate_random_sign_keypair() -> SigningKeyPair {
-        let mut seed = test_generate_random_seed();
+        let mut seed = generate_random_seed_buf(SEED_SIZE);
         SigningKeyPair::new_from_seed(&mut seed).unwrap()
     }
 
     fn test_generate_random_enc_keypair() -> EncryptingKeyPair {
-        let mut seed = test_generate_random_seed();
+        let mut seed = generate_random_seed_buf(SEED_SIZE);
         EncryptingKeyPair::new_from_seed(&mut seed).unwrap()
     }
 

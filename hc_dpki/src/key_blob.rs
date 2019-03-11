@@ -287,13 +287,13 @@ impl Blobbable for KeyBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::key_bundle::tests::*;
+    use crate::{key_bundle::tests::*, seed::generate_random_seed_buf, SEED_SIZE};
     use holochain_sodium::pwhash;
 
     #[test]
     fn it_should_blob_keybundle() {
-        let mut seed_buf = test_generate_random_seed();
-        let mut passphrase = test_generate_random_seed();
+        let mut seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let mut passphrase = generate_random_seed_buf(SEED_SIZE);
 
         let mut bundle = KeyBundle::new_from_seed_buf(&mut seed_buf, SeedType::Mock).unwrap();
 
@@ -318,8 +318,8 @@ mod tests {
 
     #[test]
     fn it_should_blob_seed() {
-        let mut passphrase = test_generate_random_seed();
-        let mut seed_buf = test_generate_random_seed();
+        let mut passphrase = generate_random_seed_buf(SEED_SIZE);
+        let mut seed_buf = generate_random_seed_buf(SEED_SIZE);
         let mut initial_seed = Seed::new(seed_buf, SeedType::Root);
 
         let blob = initial_seed
@@ -333,8 +333,8 @@ mod tests {
 
     #[test]
     fn it_should_blob_indexed_pin_seed() {
-        let mut passphrase = test_generate_random_seed();
-        let mut seed_buf = test_generate_random_seed();
+        let mut passphrase = generate_random_seed_buf(SEED_SIZE);
+        let mut seed_buf = generate_random_seed_buf(SEED_SIZE);
         let mut initial_indexed_pin_seed = IndexedPinSeed::new(seed_buf);
 
         let blob = initial_indexed_pin_seed

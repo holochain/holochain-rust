@@ -172,13 +172,13 @@ workflows:
 
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow
-  # triggers:
-  #  - schedule:
-  #     cron: "0 0 * * *"
-  #     filters:
-  #      branches:
-  #       only:
-  #        - develop
+  triggers:
+   - schedule:
+      cron: "0 0 * * *"
+      filters:
+       branches:
+        only:
+         - develop
   jobs:
    - docker.start
    - docker.01:

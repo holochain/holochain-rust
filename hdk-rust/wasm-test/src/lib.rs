@@ -458,8 +458,8 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |valida: hdk::ValidationData| {
-                match valida.entry_validation
+            validation: |valida: hdk::EntryValidationData| {
+                match valida
                 {
                     EntryValidationData::Create(entry) => 
                     {
@@ -496,7 +496,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |validation_data: hdk::ValidationData| {
+            validation: |validation_data: hdk::EntryValidationData| {
                 Err(serde_json::to_string(&validation_data).unwrap())
             }
         ),
@@ -511,7 +511,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |validation_data: hdk::ValidationData| {
+            validation: |validation_data: hdk::EntryValidationData| {
                 Ok(())
             },
 

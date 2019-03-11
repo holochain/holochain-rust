@@ -137,8 +137,8 @@ macro_rules! load_string {
 ///                 hdk::ValidationPackageDefinition::ChainFull
 ///             },
 ///
-///             validation: |validation_data: hdk::ValidationData| {
-///              match validation_data.entry_validation
+///             validation: |validation_data: hdk::EntryValidationData| {
+///              match validation_data
 ///              {
 ///              EntryValidationData::Create(entry) =>
 ///              {

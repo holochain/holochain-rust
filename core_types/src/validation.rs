@@ -50,6 +50,13 @@ pub enum EntryValidationData
     Link(Entry,LinkData)
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub enum LinkValidationData
+{
+    LinkAdd(Entry,LinkData),
+    LinkRemove(Entry,LinkData)
+}
+
 /// This structs carries information contextual for the process
 /// of validating an entry of link and is passed in to the according
 /// callbacks.

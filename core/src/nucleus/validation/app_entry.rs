@@ -56,7 +56,7 @@ pub async fn validate_app_entry(
 async fn run_call_back(context:Arc<Context>,entry:Entry,zome_name:&String,validation_data: ValidationData)-> ValidationResult
 {
     let params = EntryValidationArgs {
-        validation_data: validation_data.clone(),
+        validation_data: validation_data.clone().entry_validation,
     };
 
     let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);

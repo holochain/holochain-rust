@@ -271,7 +271,7 @@ fn post_definition() -> ValidatingEntryType {
             hdk::ValidationPackageDefinition::Entry
         },
 
-        validation: |_post: Post, _validation_data: hdk::ValidationData| {
+        validation: |_post: Post, _validation_data: hdk::EntryValidationData| {
             Ok(())
         }
     )

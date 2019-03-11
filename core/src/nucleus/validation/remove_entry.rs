@@ -46,7 +46,7 @@ pub async fn validate_remove_entry(entry: Entry,
             .ok_or(ValidationError::NotImplemented)?;
             println!("get zome name {:?}",zome_name.clone());
             let params = EntryValidationArgs {
-            validation_data: validation_data.clone(),
+            validation_data: validation_data.clone().entry_validation,
             };
             println!("validation call back params{:?}",params.clone());
             let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);

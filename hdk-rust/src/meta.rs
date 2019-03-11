@@ -114,7 +114,7 @@ pub extern "C" fn __hdk_validate_app_entry(
         Err(e) => return RibosomeEncodedValue::from(e).into(),
     };
 
-    let entry_type_to_app_entry = match entry_validation_to_app_entry_type(input.validation_data.clone().entry_validation)
+    let entry_type_to_app_entry = match entry_validation_to_app_entry_type(input.validation_data.clone())
     {
         Ok(v) => v,
         Err(e) => return RibosomeEncodedValue::from(e).into()
@@ -365,7 +365,7 @@ pub mod tests {
                 ValidationPackageDefinition::Entry
             },
 
-            validation: |_validation_data: hdk::ValidationData| {
+            validation: |_validation_data: hdk::EntryValidationData| {
                 Ok(())
             }
 

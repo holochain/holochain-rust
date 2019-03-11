@@ -152,8 +152,6 @@ pub fn entry_to_validation_data(
                     Ok(EntryValidationData::Delete(entry.clone(),latest.clone()))
                 }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find Entry".to_string())))
         }
-        Entry::LinkAdd(link) => Ok(EntryValidationData::Link(entry.clone(),link.clone())),
-        Entry::LinkRemove(link) => Ok(EntryValidationData::Link(entry.clone(),link.clone())),
         Entry::CapTokenGrant(_) => Ok(EntryValidationData::Create(entry.clone())),
         _ => Err(HolochainError::NotImplemented(
             "Not implemented".to_string(),

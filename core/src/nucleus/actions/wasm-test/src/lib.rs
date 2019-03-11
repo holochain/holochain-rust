@@ -42,8 +42,8 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: | validation_data: hdk::ValidationData| {
-                 match validation_data.entry_validation
+            validation: | validation_data: hdk::EntryValidationData| {
+                 match validation_data
                  {
                    EntryValidationData::Create(entry) =>
                    {
@@ -68,8 +68,8 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |validation_data: hdk::ValidationData| {
-                match validation_data.entry_validation
+            validation: |validation_data: hdk::EntryValidationData| {
+                match validation_data
                 {
                    EntryValidationData::Create(entry) =>
                    {
@@ -95,8 +95,8 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainEntries
             },
 
-            validation: |validation_data: hdk::ValidationData| {
-                 match validation_data.entry_validation
+            validation: |validation_data: hdk::EntryValidationData| {
+                 match validation_data
                 {
                    EntryValidationData::Create(entry) =>
                    {
@@ -121,8 +121,8 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainHeaders
             },
 
-            validation: |validation_data: hdk::ValidationData| {
-                 match validation_data.entry_validation
+            validation: |validation_data: hdk::EntryValidationData| {
+                 match validation_data
                 {
                    EntryValidationData::Create(entry) =>
                    {
@@ -147,8 +147,8 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: | validation_data: hdk::ValidationData| {
-                 match validation_data.entry_validation
+            validation: | validation_data: hdk::EntryValidationData| {
+                 match validation_data
                 {
                    EntryValidationData::Create(entry) =>
                    {

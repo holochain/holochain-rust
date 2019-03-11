@@ -5,7 +5,7 @@ use holochain_core_types::{
     dna::entry_types::EntryTypeDef,
     entry::entry_type::EntryType,
     hash::HashString,
-    validation::{ValidationData, ValidationPackageDefinition},
+    validation::{ValidationPackageDefinition,EntryValidationData,LinkValidationData},
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 
@@ -13,10 +13,10 @@ use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 
-pub type Validator = Box<FnMut(ValidationData) -> Result<(), String> + Sync>;
+pub type Validator = Box<FnMut(EntryValidationData) -> Result<(), String> + Sync>;
 
 pub type LinkValidator =
-    Box<FnMut(HashString, HashString, ValidationData) -> Result<(), String> + Sync>;
+    Box<FnMut(HashString, HashString, LinkValidationData) -> Result<(), String> + Sync>;
 
 /// This struct represents a complete entry type definition.
 /// It wraps [EntryTypeDef](struct.EntryTypeDef.html) defined in the DNA crate
@@ -127,8 +127,8 @@ pub struct ValidatingLinkDefinition {
 ///             hdk::ValidationPackageDefinition::ChainFull
 ///         },
 ///
-///         validation: |validation_data: hdk::ValidationData| {
-///              match validation_data.entry_validation
+///         validation: |validation_data: hdk::EntryValidationData| {
+///              match validation_data
 ///              {
 ///              EntryValidationData::Create(entry) =>
 ///              {
@@ -152,7 +152,7 @@ pub struct ValidatingLinkDefinition {
 ///                     hdk::ValidationPackageDefinition::ChainFull
 ///                 },
 ///
-///                 validation: |base: Address, target: Address, _validation_data: hdk::ValidationData| {
+///                 validation: |base: Address, target: Address, _validation_data: hdk::EntryValidationData| {
 ///                     Ok(())
 ///                 }
 ///             )
@@ -172,7 +172,7 @@ macro_rules! entry {
         $(native_type: $native_type:ty,)*
 
         validation_package: || $package_creator:expr,
-        validation: | $validation_data:ident : hdk::ValidationData | $entry_validation:expr
+        validation: | $validation_data:ident : hdk::EntryValidationData | $entry_validation:expr
 
         $(
             ,
@@ -214,8 +214,8 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
-                let e_type = hdk::meta::entry_validation_to_app_entry_type(validation_data.clone().entry_validation)?;
+            let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData| {
+                let e_type = hdk::meta::entry_validation_to_app_entry_type(validation_data.clone())?;
                 let $validation_data = validation_data;
                 match e_type {
                     hdk::holochain_core_types::entry::entry_type::EntryType::App(app_entry_value) => {

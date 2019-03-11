@@ -289,10 +289,12 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                 Ok(())
             }
             WssStreamState::Ready(mut socket) => {
+                // This seems to be wrong. Messages shouldn't be drained.
                 let msgs: Vec<Vec<u8>> = info.send_queue.drain(..).collect();
                 for msg in msgs {
                     socket.write_message(tungstenite::Message::Binary(msg))?;
                 }
+
                 match socket.read_message() {
                     Err(tungstenite::error::Error::Io(e)) => {
                         if e.kind() == std::io::ErrorKind::WouldBlock {

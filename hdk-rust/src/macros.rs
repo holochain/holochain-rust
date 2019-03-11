@@ -137,10 +137,22 @@ macro_rules! load_string {
 ///                 hdk::ValidationPackageDefinition::ChainFull
 ///             },
 ///
-///             validation: |post: Post, _validation_data: hdk::ValidationData| {
-///                 (post.content.len() < 280)
-///                     .ok_or_else(|| String::from("Content too long"))
-///             }
+///             validation: |validation_data: hdk::ValidationData| {
+///              match validation_data.entry_validation
+///              {
+///              EntryValidationData::Create(entry) =>
+///              {
+///                        
+///                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
+///                        (test_entry.stuff != "FAIL")
+///                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+///                }
+///                _ =>
+///                   {
+///                      Err("Failed to validate with wrong entry type".to_string())
+///                   }
+///               },
+///
 ///         )
 ///     ]
 ///

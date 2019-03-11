@@ -34,7 +34,7 @@ use holochain_wasm_utils::{
         json::{JsonString,RawString},
     },
 };
-use holochain_wasm_utils::holochain_core_types::{validation::EntryValidationData,error::RibosomeEncodingBits};
+use holochain_wasm_utils::holochain_core_types::{validation::{LinkValidationData,EntryValidationData},error::RibosomeEncodingBits};
 use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
@@ -479,7 +479,7 @@ define_zome! {
                     validation_package: || {
                         hdk::ValidationPackageDefinition::ChainFull
                     },
-                    validation: |source: Address, target: Address, validation_data: hdk::ValidationData | {
+                    validation: |validation_data: hdk::LinkValidationData | {
                         Ok(())
                     }
                 )
@@ -522,7 +522,14 @@ define_zome! {
                     validation_package: || {
                         hdk::ValidationPackageDefinition::Entry
                     },
-                    validation: |base: Address, target: Address, validation_data: hdk::ValidationData | {
+                    validation: |validation_data: hdk::LinkValidationData | {
+                        let link = match validation_data
+                        {
+                            LinkValidationData::LinkAdd(entry,link) => link.clone(),
+                            LinkValidationData::LinkRemove(entry,link) => link.clone()
+                        };
+                        let base = link.link().base();
+                        let target = link.link().target();
                         let base = match hdk::get_entry(&base)? {
                             Some(entry) => match entry {
                                 Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,

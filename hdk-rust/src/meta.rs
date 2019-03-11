@@ -233,8 +233,6 @@ pub extern "C" fn __hdk_validate_link(
             })
             .and_then(|mut link_definition| {
                 let validation_result = (*link_definition.validator)(
-                    input.link.base().clone(),
-                    input.link.target().clone(),
                     input.validation_data,
                 );
                 Some(match validation_result {

@@ -4,7 +4,6 @@
 use holochain_core_types::{
     dna::entry_types::EntryTypeDef,
     entry::entry_type::EntryType,
-    hash::HashString,
     validation::{ValidationPackageDefinition,EntryValidationData,LinkValidationData},
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
@@ -16,7 +15,7 @@ pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 pub type Validator = Box<FnMut(EntryValidationData) -> Result<(), String> + Sync>;
 
 pub type LinkValidator =
-    Box<FnMut(HashString, HashString, LinkValidationData) -> Result<(), String> + Sync>;
+    Box<FnMut(LinkValidationData) -> Result<(), String> + Sync>;
 
 /// This struct represents a complete entry type definition.
 /// It wraps [EntryTypeDef](struct.EntryTypeDef.html) defined in the DNA crate
@@ -277,7 +276,7 @@ macro_rules! link {
         tag: $tag:expr,
 
         validation_package: || $package_creator:expr,
-        validation: | $source:ident : Address,  $target:ident : Address, $validation_data:ident : hdk::ValidationData | $link_validation:expr
+        validation: | $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
     ) => (
 
         {
@@ -285,9 +284,7 @@ macro_rules! link {
                 $package_creator
             });
 
-            let validator = Box::new(|source: Address, target: Address, validation_data: ::hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
-                let $source = source;
-                let $target = target;
+            let validator = Box::new(|validation_data: ::hdk::holochain_wasm_utils::holochain_core_types::validation::LinkValidationData| {
                 let $validation_data = validation_data;
                 $link_validation
             });
@@ -315,7 +312,7 @@ macro_rules! to {
         tag: $tag:expr,
 
         validation_package: || $package_creator:expr,
-        validation: | $source:ident : Address,  $target:ident : Address, $validation_data:ident : hdk::ValidationData | $link_validation:expr
+        validation: | $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
     ) => (
         link!(
             direction: $crate::LinkDirection::To,
@@ -323,7 +320,7 @@ macro_rules! to {
             tag: $tag,
 
             validation_package: || $package_creator,
-            validation: | $source : Address,  $target : Address, $validation_data : hdk::ValidationData | $link_validation
+            validation: | $validation_data : hdk::LinkValidationData | $link_validation
         )
     )
 }
@@ -339,7 +336,7 @@ macro_rules! from {
         tag: $tag:expr,
 
         validation_package: || $package_creator:expr,
-        validation: | $source:ident : Address,  $target:ident : Address, $validation_data:ident : hdk::ValidationData | $link_validation:expr
+        validation: |  $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
     ) => (
         link!(
             direction: $crate::LinkDirection::From,
@@ -347,7 +344,7 @@ macro_rules! from {
             tag: $tag,
 
             validation_package: || $package_creator,
-            validation: | $source : Address,  $target : Address, $validation_data : hdk::ValidationData | $link_validation
+            validation: |  $validation_data : hdk::LinkValidationData | $link_validation
         )
     )
 }

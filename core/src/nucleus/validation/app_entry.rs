@@ -26,7 +26,7 @@ pub async fn validate_app_entry(
     context: &Arc<Context>,
 ) -> ValidationResult {
     let dna = context.get_dna().expect("Callback called without DNA set!");
-    let EntryWithHeader{entry : entry,header: old_entry_header} = fetch_entry_with_header(&entry.address(),&context).map_err(|_|{
+    let EntryWithHeader{entry ,header: old_entry_header} = fetch_entry_with_header(&entry.address(),&context).map_err(|_|{
             ValidationError::Fail("Entry not found in dht chain".to_string())
         })?;
     

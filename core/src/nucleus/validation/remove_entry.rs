@@ -48,7 +48,7 @@ pub async fn validate_remove_entry(entry: Entry,
             let result = await!(get_entry_result_workflow(&context,entry_args).map_err(|_|{
                 ValidationError::Fail("Could not get entry for link_update_delete".to_string())
             }))?;
-            let latest = result.latest().ok_or(ValidationError::Fail("Could not find entry for deletion entry".to_string()))?;
+            result.latest().ok_or(ValidationError::Fail("Could not find entry for deletion entry".to_string()))?;
             let params = EntryValidationArgs {
             validation_data: validation_data.clone().entry_validation,
             };

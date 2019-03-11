@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 pub async fn validate_link_entry(
     entry: Entry,
-    validation_data: ValidationData,
+    _validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> ValidationResult {
     let address = entry.address().clone();

@@ -270,7 +270,7 @@ pub mod tests {
 
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
 
-        let message = base64::encode("SOMEPAYLOAD");
+        let message = base64::encode("SOMEPAYLOAasdfasdfD");
 
         assert_eq!(
             keystore.sign("my_keypair", message.clone()),
@@ -285,7 +285,6 @@ pub mod tests {
         assert!(!result.is_err());
 
         let signature = result.unwrap();
-        assert_eq!(signature.to_string().len(),64);
+        assert_eq!(String::from(signature).len(),88); //88 is the size of a base64ized signature buf
     }
-
 }

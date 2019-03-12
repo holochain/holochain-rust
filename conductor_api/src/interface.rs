@@ -1088,6 +1088,9 @@ pub mod tests {
                 })),
             ))
             .expect("Invalid call to handler");
+
+        // This is equal to success because it did all the processing correctly before getting
+        // to calling the instance (which doesn't exist in this test setup)
         assert_eq!(
             response_str,
             r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
@@ -1100,7 +1103,7 @@ pub mod tests {
                     "instance_id" : "test-instance-1",
                     "zome" : "greeter",
                     "function" : "hello",
-                    "provenance" : {"bad_provenance" : "bogus"},
+                    "provenance" : {"bad_provenance_shouldn't be an object!" : "bogus"},
                 })),
             ))
             .expect("Invalid call to handler");
@@ -1117,13 +1120,13 @@ pub mod tests {
                     "zome" : "greeter",
                     "function" : "hello",
                     "token" : "bogus token",
-                    "provenance" : {
-                        "source" : "some_source",
-                        "signature" : "some_signature",
-                    },
+                    "provenance" : ["some_source", "some_signature"],
                 })),
             ))
             .expect("Invalid call to handler");
+
+        // This is equal to success because it did all the processing correctly before getting
+        // to calling the instance (which doesn't exist in this test setup)
         assert_eq!(
             response_str,
             r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#

@@ -35,11 +35,7 @@ impl KeyStore {
 
     /// return a list of the identifiers stored in the keystore
     pub fn list(&self) -> Vec<String> {
-        let mut ids = Vec::new();
-        for k in self.keys.keys() {
-            ids.push(k.to_string());
-        }
-        ids
+        self.keys.keys().map(|k| k.to_string()).collect()
     }
 
     /// adds a random root seed into the keystore

@@ -8,8 +8,8 @@ use regex::Regex;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, fmt, str::FromStr, time::Duration};
 
-/// Represents a timeout for an HDK function. The usize interface defaults to ms (and is rounded).
-/// Also convertible to/from a Duration at full precision.
+/// Represents a timeout for an HDK function. The usize interface defaults to ms.  Also convertible
+/// to/from a Duration at full precision.
 #[derive(Clone, Deserialize, Debug, Eq, PartialEq, Hash, Serialize, DefaultJson)]
 pub struct Timeout(usize);
 
@@ -46,7 +46,7 @@ impl From<usize> for Timeout {
 /// A human-readable time Period, implemented as a time::Duration.  Conversion to/from and
 /// Serializable to/from readable form: "1w2d3h4.567s", at full Duration precision; values > 1s w/
 /// ms precision are formatted to fractional seconds w/ full precision, while values < 1s are
-/// formatted to integer ms, us or ns as appropriate.  Accepts y|yr|year, w/wk/week, d/dy/day,
+/// formatted to integer ms, us or ns as appropriate.  Accepts y/yr/year, w/wk/week, d/dy/day,
 /// h/hr/hour, m/min/minute, s/sec/second, ms/millis/millisecond, u/μ/micros/microsecond,
 /// n/nanos/nanosecond, singlular or plural.  The humantime and parse_duration crates are complex,
 /// incompatible with each other, depend on crates and/or do not compile to WASM.

@@ -104,7 +104,7 @@ jobs:
   resource_class: large
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  cold.ubuntu.xenial:
@@ -113,7 +113,7 @@ jobs:
   resource_class: large
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  cold.debian.stable:
@@ -122,7 +122,7 @@ jobs:
   resource_class: large
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  cold.mac:
@@ -130,7 +130,7 @@ jobs:
    xcode: "10.2.0"
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
 workflows:

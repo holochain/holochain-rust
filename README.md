@@ -93,7 +93,7 @@ For Ubuntu/OSX you can install the prerequisites with:
 
 ``` shell
 cd path/to/holochain
-. ./scripts/install/auto.sh
+./scripts/install/auto.sh
 ```
 
 Note: the script will install [homebrew](https://brew.sh/) on mac os x

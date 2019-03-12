@@ -39,7 +39,7 @@ let
 
   hc-install-node-conductor = nixpkgs.writeShellScriptBin "hc-install-node-conductor"
   ''
-   . ./scripts/build_nodejs_conductor.sh;
+   ./scripts/build_nodejs_conductor.sh;
   '';
 
   hc-install-tarpaulin = nixpkgs.writeShellScriptBin "hc-install-tarpaulin"

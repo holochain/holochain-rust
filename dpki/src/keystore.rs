@@ -2,7 +2,7 @@ use crate::{
     key_bundle::KeyBundle,
     keypair::generate_random_sign_keypair,
     seed::{generate_random_seed_buf, IndexedSeed, RootSeed, SeedContext, SeedTrait, SeedType},
-    utils, AGENT_ID_CTX_STR, SEED_SIZE,
+    utils, SEED_SIZE,
 };
 use holochain_core_types::{
     agent::Base32,
@@ -24,11 +24,13 @@ pub enum Secret {
     IndexedSeed(IndexedSeed),
 }
 
+#[allow(dead_code)]
 struct Keystore {
     keys: HashMap<String, Arc<Mutex<Secret>>>,
 }
 
 impl Keystore {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Keystore {
             keys: HashMap::new(),
@@ -36,11 +38,13 @@ impl Keystore {
     }
 
     /// return a list of the identifiers stored in the keystore
+    #[allow(dead_code)]
     pub fn list(&self) -> Vec<String> {
         self.keys.keys().map(|k| k.to_string()).collect()
     }
 
     /// adds a random root seed into the keystore
+    #[allow(dead_code)]
     pub fn add_random_seed(&mut self, id_str: &str, size: usize) -> HcResult<()> {
         let id = id_str.to_string();
         if self.keys.contains_key(&id) {
@@ -85,6 +89,7 @@ impl Keystore {
     }
 
     /// adds a derived seed into the keystore
+    #[allow(dead_code)]
     pub fn add_seed_from_seed(
         &mut self,
         src_id_str: &str,
@@ -114,6 +119,7 @@ impl Keystore {
 
     /// adds a keypair into the keystore based on a seed already in the keystore
     /// returns the public key
+    #[allow(dead_code)]
     pub fn add_key_from_seed(
         &mut self,
         src_id_str: &str,
@@ -149,6 +155,7 @@ impl Keystore {
 
     /// signs some data using a keypair in the keystore
     /// returns the signature
+    #[allow(dead_code)]
     pub fn sign(&mut self, src_id_str: &str, data: String) -> HcResult<Signature> {
         let src_secret = self.check_src_identifier(src_id_str)?;
         let mut src_secret = src_secret.lock().unwrap();
@@ -172,11 +179,13 @@ impl Keystore {
 }
 
 /// verifies data and signature against a public key
+#[allow(dead_code)]
 pub fn verify(public_key: Base32, data: String, signature: Signature) -> HcResult<bool> {
     utils::verify(Address::from(public_key), data, signature)
 }
 
 /// creates a one-time private key and sign data returning the signature and the public key
+#[allow(dead_code)]
 pub fn sign_one_time(data: String) -> HcResult<(Base32, Signature)> {
     let mut data_buf = SecBuf::with_insecure_from_string(data);
     let mut sign_keys = generate_random_sign_keypair();
@@ -191,6 +200,7 @@ pub fn sign_one_time(data: String) -> HcResult<(Base32, Signature)> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::AGENT_ID_CTX_STR;
     use base64;
 
     #[test]

@@ -130,8 +130,7 @@ macro_rules! load_string {
 ///         entry!(
 ///             name: "post",
 ///             description: "",
-///             sharing: Sharing::Public,
-///             native_type: Post,
+///             sharing: Sharing::Public
 ///
 ///             validation_package: || {
 ///                 hdk::ValidationPackageDefinition::ChainFull
@@ -140,10 +139,10 @@ macro_rules! load_string {
 ///             validation: |validation_data: hdk::EntryValidationData| {
 ///              match validation_data
 ///              {
-///              EntryValidationData::Create(entry) =>
+///              EntryValidationData::Create(test_entry) =>
 ///              {
 ///                        
-///                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
+///                        
 ///                        (test_entry.stuff != "FAIL")
 ///                        .ok_or_else(|| "FAIL content is not allowed".to_string())
 ///                }

@@ -8,6 +8,8 @@ use crate::{
     link::link_data::LinkData
 };
 
+use std::convert::TryFrom;
+
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub struct ValidationPackage {
     pub chain_header: ChainHeader,
@@ -49,6 +51,46 @@ pub enum EntryValidationData<T>
     Delete(Entry,T)
 }
 
+impl<T: TryFrom<AppEntryValue>> TryFrom<EntryValidationData<Entry>> for EntryValidationData<T> {
+    type Error = HolochainError;
+    fn try_from(entry_validation : &EntryValidationData<Entry>) -> Result<Self, Self::Error> {
+         match entry_validation
+        {
+            EntryValidationData::Create(entry) => {
+                let native_type = convert_entry_validation_to_native::<T>(entry)?;
+                Ok(EntryValidationData::Create(native_type))
+            },
+            EntryValidationData::Modify(latest,entry) =>
+            {
+                let latest_native = convert_entry_validation_to_native::<T>(latest)?;
+                let current_native = convert_entry_validation_to_native::<T>(entry)?;
+                Ok(EntryValidationData::Modify(latest_native,current_native))
+            },
+            EntryValidationData::Delete(deletion_entry,entry_to_delete) =>
+            {
+                let native_entry_to_delete = convert_entry_validation_to_native::<T>(entry_to_delete)?;
+                Ok(EntryValidationData::Delete(deletion_entry.clone(),native_entry_to_delete))
+            }
+        }
+    }
+}
+
+fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(entry : Entry) -> ZomeApiResult<T>
+{
+    match entry 
+    {
+        Entry::App(_, entry_value) => T::try_from(entry_value.to_owned()).map_err(|_| {
+            ZomeApiError::Internal(
+                "Could not convert get_links result to requested type".to_string(),
+            )
+        }),
+        _ => Err(ZomeApiError::Internal(
+            "get_links did not return an app entry".to_string(),
+        )),
+    }
+    
+}
+
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum LinkValidationData
@@ -75,20 +117,7 @@ pub struct ValidationData {
     pub lifecycle: EntryLifecycle
 }
 
-/*impl Default for ValidationData {
-    fn default() -> Self {
-        Self {
-            package: ValidationPackage {
-                chain_header: test_chain_header(),
-                source_chain_entries: None,
-                source_chain_headers: None,
-                custom: None,
-            },
-            lifecycle: EntryLifecycle::default(),
-            action: EntryAction::default(),
-        }
-    }
-}*/
+
 
 impl ValidationData {
     /// The list of authors that have signed this entry.

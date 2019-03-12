@@ -46,16 +46,23 @@ pub fn definition() -> ValidatingEntryType {
     entry!(
         name: "post",
         description: "blog entry post",
-        sharing: Sharing::Public,
-        native_type: Post,
+        sharing: Sharing::Public
 
         validation_package: || {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation: |post: crate::post::Post, _validation_data: hdk::ValidationData| {
-            (post.content.len() < 280)
-                .ok_or_else(|| String::from("Content too long"))
+        validation: |validation_data: hdk::EntryValidationData<Post>| {
+            match validation_data
+            {
+                EntryVallidationData::Create(post) => 
+                {
+                    (post.content.len() < 280)
+                   .ok_or_else(|| String::from("Content too long"))
+                }
+                _ => Ok(())
+            }
+       
         },
 
         links: [

@@ -272,9 +272,7 @@ impl Context {
             JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
                 serde_json::to_string(&response.get_error().unwrap()).unwrap(),
             )),
-            _ => Err(HolochainError::ErrorGeneric(
-                "Bridge call failed".to_string(),
-            )),
+            _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
         }
     }
 

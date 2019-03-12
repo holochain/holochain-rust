@@ -1225,8 +1225,7 @@ pub mod tests {
             let context = instance.context();
             make_cap_request_for_call(
                 context.clone(),
-                Address::from(context.clone().agent_id.pub_sign_key.clone()),
-                Address::from(context.clone().agent_id.pub_sign_key.clone()),
+                Address::from(context.clone().agent_id.address()),
                 "call_bridge",
                 "{}".to_string(),
             )

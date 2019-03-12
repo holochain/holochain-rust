@@ -25,6 +25,30 @@ pub(crate) fn get_entry_from_cas(
     Ok(entry)
 }
 
+pub fn get_entry_from_agent_chain(
+    context: &Arc<Context>,
+    address: &Address,
+) -> Result<Option<Entry>, HolochainError> {
+    let agent = context.state().unwrap().agent();
+    let top_header = agent.top_chain_header();
+    let maybe_header = &agent
+        .chain_store()
+        .iter(&top_header)
+        .filter(|header| header.entry_address() == address)
+        .next();
+
+    if maybe_header.is_none() {
+        return Ok(None);
+    }
+    let cas = context
+        .state()
+        .unwrap()
+        .agent()
+        .chain_store()
+        .content_storage();
+    get_entry_from_cas(&cas.clone(), address)
+}
+
 pub(crate) fn get_entry_from_agent(
     context: &Arc<Context>,
     address: &Address,
@@ -90,7 +114,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         }
     }
     // Get crud-link
-    let mut maybe_crud_link = None;
+    let mut maybe_link_update_delete = None;
     let link_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
         Some(address).into(),
         Some(Attribute::CrudLink).into(),
@@ -103,10 +127,10 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         link_eavs.len()
     );
     if link_eavs.len() == 1 {
-        maybe_crud_link = Some(link_eavs.iter().next().unwrap().value());
+        maybe_link_update_delete = Some(link_eavs.iter().next().unwrap().value());
     }
     // Done
-    Ok(Some((crud_status, maybe_crud_link)))
+    Ok(Some((crud_status, maybe_link_update_delete)))
 }
 
 /// FetchEntry Action Creator
@@ -124,12 +148,12 @@ pub fn get_entry_with_meta<'a>(
         Ok(Some(entry)) => entry,
     };
     // 2. try to get the entry's metadata
-    let (crud_status, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address)?
+    let (crud_status, maybe_link_update_delete) = get_entry_crud_meta_from_dht(context, address)?
         .expect("Entry should have crud-status metadata");
     let item = EntryWithMeta {
         entry,
         crud_status,
-        maybe_crud_link,
+        maybe_link_update_delete,
     };
     Ok(Some(item))
 }
@@ -140,7 +164,7 @@ pub mod tests {
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
 
     #[test]
-    fn get_entry_from_dht_cas() {
+    fn test_get_entry_from_dht_cas() {
         let entry = test_entry();
         let context = test_context_with_state(None);
         let result = super::get_entry_from_dht(&context, &entry.address());
@@ -150,4 +174,10 @@ pub mod tests {
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }
+    /*
+        #[test]
+        fn test_get_entry_from_agent_chain() {
+    // write this test when its easier to get a mutable agent state
+        }
+    */
 }

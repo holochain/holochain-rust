@@ -12,14 +12,14 @@ use holochain_core::{
     context::Context,
     logger::{test_logger, TestLogger},
     signal::Signal,
-};
+    nucleus::actions::call_zome_function::make_cap_request_for_call,
+    };
 use holochain_core_types::{
     cas::content::Address,
     dna::{
-        capabilities::CapabilityCall,
+        traits::ReservedTraitNames,
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
-        traits::ReservedTraitNames,
         wasm::DnaWasm,
         zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,
@@ -50,7 +50,7 @@ pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
 }
 
 /// Create DNA from WAT
-pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&str>) -> Dna {
+pub fn create_test_dna_with_wat(zome_name: &str, wat: Option<&str>) -> Dna {
     // Default WASM code returns 1337 as integer
     let default_wat = r#"
             (module
@@ -73,11 +73,11 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
         .convert(wat_str)
         .unwrap();
 
-    create_test_dna_with_wasm(zome_name, cap_name, wasm_binary.as_ref().to_vec())
+    create_test_dna_with_wasm(zome_name, wasm_binary.as_ref().to_vec())
 }
 
 /// Prepare valid DNA struct with that WASM in a zome's capability
-pub fn create_test_dna_with_wasm(zome_name: &str, _cap_name: &str, wasm: Vec<u8>) -> Dna {
+pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
     let defs = create_test_defs_with_fn_name("public_test_fn");
 
@@ -222,16 +222,25 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
     let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
     let context = create_test_context("alex");
-    let mut hc = Holochain::new(dna.clone(), context).unwrap();
+    let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
+
+    let params_string = String::from(params.into());
+    let cap_request =  make_cap_request_for_call(
+        context.clone(),
+        Address::from(context.clone().agent_id.pub_sign_key.clone()),
+        Address::from(context.clone().agent_id.pub_sign_key.clone()),
+        fn_name,
+        params_string.clone(),
+    );
 
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
     return hc.call(
         "test_zome",
-        Some(CapabilityCall::new(Address::from("test_token"), None)),
+        cap_request,
         fn_name,
-        &String::from(params.into()),
+        &params_string,
     );
 }
 

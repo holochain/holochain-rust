@@ -4,13 +4,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
 ### Changed
+
+### Deprecated
 
 ### Removed
 
+### Fixed
+
+### Security
+
+
+## [0.0.6-alpha] - 2019-03-11
+
+### Changed
+- Replaces libzmq (zeromq) with websockets for ipc communication to networking module [#1055](https://github.com/holochain/holochain-rust/pull/1055)
+- Changes `apt-get` dependencies installed for libsodium across linux OS [#1105](https://github.com/holochain/holochain-rust/pull/1105)
+
+### Removed
+- Removes bespoke `rust_sodium-sys` crate (using upstream now) [#1105](https://github.com/holochain/holochain-rust/pull/1105)
+
 ### Added
+- New network setting via environment variable HC_N3H_LOG_LEVEL [#1085](https://github.com/holochain/holochain-rust/pull/1085)
+- Ability to sign data via `hdk::sign` using the agent key [PR#1080](https://github.com/holochain/holochain-rust/pull/1080)
+- Adds PUBLIC_TOKEN global variable for use in hdk::call in calling public functions. [PR#895](https://github.com/holochain/holochain-rust/pull/895)
+- Adds an [ADR](doc/architecture/decisions/0017-capabilities.md) for capabilities
+- CrudStatus works over network [#1048](https://github.com/holochain/holochain-rust/pull/1048)
+- Adds utils submodule of hdk which contains the following helper functions [#1006](https://github.com/holochain/holochain-rust/pull/10006):
+  - get_links_and_load_type - calls try_from for a given type when getting links
+  - get_as_type - Similar but for a single entry
+  - link_entries_bidir - Same as link_entries but creates link in both directions
+  - commit_and_link - Save a line and commit and link in a single function
+- Adds a `call` route to the json rpc for the conductor for making zome calls [PR#1090](https://github.com/holochain/holochain-rust/pull/1090).  Please note this route deprecates the `instance_id/zome/function` which will be removed in the future
+- The `admin/dna/install_from_file` RPC method now takes an optional `expected_hash`, which performs an integrity check of the DNA file before installing it in the conductor [PR#1093](https://github.com/holochain/holochain-rust/pull/1093)
+- Moves Crud Status tests to app_spec [#1096](https://github.com/holochain/holochain-rust/pull/1096)
+- Adds cold build tests + support for debian and ubuntu xenial [#1105](https://github.com/holochain/holochain-rust/pull/1105)
+
 
 ### Fixed
+- Validation of link entries gets retried now if base or target of the link were not yet accessible on the validating node. This fixes a bug where links have been invalid due to network timing issues [PR#1054](https://github.com/holochain/holochain-rust/pull/1054)
+- Validation of any entry gets retried now if the validation package could not be retrieved from the source [PR#1059](https://github.com/holochain/holochain-rust/pull/1059)
+- Scenario tests are more lenient to SyntaxError, TypeError, and other JS errors: buggy tests now merely fail rather than hanging indefinitely [#1091](https://github.com/holochain/holochain-rust/pull/1091)
+- Fixes docker builds for `holochain/holochain-rust:develop` [#1107](https://github.com/holochain/holochain-rust/pull/1107)
 
 ## [0.0.5-alpha] - 2019-03-01
 
@@ -22,13 +59,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bundle.json` & `.hcpkg` unified to `YOUR_DNA_NAME.dna.json`
   - `.build` files renamed to `.hcbuild`
   - `hc package` now builds to `dist` directory by default, to match how `hc test` works
+
 ### Removed
 - Removes legacy docker files [PR#955](https://github.com/holochain/holochain-rust/pull/955)
+
 ### Added
 - Adds a panic handler to HDK-Rust and that reroutes infos about panics happening inside the WASM Ribosome to the instances logger [PR#1029](https://github.com/holochain/holochain-rust/pull/1029)
 - Adds cmake and qt to mac os x install script [PR#955](https://github.com/holochain/holochain-rust/pull/955)
 - Adds the current git-commit hash to the compile code of the core, and checks (with warning) for the same hash that was used to compile the wasm [PR#1050](https://github.com/holochain/holochain-rust/pull/1036)
-### Fixed
 
 ## [0.0.4-alpha] - 2019-02-15
 

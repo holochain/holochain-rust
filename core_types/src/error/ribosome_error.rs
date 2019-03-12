@@ -153,6 +153,7 @@ pub enum RibosomeErrorCode {
     NotAnAllocation                 = 8 << 32,
     ZeroSizedAllocation             = 9 << 32,
     UnknownEntryType                = 10 << 32,
+    MismatchWasmCallDataType        = 11 << 32
 }
 
 #[rustfmt::skip]
@@ -169,6 +170,7 @@ impl RibosomeErrorCode {
             NotAnAllocation                 => "Not an allocation",
             ZeroSizedAllocation             => "Zero-sized allocation",
             UnknownEntryType                => "Unknown entry type",
+            MismatchWasmCallDataType        => "Mismatched WasmCallData type"
         }
     }
 }
@@ -189,10 +191,13 @@ impl From<HolochainError> for RibosomeErrorCode {
             HolochainError::InvalidOperationOnSysEntry => RibosomeErrorCode::UnknownEntryType,
             HolochainError::CapabilityCheckFailed => RibosomeErrorCode::Unspecified,
             HolochainError::ValidationFailed(_) => RibosomeErrorCode::CallbackFailed,
+            HolochainError::ValidationPending => RibosomeErrorCode::Unspecified,
             HolochainError::Ribosome(e) => e,
             HolochainError::RibosomeFailed(_) => RibosomeErrorCode::CallbackFailed,
             HolochainError::ConfigError(_) => RibosomeErrorCode::Unspecified,
             HolochainError::Timeout => RibosomeErrorCode::Unspecified,
+            HolochainError::InitializationFailed(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::DnaHashMismatch(_, _) => RibosomeErrorCode::Unspecified,
         }
     }
 }

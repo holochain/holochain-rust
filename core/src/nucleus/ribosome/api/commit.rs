@@ -11,14 +11,14 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: CommitArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let entry = match Entry::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            zome_call_data.context.log(format!(
+            context.log(format!(
                 "err/zome: invoke_commit_app_entry failed to deserialize Entry: {:?}",
                 args_str
             ));
@@ -26,9 +26,8 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         }
     };
     // Wait for future to be resolved
-    let task_result: Result<Address, HolochainError> = zome_call_data
-        .context
-        .block_on(author_entry(&entry, None, &zome_call_data.context));
+    let task_result: Result<Address, HolochainError> =
+        context.block_on(author_entry(&entry, None, &context));
 
     runtime.store_result(task_result)
 }

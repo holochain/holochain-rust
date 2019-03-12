@@ -17,7 +17,10 @@ use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{key_blob::KeyBlob, key_bundle::KeyBundle};
+use holochain_dpki::{
+    key_blob::{Blobbable, KeyBlob},
+    key_bundle::KeyBundle,
+};
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
@@ -27,6 +30,7 @@ use std::{
     convert::TryFrom,
     fs::{self, File},
     io::prelude::*,
+    option::NoneError,
     path::PathBuf,
     sync::{
         mpsc::{channel, Sender, SyncSender},
@@ -270,6 +274,7 @@ impl Conductor {
                 String::from("N3H_MODE") => network_config.n3h_mode.clone(),
                 String::from("N3H_WORK_DIR") => network_config.n3h_persistence_path.clone(),
                 String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
+                String::from("N3H_LOG_LEVEL") => network_config.n3h_log_level.clone(),
             },
             true,
         )
@@ -296,7 +301,7 @@ impl Conductor {
     fn initialize_p2p_config(&mut self) -> P2pConfig {
         // if there's no NetworkConfig we won't spawn a network process
         // and instead configure instances to use a unique in-memory network
-        if let None = self.config.network {
+        if self.config.network.is_none() {
             return P2pConfig::new_with_unique_memory_backend();
         }
         // if there is a config then either we need to spawn a process and get the
@@ -426,11 +431,17 @@ impl Conductor {
                 };
 
                 // Storage:
-                if let StorageConfiguration::File { path } = instance_config.storage {
-                    context_builder = context_builder.with_file_storage(path).map_err(|hc_err| {
-                        format!("Error creating context: {}", hc_err.to_string())
-                    })?
-                };
+                match instance_config.storage {
+                    StorageConfiguration::File { path } => {
+                        context_builder =
+                            context_builder.with_file_storage(path).map_err(|hc_err| {
+                                format!("Error creating context: {}", hc_err.to_string())
+                            })?
+                    }
+                    StorageConfiguration::Memory => {
+                        context_builder = context_builder.with_memory_storage()
+                    }
+                }
 
                 if config.logger.logger_type == "debug" {
                     context_builder = context_builder.with_logger(Arc::new(Mutex::new(
@@ -495,7 +506,30 @@ impl Conductor {
                     ))
                 })?;
 
-                Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
+                let context = Arc::new(context);
+                Holochain::load(context.clone())
+                    .and_then(|hc| {
+                        notify(format!(
+                            "Successfully loaded instance {} from storage",
+                            id.clone()
+                        ));
+                        Ok(hc)
+                    })
+                    .or_else(|loading_error| {
+                        // NoneError just means it didn't find a pre-existing state
+                        // that's not a problem and so isn't logged as such
+                        if loading_error == HolochainError::from(NoneError) {
+                            notify("No chain found in the store".to_string());
+                        } else {
+                            notify(format!(
+                                "Failed to load instance {} from storage: {:?}",
+                                id.clone(),
+                                loading_error
+                            ));
+                        }
+                        notify("Initializing new chain...".to_string());
+                        Holochain::new(dna, context).map_err(|hc_err| hc_err.to_string())
+                    })
             })
     }
 
@@ -584,23 +618,28 @@ impl Conductor {
         file.read_to_string(&mut contents)?;
         let blob: KeyBlob = serde_json::from_str(&contents)?;
 
-        // Prompt for passphrase
-        let mut passphrase_string = rpassword::read_password_from_tty(Some("Passphrase: "))?;
+        // Try default passphrase:
+        let mut default_passphrase =
+            SecBuf::with_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
+        KeyBundle::from_blob(&blob, &mut default_passphrase, None).or_else(|_| {
+            // Prompt for passphrase
+            let mut passphrase_string = rpassword::read_password_from_tty(Some("Passphrase: "))?;
 
-        // Move passphrase in secure memory
-        let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
-        let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
-        passphrase_buf
-            .write(0, passphrase_bytes.as_slice())
-            .expect("Failed to write passphrase in a SecBuf");
+            // Move passphrase in secure memory
+            let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
+            let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
+            passphrase_buf
+                .write(0, passphrase_bytes.as_slice())
+                .expect("Failed to write passphrase in a SecBuf");
 
-        // Overwrite the unsafe passphrase memory with zeros
-        for byte in passphrase_bytes.iter_mut() {
-            *byte = 0u8;
-        }
+            // Overwrite the unsafe passphrase memory with zeros
+            for byte in passphrase_bytes.iter_mut() {
+                *byte = 0u8;
+            }
 
-        // Unblob into KeyBundle
-        KeyBundle::from_blob(&blob, &mut passphrase_buf, None)
+            // Unblob into KeyBundle
+            KeyBundle::from_blob(&blob, &mut passphrase_buf, None)
+        })
     }
 
     fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {
@@ -745,7 +784,10 @@ pub mod tests {
     use super::*;
     extern crate tempfile;
     use crate::config::load_configuration;
-    use holochain_core::{action::Action, signal::signal_channel};
+    use holochain_core::{
+        action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,
+        signal::signal_channel,
+    };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
     use holochain_sodium::secbuf::SecBuf;
@@ -792,7 +834,7 @@ pub mod tests {
             .expect("SecBuf must be writeable");
 
         // Create KeyBundle from seed
-        KeyBundle::new_from_seed(&mut seed, holochain_dpki::key_bundle::SeedType::Mock).unwrap()
+        KeyBundle::new_from_seed_buf(&mut seed, holochain_dpki::seed::SeedType::Mock).unwrap()
     }
 
     pub fn test_toml() -> String {
@@ -1014,7 +1056,7 @@ pub mod tests {
         let _conductor = test_conductor_with_signals(signal_tx);
 
         test_utils::expect_action(&signal_rx, |action| match action {
-            Action::InitApplication(_) => true,
+            Action::InitializeChain(_) => true,
             _ => false,
         })
         .unwrap();
@@ -1134,7 +1176,7 @@ pub mod tests {
 
     fn callee_dna() -> Dna {
         let wat = &callee_wat();
-        let mut dna = create_test_dna_with_wat("greeter", "test_cap", Some(wat));
+        let mut dna = create_test_dna_with_wat("greeter", Some(wat));
         dna.uuid = String::from("basic_bridge_call");
         dna.zomes.get_mut("greeter").unwrap().add_fn_declaration(
             String::from("hello"),
@@ -1177,18 +1219,20 @@ pub mod tests {
             .start_all_instances()
             .expect("Instances must be spawnable");
         let caller_instance = conductor.instances["bridge-caller"].clone();
-        let result = caller_instance
-            .write()
-            .unwrap()
-            .call(
-                "test_zome",
-                Some(dna::capabilities::CapabilityCall::new(
-                    Address::from("fake_token"),
-                    None,
-                )),
+        let mut instance = caller_instance.write().unwrap();
+
+        let cap_call = {
+            let context = instance.context();
+            make_cap_request_for_call(
+                context.clone(),
+                Address::from(context.clone().agent_id.pub_sign_key.clone()),
+                Address::from(context.clone().agent_id.pub_sign_key.clone()),
                 "call_bridge",
-                "{}",
+                "{}".to_string(),
             )
+        };
+        let result = instance
+            .call("test_zome", cap_call, "call_bridge", "{}")
             .unwrap();
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
@@ -1228,5 +1272,4 @@ pub mod tests {
                 .to_string()),
         );
     }
-
 }

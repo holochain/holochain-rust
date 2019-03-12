@@ -7,7 +7,7 @@ use crate::{
     context::Context,
     dht::dht_store::DhtStore,
     network::state::NetworkState,
-    nucleus::state::NucleusState,
+    nucleus::state::{NucleusState, NucleusStateSnapshot},
 };
 use holochain_core_types::{
     cas::{
@@ -57,47 +57,51 @@ impl State {
         }
     }
 
-    pub fn new_with_agent(context: Arc<Context>, agent_state: Arc<AgentState>) -> Self {
-        // @TODO file table
-        // @see https://github.com/holochain/holochain-rust/pull/246
+    pub fn new_with_agent(context: Arc<Context>, agent_state: AgentState) -> Self {
+        Self::new_with_agent_and_nucleus(context, agent_state, NucleusState::new())
+    }
 
+    pub fn new_with_agent_and_nucleus(
+        context: Arc<Context>,
+        agent_state: AgentState,
+        mut nucleus_state: NucleusState,
+    ) -> Self {
         let cas = context.dht_storage.clone();
         let eav = context.eav_storage.clone();
 
-        fn get_dna(
-            agent_state: &Arc<AgentState>,
-            cas: Arc<RwLock<dyn ContentAddressableStorage>>,
-        ) -> HcResult<Dna> {
-            let dna_entry_header = agent_state
-                .chain_store()
-                .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
-                .last()
-                .ok_or(HolochainError::ErrorGeneric(
-                    "No DNA entry found in source chain while creating state from agent"
-                        .to_string(),
-                ))?;
-            let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
-            let entry: Entry =
-                json.map(|e| e.try_into())
-                    .ok_or(HolochainError::ErrorGeneric(
-                        "No DNA entry found in storage while creating state from agent".to_string(),
-                    ))??;
-            match entry {
-                Entry::Dna(dna) => Ok(dna),
-                _ => Err(HolochainError::SerializationError(
-                    "Tried to get Dna from non-Dna Entry".into(),
-                )),
-            }
-        }
+        nucleus_state.dna = Self::get_dna(&agent_state, cas.clone()).ok();
 
-        let mut nucleus_state = NucleusState::new();
-        nucleus_state.dna = get_dna(&agent_state, cas.clone()).ok();
         State {
             nucleus: Arc::new(nucleus_state),
-            agent: agent_state,
+            agent: Arc::new(agent_state),
             dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
             network: Arc::new(NetworkState::new()),
             history: HashSet::new(),
+        }
+    }
+
+    fn get_dna(
+        agent_state: &AgentState,
+        cas: Arc<RwLock<dyn ContentAddressableStorage>>,
+    ) -> HcResult<Dna> {
+        let dna_entry_header = agent_state
+            .chain_store()
+            .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
+            .last()
+            .ok_or(HolochainError::ErrorGeneric(
+                "No DNA entry found in source chain while creating state from agent".to_string(),
+            ))?;
+        let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
+        let entry: Entry = json
+            .map(|e| e.try_into())
+            .ok_or(HolochainError::ErrorGeneric(
+                "No DNA entry found in storage while creating state from agent".to_string(),
+            ))??;
+        match entry {
+            Entry::Dna(dna) => Ok(dna),
+            _ => Err(HolochainError::SerializationError(
+                "Tried to get Dna from non-Dna Entry".into(),
+            )),
         }
     }
 
@@ -146,17 +150,20 @@ impl State {
         Arc::clone(&self.network)
     }
 
-    pub fn try_from_agent_snapshot(
+    pub fn try_from_snapshots(
         context: Arc<Context>,
-        snapshot: AgentStateSnapshot,
+        agent_snapshot: AgentStateSnapshot,
+        nucleus_snapshot: NucleusStateSnapshot,
     ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(context.dht_storage.clone()),
-            snapshot.top_chain_header().clone(),
+            agent_snapshot.top_chain_header().map(|h| h.to_owned()),
         );
-        Ok(State::new_with_agent(
+        let nucleus_state = NucleusState::from(nucleus_snapshot);
+        Ok(State::new_with_agent_and_nucleus(
             context.clone(),
-            Arc::new(agent_state),
+            agent_state,
+            nucleus_state,
         ))
     }
 

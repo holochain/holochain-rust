@@ -35,7 +35,7 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
 /// Expected complex argument: entry_type_name and entry_value as JsonString
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let entry = match Entry::try_from(args_str) {
@@ -44,8 +44,7 @@ pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     };
 
     // Check if entry_type is valid
-    let dna = zome_call_data
-        .context
+    let dna = context
         .state()
         .unwrap()
         .nucleus()

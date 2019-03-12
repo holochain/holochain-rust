@@ -2,22 +2,22 @@ use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
     network::actions::publish::publish,
-    nucleus::actions::{
-        build_validation_package::build_validation_package, validate::validate_entry,
+    nucleus::{
+        actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
 };
 
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::Entry,
+    entry::{entry_to_entry_action, Entry},
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 
 pub async fn author_entry<'a>(
     entry: &'a Entry,
-    maybe_crud_link: Option<Address>,
+    maybe_link_update_delete: Option<Address>,
     context: &'a Arc<Context>,
 ) -> Result<Address, HolochainError> {
     let address = entry.address();
@@ -25,12 +25,13 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry: {} with content: {:?}",
         address, entry
     ));
+
     // 1. Build the context needed for validation of the entry
     let validation_package = await!(build_validation_package(&entry, context.clone()))?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
-        action: EntryAction::Create,
+        action: entry_to_entry_action(entry, maybe_link_update_delete.clone())?,
     };
 
     // 2. Validate the entry
@@ -46,7 +47,11 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: committing...",
         address
     ));
-    let addr = await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
+    let addr = await!(commit_entry(
+        entry.clone(),
+        maybe_link_update_delete,
+        &context
+    ))?;
     context.log(format!(
         "debug/workflow/authoring_entry/{}: committed",
         address

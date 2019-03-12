@@ -231,7 +231,7 @@ impl FromStr for Iso8601 {
                   )?
                 )?
                 \s*
-                (?P<Z>          # no timezone specifier implies Z         
+                (?P<Z>          # no timezone specifier implies Z
                    [Zz]
                  | (?P<Zsgn>[+-−]) # Zone sign allows UTF8 minus or ASCII hyphen as per RFC/ISO
                    (?P<Zhrs>\d{2}) # and always double-digit hours offset required
@@ -318,7 +318,7 @@ pub mod tests {
             // and JSON round-trip.
             Iso8601::try_from(*ts)
                 .and_then(|iso| {
-                    assert_eq!(format!("{}", iso), "2018-10-11T03:23:38+00:00");
+                    assert_eq!(iso.to_string(), "2018-10-11T03:23:38+00:00");
                     Ok(iso)
                 })
                 .and_then(|iso| {
@@ -385,7 +385,7 @@ pub mod tests {
         .iter()
         .map(|ts| {
             Iso8601::try_from(*ts)
-                .and_then(|iso| Ok(assert_eq!(format!("{}", iso), "2018-01-01T03:23:00+00:00")))
+                .and_then(|iso| Ok(assert_eq!(iso.to_string(), "2018-01-01T03:23:00+00:00")))
         })
         .collect::<Result<(()), HolochainError>>()
         .map_err(|e| {
@@ -412,7 +412,7 @@ pub mod tests {
             let iso_8601 = Iso8601::try_from(*ts)?;
             let dt = DateTime::<FixedOffset>::from(&iso_8601); // from &Iso8601
             Ok(assert_eq!(
-                format!("{}", dt.to_rfc3339()),
+                dt.to_rfc3339().to_string(),
                 "2015-02-18T23:59:60.234567-05:00"
             ))
         })
@@ -484,7 +484,7 @@ pub mod tests {
                 iso
             ),
             Err(e) => assert_eq!(
-                format!("{}", e),
+                e.to_string(),
                 "Failed to find ISO 3339 or RFC 8601 timestamp in \"boo\""
             ),
         }

@@ -1,19 +1,16 @@
-//! Networking / P2P IPC Abstraction
+//! IPC Abstraction for P2P networking
 //!
-//! This crate allows holochain to connect to a running P2P client node
-//! over ZeroMq-based socket connection. The recommended ZeroMQ configuration
-//! is to use the `ipc:// ` protocol, which will make use of unix domain
-//! sockets in a linux or macOs environment. You may need to fall back to
-//! `tcp://` for other operating systems.
-//!
-//! The main export you should care about is ZmqIpcClient.
-//!
+//! This module allows holochain to connect to a running P2P client node
+//! over WebSocket-based socket connection.
+
+pub(crate) mod transport;
+mod transport_wss;
+
+pub use transport::{DidWork, Transport, TransportError, TransportEvent, TransportResult};
+
+pub use transport_wss::{TransportWss, DEFAULT_HEARTBEAT_MS, DEFAULT_HEARTBEAT_WAIT_MS};
 
 #[macro_use]
 pub mod errors;
-pub mod context;
-pub mod socket;
-pub mod util;
-
-pub mod ipc_client;
 pub mod spawn;
+pub mod util;

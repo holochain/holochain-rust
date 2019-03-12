@@ -8,7 +8,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/holochain.svg?style=social&label=Follow)](https://twitter.com/holochain)
 
 Travis: [![Build Status](https://travis-ci.com/holochain/holochain-rust.svg?branch=master)](https://travis-ci.com/holochain/holochain-rust)
-Circle CI: [![CircleCI](https://circleci.com/gh/holochain/holochain-rust/tree/master.svg?style=svg)](https://circleci.com/gh/holochain/holochain-rust/tree/master)
+Circle CI: [![CircleCI](https://circleci.com/gh/holochain/holochain-rust.svg?style=svg)](https://circleci.com/gh/holochain/holochain-rust)
 Codecov: [![Codecov](https://img.shields.io/codecov/c/github/holochain/holochain-rust.svg)](https://codecov.io/gh/holochain/holochain-rust/branch/master)
 License: [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
@@ -83,11 +83,11 @@ There is a work-in-progress book of documentation being written about `holochain
 
 **The following instructions are for developing Holochain Core or the HDK itself**
 
-There are two components needed currently to run Holochain applications, the core (what's in this repo) and also [the networking engine](https://github.com/holochain/n3h).  You can install and work on core using the built-in mock network following the instructions below, but if you want to actually test out your apps using the real networking, you will have to install [the networking component](https://github.com/holochain/n3h) following the instructions in the readme there.  (Note: please see the instructions in the [`hc` command-line tool readme](./cli/README.md#using-real-networking) or the [contuctor readme](./conductor/README.md#using-real-networking) for how to configure the tools to use and activate the networking component.
+There are two components needed currently to run Holochain applications, the core (what's in this repo) and also [the networking engine](https://github.com/holochain/n3h).  You can install and work on core using the built-in mock network following the instructions below, but if you want to actually test out your apps using the real networking, you will have to install [the networking component](https://github.com/holochain/n3h) following the instructions in the README there.  (Note: please see the instructions in the guide book for [`hc`](https://developer.holochain.org/guide/latest/hc_configuring_networking.html) or the [production Conductor](https://developer.holochain.org/guide/latest/conductor_networking.html) for how to configure the tools to use and activate the networking component.
 
 There are three approaches to building and testing Holochain: using `make`, `docker` or `nix`:
 
-### Make (ubuntu and macOS only)
+### Make (ubuntu, debian and macOS only)
 
 For Ubuntu/OSX you can install the prerequisites with:
 
@@ -97,6 +97,7 @@ cd path/to/holochain
 ```
 
 Note: the script will install [homebrew](https://brew.sh/) on mac os x
+Note: the script will install dependencies with `apt-get` on linux
 
 After the install script completes successfully, you can start local development using `make`
 
@@ -171,6 +172,14 @@ make build_nodejs_conductor
 
 ### Building for Android
 Note there is an article written on how to build Holochain for Android, read it [here](doc/holochain_101/src/building_for_android.md).
+
+## Upgrading
+
+Upgrading to a new tagged release of Holochain may include new/changed system dependencies.
+
+__We strongly recommend rerunning `./scripts/install/auto.sh` when upgrading core.__
+
+The script is designed to be idempotent. This means there is no harm re-running it.
 
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](/CONTRIBUTING.md) for our general practices and protocols on participating in the community, as well as specific expectations around things like code formatting, testing practices, continuous integration, etc.

@@ -43,12 +43,12 @@ impl AgentState {
 
     pub fn new_with_top_chain_header(
         chain_store: ChainStore,
-        chain_header: ChainHeader,
+        chain_header: Option<ChainHeader>,
     ) -> AgentState {
         AgentState {
             actions: HashMap::new(),
             chain_store,
-            top_chain_header: Some(chain_header),
+            top_chain_header: chain_header,
         }
     }
 
@@ -106,11 +106,11 @@ impl AgentState {
 
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct AgentStateSnapshot {
-    top_chain_header: ChainHeader,
+    top_chain_header: Option<ChainHeader>,
 }
 
 impl AgentStateSnapshot {
-    pub fn new(chain_header: ChainHeader) -> AgentStateSnapshot {
+    pub fn new(chain_header: Option<ChainHeader>) -> AgentStateSnapshot {
         AgentStateSnapshot {
             top_chain_header: chain_header,
         }
@@ -118,19 +118,17 @@ impl AgentStateSnapshot {
     pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
         serde_json::from_str(header_str)
     }
-    pub fn top_chain_header(&self) -> &ChainHeader {
-        &self.top_chain_header
+    pub fn top_chain_header(&self) -> Option<&ChainHeader> {
+        self.top_chain_header.as_ref()
     }
 }
 
-impl TryFrom<State> for AgentStateSnapshot {
+impl TryFrom<&State> for AgentStateSnapshot {
     type Error = HolochainError;
 
-    fn try_from(state: State) -> Result<Self, Self::Error> {
+    fn try_from(state: &State) -> Result<Self, Self::Error> {
         let agent = &*(state.agent());
-        let top_chain = agent
-            .top_chain_header()
-            .ok_or_else(|| HolochainError::ErrorGeneric("Could not serialize".to_string()))?;
+        let top_chain = agent.top_chain_header();
         Ok(AgentStateSnapshot::new(top_chain))
     }
 }
@@ -216,9 +214,9 @@ fn reduce_commit_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (entry, maybe_crud_link) = unwrap_to!(action => Action::Commit);
+    let (entry, maybe_link_update_delete) = unwrap_to!(action => Action::Commit);
 
-    let result = create_new_chain_header(&entry, context.clone(), &maybe_crud_link)
+    let result = create_new_chain_header(&entry, context.clone(), &maybe_link_update_delete)
         .and_then(|chain_header| {
             let storage = &state.chain_store.content_storage().clone();
             storage.write().unwrap().add(entry)?;
@@ -233,13 +231,6 @@ fn reduce_commit_entry(
     state
         .actions
         .insert(action_wrapper.clone(), ActionResponse::Commit(result));
-
-    #[allow(unused_must_use)]
-    context.state().map(|global_state_lock| {
-        let persis_lock = context.clone().persister.clone();
-        let persister = &mut *persis_lock.lock().unwrap();
-        persister.save(global_state_lock.clone());
-    });
 }
 
 /// maps incoming action to the correct handler
@@ -269,7 +260,7 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot, *};
+    use super::*;
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         instance::tests::test_context, state::State,
@@ -317,7 +308,7 @@ pub mod tests {
         let mut agent_state = test_agent_state();
         let netname = Some("test_reduce_commit_entry");
         let context = test_context("bob", netname);
-        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
+        let state = State::new_with_agent(context, agent_state.clone());
         let mut context = test_context("bob", netname);
         Arc::get_mut(&mut context)
             .unwrap()
@@ -386,7 +377,7 @@ pub mod tests {
     #[test]
     pub fn serialize_round_trip_agent_state() {
         let header = test_chain_header();
-        let agent_snap = AgentStateSnapshot::new(header);
+        let agent_snap = AgentStateSnapshot::new(Some(header));
         let json = serde_json::to_string(&agent_snap).unwrap();
         let agent_from_json = AgentStateSnapshot::from_json_str(&json).unwrap();
         assert_eq!(agent_snap.address(), agent_from_json.address());
@@ -413,7 +404,7 @@ pub mod tests {
         let agent_state = test_agent_state();
         let netname = Some("test_create_new_chain_header");
         let context = test_context("bob", netname);
-        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
+        let state = State::new_with_agent(context, agent_state.clone());
         let mut context = test_context("bob", netname);
         Arc::get_mut(&mut context)
             .unwrap()

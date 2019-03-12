@@ -1,6 +1,6 @@
 [package]
 name = "holochain_net"
-version = "0.0.5-alpha"
+version = "0.0.6-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -15,5 +15,7 @@ serde_json = { version = "1", features = ["preserve_order"] }
 rmp-serde = "0.13.7"
 serde_bytes = "0.10.4"
 regex = "1"
-zmq = "0.9.0"
 snowflake = "1.2"
+tungstenite = "0.6.1"
+url = "1.7"
+native-tls = "0.2"

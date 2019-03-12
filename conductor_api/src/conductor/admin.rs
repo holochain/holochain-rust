@@ -1206,7 +1206,7 @@ type = 'http'"#,
 
         assert_eq!(
             conductor.add_instance(
-                &String::from("new-instance"),
+                &String::from("new-instance-2"),
                 &String::from("test-dna"),
                 &String::from("test-agent-1")
             ),
@@ -1221,7 +1221,7 @@ type = 'http'"#,
         assert_eq!(
             conductor.add_instance_to_interface(
                 &String::from("websocket interface"),
-                &String::from("new-instance")
+                &String::from("new-instance-2")
             ),
             Ok(())
         );
@@ -1244,7 +1244,7 @@ type = 'http'"#,
                 r#"[[instances]]
 agent = 'test-agent-1'
 dna = 'test-dna'
-id = 'new-instance'"#,
+id = 'new-instance-2'"#,
             ),
         );
 
@@ -1253,7 +1253,7 @@ id = 'new-instance'"#,
             .join("tmp-test")
             .join(test_name)
             .join("storage")
-            .join("new-instance");
+            .join("new-instance-2");
 
         let storage_path_string = storage_path.to_str().unwrap().to_owned();
         toml = add_block(
@@ -1277,7 +1277,7 @@ id = 'test-instance-1'
 id = 'test-instance-2'
 
 [[interfaces.instances]]
-id = 'new-instance'
+id = 'new-instance-2'
 
 [interfaces.driver]
 port = 3007

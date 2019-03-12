@@ -8,9 +8,7 @@ use holochain_core::{
     state::State,
 };
 
-use holochain_core_types::{
-    agent::AgentId, cas::content::Address, json::JsonString, signature::Provenance,
-};
+use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
@@ -163,14 +161,13 @@ impl ConductorApiBuilder {
                         params_string.clone(),
                     ),
                     Some(json_provenance) => {
-                        let provenance =
-                            Provenance::try_from(JsonString::from(json_provenance.to_string()))
-                                .map_err(|e| {
-                                    jsonrpc_core::Error::invalid_params(format!(
-                                        "invalid provenance: {}",
-                                        e
-                                    ))
-                                })?;
+                        let provenance: Provenance =
+                            serde_json::from_value(json_provenance.to_owned()).map_err(|e| {
+                                jsonrpc_core::Error::invalid_params(format!(
+                                    "invalid provenance: {}",
+                                    e
+                                ))
+                            })?;
                         CapabilityRequest::new(token, provenance.source(), provenance.signature())
                     }
                 }

@@ -8,20 +8,17 @@ use crate::{cas::content::Address, error::error::HolochainError, json::JsonStrin
 /// this type is used in headers and in capability requests where the item being signed
 /// is implicitly known by context
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Hash, Eq, DefaultJson)]
-pub struct Provenance {
-    source: Address,
-    signature: Signature,
-}
+pub struct Provenance(Address, Signature);
 
 impl Provenance {
     pub fn new(source: Address, signature: Signature) -> Self {
-        Provenance { source, signature }
+        Provenance (source, signature)
     }
     pub fn source(&self) -> Address {
-        Address::from(self.source.clone())
+        Address::from(self.0.clone())
     }
     pub fn signature(&self) -> Signature {
-        self.signature.clone()
+        self.1.clone()
     }
 }
 /// Signature is meant in the classic cryptographic sense,

@@ -75,7 +75,7 @@ _macosx_nodejs_template: &_macosx_nodejs_template
   language: rust
   rust: nightly-2019-01-24
   before_script:
-    - . ./scripts/install/release-deps-osx.sh
+    - . ./scripts/install/auto.sh
 
 _to_deploy_template: &_to_deploy_template
   if: tag =~ /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
@@ -138,7 +138,7 @@ _cli_deploy_template: &_cli_deploy_template
   rust: nightly-2019-01-24
   if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
   before_script:
-    - . ./scripts/install/release-deps-auto.sh
+    - . ./scripts/install/auto.sh
   script:
     - cargo rustc --manifest-path cli/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir cli-$TRAVIS_TAG-$TARGET
@@ -162,7 +162,7 @@ _conductor_deploy_template: &_conductor_deploy_template
   rust: nightly-2019-01-24
   if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
   before_script:
-    - . ./scripts/install/release-deps-auto.sh
+    - . ./scripts/install/auto.sh
   script:
     - cargo rustc --manifest-path conductor/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir conductor-$TRAVIS_TAG-$TARGET

@@ -1106,7 +1106,7 @@ pub mod tests {
             .expect("Invalid call to handler");
         assert_eq!(
             response_str,
-            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"invalid provenance: missing field `source` at line 1 column 26"},"id":"0"}"#
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"invalid provenance: invalid type: map, expected tuple struct Provenance"},"id":"0"}"#
         );
 
         let response_str = handler

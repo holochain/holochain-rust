@@ -53,14 +53,13 @@ impl ZomeFnCall {
         context: Arc<Context>,
         zome: &str,
         token: Address,
-        caller: Address,
         function: &str,
         parameters: J,
     ) -> Self {
         let params = parameters.into();
         ZomeFnCall::new(
             zome,
-            make_cap_request_for_call(context, token, caller, function, params.clone()),
+            make_cap_request_for_call(context, token, function, params.clone()),
             function,
             params,
         )
@@ -118,6 +117,7 @@ pub mod tests {
     use test_utils;
 
     use holochain_core_types::{
+        cas::content::AddressableContent,
         error::{DnaError, HolochainError},
         json::{JsonString, RawString},
         signature::Signature,
@@ -157,7 +157,6 @@ pub mod tests {
         make_cap_request_for_call(
             context.clone(),
             dummy_capability_token(),
-            Address::from(context.agent_id.pub_sign_key.clone()),
             function,
             parameters,
         )
@@ -171,8 +170,7 @@ pub mod tests {
     ) -> CapabilityRequest {
         make_cap_request_for_call(
             context.clone(),
-            Address::from(context.agent_id.pub_sign_key.clone()),
-            Address::from(context.agent_id.pub_sign_key.clone()),
+            Address::from(context.agent_id.address()),
             function,
             parameters,
         )
@@ -265,14 +263,8 @@ pub mod tests {
         let token = context.get_public_token().unwrap();
 
         // Create zome function call
-        let zome_call = ZomeFnCall::create(
-            context.clone(),
-            "test_zome",
-            token,
-            Address::from("some caller"),
-            "public_test_fn",
-            "",
-        );
+        let zome_call =
+            ZomeFnCall::create(context.clone(), "test_zome", token, "public_test_fn", "");
 
         let result = context.block_on(call_zome_function(zome_call, &context));
 

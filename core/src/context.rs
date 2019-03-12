@@ -104,7 +104,7 @@ impl Context {
             persister,
             state: None,
             action_channel: None,
-            signal_tx: signal_tx,
+            signal_tx,
             observer_channel: None,
             chain_storage,
             dht_storage,

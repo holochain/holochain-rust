@@ -433,6 +433,7 @@ jobs:
 
     - name: "Windows - Node 11 - DRY RUN"
       <<: *_windows_template
+      <<: *_nodejs_deploy_template
       <<: *_windows_nodejs_conductor_template
       env:
        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"

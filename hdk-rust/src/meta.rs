@@ -3,13 +3,13 @@
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
-use crate::{entry_definition::ValidatingEntryType, error::{ZomeApiResult,ZomeApiError},globals::G_MEM_STACK};
+use crate::{entry_definition::ValidatingEntryType,globals::G_MEM_STACK};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
         zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
     },
-    entry::{entry_type::{AppEntryType, EntryType},AppEntryValue,Entry},
+    entry::{entry_type::{AppEntryType, EntryType},Entry},
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     json::JsonString,
     validation::{EntryValidationData}

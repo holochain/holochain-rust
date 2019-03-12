@@ -3,7 +3,7 @@
 //! agent actions between Holochain and Zomes.
 
 use crate::{
-    cas::content::Address, chain_header::ChainHeader, entry::{Entry,entry_type::{EntryType,AppEntryType},AppEntryValue}, error::HolochainError,
+    cas::content::Address, chain_header::ChainHeader, entry::{Entry,entry_type::{EntryType,AppEntryType}}, error::HolochainError,
     json::JsonString,
     link::link_data::LinkData
 };

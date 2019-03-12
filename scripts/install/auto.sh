@@ -8,5 +8,5 @@ then
  . `pwd`/scripts/install/osx.sh
 else
  echo "auto install script not supported on $OSTYPE";
- exit 1;
+ exit 0;
 fi

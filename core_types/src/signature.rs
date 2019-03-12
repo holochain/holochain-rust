@@ -23,7 +23,7 @@ impl Provenance {
 }
 /// Signature is a wrapper structure for a cryptographic signature
 /// it is stored as a string and can be validated as having been signed
-/// by the private key associated with a given public key
+/// by the private key associated with a given public key.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Hash, Eq)]
 pub struct Signature(String);
 

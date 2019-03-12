@@ -31,7 +31,6 @@ pub async fn author_entry<'a>(
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
-        entry_validation: entry_to_validation_data(context.clone(), entry,maybe_link_update_delete.clone())?,
     };
 
     // 2. Validate the entry

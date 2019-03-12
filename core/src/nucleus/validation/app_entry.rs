@@ -2,14 +2,14 @@ use crate::{
     context::Context,
     nucleus::{
         actions::run_validation_callback::run_validation_callback,
-        validation::{ValidationError, ValidationResult},
+        validation::{ValidationError, ValidationResult,entry_to_validation_data},
         CallbackFnCall,
     },
     workflows::get_entry_result::get_entry_result_workflow,
     network::entry_with_header::{EntryWithHeader,fetch_entry_with_header}
 };
 use holochain_core_types::{
-    cas::content::AddressableContent,
+    cas::content::{Address,AddressableContent},
     entry::{entry_type::AppEntryType, Entry},
     validation::ValidationData,
     error::HolochainError
@@ -43,20 +43,22 @@ pub async fn validate_app_entry(
             ValidationError::Fail("Could not get entry for link_update_delete".to_string())
         }))?;
         let latest = result.latest().ok_or(ValidationError::Fail("Could not find entry for link_update_delete".to_string()))?;
-        await!(run_call_back(context.clone(), entry, &zome_name, validation_data))
+        await!(run_call_back(context.clone(), entry, &zome_name, old_entry_header.link_update_delete()))
     }
     else 
     {
-        await!(run_call_back(context.clone(), entry, &zome_name, validation_data))
+        await!(run_call_back(context.clone(), entry, &zome_name,old_entry_header.link_update_delete()))
     }
 
     
 }
 
-async fn run_call_back(context:Arc<Context>,entry:Entry,zome_name:&String,validation_data: ValidationData)-> ValidationResult
+async fn run_call_back(context:Arc<Context>,entry:Entry,zome_name:&String,link_update_delete:Option<Address>)-> ValidationResult
 {
     let params = EntryValidationArgs {
-        validation_data: validation_data.clone().entry_validation,
+        validation_data: entry_to_validation_data(context.clone(),&entry,link_update_delete).map_err(|_|{
+            ValidationError::Fail("Could not get entry validation".to_string())
+        })?
     };
 
     let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);

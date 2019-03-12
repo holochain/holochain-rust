@@ -44,8 +44,7 @@ pub async fn remove_link_workflow<'a>(
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
-        lifecycle: EntryLifecycle::Meta,
-        entry_validation: entry_to_validation_data(context.clone(), &entry,None)?
+        lifecycle: EntryLifecycle::Meta
     };
 
     // 3. Validate the entry

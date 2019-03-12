@@ -72,9 +72,7 @@ pub struct ValidationData {
     pub package: ValidationPackage,
     /// In which lifecycle of the entry creation are we running
     /// this validation callback?
-    pub lifecycle: EntryLifecycle,
-    /// Does the entry get committed, modified or deleted?
-    pub entry_validation: EntryValidationData<Entry>,
+    pub lifecycle: EntryLifecycle
 }
 
 /*impl Default for ValidationData {

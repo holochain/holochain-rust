@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     nucleus::{
         actions::run_validation_callback::run_validation_callback,
-        validation::{ValidationError, ValidationResult},
+        validation::{ValidationError, ValidationResult,entry_to_validation_data},
         CallbackFnCall,
     },
     workflows::get_entry_result::get_entry_result_workflow,
@@ -50,7 +50,9 @@ pub async fn validate_remove_entry(entry: Entry,
             }))?;
             result.latest().ok_or(ValidationError::Fail("Could not find entry for deletion entry".to_string()))?;
             let params = EntryValidationArgs {
-            validation_data: validation_data.clone().entry_validation,
+            validation_data: entry_to_validation_data(context.clone(),&entry,None).map_err(|_|{
+            ValidationError::Fail("Could not get entry validation".to_string())
+        })?
             };
             let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
             await!(run_validation_callback(entry.address(), call, context))

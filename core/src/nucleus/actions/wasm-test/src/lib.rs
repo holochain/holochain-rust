@@ -17,8 +17,7 @@ use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
     error::HolochainError,
     json::{JsonString},
-    validation::EntryValidationData,
-    cas::content::AddressableContent
+    validation::Validation
 };
 
 
@@ -31,6 +30,8 @@ struct TestEntryType {
     stuff: String,
 }
 
+
+
 define_zome! {
     entries: [
         entry!(
@@ -42,13 +43,11 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: | validation_data: hdk::EntryValidationData| {
+            validation: | validation_data: hdk::Validation<TestEntryType>| {
                  match validation_data
                  {
-                   EntryValidationData::Create(entry) =>
+                   Validation::Create(test_entry) =>
                    {
-                        
-                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }
@@ -68,13 +67,12 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |validation_data: hdk::EntryValidationData| {
+            validation: |validation_data: hdk::Validation<TestEntryType>| {
                 match validation_data
                 {
-                   EntryValidationData::Create(entry) =>
+                   Validation::Create(test_entry) =>
                    {
                         
-                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }
@@ -95,13 +93,12 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainEntries
             },
 
-            validation: |validation_data: hdk::EntryValidationData| {
+            validation: |validation_data: hdk::Validation<TestEntryType>| {
                  match validation_data
                 {
-                   EntryValidationData::Create(entry) =>
+                   Validation::Create(test_entry) =>
                    {
                         
-                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }
@@ -121,13 +118,12 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainHeaders
             },
 
-            validation: |validation_data: hdk::EntryValidationData| {
+            validation: |validation_data: hdk::Validation<TestEntryType>| {
                  match validation_data
                 {
-                   EntryValidationData::Create(entry) =>
+                   Validation::Create(test_entry) =>
                    {
                         
-                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }
@@ -147,13 +143,12 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: | validation_data: hdk::EntryValidationData| {
+            validation: | validation_data: hdk::Validation<TestEntryType>| {
                  match validation_data
                 {
-                   EntryValidationData::Create(entry) =>
+                   Validation::Create(test_entry) =>
                    {
                         
-                        let test_entry = hdk::utils::get_as_type::<TestEntryType>(entry.address())?;
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }

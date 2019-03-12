@@ -34,7 +34,7 @@ use holochain_wasm_utils::{
         json::{JsonString,RawString},
     },
 };
-use holochain_wasm_utils::holochain_core_types::{validation::{LinkValidationData,EntryValidationData},error::RibosomeEncodingBits};
+use holochain_wasm_utils::holochain_core_types::{validation::{LinkValidationData,Validation},error::RibosomeEncodingBits};
 use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
@@ -452,19 +452,18 @@ define_zome! {
             name: "testEntryType",
             description: "asdfda",
             sharing: Sharing::Public,
-            native_type: TestEntryType,
 
             validation_package: || {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |valida: hdk::EntryValidationData| {
+            validation: |valida: hdk::Validation<TestEntryType>| {
                 match valida
                 {
-                    EntryValidationData::Create(entry) => 
+                    Validation::Create(test_entry) => 
                     {
-                        /*(test_entry.stuff != "FAIL").ok_or_else(|| "FAIL content is not allowed".to_string())*/
-                        Ok(())
+                        (test_entry.stuff != "FAIL").ok_or_else(|| "FAIL content is not allowed".to_string())
+                   
                     },
                     _=> Ok(()),
 
@@ -490,14 +489,21 @@ define_zome! {
             name: "validation_package_tester",
             description: "asdfda",
             sharing: Sharing::Public,
-            native_type: TestEntryType,
-
             validation_package: || {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |validation_data: hdk::EntryValidationData| {
-                Err(serde_json::to_string(&validation_data).unwrap())
+            validation: |validation_data: hdk::Validation<TestEntryType>| {
+                match validation_data 
+                {
+                    Validation::Create(test_entry) => 
+                    {
+                        
+                        Err(serde_json::to_string(&test_entry).unwrap())
+                   
+                    },
+                _ => Ok(())
+                }                
             }
         ),
 
@@ -505,13 +511,12 @@ define_zome! {
             name: "link_validator",
             description: "asdfda",
             sharing: Sharing::Public,
-            native_type: TestEntryType,
 
             validation_package: || {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |validation_data: hdk::EntryValidationData| {
+            validation: |validation_data: hdk::Validation<TestEntryType>| {
                 Ok(())
             },
 

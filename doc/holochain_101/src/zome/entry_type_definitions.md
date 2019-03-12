@@ -265,13 +265,12 @@ fn post_definition() -> ValidatingEntryType {
         name: "post",
         description: "A blog post entry which has an author",
         sharing: Sharing::Public,
-        native_type: Post,
 
         validation_package: || {
             hdk::ValidationPackageDefinition::Entry
         },
 
-        validation: |_post: Post, _validation_data: hdk::EntryValidationData| {
+        validation: |_post: Post, _validation_data: Validation<Post>| {
             Ok(())
         }
     )

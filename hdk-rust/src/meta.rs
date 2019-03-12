@@ -3,16 +3,18 @@
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
-use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
+use crate::{entry_definition::ValidatingEntryType, utils::get_as_type,error::ZomeApiResult,globals::G_MEM_STACK};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
         zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
     },
-    entry::entry_type::{AppEntryType, EntryType},
+    entry::{entry_type::{AppEntryType, EntryType},AppEntryValue},
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     json::JsonString,
-    validation::EntryValidationData
+    validation::{EntryValidationData,Validation},
+    cas::content::AddressableContent
+ 
 };
 use holochain_wasm_utils::{
     api_serialization::validation::{
@@ -152,9 +154,32 @@ pub fn entry_validation_to_app_entry_type(entry_validation : EntryValidationData
         EntryValidationData::Modify(latest,_) =>{
             Ok(EntryType::App(AppEntryType::try_from(latest.entry_type())?))
         }
-        EntryValidationData::Link(entry,_) => Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?))
     }
 }
+
+pub fn transform_entry_validation_to_native_validation<T: TryFrom<AppEntryValue>>(entry_validation : EntryValidationData) -> ZomeApiResult<Validation<T>> 
+{
+    match entry_validation
+    {
+        EntryValidationData::Create(entry) => {
+            let native_type = get_as_type::<T>(entry.address())?;
+            Ok(Validation::Create(native_type))
+        },
+        EntryValidationData::Modify(latest,entry) =>
+        {
+            let latest_native = get_as_type::<T>(latest.address())?;
+            let current_native = get_as_type::<T>(entry.address())?;
+            Ok(Validation::Modify(latest_native,current_native))
+        },
+        EntryValidationData::Delete(deletion_entry,entry_to_delete) =>
+        {
+            let native_entry_to_delete = get_as_type::<T>(entry_to_delete.address())?;
+            Ok(Validation::Delete(deletion_entry.clone(),native_entry_to_delete))
+        }
+    }
+}
+
+
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_link(
@@ -363,7 +388,7 @@ pub mod tests {
                 ValidationPackageDefinition::Entry
             },
 
-            validation: |_validation_data: hdk::EntryValidationData| {
+            validation: |_validation_data: hdk::Validation<Post>| {
                 Ok(())
             }
 

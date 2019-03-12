@@ -10,6 +10,8 @@ use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 
 
 
+
+
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 
 pub type Validator = Box<FnMut(EntryValidationData) -> Result<(), String> + Sync>;
@@ -162,16 +164,18 @@ pub struct ValidatingLinkDefinition {
 /// # }
 /// ```
 
+
+
 #[macro_export]
 macro_rules! entry {
     (
         name: $name:expr,
         description: $description:expr,
         sharing: $sharing:expr,
-        $(native_type: $native_type:ty,)*
+       // $(native_type: $native_type:ty,)*
 
         validation_package: || $package_creator:expr,
-        validation: | $validation_data:ident : hdk::EntryValidationData | $entry_validation:expr
+        validation: | $validation_data:ident : hdk::Validation<$native_type:ty> | $entry_validation:expr
 
         $(
             ,
@@ -214,8 +218,9 @@ macro_rules! entry {
             });
 
             let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData| {
+                let $validation_data = hdk::meta::transform_entry_validation_to_native_validation::<$native_type>(validation_data.clone())?;
                 let e_type = hdk::meta::entry_validation_to_app_entry_type(validation_data.clone())?;
-                let $validation_data = validation_data;
+                //let $validation_data = validation_data;
                 match e_type {
                     hdk::holochain_core_types::entry::entry_type::EntryType::App(app_entry_value) => {
                         $entry_validation

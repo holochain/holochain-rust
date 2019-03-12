@@ -46,8 +46,14 @@ pub enum EntryValidationData
 {
     Create(Entry),
     Modify(Entry,Entry),
-    Delete(Entry,Entry),
-    Link(Entry,LinkData)
+    Delete(Entry,Entry)
+}
+
+pub enum Validation<T>
+{
+    Create(T),
+    Modify(T,T),
+    Delete(Entry,T)
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]

@@ -67,21 +67,8 @@ impl TryFrom<EntryValidationData<Entry>> for EntryType {
     }
 }
 
-fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(entry : Entry) -> Result<T,HolochainError>
-{
-    match entry 
-    {
-        Entry::App(_, entry_value) => T::try_from(entry_value.to_owned()).map_err(|_| {
-            HolochainError::ErrorGeneric(
-                "Could not convert get_links result to requested type".to_string(),
-            )
-        }),
-        _ => Err(HolochainError::ErrorGeneric(
-            "get_links did not return an app entry".to_string(),
-        )),
-    }
-    
-}
+
+
 
 
 #[derive(Clone, Serialize, Deserialize, Debug)]

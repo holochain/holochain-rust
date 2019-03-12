@@ -3,11 +3,12 @@
 
 use holochain_core_types::{
     dna::entry_types::EntryTypeDef,
-    entry::{entry_type::EntryType,Entry},
+    entry::{entry_type::EntryType,Entry,AppEntryValue},
     validation::{ValidationPackageDefinition,EntryValidationData,LinkValidationData},
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
-
+use crate::error::{ZomeApiResult,ZomeApiError};
+use std::convert::TryFrom;
 
 
 
@@ -217,8 +218,8 @@ macro_rules! entry {
             });
 
             let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::entry::Entry>| {
-                let $validation_data = hdk::meta::transform_entry_validation_to_native_validation::<$native_type>(validation_data.clone())?;
-                let e_type = hdk::meta::entry_validation_to_app_entry_type(validation_data)?;
+                let $validation_data = hdk::entry_definition::entry_to_native_type::<$native_type>(validation_data.clone())?;
+                let e_type = hdk::meta::try_from::<EntryType>(validation_data)?;
                 //let $validation_data = validation_data;
                 match e_type {
                     hdk::holochain_core_types::entry::entry_type::EntryType::App(app_entry_value) => {
@@ -351,4 +352,43 @@ macro_rules! from {
             validation: |  $validation_data : hdk::LinkValidationData | $link_validation
         )
     )
+}
+
+//could not turn this to try_from
+pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(entry_validation : EntryValidationData<Entry>) -> ZomeApiResult<EntryValidationData<T>> 
+{
+    match entry_validation
+    {
+        EntryValidationData::Create(entry) => {
+            let native_type = convert_entry_validation_to_native::<T>(entry)?;
+            Ok(EntryValidationData::Create(native_type))
+        },
+        EntryValidationData::Modify(latest,entry) =>
+        {
+            let latest_native = convert_entry_validation_to_native::<T>(latest)?;
+            let current_native = convert_entry_validation_to_native::<T>(entry)?;
+            Ok(EntryValidationData::Modify(latest_native,current_native))
+        },
+        EntryValidationData::Delete(deletion_entry,entry_to_delete) =>
+        {
+            let native_entry_to_delete = convert_entry_validation_to_native::<T>(entry_to_delete)?;
+            Ok(EntryValidationData::Delete(deletion_entry.clone(),native_entry_to_delete))
+        }
+    }
+}
+
+fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(entry : Entry) -> ZomeApiResult<T>
+{
+    match entry 
+    {
+        Entry::App(_, entry_value) => T::try_from(entry_value.to_owned()).map_err(|_| {
+            ZomeApiError::Internal(
+                "Could not convert get_links result to requested type".to_string(),
+            )
+        }),
+        _ => Err(ZomeApiError::Internal(
+            "get_links did not return an app entry".to_string(),
+        )),
+    }
+    
 }

@@ -155,43 +155,8 @@ pub fn entry_validation_to_app_entry_type(entry_validation : EntryValidationData
     }
 }
 
-pub fn transform_entry_validation_to_native_validation<T: TryFrom<AppEntryValue> + Clone>(entry_validation : EntryValidationData<Entry>) -> ZomeApiResult<EntryValidationData<T>> 
-{
-    match entry_validation
-    {
-        EntryValidationData::Create(entry) => {
-            let native_type = convert_entry_validation_to_native::<T>(entry)?;
-            Ok(EntryValidationData::Create(native_type))
-        },
-        EntryValidationData::Modify(latest,entry) =>
-        {
-            let latest_native = convert_entry_validation_to_native::<T>(latest)?;
-            let current_native = convert_entry_validation_to_native::<T>(entry)?;
-            Ok(EntryValidationData::Modify(latest_native,current_native))
-        },
-        EntryValidationData::Delete(deletion_entry,entry_to_delete) =>
-        {
-            let native_entry_to_delete = convert_entry_validation_to_native::<T>(entry_to_delete)?;
-            Ok(EntryValidationData::Delete(deletion_entry.clone(),native_entry_to_delete))
-        }
-    }
-}
 
-fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(entry : Entry) -> ZomeApiResult<T>
-{
-    match entry 
-    {
-        Entry::App(_, entry_value) => T::try_from(entry_value.to_owned()).map_err(|_| {
-            ZomeApiError::Internal(
-                "Could not convert get_links result to requested type".to_string(),
-            )
-        }),
-        _ => Err(ZomeApiError::Internal(
-            "get_links did not return an app entry".to_string(),
-        )),
-    }
-    
-}
+//could not implement a try_from with this for some strange reason
 
 
 

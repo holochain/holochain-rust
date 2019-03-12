@@ -1,4 +1,4 @@
-/// Macro for transforming a type check into a predicate
+/// Check if JsonProtocol is of type $p
 macro_rules! one_is {
     ($p:pat) => {
         |d| {
@@ -10,15 +10,10 @@ macro_rules! one_is {
     };
 }
 
+/// Check if JsonProtocol is of type $p and meets conditions set in $code
 macro_rules! one_is_where {
     ($p:pat, $code:tt) => {
-        |d| {
-            return if let $p = d {
-                $code
-            } else {
-                false
-            }
-        }
+        move |d| return if let $p = d { $code } else { false }
     };
 }
 

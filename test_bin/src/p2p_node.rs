@@ -165,17 +165,6 @@ impl P2pNode {
         }
         None
     }
-
-//    pub fn has_or_wait(
-//        &self,
-//        predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
-//    ) -> Option<JsonProtocol> {
-//        let mut result = self.find_recv_msg(0, predicate.clone());
-//        if result.is_none() {
-//            result = self.wait(predicate);
-//        }
-//        result
-//    }
 }
 
 // Publish, hold

@@ -136,23 +136,26 @@ pub fn setup_three_nodes(
         // Make sure Peers are connected
 
         let result_b = billy
-            .wait(Box::new(one_is_where!(JsonProtocol::PeerConnected(data), {
-data.agent_id == CAMILLE_AGENT_ID
-            })))
+            .wait(Box::new(one_is_where!(
+                JsonProtocol::PeerConnected(data),
+                { data.agent_id == CAMILLE_AGENT_ID }
+            )))
             .unwrap();
         println!("got connect result on Billy: {:?}", result_b);
 
         let result_c = camille
-            .wait(Box::new(one_is_where!(JsonProtocol::PeerConnected(data), {
-            data.agent_id == BILLY_AGENT_ID
-            })))
+            .wait(Box::new(one_is_where!(
+                JsonProtocol::PeerConnected(data),
+                { data.agent_id == BILLY_AGENT_ID }
+            )))
             .unwrap();
         println!("got connect result on Camille: {:?}", result_c);
 
         let result_a = alex
-            .wait(Box::new(one_is_where!(JsonProtocol::PeerConnected(data), {
-                data.agent_id == CAMILLE_AGENT_ID
-            })))
+            .wait(Box::new(one_is_where!(
+                JsonProtocol::PeerConnected(data),
+                { data.agent_id == CAMILLE_AGENT_ID }
+            )))
             .unwrap();
         println!("got connect result on Alex: {:?}", result_a);
     }
@@ -208,43 +211,58 @@ pub fn hold_and_publish_test(
 
     // Camille requests that entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());
-//    // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-//    let has_received = alex.wait_HandleFetchEntry_and_reply();
-//    if !has_received {
-//        let has_received = billy.wait_HandleFetchEntry_and_reply();
-//        if !has_received {
-//            let _has_received = camille.wait_HandleFetchEntry_and_reply();
-//        }
-//    }
+    // Alex or billy or Camille might receive HandleFetchEntry request as this moment
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    if !has_received {
+        let has_received = billy.wait_HandleFetchEntry_and_reply();
+        if !has_received {
+            let _has_received = camille.wait_HandleFetchEntry_and_reply();
+        }
+    }
 
     // Camille should receive the data
-    let result = camille
-        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
-        .unwrap();
-    log_i!("got result 1: {:?}", result);
-    let entry_data = unwrap_to!(result => JsonProtocol::FetchEntryResult);
-    assert_eq!(entry_data.request_id, fetch_entry.request_id);
+    let req_id = fetch_entry.request_id.clone();
+    let mut result = camille.find_recv_msg(0, Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+            entry_data.request_id == req_id
+        })));
+    if result.is_none() {
+        result = camille
+            .wait(Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+            entry_data.request_id == fetch_entry.request_id
+        })))
+    }
+
+    let json = result.unwrap();
+    log_i!("got result 1: {:?}", json);
+    let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);
     assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(entry_data.entry_content, ENTRY_CONTENT_1.clone());
 
     // Camille requests that entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_2.clone());
     // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-//    let has_received = alex.wait_HandleFetchEntry_and_reply();
-//    if !has_received {
-//        let has_received = billy.wait_HandleFetchEntry_and_reply();
-//        if !has_received {
-//            let _has_received = camille.wait_HandleFetchEntry_and_reply();
-//        }
-//    }
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    if !has_received {
+        let has_received = billy.wait_HandleFetchEntry_and_reply();
+        if !has_received {
+            let _has_received = camille.wait_HandleFetchEntry_and_reply();
+        }
+    }
 
     // Camille should receive the data
-    let result = camille
-        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
-        .unwrap();
-    log_i!("got result 2: {:?}", result);
-    let entry_data = unwrap_to!(result => JsonProtocol::FetchEntryResult);
-    assert_eq!(entry_data.request_id, fetch_entry.request_id);
+    let req_id = fetch_entry.request_id.clone();
+    let mut result = camille.find_recv_msg(0, Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+            entry_data.request_id == req_id
+        })));
+    if result.is_none() {
+        result = camille
+            .wait(Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+            entry_data.request_id == fetch_entry.request_id
+        })))
+    }
+    let json = result.unwrap();
+    log_i!("got result 2: {:?}", json);
+    let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);
     assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_2.clone());
     assert_eq!(entry_data.entry_content, ENTRY_CONTENT_2.clone());
 

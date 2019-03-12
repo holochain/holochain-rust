@@ -61,16 +61,18 @@ pub fn publish_entry_list_test(
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))), 2000);
     // billy asks for reported published data.
     billy.request_entry(ENTRY_ADDRESS_1.clone());
-//    let has_received = alex.wait_HandleFetchEntry_and_reply();
-//    if !has_received {
-//        let has_received = billy.wait_HandleFetchEntry_and_reply();
-//        assert!(has_received);
-//    }
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    if !has_received {
+        let _has_received = billy.wait_HandleFetchEntry_and_reply();
+    }
     // Billy should receive the entry data
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
-        .unwrap();
-    log_i!("got result: {:?}", result);
+    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchEntryResult(_))));
+    if result.is_none() {
+        result = billy
+            .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+    }
+    let json = result.unwrap();
+    log_i!("got result: {:?}", json);
     // Done
     Ok(())
 }
@@ -101,16 +103,18 @@ pub fn publish_meta_list_test(
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
     // billy asks for reported published data.
     billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
-//    // Alex or billy should receive HandleFetchMeta request
-//    let has_received = alex.wait_HandleFetchMeta_and_reply();
-//    if !has_received {
-//        billy.wait_HandleFetchMeta_and_reply();
-//    }
+    // Alex or billy should receive HandleFetchMeta request
+    let has_received = alex.wait_HandleFetchMeta_and_reply();
+    if !has_received {
+        let _has_received = billy.wait_HandleFetchMeta_and_reply();
+    }
     // Billy should receive the data
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
-        .unwrap();
-    log_i!("got result: {:?}", result);
+    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+    if result.is_none() {
+        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+    }
+    let json = result.unwrap();
+    log_i!("got result: {:?}", json);
     // Done
     Ok(())
 }
@@ -136,19 +140,20 @@ pub fn hold_meta_list_test(
         // billy might receive HandleStoreMeta
         let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
     }
-    std::thread::sleep(std::time::Duration::from_millis(100));
     // Have billy request that metadata
     billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
-//    // Alex might receive HandleFetchMeta request as this moment
-//    let has_received = alex.wait_HandleFetchMeta_and_reply();
-//    if !has_received {
-//        let _has_received = billy.wait_HandleFetchMeta_and_reply();
-//    }
+    // Alex might receive HandleFetchMeta request as this moment
+    let has_received = alex.wait_HandleFetchMeta_and_reply();
+    if !has_received {
+        let _has_received = billy.wait_HandleFetchMeta_and_reply();
+    }
     // Billy should receive the data
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
-        .unwrap();
-    log_i!("got result: {:?}", result);
+    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+    if result.is_none() {
+        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+    }
+    let json = result.unwrap();
+    log_i!("got result: {:?}", json);
     // Done
     Ok(())
 }
@@ -170,16 +175,18 @@ pub fn double_publish_entry_list_test(
     // billy asks for reported published data.
     billy.request_entry(ENTRY_ADDRESS_1.clone());
     // Alex or Billy receives and replies to a HandleFetchEntry
-//    let has_received = alex.wait_HandleFetchEntry_and_reply();
-//    if !has_received {
-//        let has_received = billy.wait_HandleFetchEntry_and_reply();
-//        assert!(has_received);
-//    }
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    if !has_received {
+        let _has_received = billy.wait_HandleFetchEntry_and_reply();
+    }
     // Billy should receive the entry data back
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
-        .unwrap();
-    log_i!("got result: {:?}", result);
+    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchEntryResult(_))));
+    if result.is_none() {
+        result = billy
+            .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+    }
+    let json = result.unwrap();
+    log_i!("got result: {:?}", json);
     // Done
     Ok(())
 }
@@ -211,16 +218,18 @@ pub fn double_publish_meta_list_test(
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
     // billy asks for reported published data.
     billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
-//    // Alex or billy should receive HandleFetchMeta request
-//    let has_received = alex.wait_HandleFetchMeta_and_reply();
-//    if !has_received {
-//        billy.wait_HandleFetchMeta_and_reply();
-//    }
+    // Alex or billy should receive HandleFetchMeta request
+    let has_received = alex.wait_HandleFetchMeta_and_reply();
+    if !has_received {
+        let _has_received = billy.wait_HandleFetchMeta_and_reply();
+    }
     // Billy should receive the data
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
-        .unwrap();
-    log_i!("got result: {:?}", result);
+    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+    if result.is_none() {
+        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+    }
+    let json = result.unwrap();
+    log_i!("got result: {:?}", json);
     // Done
     Ok(())
 }
@@ -305,17 +314,19 @@ pub fn many_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
 
     // billy asks for reported published data.
     let request_meta_2 = billy.request_meta(ENTRY_ADDRESS_1.clone(), META_CRUD_ATTRIBUTE.into());
-//    // Alex or billy should receive HandleFetchMeta request
-//    let has_received = alex.wait_HandleFetchMeta_and_reply();
-//    if !has_received {
-//        billy.wait_HandleFetchMeta_and_reply();
-//    }
+    // Alex or billy should receive HandleFetchMeta request
+    let has_received = alex.wait_HandleFetchMeta_and_reply();
+    if !has_received {
+        let _has_received = billy.wait_HandleFetchMeta_and_reply();
+    }
     // Billy should receive the data
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
-        .unwrap();
-    log_i!("got result 2: {:?}", result);
-    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+    let mut result = billy.find_recv_msg(1, Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+    if result.is_none() {
+        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+    }
+    let json = result.unwrap();
+    log_i!("got result 2: {:?}", json);
+    let meta_data = unwrap_to!(json => JsonProtocol::FetchMetaResult);
     assert_eq!(meta_data.request_id, request_meta_2.request_id);
     assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(meta_data.attribute, META_CRUD_ATTRIBUTE.clone());

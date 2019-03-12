@@ -262,10 +262,7 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         JsonProtocol::HandleSendMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!(
-        "{\"ry\":\"hello\"}".to_string(),
-        msg.content.to_string()
-    );
+    assert_eq!("{\"ry\":\"hello\"}".to_string(), msg.content.to_string());
 
     // Send a message back from billy to alex
     billy.send_reponse(
@@ -574,10 +571,7 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
         JsonProtocol::HandleSendMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!(
-        "{\"ry\":\"hello\"}".to_string(),
-        msg.content.to_string()
-    );
+    assert_eq!("{\"ry\":\"hello\"}".to_string(), msg.content.to_string());
 
     // Send a message back from billy to alex
     billy.send_reponse(

@@ -199,11 +199,10 @@ impl Display for JsonString {
 ///     }
 /// }
 pub fn default_to_json<V: Serialize + Debug>(v: V) -> JsonString {
-    match serde_json::to_string(&v) {
-        Ok(s) => Ok(JsonString::from(s)),
-        Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-    }
-    .expect(&format!("could not Jsonify: {:?}", v))
+    serde_json::to_string(&v)
+        .map(JsonString::from)
+        .map_err(|e| HolochainError::SerializationError(e.to_string()))
+        .unwrap_or_else(|_| panic!("could not Jsonify: {:?}", v))
 }
 
 /// if all you want to do is implement the default behaviour then use #[derive(DefaultJson)]
@@ -217,10 +216,8 @@ pub fn default_to_json<V: Serialize + Debug>(v: V) -> JsonString {
 pub fn default_try_from_json<D: DeserializeOwned>(
     json_string: JsonString,
 ) -> Result<D, HolochainError> {
-    match serde_json::from_str(&String::from(&json_string)) {
-        Ok(d) => Ok(d),
-        Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-    }
+    serde_json::from_str(&String::from(&json_string))
+        .map_err(|e| HolochainError::SerializationError(e.to_string()))
 }
 
 pub trait DefaultJson:

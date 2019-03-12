@@ -414,7 +414,7 @@ impl InMemoryServer {
             error_info: json!(format!("DNA not tracked by agent")),
         };
         self.log.e(&format!(
-            "#### '{}' check failed for {}.\n Sending failure {:?}",
+            "#### '{}' check failed for {}.\n\t Sending failure {:?}",
             self.name.clone(),
             cell_id,
             fail_msg.clone()

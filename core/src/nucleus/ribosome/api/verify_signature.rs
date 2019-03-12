@@ -13,7 +13,7 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
 
-    let _verify_signature_args = match VerifySignatureArgs::try_from(args_str.clone()) {
+    let verification_args = match VerifySignatureArgs::try_from(args_str.clone()) {
         Ok(verify_signature_input) => verify_signature_input,
         // Exit on error
         Err(_) => {
@@ -25,5 +25,13 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         }
     };
 
-    runtime.store_as_json_string(false)
+    let verification_result = context
+        .verify_signature(
+            verification_args.payload,
+            verification_args.signature.into(),
+            verification_args.pub_key,
+        )
+        .unwrap_or(false);
+
+    runtime.store_as_json_string(verification_result)
 }

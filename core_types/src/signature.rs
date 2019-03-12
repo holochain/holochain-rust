@@ -41,7 +41,7 @@ impl From<&'static str> for Signature {
 
 impl From<String> for Signature {
     fn from(s: String) -> Signature {
-        Signature(s.to_owned())
+        Signature(s)
     }
 }
 

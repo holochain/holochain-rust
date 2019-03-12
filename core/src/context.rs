@@ -21,8 +21,10 @@ use holochain_core_types::{
     eav::EntityAttributeValueStorage,
     entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
+    signature::Signature,
 };
 
+// use holochain_dpki::key_bundle::KeyBundle;
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_lite::JsonRpc;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -156,10 +158,7 @@ impl Context {
     }
 
     pub fn state(&self) -> Option<RwLockReadGuard<State>> {
-        match self.state {
-            None => None,
-            Some(ref s) => Some(s.read().unwrap()),
-        }
+        self.state.as_ref().map(|s| s.read().unwrap())
     }
 
     pub fn get_dna(&self) -> Option<Dna> {
@@ -276,6 +275,20 @@ impl Context {
         }
     }
 
+    pub fn verify_signature(
+        &self,
+        payload: String,
+        signature: Signature,
+        pub_key: String,
+    ) -> Result<bool, HolochainError> {
+        let mut message_data = SecBuf::with_insecure_from_string(payload.clone());
+        let mut signature_data = SecBuf::with_insecure_from_string(signature.into());
+
+        let res = holochain_dpki::utils::verify(pub_key, message_data, signature_data)?;
+
+        Ok(res)
+    }
+
     /// returns the public capability token (if any)
     pub fn get_public_token(&self) -> Option<Address> {
         self.state().and_then(|state| {
@@ -286,7 +299,7 @@ impl Context {
                 .agent()
                 .chain_store()
                 .iter_type(&Some(top), &EntryType::CapTokenGrant)
-                .nth(0)?
+                .next()?
                 .entry_address()
                 .to_owned();
 

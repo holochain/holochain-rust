@@ -337,7 +337,7 @@ impl TryFrom<&str> for Period {
 // Duratino.as_millis(), because its u128 return type are not supported by WASM.
 impl From<Period> for Timeout {
     fn from(p: Period) -> Self {
-        Timeout( if p.0.as_secs() as usize >= usize::max_value() / 1000 {
+        Timeout(if p.0.as_secs() as usize >= usize::max_value() / 1000 {
             // The # of seconds overflows the ms-capacity of a usize.  Eg. say a usize could only
             // contain 123,000 ms.; if the number of seconds was >= 123, then 123 * 1000 + 999 ==
             // 123,999 would overflow the capacity, while 122,999 wouldn't.
@@ -664,11 +664,7 @@ pub mod tests {
         // Canonicalization, incl. case insensitivity, long names, plurals
         vec![
             // Elide empty smaller timespans
-            (
-                "1 week",
-                Duration::new(1 * WK, 0),
-                "1w",
-            ),
+            ("1 week", Duration::new(1 * WK, 0), "1w"),
             // 1y == 364.25d
             (
                 "123w456ns",
@@ -682,7 +678,7 @@ pub mod tests {
             ),
             (
                 "2 years 18 Weeks 4 dy 12 hrs 0.000456 SEC",
-                Duration::new(123 * WK, 456_u32*1000),
+                Duration::new(123 * WK, 456_u32 * 1000),
                 "2y18w4d12h456us",
             ),
             // Truncation beyond ns precision
@@ -708,27 +704,27 @@ pub mod tests {
             (".000025s", Duration::new(0, 25000_u32), "25us"),
             (
                 "1y2w3d4h5m6s7ms8us9ns",
-                Duration::new(YR+2*WK+3*DY+4*HR+5*MN+6,7008009),
+                Duration::new(YR + 2 * WK + 3 * DY + 4 * HR + 5 * MN + 6, 7008009),
                 "1y2w3d4h5m6.007008009s",
             ),
             (
                 "1yr2wk3dy4hr5min6sec7msec8μsec9nsec",
-                Duration::new(YR+2*WK+3*DY+4*HR+5*MN+6,7008009),
+                Duration::new(YR + 2 * WK + 3 * DY + 4 * HR + 5 * MN + 6, 7008009),
                 "1y2w3d4h5m6.007008009s",
             ),
             (
                 "1year2week3day4hour5minute6second7msecond8usecond9nsecond",
-                Duration::new(YR+2*WK+3*DY+4*HR+5*MN+6,7008009),
+                Duration::new(YR + 2 * WK + 3 * DY + 4 * HR + 5 * MN + 6, 7008009),
                 "1y2w3d4h5m6.007008009s",
             ),
             (
                 "1years2weeks3days4hours5minutes6seconds7milliseconds8microseconds9nanoseconds",
-                Duration::new(YR+2*WK+3*DY+4*HR+5*MN+6,7008009),
+                Duration::new(YR + 2 * WK + 3 * DY + 4 * HR + 5 * MN + 6, 7008009),
                 "1y2w3d4h5m6.007008009s",
             ),
             (
                 "1 yrs 2 wks 3 dys 4 hrs 5 mins 6 secs 7 millis 8 micros 9 nanos ",
-                Duration::new(YR+2*WK+3*DY+4*HR+5*MN+6,7008009),
+                Duration::new(YR + 2 * WK + 3 * DY + 4 * HR + 5 * MN + 6, 7008009),
                 "1y2w3d4h5m6.007008009s",
             ),
         ]

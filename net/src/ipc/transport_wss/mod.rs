@@ -292,6 +292,7 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                 // This seems to be wrong. Messages shouldn't be drained.
                 let msgs: Vec<Vec<u8>> = info.send_queue.drain(..).collect();
                 for msg in msgs {
+                    // TODO: fix this line! if there is an error, all the remaining messages will be lost!
                     socket.write_message(tungstenite::Message::Binary(msg))?;
                 }
 

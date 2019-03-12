@@ -53,6 +53,7 @@ impl P2pNetwork {
         // Create NetConnectionThread with appropriate worker factory
         let connection = NetConnectionThread::new(handler, worker_factory, None)?;
         if let P2pBackendKind::IPC = p2p_config.backend_kind {
+            // TODO: fix this by handling initialization ordering properly
             sleep(Duration::from_millis(1000));
         }
         // Done

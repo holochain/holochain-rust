@@ -122,8 +122,6 @@ pub fn setup_three_nodes(
             assert_eq!(d.agent_id, ALEX_AGENT_ID);
         });
 
-        println!("\n\n\n\n");
-
         // Connect nodes between them
         println!("Connect  Camille to Billy ({})", node2_binding);
         camille.send(

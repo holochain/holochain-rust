@@ -180,11 +180,6 @@ impl P2pNode {
         self.authored_entry_store
             .insert(entry_address.clone(), entry_content.clone());
         if can_publish {
-            self.logger.t(&format!(
-                "> ({}) author_entry() entry_content = {:?}",
-                self.agent_id,
-                entry_content.clone(),
-            ));
             let msg_data = EntryData {
                 dna_address: self.dna_address.clone(),
                 provider_agent_id: self.agent_id.clone(),
@@ -349,11 +344,6 @@ impl P2pNode {
                     JsonProtocol::FailureResult(msg_data).into()
                 }
                 Some(data) => {
-                    self.logger.t(&format!(
-                        "> ({}) reply_to_HandleFetchEntry() sending data = {:?}",
-                        self.agent_id,
-                        data.clone(),
-                    ));
                     let msg_data = FetchEntryResultData {
                         request_id: request.request_id.clone(),
                         requester_agent_id: request.requester_agent_id.clone(),

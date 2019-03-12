@@ -101,6 +101,8 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       cargo: true
       directories:
           - node_modules
+  script:
+      - sh ./scripts/build_nodejs_conductor.sh
   # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
   before_deploy:
    # windows doesn't like absolute paths so set the working dir here
@@ -127,8 +129,6 @@ _windows_nodejs_conductor_template: &_windows_nodejs_conductor_template
     - yarn config set python python2.7
     - npm config set msvs_version 2015
     - yarn config set msvs_version 2015 --global
-  script:
-      - sh ./scripts/build_nodejs_conductor.sh
 # nodejs specific deployment templates stop here
 
 # holochain-clie deploy template

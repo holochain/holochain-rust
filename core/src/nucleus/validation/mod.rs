@@ -73,6 +73,7 @@ impl From<ValidationError> for HolochainError {
 /// main validation entry point and, like a workflow, stays high-level.
 pub async fn validate_entry(
     entry: Entry,
+    link : Option<Address>,
     validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> ValidationResult {
@@ -90,6 +91,7 @@ pub async fn validate_entry(
             app_entry_type.clone(),
             validation_data,
             context,
+            link
         )),
 
         EntryType::LinkAdd => await!(link_entry::validate_link_entry(

@@ -24,18 +24,17 @@ pub async fn validate_app_entry(
     app_entry_type: AppEntryType,
     validation_data: ValidationData,
     context: &Arc<Context>,
+    link : Option<Address>
 ) -> ValidationResult {
     let dna = context.get_dna().expect("Callback called without DNA set!");
-    let EntryWithHeader{entry ,header: old_entry_header} = fetch_entry_with_header(&entry.address(),&context).map_err(|_|{
-            ValidationError::Fail("Entry not found in dht chain".to_string())
-        })?;
+
     
     let zome_name = dna
         .get_zome_name_for_app_entry_type(&app_entry_type)
         .ok_or(ValidationError::NotImplemented)?;
-    if old_entry_header.link_update_delete().is_some()
+    if link.is_some()
     {
-        let expected_link_update = old_entry_header.link_update_delete().expect("Should unwrap link_update_delete with no problems");
+        let expected_link_update = link.clone().expect("Should unwrap link_update_delete with no problems");
         let entry_args = &GetEntryArgs {
         address: expected_link_update.clone(),
         options: Default::default()};
@@ -43,11 +42,11 @@ pub async fn validate_app_entry(
             ValidationError::Fail("Could not get entry for link_update_delete".to_string())
         }))?;
         let latest = result.latest().ok_or(ValidationError::Fail("Could not find entry for link_update_delete".to_string()))?;
-        await!(run_call_back(context.clone(), entry, &zome_name, old_entry_header.link_update_delete()))
+        await!(run_call_back(context.clone(), entry, &zome_name, link))
     }
     else 
     {
-        await!(run_call_back(context.clone(), entry, &zome_name,old_entry_header.link_update_delete()))
+        await!(run_call_back(context.clone(), entry, &zome_name,link))
     }
 
     

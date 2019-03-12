@@ -39,7 +39,7 @@ pub async fn hold_update_workflow<'a>(
 
 
     // 3. Validate the entry
-    await!(validate_entry(entry.clone(), validation_data, &context))?;
+    await!(validate_entry(entry.clone(), Some(link.clone()),validation_data, &context))?;
 
     // 3. If valid store the entry in the local DHT shard
     await!(update_entry(

@@ -38,7 +38,7 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: validating...",
         address
     ));
-    await!(validate_entry(entry.clone(), validation_data, &context))?;
+    await!(validate_entry(entry.clone(), maybe_link_update_delete.clone(),validation_data, &context))?;
     context.log(format!("Authoring entry {}: is valid!", address));
 
     // 3. Commit the entry

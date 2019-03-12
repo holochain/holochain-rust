@@ -33,7 +33,7 @@ pub async fn hold_remove_workflow<'a>(
     };
 
     // 3. Validate the entry
-    await!(validate_entry(entry.clone(), validation_data, &context))?;
+    await!(validate_entry(entry.clone(),None, validation_data, &context))?;
 
     let deletion_entry = unwrap_to!(entry => Entry::Deletion);
 

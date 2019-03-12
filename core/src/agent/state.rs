@@ -12,7 +12,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
     json::*,
-    signature::Signature,
+    signature::{Provenance, Signature},
     time::Iso8601,
 };
 use holochain_wasm_utils::api_serialization::get_entry::*;
@@ -43,12 +43,12 @@ impl AgentState {
 
     pub fn new_with_top_chain_header(
         chain_store: ChainStore,
-        chain_header: ChainHeader,
+        chain_header: Option<ChainHeader>,
     ) -> AgentState {
         AgentState {
             actions: HashMap::new(),
             chain_store,
-            top_chain_header: Some(chain_header),
+            top_chain_header: chain_header,
         }
     }
 
@@ -106,11 +106,11 @@ impl AgentState {
 
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct AgentStateSnapshot {
-    top_chain_header: ChainHeader,
+    top_chain_header: Option<ChainHeader>,
 }
 
 impl AgentStateSnapshot {
-    pub fn new(chain_header: ChainHeader) -> AgentStateSnapshot {
+    pub fn new(chain_header: Option<ChainHeader>) -> AgentStateSnapshot {
         AgentStateSnapshot {
             top_chain_header: chain_header,
         }
@@ -118,8 +118,8 @@ impl AgentStateSnapshot {
     pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
         serde_json::from_str(header_str)
     }
-    pub fn top_chain_header(&self) -> &ChainHeader {
-        &self.top_chain_header
+    pub fn top_chain_header(&self) -> Option<&ChainHeader> {
+        self.top_chain_header.as_ref()
     }
 }
 
@@ -128,9 +128,7 @@ impl TryFrom<&State> for AgentStateSnapshot {
 
     fn try_from(state: &State) -> Result<Self, Self::Error> {
         let agent = &*(state.agent());
-        let top_chain = agent
-            .top_chain_header()
-            .ok_or_else(|| HolochainError::ErrorGeneric("Could not serialize".to_string()))?;
+        let top_chain = agent.top_chain_header();
         Ok(AgentStateSnapshot::new(top_chain))
     }
 }
@@ -187,7 +185,7 @@ pub fn create_new_chain_header(
     Ok(ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
-        &vec![(agent_address, signature)],
+        &vec![Provenance::new(agent_address, signature)],
         &agent_state
             .top_chain_header
             .clone()
@@ -379,7 +377,7 @@ pub mod tests {
     #[test]
     pub fn serialize_round_trip_agent_state() {
         let header = test_chain_header();
-        let agent_snap = AgentStateSnapshot::new(header);
+        let agent_snap = AgentStateSnapshot::new(Some(header));
         let json = serde_json::to_string(&agent_snap).unwrap();
         let agent_from_json = AgentStateSnapshot::from_json_str(&json).unwrap();
         assert_eq!(agent_snap.address(), agent_from_json.address());
@@ -419,7 +417,7 @@ pub mod tests {
             ChainHeader::new(
                 &test_entry().entry_type(),
                 &test_entry().address(),
-                &[(
+                &[Provenance::new(
                     context.agent_id.address(),
                     Signature::from(mock_signer(
                         test_entry().address().to_string(),

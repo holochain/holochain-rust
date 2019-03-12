@@ -1,19 +1,22 @@
 # Holochain-rust
 
-  <a href="http://holochain.org"><img align="right" width="200" src="https://github.com/holochain/org/blob/master/logo/holochain_logo.png?raw=true" alt="holochain logo" /></a>
+<a href="http://holochain.org"><img align="right" width="200" src="https://github.com/holochain/org/blob/master/logo/holochain_logo.png?raw=true" alt="holochain logo" /></a>
 
 [![Project](https://img.shields.io/badge/project-holochain-blue.svg?style=flat-square)](http://holochain.org/)
-[![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.net)
+[![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.org)
 
 [![Twitter Follow](https://img.shields.io/twitter/follow/holochain.svg?style=social&label=Follow)](https://twitter.com/holochain)
 
-[![Travis](https://img.shields.io/travis/holochain/holochain-rust/develop.svg)](https://travis-ci.org/holochain/holochain-rust/branches)
-[![Codecov](https://img.shields.io/codecov/c/github/holochain/holochain-rust.svg)](https://codecov.io/gh/holochain/holochain-rust/branch/develop)
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
+Travis: [![Build Status](https://travis-ci.com/holochain/holochain-rust.svg?branch=master)](https://travis-ci.com/holochain/holochain-rust)
+Circle CI: [![CircleCI](https://circleci.com/gh/holochain/holochain-rust.svg?style=svg)](https://circleci.com/gh/holochain/holochain-rust)
+Codecov: [![Codecov](https://img.shields.io/codecov/c/github/holochain/holochain-rust.svg)](https://codecov.io/gh/holochain/holochain-rust/branch/master)
+License: [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-This is the home of the Holochain Rust libraries, being rewritten from [Go](https://github.com/holochain/holochain-proto) into Rust, and extended.
+This is the home of the Holochain Rust libraries.
 
-**Code Status:** Rust version is currently Pre-Alpha. Not for production use. The code has not yet undergone a security audit. We expect to destructively restructure code APIs and data chains until Beta. Prototype go version was unveiled at our first hackathon (March 2017), with go version Alpha 0 released October 2017.  Alpha 1 was released May 2018.
+This code is loosely based on the [Golang prototype](https://github.com/holochain/holochain-proto).
+
+**Code Status:** Rust version is alpha. Not for production use. The code is guaranteed NOT secure. We will aggressively restructure code APIs and data chains until Beta.
 
 There are [4 developer preview releases](https://github.com/holochain/holochain-rust/releases) of the Rust version.
 <br/>
@@ -34,10 +37,10 @@ This `holochain-rust` repository implements a number of distinct yet overlapping
 1. A sample application that we use to demonstrate the current functionality and drive development: [*app-spec*](#app-spec-driven-development)
 
 ### Core
-The [core](./core) folder contains the code that implements the core functionality of Holochain. It is the aspect that takes in an application DNA, and an agent, and securely runs peer-to-peer applications by exposing the API functions to Zomes. It draws on other top level definitions and functions such as [dna](./dna), [cas_implementations](./cas_implementations), [agent](./agent), and [core_types](./core_types).
+The [core](./core) folder contains the code that implements the core functionality of Holochain. It is the aspect that takes in an application DNA, and an agent, and "securely" (NOT secure during alpha) runs peer-to-peer applications by exposing the API functions to Zomes. It draws on other top level definitions and functions such as [dna](./dna), [cas_implementations](./cas_implementations), [agent](./agent), and [core_types](./core_types).
 
 ### HDK Rust
-Holochain applications have been designed to consist at the low-level of WebAssembly (WASM) running in a virtual machine environment. However, most languages will be easiest to use with some stub code to connect into the WASM runtime environment, because of some constraints with WASM. That is the main reason why a "Developer Kit" for a language exists. It is a library, and a syntax, for writing Zome code in that language.
+Holochain applications have been designed to consist at the low-level of WebAssembly (WASM) running in a virtual machine environment. Most languages will be easiest to use with some stub code to connect into the WASM runtime environment due to the nature of WASM. That is the main reason why a "Developer Kit" for a language exists. It is a library, and a syntax, for writing Zome code in that language.
 
 [`hdk-rust`](./hdk-rust) is a solid reference implementation of this, that enables Zomes to be written in the Rust language (the same, somewhat confusingly, as Holochain Core).
 
@@ -84,9 +87,9 @@ There are two components needed currently to run Holochain applications, the cor
 
 There are three approaches to building and testing Holochain: using `make`, `docker` or `nix`:
 
-### Make (ubuntu and macOS only)
+### Make (ubuntu, debian and macOS only)
 
-For Ubuntu/OSX you can install the prerequisites with :
+For Ubuntu/OSX you can install the prerequisites with:
 
 ``` shell
 cd path/to/holochain
@@ -94,6 +97,7 @@ cd path/to/holochain
 ```
 
 Note: the script will install [homebrew](https://brew.sh/) on mac os x
+Note: the script will install dependencies with `apt-get` on linux
 
 After the install script completes successfully, you can start local development using `make`
 
@@ -127,13 +131,16 @@ The nightly version we test/develop against can always be found in the .travis.y
 
 ### NixOS
 
-If you have `nix-shell` then feel free to use our `.nix` files.
+If you have `nix-shell` then feel free to use our `shell.nix` file.
 
-`shell.core.nix` and `shell.tools.nix` are split to mirror the versioning behaviour in the makefile.
+Not everything in the Makefile is implemented in nix, and a lot of things don't need to be.
+Notably the cross-platform and defensive installation of dependencies is not included.
 
-Not everything in the Makefile is implemented in nix, and a lot of things don't need to be. Notably the cross-platform and defensive installation of dependencies is not included.
+The nix shell contains a suite of handy bash scripts that don't exist in the Makefile.
 
 If you have a nix friendly system, this is the fastest way to develop and test.
+
+The standard docker environment is an alpine + NixOS build.
 
 #### Running tests
 
@@ -165,6 +172,14 @@ make build_nodejs_conductor
 
 ### Building for Android
 Note there is an article written on how to build Holochain for Android, read it [here](doc/holochain_101/src/building_for_android.md).
+
+## Upgrading
+
+Upgrading to a new tagged release of Holochain may include new/changed system dependencies.
+
+__We strongly recommend rerunning `./scripts/install/auto.sh` when upgrading core.__
+
+The script is designed to be idempotent. This means there is no harm re-running it.
 
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](/CONTRIBUTING.md) for our general practices and protocols on participating in the community, as well as specific expectations around things like code formatting, testing practices, continuous integration, etc.

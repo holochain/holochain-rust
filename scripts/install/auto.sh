@@ -2,7 +2,7 @@
 
 if [[ "$OSTYPE" == "linux-gnu" ]];
 then
- . `pwd`/scripts/install/ubuntu.sh
+ . `pwd`/scripts/install/linux.sh
 elif [[ "$OSTYPE" == darwin* ]];
 then
  . `pwd`/scripts/install/osx.sh

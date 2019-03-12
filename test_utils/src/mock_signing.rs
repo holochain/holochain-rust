@@ -80,6 +80,7 @@ pub fn mock_conductor_api(agent_id: AgentId) -> IoHandler {
             _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
         }?;
 
+
         let key = "payload";
         let payload = Ok(params_map
             .get(key)

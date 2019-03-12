@@ -6,7 +6,7 @@ use crate::{
         ZomeFnCall,
     },
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
+use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
@@ -16,10 +16,11 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
     fn from_args(context: Arc<Context>, args: ZomeFnCallArgs) -> Self {
+        // TODO we are currently signing the call ourself.  This signature
+        // should have happend at the client and be extracted from the args.
         let cap_call = make_cap_request_for_call(
             context.clone(),
             args.cap_token,
-            Address::from(context.agent_id.pub_sign_key.clone()),
             &args.fn_name,
             args.fn_args.clone(),
         );
@@ -125,7 +126,10 @@ pub mod tests {
 
     use crate::{
         context::Context,
-        instance::{tests::test_instance_and_context, Instance},
+        instance::{
+            tests::{test_context, test_instance_and_context},
+            Instance,
+        },
         nucleus::{
             actions::call_zome_function::{check_capability, validate_call},
             ribosome::{
@@ -145,7 +149,7 @@ pub mod tests {
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
-        cas::content::Address,
+        cas::content::{Address, AddressableContent},
         dna::{
             fn_declarations::{FnDeclaration, TraitFns},
             traits::ReservedTraitNames,
@@ -273,13 +277,8 @@ pub mod tests {
         let dna = setup_dna_for_test(true);
         let test_setup = setup_test(dna, "test_call_public");
         let token = test_setup.context.get_public_token().unwrap();
-        let cap_request = make_cap_request_for_call(
-            test_setup.context.clone(),
-            token,
-            Address::from("any caller"),
-            "test",
-            "{}",
-        );
+        let other_agent_context = test_context("other agent", None);
+        let cap_request = make_cap_request_for_call(other_agent_context, token, "test", "{}");
 
         // make the call with public token capability call
         test_reduce_call(&test_setup, cap_request, success_expected());
@@ -327,13 +326,9 @@ pub mod tests {
             .context
             .block_on(author_entry(&grant_entry, None, &test_setup.context))
             .unwrap();
-        let cap_request = make_cap_request_for_call(
-            test_setup.context.clone(),
-            addr,
-            Address::from("any caller"),
-            "test",
-            "{}",
-        );
+        let other_agent_context = test_context("other agent", None);
+        let cap_request =
+            make_cap_request_for_call(other_agent_context.clone(), addr, "test", "{}");
         test_reduce_call(&test_setup, cap_request, success_expected());
     }
 
@@ -350,18 +345,18 @@ pub mod tests {
         test_reduce_call(&test_setup, cap_request, expected_failure.clone());
 
         // test assigned capability where the caller is the agent
-        let agent_token_str = test_setup.context.agent_id.pub_sign_key.clone();
+        let agent_token_str = test_setup.context.agent_id.address();
         let cap_request = make_cap_request_for_call(
             test_setup.context.clone(),
             Address::from(agent_token_str.clone()),
-            Address::from(agent_token_str),
             "test",
             "{}",
         );
         test_reduce_call(&test_setup, cap_request, success_expected());
 
         // test assigned capability where the caller is someone else
-        let someone = Address::from("somoeone");
+        let other_agent_context = test_context("other agent", None);
+        let someone = other_agent_context.agent_id.address();
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         let grant = CapTokenGrant::create(
@@ -376,22 +371,16 @@ pub mod tests {
             .block_on(author_entry(&grant_entry, None, &test_setup.context))
             .unwrap();
         let cap_request = make_cap_request_for_call(
-            test_setup.context.clone(),
+            test_context("random other agent", None),
             grant_addr.clone(),
-            Address::from("any caller"),
             "test",
             "{}",
         );
         test_reduce_call(&test_setup, cap_request, expected_failure.clone());
 
         // test assigned capability where the caller is someone else
-        let cap_request = make_cap_request_for_call(
-            test_setup.context.clone(),
-            grant_addr,
-            someone.clone(),
-            "test",
-            "{}",
-        );
+        let cap_request =
+            make_cap_request_for_call(other_agent_context.clone(), grant_addr, "test", "{}");
         test_reduce_call(&test_setup, cap_request, success_expected());
     }
 
@@ -438,9 +427,8 @@ pub mod tests {
             "test_zome",
             make_cap_request_for_call(
                 context.clone(),
-                Address::from(context.agent_id.pub_sign_key.clone()),
-                Address::from(context.agent_id.pub_sign_key.clone()),
-                "foo_function", //<- not the function in the zome_call!
+                Address::from(context.agent_id.address()), // <- agent token
+                "foo_function",                            //<- not the function in the zome_call!
                 "{}",
             ),
             "test",
@@ -455,8 +443,7 @@ pub mod tests {
             "test_zome",
             make_cap_request_for_call(
                 context.clone(),
-                Address::from(context.agent_id.pub_sign_key.clone()),
-                Address::from(context.agent_id.pub_sign_key.clone()),
+                Address::from(context.agent_id.address()), // <- agent token
                 "test",
                 "{}",
             ),
@@ -500,9 +487,8 @@ pub mod tests {
         let zome_call = ZomeFnCall::new(
             "test_zome",
             make_cap_request_for_call(
-                context.clone(),
+                test_context("some_random_agent", None),
                 grant_addr,
-                Address::from("some_random_agent"),
                 "test",
                 "{}",
             ),

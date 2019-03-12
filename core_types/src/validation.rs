@@ -42,19 +42,13 @@ pub enum ValidationPackageDefinition {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum EntryValidationData
-{
-    Create(Entry),
-    Modify(Entry,Entry),
-    Delete(Entry,Entry)
-}
-
-pub enum Validation<T>
+pub enum EntryValidationData<T>
 {
     Create(T),
     Modify(T,T),
     Delete(Entry,T)
 }
+
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum LinkValidationData
@@ -80,7 +74,7 @@ pub struct ValidationData {
     /// this validation callback?
     pub lifecycle: EntryLifecycle,
     /// Does the entry get committed, modified or deleted?
-    pub entry_validation: EntryValidationData,
+    pub entry_validation: EntryValidationData<Entry>,
 }
 
 /*impl Default for ValidationData {

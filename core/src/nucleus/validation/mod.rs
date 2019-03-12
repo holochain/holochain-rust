@@ -134,7 +134,7 @@ pub fn entry_to_validation_data(
     context : Arc<Context>,
     entry: &Entry,
     maybe_link_update_delete: Option<Address>,
-) -> Result<EntryValidationData, HolochainError> {
+) -> Result<EntryValidationData<Entry>, HolochainError> {
     match entry {
         Entry::App(_, _) => maybe_link_update_delete
             .map(|link_update|

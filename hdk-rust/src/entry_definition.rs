@@ -3,7 +3,7 @@
 
 use holochain_core_types::{
     dna::entry_types::EntryTypeDef,
-    entry::entry_type::EntryType,
+    entry::{entry_type::EntryType,Entry},
     validation::{ValidationPackageDefinition,EntryValidationData,LinkValidationData},
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
@@ -14,7 +14,7 @@ use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 
-pub type Validator = Box<FnMut(EntryValidationData) -> Result<(), String> + Sync>;
+pub type Validator = Box<FnMut(EntryValidationData<Entry>) -> Result<(), String> + Sync>;
 
 pub type LinkValidator =
     Box<FnMut(LinkValidationData) -> Result<(), String> + Sync>;

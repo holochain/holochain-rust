@@ -2,12 +2,13 @@ use holochain_core_types::{
     error::HolochainError,
     json::*,
     link::Link,
-    validation::{LinkValidationData,EntryValidationData}
+    validation::{LinkValidationData,EntryValidationData},
+    entry::Entry
 };
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct EntryValidationArgs {
-    pub validation_data: EntryValidationData,
+    pub validation_data: EntryValidationData<Entry>,
 }
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, PartialEq, Clone)]

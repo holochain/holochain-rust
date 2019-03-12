@@ -46,8 +46,8 @@ _windows_template: &_windows_template
   - PATH="$PATH:/c/Program Files (x86)/Nodist/bin"
 
 _unix_nodejs_conductor_template: &_unix_nodejs_conductor_template
-  before_install:
-    # install our own nodejs to get a reasonable version
+  install:
+    # install our own nodejs to get the correct version to create a build for
     - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
     - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.10.1
     - export PATH=$HOME/.yarn/bin:$PATH
@@ -67,14 +67,14 @@ _linux_nodejs_template: &_linux_nodejs_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
-  before_script:
+  before_install:
     - . ./scripts/install/auto.sh
 
 _macosx_nodejs_template: &_macosx_nodejs_template
   os: osx
   language: rust
   rust: nightly-2019-01-24
-  before_script:
+  before_install:
     - . ./scripts/install/auto.sh
 
 _to_deploy_template: &_to_deploy_template
@@ -131,7 +131,7 @@ _windows_nodejs_conductor_template: &_windows_nodejs_conductor_template
     - yarn config set msvs_version 2015 --global
 # nodejs specific deployment templates stop here
 
-# holochain-clie deploy template
+# holochain-cli deploy template
 _cli_deploy_template: &_cli_deploy_template
   dist: bionic
   language: rust

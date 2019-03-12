@@ -3,6 +3,7 @@
 use crate::{
     key_bundle,
     password_encryption::{self, PwHashConfig},
+    seed::generate_random_seed_buf,
     utils, CODEC_HCK0, CODEC_HCS0, SEED_SIZE, SIGNATURE_SIZE,
 };
 use hcid::*;
@@ -164,6 +165,16 @@ impl EncryptingKeyPair {
     // TODO: Encrypt and decrypt functions
 }
 
+pub fn generate_random_sign_keypair() -> SigningKeyPair {
+    let mut seed = generate_random_seed_buf(SEED_SIZE);
+    SigningKeyPair::new_from_seed(&mut seed).unwrap()
+}
+
+pub fn generate_random_enc_keypair() -> EncryptingKeyPair {
+    let mut seed = generate_random_seed_buf(SEED_SIZE);
+    EncryptingKeyPair::new_from_seed(&mut seed).unwrap()
+}
+
 //--------------------------------------------------------------------------------------------------
 // Test
 //--------------------------------------------------------------------------------------------------
@@ -173,19 +184,9 @@ mod tests {
     use super::*;
     use crate::{seed::generate_random_seed_buf, SEED_SIZE};
 
-    fn test_generate_random_sign_keypair() -> SigningKeyPair {
-        let mut seed = generate_random_seed_buf(SEED_SIZE);
-        SigningKeyPair::new_from_seed(&mut seed).unwrap()
-    }
-
-    fn test_generate_random_enc_keypair() -> EncryptingKeyPair {
-        let mut seed = generate_random_seed_buf(SEED_SIZE);
-        EncryptingKeyPair::new_from_seed(&mut seed).unwrap()
-    }
-
     #[test]
     fn keypair_should_construct_sign() {
-        let mut sign_keys = test_generate_random_sign_keypair();
+        let mut sign_keys = generate_random_sign_keypair();
         // Test public key
         println!("sign_keys.public = {:?}", sign_keys.public);
         assert_eq!(63, sign_keys.public.len());
@@ -197,7 +198,7 @@ mod tests {
 
     #[test]
     fn keypair_should_construct_enc() {
-        let mut sign_keys = test_generate_random_enc_keypair();
+        let mut sign_keys = generate_random_enc_keypair();
         // Test public key
         println!("sign_keys.public = {:?}", sign_keys.public);
         assert_eq!(63, sign_keys.public.len());
@@ -209,7 +210,7 @@ mod tests {
 
     #[test]
     fn keypair_should_sign_message_and_verify() {
-        let mut sign_keys = test_generate_random_sign_keypair();
+        let mut sign_keys = generate_random_sign_keypair();
 
         // Create random data
         let mut message = SecBuf::with_insecure(16);

@@ -49,7 +49,7 @@ impl From<usize> for Timeout {
 /// formatted to integer ms, us or ns as appropriate.  Accepts y|yr|year, w/wk/week, d/dy/day,
 /// h/hr/hour, m/min/minute, s/sec/second, ms/millis/millisecond, u/μ/micros/microsecond,
 /// n/nanos/nanosecond, singlular or plural.  The humantime and parse_duration crates are complex,
-/// incompatible with eachother, depend on crates and/or do not compile to WASM.
+/// incompatible with each other, depend on crates and/or do not compile to WASM.
 #[derive(Clone, Eq, PartialEq, Hash, DefaultJson)]
 pub struct Period(Duration);
 
@@ -334,7 +334,7 @@ impl TryFrom<&str> for Period {
 // ms. exceeds the capacity of a usize, default to the maximum possible duration.  Since usize is
 // likely a 64-bit value, this will essentially be forever.  Even on 32-bit systems, it will be a
 // long duration, but not forever: 2^32/1000 =~= 2^22 seconds =~= 48 days.  We don't want to use
-// Duratino.as_millis(), because its u128 return type are not supported by WASM.
+// Duration.as_millis(), because its u128 return type are not supported by WASM.
 impl From<Period> for Timeout {
     fn from(p: Period) -> Self {
         Timeout(if p.0.as_secs() as usize >= usize::max_value() / 1000 {

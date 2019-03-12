@@ -68,8 +68,7 @@ pub fn publish_entry_list_test(
     // Billy should receive the entry data
     let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchEntryResult(_))));
     if result.is_none() {
-        result = billy
-            .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
     }
     let json = result.unwrap();
     log_i!("got result: {:?}", json);
@@ -182,8 +181,7 @@ pub fn double_publish_entry_list_test(
     // Billy should receive the entry data back
     let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchEntryResult(_))));
     if result.is_none() {
-        result = billy
-            .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
     }
     let json = result.unwrap();
     log_i!("got result: {:?}", json);

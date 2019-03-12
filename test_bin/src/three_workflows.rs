@@ -222,14 +222,17 @@ pub fn hold_and_publish_test(
 
     // Camille should receive the data
     let req_id = fetch_entry.request_id.clone();
-    let mut result = camille.find_recv_msg(0, Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+    let mut result = camille.find_recv_msg(
+        0,
+        Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
             entry_data.request_id == req_id
-        })));
+        })),
+    );
     if result.is_none() {
-        result = camille
-            .wait(Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
-            entry_data.request_id == fetch_entry.request_id
-        })))
+        result = camille.wait(Box::new(one_is_where!(
+            JsonProtocol::FetchEntryResult(entry_data),
+            { entry_data.request_id == fetch_entry.request_id }
+        )))
     }
 
     let json = result.unwrap();
@@ -251,14 +254,17 @@ pub fn hold_and_publish_test(
 
     // Camille should receive the data
     let req_id = fetch_entry.request_id.clone();
-    let mut result = camille.find_recv_msg(0, Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+    let mut result = camille.find_recv_msg(
+        0,
+        Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
             entry_data.request_id == req_id
-        })));
+        })),
+    );
     if result.is_none() {
-        result = camille
-            .wait(Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
-            entry_data.request_id == fetch_entry.request_id
-        })))
+        result = camille.wait(Box::new(one_is_where!(
+            JsonProtocol::FetchEntryResult(entry_data),
+            { entry_data.request_id == fetch_entry.request_id }
+        )))
     }
     let json = result.unwrap();
     log_i!("got result 2: {:?}", json);

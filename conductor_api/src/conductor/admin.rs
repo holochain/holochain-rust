@@ -1213,11 +1213,6 @@ type = 'http'"#,
             Ok(())
         );
 
-        // TODO, FIXME: Since adding an instance is such an involved process, we need to wait a bit
-        // for that initialization to complete. To clean this up, consider moving more functionality
-        // from Holochain::new into Holochain::start.
-        thread::sleep(Duration::from_secs(2));
-
         assert_eq!(
             conductor.add_instance_to_interface(
                 &String::from("websocket interface"),

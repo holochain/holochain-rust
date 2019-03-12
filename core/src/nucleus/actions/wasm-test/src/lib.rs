@@ -17,7 +17,7 @@ use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
     error::HolochainError,
     json::{JsonString},
-    validation::Validation
+    validation::EntryValidationData
 };
 
 
@@ -25,7 +25,7 @@ use hdk::holochain_core_types::{
  
 
 
-#[derive(Serialize, Deserialize, DefaultJson, Debug)]
+#[derive(Serialize, Deserialize, DefaultJson, Debug,Clone)]
 struct TestEntryType {
     stuff: String,
 }
@@ -43,10 +43,10 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: | validation_data: hdk::Validation<TestEntryType>| {
+            validation: | validation_data: hdk::EntryValidationData<TestEntryType>| {
                  match validation_data
                  {
-                   Validation::Create(test_entry) =>
+                   EntryValidationData::Create(test_entry) =>
                    {
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
@@ -67,10 +67,10 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |validation_data: hdk::Validation<TestEntryType>| {
+            validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
                 match validation_data
                 {
-                   Validation::Create(test_entry) =>
+                   EntryValidationData::Create(test_entry) =>
                    {
                         
                         (test_entry.stuff != "FAIL")
@@ -93,10 +93,10 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainEntries
             },
 
-            validation: |validation_data: hdk::Validation<TestEntryType>| {
+            validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
                  match validation_data
                 {
-                   Validation::Create(test_entry) =>
+                   EntryValidationData::Create(test_entry) =>
                    {
                         
                         (test_entry.stuff != "FAIL")
@@ -118,10 +118,10 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainHeaders
             },
 
-            validation: |validation_data: hdk::Validation<TestEntryType>| {
+            validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
                  match validation_data
                 {
-                   Validation::Create(test_entry) =>
+                   EntryValidationData::Create(test_entry) =>
                    {
                         
                         (test_entry.stuff != "FAIL")
@@ -143,10 +143,10 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: | validation_data: hdk::Validation<TestEntryType>| {
+            validation: | validation_data: hdk::EntryValidationData<TestEntryType>| {
                  match validation_data
                 {
-                   Validation::Create(test_entry) =>
+                   EntryValidationData::Create(test_entry) =>
                    {
                         
                         (test_entry.stuff != "FAIL")

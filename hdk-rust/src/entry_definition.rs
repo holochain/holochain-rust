@@ -175,7 +175,7 @@ macro_rules! entry {
        // $(native_type: $native_type:ty,)*
 
         validation_package: || $package_creator:expr,
-        validation: | $validation_data:ident : hdk::Validation<$native_type:ty> | $entry_validation:expr
+        validation: | $validation_data:ident : hdk::EntryValidationData<$native_type:ty> | $entry_validation:expr
 
         $(
             ,
@@ -217,9 +217,9 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData| {
+            let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::entry::Entry>| {
                 let $validation_data = hdk::meta::transform_entry_validation_to_native_validation::<$native_type>(validation_data.clone())?;
-                let e_type = hdk::meta::entry_validation_to_app_entry_type(validation_data.clone())?;
+                let e_type = hdk::meta::entry_validation_to_app_entry_type(validation_data)?;
                 //let $validation_data = validation_data;
                 match e_type {
                     hdk::holochain_core_types::entry::entry_type::EntryType::App(app_entry_value) => {

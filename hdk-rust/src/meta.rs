@@ -157,7 +157,7 @@ pub fn entry_validation_to_app_entry_type(entry_validation : EntryValidationData
     }
 }
 
-pub fn transform_entry_validation_to_native_validation<T: TryFrom<AppEntryValue>>(entry_validation : EntryValidationData<Entry>) -> ZomeApiResult<EntryValidationData<T>> 
+pub fn transform_entry_validation_to_native_validation<T: TryFrom<AppEntryValue> + Clone>(entry_validation : EntryValidationData<Entry>) -> ZomeApiResult<EntryValidationData<T>> 
 {
     match entry_validation
     {

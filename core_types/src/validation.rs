@@ -42,7 +42,7 @@ pub enum ValidationPackageDefinition {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum EntryValidationData<T>
+pub enum EntryValidationData<T>  
 {
     Create(T),
     Modify(T,T),

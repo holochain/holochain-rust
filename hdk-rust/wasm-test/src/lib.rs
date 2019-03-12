@@ -34,7 +34,7 @@ use holochain_wasm_utils::{
         json::{JsonString,RawString},
     },
 };
-use holochain_wasm_utils::holochain_core_types::{validation::{LinkValidationData,Validation},error::RibosomeEncodingBits};
+use holochain_wasm_utils::holochain_core_types::{validation::{LinkValidationData,EntryValidationData},error::RibosomeEncodingBits};
 use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
@@ -44,7 +44,7 @@ use std::convert::TryFrom;
 use std::time::Duration;
 use hdk::globals::G_MEM_STACK;
 
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 struct TestEntryType {
     stuff: String,
 }
@@ -457,10 +457,10 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |valida: hdk::Validation<TestEntryType>| {
+            validation: |valida: hdk::EntryValidationData<TestEntryType>| {
                 match valida
                 {
-                    Validation::Create(test_entry) => 
+                    EntryValidationData::Create(test_entry) => 
                     {
                         (test_entry.stuff != "FAIL").ok_or_else(|| "FAIL content is not allowed".to_string())
                    
@@ -493,10 +493,10 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |validation_data: hdk::Validation<TestEntryType>| {
+            validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
                 match validation_data 
                 {
-                    Validation::Create(test_entry) => 
+                    EntryValidationData::Create(test_entry) => 
                     {
                         
                         Err(serde_json::to_string(&test_entry).unwrap())
@@ -516,7 +516,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |validation_data: hdk::Validation<TestEntryType>| {
+            validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
                 Ok(())
             },
 

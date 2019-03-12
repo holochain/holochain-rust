@@ -95,7 +95,7 @@ impl Zome {
         description: &str,
         config: &Config,
         entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
-        fn_declarations: &Vec<FnDeclaration>,
+        fn_declarations: &[FnDeclaration],
         traits: &BTreeMap<String, TraitFns>,
         code: &DnaWasm,
     ) -> Zome {

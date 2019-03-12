@@ -12,7 +12,7 @@ pub struct Provenance(Address, Signature);
 
 impl Provenance {
     pub fn new(source: Address, signature: Signature) -> Self {
-        Provenance (source, signature)
+        Provenance(source, signature)
     }
     pub fn source(&self) -> Address {
         Address::from(self.0.clone())

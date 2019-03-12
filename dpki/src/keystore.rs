@@ -84,7 +84,7 @@ impl Keystore {
     }
 
     /// adds a derived seed into the keystore
-    pub fn add_derived_seed(
+    pub fn add_seed_from_seed(
         &mut self,
         src_id_str: &str,
         dst_id_str: &str,
@@ -201,13 +201,13 @@ pub mod tests {
     }
 
     #[test]
-    fn test_keystore_add_derived_seed() {
+    fn test_keystore_add_seed_from_seed() {
         let mut keystore = Keystore::new();
 
         let context = SeedContext::from("SOMECTXT");
 
         assert_eq!(
-            keystore.add_derived_seed("my_root_seed", "my_second_seed", &context, 1),
+            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1),
             Err(HolochainError::ErrorGeneric(
                 "unknown source identifier".to_string()
             ))
@@ -216,7 +216,7 @@ pub mod tests {
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
 
         assert_eq!(
-            keystore.add_derived_seed("my_root_seed", "my_second_seed", &context, 1),
+            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1),
             Ok(())
         );
 
@@ -224,7 +224,7 @@ pub mod tests {
         assert!(keystore.list().contains(&"my_second_seed".to_string()));
 
         assert_eq!(
-            keystore.add_derived_seed("my_root_seed", "my_second_seed", &context, 1),
+            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1),
             Err(HolochainError::ErrorGeneric(
                 "identifier already exists".to_string()
             ))

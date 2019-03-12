@@ -3,7 +3,7 @@
 //! agent actions between Holochain and Zomes.
 
 use crate::{
-    cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
+    cas::content::Address, chain_header::ChainHeader, entry::{Entry,entry_type::{EntryType,AppEntryType},AppEntryValue}, error::HolochainError,
     json::JsonString,
     link::link_data::LinkData
 };
@@ -51,40 +51,32 @@ pub enum EntryValidationData<T>
     Delete(Entry,T)
 }
 
-impl<T: TryFrom<AppEntryValue>> TryFrom<EntryValidationData<Entry>> for EntryValidationData<T> {
+impl TryFrom<EntryValidationData<Entry>> for EntryType {
     type Error = HolochainError;
-    fn try_from(entry_validation : &EntryValidationData<Entry>) -> Result<Self, Self::Error> {
+    fn try_from(entry_validation : EntryValidationData<Entry>) -> Result<Self, Self::Error> {
          match entry_validation
         {
             EntryValidationData::Create(entry) => {
-                let native_type = convert_entry_validation_to_native::<T>(entry)?;
-                Ok(EntryValidationData::Create(native_type))
+                Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?))
             },
-            EntryValidationData::Modify(latest,entry) =>
-            {
-                let latest_native = convert_entry_validation_to_native::<T>(latest)?;
-                let current_native = convert_entry_validation_to_native::<T>(entry)?;
-                Ok(EntryValidationData::Modify(latest_native,current_native))
-            },
-            EntryValidationData::Delete(deletion_entry,entry_to_delete) =>
-            {
-                let native_entry_to_delete = convert_entry_validation_to_native::<T>(entry_to_delete)?;
-                Ok(EntryValidationData::Delete(deletion_entry.clone(),native_entry_to_delete))
+            EntryValidationData::Delete(_,entry) => Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?)),
+            EntryValidationData::Modify(latest,_) =>{
+                Ok(EntryType::App(AppEntryType::try_from(latest.entry_type())?))
             }
         }
     }
 }
 
-fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(entry : Entry) -> ZomeApiResult<T>
+fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(entry : Entry) -> Result<T,HolochainError>
 {
     match entry 
     {
         Entry::App(_, entry_value) => T::try_from(entry_value.to_owned()).map_err(|_| {
-            ZomeApiError::Internal(
+            HolochainError::ErrorGeneric(
                 "Could not convert get_links result to requested type".to_string(),
             )
         }),
-        _ => Err(ZomeApiError::Internal(
+        _ => Err(HolochainError::ErrorGeneric(
             "get_links did not return an app entry".to_string(),
         )),
     }

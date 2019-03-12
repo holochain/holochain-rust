@@ -1,10 +1,11 @@
 use crate::{
     key_bundle::KeyBundle,
     seed::{generate_random_seed_buf, IndexedSeed, RootSeed, SeedContext, SeedTrait, SeedType},
-    utils, AGENT_ID_CTX_STR, CODEC_HCS0, SEED_SIZE,
+    utils, AGENT_ID_CTX_STR, SEED_SIZE,
 };
 use holochain_core_types::{
     agent::Base32,
+    cas::content::Address,
     error::{HcResult, HolochainError},
     signature::Signature,
 };
@@ -22,13 +23,13 @@ pub enum Secret {
     IndexedSeed(IndexedSeed),
 }
 
-struct KeyStore {
+struct Keystore {
     keys: HashMap<String, Arc<Mutex<Secret>>>,
 }
 
-impl KeyStore {
+impl Keystore {
     pub fn new() -> Self {
-        KeyStore {
+        Keystore {
             keys: HashMap::new(),
         }
     }
@@ -170,21 +171,8 @@ impl KeyStore {
 }
 
 /// verifies data and signature against a public key
-pub fn verify(signature: Signature, data: String, public_key: Base32) -> HcResult<bool> {
-    let mut key_buf = utils::decode_pub_key(public_key, &CODEC_HCS0)?;
-
-    let signature_bytes: Vec<u8> = base64::decode(&String::from(signature))
-        .map_err(|_| HolochainError::ErrorGeneric("Signature syntactically invalid".to_string()))?;
-    let mut signature_buf = SecBuf::with_insecure(signature_bytes.len());
-    signature_buf
-        .write(0, signature_bytes.as_slice())
-        .expect("SecBuf must be writeable");
-    let mut data_buf = SecBuf::with_insecure_from_string(data);
-    Ok(holochain_sodium::sign::verify(
-        &mut signature_buf,
-        &mut data_buf,
-        &mut key_buf,
-    ))
+pub fn verify(public_key: Base32, data: String, signature: Signature) -> HcResult<bool> {
+    utils::verify(Address::from(public_key), data, signature)
 }
 
 #[cfg(test)]
@@ -194,13 +182,13 @@ pub mod tests {
 
     #[test]
     fn test_keystore_new() {
-        let keystore = KeyStore::new();
+        let keystore = Keystore::new();
         assert!(keystore.list().is_empty());
     }
 
     #[test]
     fn test_keystore_add_random_seed() {
-        let mut keystore = KeyStore::new();
+        let mut keystore = Keystore::new();
 
         assert_eq!(keystore.add_random_seed("my_root_seed", SEED_SIZE), Ok(()));
         assert_eq!(keystore.list(), vec!["my_root_seed".to_string()]);
@@ -214,7 +202,7 @@ pub mod tests {
 
     #[test]
     fn test_keystore_add_derived_seed() {
-        let mut keystore = KeyStore::new();
+        let mut keystore = Keystore::new();
 
         let context = SeedContext::from("SOMECTXT");
 
@@ -245,7 +233,7 @@ pub mod tests {
 
     #[test]
     fn test_keystore_add_key_from_seed() {
-        let mut keystore = KeyStore::new();
+        let mut keystore = Keystore::new();
         let context = SeedContext::from(AGENT_ID_CTX_STR);
 
         assert_eq!(
@@ -272,15 +260,15 @@ pub mod tests {
 
     #[test]
     fn test_keystore_sign() {
-        let mut keystore = KeyStore::new();
+        let mut keystore = Keystore::new();
         let context = SeedContext::from(AGENT_ID_CTX_STR);
 
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
 
-        let message = base64::encode("SOMEPAYLOAasdfasdfD");
+        let data = base64::encode("the data to sign");
 
         assert_eq!(
-            keystore.sign("my_keypair", message.clone()),
+            keystore.sign("my_keypair", data.clone()),
             Err(HolochainError::ErrorGeneric(
                 "unknown source identifier".to_string()
             ))
@@ -290,13 +278,13 @@ pub mod tests {
             .add_key_from_seed("my_root_seed", "my_keypair", &context, 1)
             .unwrap();
 
-        let result = keystore.sign("my_keypair", message.clone());
+        let result = keystore.sign("my_keypair", data.clone());
         assert!(!result.is_err());
 
         let signature = result.unwrap();
         assert_eq!(String::from(signature.clone()).len(), 88); //88 is the size of a base64ized signature buf
 
-        let result = verify(signature, message, public_key);
+        let result = verify(public_key, data, signature);
         assert!(!result.is_err());
         assert!(result.unwrap());
     }

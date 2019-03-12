@@ -1,6 +1,11 @@
 use crate::{CODEC_HCS0, SEED_SIZE};
 use hcid::*;
-use holochain_core_types::{error::HolochainError, cas::content::Address, agent::Base32, error::HcResult, signature::Provenance};
+use holochain_core_types::{
+    agent::Base32,
+    cas::content::Address,
+    error::{HcResult, HolochainError},
+    signature::{Provenance, Signature},
+};
 use holochain_sodium::{secbuf::SecBuf, sign};
 
 /// a trait for things that have a provenance that can be verified
@@ -10,20 +15,7 @@ pub trait Verify {
 
 impl Verify for Provenance {
     fn verify(&self, data: String) -> HcResult<bool> {
-        let (author_id,signature) = self.clone();
-        let signature_string: String = signature.clone().into();
-        let signature_bytes: Vec<u8> = base64::decode(&signature_string).map_err(|_|
-            HolochainError::ErrorGeneric("Signature syntactically invalid".to_string())
-        )?;
-
-        let mut signature_buf = SecBuf::with_insecure(signature_bytes.len());
-        signature_buf
-            .write(0, signature_bytes.as_slice())
-            .expect("SecBuf must be writeable");
-
-        let mut message_buf =
-            SecBuf::with_insecure_from_string(data);
-        crate::utils::verify(author_id.to_string(), &mut message_buf, &mut signature_buf)
+        crate::utils::verify(self.source(), data, self.signature())
     }
 }
 
@@ -50,13 +42,28 @@ pub(crate) fn encode_pub_key(pub_key_sec: &mut SecBuf, codec: &HcidEncoding) -> 
     Ok(codec.encode(&locker[0..SEED_SIZE])?)
 }
 
+/// Verify that an address signed some data
+pub fn verify(source: Address, data: String, signature: Signature) -> HcResult<bool> {
+    let signature_string: String = signature.into();
+    let signature_bytes: Vec<u8> = base64::decode(&signature_string)
+        .map_err(|_| HolochainError::ErrorGeneric("Signature syntactically invalid".to_string()))?;
+
+    let mut signature_buf = SecBuf::with_insecure(signature_bytes.len());
+    signature_buf
+        .write(0, signature_bytes.as_slice())
+        .expect("SecBuf must be writeable");
+
+    let mut message_buf = SecBuf::with_insecure_from_string(data);
+    verify_bufs(source.to_string(), &mut message_buf, &mut signature_buf)
+}
+
 /// Verify data that was signed
 /// @param {Base32} pub_sign_key_b32 - Public signing key to verify with
 /// @param {SecBuf} data - Data buffer to verify
 /// @param {SecBuf} signature - Candidate signature for that data buffer
 /// @return true if verification succeeded
-pub fn verify(
-     pub_sign_key_b32: Base32,
+pub fn verify_bufs(
+    pub_sign_key_b32: Base32,
     data: &mut SecBuf,
     signature: &mut SecBuf,
 ) -> HcResult<bool> {
@@ -90,7 +97,7 @@ mod tests {
     }
 
     #[test]
-    fn it_should_verify() {
+    fn it_should_verify_bufs() {
         let codec = with_hcs0().expect("HCID failed miserably with_hcs0");
         // Create random seed
         let mut seed = SecBuf::with_insecure(SEED_SIZE);
@@ -105,7 +112,7 @@ mod tests {
         message.randomize();
         let mut signature = SecBuf::with_insecure(SIGNATURE_SIZE);
         holochain_sodium::sign::sign(&mut message, &mut secret_key, &mut signature).unwrap();
-        let res = verify(pub_key_b32, &mut message, &mut signature);
+        let res = verify_bufs(pub_key_b32, &mut message, &mut signature);
         assert!(res.unwrap());
     }
 }

@@ -263,7 +263,7 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         _ => unreachable!(),
     };
     assert_eq!(
-        "{\"entry\":{\"content\":\"hello\"}}".to_string(),
+        "{\"ry\":\"hello\"}".to_string(),
         msg.content.to_string()
     );
 
@@ -282,7 +282,7 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         _ => unreachable!(),
     };
     assert_eq!(
-        "\"echo: {\\\"entry\\\":{\\\"content\\\":\\\"hello\\\"}}\"".to_string(),
+        "\"echo: {\\\"ry\\\":\\\"hello\\\"}\"".to_string(),
         msg.content.to_string()
     );
 
@@ -575,7 +575,7 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
         _ => unreachable!(),
     };
     assert_eq!(
-        "{\"entry\":{\"content\":\"hello\"}}".to_string(),
+        "{\"ry\":\"hello\"}".to_string(),
         msg.content.to_string()
     );
 
@@ -594,7 +594,7 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
         _ => unreachable!(),
     };
     assert_eq!(
-        "\"echo: {\\\"entry\\\":{\\\"content\\\":\\\"hello\\\"}}\"".to_string(),
+        "\"echo: {\\\"ry\\\":\\\"hello\\\"}\"".to_string(),
         msg.content.to_string()
     );
 

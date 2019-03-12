@@ -122,6 +122,8 @@ pub fn setup_three_nodes(
             assert_eq!(d.agent_id, ALEX_AGENT_ID);
         });
 
+        println!("\n\n\n\n");
+
         // Connect nodes between them
         println!("Connect  Camille to Billy ({})", node2_binding);
         camille.send(
@@ -130,28 +132,29 @@ pub fn setup_three_nodes(
             })
             .into(),
         )?;
+
         // Make sure Peers are connected
-        let result_a = alex
-            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
-            .unwrap();
-        println!("got connect result A: {:?}", result_a);
-        one_let!(JsonProtocol::PeerConnected(d) = result_a {
-            assert_eq!(d.agent_id, CAMILLE_AGENT_ID);
-        });
+
         let result_b = billy
-            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+            .wait(Box::new(one_is_where!(JsonProtocol::PeerConnected(data), {
+data.agent_id == CAMILLE_AGENT_ID
+            })))
             .unwrap();
-        println!("got connect result B: {:?}", result_b);
-        one_let!(JsonProtocol::PeerConnected(d) = result_b {
-            assert_eq!(d.agent_id, CAMILLE_AGENT_ID);
-        });
+        println!("got connect result on Billy: {:?}", result_b);
+
         let result_c = camille
-            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+            .wait(Box::new(one_is_where!(JsonProtocol::PeerConnected(data), {
+            data.agent_id == BILLY_AGENT_ID
+            })))
             .unwrap();
-        println!("got connect result C: {:?}", result_c);
-        one_let!(JsonProtocol::PeerConnected(d) = result_c {
-            assert!(d.agent_id == BILLY_AGENT_ID || d.agent_id == ALEX_AGENT_ID);
-        });
+        println!("got connect result on Camille: {:?}", result_c);
+
+        let result_a = alex
+            .wait(Box::new(one_is_where!(JsonProtocol::PeerConnected(data), {
+                data.agent_id == CAMILLE_AGENT_ID
+            })))
+            .unwrap();
+        println!("got connect result on Alex: {:?}", result_a);
     }
 
     // Make sure we received everything we needed from network module
@@ -205,14 +208,14 @@ pub fn hold_and_publish_test(
 
     // Camille requests that entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());
-    // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    if !has_received {
-        let has_received = billy.wait_HandleFetchEntry_and_reply();
-        if !has_received {
-            let _has_received = camille.wait_HandleFetchEntry_and_reply();
-        }
-    }
+//    // Alex or billy or Camille might receive HandleFetchEntry request as this moment
+//    let has_received = alex.wait_HandleFetchEntry_and_reply();
+//    if !has_received {
+//        let has_received = billy.wait_HandleFetchEntry_and_reply();
+//        if !has_received {
+//            let _has_received = camille.wait_HandleFetchEntry_and_reply();
+//        }
+//    }
 
     // Camille should receive the data
     let result = camille
@@ -227,13 +230,13 @@ pub fn hold_and_publish_test(
     // Camille requests that entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_2.clone());
     // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    if !has_received {
-        let has_received = billy.wait_HandleFetchEntry_and_reply();
-        if !has_received {
-            let _has_received = camille.wait_HandleFetchEntry_and_reply();
-        }
-    }
+//    let has_received = alex.wait_HandleFetchEntry_and_reply();
+//    if !has_received {
+//        let has_received = billy.wait_HandleFetchEntry_and_reply();
+//        if !has_received {
+//            let _has_received = camille.wait_HandleFetchEntry_and_reply();
+//        }
+//    }
 
     // Camille should receive the data
     let result = camille

@@ -224,7 +224,7 @@ impl InMemoryServer {
         }
         match self.senders_by_dna.entry(dna_address.to_owned()) {
             Entry::Occupied(mut senders) => {
-                senders.get_mut().remove(agent_id.clone());
+                senders.get_mut().remove(agent_id);
             }
             Entry::Vacant(_) => unreachable!(),
         };
@@ -237,7 +237,7 @@ impl InMemoryServer {
             .d(&format!(">>>> '{}' recv: {:?}", self.name.clone(), data));
         // serve only JsonProtocol
         let maybe_json_msg = JsonProtocol::try_from(&data);
-        if let Err(_) = maybe_json_msg {
+        if maybe_json_msg.is_err() {
             return Ok(());
         };
         // Note: use same order as the enum
@@ -266,7 +266,7 @@ impl InMemoryServer {
                 // Check if its a response to our own request
                 {
                     let maybe_cell_id = self.priv_check_request(&msg.request_id);
-                    if let Some(_) = maybe_cell_id {
+                    if maybe_cell_id.is_some() {
                         self.log.d(&format!(
                             "---- '{}' internal request failed: {:?}",
                             self.name.clone(),
@@ -411,7 +411,7 @@ impl InMemoryServer {
             dna_address: dna_address.clone(),
             request_id: sender_request_id,
             to_agent_id: sender_agent_id.clone(),
-            error_info: json!(format!("DNA not tracked by agent")),
+            error_info: json!(String::from("DNA not tracked by agent")),
         };
         self.log.e(&format!(
             "#### '{}' check failed for {}.\n\t Sending failure {:?}",

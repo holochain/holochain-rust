@@ -18,12 +18,12 @@ use std::sync::Arc;
 use futures_util::try_future::TryFutureExt;
 
 pub async fn validate_remove_entry(entry: Entry,
-    validation_data: ValidationData,
+    _validation_data: ValidationData,
     context: &Arc<Context>) -> ValidationResult
     {
         let dna = context.get_dna().expect("Callback called without DNA set");
         let deletion_entry = unwrap_to!(entry=>Entry::Deletion);
-        let EntryWithHeader{entry : entry_to_delete,header: entity_to_delete_header} = fetch_entry_with_header(&deletion_entry.clone().deleted_entry_address(),&context).map_err(|_|{
+        let EntryWithHeader{entry : entry_to_delete,header: _entity_to_delete_header} = fetch_entry_with_header(&deletion_entry.clone().deleted_entry_address(),&context).map_err(|_|{
             ValidationError::Fail("Author mismatch ".to_string())
         })?;
 

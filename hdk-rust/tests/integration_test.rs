@@ -49,6 +49,9 @@ use std::{
 };
 use test_utils::*;
 
+//
+// These empty function definitions below are needed for the windows linker
+//
 #[no_mangle]
 pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
@@ -190,6 +193,7 @@ fn example_valid_entry() -> Entry {
     )
 }
 
+#[cfg(not(windows))]
 fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
     let entry_with_meta = &EntryWithMeta {
@@ -523,8 +527,9 @@ fn can_remove_link() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
 }
+
 #[test]
-#[cfg(not(windows))]
+#[cfg(test)]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
     // Create links

@@ -1,7 +1,7 @@
 use crate::{
     key_bundle::KeyBundle,
     keypair::generate_random_sign_keypair,
-    seed::{generate_random_seed_buf, IndexedSeed, RootSeed, SeedContext, SeedTrait, SeedType},
+    seed::{generate_derived_seed_buf, generate_random_seed_buf, SeedContext, SeedType},
     utils, SEED_SIZE,
 };
 use holochain_core_types::{
@@ -11,7 +11,7 @@ use holochain_core_types::{
     signature::Signature,
 };
 
-use holochain_sodium::{kdf, secbuf::SecBuf};
+use holochain_sodium::secbuf::SecBuf;
 
 use std::{
     collections::HashMap,
@@ -20,8 +20,7 @@ use std::{
 
 pub enum Secret {
     Key(KeyBundle),
-    RootSeed(RootSeed),
-    IndexedSeed(IndexedSeed),
+    Seed(SecBuf),
 }
 
 #[allow(dead_code)]
@@ -53,7 +52,7 @@ impl Keystore {
             ));
         }
         let seed_buf = generate_random_seed_buf(size);
-        let secret = Arc::new(Mutex::new(Secret::RootSeed(RootSeed::new(seed_buf))));
+        let secret = Arc::new(Mutex::new(Secret::Seed(seed_buf)));
         self.keys.insert(id, secret);
         Ok(())
     }
@@ -101,9 +100,9 @@ impl Keystore {
         let secret = {
             let mut src_secret = src_secret.lock().unwrap();
             match *src_secret {
-                Secret::RootSeed(ref mut src) => {
-                    let seed = src.generate_indexed_seed(context, index)?;
-                    Arc::new(Mutex::new(Secret::IndexedSeed(seed)))
+                Secret::Seed(ref mut src) => {
+                    let seed = generate_derived_seed_buf(src, context, index, SEED_SIZE)?;
+                    Arc::new(Mutex::new(Secret::Seed(seed)))
                 }
                 _ => {
                     return Err(HolochainError::ErrorGeneric(
@@ -131,20 +130,15 @@ impl Keystore {
         let (secret, public_key) = {
             let mut src_secret = src_secret.lock().unwrap();
             let ref mut seed = match *src_secret {
-                Secret::RootSeed(ref mut src) => src.seed_mut(),
-                Secret::IndexedSeed(ref mut src) => src.seed_mut(),
+                Secret::Seed(ref mut src) => src,
                 _ => {
                     return Err(HolochainError::ErrorGeneric(
                         "source secret is not a seed".to_string(),
                     ));
                 }
             };
-            let mut key_seed_buf = SecBuf::with_secure(SEED_SIZE);
-            let mut context = context.to_sec_buf();
-            kdf::derive(&mut key_seed_buf, index, &mut context, &mut seed.buf)?;
-
-            let key_bundle =
-                KeyBundle::new_from_seed_buf(&mut key_seed_buf, SeedType::Application)?;
+            let mut key_seed_buf = generate_derived_seed_buf(seed, context, index, SEED_SIZE)?;
+            let key_bundle = KeyBundle::new_from_seed_buf(&mut key_seed_buf, SeedType::DNA)?;
             let public_key = key_bundle.get_id();
             (Arc::new(Mutex::new(Secret::Key(key_bundle))), public_key)
         };

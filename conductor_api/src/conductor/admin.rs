@@ -519,7 +519,12 @@ pub mod tests {
     };
     use holochain_common::paths::DNA_EXTENSION;
     use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
-    use std::{convert::TryFrom, env::current_dir, fs::File, io::Read};
+    use std::{
+        convert::TryFrom,
+        env::current_dir,
+        fs::{remove_dir_all, File},
+        io::Read,
+    };
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_: &PathBuf| {
@@ -1193,6 +1198,16 @@ type = 'http'"#,
         let test_name = "test_add_instance_to_interface";
         let mut conductor = create_test_conductor(test_name, 3007);
 
+        let storage_path = current_dir()
+            .expect("Could not get current dir")
+            .join("tmp-test")
+            .join(test_name)
+            .join("storage")
+            .join("new-instance-2");
+
+        // Make sure storage is clean
+        remove_dir_all(storage_path.clone()).expect("Could not clear storage directory");
+
         conductor.start_all_interfaces();
         assert!(conductor
             .interface_threads
@@ -1237,13 +1252,6 @@ dna = 'test-dna'
 id = 'new-instance-2'"#,
             ),
         );
-
-        let storage_path = current_dir()
-            .expect("Could not get current dir")
-            .join("tmp-test")
-            .join(test_name)
-            .join("storage")
-            .join("new-instance-2");
 
         let storage_path_string = storage_path.to_str().unwrap().to_owned();
         toml = add_block(

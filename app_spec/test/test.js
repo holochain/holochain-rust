@@ -151,7 +151,7 @@ scenario2.runTape('delete_entry_different_author', async (t, { alice, bob }) => 
   const params = { content, in_reply_to }
 
   //commit create_post
-  const createResult = await alice.callSync("blog", "create_post", params)
+  const createResult = alice.call("blog", "create_post", params)
 
   t.ok(createResult.Ok)
 

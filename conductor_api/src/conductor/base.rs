@@ -307,11 +307,11 @@ impl Conductor {
         // ipc_uri for it and save it for future calls to `load_config`
         // or we use that uri value that was created from previous calls!
         let net_config = self.config.network.clone().unwrap();
-        let uri = net_config.n3h_ipc_uri.clone().unwrap_or_else(|| {
+        let uri = net_config.n3h_ipc_uri.clone().or_else(|| {
             self.network_spawn = self.spawn_network().ok();
             self.network_spawn
                 .as_ref()
-                .map(|spawn| spwn.ipc_binding.clone())
+                .map(|spawn| spawn.ipc_binding.clone())
         });
 
         P2pConfig::new_ipc_uri(
@@ -662,7 +662,7 @@ impl Conductor {
             .instances
             .iter()
             .filter(|(id, _)| instance_ids.contains(&id))
-            .cloned()
+            .map(|(id, val)| (id.clone(), val.clone()))
             .collect();
 
         let mut conductor_api_builder = ConductorApiBuilder::new()

@@ -152,6 +152,7 @@ impl FromStr for ZomeApiFunction {
             "hc_sleep" => Ok(ZomeApiFunction::Sleep),
             "hc_remove_link" => Ok(ZomeApiFunction::RemoveLink),
             "hc_sign" => Ok(ZomeApiFunction::Sign),
+            "hc_verify_signature" => Ok(ZomeApiFunction::VerifySignature),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -440,6 +441,7 @@ pub mod tests {
             ("hc_sleep", ZomeApiFunction::Sleep),
             ("hc_remove_link", ZomeApiFunction::RemoveLink),
             ("hc_sign", ZomeApiFunction::Sign),
+            ("hc_verify_signature", ZomeApiFunction::VerifySignature),
         ] {
             assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
         }
@@ -472,6 +474,7 @@ pub mod tests {
             (ZomeApiFunction::Sleep, "hc_sleep"),
             (ZomeApiFunction::RemoveLink, "hc_remove_link"),
             (ZomeApiFunction::Sign, "hc_sign"),
+            (ZomeApiFunction::VerifySignature, "hc_verify_signature"),
         ] {
             assert_eq!(output, input.as_str());
         }
@@ -495,6 +498,7 @@ pub mod tests {
             ("hc_sleep", 14),
             ("hc_remove_link", 15),
             ("hc_sign", 16),
+            ("hc_verify_signature", 17),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -518,6 +522,7 @@ pub mod tests {
             (14, ZomeApiFunction::Sleep),
             (15, ZomeApiFunction::RemoveLink),
             (16, ZomeApiFunction::Sign),
+            (17, ZomeApiFunction::VerifySignature),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

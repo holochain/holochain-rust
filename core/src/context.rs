@@ -23,9 +23,8 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     signature::Signature,
 };
-
-// use holochain_dpki::key_bundle::KeyBundle;
 use holochain_net::p2p_config::P2pConfig;
+use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_lite::JsonRpc;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use snowflake::ProcessUniqueId;
@@ -284,7 +283,7 @@ impl Context {
         let mut message_data = SecBuf::with_insecure_from_string(payload.clone());
         let mut signature_data = SecBuf::with_insecure_from_string(signature.into());
 
-        let res = holochain_dpki::utils::verify(pub_key, message_data, signature_data)?;
+        let res = holochain_dpki::utils::verify(pub_key, &mut message_data, &mut signature_data)?;
 
         Ok(res)
     }

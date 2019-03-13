@@ -108,11 +108,12 @@ pub struct ValidatingLinkDefinition {
 /// #   dna::entry_types::Sharing,
 /// #   json::JsonString,
 /// #   error::HolochainError,
+/// #   validation::EntryValidationData
 /// # };
 ///
 /// # fn main() {
 ///
-/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 /// pub struct Post {
 ///     content: String,
 ///     date_created: String,
@@ -122,27 +123,27 @@ pub struct ValidatingLinkDefinition {
 ///     entry!(
 ///         name: "post",
 ///         description: "a short social media style sharing of content",
-///         sharing: Sharing::Public
+///         sharing: Sharing::Public,
 ///
 ///         validation_package: || {
 ///             hdk::ValidationPackageDefinition::ChainFull
 ///         },
 ///
-///         validation: |validation_data: hdk::EntryValidationData| {
+///         validation: |validation_data: hdk::EntryValidationData<Post>| {
 ///              match validation_data
 ///              {
 ///              EntryValidationData::Create(test_entry) =>
 ///              {
 ///                        
 ///                        
-///                        (test_entry.stuff != "FAIL")
+///                        (test_entry.content != "FAIL")
 ///                        .ok_or_else(|| "FAIL content is not allowed".to_string())
 ///                }
 ///                _ =>
-///                   {
+///                 {
 ///                      Err("Failed to validate with wrong entry type".to_string())
-///                   }
-///         },
+///                }
+///         }},
 ///
 ///         links: [
 ///             to!(
@@ -153,7 +154,7 @@ pub struct ValidatingLinkDefinition {
 ///                     hdk::ValidationPackageDefinition::ChainFull
 ///                 },
 ///
-///                 validation: |base: Address, target: Address, _validation_data: hdk::EntryValidationData| {
+///                 validation: | _validation_data: hdk::LinkValidationData| {
 ///                     Ok(())
 ///                 }
 ///             )

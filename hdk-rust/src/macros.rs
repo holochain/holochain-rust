@@ -130,20 +130,20 @@ macro_rules! load_string {
 ///         entry!(
 ///             name: "post",
 ///             description: "",
-///             sharing: Sharing::Public
+///             sharing: Sharing::Public,
 ///
 ///             validation_package: || {
 ///                 hdk::ValidationPackageDefinition::ChainFull
 ///             },
 ///
-///             validation: |validation_data: hdk::EntryValidationData| {
+///             validation: |validation_data: hdk::EntryValidationData<Post>| {
 ///              match validation_data
 ///              {
 ///              EntryValidationData::Create(test_entry) =>
 ///              {
 ///                        
 ///                        
-///                        (test_entry.stuff != "FAIL")
+///                        (test_entry.content != "FAIL")
 ///                        .ok_or_else(|| "FAIL content is not allowed".to_string())
 ///                }
 ///                _ =>

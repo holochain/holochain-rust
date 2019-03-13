@@ -88,7 +88,6 @@ pub async fn validate_entry(
         EntryType::App(app_entry_type) => await!(app_entry::validate_app_entry(
             entry.clone(),
             app_entry_type.clone(),
-            validation_data,
             context,
             link
         )),

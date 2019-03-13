@@ -20,7 +20,6 @@ use futures_util::try_future::TryFutureExt;
 pub async fn validate_app_entry(
     entry: Entry,
     app_entry_type: AppEntryType,
-    validation_data: ValidationData,
     context: &Arc<Context>,
     link : Option<Address>
 ) -> ValidationResult {
@@ -39,7 +38,7 @@ pub async fn validate_app_entry(
         let result = await!(get_entry_result_workflow(&context,entry_args).map_err(|_|{
             ValidationError::Fail("Could not get entry for link_update_delete".to_string())
         }))?;
-        let latest = result.latest().ok_or(ValidationError::Fail("Could not find entry for link_update_delete".to_string()))?;
+        result.latest().ok_or(ValidationError::Fail("Could not find entry for link_update_delete".to_string()))?;
         await!(run_call_back(context.clone(), entry, &zome_name, link))
     }
     else 

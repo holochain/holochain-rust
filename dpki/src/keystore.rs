@@ -200,7 +200,7 @@ pub fn sign_one_time(data: String) -> HcResult<(Base32, Signature)> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::AGENT_ID_CTX_STR;
+    use crate::AGENT_ID_CTX;
     use base64;
 
     #[test]
@@ -227,7 +227,7 @@ pub mod tests {
     fn test_keystore_add_seed_from_seed() {
         let mut keystore = Keystore::new();
 
-        let context = SeedContext::from("SOMECTXT");
+        let context = SeedContext::new(*b"SOMECTXT");
 
         assert_eq!(
             keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1),
@@ -257,7 +257,7 @@ pub mod tests {
     #[test]
     fn test_keystore_add_key_from_seed() {
         let mut keystore = Keystore::new();
-        let context = SeedContext::from(AGENT_ID_CTX_STR);
+        let context = SeedContext::new(AGENT_ID_CTX);
 
         assert_eq!(
             keystore.add_key_from_seed("my_root_seed", "my_keypair", &context, 1),
@@ -284,7 +284,7 @@ pub mod tests {
     #[test]
     fn test_keystore_sign() {
         let mut keystore = Keystore::new();
-        let context = SeedContext::from(AGENT_ID_CTX_STR);
+        let context = SeedContext::new(AGENT_ID_CTX);
 
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
 

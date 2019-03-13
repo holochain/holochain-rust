@@ -1,6 +1,4 @@
-use crate::{
-    key_bundle::KeyBundle, password_encryption::*, AGENT_ID_CTX_STR, CONTEXT_SIZE, SEED_SIZE,
-};
+use crate::{key_bundle::KeyBundle, password_encryption::*, AGENT_ID_CTX, CONTEXT_SIZE, SEED_SIZE};
 use bip39::{Language, Mnemonic};
 use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_sodium::{kdf, pwhash, secbuf::SecBuf};
@@ -41,24 +39,20 @@ pub enum SeedType {
 }
 
 pub struct SeedContext {
-    inner: String,
+    inner: [u8; 8],
 }
 
 impl SeedContext {
-    pub fn new(data: String) -> Self {
+    pub fn new(data: [u8; 8]) -> Self {
         assert_eq!(data.len(), CONTEXT_SIZE);
         assert!(data.is_ascii());
         SeedContext { inner: data }
     }
 
     pub fn to_sec_buf(&self) -> SecBuf {
-        SecBuf::with_insecure_from_string(self.inner.clone())
-    }
-}
-
-impl From<&str> for SeedContext {
-    fn from(data: &str) -> SeedContext {
-        SeedContext::new(data.to_string())
+        let mut buf = SecBuf::with_insecure(8);
+        buf.write(0, &self.inner).expect("SecBuf must be writeable");
+        buf
     }
 }
 
@@ -275,7 +269,7 @@ impl IndexedPinSeed {
             return Err(HolochainError::ErrorGeneric("Invalid index".to_string()));
         }
         let mut app_seed_buf = SecBuf::with_secure(SEED_SIZE);
-        let context = SeedContext::from(AGENT_ID_CTX_STR);
+        let context = SeedContext::new(AGENT_ID_CTX);
         let mut context = context.to_sec_buf();
         kdf::derive(&mut app_seed_buf, index, &mut context, &mut self.inner.buf)?;
 
@@ -320,7 +314,7 @@ mod tests {
     #[test]
     fn it_should_create_a_indexed_seed() {
         let seed_buf = generate_random_seed_buf(SEED_SIZE);
-        let context = SeedContext::from("HCDEVICE");
+        let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
 
         let mut indexed_seed_3 = root_seed.generate_indexed_seed(&context, 3).unwrap();
@@ -349,7 +343,7 @@ mod tests {
         let seed_buf = generate_random_seed_buf(SEED_SIZE);
         let mut pin = generate_random_seed_buf(SEED_SIZE);
 
-        let context = SeedContext::from("HCDEVICE");
+        let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
         let mut indexed_seed = root_seed.generate_indexed_seed(&context, 3).unwrap();
         let indexed_pin_seed = indexed_seed
@@ -363,7 +357,7 @@ mod tests {
         let seed_buf = generate_random_seed_buf(SEED_SIZE);
         let mut pin = generate_random_seed_buf(SEED_SIZE);
 
-        let context = SeedContext::from("HCDEVICE");
+        let context = SeedContext::new(*b"HCDEVICE");
         let mut rs = RootSeed::new(seed_buf);
         let mut ds = rs.generate_indexed_seed(&context, 3).unwrap();
         let mut dps = ds.generate_indexed_pin_seed(&mut pin, TEST_CONFIG).unwrap();

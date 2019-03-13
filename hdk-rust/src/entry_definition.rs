@@ -220,9 +220,7 @@ macro_rules! entry {
             let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::entry::Entry>| {
                 let $validation_data = hdk::entry_definition::entry_to_native_type::<$native_type>(validation_data.clone())?;
                 use std::convert::TryFrom;
-                use hdk::holochain_core_types::entry::entry_type::EntryType as E_Type;
-                let e_type = E_Type::try_from(validation_data)?;
-        
+                let e_type = hdk::holochain_core_types::entry::entry_type::EntryType::try_from(validation_data)?;
                 match e_type {
                     hdk::holochain_core_types::entry::entry_type::EntryType::App(app_entry_value) => {
                         $entry_validation

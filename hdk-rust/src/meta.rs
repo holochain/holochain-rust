@@ -347,7 +347,7 @@ pub mod tests {
         Vec::new()
     }
 
-    /*#[test]
+    #[test]
     fn partial_zome_json() {
         #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
         pub struct Post {
@@ -386,5 +386,5 @@ pub mod tests {
             JsonString::from(partial_zome),
             JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
         );
-    }*/
+    }
 }

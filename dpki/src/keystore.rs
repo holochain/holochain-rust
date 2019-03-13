@@ -54,7 +54,7 @@ impl Keystore {
         }
         let seed_buf = generate_random_seed_buf(size);
         let secret = Arc::new(Mutex::new(Secret::RootSeed(RootSeed::new(seed_buf))));
-        let _ = self.keys.insert(id, secret);
+        self.keys.insert(id, secret);
         Ok(())
     }
 
@@ -112,7 +112,7 @@ impl Keystore {
                 }
             }
         };
-        let _ = self.keys.insert(dst_id, secret);
+        self.keys.insert(dst_id, secret);
 
         Ok(())
     }
@@ -148,7 +148,7 @@ impl Keystore {
             let public_key = key_bundle.get_id();
             (Arc::new(Mutex::new(Secret::Key(key_bundle))), public_key)
         };
-        let _ = self.keys.insert(dst_id, secret);
+        self.keys.insert(dst_id, secret);
 
         Ok(public_key)
     }

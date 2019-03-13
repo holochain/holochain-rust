@@ -150,7 +150,7 @@ macro_rules! load_string {
 ///                   {
 ///                      Err("Failed to validate with wrong entry type".to_string())
 ///                   }
-///               },
+///               }},
 ///
 ///         )
 ///     ]

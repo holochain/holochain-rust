@@ -223,7 +223,7 @@ macro_rules! entry {
                 use std::convert::TryFrom;
                 let e_type = hdk::holochain_core_types::entry::entry_type::EntryType::try_from(validation_data)?;
                 match e_type {
-                    hdk::holochain_core_types::entry::entry_type::EntryType::App(app_entry_value) => {
+                    hdk::holochain_core_types::entry::entry_type::EntryType::App(_) => {
                         $entry_validation
                     },
                     hdk::holochain_core_types::entry::entry_type::EntryType::Deletion =>

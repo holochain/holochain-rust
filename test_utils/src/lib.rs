@@ -15,7 +15,7 @@ use holochain_core::{
     nucleus::actions::call_zome_function::make_cap_request_for_call,
     };
 use holochain_core_types::{
-    cas::content::Address,
+    cas::content::AddressableContent,
     dna::{
         traits::ReservedTraitNames,
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
@@ -227,8 +227,7 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
     let params_string = String::from(params.into());
     let cap_request =  make_cap_request_for_call(
         context.clone(),
-        Address::from(context.clone().agent_id.pub_sign_key.clone()),
-        Address::from(context.clone().agent_id.pub_sign_key.clone()),
+        context.clone().agent_id.address(),
         fn_name,
         params_string.clone(),
     );

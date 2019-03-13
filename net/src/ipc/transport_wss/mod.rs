@@ -85,9 +85,9 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
         let host_port = format!(
             "{}:{}",
             uri.host_str()
-                .ok_or(TransportError("bad connect host".into()))?,
+                .ok_or_else(|| TransportError("bad connect host".into()))?,
             uri.port()
-                .ok_or(TransportError("bad connect port".into()))?,
+                .ok_or_else(|| TransportError("bad connect port".into()))?,
         );
         let socket = (self.stream_factory)(&host_port)?;
         let id = self.priv_next_id();
@@ -123,7 +123,7 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
                 .to_string();
             if let Some(mut info) = self.stream_sockets.remove(&key) {
                 if let Err(e) = info.close() {
-                    errors.push(e.into());
+                    errors.push(e);
                 }
             }
         }
@@ -259,7 +259,7 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
         match socket {
             WssStreamState::None => {
                 // stream must have closed, do nothing
-                return Ok(());
+                Ok(())
             }
             WssStreamState::Connecting(socket) => {
                 info.last_msg = std::time::Instant::now();
@@ -271,60 +271,59 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                     .expect("failed to build TlsConnector");
                 info.stateful_socket =
                     self.priv_tls_handshake(connector.connect(info.url.as_str(), socket))?;
-                return Ok(());
+                Ok(())
             }
             WssStreamState::TlsMidHandshake(socket) => {
                 info.stateful_socket = self.priv_tls_handshake(socket.handshake())?;
-                return Ok(());
+                Ok(())
             }
             WssStreamState::TlsReady(socket) => {
                 info.last_msg = std::time::Instant::now();
                 *did_work = true;
                 info.stateful_socket = self
                     .priv_ws_handshake(&info.id, tungstenite::client(info.url.clone(), socket))?;
-                return Ok(());
+                Ok(())
             }
             WssStreamState::WssMidHandshake(socket) => {
                 info.stateful_socket = self.priv_ws_handshake(&info.id, socket.handshake())?;
-                return Ok(());
+                Ok(())
             }
             WssStreamState::Ready(mut socket) => {
+                // This seems to be wrong. Messages shouldn't be drained.
                 let msgs: Vec<Vec<u8>> = info.send_queue.drain(..).collect();
                 for msg in msgs {
-                    if let Err(e) = socket.write_message(tungstenite::Message::Binary(msg)) {
-                        return Err(e.into());
-                    }
+                    // TODO: fix this line! if there is an error, all the remaining messages will be lost!
+                    socket.write_message(tungstenite::Message::Binary(msg))?;
                 }
+
                 match socket.read_message() {
                     Err(tungstenite::error::Error::Io(e)) => {
                         if e.kind() == std::io::ErrorKind::WouldBlock {
                             info.stateful_socket = WssStreamState::Ready(socket);
                             return Ok(());
                         }
-                        return Err(e.into());
+                        Err(e.into())
                     }
                     Err(tungstenite::error::Error::ConnectionClosed(_)) => {
                         // close event will be published
-                        return Ok(());
+                        Ok(())
                     }
-                    Err(e) => {
-                        return Err(e.into());
-                    }
+                    Err(e) => Err(e.into()),
                     Ok(msg) => {
                         info.last_msg = std::time::Instant::now();
                         *did_work = true;
-                        let mut qmsg = None;
-                        match msg {
-                            tungstenite::Message::Text(s) => qmsg = Some(s.into_bytes()),
-                            tungstenite::Message::Binary(b) => qmsg = Some(b),
-                            _ => (),
-                        }
+                        let qmsg = match msg {
+                            tungstenite::Message::Text(s) => Some(s.into_bytes()),
+                            tungstenite::Message::Binary(b) => Some(b),
+                            _ => None,
+                        };
+
                         if let Some(msg) = qmsg {
                             self.event_queue
                                 .push(TransportEvent::Message(info.id.clone(), msg));
                         }
                         info.stateful_socket = WssStreamState::Ready(socket);
-                        return Ok(());
+                        Ok(())
                     }
                 }
             }

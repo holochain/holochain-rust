@@ -144,6 +144,37 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.result.All.items[0].entry.App[1]),{content: "Hello Holo world 321", date_created: "now" })
 })
 
+
+scenario2.runTape('delete_entry_different_author', async (t, { alice, bob }) => {
+  const content = "Hello Holo world 321"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+
+  //commit create_post
+  const createResult = await alice.callSync("blog", "create_post", params)
+
+  t.ok(createResult.Ok)
+
+
+  //delete entry post
+  const deletionParams = { post_address: createResult.Ok }
+  const deletionResult = await bob.callSync("blog", "delete_entry_post", deletionParams)
+
+  t.deepEqual(deletionResult.Err,{ Internal: 'Unspecified' });
+})
+
+scenario2.runTape('update_author_entry_does_not_exist', async (t, { alice, bob }) => {
+  const content = "Hello Holo world 321"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+
+  //delete entry post
+  const deletionParams = { post_address: createResult.Ok }
+  const deletionResult = await bob.callSync("blog", "update_post", deletionParams)
+
+  t.deepEqual(deletionResult.Err,{ Internal: 'Unspecified' });
+})
+
 scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
   const in_reply_to = null

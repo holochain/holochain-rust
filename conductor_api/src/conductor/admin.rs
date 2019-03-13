@@ -519,7 +519,7 @@ pub mod tests {
     };
     use holochain_common::paths::DNA_EXTENSION;
     use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
-    use std::{convert::TryFrom, env::current_dir, fs::File, io::Read, thread, time::Duration};
+    use std::{convert::TryFrom, env::current_dir, fs::File, io::Read};
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_: &PathBuf| {
@@ -923,11 +923,6 @@ id = 'new-dna'"#,
             &String::from("new-dna"),
             &String::from("test-agent-1"),
         );
-
-        // TODO, FIXME: Since adding an instance is such an involved process, we need to wait a bit
-        // for that initialization to complete. To clean this up, consider moving more functionality
-        // from Holochain::new into Holochain::start.
-        thread::sleep(Duration::from_secs(2));
 
         assert_eq!(add_result, Ok(()));
 

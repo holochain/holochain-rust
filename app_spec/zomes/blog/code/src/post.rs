@@ -2,7 +2,7 @@ use boolinator::Boolinator;
 use hdk::entry_definition::ValidatingEntryType;
 /// This file holds everything that represents the "post" entry type.
 use hdk::holochain_core_types::{
-    cas::content::Address, dna::entry_types::Sharing, error::HolochainError, json::JsonString,
+     error::HolochainError, json::JsonString,
     validation::{EntryValidationData,LinkValidationData}
 };
 
@@ -47,7 +47,7 @@ pub fn definition() -> ValidatingEntryType {
     entry!(
         name: "post",
         description: "blog entry post",
-        sharing: Sharing::Public
+        sharing: Sharing::Public,
 
         validation_package: || {
             hdk::ValidationPackageDefinition::ChainFull
@@ -134,7 +134,7 @@ mod tests {
                 base_type: "%agent_id".to_string(),
                 tag: "recommended_posts".to_string(),
             }],
-            ..Default::default()
+            sharing : Sharing::Public
         };
         assert_eq!(
             expected_definition,

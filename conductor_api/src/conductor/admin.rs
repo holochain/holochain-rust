@@ -1211,11 +1211,11 @@ type = 'http'"#,
         // Make sure storage is clean
         let _ = remove_dir_all(storage_path.clone());
 
-        conductor.start_all_interfaces();
-        assert!(conductor
-            .interface_threads
-            .get("websocket interface")
-            .is_some());
+        //conductor.start_all_interfaces();
+        //assert!(conductor
+        //    .interface_threads
+        //    .get("websocket interface")
+        //    .is_some());
 
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");

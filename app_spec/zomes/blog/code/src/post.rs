@@ -99,7 +99,9 @@ mod tests {
     use hdk::{
         holochain_core_types::{
             dna::entry_types::{EntryTypeDef, LinkedFrom},
-            entry::{entry_type::EntryType, Entry},
+            entry::{entry_type::{EntryType,AppEntryType},AppEntryValue,Entry},
+             dna::entry_types::Sharing,
+             validation::EntryValidationData
         },
         holochain_wasm_utils::api_serialization::validation::LinkDirection,
         ValidationData,
@@ -123,7 +125,7 @@ mod tests {
         let mut post_definition = definition();
 
         let expected_name = EntryType::from("post");
-        assert_eq!(expected_name, post_definition.name.clone(),);
+        assert_eq!(expected_name, post_definition.name.clone());
 
         let expected_definition = EntryTypeDef {
             description: "blog entry post".to_string(),
@@ -150,13 +152,10 @@ mod tests {
         );
 
         let post_ok = Post::new("foo", "now");
+        let entry = Entry::App(AppEntryType("post"),post_ok.into());
         assert_eq!(
             (post_definition.validator)(
-                Entry::App(
-                    post_definition.name.clone().try_into().unwrap(),
-                    post_ok.into(),
-                ),
-                ValidationData::default()
+               EntryValidationData::Create(entry)
             ),
             Ok(()),
         );

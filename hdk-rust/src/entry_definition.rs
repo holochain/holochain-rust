@@ -384,11 +384,11 @@ fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(entry :
     {
         Entry::App(_, entry_value) => T::try_from(entry_value.to_owned()).map_err(|_| {
             ZomeApiError::Internal(
-                "Could not convert get_links result to requested type".to_string(),
+                "Could not convert Entry result to requested type".to_string(),
             )
         }),
         _ => Err(ZomeApiError::Internal(
-            "get_links did not return an app entry".to_string(),
+            "Entry did not return an app entry".to_string(),
         )),
     }
     

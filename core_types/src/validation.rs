@@ -8,6 +8,8 @@ use crate::{
     link::link_data::LinkData
 };
 
+use chain_header::test_chain_header;
+
 use std::convert::TryFrom;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
@@ -106,8 +108,7 @@ impl Default for ValidationData {
                 source_chain_headers: None,
                 custom: None,
             },
-            lifecycle: EntryLifecycle::default(),
-            action: EntryAction::default(),
+            lifecycle: EntryLifecycle::default()
         }
     }
 }

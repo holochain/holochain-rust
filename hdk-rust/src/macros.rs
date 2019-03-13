@@ -111,7 +111,7 @@ macro_rules! load_string {
 /// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # fn main() {
 ///
-/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 /// pub struct Post {
 ///     content: String,
 ///     date_created: String,

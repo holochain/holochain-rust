@@ -3,6 +3,7 @@ use hdk::entry_definition::ValidatingEntryType;
 /// This file holds everything that represents the "post" entry type.
 use hdk::holochain_core_types::{
     cas::content::Address, dna::entry_types::Sharing, error::HolochainError, json::JsonString,
+    validation::{EntryValidationData,LinkValidationData}
 };
 
 /// We declare the structure of our entry type with this Rust struct.
@@ -10,7 +11,7 @@ use hdk::holochain_core_types::{
 /// to how this happens with functions parameters and zome_functions!.
 ///
 /// So this is our normative schema definition:
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 pub struct Post {
     pub content: String,
     pub date_created: String,
@@ -72,7 +73,7 @@ pub fn definition() -> ValidatingEntryType {
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
-                validation: |_source: Address, _target: Address, _validation_data: hdk::ValidationData | {
+                validation: | _validation_data: hdk::LinkValidationData | {
                     Ok(())
                 }
             ),
@@ -82,7 +83,7 @@ pub fn definition() -> ValidatingEntryType {
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
-                validation: |_source: Address, _target: Address, _validation_data: hdk::ValidationData | {
+                validation: | _validation_data: hdk::LinkValidationData | {
                     Ok(())
                 }
             )

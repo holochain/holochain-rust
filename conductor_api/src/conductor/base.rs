@@ -165,10 +165,9 @@ impl Conductor {
     pub fn stop_all_interfaces(&mut self) {
         for (id, kill_switch) in self.interface_threads.iter() {
             notify(format!("Stopping interface {}", id));
-            let _ = kill_switch.send(()).map_err(|err| {
+            kill_switch.send(()).unwrap_or_else(|err| {
                 let message = format!("Error stopping interface: {}", err);
                 notify(message.clone());
-                err
             });
         }
     }

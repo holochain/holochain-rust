@@ -27,11 +27,9 @@ pub async fn validate_remove_entry(entry: Entry,
             ValidationError::Fail("Entry not found in dht chain".to_string())
         })?;
 
-        let EntryWithHeader{entry:_,header:deletion_entry_header} = fetch_entry_with_header(&entry_to_delete.clone().address(),&context).map_err(|_|{
-            ValidationError::Fail("Entry not found in dht chain".to_string())
-        })?;
+        let headers = &validation_data.package.chain_header;
 
-        if entity_to_delete_header.provenances().iter().find(|prov| deletion_entry_header.provenances().iter().find(|prov2|prov.0==prov2.0).is_some()).is_some()
+        if headers.provenances().iter().find(|prov| entity_to_delete_header.provenances().iter().find(|prov2|prov.0==prov2.0).is_some()).is_some()
         {
             let app_entry_type = match entry_to_delete.clone()
             {

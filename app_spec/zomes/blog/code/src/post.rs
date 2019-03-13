@@ -3,7 +3,8 @@ use hdk::entry_definition::ValidatingEntryType;
 /// This file holds everything that represents the "post" entry type.
 use hdk::holochain_core_types::{
      error::HolochainError, json::JsonString,
-    validation::{EntryValidationData,LinkValidationData}
+    validation::{EntryValidationData},
+    dna::entry_types::Sharing
 };
 
 /// We declare the structure of our entry type with this Rust struct.
@@ -56,7 +57,7 @@ pub fn definition() -> ValidatingEntryType {
         validation: |validation_data: hdk::EntryValidationData<Post>| {
             match validation_data
             {
-                EntryVallidationData::Create(post) => 
+                EntryValidationData::Create(post) => 
                 {
                     (post.content.len() < 280)
                    .ok_or_else(|| String::from("Content too long"))

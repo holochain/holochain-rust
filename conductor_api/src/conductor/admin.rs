@@ -911,6 +911,16 @@ id = 'new-dna'"#,
         let test_name = "test_add_instance";
         let mut conductor = create_test_conductor(test_name, 3001);
 
+        let storage_path = current_dir()
+            .expect("Could not get current dir")
+            .join("tmp-test")
+            .join(test_name)
+            .join("storage")
+            .join("new-instance");
+
+        // Make sure storage is clean
+        remove_dir_all(storage_path.clone()).expect("Could not clear storage directory");
+
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
         conductor
@@ -961,13 +971,6 @@ dna = 'new-dna'
 id = 'new-instance'"#,
             ),
         );
-
-        let storage_path = current_dir()
-            .expect("Could not get current dir")
-            .join("tmp-test")
-            .join(test_name)
-            .join("storage")
-            .join("new-instance");
 
         let storage_path_string = storage_path.to_str().unwrap().to_owned();
         toml = add_block(

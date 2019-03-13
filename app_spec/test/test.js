@@ -136,11 +136,11 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   t.deepEqual(failedDelete.Err,{ Internal: 'Unspecified' });
 
   //get initial entry
-  const GetInitialParamsResult = alice.call("blog", "get_initial_post", { post_address: createResult.Ok })
+  const GetInitialParamsResult = bob.call("blog", "get_initial_post", { post_address: createResult.Ok })
   t.deepEqual(JSON.parse(GetInitialParamsResult.Ok.App[1]),{content: "Hello Holo world 321", date_created: "now" });
   
   const entryWithOptionsGet = { post_address: createResult.Ok}
-  const entryWithOptionsGetResult = alice.call("blog", "get_post_with_options", entryWithOptionsGet);
+  const entryWithOptionsGetResult = bob.call("blog", "get_post_with_options", entryWithOptionsGet);
   t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.result.All.items[0].entry.App[1]),{content: "Hello Holo world 321", date_created: "now" })
 })
 

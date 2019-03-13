@@ -254,7 +254,7 @@ impl ConductorApiBuilder {
                             let mut hc = hc_lock_inner.write().unwrap();
                             let params_string = serde_json::to_string(&params)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                            println!("ZOME CALLING USING interface/zome/function ROUTE HAS BEEN DEPRECATED.  USE call INSTEAD");
+                            println!("ZOME CALLING USING instance/zome/function ROUTE HAS BEEN DEPRECATED.  USE call INSTEAD");
                             let cap_request = {
                                 // TODO: get the token from the parameters.  If not there assume public token.
                                 // currently we are always getting the public token and signing it ourself

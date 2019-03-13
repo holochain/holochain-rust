@@ -1217,10 +1217,22 @@ type = 'http'"#,
             .get("websocket interface")
             .is_some());
 
+        let mut new_dna_path = PathBuf::new();
+        new_dna_path.push("new-dna.dna.json");
+        conductor
+            .install_dna_from_file(
+                new_dna_path.clone(),
+                String::from("new-dna"),
+                false,
+                None,
+                None,
+            )
+            .expect("Could not install DNA");
+
         assert_eq!(
             conductor.add_instance(
                 &String::from("new-instance-2"),
-                &String::from("test-dna"),
+                &String::from("new-dna"),
                 &String::from("test-agent-1")
             ),
             Ok(())
@@ -1244,6 +1256,15 @@ type = 'http'"#,
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[dnas]]
+file = 'new-dna.dna.json'
+hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
+id = 'new-dna'"#,
+            ),
+        );
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(
@@ -1251,7 +1272,7 @@ type = 'http'"#,
             String::from(
                 r#"[[instances]]
 agent = 'test-agent-1'
-dna = 'test-dna'
+dna = 'new-dna'
 id = 'new-instance-2'"#,
             ),
         );

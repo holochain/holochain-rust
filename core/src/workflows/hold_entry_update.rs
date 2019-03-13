@@ -4,13 +4,13 @@ use crate::{
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
-    nucleus::validation::{validate_entry,entry_to_validation_data}
+    nucleus::validation::validate_entry
 };
 
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 

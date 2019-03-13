@@ -5,7 +5,7 @@ use crate::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
     nucleus::{
-        actions::add_pending_validation::add_pending_validation, validation::{validate_entry,entry_to_validation_data}
+        actions::add_pending_validation::add_pending_validation, validation::validate_entry
     },
 };
 
@@ -15,7 +15,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::AddressableContent,
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
+    validation::{ EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 

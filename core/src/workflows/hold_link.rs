@@ -9,14 +9,14 @@ use crate::{
 
 use crate::{
     nucleus::{
-        actions::add_pending_validation::add_pending_validation, validation::{ValidationError,entry_to_validation_data},
+        actions::add_pending_validation::add_pending_validation, validation::ValidationError,
     },
     scheduled_jobs::pending_validations::ValidatingWorkflow,
 };
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 

@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     network::actions::publish::publish,
     nucleus::{
-        actions::build_validation_package::build_validation_package, validation::{validate_entry,entry_to_validation_data}
+        actions::build_validation_package::build_validation_package, validation::validate_entry
     },
 };
 

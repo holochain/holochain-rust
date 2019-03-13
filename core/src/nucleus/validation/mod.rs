@@ -2,14 +2,13 @@ use crate::{context::Context,
 workflows::get_entry_result::get_entry_result_workflow};
 use holochain_core_types::{
     cas::content::Address,
-    entry::{entry_type::{EntryType,AppEntryType}, Entry},
+    entry::{entry_type::EntryType, Entry},
     error::HolochainError,
-    validation::{ValidationData,EntryValidationData},
-    link::Link
+    validation::{ValidationData,EntryValidationData}
 };
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
-use std::{sync::Arc,convert::TryFrom};
-use futures_util::future::FutureExt;
+use std::{sync::Arc};
+
 
 mod app_entry;
 mod header_address;

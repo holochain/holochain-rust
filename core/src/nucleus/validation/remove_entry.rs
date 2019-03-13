@@ -24,14 +24,9 @@ pub async fn validate_remove_entry(entry: Entry,
         let dna = context.get_dna().expect("Callback called without DNA set");
         let deletion_entry = unwrap_to!(entry=>Entry::Deletion);
         let EntryWithHeader{entry : entry_to_delete,header: entity_to_delete_header} = fetch_entry_with_header(&deletion_entry.clone().deleted_entry_address(),&context).map_err(|_|{
-            ValidationError::Fail("Entry not found in dht chain".to_string())
+            ValidationError::Fail("Author mismatch ".to_string())
         })?;
-        println!("Got header");
-        let headers = &validation_data.package.chain_header;
 
-        if headers.provenances().iter().find(|prov| entity_to_delete_header.provenances().iter().find(|prov2|prov.source()==prov2.source()).is_some()).is_some()
-        {
-            println!("Provenances match");
             let app_entry_type = match entry_to_delete.clone()
             {
             Entry::App(app_entry_type,_) => Ok(app_entry_type),
@@ -55,12 +50,6 @@ pub async fn validate_remove_entry(entry: Entry,
             };
             let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
             await!(run_validation_callback(entry.address(), call, context))
-        }
-        else
-        {
-            Err(ValidationError::Fail("Tried to Delete Entry From Different Author".to_string()))
-        }
-
         
     }
 

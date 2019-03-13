@@ -175,6 +175,11 @@ pub fn test_sys_entry_value() -> AgentId {
 pub fn test_entry() -> Entry {
     Entry::App(test_app_entry_type(), test_entry_value())
 }
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_entry_with_value(value : &'static str) -> Entry
+{
+    Entry::App(test_app_entry_type(), JsonString::from(value))
+}
 
 pub fn expected_serialized_entry_content() -> JsonString {
     JsonString::from("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")

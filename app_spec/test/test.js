@@ -163,16 +163,12 @@ scenario2.runTape('delete_entry_different_author', async (t, { alice, bob }) => 
   t.deepEqual(deletionResult.Err,{ Internal: 'Unspecified' });
 })
 
-scenario2.runTape('update_author_entry_does_not_exist', async (t, { alice, bob }) => {
-  const content = "Hello Holo world 321"
-  const in_reply_to = null
-  const params = { content, in_reply_to }
+scenario2.runTape('update_entry_does_not_exist', async (t, { alice, bob }) => {
+   //update entry does not exist
+   const updateParams = { post_address: "1234", new_content: "Hello Holo V2" }
+   const UpdateResult = await bob.callSync("blog", "update_post", updateParams)
 
-  //delete entry post
-  const deletionParams = { post_address: createResult.Ok }
-  const deletionResult = await bob.callSync("blog", "update_post", deletionParams)
-
-  t.deepEqual(deletionResult.Err,{ Internal: 'Unspecified' });
+  t.deepEqual(UpdateResult.Err,{ Internal: 'Unspecified' });
 })
 
 scenario2.runTape('update_post', async (t, { alice, bob }) => {

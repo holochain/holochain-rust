@@ -29,7 +29,7 @@ pub async fn validate_remove_entry(entry: Entry,
 
         let headers = &validation_data.package.chain_header;
 
-        if headers.provenances().iter().find(|prov| entity_to_delete_header.provenances().iter().find(|prov2|prov.0==prov2.0).is_some()).is_some()
+        if headers.provenances().iter().find(|prov| entity_to_delete_header.provenances().iter().find(|prov2|prov.source()==prov2.source()).is_some()).is_some()
         {
             let app_entry_type = match entry_to_delete.clone()
             {

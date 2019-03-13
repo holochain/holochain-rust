@@ -110,7 +110,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
-})
+})*/
 
 scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 321"
@@ -142,7 +142,7 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const entryWithOptionsGet = { post_address: createResult.Ok}
   const entryWithOptionsGetResult = bob.call("blog", "get_post_with_options", entryWithOptionsGet);
   t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.result.All.items[0].entry.App[1]),{content: "Hello Holo world 321", date_created: "now" })
-})*/
+})
 
 
 scenario2.runTape('delete_entry_different_author', async (t, { alice, bob }) => {

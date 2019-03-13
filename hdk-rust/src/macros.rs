@@ -75,6 +75,7 @@ macro_rules! load_string {
 /// use holochain_core_types::{
 ///     cas::content::Address,
 ///     dna::entry_types::Sharing,
+///     validation::EntryValidationData
 /// };
 /// # use holochain_core_types::error::RibosomeEncodingBits;
 /// # // Adding empty functions so that the cfg(test) build can link.
@@ -147,10 +148,10 @@ macro_rules! load_string {
 ///                        .ok_or_else(|| "FAIL content is not allowed".to_string())
 ///                }
 ///                _ =>
-///                   {
+///                 {
 ///                      Err("Failed to validate with wrong entry type".to_string())
-///                   }
-///               }},
+///                }
+///         }}
 ///
 ///         )
 ///     ]

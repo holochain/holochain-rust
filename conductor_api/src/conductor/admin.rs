@@ -919,7 +919,7 @@ id = 'new-dna'"#,
             .join("new-instance");
 
         // Make sure storage is clean
-        remove_dir_all(storage_path.clone()).expect("Could not clear storage directory");
+        let _ = remove_dir_all(storage_path.clone());
 
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
@@ -1209,7 +1209,7 @@ type = 'http'"#,
             .join("new-instance-2");
 
         // Make sure storage is clean
-        remove_dir_all(storage_path.clone()).expect("Could not clear storage directory");
+        let _ = remove_dir_all(storage_path.clone());
 
         conductor.start_all_interfaces();
         assert!(conductor

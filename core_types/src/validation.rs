@@ -97,6 +97,21 @@ pub struct ValidationData {
 }
 
 
+impl Default for ValidationData {
+    fn default() -> Self {
+        Self {
+            package: ValidationPackage {
+                chain_header: test_chain_header(),
+                source_chain_entries: None,
+                source_chain_headers: None,
+                custom: None,
+            },
+            lifecycle: EntryLifecycle::default(),
+            action: EntryAction::default(),
+        }
+    }
+}
+
 
 impl ValidationData {
     /// The list of authors that have signed this entry.

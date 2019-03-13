@@ -134,6 +134,7 @@ mod tests {
                 base_type: "%agent_id".to_string(),
                 tag: "recommended_posts".to_string(),
             }],
+            links_to : Vec::new(),
             sharing : Sharing::Public
         };
         assert_eq!(

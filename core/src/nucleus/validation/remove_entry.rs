@@ -5,7 +5,6 @@ use crate::{
         validation::{ValidationError, ValidationResult,entry_to_validation_data},
         CallbackFnCall,
     },
-    workflows::get_entry_result::get_entry_result_workflow,
     network::entry_with_header::{EntryWithHeader,fetch_entry_with_header}
 };
 use holochain_core_types::{
@@ -13,9 +12,9 @@ use holochain_core_types::{
     entry::{ Entry},
     validation::ValidationData
 };
-use holochain_wasm_utils::api_serialization::{validation::EntryValidationArgs,get_entry::GetEntryArgs};
+use holochain_wasm_utils::api_serialization::{validation::EntryValidationArgs};
 use std::sync::Arc;
-use futures_util::try_future::TryFutureExt;
+
 
 pub async fn validate_remove_entry(entry: Entry,
     validation_data: ValidationData,

@@ -12,16 +12,12 @@ use hdk::{
     },
 };
 
-pub fn handle_sign_me_message(message: String) -> ZomeApiResult<Address> {
-    let entry = Entry::App("my_entry".into(), entry.into());
-    let address = hdk::commit_entry(&entry)?;
-    Ok(address)
+pub fn handle_sign_me_message(message: String) -> ZomeApiResult<String> {
+    Ok("address".into())
 }
 
-pub fn handle_verify_me_message(entry: String) -> ZomeApiResult<Address> {
-    let entry = Entry::App("my_entry".into(), entry.into());
-    let address = hdk::commit_entry(&entry)?;
-    Ok(address)
+pub fn handle_verify_me_message(entry: String) -> ZomeApiResult<bool> {
+    Ok(false)
 }
 
 define_zome! {
@@ -32,13 +28,13 @@ define_zome! {
     functions: [
         sign_me_message: {
             inputs: |message: String|,
-            outputs: |result: ZomeApiResult<Address>|,
+            outputs: |result: ZomeApiResult<String>|,
             handler: handle_sign_me_message
         }
 
         verify_me_message: {
             inputs: |entry: String|,
-            outputs: |result: ZomeApiResult<Address>|,
+            outputs: |result: ZomeApiResult<bool>|,
             handler: handle_verify_me_message
         }
     ]

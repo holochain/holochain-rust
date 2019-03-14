@@ -64,6 +64,20 @@ pub enum EntryValidationData<T> {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub enum LinkValidationData
+{
+    LinkAdd {
+        link : LinkData,
+        validation_package : ValidationPackage
+    },
+    LinkRemove {
+        link : LinkData,
+        validation_package : ValidationPackage
+    }
+ 
+}
+
 impl TryFrom<EntryValidationData<Entry>> for EntryType {
     type Error = HolochainError;
     fn try_from(entry_validation : EntryValidationData<Entry>) -> Result<Self, Self::Error> {
@@ -84,12 +98,6 @@ impl TryFrom<EntryValidationData<Entry>> for EntryType {
 
 
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum LinkValidationData
-{
-    LinkAdd(Entry,LinkData),
-    LinkRemove(Entry,LinkData)
-}
 
 /// This structs carries information contextual for the process
 /// of validating an entry of link and is passed in to the according

@@ -530,8 +530,8 @@ define_zome! {
                     validation: |validation_data: hdk::LinkValidationData | {
                         let link = match validation_data
                         {
-                            LinkValidationData::LinkAdd(entry,link) => link.clone(),
-                            LinkValidationData::LinkRemove(entry,link) => link.clone()
+                            LinkValidationData::LinkAdd{link,validation_package:_} => link.clone(),
+                            LinkValidationData::LinkRemove{link,validation_package:_} => link.clone()
                         };
                         let base = link.link().base();
                         let target = link.link().target();

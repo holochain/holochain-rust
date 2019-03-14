@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 pub async fn validate_link_entry(
     entry: Entry,
-    _validation_data: ValidationData,
+    validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> ValidationResult {
     let address = entry.address().clone();
@@ -46,8 +46,8 @@ pub async fn validate_link_entry(
 
     let validation_data = match entry.clone()
     {
-        Entry::LinkAdd(link_add) => Ok(LinkValidationData::LinkAdd(entry,link_add)),
-        Entry::LinkRemove(link_remove) => Ok(LinkValidationData::LinkRemove(entry,link_remove)),
+        Entry::LinkAdd(link) => Ok(LinkValidationData::LinkAdd{link,validation_package : validation_data.package.clone()}),
+        Entry::LinkRemove(link) => Ok(LinkValidationData::LinkRemove{link,validation_package : validation_data.package.clone()}),
         _ => Err(ValidationError::Fail("Entry is not link".to_string()))
     }?;
 

@@ -146,12 +146,27 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
 
 
 
-scenario2.runTape('update_entry_does_not_exist', async (t, { alice, bob }) => {
+scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
    //update entry does not exist
    const updateParams = { post_address: "1234", new_content: "Hello Holo V2" }
    const UpdateResult = await bob.callSync("blog", "update_post", updateParams)
 
   t.deepEqual(UpdateResult.Err,{ Internal: 'Unspecified' });
+
+  const content = "Hello Holo world 321"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+
+  //commit create_post
+  const createResult = await alice.callSync("blog", "create_post", params)
+
+  t.ok(createResult.Ok)
+
+  const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo world 321" }
+  const UpdateResultV2 = await bob.callSync("blog", "update_post", updateParamsV2)
+  t.deepEqual(UpdateResult.Err,{ Internal: "Trying to modify with same data" });
+
+
 })
 
 scenario2.runTape('update_post', async (t, { alice, bob }) => {

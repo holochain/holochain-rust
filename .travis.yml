@@ -224,6 +224,10 @@ jobs:
         - RUSTFLAGS="-Z thinlto -C codegen-units=16"
       before_install:
         - echo $(pwd)
+        - echo "$PWD"
+        - echo $PWD
+        - echo $(PWD)
+        - echo ${PWD}
         - docker run -dit --workdir c://src --volume $(pwd)://src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
       script:
         - docker exec ${DOCKER_CONTAINER} powershell get-location

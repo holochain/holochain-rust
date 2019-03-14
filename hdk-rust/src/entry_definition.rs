@@ -360,20 +360,20 @@ pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(entry_validation 
 {
     match entry_validation
     {
-        EntryValidationData::Create(entry) => {
+        EntryValidationData::Create{entry,validation_package} => {
             let native_type = convert_entry_validation_to_native::<T>(entry)?;
-            Ok(EntryValidationData::Create(native_type))
+            Ok(EntryValidationData::Create{entry:native_type,validation_package})
         },
-        EntryValidationData::Modify(latest,entry) =>
+        EntryValidationData::Modify{new_entry,old_entry,old_entry_header,validation_package} =>
         {
-            let latest_native = convert_entry_validation_to_native::<T>(latest)?;
-            let current_native = convert_entry_validation_to_native::<T>(entry)?;
-            Ok(EntryValidationData::Modify(latest_native,current_native))
+            let new_entry = convert_entry_validation_to_native::<T>(new_entry)?;
+            let old_entry = convert_entry_validation_to_native::<T>(old_entry)?;
+            Ok(EntryValidationData::Modify{new_entry,old_entry,old_entry_header,validation_package})
         },
-        EntryValidationData::Delete(deletion_entry,entry_to_delete) =>
+        EntryValidationData::Delete{old_entry,old_entry_header,validation_package} =>
         {
-            let native_entry_to_delete = convert_entry_validation_to_native::<T>(entry_to_delete)?;
-            Ok(EntryValidationData::Delete(deletion_entry.clone(),native_entry_to_delete))
+            let old_entry = convert_entry_validation_to_native::<T>(old_entry)?;
+            Ok(EntryValidationData::Delete{old_entry,old_entry_header,validation_package})
         }
     }
 }

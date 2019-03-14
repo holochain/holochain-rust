@@ -114,7 +114,7 @@ pub extern "C" fn __hdk_validate_app_entry(
         Err(e) => return RibosomeEncodedValue::from(e).into(),
     };
 
-    let entry_type_to_app_entry = match entry_validation_to_app_entry_type(input.validation_data.clone())
+    let entry_type_to_app_entry = match EntryType::try_from(input.validation_data.clone())
     {
         Ok(v) => v,
         Err(e) => return RibosomeEncodedValue::from(e).into()
@@ -141,22 +141,10 @@ pub extern "C" fn __hdk_validate_app_entry(
     }
 }
 
-pub fn entry_validation_to_app_entry_type(entry_validation : EntryValidationData<Entry>) ->Result<EntryType,HolochainError>
-{
-    match entry_validation
-    {
-        EntryValidationData::Create(entry) => {
-            Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?))
-        },
-        EntryValidationData::Delete(_,entry) => Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?)),
-        EntryValidationData::Modify(latest,_) =>{
-            Ok(EntryType::App(AppEntryType::try_from(latest.entry_type())?))
-        }
-    }
-}
 
 
-//could not implement a try_from with this for some strange reason
+
+
 
 
 

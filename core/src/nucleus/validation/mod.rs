@@ -1,5 +1,5 @@
 use crate::{context::Context,
-network::entry_with_header::{EntryWithHeader,fetch_entry_with_header}};
+network::entry_with_header::fetch_entry_with_header};
 use holochain_core_types::{
     cas::content::Address,
     entry::{entry_type::EntryType, Entry},

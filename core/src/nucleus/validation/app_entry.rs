@@ -5,17 +5,17 @@ use crate::{
         validation::{ValidationError, ValidationResult,entry_to_validation_data},
         CallbackFnCall,
     },
-    workflows::get_entry_result::get_entry_result_workflow
+    network::entry_with_header::fetch_entry_with_header
 };
 use holochain_core_types::{
     cas::content::{Address,AddressableContent},
     entry::{entry_type::AppEntryType, Entry},
     validation::ValidationPackage
 };
-use holochain_wasm_utils::api_serialization::{validation::EntryValidationArgs,get_entry::GetEntryArgs};
+use holochain_wasm_utils::api_serialization::{validation::EntryValidationArgs};
 use std::sync::Arc;
 
-use futures_util::try_future::TryFutureExt;
+
 
 pub async fn validate_app_entry(
     entry: Entry,

@@ -222,7 +222,6 @@ jobs:
         - DOCKER_CONTAINER=windows-docker
         - CARGO_INCREMENTAL=1
         - RUSTFLAGS="-Z thinlto -C codegen-units=16"
-        - PATH=%USERPROFILE%\.cargo\bin:$PATH
       before_install:
         - echo ${PWD}
         - docker run -dit --volume ${PWD}://src --workdir //src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}

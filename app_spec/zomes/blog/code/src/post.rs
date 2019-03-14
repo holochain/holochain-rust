@@ -62,7 +62,7 @@ pub fn definition() -> ValidatingEntryType {
                     (post.content.len() < 280)
                    .ok_or_else(|| String::from("Content too long"))
                 },
-                EntryValidationData::Modified{new_entry:new_post,old_entry:old_post,old_entry_header:_old_e,validation_package:_valid} =>
+                EntryValidationData::Modify{new_entry:new_post,old_entry:old_post,old_entry_header:_old_e,validation_package:_valid} =>
                 {
                    (new_post.content == old_post.content)
                    .ok_or_else(|| String::from("Trying to modify with same data"))   

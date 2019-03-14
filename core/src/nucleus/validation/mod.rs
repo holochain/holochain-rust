@@ -1,5 +1,4 @@
 use crate::{context::Context,
-workflows::get_entry_result::get_entry_result_workflow,
 network::entry_with_header::{EntryWithHeader,fetch_entry_with_header}};
 use holochain_core_types::{
     cas::content::Address,
@@ -7,7 +6,7 @@ use holochain_core_types::{
     error::HolochainError,
     validation::{ValidationData,ValidationPackage,EntryValidationData}
 };
-use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
+
 
 use std::{sync::Arc};
 

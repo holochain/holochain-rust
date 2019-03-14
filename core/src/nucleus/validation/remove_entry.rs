@@ -10,7 +10,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::AddressableContent,
     entry::{ Entry},
-    validation::{ValidationData,ValidationPackage}
+    validation::ValidationData
 };
 use holochain_wasm_utils::api_serialization::{validation::EntryValidationArgs};
 use std::sync::Arc;

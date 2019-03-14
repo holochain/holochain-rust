@@ -223,7 +223,8 @@ jobs:
         - CARGO_INCREMENTAL=1
         - RUSTFLAGS="-Z thinlto -C codegen-units=16"
       before_install:
-        - docker run -dit --workdir //src --volume $(pwd)://src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
+        - echo $(pwd)
+        - docker run -dit --workdir c://src --volume $(pwd)://src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
       script:
         - docker exec ${DOCKER_CONTAINER} powershell get-location
         - docker exec ${DOCKER_CONTAINER} powershell dir -s

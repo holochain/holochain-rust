@@ -214,6 +214,25 @@ jobs:
   # test builds are ordered from slowest to quickest
   # this allows us to keep walltimes down
   include:
+    - name: "windows-docker"
+      os: windows
+      services:
+        - docker
+      env:
+        - DOCKER_IMG=holochain/travis-windows-proto
+        - DOCKER_CONTAINER=windows-docker
+      before_install:
+        - >-
+        sudo docker run -dit
+        --volume "${PWD}:/src"
+        --workdir /src
+        --name "${DOCKER_CONTAINER}"
+        "${DOCKER_IMG}"
+      script:
+        - >-
+          sudo docker exec "${DOCKER_CONTAINER}"
+          cargo build
+          
     - name: "windows hdk"
       <<: *_windows_template_lite
       env:

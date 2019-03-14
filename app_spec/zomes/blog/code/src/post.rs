@@ -57,17 +57,17 @@ pub fn definition() -> ValidatingEntryType {
         validation: |validation_data: hdk::EntryValidationData<Post>| {
             match validation_data
             {
-                EntryValidationData::Create{entry:post,validation_package:_} => 
+                EntryValidationData::Create{entry:post,validation_package:_valid} => 
                 {
                     (post.content.len() < 280)
                    .ok_or_else(|| String::from("Content too long"))
                 },
-                EntryValidationData::Update{new_entry:new_post,old_entry:old_post,old_entry_header:_,validation_package:_} =>
+                EntryValidationData::Update{new_entry:new_post,old_entry:old_post,old_entry_header:_old_e,validation_package:_valid} =>
                 {
                    (new_post.content == old_post.content)
                    .ok_or_else(|| String::from("Trying to modify with same data"))   
                 },
-                EntryValidationData::Update{old_entry:old_post,old_entry_header:_,validation_package:_} =>
+                EntryValidationData::Update{old_entry:old_post,old_entry_header:_old_en,validation_package:_valid_pac} =>
                 {
                    (old_post.content=="SYS")
                    .ok_or_else(|| String::from("Trying to delete native type with content SYS"))   

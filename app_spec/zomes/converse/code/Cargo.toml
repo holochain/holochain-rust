@@ -1,0 +1,17 @@
+[package]
+name = "converse"
+version = "0.1.0"
+authors = ["Julian Laubstein <contact@julianlaubstein.de>"]
+edition = "2018"
+
+[dependencies]
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+hdk = { git = "https://github.com/holochain/holochain-rust", tag = "v0.0.6-alpha" }
+holochain_wasm_utils = { git = "https://github.com/holochain/holochain-rust", tag = "v0.0.6-alpha" }
+holochain_core_types_derive = { git = "https://github.com/holochain/holochain-rust", tag = "v0.0.6-alpha" }
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]

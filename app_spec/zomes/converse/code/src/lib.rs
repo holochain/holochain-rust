@@ -12,11 +12,15 @@ use hdk::{
     },
 };
 
-pub fn handle_sign_me_message(message: String) -> ZomeApiResult<String> {
+pub fn handle_sign_message(message: String) -> ZomeApiResult<String> {
     Ok("address".into())
 }
 
-pub fn handle_verify_me_message(entry: String) -> ZomeApiResult<bool> {
+pub fn handle_verify_message(
+    message: String,
+    signature: String,
+    pub_key: String,
+) -> ZomeApiResult<bool> {
     Ok(false)
 }
 
@@ -26,20 +30,20 @@ define_zome! {
     genesis: || { Ok(()) }
 
     functions: [
-        sign_me_message: {
+        sign_message: {
             inputs: |message: String|,
             outputs: |result: ZomeApiResult<String>|,
-            handler: handle_sign_me_message
+            handler: handle_sign_message
         }
 
-        verify_me_message: {
-            inputs: |entry: String|,
+        verify_message: {
+            inputs: |message: String, signature: String, pub_key: String|,
             outputs: |result: ZomeApiResult<bool>|,
-            handler: handle_verify_me_message
+            handler: handle_verify_message
         }
     ]
 
     traits: {
-        hc_public [sign_me_message, verify_me_message]
+        hc_public [sign_message, verify_message]
     }
 }

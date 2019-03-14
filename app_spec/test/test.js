@@ -151,7 +151,7 @@ scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
    const updateParams = { post_address: "1234", new_content: "Hello Holo V2" }
    const UpdateResult = await bob.callSync("blog", "update_post", updateParams)
 
-  t.deepEqual(UpdateResult.Err,{ Internal: 'Unspecified' });
+  t.deepEqual(UpdateResult.Err,{ Internal: 'failed to update post' });
 
   const content = "Hello Holo world 321"
   const in_reply_to = null
@@ -297,7 +297,6 @@ scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
 
   //failed delete
   const failedDelete = await alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
-  console.log("failed delete " + failedDelete);
   t.deepEqual(failedDelete.Err,{ Internal: 'Unspecified' });
 })
 

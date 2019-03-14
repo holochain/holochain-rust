@@ -64,12 +64,12 @@ pub fn definition() -> ValidatingEntryType {
                 },
                 EntryValidationData::Modify{new_entry:new_post,old_entry:old_post,old_entry_header:_old_e,validation_package:_valid} =>
                 {
-                   (new_post.content == old_post.content)
+                   (new_post.content != old_post.content)
                    .ok_or_else(|| String::from("Trying to modify with same data"))   
                 },
                 EntryValidationData::Delete{old_entry:old_post,old_entry_header:_old_en,validation_package:_valid_pac} =>
                 {
-                   (old_post.content=="SYS")
+                   (old_post.content!="SYS")
                    .ok_or_else(|| String::from("Trying to delete native type with content SYS"))   
                 }
                 

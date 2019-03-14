@@ -62,12 +62,12 @@ pub fn definition() -> ValidatingEntryType {
                     (post.content.len() < 280)
                    .ok_or_else(|| String::from("Content too long"))
                 },
-                EntryValidationData::Update{new_entry:new_post,old_entry:old_post,old_entry_header:_old_e,validation_package:_valid} =>
+                EntryValidationData::Modified{new_entry:new_post,old_entry:old_post,old_entry_header:_old_e,validation_package:_valid} =>
                 {
                    (new_post.content == old_post.content)
                    .ok_or_else(|| String::from("Trying to modify with same data"))   
                 },
-                EntryValidationData::Update{old_entry:old_post,old_entry_header:_old_en,validation_package:_valid_pac} =>
+                EntryValidationData::Delete{old_entry:old_post,old_entry_header:_old_en,validation_package:_valid_pac} =>
                 {
                    (old_post.content=="SYS")
                    .ok_or_else(|| String::from("Trying to delete native type with content SYS"))   

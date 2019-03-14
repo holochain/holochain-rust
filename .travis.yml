@@ -226,7 +226,7 @@ jobs:
         - docker run -dit --workdir //src --volume ${PWD}://src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
       script:
         #- docker exec "${DOCKER_CONTAINER}" cargo build --manifest-path hdk-rust\wasm-test\Cargo.toml
-        - docker exec -it ${DOCKER_CONTAINER} cmd /c cargo build
+        - winpty docker exec -it ${DOCKER_CONTAINER} cmd /c cargo build
 
     - name: "windows hdk"
       <<: *_windows_template_lite

@@ -222,7 +222,7 @@ jobs:
         - DOCKER_CONTAINER=windows-docker
       before_install:
         - echo ${PWD}
-        - MSYS_NO_PATHCONV=1 docker run -dit --volume ${PWD}://src --workdir //src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
+        - docker run -dit --volume ${PWD}://src --workdir //src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
       script:
         - docker exec "${DOCKER_CONTAINER}" cargo build
 

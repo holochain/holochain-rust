@@ -112,7 +112,7 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
 })*/
 
-scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
+/*scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 321"
   const in_reply_to = null
   const params = { content, in_reply_to }
@@ -142,7 +142,7 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const entryWithOptionsGet = { post_address: createResult.Ok}
   const entryWithOptionsGetResult = bob.call("blog", "get_post_with_options", entryWithOptionsGet);
   t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.result.All.items[0].entry.App[1]),{content: "Hello Holo world 321", date_created: "now" })
-})
+})*/
 
 
 

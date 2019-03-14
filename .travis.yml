@@ -219,7 +219,7 @@ jobs:
       language: shell
       script:
        - ls
-       - docker run -v `pwd`:/holochain holochain/travis-windows-proto 'cd /holochain && cargo build"
+       - docker run -v `pwd`:/holochain holochain/travis-windows-proto 'cd /holochain && cargo build'
 
     - name: "windows hdk"
       <<: *_windows_template_lite

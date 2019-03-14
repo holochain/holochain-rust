@@ -181,8 +181,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const updatedPostV1 = alice.call("blog", "get_post", { post_address: createResult.Ok })
   const UpdatePostV1Content = { content: "Hello Holo world 123", date_created: "now" };
   t.ok(updatedPostV1.Ok)
-  t.notOk(updatedPostV1.Ok[1]);
-  t.deepEqual(JSON.parse(updatedPostV1.Ok[1]),UpdatePostV1Content)
+  t.deepEqual(updatedPostV1.Ok[1],UpdatePostV1Content)
 
   //update to version 2
   const updatePostContentV2 = { content: "Hello Holo V2", date_created: "now" };

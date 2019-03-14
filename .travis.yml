@@ -224,7 +224,7 @@ jobs:
         - RUSTFLAGS="-Z thinlto -C codegen-units=16"
       before_install:
         - echo ${PWD}
-        - docker run -dit --volume ${PWD}:C:\\src --workdir C:\\src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
+        - docker run -dit --volume ${PWD}://src --workdir //src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
       script:
         - docker exec "${DOCKER_CONTAINER}" cargo build --manifest-path C:\src\hdk-rust\wasm-test\Cargo.toml
         - docker exec "${DOCKER_CONTAINER}" cmd dir

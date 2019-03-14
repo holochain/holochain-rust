@@ -140,7 +140,7 @@ macro_rules! load_string {
 ///             validation: |validation_data: hdk::EntryValidationData<Post>| {
 ///              match validation_data
 ///              {
-///              EntryValidationData::Create(test_entry) =>
+///              EntryValidationData::Create{entry:test_entry,validation_package:_} =>
 ///              {
 ///                        
 ///                        

@@ -57,7 +57,7 @@ pub fn definition() -> ValidatingEntryType {
         validation: |validation_data: hdk::EntryValidationData<Post>| {
             match validation_data
             {
-                EntryValidationData::Create(post) => 
+                EntryValidationData::Create{entry:post,validation_package:_} => 
                 {
                     (post.content.len() < 280)
                    .ok_or_else(|| String::from("Content too long"))
@@ -155,7 +155,7 @@ mod tests {
         let entry = Entry::App(AppEntryType("post"),post_ok.into());
         assert_eq!(
             (post_definition.validator)(
-               EntryValidationData::Create(entry)
+               EntryValidationData::Create{entry,validation_package:_}
             ),
             Ok(()),
         );

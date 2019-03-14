@@ -460,7 +460,7 @@ define_zome! {
             validation: |valida: hdk::EntryValidationData<TestEntryType>| {
                 match valida
                 {
-                    EntryValidationData::Create(test_entry) => 
+                    EntryValidationData::Create{entry:test_entry,validation_package:_} => 
                     {
                         (test_entry.stuff != "FAIL").ok_or_else(|| "FAIL content is not allowed".to_string())
                    
@@ -496,7 +496,7 @@ define_zome! {
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
                 match validation_data 
                 {
-                    EntryValidationData::Create(test_entry) => 
+                    EntryValidationData::Create{entry:test_entry,validation_package:_} => 
                     {
                         
                         Err(serde_json::to_string(&test_entry).unwrap())

@@ -69,11 +69,11 @@ impl TryFrom<EntryValidationData<Entry>> for EntryType {
     fn try_from(entry_validation : EntryValidationData<Entry>) -> Result<Self, Self::Error> {
          match entry_validation
         {
-            EntryValidationData::Create{entry,validation_package} => {
+            EntryValidationData::Create{entry,validation_package:_} => {
                 Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?))
             },
-            EntryValidationData::Delete{old_entry,old_entry_header,validation_package} => Ok(EntryType::App(AppEntryType::try_from(old_entry.entry_type())?)),
-            EntryValidationData::Modify{new_entry,old_entry,old_entry_header,validation_package} =>{
+            EntryValidationData::Delete{old_entry,old_entry_header:_,validation_package:_} => Ok(EntryType::App(AppEntryType::try_from(old_entry.entry_type())?)),
+            EntryValidationData::Modify{new_entry,old_entry:_,old_entry_header:_,validation_package:_} =>{
                 Ok(EntryType::App(AppEntryType::try_from(new_entry.entry_type())?))
             }
         }

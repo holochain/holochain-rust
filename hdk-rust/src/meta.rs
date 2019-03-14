@@ -9,10 +9,9 @@ use holochain_core_types::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
         zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
     },
-    entry::{entry_type::{AppEntryType, EntryType},Entry},
+    entry::{entry_type::{AppEntryType, EntryType}},
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
-    json::JsonString,
-    validation::{EntryValidationData}
+    json::JsonString
 };
 use holochain_wasm_utils::{
     api_serialization::validation::{

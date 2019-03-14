@@ -1,11 +1,10 @@
 use crate::{
     context::Context,
     nucleus::{
-        actions::run_validation_callback::run_validation_callback,
+        actions::{run_validation_callback::run_validation_callback,get_entry::get_entry_from_dht},
         validation::{ValidationError, ValidationResult,entry_to_validation_data},
         CallbackFnCall,
-    },
-    network::entry_with_header::fetch_entry_with_header
+    }
 };
 use holochain_core_types::{
     cas::content::{Address,AddressableContent},
@@ -34,7 +33,7 @@ pub async fn validate_app_entry(
     {
         let expected_link_update = link.clone().expect("Should unwrap link_update_delete with no problems");
         println!("before fetch");
-        fetch_entry_with_header(&expected_link_update, &context.clone()).map_err(|_|{
+        get_entry_from_dht(&context.clone(),&expected_link_update).map_err(|_|{
             ValidationError::Fail("Could not find entry for link_update_delete".to_string())
         })?;
         println!("managed to fetch");

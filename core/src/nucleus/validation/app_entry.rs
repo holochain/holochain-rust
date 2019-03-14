@@ -33,13 +33,9 @@ pub async fn validate_app_entry(
     if link.is_some()
     {
         let expected_link_update = link.clone().expect("Should unwrap link_update_delete with no problems");
-        let entry_args = &GetEntryArgs {
-        address: expected_link_update.clone(),
-        options: Default::default()};
-        let result = await!(get_entry_result_workflow(&context,entry_args).map_err(|_|{
-            ValidationError::Fail("Could not get entry for link_update_delete".to_string())
-        }))?;
-        result.latest().ok_or(ValidationError::Fail("Could not find entry for link_update_delete".to_string()))?;
+        fetch_entry_with_header(&expected_link_update, &context.clone()).map_err(|_|{
+            ValidationError::Fail("Could not find entry for link_update_delete".to_string())
+        })?;
         await!(run_call_back(context.clone(), entry, &zome_name, link,validation_package))
     }
     else 

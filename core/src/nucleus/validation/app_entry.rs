@@ -36,25 +36,30 @@ pub async fn validate_app_entry(
         fetch_entry_with_header(&expected_link_update, &context.clone()).map_err(|_|{
             ValidationError::Fail("Could not find entry for link_update_delete".to_string())
         })?;
-        await!(run_call_back(context.clone(), entry, &zome_name, link,validation_package))
+        let params = EntryValidationArgs {
+        validation_data: entry_to_validation_data(context.clone(),&entry,link_update_delete,validation_package).map_err(|_|{
+            ValidationError::Fail("Could not get entry validation".to_string())
+        })?
+        };
+
+        let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
+
+        await!(run_validation_callback(entry.address(), call, &context))
     }
     else 
     {
-        await!(run_call_back(context.clone(), entry, &zome_name,link,validation_package))
+        let params = EntryValidationArgs {
+        validation_data: entry_to_validation_data(context.clone(),&entry,link_update_delete,validation_package).map_err(|_|{
+            ValidationError::Fail("Could not get entry validation".to_string())
+        })?
+        };
+
+        let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
+
+        await!(run_validation_callback(entry.address(), call, &context))
     }
 
     
 }
 
-async fn run_call_back(context:Arc<Context>,entry:Entry,zome_name:&String,link_update_delete:Option<Address>,validation_package:ValidationPackage)-> ValidationResult
-{
-    let params = EntryValidationArgs {
-        validation_data: entry_to_validation_data(context.clone(),&entry,link_update_delete,validation_package).map_err(|_|{
-            ValidationError::Fail("Could not get entry validation".to_string())
-        })?
-    };
 
-    let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
-
-    await!(run_validation_callback(entry.address(), call, &context))
-}

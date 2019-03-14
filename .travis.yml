@@ -222,9 +222,8 @@ jobs:
         - DOCKER_CONTAINER=windows-docker
         - CARGO_INCREMENTAL=1
         - RUSTFLAGS="-Z thinlto -C codegen-units=16"
-      before_install:
-        - docker run -dit --workdir //src --volume ${PWD}://src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
       script:
+        - docker run -dit --workdir "$PWD" --volume "$PWD":"$PWD" --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
         #- docker exec "${DOCKER_CONTAINER}" cargo build --manifest-path hdk-rust\wasm-test\Cargo.toml
         - docker exec ${DOCKER_CONTAINER} dir
         - docker exec ${DOCKER_CONTAINER} cargo build

@@ -225,8 +225,8 @@ jobs:
       before_install:
         - docker run -dit --workdir //src --volume $(pwd)://src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
       script:
-        #- docker exec "${DOCKER_CONTAINER}" cargo build --manifest-path hdk-rust\wasm-test\Cargo.toml
-        - docker exec ${DOCKER_CONTAINER} powershell dir
+        - docker exec ${DOCKER_CONTAINER} powershell get-location
+        - docker exec ${DOCKER_CONTAINER} powershell dir -s
         - docker exec ${DOCKER_CONTAINER} powershell cargo build
 
     - name: "windows hdk"

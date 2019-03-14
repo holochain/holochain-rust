@@ -37,7 +37,7 @@ pub async fn validate_app_entry(
             ValidationError::Fail("Could not find entry for link_update_delete".to_string())
         })?;
         let params = EntryValidationArgs {
-        validation_data: entry_to_validation_data(context.clone(),&entry,link_update_delete,validation_package).map_err(|_|{
+        validation_data: entry_to_validation_data(context.clone(),&entry,link.clone(),validation_package).map_err(|_|{
             ValidationError::Fail("Could not get entry validation".to_string())
         })?
         };
@@ -49,7 +49,7 @@ pub async fn validate_app_entry(
     else 
     {
         let params = EntryValidationArgs {
-        validation_data: entry_to_validation_data(context.clone(),&entry,link_update_delete,validation_package).map_err(|_|{
+        validation_data: entry_to_validation_data(context.clone(),&entry,link.clone(),validation_package).map_err(|_|{
             ValidationError::Fail("Could not get entry validation".to_string())
         })?
         };

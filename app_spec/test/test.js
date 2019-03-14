@@ -181,6 +181,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const updatedPostV1 = alice.call("blog", "get_post", { post_address: createResult.Ok })
   const UpdatePostV1Content = { content: "Hello Holo world 123", date_created: "now" };
   t.ok(updatedPostV1.Ok)
+  t.notOk(updatedPostV1.Ok[1]);
   t.deepEqual(JSON.parse(updatedPostV1.Ok[1]),UpdatePostV1Content)
 
   //update to version 2
@@ -192,11 +193,13 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   //get v2 using initial adderss
   const updatedPostv2Initial = alice.call("blog", "get_post", { post_address: createResult.Ok })
   t.ok(updatedPostv2Initial.Ok)
+  t.notOk(updatedPostv2Initial.Ok[1]);
   t.deepEqual(JSON.parse(updatedPostv2Initial.Ok[1]), updatePostContentV2)
 
   //get v2 latest address
   const updatedPostv2Latest = alice.call("blog", "get_post", { post_address: UpdateResultV2.Ok })
   t.ok(updatedPostv2Latest.Ok)
+  t.notOk(updatedPostv2Latest.Ok[1]);
   t.deepEqual(JSON.parse(updatedPostv2Latest.Ok[1]), updatePostContentV2)
 
 
@@ -235,6 +238,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   //get history entry v4
    const entryHistoryV4Params = { post_address: UpdateResultV4.Ok}
    const entryHistoryV4 =  alice.call("blog", "get_history_post", entryHistoryV4Params)
+   t.notOk(UpdateResultV4.Ok)
    t.deepEqual(entryHistoryV4.Ok.items.length,1);
    t.deepEqual(JSON.parse(entryHistoryV4.Ok.items[0].entry[1]),updatePostV4Content);
    t.deepEqual(entryHistoryV4.Ok.items[0].meta.address,UpdateResultV4.Ok);
@@ -260,7 +264,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
      t.deepEqual(entryHistoryAll.Ok.items[2].meta.crud_status,"modified");
      t.deepEqual(entryHistoryAll.Ok.crud_links[UpdateResultV3.Ok],UpdateResultV4.Ok)
 
-     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[3].entry[1]),updatePostV4Content);
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[3].entry.App[1]),updatePostV4Content);
      t.deepEqual(entryHistoryAll.Ok.items[3].meta.address,UpdateResultV4.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[3].meta.crud_status,"live");
      t.notOk(entryHistoryAll.Ok.crud_links[UpdateResultV4.Ok])

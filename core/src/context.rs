@@ -274,20 +274,6 @@ impl Context {
         }
     }
 
-    pub fn verify_signature(
-        &self,
-        payload: String,
-        signature: Signature,
-        pub_key: String,
-    ) -> Result<bool, HolochainError> {
-        let mut message_data = SecBuf::with_insecure_from_string(payload.clone());
-        let mut signature_data = SecBuf::with_insecure_from_string(signature.into());
-
-        let res = holochain_dpki::utils::verify(pub_key, &mut message_data, &mut signature_data)?;
-
-        Ok(res)
-    }
-
     /// returns the public capability token (if any)
     pub fn get_public_token(&self) -> Option<Address> {
         self.state().and_then(|state| {

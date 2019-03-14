@@ -25,13 +25,15 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         }
     };
 
-    let verification_result = context
-        .verify_signature(
-            verification_args.payload,
-            verification_args.signature.into(),
-            verification_args.pub_key,
-        )
-        .unwrap_or(false);
+    let mut message_data = SecBuf::with_insecure_from_string(verification_args.payload.clone());
+    let mut signature_data = SecBuf::with_insecure_from_string(verification_args.signature.clone());
+
+    let verification_result = holochain_dpki::utils::verify(
+        verification_args.pub_key,
+        &mut message_data,
+        &mut signature_data,
+    )
+    .unwrap_or(false);
 
     runtime.store_as_json_string(verification_result)
 }

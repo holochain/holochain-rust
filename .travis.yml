@@ -214,7 +214,7 @@ jobs:
   # test builds are ordered from slowest to quickest
   # this allows us to keep walltimes down
   include:
-    - name: "windows-docker"
+    - name: "windows_docker"
       os: windows
       language: shell
       env:
@@ -226,7 +226,7 @@ jobs:
         - echo ${PWD}
         - docker run -dit --volume ${PWD}://src --workdir //src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
       script:
-        - docker exec "${DOCKER_CONTAINER}" cmd && cargo build
+        - docker exec "${DOCKER_CONTAINER}" cargo
 
     - name: "windows hdk"
       <<: *_windows_template_lite

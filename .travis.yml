@@ -224,10 +224,10 @@ jobs:
         - RUSTFLAGS="-Z thinlto -C codegen-units=16"
       before_install:
         - echo ${PWD}
-        - docker run -dit --volume ${PWD}://src --workdir //src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
+        - docker run -dit --volume ${PWD}:/c/src --workdir /c/src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
       script:
-        - docker exec "${DOCKER_CONTAINER}" cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml
-        - docker exec "${DOCKER_CONTAINER}" dir
+        - docker exec "${DOCKER_CONTAINER}" cargo build --manifest-path /c/src/hdk-rust/wasm-test/Cargo.toml
+        - docker exec "${DOCKER_CONTAINER}" cmd dir
 
     - name: "windows hdk"
       <<: *_windows_template_lite

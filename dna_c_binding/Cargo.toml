@@ -1,6 +1,6 @@
 [package]
 name = "holochain_dna_c_binding"
-version = "0.0.5-alpha"
+version = "0.0.6-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]

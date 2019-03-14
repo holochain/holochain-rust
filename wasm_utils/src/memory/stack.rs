@@ -22,7 +22,7 @@ impl From<Top> for usize {
 
 impl From<Top> for MemoryBits {
     fn from(top: Top) -> Self {
-        top.0 as MemoryBits
+        MemoryBits::from(top.0)
     }
 }
 
@@ -50,7 +50,7 @@ impl WasmStack {
         }
     }
 
-    pub fn next_allocation(&self, length: Length) -> Result<WasmAllocation, AllocationError> {
+    pub fn next_allocation(self, length: Length) -> Result<WasmAllocation, AllocationError> {
         WasmAllocation::new(MemoryInt::from(self.top()).into(), length)
     }
 

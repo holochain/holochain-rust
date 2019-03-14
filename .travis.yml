@@ -46,8 +46,8 @@ _windows_template: &_windows_template
   - PATH="$PATH:/c/Program Files (x86)/Nodist/bin"
 
 _unix_nodejs_conductor_template: &_unix_nodejs_conductor_template
-  before_install:
-    # install our own nodejs to get a reasonable version
+  install:
+    # install our own nodejs to get the correct version to create a build for
     - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
     - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.10.1
     - export PATH=$HOME/.yarn/bin:$PATH
@@ -67,19 +67,15 @@ _linux_nodejs_template: &_linux_nodejs_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
-  before_script:
+  before_install:
     - . ./scripts/install/auto.sh
 
 _macosx_nodejs_template: &_macosx_nodejs_template
   os: osx
   language: rust
   rust: nightly-2019-01-24
-  before_script:
-    - . ./scripts/install/release-deps-osx.sh
-
-_not_deploy_template: &_not_deploy_template
-  if: tag != /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/ AND \
-      tag != /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
+  before_install:
+    - . ./scripts/install/auto.sh
 
 _to_deploy_template: &_to_deploy_template
   if: tag =~ /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
@@ -105,6 +101,8 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       cargo: true
       directories:
           - node_modules
+  script:
+      - sh ./scripts/build_nodejs_conductor.sh
   # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
   before_deploy:
    # windows doesn't like absolute paths so set the working dir here
@@ -131,18 +129,16 @@ _windows_nodejs_conductor_template: &_windows_nodejs_conductor_template
     - yarn config set python python2.7
     - npm config set msvs_version 2015
     - yarn config set msvs_version 2015 --global
-  script:
-      - sh ./scripts/build_nodejs_conductor.sh
 # nodejs specific deployment templates stop here
 
-# holochain-clie deploy template
+# holochain-cli deploy template
 _cli_deploy_template: &_cli_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
   if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
   before_script:
-    - . ./scripts/install/release-deps-auto.sh
+    - . ./scripts/install/auto.sh
   script:
     - cargo rustc --manifest-path cli/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir cli-$TRAVIS_TAG-$TARGET
@@ -166,7 +162,7 @@ _conductor_deploy_template: &_conductor_deploy_template
   rust: nightly-2019-01-24
   if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
   before_script:
-    - . ./scripts/install/release-deps-auto.sh
+    - . ./scripts/install/auto.sh
   script:
     - cargo rustc --manifest-path conductor/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir conductor-$TRAVIS_TAG-$TARGET
@@ -219,7 +215,6 @@ jobs:
   # this allows us to keep walltimes down
   include:
     - name: "windows hdk"
-      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=hdk
@@ -227,7 +222,6 @@ jobs:
        - WASM_PATH=wasm-test/
 
     - name: "windows wasm_utils"
-      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_wasm_utils
@@ -235,7 +229,6 @@ jobs:
        - WASM_PATH=wasm-test/integration-test/
 
     - name: "windows conductor_api"
-      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_conductor_api
@@ -244,7 +237,6 @@ jobs:
        - WASM_PATH_2=test-bridge-caller/
 
     - name: "windows core"
-      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_core
@@ -252,49 +244,42 @@ jobs:
        - WASM_PATH=src/nucleus/actions/wasm-test/
 
     - name: "windows holochain_cas_implementations"
-      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_cas_implementations
        - TEST_PATH=cas_implementations/
 
     - name: "windows dna_c_binding"
-      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_dna_c_binding
        - TEST_PATH=dna_c_binding/
 
     - name: "windows holochain_sodium"
-      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_sodium
        - TEST_PATH=sodium/
 
     - name: "windows hc"
-      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=hc
        - TEST_PATH=cli/
 
     - name: "windows core_types"
-      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_core_types
        - TEST_PATH=core_types/
 
     - name: "windows holochain_net"
-      <<: *_not_deploy_template
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_net
        - TEST_PATH=net/
 
     - name: "C binding tests"
-      <<: *_not_deploy_template
       <<: *_trusty_bash
       # sudo is needed for codecov, && system library install which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
@@ -448,6 +433,7 @@ jobs:
 
     - name: "Windows - Node 11 - DRY RUN"
       <<: *_windows_template
+      <<: *_nodejs_deploy_template
       <<: *_windows_nodejs_conductor_template
       env:
        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"

@@ -20,7 +20,7 @@ use holochain_core::{
     nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
+    cas::content::AddressableContent,
     entry::Entry,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
@@ -164,11 +164,9 @@ declare_types! {
                 let cap = {
                     let context = instance.context();
                     let token = context.get_public_token().unwrap();
-                    let caller = Address::from("fake");
                     make_cap_request_for_call(
                         context.clone(),
                         token,
-                        caller,
                         &fn_name,
                         params.clone(),
                     )

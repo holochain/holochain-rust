@@ -214,6 +214,13 @@ jobs:
   # test builds are ordered from slowest to quickest
   # this allows us to keep walltimes down
   include:
+    - name: "windows docker"
+      os: windows
+      language: shell
+      script:
+       - ls
+       - docker run -v `pwd`:/holochain holochain/travis-windows-proto 'cd /holochain && cargo build"
+
     - name: "windows hdk"
       <<: *_windows_template_lite
       env:

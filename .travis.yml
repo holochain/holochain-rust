@@ -223,15 +223,10 @@ jobs:
         - CARGO_INCREMENTAL=1
         - RUSTFLAGS="-Z thinlto -C codegen-units=16"
       before_install:
-        - echo $(pwd)
-        - echo "$PWD"
-        - echo $PWD
-        - echo $(PWD)
-        - echo ${PWD}
-        - docker run -dit --workdir c://src --volume `pwd -W`:c:/src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
+        - docker run -dit --workdir c:/src --volume /c/Users/travis/build/holochain/holochain-rust:c:/src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
       script:
         - docker exec ${DOCKER_CONTAINER} powershell get-location
-        - docker exec ${DOCKER_CONTAINER} powershell dir -s
+        - docker exec ${DOCKER_CONTAINER} powershell cd c:\src && dir -s
         - docker exec ${DOCKER_CONTAINER} powershell cargo build
 
     - name: "windows hdk"

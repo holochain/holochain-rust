@@ -46,11 +46,22 @@ pub enum ValidationPackageDefinition {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum EntryValidationData<T>  
-{
-    Create(T),
-    Modify(T,T),
-    Delete(Entry,T)
+pub enum EntryValidationData<T> {
+    Create {
+        entry: T,
+        validation_package: ValidationPackage
+    },
+    Modify {
+        new_entry: T,
+        old_entry: T,
+        old_entry_header: ChainHeader,
+        validation_package: ValidationPackage
+    },
+    Delete {
+        old_entry: T,
+        old_entry_header: ChainHeader,
+        validation_package: ValidationPackage
+    }
 }
 
 impl TryFrom<EntryValidationData<Entry>> for EntryType {
@@ -58,12 +69,12 @@ impl TryFrom<EntryValidationData<Entry>> for EntryType {
     fn try_from(entry_validation : EntryValidationData<Entry>) -> Result<Self, Self::Error> {
          match entry_validation
         {
-            EntryValidationData::Create(entry) => {
+            EntryValidationData::Create{entry,validation_package} => {
                 Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?))
             },
-            EntryValidationData::Delete(_,entry) => Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?)),
-            EntryValidationData::Modify(latest,_) =>{
-                Ok(EntryType::App(AppEntryType::try_from(latest.entry_type())?))
+            EntryValidationData::Delete{old_entry,old_entry_header,validation_package} => Ok(EntryType::App(AppEntryType::try_from(old_entry.entry_type())?)),
+            EntryValidationData::Modify{new_entry,old_entry,old_entry_header,validation_package} =>{
+                Ok(EntryType::App(AppEntryType::try_from(new_entry.entry_type())?))
             }
         }
     }

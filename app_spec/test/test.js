@@ -16,7 +16,7 @@ const scenario1 = new Scenario([instanceAlice], { debugLog: true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
-/*scenario2.runTape('agentId', async (t, { alice, bob }) => {
+scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
 })
@@ -110,7 +110,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
-})*/
+})
 
 scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 321"
@@ -145,25 +145,8 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
 })
 
 
-scenario2.runTape('delete_entry_different_author', async (t, { alice, bob }) => {
-  const content = "Hello Holo world 321"
-  const in_reply_to = null
-  const params = { content, in_reply_to }
 
-  //commit create_post
-  const createResult = await alice.callSync("blog", "create_post", params)
-
-  t.ok(createResult.Ok)
-
-
-  //delete entry post
-  const deletionParams = { post_address: createResult.Ok }
-  const deletionResult = await bob.callSync("blog", "delete_entry_post", deletionParams)
-
-  t.deepEqual(deletionResult.Err,{ Internal: 'Unspecified' });
-})
-
-/*scenario2.runTape('update_entry_does_not_exist', async (t, { alice, bob }) => {
+scenario2.runTape('update_entry_does_not_exist', async (t, { alice, bob }) => {
    //update entry does not exist
    const updateParams = { post_address: "1234", new_content: "Hello Holo V2" }
    const UpdateResult = await bob.callSync("blog", "update_post", updateParams)
@@ -439,4 +422,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})*/
+})

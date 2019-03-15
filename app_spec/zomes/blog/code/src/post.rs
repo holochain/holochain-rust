@@ -109,13 +109,12 @@ mod tests {
     use hdk::{
         holochain_core_types::{
             dna::entry_types::{EntryTypeDef, LinkedFrom},
-            entry::{entry_type::{EntryType,AppEntryType},AppEntryValue,Entry},
+            entry::{entry_type::{EntryType,AppEntryType},Entry},
              dna::entry_types::Sharing,
              validation::{EntryValidationData,ValidationPackage},
              chain_header::test_chain_header
         },
-        holochain_wasm_utils::api_serialization::validation::LinkDirection,
-        ValidationData,
+        holochain_wasm_utils::api_serialization::validation::LinkDirection
     };
     use std::convert::TryInto;
 

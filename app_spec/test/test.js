@@ -16,7 +16,11 @@ const scenario1 = new Scenario([instanceAlice], { debugLog: true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
-scenario2.runTape('agentId', async (t, { alice, bob }) => {
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/*scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
 })
@@ -167,7 +171,7 @@ scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
   t.deepEqual(UpdateResult.Err,{ Internal: "Trying to modify with same data" });
 
 
-})
+})*/
 
 scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
@@ -177,17 +181,19 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   //commit version 1
   const createResult = await alice.callSync("blog", "create_post", params)
   t.ok(createResult.Ok)
+
+  sleep(15000);
    //get v1
   const updatedPostV1 = alice.call("blog", "get_post", { post_address: createResult.Ok })
   const UpdatePostV1Content = { content: "Hello Holo world 123", date_created: "now" };
   t.ok(updatedPostV1.Ok)
-  t.notOk(updatedPostV1.Err)
   t.deepEqual(JSON.parse(updatedPostV1.Ok.App[1]),UpdatePostV1Content)
-
+   
+  sleep(15000);
   //update to version 2
   const updatePostContentV2 = { content: "Hello Holo V2", date_created: "now" };
   const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo V2" }
-  const UpdateResultV2 = await alice.callSync("blog", "update_post", updateParamsV2)
+  const UpdateResultV2 = await bob.callSync("blog", "update_post", updateParamsV2)
   t.ok(UpdateResultV2.Ok)
   t.notOk(UpdateResultV2.Err)
 
@@ -284,7 +290,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
 })
 
 
-scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
+/*scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
   const in_reply_to = null
   const params = { content, in_reply_to }
@@ -448,4 +454,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})
+})*/

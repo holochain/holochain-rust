@@ -184,7 +184,7 @@ pub fn verify(public_key: Base32, data: String, signature: Signature) -> HcResul
 #[allow(dead_code)]
 pub fn sign_one_time(data: String) -> HcResult<(Base32, Signature)> {
     let mut data_buf = SecBuf::with_insecure_from_string(data);
-    let mut sign_keys = generate_random_sign_keypair();
+    let mut sign_keys = generate_random_sign_keypair()?;
 
     let mut signature_buf = sign_keys.sign(&mut data_buf)?;
     let buf = signature_buf.read_lock();

@@ -287,7 +287,7 @@ impl Blobbable for KeyBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{key_bundle::tests::*, seed::generate_random_seed_buf, SEED_SIZE};
+    use crate::{key_bundle::tests::*, utils::generate_random_seed_buf, SEED_SIZE};
     use holochain_sodium::pwhash;
 
     #[test]

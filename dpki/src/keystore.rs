@@ -1,7 +1,10 @@
 use crate::{
     keypair::{generate_random_sign_keypair, KeyPair, SigningKeyPair},
-    seed::{generate_derived_seed_buf, generate_random_seed_buf, SeedContext},
-    utils, SEED_SIZE,
+    utils::{
+        generate_derived_seed_buf, generate_random_seed_buf, verify as signingkey_verify,
+        SeedContext,
+    },
+    SEED_SIZE,
 };
 use holochain_core_types::{
     agent::Base32,
@@ -177,7 +180,7 @@ impl Keystore {
 /// verifies data and signature against a public key
 #[allow(dead_code)]
 pub fn verify(public_key: Base32, data: String, signature: Signature) -> HcResult<bool> {
-    utils::verify(Address::from(public_key), data, signature)
+    signingkey_verify(Address::from(public_key), data, signature)
 }
 
 /// creates a one-time private key and sign data returning the signature and the public key

@@ -3,7 +3,6 @@
 use crate::{
     key_bundle,
     password_encryption::{self, PwHashConfig},
-    seed::generate_random_seed_buf,
     utils, CODEC_HCK0, CODEC_HCS0, SEED_SIZE, SIGNATURE_SIZE,
 };
 use hcid::*;
@@ -166,12 +165,12 @@ impl EncryptingKeyPair {
 }
 
 pub fn generate_random_sign_keypair() -> HcResult<SigningKeyPair> {
-    let mut seed = generate_random_seed_buf(SEED_SIZE);
+    let mut seed = utils::generate_random_seed_buf(SEED_SIZE);
     SigningKeyPair::new_from_seed(&mut seed)
 }
 
 pub fn generate_random_enc_keypair() -> HcResult<EncryptingKeyPair> {
-    let mut seed = generate_random_seed_buf(SEED_SIZE);
+    let mut seed = utils::generate_random_seed_buf(SEED_SIZE);
     EncryptingKeyPair::new_from_seed(&mut seed)
 }
 
@@ -182,7 +181,7 @@ pub fn generate_random_enc_keypair() -> HcResult<EncryptingKeyPair> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{seed::generate_random_seed_buf, SEED_SIZE};
+    use crate::SEED_SIZE;
 
     pub fn test_generate_random_sign_keypair() -> SigningKeyPair {
         generate_random_sign_keypair().unwrap()

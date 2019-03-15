@@ -73,7 +73,7 @@ impl KeyBundle {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::{seed::generate_random_seed_buf, SIGNATURE_SIZE};
+    use crate::{utils::generate_random_seed_buf, SIGNATURE_SIZE};
     use holochain_sodium::pwhash;
 
     pub(crate) const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(

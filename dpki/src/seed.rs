@@ -1,4 +1,9 @@
-use crate::{key_bundle::KeyBundle, password_encryption::*, AGENT_ID_CTX, CONTEXT_SIZE, SEED_SIZE};
+use crate::{
+    key_bundle::KeyBundle,
+    password_encryption::*,
+    utils::{generate_derived_seed_buf, SeedContext},
+    AGENT_ID_CTX, SEED_SIZE,
+};
 use bip39::{Language, Mnemonic};
 use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_sodium::{kdf, pwhash, secbuf::SecBuf};
@@ -36,24 +41,6 @@ pub enum SeedType {
     OneShot,
     /// Seed used only in tests or mocks
     Mock,
-}
-
-pub struct SeedContext {
-    inner: [u8; 8],
-}
-
-impl SeedContext {
-    pub fn new(data: [u8; 8]) -> Self {
-        assert_eq!(data.len(), CONTEXT_SIZE);
-        assert!(data.is_ascii());
-        SeedContext { inner: data }
-    }
-
-    pub fn to_sec_buf(&self) -> SecBuf {
-        let mut buf = SecBuf::with_insecure(8);
-        buf.write(0, &self.inner).expect("SecBuf must be writeable");
-        buf
-    }
 }
 
 /// Enum of all the different behaviors a Seed can have
@@ -183,22 +170,6 @@ impl RootSeed {
     }
 }
 
-/// derive a seed from a source seed
-pub fn generate_derived_seed_buf(
-    mut src_seed: &mut SecBuf,
-    seed_context: &SeedContext,
-    index: u64,
-    size: usize,
-) -> HcResult<SecBuf> {
-    if index == 0 {
-        return Err(HolochainError::ErrorGeneric("Invalid index".to_string()));
-    }
-    let mut derived_seed_buf = SecBuf::with_secure(size);
-    let mut context = seed_context.to_sec_buf();
-    kdf::derive(&mut derived_seed_buf, index, &mut context, &mut src_seed)?;
-    Ok(derived_seed_buf)
-}
-
 //--------------------------------------------------------------------------------------------------
 // DeviceSeed
 //--------------------------------------------------------------------------------------------------
@@ -284,13 +255,6 @@ impl DevicePinSeed {
     }
 }
 
-/// returns a random seed buf
-pub fn generate_random_seed_buf(size: usize) -> SecBuf {
-    let mut seed = SecBuf::with_insecure(size);
-    seed.randomize();
-    seed
-}
-
 //--------------------------------------------------------------------------------------------------
 // Tests
 //--------------------------------------------------------------------------------------------------
@@ -298,11 +262,15 @@ pub fn generate_random_seed_buf(size: usize) -> SecBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{password_encryption::tests::TEST_CONFIG, SEED_SIZE};
+    use crate::{
+        password_encryption::tests::TEST_CONFIG,
+        utils::{self, generate_random_seed_buf},
+        SEED_SIZE,
+    };
 
     #[test]
     fn it_should_create_a_new_seed() {
-        let seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let seed_buf = utils::generate_random_seed_buf(SEED_SIZE);
         let seed_type = SeedType::OneShot;
         let seed = Seed::new_with_initializer(SeedInitializer::Seed(seed_buf), seed_type.clone());
         assert_eq!(seed_type, seed.kind);

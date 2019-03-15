@@ -1,4 +1,4 @@
-use crate::{CODEC_HCS0, SEED_SIZE};
+use crate::{CODEC_HCS0, CONTEXT_SIZE, SEED_SIZE};
 use hcid::*;
 use holochain_core_types::{
     agent::Base32,
@@ -6,7 +6,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     signature::{Provenance, Signature},
 };
-use holochain_sodium::{secbuf::SecBuf, sign};
+use holochain_sodium::{kdf, secbuf::SecBuf, sign};
 
 /// a trait for things that have a provenance that can be verified
 pub trait Verify {
@@ -73,6 +73,47 @@ pub fn verify_bufs(
         data,
         &mut pub_key,
     ))
+}
+
+pub struct SeedContext {
+    inner: [u8; 8],
+}
+
+impl SeedContext {
+    pub fn new(data: [u8; 8]) -> Self {
+        assert_eq!(data.len(), CONTEXT_SIZE);
+        assert!(data.is_ascii());
+        SeedContext { inner: data }
+    }
+
+    pub fn to_sec_buf(&self) -> SecBuf {
+        let mut buf = SecBuf::with_insecure(8);
+        buf.write(0, &self.inner).expect("SecBuf must be writeable");
+        buf
+    }
+}
+
+/// derive a seed from a source seed
+pub fn generate_derived_seed_buf(
+    mut src_seed: &mut SecBuf,
+    seed_context: &SeedContext,
+    index: u64,
+    size: usize,
+) -> HcResult<SecBuf> {
+    if index == 0 {
+        return Err(HolochainError::ErrorGeneric("Invalid index".to_string()));
+    }
+    let mut derived_seed_buf = SecBuf::with_secure(size);
+    let mut context = seed_context.to_sec_buf();
+    kdf::derive(&mut derived_seed_buf, index, &mut context, &mut src_seed)?;
+    Ok(derived_seed_buf)
+}
+
+/// returns a random seed buf
+pub fn generate_random_seed_buf(size: usize) -> SecBuf {
+    let mut seed = SecBuf::with_insecure(size);
+    seed.randomize();
+    seed
 }
 
 #[cfg(test)]

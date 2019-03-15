@@ -22,7 +22,6 @@ pub async fn validate_remove_entry(
     let dna = context.get_dna().expect("Callback called without DNA set");
     let deletion_entry = unwrap_to!(entry=>Entry::Deletion);
     let deletion_address = deletion_entry.clone().deleted_entry_address();
-    println!("before fetch");
     let entry_to_delete = get_entry_from_dht(&context.clone(), &deletion_address)
         .map_err(|_| {
             ValidationError::Fail("Could not find entry for link_update_delete".to_string())
@@ -40,7 +39,7 @@ pub async fn validate_remove_entry(
     let zome_name = dna
         .get_zome_name_for_app_entry_type(&app_entry_type)
         .ok_or(ValidationError::NotImplemented)?;
-    println!("got zome name");
+
     let params = EntryValidationArgs {
         validation_data: entry_to_validation_data(
             context.clone(),
@@ -50,7 +49,7 @@ pub async fn validate_remove_entry(
         )
         .map_err(|_| ValidationError::Fail("Could not get entry validation".to_string()))?,
     };
-    println!("got entry validation data");
+   
     let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
     await!(run_validation_callback(entry.address(), call, context))
 }

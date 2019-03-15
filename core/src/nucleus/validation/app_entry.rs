@@ -28,16 +28,16 @@ pub async fn validate_app_entry(
     let zome_name = dna
         .get_zome_name_for_app_entry_type(&app_entry_type)
         .ok_or(ValidationError::NotImplemented)?;
-    println!("zome name is there");
+  
     if link.is_some() {
         let expected_link_update = link
             .clone()
             .expect("Should unwrap link_update_delete with no problems");
-        println!("before fetch");
+  
         get_entry_from_dht(&context.clone(), &expected_link_update).map_err(|_| {
             ValidationError::Fail("Could not find entry for link_update_delete".to_string())
         })?;
-        println!("managed to fetch");
+   
         await!(run_call_back(
             context.clone(),
             entry,
@@ -72,8 +72,7 @@ async fn run_call_back(
         )
         .map_err(|_| ValidationError::Fail("Could not get entry validation".to_string()))?,
     };
-    println!("params are here");
     let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
-    println!("call back");
+
     await!(run_validation_callback(entry.address(), call, &context))
 }

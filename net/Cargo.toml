@@ -4,11 +4,16 @@ version = "0.0.6-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
+[dev-dependencies]
+tempfile = "3"
+
 [dependencies]
 failure = "0.1.1"
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
 lazy_static = "1.2"
+reqwest = "0.9.11"
+sha2 = "0.8.0"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1", features = ["preserve_order"] }

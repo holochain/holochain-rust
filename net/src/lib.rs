@@ -12,6 +12,8 @@ extern crate failure;
 pub extern crate holochain_core_types_derive;
 #[macro_use]
 extern crate lazy_static;
+extern crate reqwest;
+extern crate sha2;
 // macros used in tests
 #[allow(unused_imports)]
 #[macro_use]

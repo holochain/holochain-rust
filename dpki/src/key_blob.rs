@@ -71,12 +71,8 @@ pub trait Blobbable {
                 "Invalid buf size for Blobbing".to_string(),
             ));
         }
-        // encrypt buffer
-        let encrypted_blob = password_encryption::pw_enc(data_buf, passphrase, config)?;
-        // Serialize and convert to base64
-        let serialized_blob =
-            serde_json::to_string(&encrypted_blob).expect("Failed to serialize Blob");
-        Ok(base64::encode(&serialized_blob))
+
+        utils::encrypt_with_passphrase(data_buf, passphrase, config)
     }
 
     /// Get the data buf back from a Blob
@@ -91,22 +87,7 @@ pub trait Blobbable {
                 "Blob type mismatch while unblobbing".to_string(),
             ));
         }
-        // Decode base64
-        let blob_b64 = base64::decode(&blob.data)?;
-        // Deserialize
-        let blob_json = str::from_utf8(&blob_b64)?;
-        let encrypted_blob: EncryptedData = serde_json::from_str(&blob_json)?;
-        // Decrypt
-        let mut decrypted_data = SecBuf::with_secure(Self::blob_size());
-        pw_dec(&encrypted_blob, passphrase, &mut decrypted_data, config)?;
-        // Check size
-        if decrypted_data.len() != Self::blob_size() {
-            return Err(HolochainError::ErrorGeneric(
-                "Invalid Blob size".to_string(),
-            ));
-        }
-        // Done
-        Ok(decrypted_data)
+        utils::decrypt_with_passphrase(&blob.data, passphrase, config, Self::blob_size())
     }
 }
 

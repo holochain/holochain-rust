@@ -1,4 +1,7 @@
-use crate::{CODEC_HCS0, CONTEXT_SIZE, SEED_SIZE};
+use crate::{
+    password_encryption::{pw_dec, pw_enc, EncryptedData, PwHashConfig},
+    CODEC_HCS0, CONTEXT_SIZE, SEED_SIZE,
+};
 use hcid::*;
 use holochain_core_types::{
     agent::Base32,
@@ -7,6 +10,7 @@ use holochain_core_types::{
     signature::{Provenance, Signature},
 };
 use holochain_sodium::{kdf, secbuf::SecBuf, sign};
+use std::str;
 
 /// a trait for things that have a provenance that can be verified
 pub trait Verify {
@@ -116,6 +120,45 @@ pub fn generate_random_seed_buf(size: usize) -> SecBuf {
     seed
 }
 
+/// encrypt and base64 encode a secbuf
+pub fn encrypt_with_passphrase(
+    data_buf: &mut SecBuf,
+    passphrase: &mut SecBuf,
+    config: Option<PwHashConfig>,
+) -> HcResult<String> {
+    // encrypt buffer
+    let encrypted_blob = pw_enc(data_buf, passphrase, config)?;
+    // Serialize and convert to base64
+    let serialized_blob = serde_json::to_string(&encrypted_blob).expect("Failed to serialize Blob");
+    Ok(base64::encode(&serialized_blob))
+}
+
+/// unencode base64 and decrypt a passphrase encrypted blob
+pub fn decrypt_with_passphrase(
+    blob: &String,
+    passphrase: &mut SecBuf,
+    config: Option<PwHashConfig>,
+
+    size: usize,
+) -> HcResult<SecBuf> {
+    // Decode base64
+    let blob_b64 = base64::decode(blob)?;
+    // Deserialize
+    let blob_json = str::from_utf8(&blob_b64)?;
+    let encrypted_blob: EncryptedData = serde_json::from_str(&blob_json)?;
+    // Decrypt
+    let mut decrypted_data = SecBuf::with_secure(size);
+    pw_dec(&encrypted_blob, passphrase, &mut decrypted_data, config)?;
+    // Check size
+    if decrypted_data.len() != size {
+        return Err(HolochainError::ErrorGeneric(
+            "Invalid Blob size".to_string(),
+        ));
+    }
+    // Done
+    Ok(decrypted_data)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -155,5 +198,28 @@ mod tests {
         holochain_sodium::sign::sign(&mut message, &mut secret_key, &mut signature).unwrap();
         let res = verify_bufs(pub_key_b32, &mut message, &mut signature);
         assert!(res.unwrap());
+    }
+
+    #[test]
+    fn it_should_round_trip_passphrase_encryption() {
+        let data_size = 32;
+        let mut random_data = SecBuf::with_insecure(data_size);
+        random_data.randomize();
+
+        let mut random_passphrase = SecBuf::with_insecure(10);
+        random_passphrase.randomize();
+
+        let encrypted_result =
+            encrypt_with_passphrase(&mut random_data, &mut random_passphrase, None);
+        assert!(encrypted_result.is_ok());
+
+        let encrypted_data = encrypted_result.unwrap();
+
+        let decrypted_result =
+            decrypt_with_passphrase(&encrypted_data, &mut random_passphrase, None, data_size);
+        assert!(decrypted_result.is_ok());
+        let mut decrypted_data = decrypted_result.unwrap();
+
+        assert_eq!(0, decrypted_data.compare(&mut random_data));
     }
 }

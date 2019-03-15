@@ -1,7 +1,6 @@
 use crate::{
-    key_bundle::KeyBundle,
-    keypair::generate_random_sign_keypair,
-    seed::{generate_derived_seed_buf, generate_random_seed_buf, SeedContext, SeedType},
+    keypair::{generate_random_sign_keypair, KeyPair, SigningKeyPair},
+    seed::{generate_derived_seed_buf, generate_random_seed_buf, SeedContext},
     utils, SEED_SIZE,
 };
 use holochain_core_types::{
@@ -19,7 +18,7 @@ use std::{
 };
 
 pub enum Secret {
-    Key(KeyBundle),
+    SigningKey(SigningKeyPair),
     Seed(SecBuf),
 }
 
@@ -138,9 +137,12 @@ impl Keystore {
                 }
             };
             let mut key_seed_buf = generate_derived_seed_buf(seed, context, index, SEED_SIZE)?;
-            let key_bundle = KeyBundle::new_from_seed_buf(&mut key_seed_buf, SeedType::DNA)?;
-            let public_key = key_bundle.get_id();
-            (Arc::new(Mutex::new(Secret::Key(key_bundle))), public_key)
+            let key_pair = SigningKeyPair::new_from_seed(&mut key_seed_buf)?;
+            let public_key = key_pair.public();
+            (
+                Arc::new(Mutex::new(Secret::SigningKey(key_pair))),
+                public_key,
+            )
         };
         self.keys.insert(dst_id, secret);
 
@@ -154,10 +156,10 @@ impl Keystore {
         let src_secret = self.check_src_identifier(src_id_str)?;
         let mut src_secret = src_secret.lock().unwrap();
         match *src_secret {
-            Secret::Key(ref mut key_bundle) => {
+            Secret::SigningKey(ref mut key_pair) => {
                 let mut data_buf = SecBuf::with_insecure_from_string(data);
 
-                let mut signature_buf = key_bundle.sign(&mut data_buf)?;
+                let mut signature_buf = key_pair.sign(&mut data_buf)?;
                 let buf = signature_buf.read_lock();
                 // Return as base64 encoded string
                 let signature_str = base64::encode(&**buf);

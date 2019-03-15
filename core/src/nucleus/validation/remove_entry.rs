@@ -1,11 +1,10 @@
 use crate::{
     context::Context,
     nucleus::{
-        actions::run_validation_callback::run_validation_callback,
+        actions::{run_validation_callback::run_validation_callback,get_entry::get_entry_from_dht},
         validation::{ValidationError, ValidationResult,entry_to_validation_data},
         CallbackFnCall,
-    },
-    network::entry_with_header::{EntryWithHeader,fetch_entry_with_header}
+    }
 };
 use holochain_core_types::{
     cas::content::AddressableContent,
@@ -24,10 +23,9 @@ pub async fn validate_remove_entry(entry: Entry,
         let deletion_entry = unwrap_to!(entry=>Entry::Deletion);
         let deletion_address = deletion_entry.clone().deleted_entry_address();
         println!("before fetch");
-        let EntryWithHeader{entry:entry_to_delete,header:_} = fetch_entry_with_header(&deletion_address, &context.clone()).map_err(|_|{
-            ValidationError::Fail("Could not get entry validation".to_string())
+        let entry_to_delete = get_entry_from_dht(&context.clone(),&expected_link_update).map_err(|_|{
+            ValidationError::Fail("Could not find entry for link_update_delete".to_string())
         })?;
-        println!("fetched header");
             let app_entry_type = match entry_to_delete.clone()
             {
             Entry::App(app_entry_type,_) => Ok(app_entry_type),

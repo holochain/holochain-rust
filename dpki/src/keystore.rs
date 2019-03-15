@@ -1,8 +1,7 @@
 use crate::{
     keypair::{generate_random_sign_keypair, KeyPair, SigningKeyPair},
     utils::{
-        generate_derived_seed_buf, generate_random_seed_buf, verify as signingkey_verify,
-        SeedContext,
+        generate_derived_seed_buf, generate_random_buf, verify as signingkey_verify, SeedContext,
     },
     SEED_SIZE,
 };
@@ -53,7 +52,7 @@ impl Keystore {
                 "identifier already exists".to_string(),
             ));
         }
-        let seed_buf = generate_random_seed_buf(size);
+        let seed_buf = generate_random_buf(size);
         let secret = Arc::new(Mutex::new(Secret::Seed(seed_buf)));
         self.keys.insert(id, secret);
         Ok(())

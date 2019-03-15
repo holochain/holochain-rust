@@ -113,11 +113,16 @@ pub fn generate_derived_seed_buf(
     Ok(derived_seed_buf)
 }
 
-/// returns a random seed buf
-pub fn generate_random_seed_buf(size: usize) -> SecBuf {
+/// returns a random buf
+pub fn generate_random_buf(size: usize) -> SecBuf {
     let mut seed = SecBuf::with_insecure(size);
     seed.randomize();
     seed
+}
+
+/// returns a random seed buf
+pub fn generate_random_seed_buf() -> SecBuf {
+    generate_random_buf(SEED_SIZE)
 }
 
 /// encrypt and base64 encode a secbuf
@@ -235,7 +240,8 @@ mod tests {
         // a bogus passphrase will not decrypt to the correct data
         let mut bogus_passphrase = SecBuf::with_insecure(10);
         bogus_passphrase.randomize();
-        let decrypted_result = decrypt_with_passphrase_buf(&encrypted_data, &mut bogus_passphrase, None, data_size);
+        let decrypted_result =
+            decrypt_with_passphrase_buf(&encrypted_data, &mut bogus_passphrase, None, data_size);
         assert!(decrypted_result.is_ok());
         let mut decrypted_data = decrypted_result.unwrap();
         assert!(0 != decrypted_data.compare(&mut random_data));

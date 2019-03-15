@@ -83,7 +83,7 @@ pub(crate) mod tests {
     ));
 
     fn test_generate_random_bundle() -> KeyBundle {
-        let mut seed = generate_random_seed_buf(SEED_SIZE);
+        let mut seed = generate_random_seed_buf();
         KeyBundle::new_from_seed_buf(&mut seed, SeedType::Mock).unwrap()
     }
 

@@ -270,7 +270,7 @@ mod tests {
 
     #[test]
     fn it_should_create_a_new_seed() {
-        let seed_buf = utils::generate_random_seed_buf(SEED_SIZE);
+        let seed_buf = utils::generate_random_seed_buf();
         let seed_type = SeedType::OneShot;
         let seed = Seed::new_with_initializer(SeedInitializer::Seed(seed_buf), seed_type.clone());
         assert_eq!(seed_type, seed.kind);
@@ -278,14 +278,14 @@ mod tests {
 
     #[test]
     fn it_should_create_a_new_root_seed() {
-        let seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let seed_buf = generate_random_seed_buf();
         let root_seed = RootSeed::new(seed_buf);
         assert_eq!(SeedType::Root, root_seed.seed().kind);
     }
 
     #[test]
     fn it_should_create_a_device_seed() {
-        let seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let seed_buf = generate_random_seed_buf();
         let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
 
@@ -312,8 +312,8 @@ mod tests {
 
     #[test]
     fn it_should_create_a_device_pin_seed() {
-        let seed_buf = generate_random_seed_buf(SEED_SIZE);
-        let mut pin = generate_random_seed_buf(SEED_SIZE);
+        let seed_buf = generate_random_seed_buf();
+        let mut pin = generate_random_seed_buf();
 
         let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
@@ -326,8 +326,8 @@ mod tests {
 
     #[test]
     fn it_should_create_dna_key_from_root_seed() {
-        let seed_buf = generate_random_seed_buf(SEED_SIZE);
-        let mut pin = generate_random_seed_buf(SEED_SIZE);
+        let seed_buf = generate_random_seed_buf();
+        let mut pin = generate_random_seed_buf();
 
         let context = SeedContext::new(*b"HCDEVICE");
         let mut rs = RootSeed::new(seed_buf);
@@ -369,7 +369,7 @@ mod tests {
     #[test]
     fn it_should_change_into_typed() {
         // Root
-        let seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let seed_buf = generate_random_seed_buf();
         let seed = Seed::new(seed_buf, SeedType::Root);
         let unknown_seed = seed.into_typed().unwrap();
         let _ = match unknown_seed {
@@ -377,7 +377,7 @@ mod tests {
             _ => unreachable!(),
         };
         // Device
-        let seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let seed_buf = generate_random_seed_buf();
         let seed = Seed::new(seed_buf, SeedType::Device);
         let unknown_seed = seed.into_typed().unwrap();
         let _ = match unknown_seed {
@@ -385,7 +385,7 @@ mod tests {
             _ => unreachable!(),
         };
         // DevicePin
-        let seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let seed_buf = generate_random_seed_buf();
         let seed = Seed::new(seed_buf, SeedType::DevicePin);
         let unknown_seed = seed.into_typed().unwrap();
         let _ = match unknown_seed {
@@ -393,7 +393,7 @@ mod tests {
             _ => unreachable!(),
         };
         // App
-        let seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let seed_buf = generate_random_seed_buf();
         let seed = Seed::new(seed_buf, SeedType::DNA);
         let maybe_seed = seed.into_typed();
         assert!(maybe_seed.is_err());

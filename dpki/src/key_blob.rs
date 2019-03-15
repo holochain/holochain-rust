@@ -273,8 +273,8 @@ mod tests {
 
     #[test]
     fn it_should_blob_keybundle() {
-        let mut seed_buf = generate_random_seed_buf(SEED_SIZE);
-        let mut passphrase = generate_random_seed_buf(SEED_SIZE);
+        let mut seed_buf = generate_random_seed_buf();
+        let mut passphrase = generate_random_seed_buf();
 
         let mut bundle = KeyBundle::new_from_seed_buf(&mut seed_buf, SeedType::Mock).unwrap();
 
@@ -299,8 +299,8 @@ mod tests {
 
     #[test]
     fn it_should_blob_seed() {
-        let mut passphrase = generate_random_seed_buf(SEED_SIZE);
-        let mut seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let mut passphrase = generate_random_seed_buf();
+        let mut seed_buf = generate_random_seed_buf();
         let mut initial_seed = Seed::new(seed_buf, SeedType::Root);
 
         let blob = initial_seed
@@ -314,8 +314,8 @@ mod tests {
 
     #[test]
     fn it_should_blob_device_pin_seed() {
-        let mut passphrase = generate_random_seed_buf(SEED_SIZE);
-        let mut seed_buf = generate_random_seed_buf(SEED_SIZE);
+        let mut passphrase = generate_random_seed_buf();
+        let mut seed_buf = generate_random_seed_buf();
         let mut initial_device_pin_seed = DevicePinSeed::new(seed_buf);
 
         let blob = initial_device_pin_seed

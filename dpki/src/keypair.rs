@@ -165,12 +165,12 @@ impl EncryptingKeyPair {
 }
 
 pub fn generate_random_sign_keypair() -> HcResult<SigningKeyPair> {
-    let mut seed = utils::generate_random_seed_buf(SEED_SIZE);
+    let mut seed = utils::generate_random_seed_buf();
     SigningKeyPair::new_from_seed(&mut seed)
 }
 
 pub fn generate_random_enc_keypair() -> HcResult<EncryptingKeyPair> {
-    let mut seed = utils::generate_random_seed_buf(SEED_SIZE);
+    let mut seed = utils::generate_random_seed_buf();
     EncryptingKeyPair::new_from_seed(&mut seed)
 }
 

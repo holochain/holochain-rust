@@ -177,11 +177,10 @@ pub fn entry_to_validation_data(
 
 fn get_entry_with_header(context : Arc<Context>, address : &Address) -> Result<(Entry,ChainHeader),HolochainError>
 {
-    let state_lock = context.state().ok_or(HolochainError::ErrorGeneric("Could not obtainn state".to_string()))?;
-    //let state = state_lock.try_read().map_err(|_|HolochainError::ErrorGeneric("Could not obtain lock".to_string()))?;
+    let state = context.state().ok_or(HolochainError::ErrorGeneric("Could not obtainn state".to_string()))?;
     let entry = get_entry_from_dht(&context.clone(),address)?.ok_or(HolochainError::ErrorGeneric("Could not get Entry".to_string()))?;
-    let entry_headers = state_lock.get_headers(address.clone())?;
-    let header = entry_headers.first().ok_or(HolochainError::ErrorGeneric("Could not get header for entry".to_string()))?;
-    Ok((entry,header.clone()))
+    let headers = state.get_headers(address.clone())?;
+    let entry_header = headers.last().ok_or(HolochainError::ErrorGeneric("Could not get header for entry".to_string()))?;
+    Ok((entry,entry_header.clone()))
 
 }

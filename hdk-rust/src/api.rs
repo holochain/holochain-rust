@@ -10,6 +10,7 @@ use holochain_core_types::{
     cas::content::Address,
     entry::Entry,
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
+    signature::Provenance,
     time::Timeout,
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
@@ -809,14 +810,12 @@ pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
 
 /// NOT YET AVAILABLE
 pub fn verify_signature<S: Into<String>>(
-    pub_key: S,
-    signature: S,
+    provenance: Provenance,
     payload: S,
 ) -> ZomeApiResult<bool> {
     Dispatch::VerifySignature.with_input(VerifySignatureArgs {
-        pub_key: pub_key.into(),
+        provenance,
         payload: payload.into(),
-        signature: signature.into(),
     })
 }
 

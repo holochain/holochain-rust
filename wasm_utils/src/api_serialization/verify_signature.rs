@@ -1,8 +1,7 @@
-use holochain_core_types::{agent::Base32, error::HolochainError, json::*};
+use holochain_core_types::{error::HolochainError, json::*, signature::Provenance};
 
-#[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize, DefaultJson)]
+#[derive(Deserialize, Clone, PartialEq, Eq, Hash, Debug, Serialize, DefaultJson)]
 pub struct VerifySignatureArgs {
-    pub pub_key: Base32,
+    pub provenance: Provenance,
     pub payload: String,
-    pub signature: String,
 }

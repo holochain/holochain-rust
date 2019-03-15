@@ -4,7 +4,7 @@ use crate::{
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
-    nucleus::validation::validate_entry
+    nucleus::validation::validate_entry,
 };
 
 use holochain_core_types::{
@@ -29,11 +29,16 @@ pub async fn hold_remove_workflow<'a>(
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
-        lifecycle: EntryLifecycle::Meta
+        lifecycle: EntryLifecycle::Meta,
     };
 
     // 3. Validate the entry
-    await!(validate_entry(entry.clone(),None, validation_data, &context))?;
+    await!(validate_entry(
+        entry.clone(),
+        None,
+        validation_data,
+        &context
+    ))?;
 
     let deletion_entry = unwrap_to!(entry => Entry::Deletion);
 

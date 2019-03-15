@@ -3,15 +3,15 @@
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
-use crate::{entry_definition::ValidatingEntryType,globals::G_MEM_STACK};
+use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
         zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
     },
-    entry::{entry_type::{AppEntryType, EntryType}},
+    entry::entry_type::{AppEntryType, EntryType},
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
-    json::JsonString
+    json::JsonString,
 };
 use holochain_wasm_utils::{
     api_serialization::validation::{
@@ -23,7 +23,7 @@ use holochain_wasm_utils::{
         ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
     },
 };
-use std::{collections::BTreeMap,convert::TryFrom};
+use std::{collections::BTreeMap, convert::TryFrom};
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -78,7 +78,6 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     unsafe { zome_setup(&mut zd) };
 
     let name = allocation.read_to_string();
-    
 
     match zd
         .entry_types
@@ -113,12 +112,11 @@ pub extern "C" fn __hdk_validate_app_entry(
         Err(e) => return RibosomeEncodedValue::from(e).into(),
     };
 
-    let entry_type = match EntryType::try_from(input.validation_data.clone())
-    {
+    let entry_type = match EntryType::try_from(input.validation_data.clone()) {
         Ok(v) => v,
-        Err(e) => return RibosomeEncodedValue::from(e).into()
+        Err(e) => return RibosomeEncodedValue::from(e).into(),
     };
-    
+
     match zd
         .entry_types
         .into_iter()
@@ -126,8 +124,7 @@ pub extern "C" fn __hdk_validate_app_entry(
     {
         None => RibosomeErrorCode::CallbackFailed as RibosomeEncodingBits,
         Some(mut entry_type_definition) => {
-            let validation_result =
-                (*entry_type_definition.validator)(input.validation_data);
+            let validation_result = (*entry_type_definition.validator)(input.validation_data);
 
             match validation_result {
                 Ok(()) => RibosomeEncodedValue::Success.into(),
@@ -139,13 +136,6 @@ pub extern "C" fn __hdk_validate_app_entry(
         }
     }
 }
-
-
-
-
-
-
-
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_link(
@@ -223,9 +213,7 @@ pub extern "C" fn __hdk_validate_link(
                     })
             })
             .and_then(|mut link_definition| {
-                let validation_result = (*link_definition.validator)(
-                    input.validation_data,
-                );
+                let validation_result = (*link_definition.validator)(input.validation_data);
                 Some(match validation_result {
                     Ok(()) => RibosomeEncodedValue::Success,
                     Err(fail_string) => {
@@ -336,7 +324,7 @@ pub mod tests {
 
     #[test]
     fn partial_zome_json() {
-        #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
+        #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
         pub struct Post {
             content: String,
             date_created: String,

@@ -42,9 +42,6 @@ impl ToString for AppEntryType {
     }
 }
 
-
-
-
 // Enum for listing all System Entry Types
 // Variant `Data` is for user defined entry types
 #[derive(

@@ -4,7 +4,7 @@ use crate::{
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
-    nucleus::validation::validate_entry
+    nucleus::validation::validate_entry,
 };
 
 use holochain_core_types::{
@@ -40,16 +40,21 @@ pub async fn remove_link_workflow<'a>(
         "debug/workflow/remove_link: got validation package!"
     ));
 
-  
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
-        lifecycle: EntryLifecycle::Meta
+        lifecycle: EntryLifecycle::Meta,
     };
 
     // 3. Validate the entry
     context.log(format!("debug/workflow/remove_link: validate..."));
-    await!(validate_entry(entry.clone(),None, validation_data, &context)).map_err(|err| {
+    await!(validate_entry(
+        entry.clone(),
+        None,
+        validation_data,
+        &context
+    ))
+    .map_err(|err| {
         context.log(format!("debug/workflow/remove_link: invalid! {:?}", err));
         err
     })?;

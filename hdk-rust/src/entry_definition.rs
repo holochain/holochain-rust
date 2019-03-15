@@ -1,24 +1,20 @@
 //! This file contains the macros used for creating validating entry type definitions,
 //! and validating links definitions within those.
 
+use crate::error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{
     dna::entry_types::EntryTypeDef,
-    entry::{entry_type::EntryType,Entry,AppEntryValue},
-    validation::{ValidationPackageDefinition,EntryValidationData,LinkValidationData},
+    entry::{entry_type::EntryType, AppEntryValue, Entry},
+    validation::{EntryValidationData, LinkValidationData, ValidationPackageDefinition},
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
-use crate::error::{ZomeApiResult,ZomeApiError};
 use std::convert::TryFrom;
-
-
-
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 
 pub type Validator = Box<FnMut(EntryValidationData<Entry>) -> Result<(), String> + Sync>;
 
-pub type LinkValidator =
-    Box<FnMut(LinkValidationData) -> Result<(), String> + Sync>;
+pub type LinkValidator = Box<FnMut(LinkValidationData) -> Result<(), String> + Sync>;
 
 /// This struct represents a complete entry type definition.
 /// It wraps [EntryTypeDef](struct.EntryTypeDef.html) defined in the DNA crate
@@ -164,8 +160,6 @@ pub struct ValidatingLinkDefinition {
 ///
 /// # }
 /// ```
-
-
 
 #[macro_export]
 macro_rules! entry {
@@ -356,40 +350,65 @@ macro_rules! from {
 }
 
 //could not turn this to try_from
-pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(entry_validation : EntryValidationData<Entry>) -> ZomeApiResult<EntryValidationData<T>> 
-{
-    match entry_validation
-    {
-        EntryValidationData::Create{entry,validation_package} => {
+pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(
+    entry_validation: EntryValidationData<Entry>,
+) -> ZomeApiResult<EntryValidationData<T>> {
+    match entry_validation {
+        EntryValidationData::Create {
+            entry,
+            validation_package,
+        } => {
             let native_type = convert_entry_validation_to_native::<T>(entry)?;
-            Ok(EntryValidationData::Create{entry:native_type,validation_package})
-        },
-        EntryValidationData::Modify{new_entry,old_entry,old_entry_header,validation_package} =>
-        {
+            Ok(EntryValidationData::Create {
+                entry: native_type,
+                validation_package,
+            })
+        }
+        EntryValidationData::Modify {
+            new_entry,
+            old_entry,
+            old_entry_header,
+            validation_package,
+        } => {
             let new_entry = convert_entry_validation_to_native::<T>(new_entry)?;
             let old_entry = convert_entry_validation_to_native::<T>(old_entry)?;
-            Ok(EntryValidationData::Modify{new_entry,old_entry,old_entry_header,validation_package})
-        },
-        EntryValidationData::Delete{old_entry,old_entry_header,validation_package} =>
-        {
+            Ok(EntryValidationData::Modify {
+                new_entry,
+                old_entry,
+                old_entry_header,
+                validation_package,
+            })
+        }
+        EntryValidationData::Delete {
+            old_entry,
+            old_entry_header,
+            validation_package,
+        } => {
             let old_entry = convert_entry_validation_to_native::<T>(old_entry)?;
-            Ok(EntryValidationData::Delete{old_entry,old_entry_header,validation_package})
+            Ok(EntryValidationData::Delete {
+                old_entry,
+                old_entry_header,
+                validation_package,
+            })
         }
     }
 }
 
-fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(entry : Entry) -> ZomeApiResult<T>
-{
-    match entry 
-    {
+fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(
+    entry: Entry,
+) -> ZomeApiResult<T> {
+    match entry {
         Entry::App(_, entry_value) => T::try_from(entry_value.to_owned()).map_err(|_| {
             ZomeApiError::Internal(
-                vec!["Could not convert Entry result to requested type : ".to_string(),entry_value.to_string()].join(&String::new())
+                vec![
+                    "Could not convert Entry result to requested type : ".to_string(),
+                    entry_value.to_string(),
+                ]
+                .join(&String::new()),
             )
         }),
         _ => Err(ZomeApiError::Internal(
             "Entry did not return an app entry".to_string(),
         )),
     }
-    
 }

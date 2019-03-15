@@ -68,12 +68,18 @@ pub async fn hold_link_workflow<'a>(
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
-        lifecycle: EntryLifecycle::Meta
+        lifecycle: EntryLifecycle::Meta,
     };
 
     // 3. Validate the entry
     context.log(format!("debug/workflow/hold_link: validate..."));
-    await!(validate_entry(entry.clone(),None, validation_data, &context)).map_err(|err| {
+    await!(validate_entry(
+        entry.clone(),
+        None,
+        validation_data,
+        &context
+    ))
+    .map_err(|err| {
         context.log(format!("debug/workflow/hold_link: invalid! {:?}", err));
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             add_pending_validation(

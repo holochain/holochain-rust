@@ -1,9 +1,9 @@
 use holochain_core_types::{
+    entry::Entry,
     error::HolochainError,
     json::*,
     link::Link,
-    validation::{LinkValidationData,EntryValidationData},
-    entry::Entry
+    validation::{EntryValidationData, LinkValidationData},
 };
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]

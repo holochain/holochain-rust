@@ -5,11 +5,12 @@ use crate::{
         ribosome::callback::links_utils,
         validation::{ValidationError, ValidationResult},
         CallbackFnCall,
-    }
-
+    },
 };
 use holochain_core_types::{
-    cas::content::AddressableContent, entry::Entry, validation::{ValidationData,LinkValidationData}
+    cas::content::AddressableContent,
+    entry::Entry,
+    validation::{LinkValidationData, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::validation::LinkValidationArgs;
 use std::sync::Arc;
@@ -44,11 +45,16 @@ pub async fn validate_link_entry(
     )
     .map_err(|_| ValidationError::NotImplemented)?;
 
-    let validation_data = match entry.clone()
-    {
-        Entry::LinkAdd(link) => Ok(LinkValidationData::LinkAdd{link,validation_package : validation_data.package.clone()}),
-        Entry::LinkRemove(link) => Ok(LinkValidationData::LinkRemove{link,validation_package : validation_data.package.clone()}),
-        _ => Err(ValidationError::Fail("Entry is not link".to_string()))
+    let validation_data = match entry.clone() {
+        Entry::LinkAdd(link) => Ok(LinkValidationData::LinkAdd {
+            link,
+            validation_package: validation_data.package.clone(),
+        }),
+        Entry::LinkRemove(link) => Ok(LinkValidationData::LinkRemove {
+            link,
+            validation_package: validation_data.package.clone(),
+        }),
+        _ => Err(ValidationError::Fail("Entry is not link".to_string())),
     }?;
 
     let params = LinkValidationArgs {

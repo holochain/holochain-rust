@@ -89,8 +89,6 @@ impl TryFrom<JsonString> for Option<Entry> {
     }
 }
 
-
-
 impl Entry {
     pub fn entry_type(&self) -> EntryType {
         match &self {
@@ -176,8 +174,7 @@ pub fn test_entry() -> Entry {
     Entry::App(test_app_entry_type(), test_entry_value())
 }
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_with_value(value : &'static str) -> Entry
-{
+pub fn test_entry_with_value(value: &'static str) -> Entry {
     Entry::App(test_app_entry_type(), JsonString::from(value))
 }
 

@@ -163,10 +163,10 @@ mod tests {
         );
 
         let post_ok = Post::new("foo", "now");
-        let entry = Entry::App(AppEntryType("post"),post_ok.into());
+        let entry = Entry::App(AppEntryType::from("post"),post_ok.into());
         assert_eq!(
             (post_definition.validator)(
-               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header)}
+               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header())}
             ),
             Ok(()),
         );
@@ -175,13 +175,14 @@ mod tests {
             "Tattooed organic sartorial, tumeric cray truffaut kale chips farm-to-table vaporware seitan brooklyn vegan locavore fam mixtape. Kale chips cold-pressed yuccie kickstarter yr. Fanny pack chambray migas heirloom microdosing blog, palo santo locavore cardigan swag organic. Disrupt pug roof party everyday carry kinfolk brooklyn quinoa. Flannel dreamcatcher yr blog, banjo hella brooklyn taxidermy four loko kickstarter aesthetic glossier biodiesel hot chicken heirloom. Leggings cronut helvetica yuccie meh.",
             "now",
         );
-        assert_eq!(
-            (post_definition.validator)(
-                Entry::App(
+
+        let entry = Entry::App(
                     post_definition.name.clone().try_into().unwrap(),
                     post_not_ok.into(),
-                ),
-                ValidationData::default()
+                );
+        assert_eq!(
+            (post_definition.validator)(
+               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header())}
             ),
             Err("Content too long".to_string()),
         );

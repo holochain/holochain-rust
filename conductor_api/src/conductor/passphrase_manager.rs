@@ -83,6 +83,12 @@ impl PassphraseManager {
     }
 }
 
+impl Drop for PassphraseManager {
+    fn drop(&mut self) {
+        self.timeout_kill_switch.send(());
+    }
+}
+
 pub struct PassphraseServiceCmd {}
 impl PassphraseService for PassphraseServiceCmd {
     fn request_passphrase(&self) -> Result<SecBuf, HolochainError> {

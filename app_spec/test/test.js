@@ -247,7 +247,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   //get history entry v4
    const entryHistoryV4Params = { post_address: UpdateResultV4.Ok}
    const entryHistoryV4 =  alice.call("blog", "get_history_post", entryHistoryV4Params)
-   t.Ok(UpdateResultV4.Ok)
+   t.ok(UpdateResultV4.Ok)
    t.notOk(UpdateResultV4.Err)
    t.deepEqual(entryHistoryV4.Ok.items.length,1);
    t.deepEqual(entryHistoryV4.Ok.items[0].entry[1],updatePostV4Content);

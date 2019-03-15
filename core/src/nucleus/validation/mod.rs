@@ -143,7 +143,7 @@ pub fn entry_to_validation_data(
         Entry::App(_, _) => maybe_link_update_delete
             .map(|link_update|
             {
-                get_entry_with_header(context.clone(),&link_update,)
+                get_entry_with_header(context.clone(),&link_update)
                 .map(|entry_with_header|{
                     Ok(EntryValidationData::Modify{
                         old_entry : entry_with_header.0.clone(),

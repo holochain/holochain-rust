@@ -18,7 +18,7 @@ const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { de
 
 
 
-scenario2.runTape('agentId', async (t, { alice, bob }) => {
+/*scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
 })
@@ -112,7 +112,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
-})
+})*/
 
 scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 321"
@@ -134,7 +134,6 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
 
   //delete should fail
   const failedDelete = await bob.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
-  console.log("failed delete " + failedDelete);
   t.deepEqual(failedDelete.Err,{ Internal: 'Unspecified' });
 
   //get initial entry
@@ -148,7 +147,7 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
 
 
 
-scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
+/*scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
    //update entry does not exist
    const updateParams = { post_address: "1234", new_content: "Hello Holo V2" }
    const UpdateResult = await bob.callSync("blog", "update_post", updateParams)
@@ -450,4 +449,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})
+})*/

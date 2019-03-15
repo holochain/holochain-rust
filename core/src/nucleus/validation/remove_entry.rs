@@ -25,7 +25,7 @@ pub async fn validate_remove_entry(entry: Entry,
         println!("before fetch");
         let entry_to_delete = get_entry_from_dht(&context.clone(),&expected_link_update).map_err(|_|{
             ValidationError::Fail("Could not find entry for link_update_delete".to_string())
-        })?;
+        })?.ok_or(ValidationError::Fail("Could not obtain entry for link_update_delte".to_string()));
             let app_entry_type = match entry_to_delete.clone()
             {
             Entry::App(app_entry_type,_) => Ok(app_entry_type),

@@ -165,7 +165,7 @@ scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
 
   const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo world 321" }
   const UpdateResultV2 = await bob.callSync("blog", "update_post", updateParamsV2)
-  t.deepEqual(UpdateResult.Err,{ Internal: "Trying to modify with same data" });
+  t.deepEqual(UpdateResultV2.Err,{ Internal: "Trying to modify with same data" });
 
 
 })
@@ -249,7 +249,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
    t.ok(UpdateResultV4.Ok)
    t.notOk(UpdateResultV4.Err)
    t.deepEqual(entryHistoryV4.Ok.items.length,1);
-   t.deepEqual(entryHistoryV4.Ok.items[0].entry[1],updatePostV4Content);
+   t.deepEqual(JSON.parse(entryHistoryV4.Ok.items[0].entry.App[1]),updatePostV4Content);
    t.deepEqual(entryHistoryV4.Ok.items[0].meta.address,UpdateResultV4.Ok);
    t.deepEqual(entryHistoryV4.Ok.items[0].meta.crud_status,"live");
 

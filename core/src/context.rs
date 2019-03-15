@@ -21,10 +21,8 @@ use holochain_core_types::{
     eav::EntityAttributeValueStorage,
     entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
-    signature::Signature,
 };
 use holochain_net::p2p_config::P2pConfig;
-use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_lite::JsonRpc;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use snowflake::ProcessUniqueId;

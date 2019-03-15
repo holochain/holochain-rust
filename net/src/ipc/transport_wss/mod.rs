@@ -213,7 +213,7 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
     fn priv_next_id(&mut self) -> String {
         let out = format!("ws{}", self.n_id);
         self.n_id += 1;
-        return out;
+        out
     }
 
     // see if any work needs to be done on our stream sockets

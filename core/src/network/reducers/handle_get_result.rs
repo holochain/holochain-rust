@@ -13,14 +13,12 @@ fn reduce_handle_get_result_inner(
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     network_state.initialized()?;
 
-    let res = serde_json::from_str(&serde_json::to_string(&dht_data.entry_content).unwrap());
-    if let Err(_) = res {
-        return Err(HolochainError::ErrorGeneric(
+    serde_json::from_str(&serde_json::to_string(&dht_data.entry_content).unwrap()).map_err(|_| {
+        HolochainError::ErrorGeneric(
             "Failed to deserialize EntryWithMeta from HandleFetchResult action argument"
                 .to_string(),
-        ));
-    }
-    Ok(res.unwrap())
+        )
+    })
 }
 
 pub fn reduce_handle_get_result(

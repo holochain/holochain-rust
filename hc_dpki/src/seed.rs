@@ -73,18 +73,14 @@ impl Seed {
 
     // TODO: We need some way of zeroing the internal memory used by mnemonic
     pub fn new_with_mnemonic(phrase: String, seed_type: SeedType) -> HcResult<Self> {
-        let maybe_mnemonic = Mnemonic::from_phrase(phrase, Language::English);
-        if let Err(e) = maybe_mnemonic {
-            return Err(HolochainError::ErrorGeneric(format!(
-                "Error loading Mnemonic phrase: {}",
-                e
-            )));
-        }
-        let mnemonic = maybe_mnemonic.unwrap();
-        let entropy = mnemonic.entropy().clone();
+        let mnemonic = Mnemonic::from_phrase(phrase, Language::English).map_err(|e| {
+            HolochainError::ErrorGeneric(format!("Error loading Mnemonic phrase: {}", e))
+        })?;
+
+        let entropy = mnemonic.entropy().to_owned();
         assert_eq!(entropy.len(), SEED_SIZE);
         let mut seed_buf = SecBuf::with_secure(entropy.len());
-        seed_buf.from_array(entropy)?;
+        seed_buf.from_array(entropy.as_slice())?;
         // Done
         Ok(Seed {
             kind: seed_type,

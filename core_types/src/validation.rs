@@ -3,9 +3,15 @@
 //! agent actions between Holochain and Zomes.
 
 use crate::{
-    cas::content::Address, chain_header::ChainHeader, entry::{Entry,entry_type::{EntryType,AppEntryType}}, error::HolochainError,
+    cas::content::Address,
+    chain_header::ChainHeader,
+    entry::{
+        entry_type::{AppEntryType, EntryType},
+        Entry,
+    },
+    error::HolochainError,
     json::JsonString,
-    link::link_data::LinkData
+    link::link_data::LinkData,
 };
 
 use chain_header::test_chain_header;
@@ -49,55 +55,59 @@ pub enum ValidationPackageDefinition {
 pub enum EntryValidationData<T> {
     Create {
         entry: T,
-        validation_package: ValidationPackage
+        validation_package: ValidationPackage,
     },
     Modify {
         new_entry: T,
         old_entry: T,
         old_entry_header: ChainHeader,
-        validation_package: ValidationPackage
+        validation_package: ValidationPackage,
     },
     Delete {
         old_entry: T,
         old_entry_header: ChainHeader,
-        validation_package: ValidationPackage
-    }
+        validation_package: ValidationPackage,
+    },
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum LinkValidationData
-{
+pub enum LinkValidationData {
     LinkAdd {
-        link : LinkData,
-        validation_package : ValidationPackage
+        link: LinkData,
+        validation_package: ValidationPackage,
     },
     LinkRemove {
-        link : LinkData,
-        validation_package : ValidationPackage
-    }
- 
+        link: LinkData,
+        validation_package: ValidationPackage,
+    },
 }
 
 impl TryFrom<EntryValidationData<Entry>> for EntryType {
     type Error = HolochainError;
-    fn try_from(entry_validation : EntryValidationData<Entry>) -> Result<Self, Self::Error> {
-         match entry_validation
-        {
-            EntryValidationData::Create{entry,validation_package:_} => {
-                Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?))
-            },
-            EntryValidationData::Delete{old_entry,old_entry_header:_,validation_package:_} => Ok(EntryType::App(AppEntryType::try_from(old_entry.entry_type())?)),
-            EntryValidationData::Modify{new_entry,old_entry:_,old_entry_header:_,validation_package:_} =>{
-                Ok(EntryType::App(AppEntryType::try_from(new_entry.entry_type())?))
-            }
+    fn try_from(entry_validation: EntryValidationData<Entry>) -> Result<Self, Self::Error> {
+        match entry_validation {
+            EntryValidationData::Create {
+                entry,
+                validation_package: _,
+            } => Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?)),
+            EntryValidationData::Delete {
+                old_entry,
+                old_entry_header: _,
+                validation_package: _,
+            } => Ok(EntryType::App(AppEntryType::try_from(
+                old_entry.entry_type(),
+            )?)),
+            EntryValidationData::Modify {
+                new_entry,
+                old_entry: _,
+                old_entry_header: _,
+                validation_package: _,
+            } => Ok(EntryType::App(AppEntryType::try_from(
+                new_entry.entry_type(),
+            )?)),
         }
     }
 }
-
-
-
-
-
 
 /// This structs carries information contextual for the process
 /// of validating an entry of link and is passed in to the according
@@ -114,9 +124,8 @@ pub struct ValidationData {
     pub package: ValidationPackage,
     /// In which lifecycle of the entry creation are we running
     /// this validation callback?
-    pub lifecycle: EntryLifecycle
+    pub lifecycle: EntryLifecycle,
 }
-
 
 impl Default for ValidationData {
     fn default() -> Self {
@@ -127,11 +136,10 @@ impl Default for ValidationData {
                 source_chain_headers: None,
                 custom: None,
             },
-            lifecycle: EntryLifecycle::default()
+            lifecycle: EntryLifecycle::default(),
         }
     }
 }
-
 
 impl ValidationData {
     /// The list of authors that have signed this entry.

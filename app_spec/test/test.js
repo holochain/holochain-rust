@@ -209,7 +209,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
    //get v1 using initial address
    const GetInitialPostV1Initial = alice.call("blog", "get_initial_post", { post_address: createResult.Ok })
    t.ok(GetInitialPostV1Initial.Ok)
-   t.notOk(updatedPostv1Initial.Err)
+   t.notOk(GetInitialPostV1Initial.Err)
    t.deepEqual(JSON.parse(GetInitialPostV1Initial.Ok.App[1]), { content: "Hello Holo world 123", date_created: "now" })
  
    //get v2 latest address

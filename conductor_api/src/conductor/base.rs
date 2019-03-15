@@ -38,14 +38,13 @@ use std::{
     thread,
 };
 
+use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
 use holochain_net::{
     ipc::spawn::{ipc_spawn, SpawnResult},
     p2p_config::P2pConfig,
 };
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
 use static_file_server::StaticServer;
-use conductor::passphrase_manager::PassphraseManager;
-use conductor::passphrase_manager::PassphraseServiceCmd;
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.
@@ -107,7 +106,9 @@ impl Drop for Conductor {
 }
 
 type SignalSender = SyncSender<Signal>;
-pub type KeyLoader = Arc<Box<FnMut(&PathBuf,&PassphraseManager) -> Result<KeyBundle, HolochainError> + Send + Sync>>;
+pub type KeyLoader = Arc<
+    Box<FnMut(&PathBuf, &PassphraseManager) -> Result<KeyBundle, HolochainError> + Send + Sync>,
+>;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
     Arc<Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
@@ -134,9 +135,9 @@ impl Conductor {
             logger: DebugLogger::new(rules),
             p2p_config: None,
             network_spawn: None,
-            passphrase_manager: PassphraseManager::new(
-                Arc::new(Mutex::new(PassphraseServiceCmd{}))
-            )
+            passphrase_manager: PassphraseManager::new(Arc::new(Mutex::new(
+                PassphraseServiceCmd {},
+            ))),
         }
     }
 
@@ -572,13 +573,16 @@ impl Conductor {
                 .agent_by_id(agent_id)
                 .ok_or(format!("Agent '{}' not found", agent_id))?;
             let key_file_path = PathBuf::from(agent_config.key_file.clone());
-            let keybundle =
-                Arc::get_mut(&mut self.key_loader).unwrap()(&key_file_path, &self.passphrase_manager).map_err(|_| {
-                    HolochainError::ConfigError(format!(
-                        "Could not load key file \"{}\"",
-                        agent_config.key_file,
-                    ))
-                })?;
+            let keybundle = Arc::get_mut(&mut self.key_loader).unwrap()(
+                &key_file_path,
+                &self.passphrase_manager,
+            )
+            .map_err(|_| {
+                HolochainError::ConfigError(format!(
+                    "Could not load key file \"{}\"",
+                    agent_config.key_file,
+                ))
+            })?;
             if agent_config.public_address != keybundle.get_id() {
                 return Err(format!(
                     "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
@@ -614,7 +618,10 @@ impl Conductor {
     }
 
     /// Default KeyLoader that actually reads files from the filesystem
-    fn load_key(file: &PathBuf, passphrase_manager: &PassphraseManager) -> Result<KeyBundle, HolochainError> {
+    fn load_key(
+        file: &PathBuf,
+        passphrase_manager: &PassphraseManager,
+    ) -> Result<KeyBundle, HolochainError> {
         notify(format!("Reading agent key from {}", file.display()));
 
         // Read key file
@@ -805,16 +812,22 @@ pub mod tests {
     }
 
     pub fn test_key_loader() -> KeyLoader {
-        let loader = Box::new(|path: &PathBuf, _pm: &PassphraseManager| match path.to_str().unwrap().as_ref() {
-            "holo_tester1.key" => Ok(test_keybundle(1)),
-            "holo_tester2.key" => Ok(test_keybundle(2)),
-            "holo_tester3.key" => Ok(test_keybundle(3)),
-            unknown => Err(HolochainError::ErrorGeneric(format!(
-                "No test key for {}",
-                unknown
-            ))),
+        let loader = Box::new(|path: &PathBuf, _pm: &PassphraseManager| {
+            match path.to_str().unwrap().as_ref() {
+                "holo_tester1.key" => Ok(test_keybundle(1)),
+                "holo_tester2.key" => Ok(test_keybundle(2)),
+                "holo_tester3.key" => Ok(test_keybundle(3)),
+                unknown => Err(HolochainError::ErrorGeneric(format!(
+                    "No test key for {}",
+                    unknown
+                ))),
+            }
         })
-            as Box<FnMut(&PathBuf, &PassphraseManager) -> Result<KeyBundle, HolochainError> + Send + Sync>;
+            as Box<
+                FnMut(&PathBuf, &PassphraseManager) -> Result<KeyBundle, HolochainError>
+                    + Send
+                    + Sync,
+            >;
         Arc::new(loader)
     }
 

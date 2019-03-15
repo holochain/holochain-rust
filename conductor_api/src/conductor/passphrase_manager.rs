@@ -1,7 +1,6 @@
-use holochain_sodium::secbuf::SecBuf;
 use holochain_core_types::error::error::HolochainError;
-use std::sync::Arc;
-use std::sync::Mutex;
+use holochain_sodium::secbuf::SecBuf;
+use std::sync::{Arc, Mutex};
 
 pub trait PassphraseService {
     fn request_passphrase(&self) -> Result<SecBuf, HolochainError>;
@@ -25,7 +24,12 @@ impl PassphraseManager {
     pub fn get_passphrase(&self) -> Result<SecBuf, HolochainError> {
         let mut passphrase = self.passphrase_cache.lock().unwrap();
         if passphrase.is_none() {
-            *passphrase = Some(self.passphrase_service.lock().unwrap().request_passphrase()?);
+            *passphrase = Some(
+                self.passphrase_service
+                    .lock()
+                    .unwrap()
+                    .request_passphrase()?,
+            );
         }
 
         match *passphrase {
@@ -33,12 +37,11 @@ impl PassphraseManager {
                 let mut new_passphrase_buf = SecBuf::with_insecure(passphrase_buf.len());
                 new_passphrase_buf.write(0, &*(passphrase_buf.read_lock()))?;
                 Ok(new_passphrase_buf)
-            },
+            }
             None => unreachable!(),
         }
     }
 }
-
 
 pub struct PassphraseServiceCmd {}
 impl PassphraseService for PassphraseServiceCmd {

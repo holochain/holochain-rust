@@ -1,10 +1,11 @@
 use crate::{context::Context,
-network::entry_with_header::fetch_entry_with_header};
+nucleus::actions::get_entry::get_entry_from_dht };
 use holochain_core_types::{
     cas::content::Address,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
-    validation::{ValidationData,ValidationPackage,EntryValidationData}
+    validation::{ValidationData,ValidationPackage,EntryValidationData},
+    chain_header::ChainHeader
 };
 
 
@@ -142,12 +143,12 @@ pub fn entry_to_validation_data(
         Entry::App(_, _) => maybe_link_update_delete
             .map(|link_update|
             {
-                fetch_entry_with_header(&link_update,&context.clone())
+                get_entry_with_header(context.clone(),&link_update,)
                 .map(|entry_with_header|{
                     Ok(EntryValidationData::Modify{
-                        old_entry : entry_with_header.entry,
+                        old_entry : entry_with_header.0.clone(),
                         new_entry : entry.clone(),
-                        old_entry_header : entry_with_header.header.clone(),
+                        old_entry_header : entry_with_header.1.clone(),
                         validation_package : validation_package.clone()
                     })
                 }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find Entry".to_string())))
@@ -155,11 +156,11 @@ pub fn entry_to_validation_data(
             .unwrap_or(Ok(EntryValidationData::Create{entry: entry.clone(),validation_package})),
         Entry::Deletion(deletion_entry) => {
             let deletion_address = deletion_entry.clone().deleted_entry_address();
-            fetch_entry_with_header(&deletion_address,&context.clone())
+            get_entry_with_header(context.clone(),&deletion_address)
                 .map(|entry_with_header|{
                     Ok(EntryValidationData::Delete{
-                        old_entry : entry_with_header.entry.clone(),
-                        old_entry_header : entry_with_header.header.clone(),
+                        old_entry : entry_with_header.0.clone(),
+                        old_entry_header : entry_with_header.1.clone(),
                         validation_package
                     })
                 }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find Entry".to_string())))
@@ -171,3 +172,16 @@ pub fn entry_to_validation_data(
     }
 }
 
+
+
+
+fn get_entry_with_header(context : Arc<Context>, address : &Address) -> Result<(Entry,ChainHeader),HolochainError>
+{
+    let state_lock = context.state().ok_or(HolochainError::ErrorGeneric("Could not obtainn state".to_string()))?;
+    //let state = state_lock.try_read().map_err(|_|HolochainError::ErrorGeneric("Could not obtain lock".to_string()))?;
+    let entry = get_entry_from_dht(&context.clone(),address)?.ok_or(HolochainError::ErrorGeneric("Could not get Entry".to_string()))?;
+    let entry_headers = state_lock.get_headers(address.clone())?;
+    let header = entry_headers.first().ok_or(HolochainError::ErrorGeneric("Could not get header for entry".to_string()))?;
+    Ok((entry,header.clone()))
+
+}

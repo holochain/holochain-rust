@@ -121,7 +121,7 @@ pub fn generate_random_seed_buf(size: usize) -> SecBuf {
 }
 
 /// encrypt and base64 encode a secbuf
-pub fn encrypt_with_passphrase(
+pub fn encrypt_with_passphrase_buf(
     data_buf: &mut SecBuf,
     passphrase: &mut SecBuf,
     config: Option<PwHashConfig>,
@@ -134,7 +134,7 @@ pub fn encrypt_with_passphrase(
 }
 
 /// unencode base64 and decrypt a passphrase encrypted blob
-pub fn decrypt_with_passphrase(
+pub fn decrypt_with_passphrase_buf(
     blob: &String,
     passphrase: &mut SecBuf,
     config: Option<PwHashConfig>,
@@ -210,13 +210,13 @@ mod tests {
         random_passphrase.randomize();
 
         let encrypted_result =
-            encrypt_with_passphrase(&mut random_data, &mut random_passphrase, None);
+            encrypt_with_passphrase_buf(&mut random_data, &mut random_passphrase, None);
         assert!(encrypted_result.is_ok());
 
         let encrypted_data = encrypted_result.unwrap();
 
         let decrypted_result =
-            decrypt_with_passphrase(&encrypted_data, &mut random_passphrase, None, data_size);
+            decrypt_with_passphrase_buf(&encrypted_data, &mut random_passphrase, None, data_size);
         assert!(decrypted_result.is_ok());
         let mut decrypted_data = decrypted_result.unwrap();
 
@@ -224,7 +224,7 @@ mod tests {
 
         // totally bogus data will return an error
         let bogus_encrypted_data = "askdfklasjdasldkfjlkasdjflkasdjfasdf".to_string();
-        let decrypted_result = decrypt_with_passphrase(
+        let decrypted_result = decrypt_with_passphrase_buf(
             &bogus_encrypted_data,
             &mut random_passphrase,
             None,
@@ -235,7 +235,7 @@ mod tests {
         // a bogus passphrase will not decrypt to the correct data
         let mut bogus_passphrase = SecBuf::with_insecure(10);
         bogus_passphrase.randomize();
-        let decrypted_result = decrypt_with_passphrase(&encrypted_data, &mut bogus_passphrase, None, data_size);
+        let decrypted_result = decrypt_with_passphrase_buf(&encrypted_data, &mut bogus_passphrase, None, data_size);
         assert!(decrypted_result.is_ok());
         let mut decrypted_data = decrypted_result.unwrap();
         assert!(0 != decrypted_data.compare(&mut random_data));

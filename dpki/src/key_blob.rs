@@ -72,7 +72,7 @@ pub trait Blobbable {
             ));
         }
 
-        utils::encrypt_with_passphrase(data_buf, passphrase, config)
+        utils::encrypt_with_passphrase_buf(data_buf, passphrase, config)
     }
 
     /// Get the data buf back from a Blob
@@ -87,7 +87,7 @@ pub trait Blobbable {
                 "Blob type mismatch while unblobbing".to_string(),
             ));
         }
-        utils::decrypt_with_passphrase(&blob.data, passphrase, config, Self::blob_size())
+        utils::decrypt_with_passphrase_buf(&blob.data, passphrase, config, Self::blob_size())
     }
 }
 

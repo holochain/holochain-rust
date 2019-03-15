@@ -111,7 +111,8 @@ mod tests {
             dna::entry_types::{EntryTypeDef, LinkedFrom},
             entry::{entry_type::{EntryType,AppEntryType},AppEntryValue,Entry},
              dna::entry_types::Sharing,
-             validation::EntryValidationData
+             validation::{EntryValidationData,ValidationPackage},
+             chain_header::test_chain_header
         },
         holochain_wasm_utils::api_serialization::validation::LinkDirection,
         ValidationData,
@@ -165,7 +166,7 @@ mod tests {
         let entry = Entry::App(AppEntryType("post"),post_ok.into());
         assert_eq!(
             (post_definition.validator)(
-               EntryValidationData::Create{entry,validation_package:_}
+               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header)}
             ),
             Ok(()),
         );

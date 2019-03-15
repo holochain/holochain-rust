@@ -165,7 +165,7 @@ scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
 
   const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo world 321" }
   const UpdateResultV2 = await bob.callSync("blog", "update_post", updateParamsV2)
-  t.deepEqual(UpdateResultV2.Err,{ Internal: "Trying to modify with same data" });
+  t.deepEqual(JSON.parse(UpdateResultV2.Err.Internal).Kind.ValidationFailed,"Trying to modify with same data");
 
 
 })

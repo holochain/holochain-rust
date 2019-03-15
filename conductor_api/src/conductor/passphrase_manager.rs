@@ -8,13 +8,11 @@ pub trait PassphraseService {
 
 pub struct PassphraseManager {
     passphrase_cache: Arc<Mutex<Option<SecBuf>>>,
-    passphrase_service: Arc<Mutex<PassphraseService>>,
+    passphrase_service: Arc<Mutex<PassphraseService + Send>>,
 }
 
-unsafe impl Send for PassphraseManager {}
-
 impl PassphraseManager {
-    pub fn new(passphrase_service: Arc<Mutex<PassphraseService>>) -> Self {
+    pub fn new(passphrase_service: Arc<Mutex<PassphraseService + Send>>) -> Self {
         PassphraseManager {
             passphrase_cache: Arc::new(Mutex::new(None)),
             passphrase_service,

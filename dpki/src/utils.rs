@@ -208,11 +208,9 @@ mod tests {
     #[test]
     fn it_should_round_trip_passphrase_encryption() {
         let data_size = 32;
-        let mut random_data = SecBuf::with_insecure(data_size);
-        random_data.randomize();
+        let mut random_data = generate_random_buf(data_size);
 
-        let mut random_passphrase = SecBuf::with_insecure(10);
-        random_passphrase.randomize();
+        let mut random_passphrase = generate_random_buf(10);
 
         let encrypted_result =
             encrypt_with_passphrase_buf(&mut random_data, &mut random_passphrase, None);
@@ -238,8 +236,7 @@ mod tests {
         assert!(decrypted_result.is_err());
 
         // a bogus passphrase will not decrypt to the correct data
-        let mut bogus_passphrase = SecBuf::with_insecure(10);
-        bogus_passphrase.randomize();
+        let mut bogus_passphrase = generate_random_buf(10);
         let decrypted_result =
             decrypt_with_passphrase_buf(&encrypted_data, &mut bogus_passphrase, None, data_size);
         assert!(decrypted_result.is_ok());

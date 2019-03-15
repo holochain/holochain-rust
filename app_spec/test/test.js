@@ -16,7 +16,7 @@ const scenario1 = new Scenario([instanceAlice], { debugLog: true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
-/*scenario2.runTape('agentId', async (t, { alice, bob }) => {
+scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
 })
@@ -86,9 +86,9 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.ok(result.Ok)
   t.notOk(result.Err)
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
-})*/
+})
 
-/*scenario2.runTape('delete_post', async (t, { alice, bob }) => {
+scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   //create post
   const alice_create_post_result = await alice.callSync("blog", "create_post",
@@ -110,9 +110,9 @@ scenario1.runTape('create_post', async (t, { alice }) => {
 
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
-})*/
+})
 
-/*scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
+scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 321"
   const in_reply_to = null
   const params = { content, in_reply_to }
@@ -142,11 +142,11 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   const entryWithOptionsGet = { post_address: createResult.Ok}
   const entryWithOptionsGetResult = bob.call("blog", "get_post_with_options", entryWithOptionsGet);
   t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.result.All.items[0].entry.App[1]),{content: "Hello Holo world 321", date_created: "now" })
-})*/
+})
 
 
 
-/*scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
+scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
    //update entry does not exist
    const updateParams = { post_address: "1234", new_content: "Hello Holo V2" }
    const UpdateResult = await bob.callSync("blog", "update_post", updateParams)
@@ -167,7 +167,7 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.deepEqual(UpdateResult.Err,{ Internal: "Trying to modify with same data" });
 
 
-})*/
+})
 
 scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
@@ -284,7 +284,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
 })
 
 
-/*scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
+scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
   const in_reply_to = null
   const params = { content, in_reply_to }
@@ -448,4 +448,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})*/
+})

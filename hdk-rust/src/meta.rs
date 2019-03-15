@@ -113,7 +113,7 @@ pub extern "C" fn __hdk_validate_app_entry(
         Err(e) => return RibosomeEncodedValue::from(e).into(),
     };
 
-    let entry_type_to_app_entry = match EntryType::try_from(input.validation_data.clone())
+    let entry_type = match EntryType::try_from(input.validation_data.clone())
     {
         Ok(v) => v,
         Err(e) => return RibosomeEncodedValue::from(e).into()
@@ -122,7 +122,7 @@ pub extern "C" fn __hdk_validate_app_entry(
     match zd
         .entry_types
         .into_iter()
-        .find(|ref validating_entry_type| validating_entry_type.name == entry_type_to_app_entry)
+        .find(|ref validating_entry_type| validating_entry_type.name == entry_type)
     {
         None => RibosomeErrorCode::CallbackFailed as RibosomeEncodingBits,
         Some(mut entry_type_definition) => {

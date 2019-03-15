@@ -221,5 +221,23 @@ mod tests {
         let mut decrypted_data = decrypted_result.unwrap();
 
         assert_eq!(0, decrypted_data.compare(&mut random_data));
+
+        // totally bogus data will return an error
+        let bogus_encrypted_data = "askdfklasjdasldkfjlkasdjflkasdjfasdf".to_string();
+        let decrypted_result = decrypt_with_passphrase(
+            &bogus_encrypted_data,
+            &mut random_passphrase,
+            None,
+            data_size,
+        );
+        assert!(decrypted_result.is_err());
+
+        // a bogus passphrase will not decrypt to the correct data
+        let mut bogus_passphrase = SecBuf::with_insecure(10);
+        bogus_passphrase.randomize();
+        let decrypted_result = decrypt_with_passphrase(&encrypted_data, &mut bogus_passphrase, None, data_size);
+        assert!(decrypted_result.is_ok());
+        let mut decrypted_data = decrypted_result.unwrap();
+        assert!(0 != decrypted_data.compare(&mut random_data));
     }
 }

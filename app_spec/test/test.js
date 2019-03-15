@@ -18,7 +18,7 @@ const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { de
 
 
 
-/*scenario2.runTape('agentId', async (t, { alice, bob }) => {
+scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
 })
@@ -169,7 +169,7 @@ scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
   t.deepEqual(UpdateResult.Err,{ Internal: "Trying to modify with same data" });
 
 
-})*/
+})
 
 scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
@@ -259,22 +259,22 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
      const entryHistoryAll = alice.call("blog", "get_history_post", entryHistoryAllParams)
 
      t.deepEqual(entryHistoryAll.Ok.items.length,4);
-     t.deepEqual(entryHistoryAll.Ok.items[0].entry[1],{ content: "Hello Holo world 123", date_created: "now" });
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[0].entry.App[1]),{ content: "Hello Holo world 123", date_created: "now" });
      t.deepEqual(entryHistoryAll.Ok.items[0].meta.address,createResult.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[0].meta.crud_status,"modified");
      t.deepEqual(entryHistoryAll.Ok.crud_links[createResult.Ok],UpdateResultV2.Ok)
 
-     t.deepEqual(entryHistoryAll.Ok.items[1].entry[1],updatePostContentV2);
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[1].entry.App[1]),updatePostContentV2);
      t.deepEqual(entryHistoryAll.Ok.items[1].meta.address,UpdateResultV2.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[1].meta.crud_status,"modified");
      t.deepEqual(entryHistoryAll.Ok.crud_links[UpdateResultV2.Ok],UpdateResultV3.Ok)
 
-     t.deepEqual(entryHistoryAll.Ok.items[2].entry[1],UpdatePostV3Content);
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[2].entry.App[1]),UpdatePostV3Content);
      t.deepEqual(entryHistoryAll.Ok.items[2].meta.address,UpdateResultV3.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[2].meta.crud_status,"modified");
      t.deepEqual(entryHistoryAll.Ok.crud_links[UpdateResultV3.Ok],UpdateResultV4.Ok)
 
-     t.deepEqual(entryHistoryAll.Ok.items[3].entry.App[1],updatePostV4Content);
+     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[3].entry.App[1]),updatePostV4Content);
      t.deepEqual(entryHistoryAll.Ok.items[3].meta.address,UpdateResultV4.Ok);
      t.deepEqual(entryHistoryAll.Ok.items[3].meta.crud_status,"live");
      t.notOk(entryHistoryAll.Ok.crud_links[UpdateResultV4.Ok])
@@ -286,7 +286,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
 })
 
 
-/*scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
+scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
   const in_reply_to = null
   const params = { content, in_reply_to }
@@ -450,4 +450,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})*/
+})

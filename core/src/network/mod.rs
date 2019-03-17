@@ -10,7 +10,7 @@ pub mod test_utils;
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        agent::{actions::commit::commit_entry, state::create_new_chain_header},
+        agent::{actions::commit::commit_entry},
         instance::tests::test_instance_and_context_by_name,
         network::{
             actions::{
@@ -19,16 +19,13 @@ pub mod tests {
             },
             test_utils::test_wat_always_valid,
         },
-        workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
+        workflows::{author_entry::author_entry},
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMeta},
         link::link_data::LinkData,
-    };
-    use holochain_wasm_utils::api_serialization::get_entry::{
-        GetEntryArgs, GetEntryOptions, GetEntryResultType,
     };
     use test_utils::*;
 

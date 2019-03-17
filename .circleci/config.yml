@@ -171,10 +171,6 @@ workflows:
         only:
          - develop
 
- do.end:
-  jobs:
-   - docker.end
-
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow
   triggers:

@@ -217,6 +217,9 @@ jobs:
     - name: "windows_docker"
       os: windows
       language: sh
+      cache:
+       directories:
+        - $HOME/.cache/docker
       env:
         - DOCKER_IMG=holochain/travis-windows-proto
         - DOCKER_CONTAINER=windows-docker

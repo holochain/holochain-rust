@@ -144,24 +144,24 @@ workflows:
 
  cold.ubuntu:
   jobs:
-   - cold.ubuntu.bionic
-      # filters:
-      #  branches:
-      #   only:
-      #    - develop
-   - cold.ubuntu.xenial
-      # filters:
-      #  branches:
-      #   only:
-      #    - develop
+   - cold.ubuntu.bionic:
+      filters:
+       branches:
+        only:
+         - develop
+   - cold.ubuntu.xenial:
+      filters:
+       branches:
+        only:
+         - develop
 
  cold.debian:
   jobs:
-   - cold.debian.stable
-      # filters:
-      #  branches:
-      #   only:
-      #    - develop
+   - cold.debian.stable:
+      filters:
+       branches:
+        only:
+         - develop
 
  cold.mac:
   jobs:

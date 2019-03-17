@@ -78,7 +78,7 @@ impl IpcNetWorker {
             .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string()))
             .collect();
         // create a new IpcNetWorker witch spawns the n3h process
-        IpcNetWorker::priv_new_with_spawn(
+        return IpcNetWorker::priv_new_with_spawn(
             handler,
             spawn_config["cmd"].as_str().unwrap().to_string(),
             spawn_config["args"]
@@ -91,7 +91,7 @@ impl IpcNetWorker {
             enduser_config,
             env,
             bootstrap_nodes,
-        )
+        );
     }
 
     /// Constructor with IpcNetWorker instance pointing to a process that we spawn here

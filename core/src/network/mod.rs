@@ -10,7 +10,7 @@ pub mod test_utils;
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        agent::{actions::commit::commit_entry},
+        agent::actions::commit::commit_entry,
         instance::tests::test_instance_and_context_by_name,
         network::{
             actions::{
@@ -19,7 +19,7 @@ pub mod tests {
             },
             test_utils::test_wat_always_valid,
         },
-        workflows::{author_entry::author_entry},
+        workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},

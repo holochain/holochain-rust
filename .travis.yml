@@ -234,9 +234,9 @@ jobs:
       install:
         # "none" is a hack here to avoid "" ending up in the cache, potentially
         # caching everything in the repo (we never want to accidentally do that)
-        - docker exec ${DOCKER_CONTAINER} powershell if [ ! -z "$WASM_PATH" ]; then rustup target add wasm32-unknown-unknown; fi;
-        - docker exec ${DOCKER_CONTAINER} powershell if [ ! -z "$WASM_PATH" ]; then cargo build --manifest-path ${TEST_PATH}${WASM_PATH}Cargo.toml --release --target wasm32-unknown-unknown --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH}target; fi;
-        - docker exec ${DOCKER_CONTAINER} powershell if [ ! -z "$WASM_PATH_2" ]; then cargo build --manifest-path ${TEST_PATH}${WASM_PATH_2}Cargo.toml --release --target wasm32-unknown-unknown --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH_2}target; fi;
+        - docker exec ${DOCKER_CONTAINER} powershell rustup target add wasm32-unknown-unknown
+        - docker exec ${DOCKER_CONTAINER} powershell cargo build --manifest-path ${TEST_PATH}${WASM_PATH}Cargo.toml --release --target wasm32-unknown-unknown --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH}target
+        # - docker exec ${DOCKER_CONTAINER} powershell 'cargo build --manifest-path ${TEST_PATH}${WASM_PATH_2}Cargo.toml --release --target wasm32-unknown-unknown --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH_2}target'
 
       script:
         - docker exec ${DOCKER_CONTAINER} powershell node --version

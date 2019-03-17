@@ -82,6 +82,10 @@ pub mod tests {
     }
 
     #[test]
+    // flaky test
+    // https://circleci.com/gh/holochain/holochain-rust/12091
+    // timestamps are not being created deterministically
+    #[cfg(feature = "broken-tests")]
     fn get_entry_results_roundtrip() {
         let netname = Some("get_entry_results_roundtrip");
         let mut dna = create_test_dna_with_wat("test_zome", None);

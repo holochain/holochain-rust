@@ -1,4 +1,4 @@
-use holochain_core_types::{dna::capabilities::CapabilityCall, error::HolochainError, json::*};
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::*};
 
 pub const THIS_INSTANCE: &str = "__hdk_this_instance";
 
@@ -7,7 +7,7 @@ pub const THIS_INSTANCE: &str = "__hdk_this_instance";
 pub struct ZomeFnCallArgs {
     pub instance_handle: String,
     pub zome_name: String,
-    pub cap: Option<CapabilityCall>,
+    pub cap_token: Address,
     pub fn_name: String,
     pub fn_args: String,
 }

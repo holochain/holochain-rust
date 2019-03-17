@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core_types"
-version = "0.0.4-alpha"
+version = "0.0.6-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 build = "build.rs"
 
@@ -21,7 +21,8 @@ futures-io-preview = "=0.3.0-alpha.12"
 futures-sink-preview = "=0.3.0-alpha.12"
 futures-util-preview = "=0.3.0-alpha.12"
 
-reed-solomon = "0.2.1"
+hcid = "0.0.3-alpha"
+
 rust-base58 = "0.0.4"
 snowflake = "1.2"
 objekt="0.1.1"

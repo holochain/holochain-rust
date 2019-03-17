@@ -5,10 +5,10 @@ use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
     config::*,
-    key_loaders::{test_key, test_key_loader},
+    key_loaders::{test_keybundle, test_keybundle_loader},
     logger::LogRules,
 };
-use holochain_core_types::agent::{AgentId, KeyBuffer};
+use holochain_core_types::agent::AgentId;
 use std::{fs, path::PathBuf};
 
 /// Starts a minimal configuration Conductor with the current application running
@@ -26,7 +26,7 @@ pub fn run(
     mount_conductor_from_config(conductor_config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
-    conductor.key_loader = test_key_loader();
+    conductor.key_loader = test_keybundle_loader();
 
     conductor
         .load_config()
@@ -97,13 +97,12 @@ fn agent_configuration() -> AgentConfiguration {
         .value()
         .ok()
         .unwrap_or_else(|| String::from(AGENT_NAME_DEFAULT));
-    let keypair = test_key(&agent_name);
-    let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
-    let agent_id = AgentId::new(&agent_name, &pub_key);
+    let keybundle = test_keybundle(&agent_name);
+    let agent_id = AgentId::new(&agent_name, keybundle.get_id());
     AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
         name: agent_id.nick,
-        public_address: agent_id.key,
+        public_address: agent_id.pub_sign_key,
         key_file: agent_name,
         holo_remote_key: None,
     }
@@ -189,41 +188,41 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
     // if this logic changes
-    let n3h_path = EnvVar::N3hPath.value().ok();
+    let maybe_n3h_path = EnvVar::N3hPath.value().ok();
 
     // create an n3h network config if the --networked flag is set
     // or if a value where to find n3h has been put into the
     // HC_N3H_PATH environment variable
-    if networked || n3h_path.is_some() {
-        // note that this behaviour is documented within
-        // holochain_common::env_vars module and should be updated
-        // if this logic changes
-        let n3h_mode = EnvVar::N3hMode.value().ok();
-        let n3h_persistence_path = EnvVar::N3hWorkDir.value().ok();
-        let n3h_bootstrap_node = EnvVar::N3hBootstrapNode.value().ok();
-        let mut n3h_bootstrap = Vec::new();
-
-        if n3h_bootstrap_node.is_some() {
-            n3h_bootstrap.push(n3h_bootstrap_node.unwrap())
-        }
-
-        // Load end_user config file
-        // note that this behaviour is documented within
-        // holochain_common::env_vars module and should be updated
-        // if this logic changes
-        let networking_config_filepath = EnvVar::NetworkingConfigFile.value().ok();
-
-        Some(NetworkConfig {
-            bootstrap_nodes: n3h_bootstrap,
-            n3h_path: n3h_path.unwrap_or_else(default_n3h_path),
-            n3h_mode: n3h_mode.unwrap_or_else(default_n3h_mode),
-            n3h_persistence_path: n3h_persistence_path.unwrap_or_else(default_n3h_persistence_path),
-            n3h_ipc_uri: Default::default(),
-            networking_config_file: networking_config_filepath,
-        })
-    } else {
-        None
+    if maybe_n3h_path.is_none() && !networked {
+        return None;
     }
+
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
+    let mut bootstrap_nodes = Vec::new();
+    if let Ok(node) = EnvVar::N3hBootstrapNode.value() {
+        bootstrap_nodes.push(node);
+    };
+
+    Some(NetworkConfig {
+        bootstrap_nodes,
+        n3h_log_level: EnvVar::N3hLogLevel
+            .value()
+            .ok()
+            .unwrap_or_else(default_n3h_log_level),
+        n3h_path: maybe_n3h_path.unwrap_or_else(default_n3h_path),
+        n3h_mode: EnvVar::N3hMode
+            .value()
+            .ok()
+            .unwrap_or_else(default_n3h_mode),
+        n3h_persistence_path: EnvVar::N3hWorkDir
+            .value()
+            .ok()
+            .unwrap_or_else(default_n3h_persistence_path),
+        n3h_ipc_uri: Default::default(),
+        networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
+    })
 }
 
 #[cfg(test)]
@@ -268,13 +267,17 @@ mod tests {
     #[test]
     fn test_agent_configuration() {
         let agent = super::agent_configuration();
-        assert_eq!(agent, AgentConfiguration {
-            id: "hc-run-agent".to_string(),
-            name: "testAgent".to_string(),
-            public_address: "s9UNYMzKdze-AAcg5-0UGHhdtu_vPQvfjYOyJifXivr_FIyhglPbbUgzcIwVhr7rzw4KCR6FcezPeRlQ_RPubdXwT1E_".to_string(),
-            key_file: "testAgent".to_string(),
-            holo_remote_key: None,
-        });
+        assert_eq!(
+            agent,
+            AgentConfiguration {
+                id: "hc-run-agent".to_string(),
+                name: "testAgent".to_string(),
+                public_address: "HcScjN8wBwrn3tuyg89aab3a69xsIgdzmX5P9537BqQZ5A7TEZu7qCY4Xzzjhma"
+                    .to_string(),
+                key_file: "testAgent".to_string(),
+                holo_remote_key: None,
+            },
+        );
     }
 
     #[test]
@@ -360,6 +363,7 @@ mod tests {
             networking,
             Some(NetworkConfig {
                 bootstrap_nodes: Vec::new(),
+                n3h_log_level: default_n3h_log_level(),
                 n3h_path: default_n3h_path(),
                 n3h_mode: default_n3h_mode(),
                 n3h_persistence_path: default_n3h_persistence_path(),

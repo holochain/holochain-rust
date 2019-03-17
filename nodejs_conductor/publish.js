@@ -28,19 +28,25 @@ shell.cd(rootDirectory);
 const shouldPublish = process.argv.slice(2).indexOf("--publish") !== -1;
 
 //Cleanup the previous build, if it exists
-shell.rm("-rf", "./dist");
-shell.rm("-rf", "./bin-package");
-shell.rm("-rf", "./build");
+if (shouldPublish) {
+  shell.rm("-rf", "./dist");
+  shell.rm("-rf", "./bin-package");
+  shell.rm("-rf", "./build");
+}
 
 // Cleanup any previous Rust builds, update deps, and compile
 shell.exec("yarn install --ignore-scripts");
-shell.exec("yarn run clean");
+if (shouldPublish) {
+  shell.exec("yarn run clean");
+}
 
 // copy files to include in release
-shell.mkdir("./dist");
+shell.mkdir('-p', "./dist");
 shell.cp(["README.md", "package.json", "index.js"], "./dist");
 shell.cp("-R", "./native/", "./dist");
-shell.rm("-rf", "./dist/native/target");
+if (shouldPublish) {
+  shell.rm("-rf", "./dist/native/target");
+}
 
 
 shell.pushd("./native");
@@ -58,7 +64,7 @@ npmPackageJson.scripts.fallback = "npm run compile && mkdir -p bin-package && cp
 
 fs.writeFileSync("./dist/package.json", JSON.stringify(npmPackageJson, null, 2));
 
-shell.mkdir("./bin-package");
+shell.mkdir('-p', "./bin-package");
 shell.cp("./native/index.node", "./bin-package");
 if (process.platform === "win32") {
     shell.exec("sh node_modules/.bin/node-pre-gyp package");

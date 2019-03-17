@@ -21,7 +21,7 @@ jobs:
  app-spec-tests:
   docker:
    - image: holochain/holochain-rust:circle.zz.end
-  resource_class: large
+  resource_class: xlarge
   steps:
    - checkout
 
@@ -68,6 +68,7 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker pull holochain/holochain-rust:circle..start
    - run: docker build -f .circleci/Dockerfile.01.warm.nix -t holochain/holochain-rust:circle.01.warm.nix .
    - run: docker push holochain/holochain-rust:circle.01.warm.nix
  docker.02:
@@ -75,6 +76,7 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker pull holochain/holochain-rust:circle.01.warm.nix
    - run: docker build -f .circleci/Dockerfile.02.warm.tests -t holochain/holochain-rust:circle.02.warm.tests .
    - run: docker push holochain/holochain-rust:circle.02.warm.tests
  docker.03:
@@ -82,6 +84,7 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker pull holochain/holochain-rust:circle.02.warm.tests
    - run: docker build -f .circleci/Dockerfile.03.warm.tools -t holochain/holochain-rust:circle.03.warm.tools .
    - run: docker push holochain/holochain-rust:circle.03.warm.tools
  docker.end:
@@ -89,13 +92,42 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker pull holochain/holochain-rust:circle.03.warm.tools
    - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end -t holochain/holochain-rust:develop .
    - run: docker push holochain/holochain-rust:circle.zz.end
    - run: docker push holochain/holochain-rust:develop
+   - run: docker push holochain/holochain-rust:latest
 
- cold.ubuntu:
+ cold.ubuntu.bionic:
   docker:
-   - image: ubuntu
+   - image: ubuntu:bionic
+  resource_class: large
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
+
+ cold.ubuntu.xenial:
+  docker:
+   - image: ubuntu:xenial
+  resource_class: large
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
+
+ cold.debian.stable:
+  docker:
+   - image: debian:stable
+  resource_class: large
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
+
+ cold.mac:
+  macos:
+   xcode: "10.2.0"
   steps:
    - checkout
    - run: . ./scripts/install/auto.sh
@@ -110,9 +142,30 @@ workflows:
    - app-spec-tests
    - cli-tests
 
- cold:
+ cold.ubuntu:
   jobs:
-   - cold.ubuntu:
+   - cold.ubuntu.bionic:
+      filters:
+       branches:
+        only:
+         - develop
+   - cold.ubuntu.xenial:
+      filters:
+       branches:
+        only:
+         - develop
+
+ cold.debian:
+  jobs:
+   - cold.debian.stable:
+      filters:
+       branches:
+        only:
+         - develop
+
+ cold.mac:
+  jobs:
+   - cold.mac:
       filters:
        branches:
         only:

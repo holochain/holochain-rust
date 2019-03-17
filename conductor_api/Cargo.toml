@@ -1,6 +1,6 @@
 [package]
 name = "holochain_conductor_api"
-version = "0.0.4-alpha"
+version = "0.0.6-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -23,7 +23,6 @@ jsonrpc-http-server = { git = "https://github.com/paritytech/jsonrpc" }
 petgraph = "0.4.13"
 colored = "1.6"
 regex = "1"
-holochain_net_ipc = { path = "../net_ipc" }
 maplit = "1.0.1"
 lazy_static = "1.2"
 directories = "1.0"

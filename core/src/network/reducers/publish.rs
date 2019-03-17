@@ -7,7 +7,6 @@ use crate::{
         reducers::send,
         state::NetworkState,
     },
-    nucleus::actions::get_entry::get_entry_crud_meta_from_dht,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -16,7 +15,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net_connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
+use holochain_net::connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
 use std::sync::Arc;
 
 /// Send to network a PublishDhtData message
@@ -41,11 +40,11 @@ fn publish_entry(
 /// Send to network:
 ///  - a PublishDhtMeta message for the crud-status
 ///  - a PublishDhtMeta message for the crud-link
-fn publish_crud_meta(
+fn publish_update_delete_meta(
     network_state: &mut NetworkState,
     entry_address: Address,
-    crud_status: CrudStatus,
-    crud_link: Option<Address>,
+    crud_status: String,
+    entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
     // publish crud-status
     send(
@@ -54,30 +53,15 @@ fn publish_crud_meta(
             dna_address: network_state.dna_address.clone().unwrap(),
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: entry_address.clone(),
-            attribute: Attribute::CrudStatus.to_string(),
-            content_list: vec![
-                serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
-            ],
-        }),
-    )?;
-
-    // publish crud-link if there is one
-    if crud_link.is_none() {
-        return Ok(());
-    }
-    send(
-        network_state,
-        JsonProtocol::PublishMeta(DhtMetaData {
-            dna_address: network_state.dna_address.clone().unwrap(),
-            provider_agent_id: network_state.agent_id.clone().unwrap(),
-            entry_address: entry_address.clone(),
-            attribute: Attribute::CrudLink.to_string(),
+            attribute: crud_status,
             content_list: vec![serde_json::from_str(
-                &serde_json::to_string(&crud_link.unwrap()).unwrap(),
+                &serde_json::to_string(&entry_with_header).unwrap(),
             )
             .unwrap()],
         }),
     )?;
+
+    // publish crud-link if there is one
     Ok(())
 }
 
@@ -127,35 +111,30 @@ fn reduce_publish_inner(
     network_state.initialized()?;
 
     let entry_with_header = fetch_entry_with_header(&address, &context)?;
-    let (crud_status, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address.clone())?
-        .expect("Entry should have crud-status metadata in DHT.");
     match entry_with_header.entry.entry_type() {
-        EntryType::AgentId => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            publish_crud_meta(
-                network_state,
-                entry_with_header.entry.address(),
-                crud_status,
-                maybe_crud_link,
-            )
-        }),
+        EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            publish_crud_meta(
-                network_state,
-                entry_with_header.entry.address(),
-                crud_status,
-                maybe_crud_link,
-            )
+            if entry_with_header.header.link_update_delete().is_some() {
+                publish_update_delete_meta(
+                    network_state,
+                    entry_with_header.entry.address(),
+                    String::from(CrudStatus::Modified),
+                    &entry_with_header.clone(),
+                )
+            } else {
+                Ok(())
+            }
         }),
         EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
             .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
         EntryType::LinkRemove => publish_entry(network_state, &entry_with_header)
             .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
         EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            publish_crud_meta(
+            publish_update_delete_meta(
                 network_state,
                 entry_with_header.entry.address(),
-                crud_status,
-                maybe_crud_link,
+                String::from(CrudStatus::Deleted),
+                &entry_with_header.clone(),
             )
         }),
         _ => Err(HolochainError::NotImplemented(

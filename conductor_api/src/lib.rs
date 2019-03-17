@@ -95,7 +95,6 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dpki;
 extern crate holochain_net;
-extern crate holochain_net_ipc;
 extern crate holochain_sodium;
 
 extern crate chrono;
@@ -123,8 +122,8 @@ extern crate directories;
 extern crate hyper;
 extern crate hyper_staticfile;
 extern crate json_patch;
-#[cfg(test)]
-extern crate reqwest;
+// #[cfg(test)]
+// extern crate reqwest;
 extern crate tokio;
 #[cfg(test)]
 #[macro_use]

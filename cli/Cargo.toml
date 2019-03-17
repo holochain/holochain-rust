@@ -1,6 +1,6 @@
 [package]
 name = "hc"
-version = "0.0.4-alpha"
+version = "0.0.6-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]

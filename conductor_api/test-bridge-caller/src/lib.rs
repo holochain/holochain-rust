@@ -5,11 +5,14 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-use hdk::holochain_core_types::error::HolochainError;
-use hdk::holochain_core_types::json::JsonString;
+use hdk::holochain_core_types::{
+    error::HolochainError,
+    json::JsonString,
+    cas::content::Address,
+};
 
 fn handle_call_bridge() -> JsonString {
-    hdk::call("test-callee", "greeter", "token", "hello", JsonString::from("{}")).unwrap()
+    hdk::call("test-callee", "greeter", Address::from("token"), "hello", JsonString::from("{}")).unwrap()
 }
 
 define_zome! {

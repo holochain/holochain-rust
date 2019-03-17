@@ -26,7 +26,6 @@ pub mod tests {
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMeta},
         link::link_data::LinkData,
-        time::Timeout,
     };
     use holochain_wasm_utils::api_serialization::get_entry::{
         GetEntryArgs, GetEntryOptions, GetEntryResultType,
@@ -38,7 +37,7 @@ pub mod tests {
     #[ignore]
     fn get_entry_roundtrip() {
         let netname = Some("get_entry_roundtrip");
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
@@ -85,7 +84,7 @@ pub mod tests {
     #[test]
     fn get_entry_results_roundtrip() {
         let netname = Some("get_entry_results_roundtrip");
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alex", netname).unwrap();
@@ -94,8 +93,8 @@ pub mod tests {
 
         // Create Entry & crud-status metadata, and store it.
         let entry = test_entry();
-        let header1 = create_new_chain_header(&entry, context1.clone(), &None);
-        let header2 = create_new_chain_header(&entry, context2.clone(), &None);
+        let header1 = create_new_chain_header(&entry, context1.clone(), &None).unwrap();
+        let header2 = create_new_chain_header(&entry, context2.clone(), &None).unwrap();
         context1
             .block_on(commit_entry(entry.clone(), None, &context1))
             .unwrap();
@@ -123,9 +122,12 @@ pub mod tests {
     }
 
     #[test]
+    // flaky test
+    // see https://circleci.com/gh/holochain/holochain-rust/10027
+    #[cfg(feature = "broken-tests")]
     fn get_non_existant_entry() {
         let netname = Some("get_non_existant_entry");
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
         let (_, _) = test_instance_and_context_by_name(dna.clone(), "alice2", netname).unwrap();
         let (_, context2) =
@@ -145,8 +147,8 @@ pub mod tests {
 
     #[test]
     fn get_entry_when_alone() {
-        let netname = Some("get_entry_when_alone");
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        let netname = Some("get_when_alone");
+        let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "bob3", netname).unwrap();
@@ -178,9 +180,9 @@ pub mod tests {
     fn get_validation_package_roundtrip() {
         let netname = Some("get_validation_package_roundtrip");
         let wat = &test_wat_always_valid();
-
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
+        let mut dna = create_test_dna_with_wat("test_zome", Some(wat));
         dna.uuid = netname.unwrap().to_string();
+
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
 
@@ -211,8 +213,7 @@ pub mod tests {
     fn get_links_roundtrip() {
         let netname = Some("get_links_roundtrip");
         let wat = &test_wat_always_valid();
-
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
+        let mut dna = create_test_dna_with_wat("test_zome", Some(wat));
         dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alex2", netname).unwrap();

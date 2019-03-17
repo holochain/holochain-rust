@@ -83,7 +83,7 @@ impl ValidationData {
             .chain_header
             .provenances()
             .iter()
-            .map(|(addr, _)| addr.clone())
+            .map(|provenance| provenance.source())
             .collect()
     }
 }

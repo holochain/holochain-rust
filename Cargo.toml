@@ -10,8 +10,6 @@ members = [
   "dna_c_binding",
   "hdk-rust",
   "net",
-  "net_connection",
-  "net_ipc",
   "nodejs_waiter",
   "sodium",
   "hc_dpki",
@@ -21,10 +19,4 @@ exclude = [
   "test_utils",
   "app_spec",
   "nodejs_conductor/native",
-  "rust_sodium-sys",
-  "zmq-sys",
 ]
-
-[patch.crates-io]
-rust_sodium-sys = { path = "./rust_sodium-sys" }
-zmq-sys = { path = "./zmq-sys" }

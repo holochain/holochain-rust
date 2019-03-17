@@ -1,6 +1,6 @@
 [package]
 name = "holochain-node"
-version = "0.0.4-alpha"
+version = "0.0.6-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 license = "MIT"
 build = "build.rs"
@@ -23,7 +23,4 @@ holochain_core = { path = "../../core" }
 holochain_core_types = { path = "../../core_types" }
 holochain_node_test_waiter = { path = "../../nodejs_waiter" }
 neon-serde = "0.1.1"
-
-[patch.crates-io]
-rust_sodium-sys = { path = "../../rust_sodium-sys" }
-zmq-sys = { path = "../../zmq-sys" }
+rust_sodium-sys = "0.10.3"

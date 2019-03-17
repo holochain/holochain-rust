@@ -53,7 +53,7 @@ Conductor.prototype.stop = function () {
 }
 
 /**
- * Run a new Conductor, specified by a closure:
+ * Run a new Conductor, specified by a closure which returns a Promise:
  * (stop, conductor) => { (code to run) }
  * where `stop` is a function that shuts down the Conductor and must be called in the closure body
  *
@@ -72,7 +72,13 @@ Conductor.run = function (config, fn) {
     return new Promise((fulfill, reject) => {
         try {
             conductor._start(callbackFromPromise(fulfill, reject))
-            fn(() => conductor._stop(), conductor)
+            const promise = fn(() => conductor._stop(), conductor)
+            if (promise && promise.catch) {
+                // If the function returned a promise, pass on its potential rejection
+                // to the outer promise
+                promise.catch(reject)
+            }
+            // Otherwise, it should have thrown a normal Exception, which will be caught here
         } catch (e) {
             reject(e)
         }
@@ -176,13 +182,10 @@ class Scenario {
             throw new Error("must call `scenario.setTape(require('tape'))` before running tape-based tests!")
         }
         Scenario._tape(description, t => {
-            this.run(async (stop, instances) => {
-                await fn(t, instances)
-                stop()
+            this.run((stop, instances) => {
+                return fn(t, instances).then(() => stop())
             })
-            .catch(e => {
-                t.fail(e)
-            })
+            .catch(e => t.fail(e))
             .then(t.end)
         })
     }

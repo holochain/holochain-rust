@@ -5,10 +5,10 @@ use hdk::{
         cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{
-        get_entry::{GetEntryOptions, GetEntryResultType},
-        get_links::{GetLinksOptions, GetLinksResult},
+        get_entry::{GetEntryOptions, GetEntryResultType,EntryHistory, StatusRequestKind,GetEntryResult},
+        get_links::{GetLinksOptions, GetLinksResult}
     },
-    AGENT_ADDRESS, AGENT_ID_STR, DNA_ADDRESS, DNA_NAME,
+    AGENT_ADDRESS, AGENT_ID_STR, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
 };
 use post::Post;
 use std::convert::TryFrom;
@@ -54,7 +54,7 @@ pub fn handle_get_sources(address: Address) -> ZomeApiResult<Vec<Address>> {
         Ok(result
             .headers
             .into_iter()
-            .map(|header| header.provenances().first().unwrap().clone().0)
+            .map(|header| header.provenances().first().unwrap().clone().source())
             .collect())
     } else {
         unimplemented!()
@@ -72,7 +72,7 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
     hdk::call(
         hdk::THIS_INSTANCE,
         "summer",
-        "test_token",
+        Address::from(PUBLIC_TOKEN.to_string()),
         "sum",
         check_sum_args(num1, num2).into(),
     )
@@ -158,7 +158,38 @@ pub fn handle_delete_entry_post(post_address: Address) -> ZomeApiResult<()> {
     Ok(())
 }
 
-pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<()> {
+pub fn handle_get_initial_post(post_address: Address) ->ZomeApiResult<Option<Entry>>
+{
+    hdk::get_entry_initial(&post_address)
+}
+
+pub fn handle_get_post_with_options_latest(post_address : Address) -> ZomeApiResult<Entry>
+{
+    let res = hdk::get_entry_result(
+        &post_address,
+        GetEntryOptions::new(StatusRequestKind::All, false, false, Default::default()),
+    )?;
+    let latest = res.latest().ok_or(ZomeApiError::Internal("Could not get latest".into()))?;
+    Ok(latest)
+}
+
+pub fn handle_my_post_with_options(post_address : Address) ->ZomeApiResult<GetEntryResult>
+{
+    hdk::get_entry_result(
+        &post_address,
+        GetEntryOptions::new(StatusRequestKind::All, false, false, Default::default()),
+    )
+}
+
+pub fn handle_get_history_post(post_address : Address) -> ZomeApiResult<EntryHistory>
+{
+    let history = hdk::get_entry_history(&post_address)?.ok_or(ZomeApiError::Internal("Could not get History".into()));
+    history
+}
+
+
+
+pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<Address> {
     let old_entry = hdk::get_entry(&post_address)?;
 
     if let Some(Entry::App(_, json_string)) = old_entry {
@@ -168,9 +199,7 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
             Post::new(&new_content, &post.date_created).into(),
         );
 
-        hdk::update_entry(updated_post_entry, &post_address)?;
-
-        Ok(())
+        hdk::update_entry(updated_post_entry, &post_address)
     } else {
         Err(ZomeApiError::Internal("failed to update post".into()))
     }

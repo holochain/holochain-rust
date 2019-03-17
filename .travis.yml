@@ -228,6 +228,7 @@ jobs:
       before_install:
         - docker run -dit --workdir c:\\src --volume c:\\Users\\travis\\build\\holochain\\holochain-rust:c:\\src --name ${DOCKER_CONTAINER} ${DOCKER_IMG}
       script:
+        - docker exec ${DOCKER_CONTAINER} powershell node --version
         - docker exec ${DOCKER_CONTAINER} powershell cargo build
 
     - name: "windows hdk"

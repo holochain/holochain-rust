@@ -52,7 +52,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
 
     // Update public_token
     let maybe_token = call_data.context.get_public_token();
-    if maybe_token.is_some() {
+    if maybe_token.is_ok() {
         globals.public_token = maybe_token.unwrap();
     }
 

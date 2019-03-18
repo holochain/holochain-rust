@@ -115,7 +115,9 @@ impl Keystore {
         Ok(dst_id)
     }
 
-    fn check_src_identifier(&self, src_id_str: &str) -> HcResult<Arc<Mutex<Secret>>> {
+    /// gets a secret from the keystore
+    #[allow(dead_code)]
+    pub fn get(&self, src_id_str: &str) -> HcResult<Arc<Mutex<Secret>>> {
         let src_id = src_id_str.to_string();
         if !self.keys.contains_key(&src_id) {
             return Err(HolochainError::ErrorGeneric(
@@ -131,7 +133,7 @@ impl Keystore {
         dst_id_str: &str,
     ) -> HcResult<(Arc<Mutex<Secret>>, String)> {
         let dst_id = self.check_dst_identifier(dst_id_str)?;
-        let src_secret = self.check_src_identifier(src_id_str)?;
+        let src_secret = self.get(src_id_str)?;
         Ok((src_secret, dst_id))
     }
 
@@ -202,7 +204,7 @@ impl Keystore {
     /// returns the signature
     #[allow(dead_code)]
     pub fn sign(&mut self, src_id_str: &str, data: String) -> HcResult<Signature> {
-        let src_secret = self.check_src_identifier(src_id_str)?;
+        let src_secret = self.get(src_id_str)?;
         let mut src_secret = src_secret.lock().unwrap();
         match *src_secret {
             Secret::SigningKey(ref mut key_pair) => {

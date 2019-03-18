@@ -1,7 +1,6 @@
 os: Visual Studio 2017
 version: 1.0.{build}
-build:
-  verbosity: minimal
+build: false
   
 environment:
  global:
@@ -26,5 +25,3 @@ install:
 
 test_script:
  - cargo test --release -p %TEST_P% --target-dir %TEST_PATH%\target
-
-build: false

@@ -2,4 +2,16 @@ os: Visual Studio 2017
 version: 1.0.{build}
 build:
   verbosity: minimal
+  
+environment:
+ global:
+  RUST_VERSION: nightly-2018-11-28
+  TARGET: x86_64-pc-windows-msvc
+  WASM_TARGET: wasm32-unknown-unknown
 
+install:
+  - rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
+  - set PATH=%PATH%;%USERPROFILE%\.cargo\bin
+  - rustc -Vv
+  - cargo -V
+  - rustup target add %WASM_TARGET%

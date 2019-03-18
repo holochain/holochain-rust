@@ -146,8 +146,10 @@ enum Cli {
     },
     #[structopt(name = "chain", about = "View the contents of a source chain")]
     ChainLog {
+        #[structopt(name = "INSTANCE", help = "Instance ID to view")]
+        instance_id: Option<String>,
         #[structopt(long, short, help = "Location of chain storage")]
-        chain: PathBuf,
+        path: Option<PathBuf>,
     },
 }
 
@@ -221,9 +223,11 @@ fn run() -> HolochainResult<()> {
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
 
-        Cli::ChainLog { chain } => {
-            cli::chain_log(&chain).map_err(|e| HolochainError::Default(format_err!("{}", e)))?
-        }
+        Cli::ChainLog { instance_id, path } => match instance_id {
+            Some(instance_id) => cli::chain_log(path, instance_id)
+                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
+            None => cli::chain_list(path),
+        },
     }
 
     Ok(())

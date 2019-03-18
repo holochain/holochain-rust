@@ -26,3 +26,5 @@ install:
 
 test_script:
  - cargo test --release -p %TEST_P% --target-dir %TEST_PATH%\target
+
+build: false

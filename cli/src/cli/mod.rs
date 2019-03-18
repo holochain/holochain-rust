@@ -1,3 +1,4 @@
+mod chain_log;
 mod generate;
 mod init;
 mod keygen;
@@ -7,6 +8,7 @@ mod scaffold;
 pub mod test;
 
 pub use self::{
+    chain_log::chain_log,
     generate::generate,
     init::init,
     keygen::keygen,

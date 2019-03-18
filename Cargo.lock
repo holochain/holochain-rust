@@ -746,6 +746,7 @@ dependencies = [
  "colored 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "directories 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_cas_implementations 0.0.6-alpha",
  "holochain_common 0.0.6-alpha",
  "holochain_conductor_api 0.0.6-alpha",
  "holochain_core 0.0.6-alpha",

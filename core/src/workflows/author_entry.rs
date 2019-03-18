@@ -98,7 +98,7 @@ pub mod tests {
         let netname = Some("test_commit_with_dht_publish, the network");
         let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
         let (_instance2, context2) = instance_by_name("jack", dna, netname);
-        
+
         let entry_address = context1
             .block_on(author_entry(
                 &test_entry_with_value("{\"stuff\":\"test entry value\"}"),

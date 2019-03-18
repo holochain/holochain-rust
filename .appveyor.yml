@@ -1,3 +1,4 @@
 # Build worker image (VM template)
 image: Visual Studio 2015
 version: '1.0.{build}'
+

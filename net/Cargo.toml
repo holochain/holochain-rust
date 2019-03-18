@@ -8,6 +8,7 @@ edition = "2018"
 tempfile = "3"
 
 [dependencies]
+directories = "1"
 failure = "0.1.1"
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }

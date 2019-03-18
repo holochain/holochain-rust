@@ -1,0 +1,88 @@
+#!/usr/bin/env node
+const path = require('path')
+const fs = require('fs')
+const https = require('https')
+const { URL } = require('url')
+
+if (!process.argv[2]) {
+  throw new Error('required tag, usage: pin_n3h n3h_tag')
+}
+
+const TAG = process.argv[2]
+
+const OS_ARCH = [
+  'linux-aarch64.AppImage',
+  'linux-x64.AppImage',
+  'mac-x64.dmg',
+  'win-x64.exe'
+]
+
+function fetch (url) {
+  return new Promise((resolve, reject) => {
+    try {
+      url = new URL(url)
+      console.log('fetch', url.toString(), url.hostname, url.pathname)
+      https.get({
+        hostname: url.hostname,
+        path: url.pathname + url.search,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 () AppleWebKit/537.36 (KHTML, like Gecko) NodeJs'
+        }
+      }, res => {
+        if (res.statusCode === 302) {
+          return resolve(fetch(res.headers.location))
+        }
+        let data = Buffer.alloc(0)
+        res.on('data', chunk => {
+          data = Buffer.concat([data, chunk])
+        })
+        res.on('end', () => {
+          if (res.statusCode !== 200) {
+            return reject(new Error('bad status: ' + res.statusCode + ' ' + data.toString('utf8')))
+          }
+          resolve(data)
+        })
+      })
+    } catch (e) {
+      reject(e)
+    }
+  })
+}
+
+async function main () {
+  const version = JSON.parse((await fetch(`https://github.com/holochain/n3h/raw/${TAG}/package.json`)).toString('utf8')).version
+  const commitish = JSON.parse((await fetch(`https://api.github.com/repos/holochain/n3h/releases/tags/${TAG}`)).toString('utf8'))['target_commitish']
+
+  const out = {
+    release: TAG,
+    version: 'v' + version,
+    commitish,
+    artifacts: {}
+  }
+
+  for (let osArch of OS_ARCH) {
+    const sum = (await fetch(`https://github.com/holochain/n3h/releases/download/${TAG}/n3h-${version}-${osArch}.sha256`)).toString('utf8').trim()
+    const m = sum.match(/([^\s]+)\s+([^\s]+)/)
+    const os = osArch.split('.')[0].split('-')[0]
+    const arch = osArch.split('.')[0].split('-')[1]
+    if (!(os in out.artifacts)) {
+      out.artifacts[os] = {}
+    }
+    out.artifacts[os][arch] = {
+      url: `https://github.com/holochain/n3h/releases/download/${TAG}/n3h-${version}-${osArch}`,
+      file: m[2],
+      hash: m[1]
+    }
+  }
+
+  const fn = path.resolve(__dirname, 'net', 'src', 'ipc', 'n3h_pin.json')
+  fs.writeFileSync(fn, JSON.stringify(out, null, 2))
+
+  console.log('')
+  console.log(fn, fs.readFileSync(fn).toString('utf8'))
+}
+
+main().then(() => {}, err => {
+  console.error(err)
+  process.exit(1)
+})

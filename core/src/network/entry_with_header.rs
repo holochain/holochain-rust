@@ -34,7 +34,7 @@ pub fn fetch_entry_with_header(
     context: &Arc<Context>,
 ) -> Result<EntryWithHeader, HolochainError> {
     let entry = fetch_entry_from_cas(address, &context)?;
-    println!("entry found {:?}", entry.clone());
+
     let header =
         find_chain_header(&entry, &context).ok_or("No header found for entry".to_string())?;
 

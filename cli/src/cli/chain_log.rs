@@ -11,14 +11,14 @@ use std::{convert::TryFrom, fs, path::PathBuf};
 // TODO: use system-agnostic default path
 const DEFAULT_CHAIN_PATH: &str = "/home/michael/.holochain/holo/storage/";
 
-pub fn chain_log(chain_path: Option<PathBuf>, instance_id: String) -> DefaultResult<()> {
-    let chain_path = chain_path.unwrap_or_else(|| PathBuf::new().join(DEFAULT_CHAIN_PATH));
-    let chain_path = chain_path.join(instance_id).join("cas");
-    let snapshot_json =
-        include_str!("/home/michael/.holochain/holo/storage/holo-hosting-app/cas/AgentState.txt");
-    let snapshot = AgentStateSnapshot::from_json_str(snapshot_json)?;
+pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultResult<()> {
+    let storage_path = storage_path.unwrap_or_else(|| PathBuf::new().join(DEFAULT_CHAIN_PATH));
+    let cas_path = storage_path.join(instance_id).join("cas");
+    let snapshot_path = cas_path.join("AgentState.txt");
+    let snapshot_json = fs::read_to_string(snapshot_path)?;
+    let snapshot = AgentStateSnapshot::from_json_str(&snapshot_json)?;
     let chain_store = ChainStore::new(std::sync::Arc::new(std::sync::RwLock::new(
-        FilesystemStorage::new(chain_path.clone()).expect("could not create chain store"),
+        FilesystemStorage::new(cas_path.clone()).expect("could not create chain store"),
     )));
     let cas_lock = chain_store.content_storage();
     let cas = cas_lock.read().unwrap();
@@ -30,7 +30,7 @@ pub fn chain_log(chain_path: Option<PathBuf>, instance_id: String) -> DefaultRes
     } else {
         println!(
             "\nChain entries for '{}' (latest on top):\n",
-            chain_path.to_string_lossy()
+            cas_path.to_string_lossy()
         );
         for ref header in agent.iter_chain() {
             let content = cas

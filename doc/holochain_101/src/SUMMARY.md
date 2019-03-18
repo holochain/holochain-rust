@@ -18,6 +18,7 @@
   - [Updating from Proto to Rust](./alpha_migrate.md)
   - [Built With Holochain](./built_with_holochain.md)
 - [Building Holochain Apps: Zome Code](./zome/welcome.md)
+  - [Build A To-Do App!](first-steps.md)
   - [Adding a Zome](./zome/adding_a_zome.md)
   - [Intro to HDK](./zome/intro_to_hdk.md)
   - [Intro to Zome Definition](./zome/define_zome.md)

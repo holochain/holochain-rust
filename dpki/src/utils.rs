@@ -143,7 +143,6 @@ pub fn decrypt_with_passphrase_buf(
     blob: &String,
     passphrase: &mut SecBuf,
     config: Option<PwHashConfig>,
-
     size: usize,
 ) -> HcResult<SecBuf> {
     // Decode base64

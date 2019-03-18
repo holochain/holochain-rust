@@ -1,8 +1,9 @@
 use crate::{
     keypair::{generate_random_sign_keypair, KeyPair, SigningKeyPair},
     utils::{
-        generate_derived_seed_buf, generate_random_buf, verify as signingkey_verify, SeedContext,
+        encrypt_with_passphrase_buf,decrypt_with_passphrase_buf, generate_derived_seed_buf, generate_random_buf, verify as signingkey_verify, SeedContext,
     },
+
     SEED_SIZE,
 };
 use holochain_core_types::{
@@ -19,6 +20,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+pub const PCHECK_HEADER_SIZE: usize = 8;
+pub const PCHECK_HEADER: [u8; 8] = *b"PHCCHECK";
+pub const PCHECK_RANDOM_SIZE: usize = 32;
+pub const PCHECK_SIZE: usize = PCHECK_RANDOM_SIZE+PCHECK_HEADER_SIZE;
+
 pub enum Secret {
     SigningKey(SigningKeyPair),
     Seed(SecBuf),
@@ -26,15 +32,32 @@ pub enum Secret {
 
 #[allow(dead_code)]
 struct Keystore {
+    passphrase_check: String,
     keys: HashMap<String, Arc<Mutex<Secret>>>,
 }
 
 impl Keystore {
     #[allow(dead_code)]
-    pub fn new() -> Self {
-        Keystore {
+    pub fn new(passphrase: &mut SecBuf) -> HcResult<Self> {
+        let mut check_buf = SecBuf::with_secure(PCHECK_SIZE);
+        check_buf.randomize();
+        check_buf.write(0, &PCHECK_HEADER).unwrap();
+        Ok(Keystore {
+            passphrase_check: encrypt_with_passphrase_buf(&mut check_buf,passphrase,None)?,
             keys: HashMap::new(),
-        }
+        })
+    }
+
+    #[allow(dead_code)]
+    fn check_passphrase(&self, mut passphrase: &mut SecBuf) -> HcResult<bool> {
+        let mut decrypted_buf =
+            decrypt_with_passphrase_buf(&self.passphrase_check, &mut passphrase, None, PCHECK_SIZE)?;
+        let mut decrypted_header = SecBuf::with_insecure(PCHECK_HEADER_SIZE);
+        let decrypted_buf = decrypted_buf.read_lock();
+        decrypted_header.write(0,&decrypted_buf[0..PCHECK_HEADER_SIZE])?;
+        let mut expected_header = SecBuf::with_secure(PCHECK_HEADER_SIZE);
+        expected_header.write(0, &PCHECK_HEADER)?;
+        Ok(decrypted_header.compare(&mut expected_header) == 0)
     }
 
     /// return a list of the identifiers stored in the keystore
@@ -198,18 +221,27 @@ pub fn sign_one_time(data: String) -> HcResult<(Base32, Signature)> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::AGENT_ID_CTX;
+    use crate::{AGENT_ID_CTX,utils};
     use base64;
+
+    fn new_test_keystore() -> Keystore {
+        let mut random_passphrase = utils::generate_random_buf(10);
+        Keystore::new(&mut random_passphrase).unwrap()
+    }
 
     #[test]
     fn test_keystore_new() {
-        let keystore = Keystore::new();
+        let mut random_passphrase = utils::generate_random_buf(10);
+        let keystore = Keystore::new(&mut random_passphrase).unwrap();
         assert!(keystore.list().is_empty());
+        assert_eq!(keystore.check_passphrase(&mut random_passphrase),Ok(true));
+        let mut another_random_passphrase = utils::generate_random_buf(10);
+        assert_eq!(keystore.check_passphrase(&mut another_random_passphrase),Ok(false));
     }
 
     #[test]
     fn test_keystore_add_random_seed() {
-        let mut keystore = Keystore::new();
+        let mut keystore = new_test_keystore();
 
         assert_eq!(keystore.add_random_seed("my_root_seed", SEED_SIZE), Ok(()));
         assert_eq!(keystore.list(), vec!["my_root_seed".to_string()]);
@@ -223,7 +255,7 @@ pub mod tests {
 
     #[test]
     fn test_keystore_add_seed_from_seed() {
-        let mut keystore = Keystore::new();
+        let mut keystore = new_test_keystore();
 
         let context = SeedContext::new(*b"SOMECTXT");
 
@@ -254,7 +286,7 @@ pub mod tests {
 
     #[test]
     fn test_keystore_add_key_from_seed() {
-        let mut keystore = Keystore::new();
+        let mut keystore = new_test_keystore();
         let context = SeedContext::new(AGENT_ID_CTX);
 
         assert_eq!(
@@ -281,7 +313,7 @@ pub mod tests {
 
     #[test]
     fn test_keystore_sign() {
-        let mut keystore = Keystore::new();
+        let mut keystore = new_test_keystore();
         let context = SeedContext::new(AGENT_ID_CTX);
 
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);

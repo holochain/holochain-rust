@@ -900,7 +900,7 @@ pub mod tests {
     type = "memory"
 
     [[interfaces]]
-    id = "test-interface"
+    id = "test-interface-1"
     admin = true
     [interfaces.driver]
     type = "websocket"
@@ -911,7 +911,7 @@ pub mod tests {
     id = "test-instance-2"
 
     [[interfaces]]
-    id = "test-interface"
+    id = "test-interface-2"
     [interfaces.driver]
     type = "http"
     port = 4000

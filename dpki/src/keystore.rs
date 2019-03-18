@@ -36,14 +36,18 @@ struct Keystore {
     keys: HashMap<String, Arc<Mutex<Secret>>>,
 }
 
+fn make_passphrase_check(passphrase: &mut SecBuf) -> HcResult<String> {
+    let mut check_buf = SecBuf::with_secure(PCHECK_SIZE);
+    check_buf.randomize();
+    check_buf.write(0, &PCHECK_HEADER).unwrap();
+    encrypt_with_passphrase_buf(&mut check_buf, passphrase, None)
+}
+
 impl Keystore {
     #[allow(dead_code)]
     pub fn new(passphrase: &mut SecBuf) -> HcResult<Self> {
-        let mut check_buf = SecBuf::with_secure(PCHECK_SIZE);
-        check_buf.randomize();
-        check_buf.write(0, &PCHECK_HEADER).unwrap();
         Ok(Keystore {
-            passphrase_check: encrypt_with_passphrase_buf(&mut check_buf, passphrase, None)?,
+            passphrase_check: make_passphrase_check(passphrase)?,
             keys: HashMap::new(),
         })
     }
@@ -62,6 +66,19 @@ impl Keystore {
         let mut expected_header = SecBuf::with_secure(PCHECK_HEADER_SIZE);
         expected_header.write(0, &PCHECK_HEADER)?;
         Ok(decrypted_header.compare(&mut expected_header) == 0)
+    }
+
+    #[allow(dead_code)]
+    pub fn change_passphrase(
+        &mut self,
+        old_passphrase: &mut SecBuf,
+        new_passphrase: &mut SecBuf,
+    ) -> HcResult<()> {
+        if !self.check_passphrase(old_passphrase)? {
+            return Err(HolochainError::ErrorGeneric("Bad passphrase".to_string()));
+        }
+        self.passphrase_check = make_passphrase_check(new_passphrase)?;
+        Ok(())
     }
 
     /// return a list of the identifiers stored in the keystore
@@ -243,6 +260,29 @@ pub mod tests {
         assert_eq!(
             keystore.check_passphrase(&mut another_random_passphrase),
             Ok(false)
+        );
+    }
+
+    #[test]
+    fn test_keystore_change_passphrase() {
+        let mut random_passphrase = utils::generate_random_buf(10);
+        let mut keystore = Keystore::new(&mut random_passphrase).unwrap();
+        let mut another_random_passphrase = utils::generate_random_buf(10);
+        assert!(
+            // wrong passphrase
+            keystore
+                .change_passphrase(&mut another_random_passphrase, &mut random_passphrase)
+                .is_err()
+        );
+        assert_eq!(
+            keystore.change_passphrase(&mut random_passphrase, &mut another_random_passphrase),
+            Ok(())
+        );
+        // check that passphrase was actually changed
+        assert_eq!(keystore.check_passphrase(&mut random_passphrase), Ok(false));
+        assert_eq!(
+            keystore.check_passphrase(&mut another_random_passphrase),
+            Ok(true)
         );
     }
 

@@ -131,7 +131,7 @@ impl fmt::Display for HolochainError {
             InitializationFailed(err_msg) => write!(f, "{}", err_msg),
             DnaHashMismatch(hash1, hash2) => write!(
                 f,
-                "DNA hash does not match expected hash!\n{} != {}",
+                "DNA hash does not match expected hash! {} != {}",
                 hash1, hash2
             ),
         }

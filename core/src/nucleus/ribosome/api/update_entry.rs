@@ -38,11 +38,11 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     };
     let maybe_entry_result = context.block_on(get_entry_result_workflow(&context, &get_args));
     if let Err(_err) = maybe_entry_result {
-        return ribosome_error_code!(Unspecified);
+        return ribosome_error_code!(EntryNotFound);
     }
     let entry_result = maybe_entry_result.clone().unwrap();
     if !entry_result.found() {
-        return ribosome_error_code!(Unspecified);
+        return ribosome_error_code!(EntryNotFound);
     }
     let latest_entry = entry_result.latest().unwrap();
 

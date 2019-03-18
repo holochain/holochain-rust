@@ -15,7 +15,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::AddressableContent,
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 
@@ -56,11 +56,16 @@ pub async fn hold_entry_workflow<'a>(
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Dht,
-        action: EntryAction::Create,
     };
 
     // 3. Validate the entry
-    await!(validate_entry(entry.clone(), validation_data, &context)).map_err(|err| {
+    await!(validate_entry(
+        entry.clone(),
+        None,
+        validation_data,
+        &context
+    ))
+    .map_err(|err| {
         context.log(format!(
             "err/workflow/hold_entry: {} is NOT valid! {:?}",
             entry_with_header.entry.address(),

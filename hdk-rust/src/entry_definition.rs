@@ -1,20 +1,20 @@
 //! This file contains the macros used for creating validating entry type definitions,
 //! and validating links definitions within those.
 
+use crate::error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{
     dna::entry_types::EntryTypeDef,
-    entry::{entry_type::EntryType, Entry},
-    hash::HashString,
-    validation::{ValidationData, ValidationPackageDefinition},
+    entry::{entry_type::EntryType, AppEntryValue, Entry},
+    validation::{EntryValidationData, LinkValidationData, ValidationPackageDefinition},
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
+use std::convert::TryFrom;
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 
-pub type Validator = Box<FnMut(Entry, ValidationData) -> Result<(), String> + Sync>;
+pub type Validator = Box<FnMut(EntryValidationData<Entry>) -> Result<(), String> + Sync>;
 
-pub type LinkValidator =
-    Box<FnMut(HashString, HashString, ValidationData) -> Result<(), String> + Sync>;
+pub type LinkValidator = Box<FnMut(LinkValidationData) -> Result<(), String> + Sync>;
 
 /// This struct represents a complete entry type definition.
 /// It wraps [EntryTypeDef](struct.EntryTypeDef.html) defined in the DNA crate
@@ -104,11 +104,12 @@ pub struct ValidatingLinkDefinition {
 /// #   dna::entry_types::Sharing,
 /// #   json::JsonString,
 /// #   error::HolochainError,
+/// #   validation::EntryValidationData
 /// # };
 ///
 /// # fn main() {
 ///
-/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 /// pub struct Post {
 ///     content: String,
 ///     date_created: String,
@@ -119,16 +120,26 @@ pub struct ValidatingLinkDefinition {
 ///         name: "post",
 ///         description: "a short social media style sharing of content",
 ///         sharing: Sharing::Public,
-///         native_type: Post,
 ///
 ///         validation_package: || {
 ///             hdk::ValidationPackageDefinition::ChainFull
 ///         },
 ///
-///         validation: |post: Post, _validation_data: hdk::ValidationData| {
-///             (post.content.len() < 280)
-///                 .ok_or_else(|| String::from("Content too long"))
-///         },
+///         validation: |validation_data: hdk::EntryValidationData<Post>| {
+///              match validation_data
+///              {
+///              EntryValidationData::Create{entry:test_entry,validation_package:_} =>
+///              {
+///                        
+///                        
+///                        (test_entry.content != "FAIL")
+///                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+///                }
+///                _ =>
+///                 {
+///                      Err("Failed to validate with wrong entry type".to_string())
+///                }
+///         }},
 ///
 ///         links: [
 ///             to!(
@@ -139,7 +150,7 @@ pub struct ValidatingLinkDefinition {
 ///                     hdk::ValidationPackageDefinition::ChainFull
 ///                 },
 ///
-///                 validation: |base: Address, target: Address, _validation_data: hdk::ValidationData| {
+///                 validation: | _validation_data: hdk::LinkValidationData| {
 ///                     Ok(())
 ///                 }
 ///             )
@@ -156,10 +167,10 @@ macro_rules! entry {
         name: $name:expr,
         description: $description:expr,
         sharing: $sharing:expr,
-        $(native_type: $native_type:ty,)*
+       // $(native_type: $native_type:ty,)*
 
         validation_package: || $package_creator:expr,
-        validation: | $entry:ident : $entry_type:ty, $validation_data:ident : hdk::ValidationData | $entry_validation:expr
+        validation: | $validation_data:ident : hdk::EntryValidationData<$native_type:ty> | $entry_validation:expr
 
         $(
             ,
@@ -201,14 +212,18 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|entry: hdk::holochain_core_types::entry::Entry, validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
-                let $validation_data = validation_data;
-                match entry {
-                    hdk::holochain_core_types::entry::Entry::App(_, app_entry_value) => {
-                        let entry: $entry_type = ::std::convert::TryInto::try_into(app_entry_value)?;
-                        let $entry = entry;
+            let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::entry::Entry>| {
+                let $validation_data = hdk::entry_definition::entry_to_native_type::<$native_type>(validation_data.clone())?;
+                use std::convert::TryFrom;
+                let e_type = hdk::holochain_core_types::entry::entry_type::EntryType::try_from(validation_data)?;
+                match e_type {
+                    hdk::holochain_core_types::entry::entry_type::EntryType::App(_) => {
                         $entry_validation
                     },
+                    hdk::holochain_core_types::entry::entry_type::EntryType::Deletion =>
+                    {
+                        $entry_validation
+                    }
                     _ => {
                         Err(String::from("Schema validation failed"))?
                     }
@@ -261,7 +276,7 @@ macro_rules! link {
         tag: $tag:expr,
 
         validation_package: || $package_creator:expr,
-        validation: | $source:ident : Address,  $target:ident : Address, $validation_data:ident : hdk::ValidationData | $link_validation:expr
+        validation: | $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
     ) => (
 
         {
@@ -269,9 +284,7 @@ macro_rules! link {
                 $package_creator
             });
 
-            let validator = Box::new(|source: Address, target: Address, validation_data: ::hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
-                let $source = source;
-                let $target = target;
+            let validator = Box::new(|validation_data: ::hdk::holochain_wasm_utils::holochain_core_types::validation::LinkValidationData| {
                 let $validation_data = validation_data;
                 $link_validation
             });
@@ -299,7 +312,7 @@ macro_rules! to {
         tag: $tag:expr,
 
         validation_package: || $package_creator:expr,
-        validation: | $source:ident : Address,  $target:ident : Address, $validation_data:ident : hdk::ValidationData | $link_validation:expr
+        validation: | $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
     ) => (
         link!(
             direction: $crate::LinkDirection::To,
@@ -307,7 +320,7 @@ macro_rules! to {
             tag: $tag,
 
             validation_package: || $package_creator,
-            validation: | $source : Address,  $target : Address, $validation_data : hdk::ValidationData | $link_validation
+            validation: | $validation_data : hdk::LinkValidationData | $link_validation
         )
     )
 }
@@ -323,7 +336,7 @@ macro_rules! from {
         tag: $tag:expr,
 
         validation_package: || $package_creator:expr,
-        validation: | $source:ident : Address,  $target:ident : Address, $validation_data:ident : hdk::ValidationData | $link_validation:expr
+        validation: |  $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
     ) => (
         link!(
             direction: $crate::LinkDirection::From,
@@ -331,7 +344,71 @@ macro_rules! from {
             tag: $tag,
 
             validation_package: || $package_creator,
-            validation: | $source : Address,  $target : Address, $validation_data : hdk::ValidationData | $link_validation
+            validation: |  $validation_data : hdk::LinkValidationData | $link_validation
         )
     )
+}
+
+//could not turn this to try_from
+pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(
+    entry_validation: EntryValidationData<Entry>,
+) -> ZomeApiResult<EntryValidationData<T>> {
+    match entry_validation {
+        EntryValidationData::Create {
+            entry,
+            validation_package,
+        } => {
+            let native_type = convert_entry_validation_to_native::<T>(entry)?;
+            Ok(EntryValidationData::Create {
+                entry: native_type,
+                validation_package,
+            })
+        }
+        EntryValidationData::Modify {
+            new_entry,
+            old_entry,
+            old_entry_header,
+            validation_package,
+        } => {
+            let new_entry = convert_entry_validation_to_native::<T>(new_entry)?;
+            let old_entry = convert_entry_validation_to_native::<T>(old_entry)?;
+            Ok(EntryValidationData::Modify {
+                new_entry,
+                old_entry,
+                old_entry_header,
+                validation_package,
+            })
+        }
+        EntryValidationData::Delete {
+            old_entry,
+            old_entry_header,
+            validation_package,
+        } => {
+            let old_entry = convert_entry_validation_to_native::<T>(old_entry)?;
+            Ok(EntryValidationData::Delete {
+                old_entry,
+                old_entry_header,
+                validation_package,
+            })
+        }
+    }
+}
+
+fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(
+    entry: Entry,
+) -> ZomeApiResult<T> {
+    match entry {
+        Entry::App(_, entry_value) => T::try_from(entry_value.to_owned()).map_err(|_| {
+            ZomeApiError::Internal(
+                vec![
+                    "Could not convert Entry result to requested type : ".to_string(),
+                    entry_value.to_string(),
+                ]
+                .join(&String::new()),
+            )
+        }),
+        _ => Err(ZomeApiError::Internal(
+            "Entry did not return an app entry".to_string(),
+        )),
+    }
 }

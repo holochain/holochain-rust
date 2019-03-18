@@ -150,6 +150,8 @@ enum Cli {
         instance_id: Option<String>,
         #[structopt(long, short, help = "Location of chain storage")]
         path: Option<PathBuf>,
+        #[structopt(long, short, help = "List available instances")]
+        list: bool,
     },
 }
 
@@ -223,10 +225,20 @@ fn run() -> HolochainResult<()> {
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
 
-        Cli::ChainLog { instance_id, path } => match instance_id {
-            Some(instance_id) => cli::chain_log(path, instance_id)
-                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
-            None => cli::chain_list(path),
+        Cli::ChainLog {
+            instance_id,
+            path,
+            list,
+        } => match (list, instance_id) {
+            (true, _) => cli::chain_list(path),
+            (false, None) => {
+                Cli::clap().print_help().expect("Couldn't print help!");
+                println!("\n\nTry `hc help chain` for more info");
+            }
+            (false, Some(instance_id)) => {
+                cli::chain_log(path, instance_id)
+                    .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
+            }
         },
     }
 

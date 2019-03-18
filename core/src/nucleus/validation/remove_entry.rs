@@ -24,7 +24,7 @@ pub async fn validate_remove_entry(
     let deletion_address = deletion_entry.clone().deleted_entry_address();
     let entry_to_delete = get_entry_from_dht(&context.clone(), &deletion_address)
         .map_err(|_| {
-            ValidationError::UnresolvedDependencies([deletion_address.clone()])
+            ValidationError::UnresolvedDependencies(vec![deletion_address.clone()])
         })?
         .ok_or(ValidationError::Fail(
             "Could not obtain entry for link_update_delte".to_string(),

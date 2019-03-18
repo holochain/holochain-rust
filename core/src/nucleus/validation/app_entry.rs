@@ -35,7 +35,7 @@ pub async fn validate_app_entry(
             .expect("Should unwrap link_update_delete with no problems");
 
         get_entry_from_dht(&context.clone(), &expected_link_update).map_err(|_| {
-            ValidationError::Fail("Could not find entry for link_update_delete".to_string())
+            ValidationError::UnresolvedDependencies([expected_link_update.clone()])
         })?;
 
         await!(run_call_back(

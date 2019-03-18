@@ -15,6 +15,8 @@ extern crate lazy_static;
 extern crate directories;
 extern crate reqwest;
 extern crate sha2;
+extern crate tar;
+extern crate libflate;
 // macros used in tests
 #[allow(unused_imports)]
 #[macro_use]

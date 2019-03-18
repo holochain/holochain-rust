@@ -67,10 +67,24 @@ pub fn get_verify_n3h() -> NetResult<std::path::PathBuf> {
     );
     path.push(".hc");
     path.push("n3h-binaries");
+
+    let bin_dir = path.clone();
+
+    path.push(&N3H_INFO.version);
     std::fs::create_dir_all(&path).expect("could not create n3h-binaries directory");
     path.push(&artifact.file);
 
     download(path.as_os_str(), &artifact.url, &artifact.hash)?;
+
+    let path = if os == "mac" {
+        // we need to extract the tar.gz into n3h.app
+        extract_tar_gz(path.as_os_str(), &bin_dir)?;
+        let mut path = bin_dir.clone();
+        path.push("n3h.app");
+        path
+    } else {
+        path
+    };
 
     let res = exec_output(path.as_os_str(), vec!["--version"])?;
     if &res != &N3H_INFO.version {
@@ -133,6 +147,15 @@ fn get_os_arch() -> NetResult<(&'static str, &'static str)> {
     } else {
         bail!("no prebuilt n3h for current os/arch - TODO check for node/npm - dl release zip");
     }
+}
+
+/// extract a tar.gz archive
+fn extract_tar_gz(file: &std::ffi::OsStr, dest: &std::path::PathBuf) -> NetResult<()> {
+    let mut file = std::fs::File::open(file)?;
+    let tar = libflate::gzip::Decoder::new(&mut file)?;
+    let mut archive = tar::Archive::new(tar);
+    archive.unpack(dest)?;
+    Ok(())
 }
 
 /// hash a file && compare to expected hash

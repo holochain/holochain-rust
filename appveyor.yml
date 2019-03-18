@@ -8,6 +8,13 @@ environment:
   RUST_VERSION: nightly-2018-11-28
   TARGET: x86_64-pc-windows-msvc
   WASM_TARGET: wasm32-unknown-unknown
+  
+ matrix:
+  - TEST_P: holochain_cas_implementations
+    TEST_PATH: cas_implementations
+
+  - TEST_P: hc
+    TEST_PATH: hc
 
 install:
   - curl -sSf -o rustup-init.exe https://win.rustup.rs/
@@ -16,3 +23,6 @@ install:
   - rustc -Vv
   - cargo -V
   - rustup target add %WASM_TARGET%
+
+test_script:
+ - cargo test --release -p %TEST_P% --target-dir %TEST_PATH%\target

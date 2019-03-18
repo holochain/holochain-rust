@@ -87,18 +87,21 @@ impl Keystore {
         self.keys.keys().map(|k| k.to_string()).collect()
     }
 
+    /// adds a secret to the keystore
+    #[allow(dead_code)]
+    pub fn add(&mut self, dst_id_str: &str, secret: Arc<Mutex<Secret>>) -> HcResult<()> {
+        let dst_id = self.check_dst_identifier(dst_id_str)?;
+        self.keys.insert(dst_id, secret);
+        Ok(())
+    }
+
     /// adds a random root seed into the keystore
     #[allow(dead_code)]
-    pub fn add_random_seed(&mut self, id_str: &str, size: usize) -> HcResult<()> {
-        let id = id_str.to_string();
-        if self.keys.contains_key(&id) {
-            return Err(HolochainError::ErrorGeneric(
-                "identifier already exists".to_string(),
-            ));
-        }
+    pub fn add_random_seed(&mut self, dst_id_str: &str, size: usize) -> HcResult<()> {
+        let dst_id = self.check_dst_identifier(dst_id_str)?;
         let seed_buf = generate_random_buf(size);
         let secret = Arc::new(Mutex::new(Secret::Seed(seed_buf)));
-        self.keys.insert(id, secret);
+        self.keys.insert(dst_id, secret);
         Ok(())
     }
 

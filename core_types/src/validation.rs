@@ -52,23 +52,23 @@ pub enum ValidationPackageDefinition {
 }
 
 ///This struct carries information needed for Validating Entry Data,
-/// It is passed between callbacks and allows the user to validate 
+/// It is passed between callbacks and allows the user to validate
 /// using each supplied variant.
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum EntryValidationData<T> {
-/// The create variant contains an entry T and the validation package.
+    /// The create variant contains an entry T and the validation package.
     Create {
         entry: T,
         validation_package: ValidationPackage,
     },
-/// The Modify variant contains the new entry T, old entry of the same type, the entry header of the old entry and a validation package
+    /// The Modify variant contains the new entry T, old entry of the same type, the entry header of the old entry and a validation package
     Modify {
         new_entry: T,
         old_entry: T,
         old_entry_header: ChainHeader,
         validation_package: ValidationPackage,
     },
-/// The delete contains an old entry which is the entry being deleted and the old entry header of type ChainHeader and a validation package
+    /// The delete contains an old entry which is the entry being deleted and the old entry header of type ChainHeader and a validation package
     Delete {
         old_entry: T,
         old_entry_header: ChainHeader,
@@ -77,16 +77,16 @@ pub enum EntryValidationData<T> {
 }
 
 ///This struct carries information needed for Validating Link Data,
-/// It is passed between callbacks and allows the user to validate 
+/// It is passed between callbacks and allows the user to validate
 /// using each supplied variant.
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum LinkValidationData {
-/// The LinkAdd variant contains a linkData and a validation package
+    /// The LinkAdd variant contains a linkData and a validation package
     LinkAdd {
         link: LinkData,
         validation_package: ValidationPackage,
     },
-/// The LinkRemove variant contains a linkData and a validation package
+    /// The LinkRemove variant contains a linkData and a validation package
     LinkRemove {
         link: LinkData,
         validation_package: ValidationPackage,

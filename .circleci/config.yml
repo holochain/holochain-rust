@@ -143,7 +143,12 @@ jobs:
       command: |
        curl https://nixos.org/nix/install | sh
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
-       nix-shell --run 'hc-build-wasm && hc-test'
+       nix-shell --run hc-build-wasm
+       nix-shell --run hc-test
+       nix-shell --run hc-install-cli
+       nix-shell --run hc-install-conductor
+       nix-shell --run hc-install-node-conductor
+       nix-shell --run hc-test-app-spec
 
 workflows:
  version: 2

@@ -11,6 +11,14 @@ let
 
   rust-build = (pkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
 
+  hc-node-flush = pkgs.writeShellScriptBin "hc-node-flush"
+  ''
+  find . -wholename "**/node_modules" | xargs -I {} rm -rf  {};
+  find . -wholename "./nodejs_conductor/bin-package" | xargs -I {} rm -rf {};
+  find . -wholename "./nodejs_conductor/build" | xargs -I {} rm -rf {};
+  find . -wholename "./nodejs_conductor/dist" | xargs -I {} rm -rf {};
+  '';
+
   hc-cargo-flush = pkgs.writeShellScriptBin "hc-cargo-flush"
   ''
    rm -rf ~/.cargo/registry;
@@ -41,6 +49,7 @@ let
 
   hc-install-node-conductor = pkgs.writeShellScriptBin "hc-install-node-conductor"
   ''
+  hc-node-flush;
    . ./scripts/build_nodejs_conductor.sh;
   '';
 
@@ -123,6 +132,7 @@ stdenv.mkDerivation rec {
     nodejs-8_x
     yarn
 
+    hc-node-flush
     hc-cargo-flush
 
     hc-cargo-lock-flush

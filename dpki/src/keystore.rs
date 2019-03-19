@@ -19,6 +19,8 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
+use std::collections::BTreeMap;
+use crate::key_blob::KeyBlob;
 
 pub const PCHECK_HEADER_SIZE: usize = 8;
 pub const PCHECK_HEADER: [u8; 8] = *b"PHCCHECK";
@@ -39,7 +41,9 @@ enum KeyType {
 #[allow(dead_code)]
 struct Keystore {
     passphrase_check: String,
-    keys: HashMap<String, Arc<Mutex<Secret>>>,
+    secrets: BTreeMap<String, KeyBlob>,
+    #[serde(skip_serializing)]
+    cache: HashMap<String, Arc<Mutex<Secret>>>,
 }
 
 fn make_passphrase_check(passphrase: &mut SecBuf) -> HcResult<String> {
@@ -54,7 +58,8 @@ impl Keystore {
     pub fn new(passphrase: &mut SecBuf) -> HcResult<Self> {
         Ok(Keystore {
             passphrase_check: make_passphrase_check(passphrase)?,
-            keys: HashMap::new(),
+            secrets: BTreeMap::new(),
+            cache: HashMap::new(),
         })
     }
 
@@ -90,14 +95,14 @@ impl Keystore {
     /// return a list of the identifiers stored in the keystore
     #[allow(dead_code)]
     pub fn list(&self) -> Vec<String> {
-        self.keys.keys().map(|k| k.to_string()).collect()
+        self.cache.keys().map(|k| k.to_string()).collect()
     }
 
     /// adds a secret to the keystore
     #[allow(dead_code)]
     pub fn add(&mut self, dst_id_str: &str, secret: Arc<Mutex<Secret>>) -> HcResult<()> {
         let dst_id = self.check_dst_identifier(dst_id_str)?;
-        self.keys.insert(dst_id, secret);
+        self.cache.insert(dst_id, secret);
         Ok(())
     }
 
@@ -107,13 +112,13 @@ impl Keystore {
         let dst_id = self.check_dst_identifier(dst_id_str)?;
         let seed_buf = generate_random_buf(size);
         let secret = Arc::new(Mutex::new(Secret::Seed(seed_buf)));
-        self.keys.insert(dst_id, secret);
+        self.cache.insert(dst_id, secret);
         Ok(())
     }
 
     fn check_dst_identifier(&self, dst_id_str: &str) -> HcResult<String> {
         let dst_id = dst_id_str.to_string();
-        if self.keys.contains_key(&dst_id) {
+        if self.cache.contains_key(&dst_id) {
             return Err(HolochainError::ErrorGeneric(
                 "identifier already exists".to_string(),
             ));
@@ -125,12 +130,12 @@ impl Keystore {
     #[allow(dead_code)]
     pub fn get(&self, src_id_str: &str) -> HcResult<Arc<Mutex<Secret>>> {
         let src_id = src_id_str.to_string();
-        if !self.keys.contains_key(&src_id) {
+        if !self.cache.contains_key(&src_id) {
             return Err(HolochainError::ErrorGeneric(
                 "unknown source identifier".to_string(),
             ));
         }
-        Ok(self.keys.get(&src_id).unwrap().clone()) // unwrap ok because we checked if src exists
+        Ok(self.cache.get(&src_id).unwrap().clone()) // unwrap ok because we checked if src exists
     }
 
     fn check_identifiers(
@@ -167,7 +172,7 @@ impl Keystore {
                 }
             }
         };
-        self.keys.insert(dst_id, secret);
+        self.cache.insert(dst_id, secret);
 
         Ok(())
     }
@@ -214,7 +219,7 @@ impl Keystore {
                 }
             }
         };
-        self.keys.insert(dst_id, secret);
+        self.cache.insert(dst_id, secret);
 
         Ok(public_key)
     }

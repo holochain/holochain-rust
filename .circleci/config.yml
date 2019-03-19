@@ -107,20 +107,20 @@ jobs:
    - run: . ./scripts/install/auto.sh
    - run: make test
 
-
- cold.ubuntu.bionic.nix:
-  docker:
-   - image: ubuntu:bionic
-  resource_class: xlarge
-  steps:
-   - checkout
-   - run:
-      name: Install and run all tests via nix
-      command: |
-       export USER=`whoami`
-       apt-get update && apt-get install -y curl bzip2 sudo
-       curl https://nixos.org/nix/install | sh
-       nix-shell --run hc-test-all
+ # https://github.com/NixOS/nix/issues/1559
+ # cold.ubuntu.bionic.nix:
+ #  docker:
+ #   - image: ubuntu:bionic
+ #  resource_class: xlarge
+ #  steps:
+ #   - checkout
+ #   - run:
+ #      name: Install and run all tests via nix
+ #      command: |
+ #       export USER=`whoami`
+ #       apt-get update && apt-get install -y curl bzip2 sudo
+ #       curl https://nixos.org/nix/install | sh
+ #       nix-shell --run hc-test-all
 
  cold.ubuntu.xenial.auto:
   docker:
@@ -131,19 +131,20 @@ jobs:
    - run: . ./scripts/install/auto.sh
    - run: make test
 
- cold.ubuntu.xenial.nix:
-  docker:
-   - image: ubuntu:xenial
-  resource_class: xlarge
-  steps:
-   - checkout
-   - run:
-      name: Install and run all tests via nix
-      command: |
-       export USER=`whoami`
-       apt-get update && apt-get install -y curl bzip2 sudo
-       curl https://nixos.org/nix/install | sh
-       nix-shell --run hc-test-all
+ # https://github.com/NixOS/nix/issues/1559
+ # cold.ubuntu.xenial.nix:
+ #  docker:
+ #   - image: ubuntu:xenial
+ #  resource_class: xlarge
+ #  steps:
+ #   - checkout
+ #   - run:
+ #      name: Install and run all tests via nix
+ #      command: |
+ #       export USER=`whoami`
+ #       apt-get update && apt-get install -y curl bzip2 sudo
+ #       curl https://nixos.org/nix/install | sh
+ #       nix-shell --run hc-test-all
 
  cold.debian.stable.auto:
   docker:
@@ -154,19 +155,20 @@ jobs:
    - run: . ./scripts/install/auto.sh
    - run: make test
 
- cold.debian.stable.nix:
-  docker:
-   - image: debian:stable
-  resource_class: xlarge
-  steps:
-   - checkout
-   - run:
-      name: Install and run all tests via nix
-      command: |
-       export USER=`whoami`
-       apt-get update && apt-get install -y curl bzip2 sudo
-       curl https://nixos.org/nix/install | sh
-       nix-shell --run hc-test-all
+ # https://github.com/NixOS/nix/issues/1559
+ # cold.debian.stable.nix:
+ #  docker:
+ #   - image: debian:stable
+ #  resource_class: xlarge
+ #  steps:
+ #   - checkout
+ #   - run:
+ #      name: Install and run all tests via nix
+ #      command: |
+ #       export USER=`whoami`
+ #       apt-get update && apt-get install -y curl bzip2 sudo
+ #       curl https://nixos.org/nix/install | sh
+ #       nix-shell --run hc-test-all
 
  cold.mac.10.auto:
   macos:
@@ -204,13 +206,14 @@ workflows:
        branches:
         only:
          - develop
-   - cold.ubuntu.bionic.nix
+   # - cold.ubuntu.bionic.nix
+
    - cold.ubuntu.xenial.auto:
       filters:
        branches:
         only:
          - develop
-   - cold.ubuntu.xenial.nix
+   # - cold.ubuntu.xenial.nix
 
  cold.debian:
   jobs:
@@ -219,7 +222,7 @@ workflows:
        branches:
         only:
          - develop
-   - cold.debian.stable.nix
+   # - cold.debian.stable.nix
 
  cold.mac:
   jobs:

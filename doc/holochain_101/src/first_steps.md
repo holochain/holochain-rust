@@ -231,13 +231,13 @@ Finally, `get_list` requires us to use the HDK function `get_links(base_address,
 fn handle_get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
 
     // load the list entry. Early return error if it cannot load or is wrong type
-    let list = get_as_type::<List>(list_addr.clone())?;
+    let list = hdk::utils::get_as_type::<List>(list_addr.clone())?;
 
     // try and load the list items, filter out errors and collect in a vector
     let list_items = hdk::get_links(&list_addr, "items")?.addresses()
         .iter()
         .map(|item_address| {
-            get_as_type::<ListItem>(item_address.to_owned())
+            hdk::utils::get_as_type::<ListItem>(item_address.to_owned())
         })
         .filter_map(Result::ok)
         .collect::<Vec<ListItem>>();
@@ -411,13 +411,13 @@ fn handle_add_item(list_item: ListItem, list_addr: HashString) -> ZomeApiResult<
 fn handle_get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
 
     // load the list entry. Early return error if it cannot load or is wrong type
-    let list = get_as_type::<List>(list_addr.clone())?;
+    let list = hdk::utils::get_as_type::<List>(list_addr.clone())?;
 
     // try and load the list items, filter out errors and collect in a vector
     let list_items = hdk::get_links(&list_addr, "items")?.addresses()
         .iter()
         .map(|item_address| {
-            get_as_type::<ListItem>(item_address.to_owned())
+            hdk::utils::get_as_type::<ListItem>(item_address.to_owned())
         })
         .filter_map(Result::ok)
         .collect::<Vec<ListItem>>();

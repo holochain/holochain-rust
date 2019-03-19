@@ -1,32 +1,32 @@
 {
-  "release": "adhoc-2019-03-18",
-  "version": "v0.0.6-alpha2",
-  "commitish": "f4d9f8cbe545e268e454fa75253d7bed17179649",
+  "release": "adhoc-2019-03-19",
+  "version": "v0.0.6-alpha3",
+  "commitish": "e263aebaf3fd59561f1dceb28e0b08dea8cdfd3a",
   "artifacts": {
     "linux": {
       "aarch64": {
-        "url": "https://github.com/holochain/n3h/releases/download/adhoc-2019-03-18/n3h-0.0.6-alpha2-linux-aarch64.AppImage",
-        "file": "n3h-0.0.6-alpha2-linux-aarch64.AppImage",
-        "hash": "0e3d336503fa588fc6a437e9728f555b8cb23f203b04f21b0cb187c6201fdc51"
+        "url": "https://github.com/holochain/n3h/releases/download/adhoc-2019-03-19/n3h-0.0.6-alpha3-linux-aarch64.AppImage",
+        "file": "n3h-0.0.6-alpha3-linux-aarch64.AppImage",
+        "hash": "0e7fe786be5e02b8bb530a0488b70c88609eb4d95a2abc83873ec7b9ab15703e"
       },
       "x64": {
-        "url": "https://github.com/holochain/n3h/releases/download/adhoc-2019-03-18/n3h-0.0.6-alpha2-linux-x64.AppImage",
-        "file": "n3h-0.0.6-alpha2-linux-x64.AppImage",
-        "hash": "c7878cd5b0b4f27a2de32a977155da9a87cd28c9224d92f2fe065c3b471777e3"
+        "url": "https://github.com/holochain/n3h/releases/download/adhoc-2019-03-19/n3h-0.0.6-alpha3-linux-x64.AppImage",
+        "file": "n3h-0.0.6-alpha3-linux-x64.AppImage",
+        "hash": "1223b34b2be14837eee7dd1a5a7ef3d646824ca997c7df041b2106b519845795"
       }
     },
     "mac": {
       "x64": {
-        "url": "https://github.com/holochain/n3h/releases/download/adhoc-2019-03-18/n3h-0.0.6-alpha2-mac-x64.dmg",
-        "file": "n3h-0.0.6-alpha2-mac-x64.dmg",
-        "hash": "4d4ba00f10512d8257837652aad2b8faf362204229fd128ed8cc3e82ac64dd36"
+        "url": "https://github.com/holochain/n3h/releases/download/adhoc-2019-03-19/n3h-0.0.6-alpha3-mac-x64.dmg",
+        "file": "n3h-0.0.6-alpha3-mac-x64.dmg",
+        "hash": "14002917b6acca14e70112ec8456eeb11a9fc6ff91c019b3052c2da939042fba"
       }
     },
     "win": {
       "x64": {
-        "url": "https://github.com/holochain/n3h/releases/download/adhoc-2019-03-18/n3h-0.0.6-alpha2-win-x64.exe",
-        "file": "n3h-0.0.6-alpha2-win-x64.exe",
-        "hash": "55751c623c0ecbd8e2f93a11aa55554f4800ddbec8f5430f5ad394f9bc1966e8"
+        "url": "https://github.com/holochain/n3h/releases/download/adhoc-2019-03-19/n3h-0.0.6-alpha3-win-x64.exe",
+        "file": "n3h-0.0.6-alpha3-win-x64.exe",
+        "hash": "ffdad6192bc221a6b1287961978dcc0c19601101c29e947fa3b498696068b511"
       }
     }
   }

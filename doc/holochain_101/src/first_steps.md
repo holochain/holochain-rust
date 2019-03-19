@@ -1,5 +1,9 @@
 # First steps writing Holochain hApps with Rust
 
+___
+This tutorial builds for the 0.0.7-alpha release but as the API and HDK are changing it will likely fail under newer releases.
+___
+
 Holochain hApps are made of compiled WebAssembly that encodes the rules of the hApp, the data it can store and how users will interact with it. This means that [any language that can compile to WebAssembly](https://github.com/appcypher/awesome-wasm-langs) can one day be used for Holochain.
 
 Writing WebAssembly that complies with the Holochain runtime can be tricky. To make development as streamlined as possible the core team has been developing a Holochain-dev-kit (HDK) for the first supported language, Rust! In the near future the community is encouraged to develop an HDK for their language of choice.
@@ -60,7 +64,7 @@ The project structure should now be as follows:
 ```
  
 ## Writing the lists zome
-The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The most important of which is the [`define_zome!`](https://developer.holochain.org/api/0.0.6-alpha/hdk/macro.define_zome.html) macro. Every zome must use this to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (genesis).
+The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The most important of which is the [`define_zome!`](https://developer.holochain.org/api/0.0.7-alpha/hdk/macro.define_zome.html) macro. Every zome must use this to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (genesis).
 
 Open up `lib.rs` and replace its contents with the following:
 
@@ -517,4 +521,4 @@ Pro tip: [Pipe the output to tap-spec](https://github.com/scottcorgan/tap-spec) 
 
 And there we have it! A simple zome created in holochain using the Rust HDK. Those with previous experience developing for holochain-proto will appreciate the reduced boilerplate, strong typing and vastly improved testing framework.
 
-The [complete working version of this project is available on github](https://github.com/willemolding/holochain-rust-todo). This builds under the 0.0.6-alpha release but as the API and HDK are changing it will likely fail under newer releases.
+The [complete working version of this project is available on github](https://github.com/willemolding/holochain-rust-todo). This builds under the 0.0.7-alpha release but as the API and HDK are changing it will likely fail under newer releases.

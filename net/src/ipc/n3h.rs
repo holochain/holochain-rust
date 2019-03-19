@@ -249,6 +249,12 @@ mod tests {
 
     #[test]
     fn can_dl_n3h() {
+        {
+            let mut tweetlog = TWEETLOG.write().unwrap();
+            tweetlog.set(crate::tweetlog::LogLevel::from('t'), None);
+            tweetlog.listen(crate::tweetlog::Tweetlog::console);
+        }
+
         get_verify_n3h().unwrap();
         // run again to verify the hash on an existing file
         get_verify_n3h().unwrap();

@@ -5,13 +5,13 @@ use holochain_core_types::{
     signature::Signature,
 };
 use holochain_dpki::{
-    key_blob::KeyBlob,
+    key_blob::{Blobbable, BlobType, KeyBlob},
     keypair::{generate_random_sign_keypair, EncryptingKeyPair, KeyPair, SigningKeyPair},
     utils::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
         generate_random_buf, verify as signingkey_verify, SeedContext,
     },
-    SEED_SIZE,
+    seed::Seed, SEED_SIZE,
 };
 
 use holochain_sodium::secbuf::SecBuf;
@@ -21,6 +21,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     sync::{Arc, Mutex},
 };
+use holochain_dpki::seed::SeedType;
 
 pub const PCHECK_HEADER_SIZE: usize = 8;
 pub const PCHECK_HEADER: [u8; 8] = *b"PHCCHECK";
@@ -96,17 +97,54 @@ impl Keystore {
         Ok(())
     }
 
+    fn decrypt(&mut self, id_str: &String) -> HcResult<()> {
+        let blob = self
+            .secrets
+            .get(id_str)
+            .ok_or(HolochainError::new("Secret not found"))?;
+        let mut passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
+        let secret = match blob.blob_type {
+            BlobType::Seed => Secret::Seed(Seed::from_blob(blob, &mut passphrase, None)?.buf),
+            BlobType::SigningKey => Secret::SigningKey(SigningKeyPair::from_blob(blob, &mut passphrase, None)?),
+            BlobType::EncryptingKey => Secret::EncryptingKey(EncryptingKeyPair::from_blob(blob, &mut passphrase, None)?),
+            _ => return Err(HolochainError::ErrorGeneric(format!("Tried to decrypt unsupported BlobType in Keystore: {}", id_str))),
+        };
+        self.cache.insert(id_str.clone(), Arc::new(Mutex::new(secret)));
+        Ok(())
+    }
+
+    fn encrypt(&mut self, id_str: &String) -> HcResult<()> {
+        let secret = self
+            .cache
+            .get(id_str)
+            .ok_or(HolochainError::new("Secret not found"))?;
+        let mut passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
+        self.check_passphrase(&mut passphrase)?;
+        let blob = match *secret.lock()? {
+            Secret::Seed(ref mut buf) => {
+                let mut owned_buf = SecBuf::with_insecure(buf.len());
+                owned_buf.write(0, &*buf.read_lock())?;
+                Seed::new(owned_buf, SeedType::OneShot).as_blob(&mut passphrase, "".to_string(), None)
+            },
+            Secret::SigningKey(ref mut key) => key.as_blob(&mut passphrase, "".to_string(), None),
+            Secret::EncryptingKey(ref mut key) => key.as_blob(&mut passphrase, "".to_string(), None),
+        }?;
+        self.secrets.insert(id_str.clone(), blob);
+        Ok(())
+    }
+
     /// return a list of the identifiers stored in the keystore
     #[allow(dead_code)]
     pub fn list(&self) -> Vec<String> {
-        self.cache.keys().map(|k| k.to_string()).collect()
+        self.secrets.keys().map(|k| k.to_string()).collect()
     }
 
     /// adds a secret to the keystore
     #[allow(dead_code)]
     pub fn add(&mut self, dst_id_str: &str, secret: Arc<Mutex<Secret>>) -> HcResult<()> {
         let dst_id = self.check_dst_identifier(dst_id_str)?;
-        self.cache.insert(dst_id, secret);
+        self.cache.insert(dst_id.clone(), secret);
+        self.encrypt(&dst_id)?;
         Ok(())
     }
 
@@ -116,13 +154,14 @@ impl Keystore {
         let dst_id = self.check_dst_identifier(dst_id_str)?;
         let seed_buf = generate_random_buf(size);
         let secret = Arc::new(Mutex::new(Secret::Seed(seed_buf)));
-        self.cache.insert(dst_id, secret);
+        self.cache.insert(dst_id.clone(), secret);
+        self.encrypt(&dst_id)?;
         Ok(())
     }
 
     fn check_dst_identifier(&self, dst_id_str: &str) -> HcResult<String> {
         let dst_id = dst_id_str.to_string();
-        if self.cache.contains_key(&dst_id) {
+        if self.secrets.contains_key(&dst_id) {
             return Err(HolochainError::ErrorGeneric(
                 "identifier already exists".to_string(),
             ));
@@ -132,18 +171,23 @@ impl Keystore {
 
     /// gets a secret from the keystore
     #[allow(dead_code)]
-    pub fn get(&self, src_id_str: &str) -> HcResult<Arc<Mutex<Secret>>> {
+    pub fn get(&mut self, src_id_str: &str) -> HcResult<Arc<Mutex<Secret>>> {
         let src_id = src_id_str.to_string();
-        if !self.cache.contains_key(&src_id) {
+        if !self.secrets.contains_key(&src_id) {
             return Err(HolochainError::ErrorGeneric(
                 "unknown source identifier".to_string(),
             ));
         }
-        Ok(self.cache.get(&src_id).unwrap().clone()) // unwrap ok because we checked if src exists
+
+        if !self.cache.contains_key(&src_id) {
+            self.decrypt(&src_id)?;
+        }
+
+        Ok(self.cache.get(&src_id).unwrap().clone()) // unwrap ok because we made sure src exists
     }
 
     fn check_identifiers(
-        &self,
+        &mut self,
         src_id_str: &str,
         dst_id_str: &str,
     ) -> HcResult<(Arc<Mutex<Secret>>, String)> {
@@ -176,7 +220,8 @@ impl Keystore {
                 }
             }
         };
-        self.cache.insert(dst_id, secret);
+        self.cache.insert(dst_id.clone(), secret);
+        self.encrypt(&dst_id)?;
 
         Ok(())
     }
@@ -223,7 +268,8 @@ impl Keystore {
                 }
             }
         };
-        self.cache.insert(dst_id, secret);
+        self.cache.insert(dst_id.clone(), secret);
+        self.encrypt(&dst_id)?;
 
         Ok(public_key)
     }

@@ -23,7 +23,6 @@ use holochain_dpki::{
 };
 use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use rpassword;
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -39,6 +38,7 @@ use std::{
     thread,
 };
 
+use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
 use holochain_net::{
     ipc::spawn::{ipc_spawn, SpawnResult},
     p2p_config::P2pConfig,
@@ -92,6 +92,7 @@ pub struct Conductor {
     logger: DebugLogger,
     p2p_config: Option<P2pConfig>,
     network_spawn: Option<SpawnResult>,
+    passphrase_manager: PassphraseManager,
 }
 
 impl Drop for Conductor {
@@ -105,7 +106,9 @@ impl Drop for Conductor {
 }
 
 type SignalSender = SyncSender<Signal>;
-pub type KeyLoader = Arc<Box<FnMut(&PathBuf) -> Result<KeyBundle, HolochainError> + Send + Sync>>;
+pub type KeyLoader = Arc<
+    Box<FnMut(&PathBuf, &PassphraseManager) -> Result<KeyBundle, HolochainError> + Send + Sync>,
+>;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
     Arc<Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
@@ -132,6 +135,9 @@ impl Conductor {
             logger: DebugLogger::new(rules),
             p2p_config: None,
             network_spawn: None,
+            passphrase_manager: PassphraseManager::new(Arc::new(Mutex::new(
+                PassphraseServiceCmd {},
+            ))),
         }
     }
 
@@ -567,13 +573,16 @@ impl Conductor {
                 .agent_by_id(agent_id)
                 .ok_or(format!("Agent '{}' not found", agent_id))?;
             let key_file_path = PathBuf::from(agent_config.key_file.clone());
-            let keybundle =
-                Arc::get_mut(&mut self.key_loader).unwrap()(&key_file_path).map_err(|_| {
-                    HolochainError::ConfigError(format!(
-                        "Could not load key file \"{}\"",
-                        agent_config.key_file,
-                    ))
-                })?;
+            let keybundle = Arc::get_mut(&mut self.key_loader).unwrap()(
+                &key_file_path,
+                &self.passphrase_manager,
+            )
+            .map_err(|_| {
+                HolochainError::ConfigError(format!(
+                    "Could not load key file \"{}\"",
+                    agent_config.key_file,
+                ))
+            })?;
             if agent_config.public_address != keybundle.get_id() {
                 return Err(format!(
                     "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
@@ -609,7 +618,10 @@ impl Conductor {
     }
 
     /// Default KeyLoader that actually reads files from the filesystem
-    fn load_key(file: &PathBuf) -> Result<KeyBundle, HolochainError> {
+    fn load_key(
+        file: &PathBuf,
+        passphrase_manager: &PassphraseManager,
+    ) -> Result<KeyBundle, HolochainError> {
         notify(format!("Reading agent key from {}", file.display()));
 
         // Read key file
@@ -622,20 +634,7 @@ impl Conductor {
         let mut default_passphrase =
             SecBuf::with_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
         KeyBundle::from_blob(&blob, &mut default_passphrase, None).or_else(|_| {
-            // Prompt for passphrase
-            let mut passphrase_string = rpassword::read_password_from_tty(Some("Passphrase: "))?;
-
-            // Move passphrase in secure memory
-            let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
-            let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
-            passphrase_buf
-                .write(0, passphrase_bytes.as_slice())
-                .expect("Failed to write passphrase in a SecBuf");
-
-            // Overwrite the unsafe passphrase memory with zeros
-            for byte in passphrase_bytes.iter_mut() {
-                *byte = 0u8;
-            }
+            let mut passphrase_buf = passphrase_manager.get_passphrase()?;
 
             // Unblob into KeyBundle
             KeyBundle::from_blob(&blob, &mut passphrase_buf, None)
@@ -813,16 +812,22 @@ pub mod tests {
     }
 
     pub fn test_key_loader() -> KeyLoader {
-        let loader = Box::new(|path: &PathBuf| match path.to_str().unwrap().as_ref() {
-            "holo_tester1.key" => Ok(test_keybundle(1)),
-            "holo_tester2.key" => Ok(test_keybundle(2)),
-            "holo_tester3.key" => Ok(test_keybundle(3)),
-            unknown => Err(HolochainError::ErrorGeneric(format!(
-                "No test key for {}",
-                unknown
-            ))),
+        let loader = Box::new(|path: &PathBuf, _pm: &PassphraseManager| {
+            match path.to_str().unwrap().as_ref() {
+                "holo_tester1.key" => Ok(test_keybundle(1)),
+                "holo_tester2.key" => Ok(test_keybundle(2)),
+                "holo_tester3.key" => Ok(test_keybundle(3)),
+                unknown => Err(HolochainError::ErrorGeneric(format!(
+                    "No test key for {}",
+                    unknown
+                ))),
+            }
         })
-            as Box<FnMut(&PathBuf) -> Result<KeyBundle, HolochainError> + Send + Sync>;
+            as Box<
+                FnMut(&PathBuf, &PassphraseManager) -> Result<KeyBundle, HolochainError>
+                    + Send
+                    + Sync,
+            >;
         Arc::new(loader)
     }
 

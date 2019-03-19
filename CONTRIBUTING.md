@@ -54,6 +54,12 @@ We use rust-fmt to enforce code style so that we don't spend time arguing about 
 
 Run the formatter with:
 
+``` shell
+nix-shell --run hc-fmt
+```
+
+or
+
 ```shell
 . docker/run-fmt
 ```
@@ -61,12 +67,6 @@ or
 
 ``` shell
 make fmt
-```
-
-or
-
-``` shell
-nix-shell --run hc-fmt
 ```
 
 ## Continuous Integration

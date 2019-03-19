@@ -116,7 +116,7 @@ jobs:
    - run: . ./scripts/install/auto.sh
    - run: make test
 
- cold.debian.stable:
+ cold.debian.stable.auto:
   docker:
    - image: debian:stable
   resource_class: xlarge
@@ -125,7 +125,19 @@ jobs:
    - run: . ./scripts/install/auto.sh
    - run: make test
 
- cold.mac:
+ cold.debian.stable.nix:
+  docker:
+   - image: debian:stable
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run:
+    name: Install and run all tests via nix
+    command: |
+    curl https://nixos.org/nix/install | sh
+    nix-shell --run hc-test-all
+
+ cold.mac.10.auto:
   macos:
    xcode: "10.2.0"
   steps:
@@ -133,22 +145,17 @@ jobs:
    - run: . ./scripts/install/auto.sh
    - run: make test
 
- cold.mac.nix:
+ cold.mac.10.nix:
   macos:
    xcode: "10.2.0"
   steps:
    - checkout
    - run:
-      name: Install and run basic tests via nix shell
+      name: Install and run all tests via nix
       command: |
        curl https://nixos.org/nix/install | sh
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
-       nix-shell --run hc-build-wasm
-       nix-shell --run hc-test
-       nix-shell --run hc-install-cli
-       nix-shell --run hc-install-conductor
-       nix-shell --run hc-install-node-conductor
-       nix-shell --run hc-test-app-spec
+       nix-shell --run hc-test-all
 
 workflows:
  version: 2
@@ -174,20 +181,21 @@ workflows:
 
  cold.debian:
   jobs:
-   - cold.debian.stable:
+   - cold.debian.stable.auto:
       filters:
        branches:
         only:
          - develop
+   - cold.debian.stable.nix
 
  cold.mac:
   jobs:
-   - cold.mac:
+   - cold.mac10.auto:
       filters:
        branches:
         only:
          - develop
-   - cold.mac.nix
+   - cold.mac.10.nix
 
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow

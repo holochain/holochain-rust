@@ -114,6 +114,16 @@ let
    HC_SIMPLE_LOGGER_MUTE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
   '';
 
+  hc-test-all = pkgs.writeShellScriptBin "hc-test-all"
+  ''
+   hc-fmt-check \
+   && hc-build-wasm \
+   && hc-install-cli \
+   && hc-install-conductor \
+   && hc-install-node-conductor \
+   && hc-test-app-spec
+  '';
+
 in
 with pkgs;
 stdenv.mkDerivation rec {
@@ -142,9 +152,10 @@ stdenv.mkDerivation rec {
     hc-build-wasm
     hc-test
 
-    hc-install-tarpaulin
     hc-tarpaulin
 
+    hc-install-tarpaulin
+    hc-install-fmt
     hc-install-cli
     hc-install-conductor
     hc-install-node-conductor
@@ -153,9 +164,10 @@ stdenv.mkDerivation rec {
     hc-test-app-spec
     hc-test-node-conductor
 
-    hc-install-fmt
     hc-fmt
     hc-fmt-check
+
+    hc-test-all
 
     # dev tooling
     git

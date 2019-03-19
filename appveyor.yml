@@ -13,5 +13,4 @@ environment:
   APPVEYOR_BUILD_WORKER_CLOUD: master
 
 test_script:
- # - setx path %PATH%;...
- - cargo build --all --exclude holochain_node
+ - cargo  test --release

@@ -118,7 +118,6 @@ extern crate toml;
 extern crate maplit;
 #[macro_use]
 extern crate lazy_static;
-extern crate directories;
 extern crate hyper;
 extern crate hyper_staticfile;
 extern crate json_patch;

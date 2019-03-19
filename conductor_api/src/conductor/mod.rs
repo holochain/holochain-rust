@@ -1,5 +1,6 @@
 pub mod admin;
 pub mod base;
+pub mod passphrase_manager;
 pub mod ui_admin;
 
 pub use self::{

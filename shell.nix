@@ -4,7 +4,7 @@ let
     overlays = [ moz_overlay ];
   };
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
-  frameworks = pkgs.lib.optional pkgs.stdenv.isDarwin pkgs.darwin.apple_sdk.frameworks;
+  frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
   date = "2019-01-24";
   wasmTarget = "wasm32-unknown-unknown";

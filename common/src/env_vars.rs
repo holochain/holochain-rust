@@ -8,9 +8,6 @@
 //! Useful for changing the agent while running multiple instances.
 //! - **HC_INTERFACE** *string* **websocket** OR **http** Set an interface type to use. Setting this as an environment variable will override the
 //! value of the `--interface` option for `hc run`. The default interface if neither is set is `websocket`.
-//! - **HC_N3H_PATH** *string* Path to the [n3h](https://github.com/holochain/n3h) networking module. If set, this will automatically trigger `hc run` to do live networking,
-//! instead of mock networking which is the default. The following environment variables are irrelevant if `hc run` is not run with the `--networked`
-//! flag, AND this is not set, because they are all configuration for live networking. Default is a subdirectory of your HOME folder, at the path `.hc/net/n3h`.
 //! - **HC_N3H_WORK_DIR** *string* Eventually, there will be a directory needed by n3h for persisting data, such as remote node QoS metrics, peer lists, and non-core DHT data items such as peer discovery info.
 //! Default is temporary directory which will get removed again once the Conductor process stops. Recommended not to use this at this time.
 //! - **HC_N3H_BOOTSTRAP_NODE** *string* Set an external p2p bound ip4 address for another node, to bootstrap the networking discovery process.
@@ -49,7 +46,6 @@ impl EnvVar {
         match self {
             EnvVar::Agent => "HC_AGENT",
             EnvVar::Interface => "HC_INTERFACE",
-            EnvVar::N3hPath => "HC_N3H_PATH",
             EnvVar::N3hMode => "HC_N3H_MODE",
             EnvVar::N3hWorkDir => "HC_N3H_WORK_DIR",
             EnvVar::N3hBootstrapNode => "HC_N3H_BOOTSTRAP_NODE",

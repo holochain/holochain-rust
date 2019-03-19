@@ -117,6 +117,7 @@ jobs:
    - run:
       name: Install and run all tests via nix
       command: |
+       apt-get update && apt-get install -y curl
        curl https://nixos.org/nix/install | sh
        nix-shell --run hc-test-all
 
@@ -138,6 +139,7 @@ jobs:
    - run:
       name: Install and run all tests via nix
       command: |
+       apt-get update && apt-get install -y curl
        curl https://nixos.org/nix/install | sh
        nix-shell --run hc-test-all
 
@@ -159,8 +161,7 @@ jobs:
    - run:
       name: Install and run all tests via nix
       command: |
-       apt-get update
-       apt-get install -y curl bzcat
+       apt-get update && apt-get install -y curl bzcat
        curl https://nixos.org/nix/install | sh
        nix-shell --run hc-test-all
 

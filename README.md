@@ -96,6 +96,10 @@ NixOS is an entire operating system but the `nix-shell` is simply a tool to mana
 To install `nix-shell`:
 
 ```shell
+# basic deps needed on ubuntu/debian
+apt-get update && apt-get install -y curl bzcat
+
+# this installs on all (non-windows) systems
 curl https://nixos.org/nix/install | sh
 ```
 

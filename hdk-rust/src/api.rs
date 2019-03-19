@@ -10,6 +10,7 @@ use holochain_core_types::{
     cas::content::Address,
     entry::Entry,
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
+    signature::Provenance,
     time::Timeout,
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
@@ -23,6 +24,7 @@ use holochain_wasm_utils::{
         link_entries::LinkEntriesArgs,
         send::{SendArgs, SendOptions},
         sign::SignArgs,
+        verify_signature::VerifySignatureArgs,
         QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
@@ -212,6 +214,7 @@ pub enum Dispatch {
     Sleep,
     RemoveLink,
     Sign,
+    VerifySignature,
 }
 
 impl Dispatch {
@@ -244,6 +247,7 @@ impl Dispatch {
                 Dispatch::Sleep => hc_sleep,
                 Dispatch::RemoveLink => hc_remove_link,
                 Dispatch::Sign => hc_sign,
+                Dispatch::VerifySignature => hc_verify_signature,
             })(encoded_input)
         };
 
@@ -305,6 +309,8 @@ impl Dispatch {
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -389,6 +395,8 @@ impl Dispatch {
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -802,11 +810,13 @@ pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
 
 /// NOT YET AVAILABLE
 pub fn verify_signature<S: Into<String>>(
-    _signature: S,
-    _data: S,
-    _pub_key: S,
+    provenance: Provenance,
+    payload: S,
 ) -> ZomeApiResult<bool> {
-    Err(ZomeApiError::FunctionNotImplemented)
+    Dispatch::VerifySignature.with_input(VerifySignatureArgs {
+        provenance,
+        payload: payload.into(),
+    })
 }
 
 /// Commit an entry to your local source chain that "updates" a previous entry, meaning when getting
@@ -1067,6 +1077,8 @@ pub fn query_result(
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]

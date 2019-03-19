@@ -129,7 +129,7 @@ extern crate tokio;
 #[macro_use]
 extern crate pretty_assertions;
 extern crate base64;
-extern crate rpassword;
+extern crate crossbeam_channel;
 
 pub mod conductor;
 pub mod config;

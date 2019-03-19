@@ -64,12 +64,8 @@ impl IpcNetWorker {
             bail!("config.spawn or config.ipcUri is required");
         }
         let spawn_config = config["spawn"].as_object().unwrap();
-        if !(spawn_config["cmd"].is_string()
-            && spawn_config["args"].is_array()
-            && spawn_config["workDir"].is_string()
-            && spawn_config["env"].is_object())
-        {
-            bail!("config.spawn requires 'cmd', 'args', 'workDir', and 'env'");
+        if !(spawn_config["workDir"].is_string() && spawn_config["env"].is_object()) {
+            bail!("config.spawn requires 'workDir', and 'env'");
         }
         let env: HashMap<String, String> = spawn_config["env"]
             .as_object()
@@ -80,13 +76,6 @@ impl IpcNetWorker {
         // create a new IpcNetWorker witch spawns the n3h process
         return IpcNetWorker::priv_new_with_spawn(
             handler,
-            spawn_config["cmd"].as_str().unwrap().to_string(),
-            spawn_config["args"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|i| i.as_str().unwrap_or_default().to_string())
-                .collect(),
             spawn_config["workDir"].as_str().unwrap().to_string(),
             enduser_config,
             env,
@@ -97,15 +86,13 @@ impl IpcNetWorker {
     /// Constructor with IpcNetWorker instance pointing to a process that we spawn here
     fn priv_new_with_spawn(
         handler: NetHandler,
-        cmd: String,
-        args: Vec<String>,
         work_dir: String,
         config: String,
         env: HashMap<String, String>,
         bootstrap_nodes: Vec<String>,
     ) -> NetResult<Self> {
         // Spawn a process with given `cmd` that we will have an IPC connection with
-        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, config, env, true)?;
+        let spawn_result = spawn::ipc_spawn(work_dir, config, env, true)?;
         // Get spawn result info
         let ipc_binding = spawn_result.ipc_binding;
         let kill = spawn_result.kill;

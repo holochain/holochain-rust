@@ -1,7 +1,19 @@
 //! check that n3h is in the path, or download it
 
-use crate::connection::NetResult;
+use crate::{connection::NetResult, tweetlog::TWEETLOG};
 use sha2::Digest;
+
+macro_rules! tlog_d {
+    ($($arg:tt)+) => {
+        log_dd!("get_verify_n3h", $($arg)+);
+    }
+}
+
+macro_rules! tlog_e {
+    ($($arg:tt)+) => {
+        log_ee!("get_verify_n3h", $($arg)+);
+    }
+}
 
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::fs::OpenOptionsExt;
@@ -126,7 +138,7 @@ where
 {
     let mut cmd = std::process::Command::new(cmd);
     cmd.args(args);
-    println!("EXEC: {:?}", cmd);
+    tlog_d!("EXEC: {:?}", cmd);
     let res = cmd.output()?;
     if !ignore_errors && !res.status.success() {
         bail!(
@@ -158,7 +170,7 @@ fn extract_dmg(file: &std::ffi::OsStr, dest: &std::path::PathBuf) -> NetResult<s
     let mut dest = dest.clone();
     dest.push("n3h.app");
     if !dest.exists() {
-        println!(
+        tlog_d!(
             "{}",
             exec_output(
                 "hdiutil",
@@ -176,7 +188,7 @@ fn extract_dmg(file: &std::ffi::OsStr, dest: &std::path::PathBuf) -> NetResult<s
             vec!["-a", "./dmg-mount/n3h.app", &dest.to_string_lossy()],
             true,
         )?;
-        println!(
+        tlog_d!(
             "{}",
             exec_output("hdiutil", vec!["detach", "./dmg-mount"], false)?
         );
@@ -203,7 +215,7 @@ fn check_hash(file: &std::ffi::OsStr, sha256: &str) -> bool {
     let hash = format!("{:x}", hash.result());
 
     if &hash != sha256 {
-        eprintln!("bad hash, expected {}, got {}", sha256, &hash);
+        tlog_e!("bad hash, expected {}, got {}", sha256, &hash);
     }
 
     &hash == sha256
@@ -215,7 +227,7 @@ fn download(dest: &std::ffi::OsStr, url: &str, sha256: &str) -> NetResult<()> {
         return Ok(());
     }
     {
-        println!("downloading {}...", url);
+        tlog_d!("downloading {}...", url);
         let mut open_opts = std::fs::OpenOptions::new();
         open_opts.create(true).write(true);
         if cfg!(not(target_os = "windows")) {

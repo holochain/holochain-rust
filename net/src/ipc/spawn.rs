@@ -7,6 +7,8 @@ use crate::{
     tweetlog::TWEETLOG,
 };
 
+use super::n3h::get_verify_n3h;
+
 use std::{
     collections::HashMap,
     io::{Read, Write},
@@ -20,19 +22,18 @@ pub struct SpawnResult {
 
 /// spawn a holochain networking ipc sub-process
 pub fn ipc_spawn(
-    cmd: String,
-    args: Vec<String>,
     work_dir: String,
     end_user_config: String,
     env: HashMap<String, String>,
     block_connect: bool,
 ) -> NetResult<SpawnResult> {
-    let mut child = std::process::Command::new(cmd);
+    let n3h = get_verify_n3h()?;
+
+    let mut child = std::process::Command::new(n3h);
 
     child
         .stdout(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped())
-        .args(&args)
         .envs(&env)
         .current_dir(work_dir);
 

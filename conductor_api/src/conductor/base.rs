@@ -263,11 +263,6 @@ impl Conductor {
             network_config.n3h_persistence_path
         );
         let spawn_result = ipc_spawn(
-            "node".to_string(),
-            vec![format!(
-                "{}/packages/n3h/bin/n3h",
-                network_config.n3h_path.clone()
-            )],
             network_config.n3h_persistence_path.clone(),
             P2pConfig::load_end_user_config(network_config.networking_config_file).to_string(),
             hashmap! {

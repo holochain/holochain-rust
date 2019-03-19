@@ -48,7 +48,7 @@ lazy_static! {
 pub fn get_verify_n3h() -> NetResult<std::path::PathBuf> {
     let mut path = std::path::PathBuf::new();
 
-    let res = exec_output("n3h", vec!["--version"]);
+    let res = exec_output("n3h", vec!["--version"], false);
     if res.is_ok() {
         let res = res.unwrap();
         if &res == &N3H_INFO.version {
@@ -67,26 +67,23 @@ pub fn get_verify_n3h() -> NetResult<std::path::PathBuf> {
     );
     path.push(".hc");
     path.push("n3h-binaries");
+    path.push(&N3H_INFO.version);
 
     let bin_dir = path.clone();
 
-    path.push(&N3H_INFO.version);
     std::fs::create_dir_all(&path).expect("could not create n3h-binaries directory");
     path.push(&artifact.file);
 
     download(path.as_os_str(), &artifact.url, &artifact.hash)?;
 
     let path = if os == "mac" {
-        // we need to extract the tar.gz into n3h.app
-        extract_tar_gz(path.as_os_str(), &bin_dir)?;
-        let mut path = bin_dir.clone();
-        path.push("n3h.app");
-        path
+        // we need to extract the dmg into n3h.app
+        extract_dmg(path.as_os_str(), &bin_dir)?
     } else {
         path
     };
 
-    let res = exec_output(path.as_os_str(), vec!["--version"])?;
+    let res = exec_output(path.as_os_str(), vec!["--version"], false)?;
     if &res != &N3H_INFO.version {
         bail!(
             "downloaded n3h version mismatch: {}, expected {}",
@@ -121,15 +118,22 @@ fn get_artifact_info(os: &str, arch: &str) -> NetResult<&'static Artifact> {
 }
 
 /// run a command / capture the output
-fn exec_output<S1, I, S2>(cmd: S1, args: I) -> NetResult<String>
+fn exec_output<S1, I, S2>(cmd: S1, args: I, ignore_errors: bool) -> NetResult<String>
 where
     S1: AsRef<std::ffi::OsStr>,
     I: IntoIterator<Item = S2>,
     S2: AsRef<std::ffi::OsStr>,
 {
-    let res = std::process::Command::new(cmd).args(args).output()?;
-    if !res.status.success() {
-        bail!("bad exit {:?}", res.status.code());
+    let mut cmd = std::process::Command::new(cmd);
+    cmd.args(args);
+    println!("EXEC: {:?}", cmd);
+    let res = cmd.output()?;
+    if !ignore_errors && !res.status.success() {
+        bail!(
+            "bad exit {:?} {:?}",
+            res.status.code(),
+            String::from_utf8_lossy(&res.stderr)
+        );
     }
     Ok(String::from_utf8_lossy(&res.stdout).trim().to_string())
 }
@@ -149,13 +153,38 @@ fn get_os_arch() -> NetResult<(&'static str, &'static str)> {
     }
 }
 
-/// extract a tar.gz archive
-fn extract_tar_gz(file: &std::ffi::OsStr, dest: &std::path::PathBuf) -> NetResult<()> {
-    let mut file = std::fs::File::open(file)?;
-    let tar = libflate::gzip::Decoder::new(&mut file)?;
-    let mut archive = tar::Archive::new(tar);
-    archive.unpack(dest)?;
-    Ok(())
+/// extract a dmg archive
+fn extract_dmg(file: &std::ffi::OsStr, dest: &std::path::PathBuf) -> NetResult<std::path::PathBuf> {
+    let mut dest = dest.clone();
+    dest.push("n3h.app");
+    if !dest.exists() {
+        println!(
+            "{}",
+            exec_output(
+                "hdiutil",
+                vec![
+                    "attach",
+                    "-mountpoint",
+                    "./dmg-mount",
+                    &file.to_string_lossy()
+                ],
+                false
+            )?
+        );
+        exec_output(
+            "cp",
+            vec!["-a", "./dmg-mount/n3h.app", &dest.to_string_lossy()],
+            true,
+        )?;
+        println!(
+            "{}",
+            exec_output("hdiutil", vec!["detach", "./dmg-mount"], false)?
+        );
+    }
+    dest.push("Contents");
+    dest.push("MacOS");
+    dest.push("n3h");
+    Ok(dest)
 }
 
 /// hash a file && compare to expected hash
@@ -172,6 +201,10 @@ fn check_hash(file: &std::ffi::OsStr, sha256: &str) -> bool {
     }
 
     let hash = format!("{:x}", hash.result());
+
+    if &hash != sha256 {
+        eprintln!("bad hash, expected {}, got {}", sha256, &hash);
+    }
 
     &hash == sha256
 }
@@ -224,26 +257,26 @@ mod tests {
     #[test]
     #[cfg(target_os = "windows")]
     fn it_checks_path_true() {
-        exec_output("cmd", vec!["/C", "echo"]).unwrap();
+        exec_output("cmd", vec!["/C", "echo"], false).unwrap();
     }
 
     #[test]
     #[cfg(not(target_os = "windows"))]
     fn it_checks_path_true() {
-        exec_output("sh", vec!["-c", "exit"]).unwrap();
+        exec_output("sh", vec!["-c", "exit"], false).unwrap();
     }
 
     #[test]
     #[cfg(target_os = "windows")]
     fn it_checks_path_false() {
         let args: Vec<&str> = Vec::new();
-        exec_output("badcommand", args).unwrap_err();
+        exec_output("badcommand", args, false).unwrap_err();
     }
 
     #[test]
     #[cfg(not(target_os = "windows"))]
     fn it_checks_path_false() {
         let args: Vec<&str> = Vec::new();
-        exec_output("badcommand", args).unwrap_err();
+        exec_output("badcommand", args, false).unwrap_err();
     }
 }

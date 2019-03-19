@@ -9,6 +9,13 @@ let
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
 
+  hc-node-flush = nixpkgs.writeShellScriptBin "hc-node-flush"
+  ''
+  find . -wholename "**/node_modules" | xargs -I {} rm -rf  {};
+  find . -wholename "./nodejs_conductor/bin-package" | xargs -I {} rm -rf {};
+  find . -wholename "./nodejs_conductor/build" | xargs -I {} rm -rf {};
+  find . -wholename "./nodejs_conductor/dist" | xargs -I {} rm -rf {};
+  '';
   hc-cargo-flush = nixpkgs.writeShellScriptBin "hc-cargo-flush"
   ''
    rm -rf ~/.cargo/registry;
@@ -39,6 +46,7 @@ let
 
   hc-install-node-conductor = nixpkgs.writeShellScriptBin "hc-install-node-conductor"
   ''
+  hc-node-flush;
    . ./scripts/build_nodejs_conductor.sh;
   '';
 
@@ -116,6 +124,7 @@ stdenv.mkDerivation rec {
     nodejs-8_x
     yarn
 
+    hc-node-flush
     hc-cargo-flush
 
     hc-cargo-lock-flush

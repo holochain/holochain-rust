@@ -1,16 +1,17 @@
-use crate::{
-    keypair::{generate_random_sign_keypair, EncryptingKeyPair, KeyPair, SigningKeyPair},
-    utils::{
-        decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
-        generate_random_buf, verify as signingkey_verify, SeedContext,
-    },
-    SEED_SIZE,
-};
 use holochain_core_types::{
     agent::Base32,
     cas::content::Address,
     error::{HcResult, HolochainError},
     signature::Signature,
+};
+use holochain_dpki::{
+    keypair::{generate_random_sign_keypair, EncryptingKeyPair, KeyPair, SigningKeyPair},
+    key_blob::KeyBlob,
+    utils::{
+        decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
+        generate_random_buf, verify as signingkey_verify, SeedContext,
+    },
+    SEED_SIZE,
 };
 
 use holochain_sodium::secbuf::SecBuf;
@@ -20,7 +21,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 use std::collections::BTreeMap;
-use crate::key_blob::KeyBlob;
 
 pub const PCHECK_HEADER_SIZE: usize = 8;
 pub const PCHECK_HEADER: [u8; 8] = *b"PHCCHECK";
@@ -39,10 +39,11 @@ enum KeyType {
 }
 
 #[allow(dead_code)]
+#[derive(Serialize, Deserialize)]
 struct Keystore {
     passphrase_check: String,
     secrets: BTreeMap<String, KeyBlob>,
-    #[serde(skip_serializing)]
+    #[serde(skip_serializing, skip_deserializing)]
     cache: HashMap<String, Arc<Mutex<Secret>>>,
 }
 

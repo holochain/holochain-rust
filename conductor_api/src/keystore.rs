@@ -6,6 +6,7 @@ use holochain_core_types::{
 };
 use holochain_dpki::{
     key_blob::{BlobType, Blobbable, KeyBlob},
+    key_bundle::KeyBundle,
     keypair::{generate_random_sign_keypair, EncryptingKeyPair, KeyPair, SigningKeyPair},
     seed::Seed,
     utils::{
@@ -27,10 +28,12 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-pub const PCHECK_HEADER_SIZE: usize = 8;
-pub const PCHECK_HEADER: [u8; 8] = *b"PHCCHECK";
-pub const PCHECK_RANDOM_SIZE: usize = 32;
-pub const PCHECK_SIZE: usize = PCHECK_RANDOM_SIZE + PCHECK_HEADER_SIZE;
+const PCHECK_HEADER_SIZE: usize = 8;
+const PCHECK_HEADER: [u8; 8] = *b"PHCCHECK";
+const PCHECK_RANDOM_SIZE: usize = 32;
+const PCHECK_SIZE: usize = PCHECK_RANDOM_SIZE + PCHECK_HEADER_SIZE;
+const KEYBUNDLE_SIGNKEY_SUFFIX: &str = ":sign_key";
+const KEYBUNDLE_ENCKEY_SUFFIX: &str = ":enc_key";
 
 pub enum Secret {
     SigningKey(SigningKeyPair),
@@ -328,7 +331,7 @@ impl Keystore {
         self.add_key_from_seed(src_id_str, dst_id_str, context, index, KeyType::Signing)
     }
 
-    /// adds a signing keypair into the keystore based on a seed already in the keystore
+    /// adds an encrypting keypair into the keystore based on a seed already in the keystore
     /// returns the public key
     #[allow(dead_code)]
     pub fn add_encrypting_key_from_seed(
@@ -339,6 +342,82 @@ impl Keystore {
         index: u64,
     ) -> HcResult<Base32> {
         self.add_key_from_seed(src_id_str, dst_id_str, context, index, KeyType::Encrypting)
+    }
+
+    /// adds a keybundle into the keystore based on a seed already in the keystore by
+    /// adding two keypair secrets (signing and encrypting) under the named prefix
+    /// returns the public keys of the secrets
+    #[allow(dead_code)]
+    pub fn add_keybundle_from_seed(
+        &mut self,
+        src_id_str: &str,
+        dst_id_prefix_str: &str,
+        context: &SeedContext,
+        index: u64,
+    ) -> HcResult<(Base32, Base32)> {
+        let dst_sign_id_str = [dst_id_prefix_str, KEYBUNDLE_SIGNKEY_SUFFIX].join("");
+        let dst_enc_id_str = [dst_id_prefix_str, KEYBUNDLE_ENCKEY_SUFFIX].join("");
+
+        let sign_pub_key = self.add_key_from_seed(
+            src_id_str,
+            &dst_sign_id_str,
+            context,
+            index,
+            KeyType::Signing,
+        )?;
+        let enc_pub_key = self.add_key_from_seed(
+            src_id_str,
+            &dst_enc_id_str,
+            context,
+            index,
+            KeyType::Encrypting,
+        )?;
+        Ok((sign_pub_key, enc_pub_key))
+    }
+
+    /// adds a keybundle into the keystore based on a seed already in the keystore by
+    /// adding two keypair secrets (signing and encrypting) under the named prefix
+    /// returns the public keys of the secrets
+    #[allow(dead_code)]
+    pub fn get_keybundle(&mut self, src_id_prefix_str: &str) -> HcResult<KeyBundle> {
+        let src_sign_id_str = [src_id_prefix_str, KEYBUNDLE_SIGNKEY_SUFFIX].join("");
+        let src_enc_id_str = [src_id_prefix_str, KEYBUNDLE_ENCKEY_SUFFIX].join("");
+
+        let sign_secret = self.get(&src_sign_id_str)?;
+        let mut sign_secret = sign_secret.lock().unwrap();
+        let sign_key = match *sign_secret {
+            Secret::SigningKey(ref mut key_pair) => {
+                let mut buf = SecBuf::with_secure(key_pair.private().len());
+                let pub_key = key_pair.public();
+                let lock = key_pair.private().read_lock();
+                buf.write(0, &**lock);
+                SigningKeyPair::new(pub_key, buf)
+            }
+            _ => {
+                return Err(HolochainError::ErrorGeneric(
+                    "source secret is not a signing key".to_string(),
+                ));
+            }
+        };
+
+        let enc_secret = self.get(&src_enc_id_str)?;
+        let mut enc_secret = enc_secret.lock().unwrap();
+        let enc_key = match *enc_secret {
+            Secret::EncryptingKey(ref mut key_pair) => {
+                let mut buf = SecBuf::with_secure(key_pair.private().len());
+                let pub_key = key_pair.public();
+                let lock = key_pair.private().read_lock();
+                buf.write(0, &**lock);
+                EncryptingKeyPair::new(pub_key, buf)
+            }
+            _ => {
+                return Err(HolochainError::ErrorGeneric(
+                    "source secret is not an encrypting key".to_string(),
+                ));
+            }
+        };
+
+        Ok(KeyBundle::new(sign_key, enc_key)?)
     }
 
     /// signs some data using a keypair in the keystore
@@ -609,6 +688,40 @@ pub mod tests {
         let result = verify(public_key, data, signature);
         assert!(!result.is_err());
         assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_keystore_keybundle() {
+        let mut keystore = new_test_keystore(random_test_passphrase());
+        let context = SeedContext::new(AGENT_ID_CTX);
+
+        assert_eq!(
+            keystore.add_keybundle_from_seed("my_root_seed", "my_keybundle", &context, 1),
+            Err(HolochainError::ErrorGeneric(
+                "unknown source identifier".to_string()
+            ))
+        );
+
+        let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
+
+        let result = keystore.add_keybundle_from_seed("my_root_seed", "my_keybundle", &context, 1);
+        assert!(!result.is_err());
+        let (sign_pubkey, enc_pubkey) = result.unwrap();
+        assert!(format!("{}", sign_pubkey).starts_with("Hc"));
+
+        assert_eq!(
+            keystore.add_keybundle_from_seed("my_root_seed", "my_keybundle", &context, 1),
+            Err(HolochainError::ErrorGeneric(
+                "identifier already exists".to_string()
+            ))
+        );
+
+        let result = keystore.get_keybundle("my_keybundle");
+        assert!(!result.is_err());
+        let key_bundle = result.unwrap();
+
+        assert_eq!(key_bundle.sign_keys.public(), sign_pubkey);
+        assert_eq!(key_bundle.enc_keys.public(), enc_pubkey);
     }
 
 }

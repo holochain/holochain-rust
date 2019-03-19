@@ -1,5 +1,5 @@
 use crate::{
-    keypair::{generate_random_sign_keypair, KeyPair, SigningKeyPair},
+    keypair::{generate_random_sign_keypair, EncryptingKeyPair, KeyPair, SigningKeyPair},
     utils::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
         generate_random_buf, verify as signingkey_verify, SeedContext,
@@ -27,7 +27,13 @@ pub const PCHECK_SIZE: usize = PCHECK_RANDOM_SIZE + PCHECK_HEADER_SIZE;
 
 pub enum Secret {
     SigningKey(SigningKeyPair),
+    EncryptingKey(EncryptingKeyPair),
     Seed(SecBuf),
+}
+
+enum KeyType {
+    Signing,
+    Encrypting,
 }
 
 #[allow(dead_code)]
@@ -169,12 +175,13 @@ impl Keystore {
     /// adds a keypair into the keystore based on a seed already in the keystore
     /// returns the public key
     #[allow(dead_code)]
-    pub fn add_key_from_seed(
+    fn add_key_from_seed(
         &mut self,
         src_id_str: &str,
         dst_id_str: &str,
         context: &SeedContext,
         index: u64,
+        key_type: KeyType,
     ) -> HcResult<Base32> {
         let (src_secret, dst_id) = self.check_identifiers(src_id_str, dst_id_str)?;
         let (secret, public_key) = {
@@ -188,16 +195,54 @@ impl Keystore {
                 }
             };
             let mut key_seed_buf = generate_derived_seed_buf(seed, context, index, SEED_SIZE)?;
-            let key_pair = SigningKeyPair::new_from_seed(&mut key_seed_buf)?;
-            let public_key = key_pair.public();
-            (
-                Arc::new(Mutex::new(Secret::SigningKey(key_pair))),
-                public_key,
-            )
+            match key_type {
+                KeyType::Signing => {
+                    let key_pair = SigningKeyPair::new_from_seed(&mut key_seed_buf)?;
+                    let public_key = key_pair.public();
+                    (
+                        Arc::new(Mutex::new(Secret::SigningKey(key_pair))),
+                        public_key,
+                    )
+                }
+                KeyType::Encrypting => {
+                    let key_pair = EncryptingKeyPair::new_from_seed(&mut key_seed_buf)?;
+                    let public_key = key_pair.public();
+                    (
+                        Arc::new(Mutex::new(Secret::EncryptingKey(key_pair))),
+                        public_key,
+                    )
+                }
+            }
         };
         self.keys.insert(dst_id, secret);
 
         Ok(public_key)
+    }
+
+    /// adds a signing keypair into the keystore based on a seed already in the keystore
+    /// returns the public key
+    #[allow(dead_code)]
+    pub fn add_signing_key_from_seed(
+        &mut self,
+        src_id_str: &str,
+        dst_id_str: &str,
+        context: &SeedContext,
+        index: u64,
+    ) -> HcResult<Base32> {
+        self.add_key_from_seed(src_id_str, dst_id_str, context, index, KeyType::Signing)
+    }
+
+    /// adds a signing keypair into the keystore based on a seed already in the keystore
+    /// returns the public key
+    #[allow(dead_code)]
+    pub fn add_encrypting_key_from_seed(
+        &mut self,
+        src_id_str: &str,
+        dst_id_str: &str,
+        context: &SeedContext,
+        index: u64,
+    ) -> HcResult<Base32> {
+        self.add_key_from_seed(src_id_str, dst_id_str, context, index, KeyType::Encrypting)
     }
 
     /// signs some data using a keypair in the keystore
@@ -218,7 +263,7 @@ impl Keystore {
             }
             _ => {
                 return Err(HolochainError::ErrorGeneric(
-                    "source secret is not a key".to_string(),
+                    "source secret is not a signing key".to_string(),
                 ));
             }
         }
@@ -337,12 +382,12 @@ pub mod tests {
     }
 
     #[test]
-    fn test_keystore_add_key_from_seed() {
+    fn test_keystore_add_signing_key_from_seed() {
         let mut keystore = new_test_keystore();
         let context = SeedContext::new(AGENT_ID_CTX);
 
         assert_eq!(
-            keystore.add_key_from_seed("my_root_seed", "my_keypair", &context, 1),
+            keystore.add_signing_key_from_seed("my_root_seed", "my_keypair", &context, 1),
             Err(HolochainError::ErrorGeneric(
                 "unknown source identifier".to_string()
             ))
@@ -350,13 +395,13 @@ pub mod tests {
 
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
 
-        let result = keystore.add_key_from_seed("my_root_seed", "my_keypair", &context, 1);
+        let result = keystore.add_signing_key_from_seed("my_root_seed", "my_keypair", &context, 1);
         assert!(!result.is_err());
         let pubkey = result.unwrap();
         assert!(format!("{}", pubkey).starts_with("Hc"));
 
         assert_eq!(
-            keystore.add_key_from_seed("my_root_seed", "my_keypair", &context, 1),
+            keystore.add_signing_key_from_seed("my_root_seed", "my_keypair", &context, 1),
             Err(HolochainError::ErrorGeneric(
                 "identifier already exists".to_string()
             ))
@@ -380,7 +425,7 @@ pub mod tests {
         );
 
         let public_key = keystore
-            .add_key_from_seed("my_root_seed", "my_keypair", &context, 1)
+            .add_signing_key_from_seed("my_root_seed", "my_keypair", &context, 1)
             .unwrap();
 
         let result = keystore.sign("my_keypair", data.clone());
@@ -389,9 +434,19 @@ pub mod tests {
         let signature = result.unwrap();
         assert_eq!(String::from(signature.clone()).len(), 88); //88 is the size of a base64ized signature buf
 
-        let result = verify(public_key, data, signature);
+        let result = verify(public_key, data.clone(), signature);
         assert!(!result.is_err());
         assert!(result.unwrap());
+
+        keystore
+            .add_encrypting_key_from_seed("my_root_seed", "my_enc_keypair", &context, 1)
+            .unwrap();
+        assert_eq!(
+            keystore.sign("my_enc_keypair", data.clone()),
+            Err(HolochainError::ErrorGeneric(
+                "source secret is not a signing key".to_string()
+            ))
+        );
     }
 
     #[test]

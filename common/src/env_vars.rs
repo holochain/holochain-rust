@@ -31,7 +31,6 @@ use std::env::VarError;
 pub enum EnvVar {
     Agent,
     Interface,
-    N3hPath,
     N3hMode,
     N3hWorkDir,
     N3hBootstrapNode,

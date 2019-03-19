@@ -185,7 +185,6 @@ fn logger_configuration() -> LoggerConfiguration {
 
 // NETWORKING
 fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
-
     // create an n3h network config if the --networked flag is set
     if !networked {
         return None;

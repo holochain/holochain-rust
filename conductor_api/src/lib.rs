@@ -139,8 +139,8 @@ pub mod holo_signing_service;
 pub mod holochain;
 pub mod interface;
 pub mod interface_impls;
-pub mod keystore;
 pub mod key_loaders;
+pub mod keystore;
 pub mod logger;
 pub mod static_file_server;
 

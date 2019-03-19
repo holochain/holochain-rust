@@ -5,8 +5,8 @@ use holochain_core_types::{
     signature::Signature,
 };
 use holochain_dpki::{
-    keypair::{generate_random_sign_keypair, EncryptingKeyPair, KeyPair, SigningKeyPair},
     key_blob::KeyBlob,
+    keypair::{generate_random_sign_keypair, EncryptingKeyPair, KeyPair, SigningKeyPair},
     utils::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
         generate_random_buf, verify as signingkey_verify, SeedContext,
@@ -17,10 +17,9 @@ use holochain_dpki::{
 use holochain_sodium::secbuf::SecBuf;
 
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     sync::{Arc, Mutex},
 };
-use std::collections::BTreeMap;
 
 pub const PCHECK_HEADER_SIZE: usize = 8;
 pub const PCHECK_HEADER: [u8; 8] = *b"PHCCHECK";

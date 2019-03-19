@@ -138,8 +138,7 @@ jobs:
    xcode: "10.2.0"
   steps:
    - checkout
-   - run: curl https://nixos.org/nix/install | sh
-   - run: . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
+   - run: curl https://nixos.org/nix/install | sh && . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
    - run: nix-shell --run 'hc-build-wasm && hc-test'
 
 workflows:

@@ -13,4 +13,5 @@ environment:
   APPVEYOR_BUILD_WORKER_CLOUD: master
 
 test_script:
+ - pwd       
  - cargo  test --release

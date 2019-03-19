@@ -10,9 +10,7 @@ build: false
 environment:
  global:
   APPVEYOR_BUILD_WORKER_CLOUD: master
-  RUST_VERSION: nightly-2019-01-24
-  TARGET: x86_64-pc-windows-msvc
-  WASM_TARGET: wasm32-unknown-unknown
 
 test_script:
+ # - setx path %PATH%;...
  - cargo build --all --exclude holochain_node

@@ -1,7 +1,7 @@
 # https://www.appveyor.com/docs/enterprise/running-builds-on-aws/
 
 build_cloud: master
-image: build-0.0.3
+image: build-0.0.4
 
 shallow_clone: true
 version: 1.0.{build}

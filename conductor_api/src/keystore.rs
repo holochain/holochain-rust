@@ -72,6 +72,7 @@ impl Keystore {
         })
     }
 
+    #[allow(dead_code)]
     pub fn new_from_file(
         path: PathBuf,
         passphrase_manager: Arc<PassphraseManager>,
@@ -165,6 +166,7 @@ impl Keystore {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn save(&self, path: PathBuf) -> HcResult<()> {
         let json_string = serde_json::to_string(self)?;
         let mut file = File::create(path)?;

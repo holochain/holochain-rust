@@ -97,7 +97,7 @@ To install `nix-shell`:
 
 ```shell
 # basic deps needed on ubuntu/debian
-apt-get update && apt-get install -y curl bzcat
+apt-get update && apt-get install -y curl bzip2
 
 # this installs on all (non-windows) systems
 curl https://nixos.org/nix/install | sh

@@ -24,5 +24,6 @@ install:
   - cargo -V
   - rustup target add %WASM_TARGET%
 
+
 test_script:
  - cargo test --release -p %TEST_P% --target-dir %TEST_PATH%\target

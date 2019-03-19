@@ -1,7 +1,9 @@
+build_cloud: master
+image: foo
+
 shallow_clone: true
 version: 1.0.{build}
 build: false
-image: master
 
 environment:
  global:

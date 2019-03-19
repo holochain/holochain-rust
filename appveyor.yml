@@ -21,14 +21,5 @@ environment:
   - TEST_P: hc
     TEST_PATH: hc
 
-install:
-  - curl -sSf -o rustup-init.exe https://win.rustup.rs/
-  - rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
-  - set PATH=%PATH%;%USERPROFILE%\.cargo\bin
-  - rustc -Vv
-  - cargo -V
-  - rustup target add %WASM_TARGET%
-
-
 test_script:
  - cargo test --release -p %TEST_P% --target-dir %TEST_PATH%\target

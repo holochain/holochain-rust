@@ -21,6 +21,9 @@ use conductor::passphrase_manager::PassphraseManager;
 use holochain_dpki::seed::SeedType;
 use std::{
     collections::{BTreeMap, HashMap},
+    fs::File,
+    io::prelude::*,
+    path::PathBuf,
     sync::{Arc, Mutex},
 };
 
@@ -67,6 +70,18 @@ impl Keystore {
             cache: HashMap::new(),
             passphrase_manager: Some(passphrase_manager),
         })
+    }
+
+    pub fn new_from_file(
+        path: PathBuf,
+        passphrase_manager: Arc<PassphraseManager>,
+    ) -> HcResult<Self> {
+        let mut file = File::open(path)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        let mut keystore: Keystore = serde_json::from_str(&contents)?;
+        keystore.passphrase_manager = Some(passphrase_manager);
+        Ok(keystore)
     }
 
     #[allow(dead_code)]
@@ -147,6 +162,13 @@ impl Keystore {
             }
         }?;
         self.secrets.insert(id_str.clone(), blob);
+        Ok(())
+    }
+
+    pub fn save(&self, path: PathBuf) -> HcResult<()> {
+        let json_string = serde_json::to_string(self)?;
+        let mut file = File::create(path)?;
+        file.write_all(&json_string.as_bytes())?;
         Ok(())
     }
 
@@ -368,11 +390,14 @@ pub mod tests {
     use conductor::passphrase_manager::PassphraseServiceMock;
     use holochain_dpki::{utils, AGENT_ID_CTX};
 
-    fn new_test_keystore(passphrase: String) -> Keystore {
-        Keystore::new(Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
+    fn mock_passphrase_manager(passphrase: String) -> Arc<PassphraseManager> {
+        Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
             PassphraseServiceMock { passphrase },
-        )))))
-        .unwrap()
+        ))))
+    }
+
+    fn new_test_keystore(passphrase: String) -> Keystore {
+        Keystore::new(mock_passphrase_manager(passphrase)).unwrap()
     }
 
     fn random_test_passphrase() -> String {
@@ -393,6 +418,43 @@ pub mod tests {
             keystore.check_passphrase(&mut another_random_passphrase),
             Ok(false)
         );
+    }
+
+    #[test]
+    fn test_save_load_roundtrip() {
+        let random_passphrase = random_test_passphrase();
+        let mut keystore = new_test_keystore(random_passphrase.clone());
+        assert_eq!(keystore.add_random_seed("my_root_seed", SEED_SIZE), Ok(()));
+        assert_eq!(keystore.list(), vec!["my_root_seed".to_string()]);
+
+        let mut path = PathBuf::new();
+        path.push("tmp-test/test-keystore");
+        keystore.save(path.clone()).unwrap();
+
+        let mut loaded_keystore =
+            Keystore::new_from_file(path.clone(), mock_passphrase_manager(random_passphrase))
+                .unwrap();
+        assert_eq!(loaded_keystore.list(), vec!["my_root_seed".to_string()]);
+
+        let secret1 = keystore.get("my_root_seed").unwrap();
+        let expected_seed = match *secret1.lock().unwrap() {
+            Secret::Seed(ref mut buf) => {
+                let lock = buf.read_lock();
+                String::from_utf8_lossy(&**lock).to_string()
+            }
+            _ => unreachable!(),
+        };
+
+        let secret2 = loaded_keystore.get("my_root_seed").unwrap();
+        let loaded_seed = match *secret2.lock().unwrap() {
+            Secret::Seed(ref mut buf) => {
+                let lock = buf.read_lock();
+                String::from_utf8_lossy(&**lock).to_string()
+            }
+            _ => unreachable!(),
+        };
+
+        assert_eq!(expected_seed, loaded_seed);
     }
 
     #[test]

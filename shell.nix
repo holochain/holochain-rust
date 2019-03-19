@@ -3,6 +3,8 @@ let
   nixpkgs = import <nixpkgs> {
     overlays = [ moz_overlay ];
   };
+  # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
+  frameworks = nixpkgs.darwin.apple_sdk.frameworks;
 
   date = "2019-01-24";
   wasmTarget = "wasm32-unknown-unknown";
@@ -50,6 +52,11 @@ let
    fi;
   '';
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
+
+  hc-install-fmt = nixpkgs.writeShellScriptBin "hc-install-fmt"
+  ''
+   rustup component add rustfmt
+  '';
 
   hc-install-cli = nixpkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
   hc-install-conductor = nixpkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain --release && cargo install -f --path conductor";
@@ -136,6 +143,7 @@ stdenv.mkDerivation rec {
     hc-test-app-spec
     hc-test-node-conductor
 
+    hc-install-fmt
     hc-fmt
     hc-fmt-check
 
@@ -147,6 +155,11 @@ stdenv.mkDerivation rec {
     circleci-cli
     hc-codecov
     ci
+
+    # mac os x
+    frameworks.Security
+    frameworks.CoreFoundation
+    frameworks.CoreServices
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
@@ -170,5 +183,7 @@ stdenv.mkDerivation rec {
    # needed for install cli and tarpaulin
    export PATH=$PATH:~/.cargo/bin;
    export HC_TARGET_PREFIX=~/nix-holochain/
+   export PS1="[$name] \[$txtgrn\]\u@\h\[$txtwht\]:\[$bldpur\]\w \[$txtcyn\]\$git_branch\[$txtred\]\$git_dirty \[$bldylw\]\$aws_env\[$txtrst\]\$ "
+   export NIX_LDFLAGS="-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation $NIX_LDFLAGS";
   '';
 }

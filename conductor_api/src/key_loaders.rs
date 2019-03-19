@@ -1,4 +1,5 @@
 use crate::conductor::base::KeyLoader;
+use conductor::passphrase_manager::PassphraseManager;
 use holochain_core_types::error::HolochainError;
 use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
 use holochain_sodium::{hash::sha256, secbuf::SecBuf};
@@ -8,8 +9,12 @@ use std::{path::PathBuf, sync::Arc};
 /// This replaces filesystem access for getting keys mentioned in the config.
 /// Uses `test_keybundle` to create a deterministic key dependent on the (virtual) file name.
 pub fn test_keybundle_loader() -> KeyLoader {
-    let loader = Box::new(|path: &PathBuf| Ok(test_keybundle(&path.to_str().unwrap().to_string())))
-        as Box<FnMut(&PathBuf) -> Result<KeyBundle, HolochainError> + Send + Sync>;
+    let loader = Box::new(|path: &PathBuf, _pm: &PassphraseManager| {
+        Ok(test_keybundle(&path.to_str().unwrap().to_string()))
+    })
+        as Box<
+            FnMut(&PathBuf, &PassphraseManager) -> Result<KeyBundle, HolochainError> + Send + Sync,
+        >;
     Arc::new(loader)
 }
 

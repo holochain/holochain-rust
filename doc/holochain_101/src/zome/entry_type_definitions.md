@@ -121,7 +121,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 struct Post {
     content: String,
     date_created: String,
@@ -182,11 +182,11 @@ Further reading is [here](./entry_validation.md).
 
 __validation__
 ```rust
-use hdk::ValidationData;
+use hdk::EntryValidationData;
 
 entry!(
     ...
-    validation: |_post: Post, _validation_data: ValidationData| {
+    validation: |_validation_data: ValidationData<Post>| {
         Ok(())
     }
 )
@@ -218,11 +218,10 @@ entry!(
     name: "post",
     description: "A blog post entry which has an author",
     sharing: Sharing::Public,
-    native_type: Post,
     validation_package: || {
         ValidationPackageDefinition::Entry
     },
-    validation: |_post: Post, _validation_data: ValidationData| {
+    validation: |validation_data: EntryValidationData<Post>| {
         Ok(())
     }
 )
@@ -237,11 +236,11 @@ define_zome! {
             name: "post",
             description: "A blog post entry which has an author",
             sharing: Sharing::Public,
-            native_type: Post,
+   
             validation_package: || {
                 ValidationPackageDefinition::Entry
             },
-            validation: |_post: Post, _validation_data: ValidationData| {
+            validation: | _validation_data: EntryValidationData<Post>| {
                 Ok(())
             }
         )
@@ -265,13 +264,12 @@ fn post_definition() -> ValidatingEntryType {
         name: "post",
         description: "A blog post entry which has an author",
         sharing: Sharing::Public,
-        native_type: Post,
 
         validation_package: || {
             hdk::ValidationPackageDefinition::Entry
         },
 
-        validation: |_post: Post, _validation_data: hdk::ValidationData| {
+        validation: |_validation_data: Validation<Post>| {
             Ok(())
         }
     )

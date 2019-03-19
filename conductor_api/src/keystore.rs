@@ -5,23 +5,24 @@ use holochain_core_types::{
     signature::Signature,
 };
 use holochain_dpki::{
-    key_blob::{Blobbable, BlobType, KeyBlob},
+    key_blob::{BlobType, Blobbable, KeyBlob},
     keypair::{generate_random_sign_keypair, EncryptingKeyPair, KeyPair, SigningKeyPair},
+    seed::Seed,
     utils::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
         generate_random_buf, verify as signingkey_verify, SeedContext,
     },
-    seed::Seed, SEED_SIZE,
+    SEED_SIZE,
 };
 
 use holochain_sodium::secbuf::SecBuf;
 
 use conductor::passphrase_manager::PassphraseManager;
+use holochain_dpki::seed::SeedType;
 use std::{
     collections::{BTreeMap, HashMap},
     sync::{Arc, Mutex},
 };
-use holochain_dpki::seed::SeedType;
 
 pub const PCHECK_HEADER_SIZE: usize = 8;
 pub const PCHECK_HEADER: [u8; 8] = *b"PHCCHECK";
@@ -105,11 +106,21 @@ impl Keystore {
         let mut passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
         let secret = match blob.blob_type {
             BlobType::Seed => Secret::Seed(Seed::from_blob(blob, &mut passphrase, None)?.buf),
-            BlobType::SigningKey => Secret::SigningKey(SigningKeyPair::from_blob(blob, &mut passphrase, None)?),
-            BlobType::EncryptingKey => Secret::EncryptingKey(EncryptingKeyPair::from_blob(blob, &mut passphrase, None)?),
-            _ => return Err(HolochainError::ErrorGeneric(format!("Tried to decrypt unsupported BlobType in Keystore: {}", id_str))),
+            BlobType::SigningKey => {
+                Secret::SigningKey(SigningKeyPair::from_blob(blob, &mut passphrase, None)?)
+            }
+            BlobType::EncryptingKey => {
+                Secret::EncryptingKey(EncryptingKeyPair::from_blob(blob, &mut passphrase, None)?)
+            }
+            _ => {
+                return Err(HolochainError::ErrorGeneric(format!(
+                    "Tried to decrypt unsupported BlobType in Keystore: {}",
+                    id_str
+                )));
+            }
         };
-        self.cache.insert(id_str.clone(), Arc::new(Mutex::new(secret)));
+        self.cache
+            .insert(id_str.clone(), Arc::new(Mutex::new(secret)));
         Ok(())
     }
 
@@ -124,10 +135,16 @@ impl Keystore {
             Secret::Seed(ref mut buf) => {
                 let mut owned_buf = SecBuf::with_insecure(buf.len());
                 owned_buf.write(0, &*buf.read_lock())?;
-                Seed::new(owned_buf, SeedType::OneShot).as_blob(&mut passphrase, "".to_string(), None)
-            },
+                Seed::new(owned_buf, SeedType::OneShot).as_blob(
+                    &mut passphrase,
+                    "".to_string(),
+                    None,
+                )
+            }
             Secret::SigningKey(ref mut key) => key.as_blob(&mut passphrase, "".to_string(), None),
-            Secret::EncryptingKey(ref mut key) => key.as_blob(&mut passphrase, "".to_string(), None),
+            Secret::EncryptingKey(ref mut key) => {
+                key.as_blob(&mut passphrase, "".to_string(), None)
+            }
         }?;
         self.secrets.insert(id_str.clone(), blob);
         Ok(())

@@ -519,6 +519,6 @@ Pro tip: [Pipe the output to tap-spec](https://github.com/scottcorgan/tap-spec) 
 
 ## Conclusion
 
-And there we have it! A simple zome created in holochain using the Rust HDK. Those with previous experience developing for holochain-proto will appreciate the reduced boilerplate, strong typing and vastly improved testing framework.
+And there we have it! A simple Zome created with Holochain using the Rust HDK.
 
 The [complete working version of this project is available on github](https://github.com/willemolding/holochain-rust-todo). This builds under the 0.0.7-alpha release but as the API and HDK are changing it will likely fail under newer releases.

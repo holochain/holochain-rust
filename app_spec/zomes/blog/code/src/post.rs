@@ -2,7 +2,9 @@ use boolinator::Boolinator;
 use hdk::entry_definition::ValidatingEntryType;
 /// This file holds everything that represents the "post" entry type.
 use hdk::holochain_core_types::{
-    cas::content::Address, dna::entry_types::Sharing, error::HolochainError, json::JsonString,
+     error::HolochainError, json::JsonString,
+    validation::{EntryValidationData},
+    dna::entry_types::Sharing
 };
 
 /// We declare the structure of our entry type with this Rust struct.
@@ -10,7 +12,7 @@ use hdk::holochain_core_types::{
 /// to how this happens with functions parameters and zome_functions!.
 ///
 /// So this is our normative schema definition:
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 pub struct Post {
     pub content: String,
     pub date_created: String,
@@ -47,15 +49,32 @@ pub fn definition() -> ValidatingEntryType {
         name: "post",
         description: "blog entry post",
         sharing: Sharing::Public,
-        native_type: Post,
 
         validation_package: || {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation: |post: crate::post::Post, _validation_data: hdk::ValidationData| {
-            (post.content.len() < 280)
-                .ok_or_else(|| String::from("Content too long"))
+        validation: |validation_data: hdk::EntryValidationData<Post>| {
+            match validation_data
+            {
+                EntryValidationData::Create{entry:post,validation_package:_valid} => 
+                {
+                    (post.content.len() < 280)
+                   .ok_or_else(|| String::from("Content too long"))
+                },
+                EntryValidationData::Modify{new_entry:new_post,old_entry:old_post,old_entry_header:_old_e,validation_package:_valid} =>
+                {
+                   (new_post.content != old_post.content)
+                   .ok_or_else(|| String::from("Trying to modify with same data"))   
+                },
+                EntryValidationData::Delete{old_entry:old_post,old_entry_header:_old_en,validation_package:_valid_pac} =>
+                {
+                   (old_post.content!="SYS")
+                   .ok_or_else(|| String::from("Trying to delete native type with content SYS"))   
+                }
+                
+            }
+       
         },
 
         links: [
@@ -65,7 +84,7 @@ pub fn definition() -> ValidatingEntryType {
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
-                validation: |_source: Address, _target: Address, _validation_data: hdk::ValidationData | {
+                validation: | _validation_data: hdk::LinkValidationData | {
                     Ok(())
                 }
             ),
@@ -75,7 +94,7 @@ pub fn definition() -> ValidatingEntryType {
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
-                validation: |_source: Address, _target: Address, _validation_data: hdk::ValidationData | {
+                validation: | _validation_data: hdk::LinkValidationData | {
                     Ok(())
                 }
             )
@@ -90,10 +109,12 @@ mod tests {
     use hdk::{
         holochain_core_types::{
             dna::entry_types::{EntryTypeDef, LinkedFrom},
-            entry::{entry_type::EntryType, Entry},
+            entry::{entry_type::{EntryType,AppEntryType},Entry},
+             dna::entry_types::Sharing,
+             validation::{EntryValidationData,ValidationPackage},
+             chain_header::test_chain_header
         },
-        holochain_wasm_utils::api_serialization::validation::LinkDirection,
-        ValidationData,
+        holochain_wasm_utils::api_serialization::validation::LinkDirection
     };
     use std::convert::TryInto;
 
@@ -114,7 +135,7 @@ mod tests {
         let mut post_definition = definition();
 
         let expected_name = EntryType::from("post");
-        assert_eq!(expected_name, post_definition.name.clone(),);
+        assert_eq!(expected_name, post_definition.name.clone());
 
         let expected_definition = EntryTypeDef {
             description: "blog entry post".to_string(),
@@ -126,7 +147,8 @@ mod tests {
                 base_type: "%agent_id".to_string(),
                 tag: "recommended_posts".to_string(),
             }],
-            ..Default::default()
+            links_to : Vec::new(),
+            sharing : Sharing::Public
         };
         assert_eq!(
             expected_definition,
@@ -140,13 +162,10 @@ mod tests {
         );
 
         let post_ok = Post::new("foo", "now");
+        let entry = Entry::App(AppEntryType::from("post"),post_ok.into());
         assert_eq!(
             (post_definition.validator)(
-                Entry::App(
-                    post_definition.name.clone().try_into().unwrap(),
-                    post_ok.into(),
-                ),
-                ValidationData::default()
+               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header())}
             ),
             Ok(()),
         );
@@ -155,13 +174,14 @@ mod tests {
             "Tattooed organic sartorial, tumeric cray truffaut kale chips farm-to-table vaporware seitan brooklyn vegan locavore fam mixtape. Kale chips cold-pressed yuccie kickstarter yr. Fanny pack chambray migas heirloom microdosing blog, palo santo locavore cardigan swag organic. Disrupt pug roof party everyday carry kinfolk brooklyn quinoa. Flannel dreamcatcher yr blog, banjo hella brooklyn taxidermy four loko kickstarter aesthetic glossier biodiesel hot chicken heirloom. Leggings cronut helvetica yuccie meh.",
             "now",
         );
-        assert_eq!(
-            (post_definition.validator)(
-                Entry::App(
+
+        let entry = Entry::App(
                     post_definition.name.clone().try_into().unwrap(),
                     post_not_ok.into(),
-                ),
-                ValidationData::default()
+                );
+        assert_eq!(
+            (post_definition.validator)(
+               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header())}
             ),
             Err("Content too long".to_string()),
         );

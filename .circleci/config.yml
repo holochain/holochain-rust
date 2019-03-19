@@ -5,7 +5,7 @@ jobs:
  # is actually unit tests
  build:
   docker:
-   - image: holochain/holochain-rust:circle.zz.end
+   - image: holochain/holochain-rust:latest
   resource_class: large
   steps:
    - checkout
@@ -13,14 +13,14 @@ jobs:
 
  fmt:
   docker:
-   - image: holochain/holochain-rust:circle.zz.end
+   - image: holochain/holochain-rust:latest
   steps:
    - checkout
    - run: nix-shell --run hc-fmt-check
 
  app-spec-tests:
   docker:
-   - image: holochain/holochain-rust:circle.zz.end
+   - image: holochain/holochain-rust:latest
   resource_class: xlarge
   steps:
    - checkout
@@ -43,7 +43,7 @@ jobs:
 
  cli-tests:
   docker:
-   - image: holochain/holochain-rust:circle.zz.end
+   - image: holochain/holochain-rust:latest
   steps:
    - checkout
 
@@ -93,7 +93,7 @@ jobs:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
    - run: docker pull holochain/holochain-rust:circle.03.warm.tools
-   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end -t holochain/holochain-rust:develop .
+   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end -t holochain/holochain-rust:develop -t holochain/holochain-rust:latest .
    - run: docker push holochain/holochain-rust:circle.zz.end
    - run: docker push holochain/holochain-rust:develop
    - run: docker push holochain/holochain-rust:latest
@@ -101,7 +101,7 @@ jobs:
  cold.ubuntu.bionic:
   docker:
    - image: ubuntu:bionic
-  resource_class: large
+  resource_class: xlarge
   steps:
    - checkout
    - run: . ./scripts/install/auto.sh
@@ -110,7 +110,7 @@ jobs:
  cold.ubuntu.xenial:
   docker:
    - image: ubuntu:xenial
-  resource_class: large
+  resource_class: xlarge
   steps:
    - checkout
    - run: . ./scripts/install/auto.sh
@@ -119,7 +119,7 @@ jobs:
  cold.debian.stable:
   docker:
    - image: debian:stable
-  resource_class: large
+  resource_class: xlarge
   steps:
    - checkout
    - run: . ./scripts/install/auto.sh

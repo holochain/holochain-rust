@@ -11,7 +11,7 @@ use holochain_core_types::{
     cas::content::AddressableContent,
     entry::Entry,
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 
@@ -30,11 +30,15 @@ pub async fn hold_remove_workflow<'a>(
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Meta,
-        action: EntryAction::Delete,
     };
 
     // 3. Validate the entry
-    await!(validate_entry(entry.clone(), validation_data, &context))?;
+    await!(validate_entry(
+        entry.clone(),
+        None,
+        validation_data,
+        &context
+    ))?;
 
     let deletion_entry = unwrap_to!(entry => Entry::Deletion);
 

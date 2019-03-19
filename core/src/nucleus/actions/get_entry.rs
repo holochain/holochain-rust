@@ -72,7 +72,7 @@ pub(crate) fn get_entry_from_dht(
 
 pub(crate) fn get_entry_crud_meta_from_dht(
     context: &Arc<Context>,
-    address: Address,
+    address: &Address,
 ) -> Result<Option<(CrudStatus, Option<Address>)>, HolochainError> {
     let dht = context.state().unwrap().dht().meta_storage();
     let storage = &dht.clone();
@@ -116,7 +116,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     // Get crud-link
     let mut maybe_link_update_delete = None;
     let link_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
-        Some(address).into(),
+        Some(address.clone()).into(),
         Some(Attribute::CrudLink).into(),
         None.into(),
         IndexFilter::LatestByAttribute,
@@ -148,8 +148,15 @@ pub fn get_entry_with_meta<'a>(
         Ok(Some(entry)) => entry,
     };
     // 2. try to get the entry's metadata
-    let (crud_status, maybe_link_update_delete) = get_entry_crud_meta_from_dht(context, address)?
-        .expect("Entry should have crud-status metadata");
+    let (crud_status, maybe_link_update_delete) =
+        match get_entry_crud_meta_from_dht(context, &address)? {
+            Some(crud_info) => crud_info,
+            None => return Ok(None), //If we cannot get the CRUD status for above entry it is not an
+                                     //entry that is held by this DHT. It might be in the DHT CAS
+                                     //because DHT and chain share the same CAS or it maybe just got
+                                     //added by a concurrent process but the CRUD status is still about
+                                     //to get set. Either way, we should treat it as not existent (yet).
+        };
     let item = EntryWithMeta {
         entry,
         crud_status,

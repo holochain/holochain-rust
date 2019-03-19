@@ -213,7 +213,7 @@ impl Blobbable for KeyBundle {
 
         // Done
         Ok(KeyBlob {
-            seed_type: self.seed_type.clone(),
+            seed_type: SeedType::Mock,
             blob_type: BlobType::KeyBundle,
             hint,
             data: encoded_blob,
@@ -260,7 +260,6 @@ impl Blobbable for KeyBundle {
                 EncryptingKeyPair::encode_pub_key(&mut pub_enc),
                 priv_enc,
             ),
-            seed_type: blob.seed_type.clone(),
         })
     }
 }
@@ -276,7 +275,7 @@ mod tests {
         let mut seed_buf = generate_random_seed_buf();
         let mut passphrase = generate_random_seed_buf();
 
-        let mut bundle = KeyBundle::new_from_seed_buf(&mut seed_buf, SeedType::Mock).unwrap();
+        let mut bundle = KeyBundle::new_from_seed_buf(&mut seed_buf).unwrap();
 
         let blob = bundle
             .as_blob(&mut passphrase, "hint".to_string(), TEST_CONFIG)

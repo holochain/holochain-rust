@@ -248,10 +248,7 @@ impl DevicePinSeed {
         let mut context = context.to_sec_buf();
         kdf::derive(&mut dna_seed_buf, index, &mut context, &mut self.inner.buf)?;
 
-        Ok(KeyBundle::new_from_seed_buf(
-            &mut dna_seed_buf,
-            SeedType::DNA,
-        )?)
+        Ok(KeyBundle::new_from_seed_buf(&mut dna_seed_buf)?)
     }
 }
 
@@ -337,7 +334,6 @@ mod tests {
 
         assert_eq!(crate::SIGNATURE_SIZE, keybundle_5.sign_keys.private.len());
         assert_eq!(SEED_SIZE, keybundle_5.enc_keys.private.len());
-        assert_eq!(SeedType::DNA, keybundle_5.seed_type);
 
         let res = dps.generate_dna_key(0);
         assert!(res.is_err());

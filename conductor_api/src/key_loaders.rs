@@ -21,5 +21,5 @@ pub fn test_keybundle(name: &String) -> KeyBundle {
     sha256(&mut name, &mut seed).expect("Could not hash test agent name");
 
     // Create KeyBundle from seed
-    KeyBundle::new_from_seed_buf(&mut seed, SeedType::Mock).unwrap()
+    KeyBundle::new_from_seed_buf(&mut seed).unwrap()
 }

@@ -176,10 +176,11 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   HC_TARGET_PREFIX = "~/nix-holochain/";
-  NIX_LDFLAGS = if stdenv.isDarwin then "-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation $NIX_LDFLAGS" else "$NIX_LDFLAGS";
+  DARWIN_NIX_LDFLAGS = if stdenv.isDarwin then "-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation " else "";
 
   shellHook = ''
    # cargo installs things to the user's home so we need it on the path
    export PATH=$PATH:~/.cargo/bin;
+   export NIX_LDFLAGS="$DARWIN_NIX_LDFLAGS$NIX_LDFLAGS";
   '';
 }

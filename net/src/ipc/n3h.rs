@@ -170,28 +170,24 @@ fn extract_dmg(file: &std::ffi::OsStr, dest: &std::path::PathBuf) -> NetResult<s
     let mut dest = dest.clone();
     dest.push("n3h.app");
     if !dest.exists() {
-        tlog_d!(
-            "{}",
-            exec_output(
-                "hdiutil",
-                vec![
-                    "attach",
-                    "-mountpoint",
-                    "./dmg-mount",
-                    &file.to_string_lossy()
-                ],
-                false
-            )?
-        );
+        let res = exec_output(
+            "hdiutil",
+            vec![
+                "attach",
+                "-mountpoint",
+                "./dmg-mount",
+                &file.to_string_lossy(),
+            ],
+            false,
+        )?;
+        tlog_d!("{}", res);
         exec_output(
             "cp",
             vec!["-a", "./dmg-mount/n3h.app", &dest.to_string_lossy()],
             true,
         )?;
-        tlog_d!(
-            "{}",
-            exec_output("hdiutil", vec!["detach", "./dmg-mount"], false)?
-        );
+        let res = exec_output("hdiutil", vec!["detach", "./dmg-mount"], false)?;
+        tlog_d!("{}", res);
     }
     dest.push("Contents");
     dest.push("MacOS");
@@ -216,12 +212,15 @@ fn check_hash(file: &std::ffi::OsStr, sha256: &str) -> bool {
 
     if &hash != sha256 {
         tlog_e!("bad hash, expected {}, got {}", sha256, &hash);
+        return false;
     }
 
-    &hash == sha256
+    true
 }
 
-/// hash a file, if it doesn't exist or fails, download && hash
+/// 1 - if file exists - check compare its hash
+/// 2 - if file doesn't exist, or hash check fails, download it
+/// 3 - compare downloaded file's hash
 fn download(dest: &std::ffi::OsStr, url: &str, sha256: &str) -> NetResult<()> {
     if check_hash(dest, sha256) {
         return Ok(());
@@ -231,6 +230,7 @@ fn download(dest: &std::ffi::OsStr, url: &str, sha256: &str) -> NetResult<()> {
         let mut open_opts = std::fs::OpenOptions::new();
         open_opts.create(true).write(true);
         if cfg!(not(target_os = "windows")) {
+            // make sure the file is executable
             open_opts.mode(0o755);
         }
         let mut file = open_opts.open(dest)?;

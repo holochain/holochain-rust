@@ -6,6 +6,7 @@ image: build-0.0.2
 shallow_clone: true
 version: 1.0.{build}
 build: false
+max_jobs: 20
 
 environment:
  global:

@@ -227,8 +227,8 @@ fn run() -> HolochainResult<()> {
 
         Cli::ChainLog {
             instance_id,
-            path,
             list,
+            path,
         } => match (list, instance_id) {
             (true, _) => cli::chain_list(path),
             (false, None) => {

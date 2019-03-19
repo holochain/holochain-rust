@@ -493,9 +493,6 @@ pub struct NetworkConfig {
     /// Global logging level output by N3H
     #[serde(default = "default_n3h_log_level")]
     pub n3h_log_level: String,
-    /// Absolute path to the local installation/repository of n3h
-    #[serde(default)]
-    pub n3h_path: String,
     /// networking mode used by n3h
     #[serde(default = "default_n3h_mode")]
     pub n3h_mode: String,
@@ -525,23 +522,6 @@ pub fn default_n3h_mode() -> String {
 // if this logic changes
 pub fn default_n3h_log_level() -> String {
     String::from("i")
-}
-
-// note that this behaviour is documented within
-// holochain_common::env_vars module and should be updated
-// if this logic changes
-pub fn default_n3h_path() -> String {
-    if let Some(user_dirs) = directories::UserDirs::new() {
-        user_dirs
-            .home_dir()
-            .join(".hc")
-            .join("net")
-            .join("n3h")
-            .to_string_lossy()
-            .to_string()
-    } else {
-        String::from("n3h")
-    }
 }
 
 // note that this behaviour is documented within
@@ -689,7 +669,6 @@ pub mod tests {
 
     [network]
     bootstrap_nodes = ["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"]
-    n3h_path = "/Users/cnorris/.holochain/n3h"
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     networking_config_file = "/Users/cnorris/.holochain/network_config.json"
     n3h_log_level = "d"
@@ -717,7 +696,6 @@ pub mod tests {
                     "wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"
                 )],
                 n3h_log_level: String::from("d"),
-                n3h_path: String::from("/Users/cnorris/.holochain/n3h"),
                 n3h_mode: String::from("HACK"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
                 n3h_ipc_uri: None,

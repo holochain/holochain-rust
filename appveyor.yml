@@ -1,7 +1,7 @@
 shallow_clone: true
 version: 1.0.{build}
 build: false
-image: ami-0fb8a298c3a1d500d
+image: master
 
 environment:
  global:

@@ -15,7 +15,7 @@ fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), H
         .ok_or(HolochainError::ErrorGeneric(
             "No source found in ChainHeader".to_string(),
         ))?
-        .0;
+        .source();
     let direct_message = DirectMessage::RequestValidationPackage(header.entry_address().clone());
 
     send_message(network_state, source_address, direct_message)

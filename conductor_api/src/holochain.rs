@@ -155,7 +155,11 @@ impl Holochain {
 
     pub fn load(context: Arc<Context>) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.dht_storage.clone());
-        let loaded_state = persister.load(context.clone())??;
+        let loaded_state = persister
+            .load(context.clone())?
+            .ok_or(HolochainError::ErrorGeneric(
+                "State could not be loaded due to NoneError".to_string(),
+            ))?;
         let mut instance = Instance::from_state(loaded_state.clone());
         let new_context = instance.initialize(None, context.clone())?;
         Ok(Holochain {
@@ -231,7 +235,11 @@ mod tests {
         },
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{cas::content::Address, dna::Dna, json::RawString};
+    use holochain_core_types::{
+        cas::content::{Address, AddressableContent},
+        dna::Dna,
+        json::RawString,
+    };
     use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
     use test_utils::{
@@ -275,8 +283,7 @@ mod tests {
     fn cap_call(context: Arc<Context>, fn_name: &str, params: &str) -> CapabilityRequest {
         make_cap_request_for_call(
             context.clone(),
-            Address::from(context.clone().agent_id.pub_sign_key.clone()),
-            Address::from(context.clone().agent_id.pub_sign_key.clone()),
+            Address::from(context.clone().agent_id.address()),
             fn_name,
             params.to_string(),
         )

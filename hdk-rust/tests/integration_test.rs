@@ -49,6 +49,9 @@ use std::{
 };
 use test_utils::*;
 
+//
+// These empty function definitions below are needed for the windows linker
+//
 #[no_mangle]
 pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
@@ -190,6 +193,7 @@ fn example_valid_entry() -> Entry {
     )
 }
 
+#[cfg(not(windows))]
 fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
     let entry_with_meta = &EntryWithMeta {
@@ -291,8 +295,7 @@ fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainR
     let cap_call = {
         let context = hc.context();
         let token = context.get_public_token().unwrap();
-        let caller = Address::from("fake");
-        make_cap_request_for_call(context.clone(), token, caller, fn_name, params.to_string())
+        make_cap_request_for_call(context.clone(), token, fn_name, params.to_string())
     };
     hc.call("test_zome", cap_call, fn_name, params)
 }
@@ -524,8 +527,9 @@ fn can_remove_link() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
 }
+
 #[test]
-#[cfg(not(windows))]
+#[cfg(test)]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
     // Create links

@@ -104,7 +104,7 @@ impl Context {
             persister,
             state: None,
             action_channel: None,
-            signal_tx: signal_tx,
+            signal_tx,
             observer_channel: None,
             chain_storage,
             dht_storage,
@@ -272,9 +272,7 @@ impl Context {
             JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
                 serde_json::to_string(&response.get_error().unwrap()).unwrap(),
             )),
-            _ => Err(HolochainError::ErrorGeneric(
-                "Bridge call failed".to_string(),
-            )),
+            _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
         }
     }
 

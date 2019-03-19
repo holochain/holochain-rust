@@ -895,7 +895,7 @@ pub mod tests {
     type = "memory"
 
     [[interfaces]]
-    id = "test-interface"
+    id = "test-interface-1"
     admin = true
     [interfaces.driver]
     type = "websocket"
@@ -906,7 +906,7 @@ pub mod tests {
     id = "test-instance-2"
 
     [[interfaces]]
-    id = "test-interface"
+    id = "test-interface-2"
     [interfaces.driver]
     type = "http"
     port = 4000
@@ -1225,8 +1225,7 @@ pub mod tests {
             let context = instance.context();
             make_cap_request_for_call(
                 context.clone(),
-                Address::from(context.clone().agent_id.pub_sign_key.clone()),
-                Address::from(context.clone().agent_id.pub_sign_key.clone()),
+                Address::from(context.clone().agent_id.address()),
                 "call_bridge",
                 "{}".to_string(),
             )

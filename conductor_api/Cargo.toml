@@ -28,13 +28,14 @@ lazy_static = "1.2"
 directories = "1.0"
 json-patch = "0.2.2"
 hyper = "0.12.21"
-hyper-staticfile = "0.3.0"
+hyper-staticfile = "0.3.1"
 tokio = "0.1.14"
 fs_extra = "1.1"
 rpassword = "2.1.0"
 dirs = "1.0.4"
 base64 = "0.10"
 reqwest = "0.9"
+crossbeam-channel = "0.3.8"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

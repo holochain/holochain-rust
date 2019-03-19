@@ -9,7 +9,7 @@ use crate::{
 
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::{entry_to_entry_action, Entry},
+    entry::Entry,
     error::HolochainError,
     validation::{EntryLifecycle, ValidationData},
 };
@@ -31,7 +31,6 @@ pub async fn author_entry<'a>(
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
-        action: entry_to_entry_action(entry, maybe_link_update_delete.clone())?,
     };
 
     // 2. Validate the entry
@@ -39,7 +38,12 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: validating...",
         address
     ));
-    await!(validate_entry(entry.clone(), validation_data, &context))?;
+    await!(validate_entry(
+        entry.clone(),
+        maybe_link_update_delete.clone(),
+        validation_data,
+        &context
+    ))?;
     context.log(format!("Authoring entry {}: is valid!", address));
 
     // 3. Commit the entry
@@ -83,11 +87,10 @@ pub async fn author_entry<'a>(
 pub mod tests {
     use super::author_entry;
     use crate::nucleus::actions::tests::*;
-    use holochain_core_types::{entry::test_entry, json::JsonString};
+    use holochain_core_types::{entry::test_entry_with_value, json::JsonString};
     use std::{thread, time};
 
     #[test]
-    #[cfg(not(windows))]
     /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
         let mut dna = test_dna();
@@ -97,7 +100,11 @@ pub mod tests {
         let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
         let entry_address = context1
-            .block_on(author_entry(&test_entry(), None, &context1))
+            .block_on(author_entry(
+                &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
+                None,
+                &context1,
+            ))
             .unwrap();
         thread::sleep(time::Duration::from_millis(500));
 
@@ -124,7 +131,8 @@ pub mod tests {
         let x: String = json.unwrap().to_string();
         assert_eq!(
             x,
-            "{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}".to_string(),
+            "{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"test entry value\\\"}\"]}"
+                .to_string(),
         );
     }
 }

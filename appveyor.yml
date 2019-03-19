@@ -14,12 +14,5 @@ environment:
   TARGET: x86_64-pc-windows-msvc
   WASM_TARGET: wasm32-unknown-unknown
 
- matrix:
-  - TEST_P: holochain_cas_implementations
-    TEST_PATH: cas_implementations
-
-  - TEST_P: hc
-    TEST_PATH: hc
-
 test_script:
- - cargo test --release -p %TEST_P% --target-dir %TEST_PATH%\target
+ - cargo build --all --exclude holochain_node

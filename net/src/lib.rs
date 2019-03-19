@@ -8,6 +8,7 @@
 
 #[macro_use]
 extern crate failure;
+extern crate holochain_common;
 #[macro_use]
 pub extern crate holochain_core_types_derive;
 #[macro_use]

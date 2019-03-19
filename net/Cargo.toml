@@ -10,6 +10,7 @@ tempfile = "3"
 [dependencies]
 directories = "1"
 failure = "0.1.1"
+holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
 lazy_static = "1.2"

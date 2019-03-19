@@ -1021,6 +1021,7 @@ version = "0.0.7-alpha"
 dependencies = [
  "directories 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_common 0.0.7-alpha",
  "holochain_core_types 0.0.7-alpha",
  "holochain_core_types_derive 0.0.7-alpha",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",

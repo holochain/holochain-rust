@@ -72,13 +72,7 @@ pub fn get_verify_n3h() -> NetResult<std::path::PathBuf> {
     let (os, arch) = get_os_arch()?;
     let artifact = get_artifact_info(os, arch)?;
 
-    path.push(
-        directories::UserDirs::new()
-            .expect("cannot locate a home directory")
-            .home_dir(),
-    );
-    path.push(".hc");
-    path.push("n3h-binaries");
+    path.push(crate::holochain_common::paths::n3h_binaries_directory());
     path.push(&N3H_INFO.version);
 
     let bin_dir = path.clone();

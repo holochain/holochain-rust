@@ -17,20 +17,28 @@ pub async fn get_entry_with_meta_workflow<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,
     timeout: &'a Timeout,
-) -> Result<Option<EntryWithMeta>, HolochainError> {
+) -> Result<Option<(EntryWithMeta,Vec<ChainHeader>)>, HolochainError> {
     // 1. Try to get the entry locally (i.e. local DHT shard)
 
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
-    if maybe_entry_with_meta.is_some() {
-        return Ok(maybe_entry_with_meta);
-    }
-    // 2. No result, so try on the network
-    await!(network::actions::get_entry::get_entry(
+    let state = context
+                    .state()
+                    .ok_or(HolochainError::ErrorGeneric("Could not get state".to_string()))?;
+    let headers = state.get_headers(address.clone())?;
+
+    if maybe_entry_with_meta.is_some() || headers.is_empty()
+    {
+        await!(network::actions::get_entry::get_entry(
         context.clone(),
         address.clone(),
         timeout.clone(),
-    ))
+         ))
+    }
+    else
+    {
+        Ok(Some((maybe_entry_with_meta.expect("Should have no problem unwrapping maybe entry"),headers.clone())))
+    }
 }
 
 /// Get GetEntryResult workflow
@@ -57,7 +65,7 @@ pub async fn get_entry_result_workflow<'a>(
         if let Some(entry_with_meta) = maybe_entry_with_meta {
             // Erase history if request is for latest
             if args.options.status_request == StatusRequestKind::Latest {
-                if entry_with_meta.crud_status == CrudStatus::Deleted {
+                if entry_with_meta.0.crud_status == CrudStatus::Deleted {
                     entry_result.clear();
                     break;
                 }
@@ -68,22 +76,22 @@ pub async fn get_entry_result_workflow<'a>(
                 context
                     .state()
                     .expect("state uninitialized! :)")
-                    .get_headers(entry_with_meta.entry.address().clone())?
+                    .get_headers(entry_with_meta.0.entry.address().clone())?
             } else {
                 Vec::new()
             };
-            entry_result.push(&entry_with_meta, headers);
+            entry_result.push(&entry_with_meta.0, headers);
 
             if args.options.status_request == StatusRequestKind::Initial {
                 break;
             }
 
             // Follow crud-link if possible
-            if entry_with_meta.maybe_link_update_delete.is_some()
-                && entry_with_meta.crud_status != CrudStatus::Deleted
+            if entry_with_meta.0.maybe_link_update_delete.is_some()
+                && entry_with_meta.0.crud_status != CrudStatus::Deleted
                 && args.options.status_request != StatusRequestKind::Initial
             {
-                maybe_address = Some(entry_with_meta.maybe_link_update_delete.unwrap());
+                maybe_address = Some(entry_with_meta.0.maybe_link_update_delete.unwrap());
             }
         }
     }

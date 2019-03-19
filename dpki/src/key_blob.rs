@@ -32,8 +32,8 @@ pub struct KeyBlob {
 pub enum BlobType {
     Seed,
     KeyBundle,
+    SigningKey,
     // TODO futur blobbables?
-    // KeyPair,
     // Key,
 }
 
@@ -264,10 +264,109 @@ impl Blobbable for KeyBundle {
     }
 }
 
+//--------------------------------------------------------------------------------------------------
+// SigningKey
+//--------------------------------------------------------------------------------------------------
+
+const SIGNING_KEY_BLOB_FORMAT_VERSION: u8 = 2;
+
+const SIGNING_KEY_BLOB_SIZE: usize = 1 // version byte
+    + sign::PUBLICKEYBYTES
+    + sign::SECRETKEYBYTES;
+
+pub const SIGNING_KEY_BLOB_SIZE_ALIGNED: usize = ((SIGNING_KEY_BLOB_SIZE + 8 - 1) / 8) * 8;
+
+impl Blobbable for SigningKeyPair {
+    fn blob_type() -> BlobType {
+        BlobType::SigningKey
+    }
+
+    fn blob_size() -> usize {
+        SIGNING_KEY_BLOB_SIZE_ALIGNED
+    }
+
+    /// Generate an encrypted blob for persistence
+    /// @param {SecBuf} passphrase - the encryption passphrase
+    /// @param {string} hint - additional info / description for the bundle
+    /// @param {Option<PwHashConfig>} config - Settings for pwhash
+    fn as_blob(
+        &mut self,
+        passphrase: &mut SecBuf,
+        hint: String,
+        config: Option<PwHashConfig>,
+    ) -> HcResult<KeyBlob> {
+        // Initialize buffer
+        let mut data_buf = SecBuf::with_secure(SIGNING_KEY_BLOB_SIZE_ALIGNED);
+        let mut offset: usize = 0;
+        // Write version
+        data_buf.write(0, &[KEYBUNDLE_BLOB_FORMAT_VERSION]).unwrap();
+        offset += 1;
+        // Write public signing key
+        let key = self.decode_pub_key();
+        assert_eq!(sign::PUBLICKEYBYTES, key.len());
+        data_buf
+            .write(offset, &key)
+            .expect("Failed blobbing public signing key");
+        offset += sign::PUBLICKEYBYTES;
+        // Write private signing key
+        data_buf
+            .write(offset, &**self.private.read_lock())
+            .expect("Failed blobbing private signing key");
+        offset += sign::SECRETKEYBYTES;
+
+        // Finalize
+        let encoded_blob = Self::finalize_blobbing(&mut data_buf, passphrase, config)?;
+
+        // Done
+        Ok(KeyBlob {
+            seed_type: SeedType::Mock,
+            blob_type: BlobType::SigningKey,
+            hint,
+            data: encoded_blob,
+        })
+    }
+
+    /// Construct the pairs from an encrypted blob
+    /// @param {object} bundle - persistence info
+    /// @param {SecBuf} passphrase - decryption passphrase
+    /// @param {Option<PwHashConfig>} config - Settings for pwhash
+    fn from_blob(
+        blob: &KeyBlob,
+        passphrase: &mut SecBuf,
+        config: Option<PwHashConfig>,
+    ) -> HcResult<SigningKeyPair> {
+        // Retrieve data buf from blob
+        let mut keybundle_blob = Self::unblob(blob, passphrase, config)?;
+
+        // Deserialize manually
+        let mut pub_sign = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
+        let mut priv_sign = SecBuf::with_secure(sign::SECRETKEYBYTES);
+        {
+            let keybundle_blob = keybundle_blob.read_lock();
+            if keybundle_blob[0] != SIGNING_KEY_BLOB_FORMAT_VERSION {
+                return Err(HolochainError::ErrorGeneric(format!(
+                    "Invalid SigningKey Blob Format: v{:?} != v{:?}",
+                    keybundle_blob[0], SIGNING_KEY_BLOB_FORMAT_VERSION
+                )));
+            }
+            pub_sign.write(0, &keybundle_blob[1..33])?;
+            priv_sign.write(0, &keybundle_blob[33..97])?;
+        }
+        // Done
+        Ok(SigningKeyPair::new(
+            SigningKeyPair::encode_pub_key(&mut pub_sign),
+            priv_sign,
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{key_bundle::tests::*, utils::generate_random_seed_buf, SEED_SIZE};
+    use crate::{
+        key_bundle::tests::*, keypair::generate_random_sign_keypair,
+        utils::generate_random_seed_buf, SEED_SIZE,
+    };
     use holochain_sodium::pwhash;
 
     #[test]
@@ -293,6 +392,32 @@ mod tests {
         // Test with wrong passphrase
         passphrase.randomize();
         let maybe_unblob = KeyBundle::from_blob(&blob, &mut passphrase, TEST_CONFIG);
+        assert!(maybe_unblob.is_err());
+    }
+
+    #[test]
+    fn it_should_blob_signing_key() {
+        let mut passphrase = generate_random_seed_buf();
+
+        let mut signing_key = generate_random_sign_keypair().unwrap();
+
+        let blob = signing_key
+            .as_blob(&mut passphrase, "hint".to_string(), TEST_CONFIG)
+            .unwrap();
+
+        println!("blob.data: {}", blob.data);
+
+        assert_eq!(SeedType::Mock, blob.seed_type);
+        assert_eq!("hint", blob.hint);
+
+        let mut unblob = SigningKeyPair::from_blob(&blob, &mut passphrase, TEST_CONFIG).unwrap();
+
+        assert_eq!(0, unblob.private().compare(&mut signing_key.private()));
+        assert_eq!(unblob.public(), signing_key.public());
+
+        // Test with wrong passphrase
+        passphrase.randomize();
+        let maybe_unblob = SigningKeyPair::from_blob(&blob, &mut passphrase, TEST_CONFIG);
         assert!(maybe_unblob.is_err());
     }
 

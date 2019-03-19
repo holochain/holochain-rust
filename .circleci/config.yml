@@ -98,7 +98,7 @@ jobs:
    - run: docker push holochain/holochain-rust:develop
    - run: docker push holochain/holochain-rust:latest
 
- cold.ubuntu.bionic:
+ cold.ubuntu.bionic.auto:
   docker:
    - image: ubuntu:bionic
   resource_class: xlarge
@@ -107,7 +107,20 @@ jobs:
    - run: . ./scripts/install/auto.sh
    - run: make test
 
- cold.ubuntu.xenial:
+
+ cold.ubuntu.bionic.nix:
+  docker:
+   - image: ubuntu:bionic
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run:
+      name: Install and run all tests via nix
+      command: |
+       curl https://nixos.org/nix/install | sh
+       nix-shell --run hc-test-all
+
+ cold.ubuntu.xenial.auto:
   docker:
    - image: ubuntu:xenial
   resource_class: xlarge
@@ -115,6 +128,18 @@ jobs:
    - checkout
    - run: . ./scripts/install/auto.sh
    - run: make test
+
+ cold.ubuntu.xenial.nix:
+  docker:
+   - image: ubuntu:xenial
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run:
+      name: Install and run all tests via nix
+      command: |
+       curl https://nixos.org/nix/install | sh
+       nix-shell --run hc-test-all
 
  cold.debian.stable.auto:
   docker:
@@ -132,10 +157,10 @@ jobs:
   steps:
    - checkout
    - run:
-    name: Install and run all tests via nix
-    command: |
-    curl https://nixos.org/nix/install | sh
-    nix-shell --run hc-test-all
+      name: Install and run all tests via nix
+      command: |
+       curl https://nixos.org/nix/install | sh
+       nix-shell --run hc-test-all
 
  cold.mac.10.auto:
   macos:
@@ -168,16 +193,18 @@ workflows:
 
  cold.ubuntu:
   jobs:
-   - cold.ubuntu.bionic:
+   - cold.ubuntu.bionic.auto:
       filters:
        branches:
         only:
          - develop
-   - cold.ubuntu.xenial:
+   - cold.ubuntu.bionic.nix
+   - cold.ubuntu.xenial.auto:
       filters:
        branches:
         only:
          - develop
+   - cold.ubuntu.xenial.nix
 
  cold.debian:
   jobs:
@@ -190,7 +217,7 @@ workflows:
 
  cold.mac:
   jobs:
-   - cold.mac10.auto:
+   - cold.mac.10.auto:
       filters:
        branches:
         only:

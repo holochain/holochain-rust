@@ -26,6 +26,7 @@ pub mod tests {
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMeta},
         link::link_data::LinkData,
+        chain_header::ChainHeader
     };
     use test_utils::*;
 
@@ -55,7 +56,7 @@ pub mod tests {
 
         // Get it from the network
         // HACK: doing a loop because publish returns before actual confirmation from the network
-        let mut maybe_entry_with_meta: Option<EntryWithMeta> = None;
+        let mut maybe_entry_with_meta: Option<(EntryWithMeta,Vec<ChainHeader>)> = None;
         let mut loop_count = 0;
         while maybe_entry_with_meta.is_none() && loop_count < 10 {
             loop_count += 1;
@@ -73,7 +74,7 @@ pub mod tests {
             "maybe_entry_with_meta = {:?}",
             maybe_entry_with_meta
         );
-        let entry_with_meta = maybe_entry_with_meta.unwrap();
+        let entry_with_meta = maybe_entry_with_meta.unwrap().0;
         assert_eq!(entry_with_meta.entry, entry);
         assert_eq!(entry_with_meta.crud_status, CrudStatus::Live);
     }
@@ -173,8 +174,8 @@ pub mod tests {
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_some());
         let entry_with_meta = maybe_entry_with_meta.unwrap();
-        assert_eq!(entry_with_meta.entry, entry);
-        assert_eq!(entry_with_meta.crud_status, CrudStatus::Live);
+        assert_eq!(entry_with_meta.0.entry, entry);
+        assert_eq!(entry_with_meta.0.crud_status, CrudStatus::Live);
     }
 
     #[test]

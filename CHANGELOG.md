@@ -12,11 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Actually instantiate instance when creating through admin interface (the original intent of this PR)
+- Use Content-type: application/json for remote signing service HTTP requests
+- Check for duplicate IDs during integrity check
+
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+- Conductors running on Windows will be able to hit '/' route for UI server [PR#1128](https://github.com/holochain/holochain-rust/pull/1128)
 
 ### Security
 

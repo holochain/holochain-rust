@@ -118,7 +118,7 @@ jobs:
       name: Install and run all tests via nix
       command: |
        export USER=`whoami`
-       apt-get update && apt-get install -y curl bzip2
+       apt-get update && apt-get install -y curl bzip2 sudo
        curl https://nixos.org/nix/install | sh
        nix-shell --run hc-test-all
 
@@ -141,7 +141,7 @@ jobs:
       name: Install and run all tests via nix
       command: |
        export USER=`whoami`
-       apt-get update && apt-get install -y curl bzip2
+       apt-get update && apt-get install -y curl bzip2 sudo
        curl https://nixos.org/nix/install | sh
        nix-shell --run hc-test-all
 
@@ -164,7 +164,7 @@ jobs:
       name: Install and run all tests via nix
       command: |
        export USER=`whoami`
-       apt-get update && apt-get install -y curl bzip2
+       apt-get update && apt-get install -y curl bzip2 sudo
        curl https://nixos.org/nix/install | sh
        nix-shell --run hc-test-all
 

@@ -150,10 +150,9 @@ impl Conductor {
     }
 
     pub fn p2p_bindings(&self) -> Option<Vec<String>> {
-        match self.network_spawn {
-            None => None,
-            Some(ref spawn) => Some(spawn.p2p_bindings.clone()),
-        }
+        self.network_spawn
+            .as_ref()
+            .map(|spawn| spawn.p2p_bindings.clone())
     }
 
     pub fn config(&self) -> Configuration {
@@ -172,10 +171,9 @@ impl Conductor {
     pub fn stop_all_interfaces(&mut self) {
         for (id, kill_switch) in self.interface_threads.iter() {
             notify(format!("Stopping interface {}", id));
-            let _ = kill_switch.send(()).map_err(|err| {
+            kill_switch.send(()).unwrap_or_else(|err| {
                 let message = format!("Error stopping interface: {}", err);
                 notify(message.clone());
-                err
             });
         }
     }
@@ -314,16 +312,13 @@ impl Conductor {
         // ipc_uri for it and save it for future calls to `load_config`
         // or we use that uri value that was created from previous calls!
         let net_config = self.config.network.clone().unwrap();
-        let uri = match net_config.n3h_ipc_uri.clone() {
-            Some(uri) => Some(uri),
-            None => {
-                self.network_spawn = self.spawn_network().ok();
-                match self.network_spawn {
-                    None => None,
-                    Some(ref spawn) => Some(spawn.ipc_binding.clone()),
-                }
-            }
-        };
+        let uri = net_config.n3h_ipc_uri.clone().or_else(|| {
+            self.network_spawn = self.spawn_network().ok();
+            self.network_spawn
+                .as_ref()
+                .map(|spawn| spawn.ipc_binding.clone())
+        });
+
         P2pConfig::new_ipc_uri(
             uri,
             &net_config.bootstrap_nodes,
@@ -416,7 +411,7 @@ impl Conductor {
 
                 // Agent:
                 let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
-                let agent_id = if Some(true) == agent_config.holo_remote_key {
+                let agent_id = if let Some(true) = agent_config.holo_remote_key {
                     // !!!!!!!!!!!!!!!!!!!!!!!
                     // Holo closed-alpha hack:
                     // !!!!!!!!!!!!!!!!!!!!!!!
@@ -458,7 +453,7 @@ impl Conductor {
                 // Conductor API
                 let mut api_builder = ConductorApiBuilder::new();
                 // Signing callback:
-                if Some(true) == agent_config.holo_remote_key {
+                if let Some(true) = agent_config.holo_remote_key {
                     // !!!!!!!!!!!!!!!!!!!!!!!
                     // Holo closed-alpha hack:
                     // !!!!!!!!!!!!!!!!!!!!!!!
@@ -545,11 +540,10 @@ impl Conductor {
     /// passphrase prompts) before bootstrapping the whole config and have prompts appear
     /// in between other initialization output.
     pub fn check_load_key_for_agent(&mut self, agent_id: &String) -> Result<(), String> {
-        if Some(true)
-            == self
-                .config
-                .agent_by_id(agent_id)
-                .and_then(|a| a.holo_remote_key)
+        if let Some(true) = self
+            .config
+            .agent_by_id(agent_id)
+            .and_then(|a| a.holo_remote_key)
         {
             // !!!!!!!!!!!!!!!!!!!!!!!
             // Holo closed-alpha hack:

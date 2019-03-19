@@ -99,6 +99,8 @@ To install `nix-shell`:
 curl https://nixos.org/nix/install | sh
 ```
 
+Follow any further instructions output to the terminal during installation.
+
 [The website](https://nixos.org/nix/download.html) has more details.
 
 Running the `nix-shell` command from inside the root of the repository will detect and use the `shell.nix` file.
@@ -122,6 +124,8 @@ The `nix-shell` approach offers unique benefits:
 If you have a nix friendly system, this is the fastest and most reliable way to develop and test.
 
 Once in a `nix-shell` the `hc-*` prefixed bash commands support tab completion.
+
+Note: The `hc-test-all` command builds and tests _everything_ in core.
 
 Note: The `hc-install-*` commands may write to the current user's home directory.
 Other commands that call `cargo` and `npm` may also write to the home directory.

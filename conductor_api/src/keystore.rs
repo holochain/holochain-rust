@@ -16,6 +16,7 @@ use holochain_dpki::{
 
 use holochain_sodium::secbuf::SecBuf;
 
+use conductor::passphrase_manager::PassphraseManager;
 use std::{
     collections::{BTreeMap, HashMap},
     sync::{Arc, Mutex},
@@ -44,6 +45,8 @@ struct Keystore {
     secrets: BTreeMap<String, KeyBlob>,
     #[serde(skip_serializing, skip_deserializing)]
     cache: HashMap<String, Arc<Mutex<Secret>>>,
+    #[serde(skip_serializing, skip_deserializing)]
+    passphrase_manager: Option<Arc<PassphraseManager>>,
 }
 
 fn make_passphrase_check(passphrase: &mut SecBuf) -> HcResult<String> {
@@ -55,11 +58,12 @@ fn make_passphrase_check(passphrase: &mut SecBuf) -> HcResult<String> {
 
 impl Keystore {
     #[allow(dead_code)]
-    pub fn new(passphrase: &mut SecBuf) -> HcResult<Self> {
+    pub fn new(passphrase_manager: Arc<PassphraseManager>) -> HcResult<Self> {
         Ok(Keystore {
-            passphrase_check: make_passphrase_check(passphrase)?,
+            passphrase_check: make_passphrase_check(&mut passphrase_manager.get_passphrase()?)?,
             secrets: BTreeMap::new(),
             cache: HashMap::new(),
+            passphrase_manager: Some(passphrase_manager),
         })
     }
 
@@ -297,18 +301,28 @@ pub fn sign_one_time(data: String) -> HcResult<(Base32, Signature)> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{utils, AGENT_ID_CTX};
     use base64;
+    use conductor::passphrase_manager::PassphraseServiceMock;
+    use holochain_dpki::{utils, AGENT_ID_CTX};
 
-    fn new_test_keystore() -> Keystore {
-        let mut random_passphrase = utils::generate_random_buf(10);
-        Keystore::new(&mut random_passphrase).unwrap()
+    fn new_test_keystore(passphrase: String) -> Keystore {
+        Keystore::new(Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
+            PassphraseServiceMock { passphrase },
+        )))))
+        .unwrap()
+    }
+
+    fn random_test_passphrase() -> String {
+        let mut buf = utils::generate_random_buf(10);
+        let read_lock = buf.read_lock();
+        String::from_utf8_lossy(&*read_lock).to_string()
     }
 
     #[test]
     fn test_keystore_new() {
-        let mut random_passphrase = utils::generate_random_buf(10);
-        let keystore = Keystore::new(&mut random_passphrase).unwrap();
+        let random_passphrase = random_test_passphrase();
+        let keystore = new_test_keystore(random_passphrase.clone());
+        let mut random_passphrase = SecBuf::with_insecure_from_string(random_passphrase);
         assert!(keystore.list().is_empty());
         assert_eq!(keystore.check_passphrase(&mut random_passphrase), Ok(true));
         let mut another_random_passphrase = utils::generate_random_buf(10);
@@ -320,8 +334,9 @@ pub mod tests {
 
     #[test]
     fn test_keystore_change_passphrase() {
-        let mut random_passphrase = utils::generate_random_buf(10);
-        let mut keystore = Keystore::new(&mut random_passphrase).unwrap();
+        let random_passphrase = random_test_passphrase();
+        let mut keystore = new_test_keystore(random_passphrase.clone());
+        let mut random_passphrase = SecBuf::with_insecure_from_string(random_passphrase);
         let mut another_random_passphrase = utils::generate_random_buf(10);
         assert!(
             // wrong passphrase
@@ -343,7 +358,7 @@ pub mod tests {
 
     #[test]
     fn test_keystore_add_random_seed() {
-        let mut keystore = new_test_keystore();
+        let mut keystore = new_test_keystore(random_test_passphrase());
 
         assert_eq!(keystore.add_random_seed("my_root_seed", SEED_SIZE), Ok(()));
         assert_eq!(keystore.list(), vec!["my_root_seed".to_string()]);
@@ -357,7 +372,7 @@ pub mod tests {
 
     #[test]
     fn test_keystore_add_seed_from_seed() {
-        let mut keystore = new_test_keystore();
+        let mut keystore = new_test_keystore(random_test_passphrase());
 
         let context = SeedContext::new(*b"SOMECTXT");
 
@@ -388,7 +403,7 @@ pub mod tests {
 
     #[test]
     fn test_keystore_add_signing_key_from_seed() {
-        let mut keystore = new_test_keystore();
+        let mut keystore = new_test_keystore(random_test_passphrase());
         let context = SeedContext::new(AGENT_ID_CTX);
 
         assert_eq!(
@@ -415,7 +430,7 @@ pub mod tests {
 
     #[test]
     fn test_keystore_sign() {
-        let mut keystore = new_test_keystore();
+        let mut keystore = new_test_keystore(random_test_passphrase());
         let context = SeedContext::new(AGENT_ID_CTX);
 
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);

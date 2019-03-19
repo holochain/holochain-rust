@@ -6,6 +6,7 @@ use boolinator::*;
 use holochain_core_types::{
     cas::content::Address, entry::EntryWithMeta, error::HolochainError,
     validation::ValidationPackage,
+    chain_header::ChainHeader
 };
 use holochain_net::p2p_network::P2pNetwork;
 use snowflake;
@@ -21,7 +22,7 @@ type Actions = HashMap<ActionWrapper, ActionResponse>;
 /// Some(Err(_)): there was a problem at some point
 /// Some(Ok(None)): no problem but also no entry -> it does not exist
 /// Some(Ok(Some(entry_with_meta))): we have it
-type GetEntryWithMetaResult = Option<Result<Option<EntryWithMeta>, HolochainError>>;
+type GetEntryWithMetaResult = Option<Result<Option<(EntryWithMeta,Vec<ChainHeader>)>, HolochainError>>;
 
 /// This represents the state of a get_links network process:
 /// None: process started, but no response yet from the network

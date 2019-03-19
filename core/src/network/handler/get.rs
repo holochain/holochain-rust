@@ -13,17 +13,29 @@ use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
+    let address = Address::from(get_dht_data.entry_address.clone());
     let maybe_entry_with_meta = nucleus::actions::get_entry::get_entry_with_meta(
         &context,
-        Address::from(get_dht_data.entry_address.clone()),
+        address.clone(),
     )
     .unwrap_or_else(|error| {
         context.log(format!("err/net: Error trying to find entry {:?}", error));
         None
     });
+    if let None = context.state() {
+        context.log(format!("err/net: Error trying to get state"));
+        
+    }
+    let state = context.state().expect("Couuld not get state for handle_fetch_entry");
+    let header_res = state.get_headers(address);
+    if let Err(error) = header_res.clone() {
+        context.log(format!("err/net: Error trying to get headers {:?}", error));
+        
+    }
+    let tuple = maybe_entry_with_meta.map(|s|Some((s,header_res.expect("Could not get headers for handle_fetch_entry")))).unwrap_or(None);
 
     let action_wrapper =
-        ActionWrapper::new(Action::RespondFetch((get_dht_data, maybe_entry_with_meta)));
+        ActionWrapper::new(Action::RespondFetch((get_dht_data, tuple)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 }
 

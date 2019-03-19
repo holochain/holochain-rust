@@ -19,7 +19,7 @@ fn reduce_fetch_entry_inner(
             requester_agent_id: network_state.agent_id.clone().unwrap(),
             request_id: key.id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
-            entry_address: key.address.clone(),
+            entry_address: key.address.clone()
         }),
     )
 }

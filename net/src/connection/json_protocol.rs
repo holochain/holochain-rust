@@ -7,7 +7,7 @@
 use serde_json;
 
 use failure::Error;
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString,chain_header::ChainHeader};
 use std::convert::TryFrom;
 
 use super::protocol::Protocol;
@@ -177,6 +177,9 @@ pub struct FetchEntryResultData {
     pub entry_address: Address,
     #[serde(rename = "content")]
     pub entry_content: serde_json::Value,
+
+    #[serde(rename = "chainHeader")]
+    pub headers: Vec<ChainHeader>,
 }
 
 //--------------------------------------------------------------------------------------------------

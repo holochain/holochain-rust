@@ -2,13 +2,13 @@ os: Visual Studio 2017
 shallow_clone: true
 version: 1.0.{build}
 build: false
-  
+
 environment:
  global:
-  RUST_VERSION: nightly-2018-11-28
+  RUST_VERSION: nightly-2019-01-24
   TARGET: x86_64-pc-windows-msvc
   WASM_TARGET: wasm32-unknown-unknown
-  
+
  matrix:
   - TEST_P: holochain_cas_implementations
     TEST_PATH: cas_implementations

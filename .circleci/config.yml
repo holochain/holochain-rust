@@ -133,6 +133,14 @@ jobs:
    - run: . ./scripts/install/auto.sh
    - run: make test
 
+ cold.mac.nix:
+  macos:
+   xcode: "10.2.0"
+  steps:
+   - checkout
+   - run: curl https://nixos.org/nix/install | sh
+   - run: nix-shell --run 'hc-build-wasm && hc-test'
+
 workflows:
  version: 2
  tests:
@@ -170,6 +178,7 @@ workflows:
        branches:
         only:
          - develop
+   - cold.mac.nix
 
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow

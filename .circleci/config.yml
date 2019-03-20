@@ -23,7 +23,7 @@ jobs:
       # avoid pipefail
       shell: /bin/bash
       command: |
-        UNPINNED = nix-shell --run hc-cargo-toml-grep-unpinned
+        export UNPINNED = nix-shell --run hc-cargo-toml-grep-unpinned
         echo "unpinned deps (must be empty):\n$UNPINNED"
         test $( $UNPINNNED | wc -l ) = 0
 

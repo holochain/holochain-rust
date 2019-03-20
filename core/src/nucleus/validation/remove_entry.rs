@@ -39,13 +39,10 @@ pub async fn validate_remove_entry(
         .ok_or(ValidationError::NotImplemented)?;
 
     let params = EntryValidationArgs {
-        validation_data: entry_to_validation_data(
-            context.clone(),
-            &entry,
-            None,
-            validation_data,
-        )
-        .map_err(|_| ValidationError::Fail("Could not get entry validation".to_string()))?,
+        validation_data: entry_to_validation_data(context.clone(), &entry, None, validation_data)
+            .map_err(|_| {
+            ValidationError::Fail("Could not get entry validation".to_string())
+        })?,
     };
 
     let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);

@@ -15,7 +15,7 @@ failure = "=0.1.5"
 lazy_static = "=1.2.0"
 unwrap_to = "=0.1.0"
 backtrace = "=0.3.14"
-multihash = "0.8.0"
+multihash = "=0.8.0"
 
 [[bin]]
 name = "holochain_test_bin"

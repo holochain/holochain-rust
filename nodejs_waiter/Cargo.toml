@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 colored = "=1.7.0"
-neon = "0.2.0"
+neon = "=0.2.0"
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../hc_dpki" }

@@ -21,7 +21,7 @@ jobs:
    - run:
       name: no unpinnned deps
       command: |
-        { nix-shell --run hc-cargo-toml-grep-unpinned || test $? = 1; }
+        nix-shell --run hc-cargo-toml-grep-unpinned
 
  app-spec-tests:
   docker:

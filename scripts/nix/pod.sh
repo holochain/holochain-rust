@@ -6,12 +6,14 @@
 # this is also surprising if you expect `nix-shell` to provide complete
 # isolation from the host environment
 #
-# try `nix-container` which does provide complete isolation to see why you may
-# not really want that, for example:
+# try `nixos-container` which does provide complete isolation to see why you
+# may not want that, e.g.:
 #
 # - no internet connection
 # - no configured devices/users
 # - no access to files on host system
+#
+# @see https://nixos.org/nixos/manual/#ch-containers
 #
 # that said, `nix-shell` can be configured to provide a lot more isolation than
 # the default configuration

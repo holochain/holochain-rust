@@ -20,7 +20,7 @@ toml = "=0.5.0"
 semver = { version = "0.9.0", features = ["serde"] }
 base64 = "=0.10.1"
 colored = "=1.7.0"
-ignore = "0.4.3"
+ignore = "=0.4.6"
 rpassword = "2.1.0"
 rustyline = "^2.1"
 directories = "=1.0.2"

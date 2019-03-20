@@ -24,11 +24,13 @@ jobs:
         # temporary avoid build fails due to greps
         set +eo pipefail
         export UNPINNED=`nix-shell --run hc-cargo-toml-grep-unpinned`
-        echo "unpinned deps (must be empty):"
-        echo "$UNPINNED"
         set -eo pipefail
-        echo test $( $UNPINNNED | wc -l ) = 0
-        echo $?
+        if [[ $UNPINNED ]]
+        then
+         echo "unpinned deps must be empty:"
+         echo "$UNPINNED"
+         exit 1
+        fi
 
  app-spec-tests:
   docker:

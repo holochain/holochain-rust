@@ -24,7 +24,9 @@ jobs:
       shell: /bin/bash
       command: |
         export UNPINNED=`nix-shell --run hc-cargo-toml-grep-unpinned`
-        echo "unpinned deps (must be empty):\n$UNPINNED"
+        echo "unpinned deps (must be empty):"
+        echo "$UNPINNED"
+        set -e
         test $( $UNPINNNED | wc -l ) = 0
 
  app-spec-tests:

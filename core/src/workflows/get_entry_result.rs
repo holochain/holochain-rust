@@ -38,13 +38,11 @@ pub async fn get_entry_with_meta_workflow<'a>(
     else 
     {
         let entry = maybe_entry_with_meta.ok_or(HolochainError::ErrorGeneric("Could not get entry".to_string()))?;
-        state.get_headers(address.clone())
-                                     .map(|header|{
-                                         Ok(Some((entry.clone(),header.clone())))
-                                     })
-                                     .unwrap_or(await!(network::actions::get_entry::get_entry(context.clone(),address.clone(),timeout.clone())))
-                                     
-     
+        match state.get_headers(address.clone())
+        {
+            Ok(headers) =>Ok(Some((entry.clone(),headers.clone()))),
+            Err(_) =>await!(network::actions::get_entry::get_entry(context.clone(),address.clone(),timeout.clone()))
+        }     
     }
 
     

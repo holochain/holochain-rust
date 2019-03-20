@@ -12,7 +12,7 @@ use std::{convert::TryFrom, fs, path::PathBuf};
 const DEFAULT_CHAIN_PATH: &str = "TODO";
 
 pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultResult<()> {
-    // let storage_path = storage_path.unwrap_or_else(|| PathBuf::new().join(DEFAULT_CHAIN_PATH));
+    // let storage_path = storage_path.unwrap_or_else(|| PathBuf::from(DEFAULT_CHAIN_PATH));
     let storage_path = storage_path.ok_or(format_err!(
         "Please specify the path to CAS storage with the --path option."
     ))?;
@@ -65,7 +65,7 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
 }
 
 pub fn chain_list(path: Option<PathBuf>) {
-    let path = path.unwrap_or_else(|| PathBuf::new().join(DEFAULT_CHAIN_PATH));
+    let path = path.unwrap_or_else(|| PathBuf::from(DEFAULT_CHAIN_PATH));
     println!("Please specify an instance ID to view its chain.");
     println!("Available instances for '{}':\n", path.to_string_lossy());
     for entry in fs::read_dir(path).unwrap() {

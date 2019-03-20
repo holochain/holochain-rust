@@ -9,7 +9,7 @@ failure = "=0.1.5"
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
 lazy_static = "=1.2.0"
-serde = "1.0"
+serde = "=1.0.89"
 serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 rmp-serde = "0.13.7"

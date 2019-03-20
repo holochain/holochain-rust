@@ -9,7 +9,7 @@ lazy_static = "=1.2.0"
 base64 = "=0.10.1"
 holochain_core_types = { path = "../core_types" }
 holochain_sodium = { path = "../sodium" }
-serde = "1.0"
+serde = "=1.0.89"
 serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 hcid = "0.0.3-alpha"

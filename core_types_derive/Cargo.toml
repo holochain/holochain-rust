@@ -9,5 +9,5 @@ proc-macro = true
 [dependencies]
 syn = "0.15"
 quote = "0.6.3"
-serde = "1.0"
+serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }

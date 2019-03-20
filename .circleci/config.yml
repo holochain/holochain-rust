@@ -27,7 +27,7 @@ jobs:
         echo "unpinned deps (must be empty):"
         echo "$UNPINNED"
         set -eo pipefail
-        test $( $UNPINNNED | wc -l ) = 0
+        echo test $( $UNPINNNED | wc -l ) = 0
         echo $?
 
  app-spec-tests:

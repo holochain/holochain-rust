@@ -86,7 +86,7 @@ let
    # ignore upgrades that are just unpinning themselves (=x.y.z will suggest x.y.z)
    # | grep -vE 'v=([0-9]+\.[0-9]+\.[0-9]+) -> v\1'
    find . -name "Cargo.toml" \
-     | xargs -I {} cargo upgrade --dry-run --allow-prerelease --all --manifest-path {} \
+     | xargs -P "$NIX_BUILD_CORES" -I {} cargo upgrade --dry-run --allow-prerelease --all --manifest-path {} \
      | grep -vE 'v=[0-9]+\.[0-9]+\.[0-9]+'
   '';
 

@@ -204,7 +204,7 @@ fn run() -> HolochainResult<()> {
             } else {
                 None
             };
-            cli::keygen("test-instance", None, passphrase)
+            cli::keygen(None, passphrase)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
     }

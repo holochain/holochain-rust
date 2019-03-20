@@ -5,11 +5,9 @@ use holochain_dpki::{utils::SeedContext, AGENT_ID_CTX, SEED_SIZE};
 use rpassword;
 use std::{fs::create_dir_all, path::PathBuf};
 
-pub fn keygen(
-    agent_name: &str,
-    path: Option<PathBuf>,
-    passphrase: Option<String>,
-) -> DefaultResult<()> {
+const PRIMARY_KEYBUNDLE_ID: &str = "primary_keybundle";
+
+pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
     println!(
         "This will create a new agent keystore - that is all keys needed to represent one agent."
     );
@@ -31,7 +29,8 @@ pub fn keygen(
     keystore.add_random_seed("root_seed", SEED_SIZE)?;
 
     let context = SeedContext::new(AGENT_ID_CTX);
-    let (pub_key, _) = keystore.add_keybundle_from_seed("root_seed", agent_name, &context, 1)?;
+    let (pub_key, _) =
+        keystore.add_keybundle_from_seed("root_seed", PRIMARY_KEYBUNDLE_ID, &context, 1)?;
 
     let path = if None == path {
         let p = keys_directory();
@@ -64,17 +63,12 @@ pub mod test {
         let path = PathBuf::new().join("test.key");
         let passphrase = String::from("secret");
 
-        keygen(
-            "test-instance",
-            Some(path.clone()),
-            Some(passphrase.clone()),
-        )
-        .expect("Keygen should work");
+        keygen(Some(path.clone()), Some(passphrase.clone())).expect("Keygen should work");
 
         let mut keystore =
             Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase)).unwrap();
 
-        let keybundle = keystore.get_keybundle("test-instance");
+        let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
 
         assert!(keybundle.is_ok());
 

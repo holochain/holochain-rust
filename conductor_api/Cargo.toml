@@ -34,7 +34,7 @@ fs_extra = "=1.1.0"
 rpassword = "2.1.0"
 dirs = "1.0.4"
 base64 = "=0.10.1"
-reqwest = "0.9"
+reqwest = "=0.9.11"
 crossbeam-channel = "0.3.8"
 
 [dev-dependencies]

@@ -22,12 +22,7 @@ jobs:
       name: check unpinned deps
       command: |
        nix-shell --run hc-cargo-toml-grep-unpinned
-       UNPINNED=$( nix-shell --run hc-cargo-toml-grep-unpinned )
-       echo "$UNPINNED"
-       # if [[ $UNPINNED ]]
-       # then
-       #   echo "$UNPINNED"
-       # fi
+
 
  app-spec-tests:
   docker:

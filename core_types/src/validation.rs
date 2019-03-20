@@ -88,11 +88,13 @@ pub enum LinkValidationData {
     LinkAdd {
         link: LinkData,
         validation_package: ValidationPackage,
+        life_cycle : EntryLifecycle
     },
     /// The LinkRemove variant contains a linkData and a validation package
     LinkRemove {
         link: LinkData,
         validation_package: ValidationPackage,
+        life_cycle : EntryLifecycle
     },
 }
 

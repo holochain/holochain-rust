@@ -23,7 +23,7 @@ jsonrpc-http-server = { git = "https://github.com/paritytech/jsonrpc" }
 petgraph = "0.4.13"
 colored = "=1.7.0"
 regex = "=1.1.2"
-maplit = "1.0.1"
+maplit = "=1.0.1"
 lazy_static = "=1.2.0"
 directories = "=1.0.2"
 json-patch = "0.2.2"

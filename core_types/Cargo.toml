@@ -33,4 +33,4 @@ regex = "=1.1.2"
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
 holochain_core = { path = "../core"}
-maplit = "1.0.1"
+maplit = "=1.0.1"

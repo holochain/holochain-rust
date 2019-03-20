@@ -22,7 +22,7 @@ base64 = "=0.10.1"
 colored = "=1.7.0"
 ignore = "=0.4.6"
 rpassword = "2.1.0"
-rustyline = "^2.1"
+rustyline = "=3.0.0"
 directories = "=1.0.2"
 
 [dev-dependencies]

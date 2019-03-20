@@ -27,7 +27,7 @@ rust-base58 = "=0.0.4"
 snowflake = "=1.3.0"
 objekt= "=0.1.2"
 holochain_core_types_derive = { path = "../core_types_derive" }
-uuid = { version = "=0.7.2", features = ["v4"] }
+uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
 
 [dev-dependencies]

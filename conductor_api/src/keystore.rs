@@ -17,6 +17,7 @@ use holochain_dpki::{
 };
 
 use holochain_sodium::secbuf::SecBuf;
+use holochain_sodium::pwhash::{OPSLIMIT_INTERACTIVE, MEMLIMIT_INTERACTIVE, ALG_ARGON2ID13};
 
 use conductor::passphrase_manager::PassphraseManager;
 use holochain_dpki::seed::SeedType;
@@ -27,6 +28,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
+use holochain_dpki::password_encryption::PwHashConfig;
 
 const PCHECK_HEADER_SIZE: usize = 8;
 const PCHECK_HEADER: [u8; 8] = *b"PHCCHECK";
@@ -55,23 +57,26 @@ pub struct Keystore {
     cache: HashMap<String, Arc<Mutex<Secret>>>,
     #[serde(skip_serializing, skip_deserializing)]
     passphrase_manager: Option<Arc<PassphraseManager>>,
+    #[serde(skip_serializing, skip_deserializing)]
+    hash_config: Option<PwHashConfig>,
 }
 
-fn make_passphrase_check(passphrase: &mut SecBuf) -> HcResult<String> {
+fn make_passphrase_check(passphrase: &mut SecBuf, hash_config: Option<PwHashConfig>) -> HcResult<String> {
     let mut check_buf = SecBuf::with_secure(PCHECK_SIZE);
     check_buf.randomize();
     check_buf.write(0, &PCHECK_HEADER).unwrap();
-    encrypt_with_passphrase_buf(&mut check_buf, passphrase, None)
+    encrypt_with_passphrase_buf(&mut check_buf, passphrase, hash_config)
 }
 
 impl Keystore {
     #[allow(dead_code)]
-    pub fn new(passphrase_manager: Arc<PassphraseManager>) -> HcResult<Self> {
+    pub fn new(passphrase_manager: Arc<PassphraseManager>, hash_config: Option<PwHashConfig>) -> HcResult<Self> {
         Ok(Keystore {
-            passphrase_check: make_passphrase_check(&mut passphrase_manager.get_passphrase()?)?,
+            passphrase_check: make_passphrase_check(&mut passphrase_manager.get_passphrase()?, hash_config.clone())?,
             secrets: BTreeMap::new(),
             cache: HashMap::new(),
             passphrase_manager: Some(passphrase_manager),
+            hash_config,
         })
     }
 
@@ -79,11 +84,13 @@ impl Keystore {
     pub fn new_from_file(
         path: PathBuf,
         passphrase_manager: Arc<PassphraseManager>,
+        hash_config: Option<PwHashConfig>,
     ) -> HcResult<Self> {
         let mut file = File::open(path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let mut keystore: Keystore = serde_json::from_str(&contents)?;
+        keystore.hash_config = hash_config;
         keystore.passphrase_manager = Some(passphrase_manager);
         Ok(keystore)
     }
@@ -93,7 +100,7 @@ impl Keystore {
         let mut decrypted_buf = decrypt_with_passphrase_buf(
             &self.passphrase_check,
             &mut passphrase,
-            None,
+            self.hash_config.clone(),
             PCHECK_SIZE,
         )?;
         let mut decrypted_header = SecBuf::with_insecure(PCHECK_HEADER_SIZE);
@@ -113,7 +120,7 @@ impl Keystore {
         if !self.check_passphrase(old_passphrase)? {
             return Err(HolochainError::ErrorGeneric("Bad passphrase".to_string()));
         }
-        self.passphrase_check = make_passphrase_check(new_passphrase)?;
+        self.passphrase_check = make_passphrase_check(new_passphrase, self.hash_config.clone())?;
         Ok(())
     }
 
@@ -124,12 +131,12 @@ impl Keystore {
             .ok_or(HolochainError::new("Secret not found"))?;
         let mut passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
         let secret = match blob.blob_type {
-            BlobType::Seed => Secret::Seed(Seed::from_blob(blob, &mut passphrase, None)?.buf),
+            BlobType::Seed => Secret::Seed(Seed::from_blob(blob, &mut passphrase, self.hash_config.clone())?.buf),
             BlobType::SigningKey => {
-                Secret::SigningKey(SigningKeyPair::from_blob(blob, &mut passphrase, None)?)
+                Secret::SigningKey(SigningKeyPair::from_blob(blob, &mut passphrase, self.hash_config.clone())?)
             }
             BlobType::EncryptingKey => {
-                Secret::EncryptingKey(EncryptingKeyPair::from_blob(blob, &mut passphrase, None)?)
+                Secret::EncryptingKey(EncryptingKeyPair::from_blob(blob, &mut passphrase, self.hash_config.clone())?)
             }
             _ => {
                 return Err(HolochainError::ErrorGeneric(format!(
@@ -157,12 +164,12 @@ impl Keystore {
                 Seed::new(owned_buf, SeedType::OneShot).as_blob(
                     &mut passphrase,
                     "".to_string(),
-                    None,
+                    self.hash_config.clone(),
                 )
             }
-            Secret::SigningKey(ref mut key) => key.as_blob(&mut passphrase, "".to_string(), None),
+            Secret::SigningKey(ref mut key) => key.as_blob(&mut passphrase, "".to_string(), self.hash_config.clone()),
             Secret::EncryptingKey(ref mut key) => {
-                key.as_blob(&mut passphrase, "".to_string(), None)
+                key.as_blob(&mut passphrase, "".to_string(), self.hash_config.clone())
             }
         }?;
         self.secrets.insert(id_str.clone(), blob);
@@ -464,6 +471,14 @@ pub fn sign_one_time(data: String) -> HcResult<(Base32, Signature)> {
     Ok((sign_keys.public, Signature::from(signature_str)))
 }
 
+pub fn test_hash_config() -> Option<PwHashConfig> {
+    Some(PwHashConfig(
+        OPSLIMIT_INTERACTIVE,
+        MEMLIMIT_INTERACTIVE,
+        ALG_ARGON2ID13,
+    ))
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -478,7 +493,7 @@ pub mod tests {
     }
 
     fn new_test_keystore(passphrase: String) -> Keystore {
-        Keystore::new(mock_passphrase_manager(passphrase)).unwrap()
+        Keystore::new(mock_passphrase_manager(passphrase), test_hash_config()).unwrap()
     }
 
     fn random_test_passphrase() -> String {
@@ -513,7 +528,7 @@ pub mod tests {
         keystore.save(path.clone()).unwrap();
 
         let mut loaded_keystore =
-            Keystore::new_from_file(path.clone(), mock_passphrase_manager(random_passphrase))
+            Keystore::new_from_file(path.clone(), mock_passphrase_manager(random_passphrase), test_hash_config())
                 .unwrap();
         assert_eq!(loaded_keystore.list(), vec!["my_root_seed".to_string()]);
 

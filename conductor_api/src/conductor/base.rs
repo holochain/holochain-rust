@@ -637,7 +637,7 @@ impl Conductor {
     ) -> Result<Keystore, HolochainError> {
         notify(format!("Reading keystore from {}", file.display()));
 
-        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager)?;
+        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager, None)?;
         Ok(keystore)
     }
 
@@ -783,7 +783,7 @@ pub mod tests {
     use super::*;
     use conductor::passphrase_manager::PassphraseManager;
     use key_loaders::mock_passphrase_manager;
-    use keystore::{Keystore, Secret};
+    use keystore::{Keystore, Secret, test_hash_config};
     extern crate tempfile;
     use crate::config::load_configuration;
     use holochain_core::{
@@ -836,7 +836,7 @@ pub mod tests {
 
     pub fn test_keystore(index: u8) -> Keystore {
         let agent_name = format!("test-agent-{}", index);
-        let mut keystore = Keystore::new(mock_passphrase_manager(agent_name.clone())).unwrap();
+        let mut keystore = Keystore::new(mock_passphrase_manager(agent_name.clone()), test_hash_config()).unwrap();
 
         // Create deterministic seed
         let mut seed = SecBuf::with_insecure(SEED_SIZE);

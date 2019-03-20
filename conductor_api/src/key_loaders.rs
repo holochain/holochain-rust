@@ -10,6 +10,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
+use keystore::test_hash_config;
 
 /// Key loader callback to use with conductor_api.
 /// This replaces filesystem access for getting keys mentioned in the config.
@@ -28,7 +29,7 @@ pub fn test_keystore_loader() -> KeyLoader {
 
 /// Create a deterministic test key from the SHA256 of the given name string.
 pub fn test_keystore(agent_name: &String) -> Keystore {
-    let mut keystore = Keystore::new(mock_passphrase_manager(agent_name.clone())).unwrap();
+    let mut keystore = Keystore::new(mock_passphrase_manager(agent_name.clone()), test_hash_config()).unwrap();
 
     // Create seed from name
     let mut name = SecBuf::with_insecure_from_string(agent_name.clone());

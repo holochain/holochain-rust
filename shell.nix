@@ -85,7 +85,7 @@ let
      | grep -Ev '=[0-9]+\.[0-9]+\.[0-9]+' \
      | grep -E '[0-9]+' \
      | grep -Ev '(version|edition)' \
-     1> /dev/null
+     | cat
   '';
   hc-cargo-toml-test-ver = pkgs.writeShellScriptBin "hc-cargo-toml-test-ver"
   ''

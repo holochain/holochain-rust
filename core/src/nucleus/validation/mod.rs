@@ -144,7 +144,7 @@ pub fn entry_to_validation_data(
                             new_entry: entry.clone(),
                             old_entry_header: entry_with_header.1.clone(),
                             validation_package: validation_clone.package,
-                            entry_lifecycle : validation_clone.lifecycle
+                            lifecycle : validation_clone.lifecycle
                         })
                     })
                     .unwrap_or(Err(HolochainError::ErrorGeneric(
@@ -154,7 +154,7 @@ pub fn entry_to_validation_data(
             .unwrap_or(Ok(EntryValidationData::Create {
                 entry: entry.clone(),
                 validation_package : validation_data.package.clone(),
-                entry_lifecycle : validation_data.lifecycle
+                lifecycle : validation_data.lifecycle
             })),
         Entry::Deletion(deletion_entry) => {
             let deletion_address = deletion_entry.clone().deleted_entry_address();
@@ -164,7 +164,7 @@ pub fn entry_to_validation_data(
                         old_entry: entry_with_header.0.clone(),
                         old_entry_header: entry_with_header.1.clone(),
                         validation_package : validation_data.package,
-                        entry_lifecycle : validation_data.lifecycle
+                        lifecycle : validation_data.lifecycle
                     })
                 })
                 .unwrap_or(Err(HolochainError::ErrorGeneric(
@@ -174,7 +174,7 @@ pub fn entry_to_validation_data(
         Entry::CapTokenGrant(_) => Ok(EntryValidationData::Create {
             entry: entry.clone(),
             validation_package : validation_data.package,
-            entry_lifecycle: validation_data.lifecycle
+            lifecycle: validation_data.lifecycle
         }),
         _ => Err(HolochainError::NotImplemented(
             "Not implemented".to_string(),

@@ -28,6 +28,7 @@ jobs:
         echo "$UNPINNED"
         set -eo pipefail
         test $( $UNPINNNED | wc -l ) = 0
+        echo $?
 
  app-spec-tests:
   docker:

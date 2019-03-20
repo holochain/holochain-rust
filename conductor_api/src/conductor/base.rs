@@ -783,7 +783,7 @@ pub mod tests {
     use super::*;
     use conductor::passphrase_manager::PassphraseManager;
     use key_loaders::mock_passphrase_manager;
-    use keystore::{Keystore, Secret, test_hash_config};
+    use keystore::{test_hash_config, Keystore, Secret};
     extern crate tempfile;
     use crate::config::load_configuration;
     use holochain_core::{
@@ -836,7 +836,11 @@ pub mod tests {
 
     pub fn test_keystore(index: u8) -> Keystore {
         let agent_name = format!("test-agent-{}", index);
-        let mut keystore = Keystore::new(mock_passphrase_manager(agent_name.clone()), test_hash_config()).unwrap();
+        let mut keystore = Keystore::new(
+            mock_passphrase_manager(agent_name.clone()),
+            test_hash_config(),
+        )
+        .unwrap();
 
         // Create deterministic seed
         let mut seed = SecBuf::with_insecure(SEED_SIZE);

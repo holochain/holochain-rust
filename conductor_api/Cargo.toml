@@ -41,5 +41,5 @@ crossbeam-channel = "0.3.8"
 test_utils = { path = "../test_utils"}
 tempfile = "=3.0.7"
 holochain_wasm_utils = { path = "../wasm_utils" }
-structopt = "0.2"
+structopt = "=0.2.15"
 pretty_assertions = "=0.6.1"

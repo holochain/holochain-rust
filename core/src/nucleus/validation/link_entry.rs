@@ -48,11 +48,11 @@ pub async fn validate_link_entry(
     let validation_data = match entry.clone() {
         Entry::LinkAdd(link) => Ok(LinkValidationData::LinkAdd {
             link,
-            validation_package: validation_data.package.clone(),
+            validation_data,
         }),
         Entry::LinkRemove(link) => Ok(LinkValidationData::LinkRemove {
             link,
-            validation_package: validation_data.package.clone(),
+            validation_data,
         }),
         _ => Err(ValidationError::Fail("Entry is not link".to_string())),
     }?;

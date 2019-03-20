@@ -3,8 +3,8 @@
 # default nix-shell behaviour preserves some of the user's environment
 # this can be problematic when debugging nix behaviour on dirty systems
 #
-# this is also surprising if you expect `nix-shell` to provide complete
-# isolation from the host environment
+# this is surprising if you expect `nix-shell` to provide complete isolation
+# from the host environment and work exactly like a full nixos install
 #
 # try `nixos-container` which does provide complete isolation to see why you
 # may not want that, e.g.:

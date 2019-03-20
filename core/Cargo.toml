@@ -11,7 +11,7 @@ serde_derive = "1.0"
 chrono = "0.4"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 snowflake = "1.2"
-bitflags = "1.0"
+bitflags = "=1.0.4"
 wasmi = "0.3"
 failure = "=0.1.5"
 futures-preview = "=0.3.0-alpha.12"

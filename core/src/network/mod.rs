@@ -23,10 +23,10 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
+        chain_header::ChainHeader,
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMeta},
         link::link_data::LinkData,
-        chain_header::ChainHeader
     };
     use test_utils::*;
 
@@ -56,7 +56,7 @@ pub mod tests {
 
         // Get it from the network
         // HACK: doing a loop because publish returns before actual confirmation from the network
-        let mut maybe_entry_with_meta: Option<(EntryWithMeta,Vec<ChainHeader>)> = None;
+        let mut maybe_entry_with_meta: Option<(EntryWithMeta, Vec<ChainHeader>)> = None;
         let mut loop_count = 0;
         while maybe_entry_with_meta.is_none() && loop_count < 10 {
             loop_count += 1;

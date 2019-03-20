@@ -8,8 +8,8 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-    cas::content::Address, entry::EntryWithMeta, error::HcResult, time::Timeout,
-    chain_header::ChainHeader
+    cas::content::Address, chain_header::ChainHeader, entry::EntryWithMeta, error::HcResult,
+    time::Timeout,
 };
 use std::{pin::Pin, sync::Arc, thread};
 
@@ -22,7 +22,7 @@ pub async fn get_entry(
     context: Arc<Context>,
     address: Address,
     timeout: Timeout,
-) -> HcResult<Option<(EntryWithMeta,Vec<ChainHeader>)>> {
+) -> HcResult<Option<(EntryWithMeta, Vec<ChainHeader>)>> {
     let key = GetEntryKey {
         address: address,
         id: snowflake::ProcessUniqueId::new().to_string(),
@@ -53,7 +53,7 @@ pub struct GetEntryFuture {
 }
 
 impl Future for GetEntryFuture {
-    type Output = HcResult<Option<(EntryWithMeta,Vec<ChainHeader>)>>;
+    type Output = HcResult<Option<(EntryWithMeta, Vec<ChainHeader>)>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         let state = self.context.state().unwrap().network();

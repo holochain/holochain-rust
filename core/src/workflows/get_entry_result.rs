@@ -17,35 +17,35 @@ pub async fn get_entry_with_meta_workflow<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,
     timeout: &'a Timeout,
-) -> Result<Option<(EntryWithMeta,Vec<ChainHeader>)>, HolochainError> {
+) -> Result<Option<(EntryWithMeta, Vec<ChainHeader>)>, HolochainError> {
     // 1. Try to get the entry locally (i.e. local DHT shard)
 
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
-    
-    let state = context
-                    .state()
-                    .ok_or(HolochainError::ErrorGeneric("Could not get state".to_string()))?;
-    
-    if let None = maybe_entry_with_meta
-    {
-        await!(network::actions::get_entry::get_entry(
-        context.clone(),
-        address.clone(),
-        timeout.clone(),
-         ))
-    }
-    else 
-    {
-        let entry = maybe_entry_with_meta.ok_or(HolochainError::ErrorGeneric("Could not get entry".to_string()))?;
-        match state.get_headers(address.clone())
-        {
-            Ok(headers) =>Ok(Some((entry.clone(),headers.clone()))),
-            Err(_) =>await!(network::actions::get_entry::get_entry(context.clone(),address.clone(),timeout.clone()))
-        }     
-    }
 
-    
+    let state = context.state().ok_or(HolochainError::ErrorGeneric(
+        "Could not get state".to_string(),
+    ))?;
+
+    if let None = maybe_entry_with_meta {
+        await!(network::actions::get_entry::get_entry(
+            context.clone(),
+            address.clone(),
+            timeout.clone(),
+        ))
+    } else {
+        let entry = maybe_entry_with_meta.ok_or(HolochainError::ErrorGeneric(
+            "Could not get entry".to_string(),
+        ))?;
+        match state.get_headers(address.clone()) {
+            Ok(headers) => Ok(Some((entry.clone(), headers.clone()))),
+            Err(_) => await!(network::actions::get_entry::get_entry(
+                context.clone(),
+                address.clone(),
+                timeout.clone()
+            )),
+        }
+    }
 }
 
 /// Get GetEntryResult workflow

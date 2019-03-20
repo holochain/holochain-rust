@@ -2,10 +2,10 @@ use crate::{context::Context, workflows::get_entry_result::get_entry_with_meta_w
 use holochain_core_types::{
     cas::content::Address,
     chain_header::ChainHeader,
-    entry::{entry_type::EntryType, Entry,EntryWithMeta},
+    entry::{entry_type::EntryType, Entry, EntryWithMeta},
     error::HolochainError,
+    time::Timeout,
     validation::{EntryValidationData, ValidationData, ValidationPackage},
-    time::Timeout
 };
 
 use std::sync::Arc;
@@ -182,8 +182,16 @@ fn get_entry_with_header(
     context: Arc<Context>,
     address: &Address,
 ) -> Result<(EntryWithMeta, ChainHeader), HolochainError> {
-    let pair = context.block_on(get_entry_with_meta_workflow(&context,address,&Timeout::default()))?;
-    let entry_chain = pair.ok_or(HolochainError::ErrorGeneric("Could not get chain".to_string()))?;
-    let latest_header = entry_chain.1.last().ok_or(HolochainError::ErrorGeneric("Could not get last entry from chain".to_string()))?;
-    Ok((entry_chain.0,latest_header.clone()))
+    let pair = context.block_on(get_entry_with_meta_workflow(
+        &context,
+        address,
+        &Timeout::default(),
+    ))?;
+    let entry_chain = pair.ok_or(HolochainError::ErrorGeneric(
+        "Could not get chain".to_string(),
+    ))?;
+    let latest_header = entry_chain.1.last().ok_or(HolochainError::ErrorGeneric(
+        "Could not get last entry from chain".to_string(),
+    ))?;
+    Ok((entry_chain.0, latest_header.clone()))
 }

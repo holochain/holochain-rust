@@ -3,25 +3,29 @@ use crate::{
     context::Context,
     network::state::NetworkState,
 };
-use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HolochainError,chain_header::ChainHeader};
+use holochain_core_types::{
+    cas::content::Address, chain_header::ChainHeader, entry::EntryWithMeta, error::HolochainError,
+};
 use holochain_net::connection::json_protocol::FetchEntryResultData;
 use std::sync::Arc;
 
 fn reduce_handle_get_result_inner(
     network_state: &mut NetworkState,
     dht_data: &FetchEntryResultData,
-) -> Result<Option<(EntryWithMeta,Vec<ChainHeader>)>, HolochainError> {
+) -> Result<Option<(EntryWithMeta, Vec<ChainHeader>)>, HolochainError> {
     network_state.initialized()?;
-    let content = serde_json::to_string(&dht_data.entry_content).map_err(|_|HolochainError::ErrorGeneric("Could not serialize entry content".to_string()))?;
+    let content = serde_json::to_string(&dht_data.entry_content).map_err(|_| {
+        HolochainError::ErrorGeneric("Could not serialize entry content".to_string())
+    })?;
 
-    let entity = serde_json::from_str(&content).map_err(|_|{
+    let entity = serde_json::from_str(&content).map_err(|_| {
         HolochainError::ErrorGeneric(
             "Failed to deserialize EntryWithMeta from HandleFetchResult action argument"
                 .to_string(),
         )
     })?;
     let headers = dht_data.headers.clone();
-    Ok(Some((entity,headers)))
+    Ok(Some((entity, headers)))
 }
 
 pub fn reduce_handle_get_result(

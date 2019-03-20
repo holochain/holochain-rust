@@ -7,7 +7,9 @@
 use serde_json;
 
 use failure::Error;
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString,chain_header::ChainHeader};
+use holochain_core_types::{
+    cas::content::Address, chain_header::ChainHeader, error::HolochainError, json::JsonString,
+};
 use std::convert::TryFrom;
 
 use super::protocol::Protocol;
@@ -615,7 +617,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             entry_content: json!("hello"),
-            headers : Vec::new()
+            headers: Vec::new()
         }));
     }
     #[test]
@@ -627,7 +629,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             entry_content: json!("hello"),
-            headers : Vec::new()
+            headers: Vec::new()
         }));
     }
     #[test]

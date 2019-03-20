@@ -128,7 +128,7 @@ pub struct ValidatingLinkDefinition {
 ///         validation: |validation_data: hdk::EntryValidationData<Post>| {
 ///              match validation_data
 ///              {
-///              EntryValidationData::Create{entry:test_entry,validation_package:_} =>
+///              EntryValidationData::Create{entry:test_entry,validation_package:_,lifecycle:_} =>
 ///              {
 ///                        
 ///                        
@@ -357,11 +357,13 @@ pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(
         EntryValidationData::Create {
             entry,
             validation_package,
+            lifecycle,
         } => {
             let native_type = convert_entry_validation_to_native::<T>(entry)?;
             Ok(EntryValidationData::Create {
                 entry: native_type,
                 validation_package,
+                lifecycle
             })
         }
         EntryValidationData::Modify {
@@ -369,6 +371,7 @@ pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(
             old_entry,
             old_entry_header,
             validation_package,
+            lifecycle
         } => {
             let new_entry = convert_entry_validation_to_native::<T>(new_entry)?;
             let old_entry = convert_entry_validation_to_native::<T>(old_entry)?;
@@ -377,18 +380,21 @@ pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(
                 old_entry,
                 old_entry_header,
                 validation_package,
+                lifecycle
             })
         }
         EntryValidationData::Delete {
             old_entry,
             old_entry_header,
             validation_package,
+            lifecycle
         } => {
             let old_entry = convert_entry_validation_to_native::<T>(old_entry)?;
             Ok(EntryValidationData::Delete {
                 old_entry,
                 old_entry_header,
                 validation_package,
+                lifecycle
             })
         }
     }

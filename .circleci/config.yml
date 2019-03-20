@@ -20,6 +20,7 @@ jobs:
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
+      shell: /bin/bash
       command: |
         nix-shell --run hc-cargo-toml-grep-unpinned
 

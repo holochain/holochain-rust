@@ -20,7 +20,8 @@ jobs:
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
-      command: { nix-shell --run hc-cargo-toml-grep-unpinned || test $? = 1; }
+      command: |
+        { nix-shell --run hc-cargo-toml-grep-unpinned || test $? = 1; }
 
  app-spec-tests:
   docker:

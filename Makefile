@@ -1,31 +1,82 @@
 # holochain-rust Makefile
-# currently only supports 'debug' builds
+# o Build Holochain targets, either via Nix, or using the local toolchain
 
 .PHONY: all build install help
-
 all: build
 
 build: build_holochain build_cli build_nodejs
 
-install: build install_cli
+install: build install_cli install_conductor
 
 help:
-	@echo "run 'make' to build all the libraries and binaries, and the nodejs bin-package"
+	@echo "run 'make all' to build all the libraries and binaries, and the nodejs bin-package"
+	@echo "run 'make nix-all' to build all the libraries and binaries, and the nodejs bin-package using a Nix environment"
 	@echo "run 'make install' to build and install all the libraries and binaries, and the nodejs bin-package"
 	@echo "run 'make test' to execute all the tests"
 	@echo "run 'make test_app_spec' to build and test app_spec API tests"
 	@echo "run 'make clean' to clean up the build environment"
 	@echo "run 'make test_holochain' to test holochain builds"
 	@echo "run 'make test_cli' to build and test the command line tool builds"
-	@echo "run 'make install_cli' to build and install the command line tool builds"
+	@echo "run 'make install_cli' to build and install the `hc` command-line tool"
+	@echo "run 'make install_conductor' to build and install the `holochain` command-line tool"
 	@echo "run 'make test-something' to run cargo tests matching 'something'"
 
+# NIX Shell build/install/test: See `shell.nix` and the Nix environment manager `nix-shell`.  We
+# don't want to contaminate the Nix build environment with the environment variables required to get
+# machine-local builds to work (eg. RUST_SODIUM_...), so use --pure.  To install Nix:
+# https://nixos.org/nix/download.html
+.PHONY: nix-all nix-build nix-install nix-test
+nix-all: nix-build nix-test
+
+nix-build:
+	nix-shell --pure --run hc-build-wasm
+
+nix-install: nix-build
+	nix-shell --pure --run hc-install-cli			# hc
+	nix-shell --pure --run hc-install-conductor		# holochain
+
+nix-test:
+	rm -rf nodejs_conductor/build
+	nix-shell --pure --run hc-install-node-conductor	# nodejs_conductor
+	nix-shell --pure --run hc-test-app-spec
+
+# We use bash features in some of our Makefile shell scripting
 SHELL = /bin/bash
+
+# The Rust versions required for Holochain development, and the required cargo options are configured here:
 CORE_RUST_VERSION ?= nightly-2019-01-24
 TOOLS_RUST_VERSION ?= nightly-2019-01-24
-CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
-CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(TOOLS_RUST_VERSION) cargo $(CARGO_ARGS)
-CARGO_TARPULIN_INSTALL = RUSTFLAGS="--cfg procmacro2_semver_exempt -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
+CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" rustup run $(CORE_RUST_VERSION) cargo -Z config-profile $(CARGO_ARGS)
+CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" rustup run $(TOOLS_RUST_VERSION) cargo -Z config-profile $(CARGO_ARGS)
+CARGO_TARPULIN_INSTALL = RUSTFLAGS="--cfg procmacro2_semver_exempt -D warnings" cargo -Z config-profile $(CARGO_ARGS) +$(CORE_RUST_VERSION)
+
+# All rustup and cargo invocations executed (directly in this Makefile, or indirectly eg. via npm)
+# must include these environment variables.  If we'd like to see Rust back-traces:
+export RUST_BACKTRACE=1
+
+# There are 3 methods to obtain the libsodium encryption library required by holochain-rust,
+# selectable by setting/clearing various RUST_SODIUM_...  environment variables (see:
+# https://github.com/maidsafe/rust_sodium).  These selections are implemented and enforced in
+# rust_sodium-sys/build.rs.  The default is to download/compile libsodium 1.0.17 (06-Jan-2019).
+
+# 0) DEFAULT: Downloaded/compiled by holochain-rust build: select by clearing RUST_SODIUM_LIB_DIR
+# and RUST_SODIUM_USE_PKG_CONFIG.  Some systems require libsodium to be configured and built with
+# `--disable-pie`; select this here by setting RUST_SODIUM_DISABLE_PIE.
+#export RUST_SODIUM_DISABLE_PIE=1
+
+# 1) System installed: select by setting RUST_SODIUM_LIB_DIR. We need to find the location of the
+# system's libsodium dynamic library: at least version 1.0.12 is required.  On Mac, `brew install
+# libsodium`.  On Ubuntu Bionic (libsodium 1.0.16), Consmic (libsodium 1.0.16) and Disco (libsodium
+# 1.0.17): `apt-get install libsodium-dev`.  On Debian Stretch (stable, libsodium 1.0.11 *to old*,
+# add `buster` to /etc/apt/sources...), or Debian Buster (testing, libsodium 1.0.17): `apt-get -t
+# buster -u install libsodium-dev`.  On other Linux distros, ensure at least libsodium 1.0.12+ is
+# installed.
+RUST_SODIUM_LIB=$(shell find /usr/local/lib /usr/lib /lib -name 'libsodium.so' -o -name 'libsodium.dylib' 2>/dev/null | head -1)
+export RUST_SODIUM_LIB_DIR=$(dir $(RUST_SODIUM_LIB))
+export RUST_SODIUM_SHARED=1
+
+# 2) Rust `pkg_config::probe_library`-detected: select by setting RUST_SODIUM_USE_PKG_CONFIG.
+#export RUST_SODIUM_USE_PKG_CONFIG=1
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
@@ -149,6 +200,7 @@ ${C_BINDING_DIRS}:
 	cd $@; $(MAKE)
 
 # execute all tests: holochain, command-line tools, app spec, nodejs conductor, and "C" bindings
+.PHONY: test
 test: test_holochain test_cli test_app_spec c_binding_tests ${C_BINDING_TESTS}
 
 test_holochain: build_holochain
@@ -187,15 +239,30 @@ wasm_build: ensure_wasm_target
 	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 
-.PHONY: build_holochain
-build_holochain: core_toolchain wasm_build
+
+.PHONY: build_holochain libsodium_version
+libsodium_version:
+	@[ ! -z "$${RUST_SODIUM_LIB_DIR+defined}" ] \
+	    && echo -e "\033[0;93m## Building rust_sodium-sys -- with system libsodium \"$(RUST_SODIUM_LIB)\" in: $${RUST_SODIUM_LIB_DIR:-(unknown)}) ##\033[0m" \
+	    || ( [ ! -z "$${RUST_SODIUM_USE_PKG_CONFIG+defined}" ] \
+		&& echo -e "\033[0;93m## Building rust_sodium-sys -- with pkg_config libsodium ##\033[0m" \
+		|| ( echo -e "\033[0;93m## Building rust_sodium-sys -- with download/build libsodium ##\033[0m" ))
+	@$(CARGO) build --manifest-path rust_sodium-sys/Cargo.toml \
+	    || echo -e "\033[0;91m##  *** Building rust_sodium-sys failed: Ensure libsodium version 1.0.12+ is installed ##\033[0m" \
+
+build_holochain: core_toolchain wasm_build libsodium_version
 	@echo -e "\033[0;93m## Building holochain... ##\033[0m"
 	$(CARGO) build --all --exclude hc
 
 .PHONY: build_cli
 build_cli: core_toolchain ensure_wasm_target
 	@echo -e "\033[0;93m## Building hc command... ##\033[0m"
-	$(CARGO) build -p hc
+	$(CARGO) build -p hc --release
+
+.PHONY: build_conductor
+build_conductor: core_toolchain ensure_wasm_target
+	@echo -e "\033[0;93m## Building holochain command... ##\033[0m"
+	$(CARGO) build -p holochain --release
 
 .PHONY: build_nodejs
 build_nodejs:
@@ -205,7 +272,12 @@ build_nodejs:
 .PHONY: install_cli
 install_cli: build_cli
 	@echo -e "\033[0;93m## Installing hc command... ##\033[0m"
-	cd cli && $(CARGO) install -f --path .
+	$(CARGO) install -f --path cli
+
+.PHONY: install_conductor
+install_conductor: build_conductor
+	@echo -e "\033[0;93m## Installing holochain command... ##\033[0m"
+	$(CARGO) install -f --path conductor
 
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci
@@ -238,7 +310,7 @@ clean: ${C_BINDING_CLEAN}
 	@$(RM) -rf app_spec/dist
 	@for cargo in $$( find . -name 'Cargo.toml' ); do \
 	    echo -e "\033[0;93m## 'cargo clean' in $${cargo%/*} ##\033[0m"; \
-	    ( cd $${cargo%/*} && cargo clean ); \
+	    ( cd $${cargo%/*} && $(CARGO) clean ); \
 	done
 
 # clean up the extraneous "C" binding test files

@@ -8,7 +8,7 @@ serde = "1.0"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 hdk = { path = "../../../../hdk-rust" }
 serde_derive = "1.0"
-boolinator = "2.4"
+boolinator = "=2.4.0"
 
 [lib]
 path = "src/lib.rs"

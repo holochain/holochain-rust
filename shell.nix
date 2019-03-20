@@ -84,11 +84,10 @@ let
    # loop over all tomls
    # find all possible upgrades
    # ignore upgrades that are just unpinning themselves (=x.y.z will suggest x.y.z)
+   # | grep -vE 'v=([0-9]+\.[0-9]+\.[0-9]+) -> v\1'
    find . -name "Cargo.toml" \
      | xargs -I {} cargo upgrade --dry-run --allow-prerelease --all --manifest-path {} \
-     | grep -vE 'v=[0-9]+\.[0-9]+\.[0-9]+' \
-     # | grep -vE 'v=([0-9]+\.[0-9]+\.[0-9]+) -> v\1' \
-     ;
+     | grep -vE 'v=[0-9]+\.[0-9]+\.[0-9]+'
   '';
 
   hc-install-cli = pkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";

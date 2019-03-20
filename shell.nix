@@ -73,7 +73,15 @@ let
   '';
   hc-cargo-toml-set-ver = pkgs.writeShellScriptBin "hc-cargo-toml-set-ver"
   ''
-  find . -name "Cargo.toml" | xargs -I {} cargo upgrade "$1" --all --manifest-path {}
+   # node dist can mess with the process
+   hc-node-flush
+   find . -name "Cargo.toml" | xargs -I {} cargo upgrade "$1" --all --manifest-path {}
+  '';
+  hc-cargo-toml-test-ver = pkgs.writeShellScriptBin "hc-cargo-toml-test-ver"
+  ''
+   # node dists can mess with the process
+   hc-node-flush
+   find . -name "Cargo.toml" | xargs -I {} cargo upgrade --dry-run --allow-prerelease --all --manifest-path {}
   '';
 
   hc-install-cli = pkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
@@ -158,7 +166,7 @@ stdenv.mkDerivation rec {
     hc-cargo-lock-build
     hc-cargo-lock-refresh
     hc-cargo-toml-set-ver
-    # hc-cargo-toml-test-ver
+    hc-cargo-toml-test-ver
 
     hc-build-wasm
     hc-test

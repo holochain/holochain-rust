@@ -15,4 +15,4 @@ test_utils = { path = "../test_utils"}
 holochain_core = { path = "../core" }
 holochain_conductor_api = { path = "../conductor_api" }
 holochain_cas_implementations= {path="../cas_implementations"}
-tempfile = "3"
+tempfile = "=3.0.7"

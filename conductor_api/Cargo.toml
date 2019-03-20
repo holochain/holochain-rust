@@ -39,7 +39,7 @@ crossbeam-channel = "0.3.8"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
-tempfile = "3"
+tempfile = "=3.0.7"
 holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "0.2"
 pretty_assertions = "*"

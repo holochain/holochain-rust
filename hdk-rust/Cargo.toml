@@ -19,5 +19,5 @@ test_utils = { path = "../test_utils" }
 holochain_conductor_api = { path = "../conductor_api" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
-tempfile = "3"
+tempfile = "=3.0.7"
 boolinator = "2.4"

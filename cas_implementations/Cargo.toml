@@ -14,4 +14,4 @@ uuid = { version = "0.7", features = ["v4"] }
 
 [dev-dependencies]
 holochain_core_types = { path = "../core_types" }
-tempfile = "3"
+tempfile = "=3.0.7"

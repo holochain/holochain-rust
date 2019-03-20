@@ -46,4 +46,4 @@ clokwerk = "0.1.0"
 [dev-dependencies]
 wabt = "0.7.2"
 test_utils = { path = "../test_utils"}
-tempfile = "3"
+tempfile = "=3.0.7"

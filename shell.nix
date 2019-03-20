@@ -78,6 +78,14 @@ let
    hc-node-flush
    find . -name "Cargo.toml" | xargs -I {} cargo upgrade "$1" --all --manifest-path {}
   '';
+  hc-cargo-toml-grep-unpinned = pkgs.writeShellScriptBin "hc-cargo-toml-grep-unpinned"
+  ''
+   find . -type f \( -name "Cargo.toml" -or -name "Cargo.template.toml" \) \
+     | xargs cat \
+     | grep -Ev '=[0-9]+\.[0-9]+\.[0-9]+' \
+     | grep -E '[0-9]+' \
+     | grep -Ev '(version|edition)'
+  '';
   hc-cargo-toml-test-ver = pkgs.writeShellScriptBin "hc-cargo-toml-test-ver"
   ''
    # node dists can mess with the process
@@ -92,12 +100,7 @@ let
      | xargs -P "$NIX_BUILD_CORES" -I {} cargo upgrade --dry-run --allow-prerelease --all --manifest-path {} \
      | grep -vE 'v=[0-9]+\.[0-9]+\.[0-9]+'
 
-   echo "every unpinned crate LOC"
-   find . -name "Cargo.toml" \
-     | xargs cat \
-     | grep -Ev '=[0-9]+\.[0-9]+\.[0-9]+' \
-     | grep -E '[0-9]+' \
-     | grep -Ev '(version|edition)'
+   hc-cargo-toml-grep-unpinned
   '';
 
   hc-install-cli = pkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
@@ -183,6 +186,7 @@ stdenv.mkDerivation rec {
     hc-cargo-lock-refresh
     hc-cargo-toml-set-ver
     hc-cargo-toml-test-ver
+    hc-cargo-toml-grep-unpinned
 
     hc-build-wasm
     hc-test

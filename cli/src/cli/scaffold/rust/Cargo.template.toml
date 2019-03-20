@@ -5,9 +5,9 @@ authors = <<AUTHORS>>
 edition = <<EDITION>>
 
 [dependencies]
-serde = "1.0"
+serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
-serde_derive = "1.0"
+serde_derive = "=1.0.89"
 hdk = { git = "https://github.com/holochain/holochain-rust", <<VERSION>> }
 holochain_wasm_utils = { git = "https://github.com/holochain/holochain-rust", <<VERSION>> }
 holochain_core_types_derive = { git = "https://github.com/holochain/holochain-rust", <<VERSION>> }

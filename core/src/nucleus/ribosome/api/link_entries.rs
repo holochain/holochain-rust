@@ -101,6 +101,14 @@ pub mod tests {
         JsonString::from(test_entry()).into_bytes()
     }
 
+    fn create_test_instance_with_name(netname : Option<&str>) -> (Instance, Arc<Context>)
+    {
+        let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
+
+        let netname = Some("create_test_instance");
+        test_instance_and_context(dna, netname).expect("Could not create test instance")
+    }
     fn create_test_instance() -> (Instance, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
@@ -127,7 +135,7 @@ pub mod tests {
 
     #[test]
     fn returns_ok_if_base_is_present() {
-        let (instance, context) = create_test_instance();
+        let (instance, context) = create_test_instance_with_name(Some("returns_ok_if_base_present"));
 
         context
             .block_on(commit_entry(test_entry(), None, &context))

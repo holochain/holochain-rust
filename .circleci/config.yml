@@ -26,7 +26,7 @@ jobs:
         export UNPINNED=`nix-shell --run hc-cargo-toml-grep-unpinned`
         echo "unpinned deps (must be empty):"
         echo "$UNPINNED"
-        set -eo
+        set -eo pipefail
         test $( $UNPINNNED | wc -l ) = 0
 
  app-spec-tests:

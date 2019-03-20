@@ -11,7 +11,7 @@ name = "holochain_node"
 crate-type = ["dylib"]
 
 [build-dependencies]
-neon-build = "0.2.0"
+neon-build = "=0.2.0"
 
 [dependencies]
 neon = "0.2.0"

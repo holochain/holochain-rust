@@ -96,7 +96,7 @@ define_zome! {
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
                  match validation_data
                 {
-                   EntryValidationData::Create{entry:test_entry,validatino_data:_} =>
+                   EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
                         
                         (test_entry.stuff != "FAIL")

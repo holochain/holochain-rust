@@ -356,8 +356,7 @@ pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(
     match entry_validation {
         EntryValidationData::Create {
             entry,
-            validation_package,
-            lifecycle,
+            validation_data
         } => {
             let native_type = convert_entry_validation_to_native::<T>(entry)?;
             Ok(EntryValidationData::Create {

@@ -138,7 +138,6 @@ pub fn entry_to_validation_data(
             .map(|link_update| {
                 get_entry_with_header(context.clone(), &link_update)
                     .map(|entry_with_header| {
-                        let validation_clone = validation_data.clone();
                         Ok(EntryValidationData::Modify {
                             old_entry: entry_with_header.0.clone(),
                             new_entry: entry.clone(),

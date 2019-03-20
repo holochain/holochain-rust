@@ -1,5 +1,4 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::signature::Provenance;
 use holochain_dpki::utils::Verify;
 use holochain_wasm_utils::api_serialization::verify_signature::VerifySignatureArgs;
 use std::convert::TryFrom;

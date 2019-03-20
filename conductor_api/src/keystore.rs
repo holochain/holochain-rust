@@ -48,7 +48,7 @@ enum KeyType {
 
 #[allow(dead_code)]
 #[derive(Serialize, Deserialize)]
-struct Keystore {
+pub struct Keystore {
     passphrase_check: String,
     secrets: BTreeMap<String, KeyBlob>,
     #[serde(skip_serializing, skip_deserializing)]
@@ -390,7 +390,7 @@ impl Keystore {
                 let mut buf = SecBuf::with_secure(key_pair.private().len());
                 let pub_key = key_pair.public();
                 let lock = key_pair.private().read_lock();
-                buf.write(0, &**lock);
+                buf.write(0, &**lock)?;
                 SigningKeyPair::new(pub_key, buf)
             }
             _ => {
@@ -407,7 +407,7 @@ impl Keystore {
                 let mut buf = SecBuf::with_secure(key_pair.private().len());
                 let pub_key = key_pair.public();
                 let lock = key_pair.private().read_lock();
-                buf.write(0, &**lock);
+                buf.write(0, &**lock)?;
                 EncryptingKeyPair::new(pub_key, buf)
             }
             _ => {

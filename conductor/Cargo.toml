@@ -9,5 +9,5 @@ holochain_conductor_api = { path = "../conductor_api" }
 holochain_sodium = { path = "../sodium" }
 holochain_common = { path = "../common" }
 structopt = "0.2"
-tiny_http = "0.6.0"
+tiny_http = "=0.6.2"
 ws = "=0.8.0"

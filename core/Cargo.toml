@@ -8,7 +8,7 @@ edition = "2018"
 base64 = "=0.10.1"
 serde = { version = "=1.0.89", features = ["rc"] }
 serde_derive = "=1.0.89"
-chrono = "0.4"
+chrono = "=0.4.6"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 snowflake = "=1.3.0"
 bitflags = "=1.0.4"

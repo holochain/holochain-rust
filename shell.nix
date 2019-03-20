@@ -81,7 +81,12 @@ let
   ''
    # node dists can mess with the process
    hc-node-flush
-   find . -name "Cargo.toml" | xargs -I {} cargo upgrade --dry-run --allow-prerelease --all --manifest-path {}
+   # loop over all tomls
+   # find all possible upgrades
+   # ignore upgrades that are just unpinning themselves (=x.y.z will suggest x.y.z)
+   find . -name "Cargo.toml" \
+     | xargs -I {} cargo upgrade --dry-run --allow-prerelease --all --manifest-path {} \
+     | grep -vE 'v=([0-9]+\.[0-9]+\.[0-9]+) -> v\1'
   '';
 
   hc-install-cli = pkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";

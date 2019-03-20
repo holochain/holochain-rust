@@ -9,13 +9,13 @@ use std::{
     path::PathBuf,
 };
 
-pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
+pub fn keygen(agent_name: String, path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
     println!(
-        "This will create a new agent key bundle - that is all keys needed to represent one agent."
+        "This will create a new agent keystore - that is all keys needed to represent one agent."
     );
-    println!("This key bundle will be stored in a file, encrypted with a passphrase.");
-    println!("The passphrase is securing the keys and will be needed, together with the key file, in order to use the key.");
-    println!("Please enter a secret passphrase below, you will have to enter it again when unlocking this key to use within a Holochain conductor.");
+    println!("This keystore will be stored in a file, encrypted with a passphrase.");
+    println!("The passphrase is securing the keys and will be needed, together with the file, in order to use the key.");
+    println!("Please enter a secret passphrase below, you will have to enter it again when unlocking this keystore to use within a Holochain conductor.");
 
     let passphrase = passphrase.unwrap_or_else(|| {
         let passphrase1 = rpassword::read_password_from_tty(Some("Passphrase: ")).unwrap();
@@ -27,20 +27,12 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         passphrase1
     });
 
-    let mut seed = SecBuf::with_secure(SEED_SIZE);
-    seed.randomize();
+    let mut keystore = Keystore::new(mock_passphrase_manager(agent_name.clone()))?;
+    keystore.add_random_seed("root_seed", SEED_SIZE)?;
 
-    let mut keybundle =
-        KeyBundle::new_from_seed_buf(&mut seed).expect("Failed to generate keybundle");
-    let passphrase_bytes = passphrase.as_bytes();
-    let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
-    passphrase_buf
-        .write(0, passphrase_bytes)
-        .expect("SecBuf must be writeable");
-
-    let blob = keybundle
-        .as_blob(&mut passphrase_buf, "hint".to_string(), None)
-        .expect("Failed to encrypt with passphrase.");
+    let context = SeedContext::new(AGENT_ID_CTX);
+    let pub_key = keystore
+        .add_keybundle_from_seed("root_seed", &agent_name, &context, 1)?;
 
     let path = if None == path {
         let p = keys_directory();
@@ -50,12 +42,12 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         path.unwrap()
     };
 
-    let mut file = File::create(path.clone())?;
-    file.write_all(serde_json::to_string(&blob).unwrap().as_bytes())?;
+    keystore.save(path)?;
+
     println!("");
-    println!("Succesfully created new agent keys.");
+    println!("Succesfully created new agent keystore.");
     println!("");
-    println!("Public address: {}", keybundle.get_id());
+    println!("Public address: {}", pub_key);
     println!("Bundle written to: {}.", path.to_str().unwrap());
     println!("");
     println!("You can set this file in a conductor config as key_file for an agent.");

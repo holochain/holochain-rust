@@ -45,7 +45,7 @@ pub fn test_keystore(agent_name: &String) -> Keystore {
     keystore
 }
 
-fn mock_passphrase_manager(passphrase: String) -> Arc<PassphraseManager> {
+pub fn mock_passphrase_manager(passphrase: String) -> Arc<PassphraseManager> {
     Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
         PassphraseServiceMock { passphrase },
     ))))

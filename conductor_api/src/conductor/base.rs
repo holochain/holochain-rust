@@ -786,6 +786,9 @@ impl Logger for NullLogger {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use conductor::passphrase_manager::PassphraseManager;
+    use key_loaders::mock_passphrase_manager;
+    use keystore::{Keystore, Secret};
     extern crate tempfile;
     use crate::config::load_configuration;
     use holochain_core::{
@@ -793,7 +796,7 @@ pub mod tests {
         signal::signal_channel,
     };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
-    use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
+    use holochain_dpki::{key_bundle::KeyBundle, utils::SeedContext, AGENT_ID_CTX, SEED_SIZE};
     use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
@@ -819,11 +822,11 @@ pub mod tests {
     pub fn test_key_loader() -> KeyLoader {
         let loader = Box::new(|path: &PathBuf, _pm: Arc<PassphraseManager>| {
             match path.to_str().unwrap().as_ref() {
-                "holo_tester1.key" => Ok(test_keybundle(1)),
-                "holo_tester2.key" => Ok(test_keybundle(2)),
-                "holo_tester3.key" => Ok(test_keybundle(3)),
+                "holo_tester1.key" => Ok(test_keystore(1)),
+                "holo_tester2.key" => Ok(test_keystore(2)),
+                "holo_tester3.key" => Ok(test_keystore(3)),
                 unknown => Err(HolochainError::ErrorGeneric(format!(
-                    "No test key for {}",
+                    "No test keystore for {}",
                     unknown
                 ))),
             }
@@ -836,15 +839,30 @@ pub mod tests {
         Arc::new(loader)
     }
 
-    pub fn test_keybundle(index: u8) -> KeyBundle {
+    pub fn test_keystore(index: u8) -> Keystore {
+        let agent_name = format!("test-agent-{}", index);
+        let mut keystore = Keystore::new(mock_passphrase_manager(agent_name.clone())).unwrap();
+
         // Create deterministic seed
         let mut seed = SecBuf::with_insecure(SEED_SIZE);
         let mock_seed: Vec<u8> = (1..SEED_SIZE).map(|e| e as u8 + index).collect();
         seed.write(0, mock_seed.as_slice())
             .expect("SecBuf must be writeable");
 
-        // Create KeyBundle from seed
-        KeyBundle::new_from_seed_buf(&mut seed).unwrap()
+        let secret = Arc::new(Mutex::new(Secret::Seed(seed)));
+        keystore.add("root_seed", secret).unwrap();
+        let context = SeedContext::new(AGENT_ID_CTX);
+
+        keystore
+            .add_keybundle_from_seed("root_seed", &agent_name, &context, 1)
+            .unwrap();
+        keystore
+    }
+
+    pub fn test_keybundle(index: u8) -> KeyBundle {
+        let agent_name = format!("test-agent-{}", index);
+        let mut keystore = test_keystore(index);
+        keystore.get_keybundle(&agent_name).unwrap()
     }
 
     pub fn test_toml() -> String {

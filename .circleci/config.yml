@@ -231,7 +231,11 @@ workflows:
        branches:
         only:
          - develop
-   - cold.mac.10.nix
+   - cold.mac.10.nix:
+      filters:
+       branches:
+        only:
+         - develop
 
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow

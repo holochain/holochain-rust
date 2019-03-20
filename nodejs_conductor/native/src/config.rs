@@ -3,7 +3,7 @@ use holochain_conductor_api::{
         AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
         LoggerConfiguration, StorageConfiguration,
     },
-    key_loaders::test_keybundle,
+    key_loaders::test_keystore,
     logger::LogRules,
 };
 use neon::prelude::*;
@@ -64,7 +64,9 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
         let agent_name = instance.agent.name;
         let mut dna_data = instance.dna;
         let agent_config = agent_configs.entry(agent_name.clone()).or_insert_with(|| {
-            let keybundle = test_keybundle(&agent_name);
+            let mut keystore = test_keystore(&agent_name);
+            let keybundle = keystore.get_keybundle(&agent_name)
+                .expect("Couldn't get KeyBundle that was just added back from Keystore");
             let config = AgentConfiguration {
                 id: agent_name.clone(),
                 name: agent_name.clone(),

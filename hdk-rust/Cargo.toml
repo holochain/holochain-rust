@@ -12,7 +12,7 @@ lazy_static = "=1.2.0"
 holochain_wasm_utils = { path = "../wasm_utils" }
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
-pretty_assertions = "0.5.1"
+pretty_assertions = "=0.6.1"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils" }

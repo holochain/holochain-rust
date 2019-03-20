@@ -39,7 +39,7 @@ boolinator = "=2.4.0"
 jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
 jsonrpc-lite = "0.5.0"
 globset = "0.4.2"
-pretty_assertions = "0.5.1"
+pretty_assertions = "=0.6.1"
 pin-utils = "0.1.0-alpha.4"
 clokwerk = "0.1.0"
 

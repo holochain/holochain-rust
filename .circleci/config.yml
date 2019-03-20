@@ -18,10 +18,7 @@ jobs:
    - checkout
    - run: nix-shell --run hc-fmt-check
    # don't allow unpinned deps
-   - run:
-      name: check unpinned deps
-      command: |
-       nix-shell --run hc-cargo-toml-grep-unpinned
+   - run: nix-shell --run hc-cargo-toml-grep-unpinned
 
 
  app-spec-tests:

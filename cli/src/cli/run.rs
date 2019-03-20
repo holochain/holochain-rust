@@ -97,7 +97,7 @@ fn agent_configuration() -> AgentConfiguration {
         .value()
         .ok()
         .unwrap_or_else(|| String::from(AGENT_NAME_DEFAULT));
-    let keystore = test_keystore(&agent_name);
+    let mut keystore = test_keystore(&agent_name);
     let pub_key = keystore
         .get_keybundle(&agent_name)
         .expect("should be able to get keybundle")
@@ -276,7 +276,7 @@ mod tests {
             AgentConfiguration {
                 id: "hc-run-agent".to_string(),
                 name: "testAgent".to_string(),
-                public_address: "HcScjN8wBwrn3tuyg89aab3a69xsIgdzmX5P9537BqQZ5A7TEZu7qCY4Xzzjhma"
+                public_address: "HcScIZx6nehW5i748gzMWHgq8CwerskpjoqoUkdthkvf36roqv3Skk46Wyub4yz"
                     .to_string(),
                 key_file: "testAgent".to_string(),
                 holo_remote_key: None,

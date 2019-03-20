@@ -1,8 +1,7 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
-use holochain_dpki::{key_bundle::KeyBundle, utils::SeedContext, AGENT_ID_CTX, SEED_SIZE};
-use holochain_sodium::secbuf::SecBuf;
+use holochain_dpki::{utils::SeedContext, AGENT_ID_CTX, SEED_SIZE};
 use rpassword;
 use std::{fs::create_dir_all, path::PathBuf};
 
@@ -28,7 +27,7 @@ pub fn keygen(
         passphrase1
     });
 
-    let mut keystore = Keystore::new(mock_passphrase_manager(agent_name.to_owned()))?;
+    let mut keystore = Keystore::new(mock_passphrase_manager(passphrase))?;
     keystore.add_random_seed("root_seed", SEED_SIZE)?;
 
     let context = SeedContext::new(AGENT_ID_CTX);
@@ -42,7 +41,7 @@ pub fn keygen(
         path.unwrap()
     };
 
-    keystore.save(path)?;
+    keystore.save(path.clone())?;
 
     println!("");
     println!("Succesfully created new agent keystore.");
@@ -57,11 +56,8 @@ pub fn keygen(
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use holochain_dpki::key_blob::KeyBlob;
-    use std::{
-        fs::{remove_file, File},
-        path::PathBuf,
-    };
+    use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
+    use std::{fs::remove_file, path::PathBuf};
 
     #[test]
     fn keygen_roundtrip() {
@@ -75,13 +71,10 @@ pub mod test {
         )
         .expect("Keygen should work");
 
-        let mut file = File::open(path.clone()).unwrap();
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
+        let mut keystore =
+            Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase)).unwrap();
 
-        let blob: KeyBlob = serde_json::from_str(&contents).unwrap();
-        let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        let keybundle = KeyBundle::from_blob(&blob, &mut passphrase, None);
+        let keybundle = keystore.get_keybundle("test-instance");
 
         assert!(keybundle.is_ok());
 

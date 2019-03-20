@@ -46,7 +46,7 @@ define_zome! {
             validation: | validation_data: hdk::EntryValidationData<TestEntryType>| {
                  match validation_data
                  {
-                   EntryValidationData::Create{entry:test_entry,validation_package:_} =>
+                   EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
@@ -70,7 +70,7 @@ define_zome! {
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
                 match validation_data
                 {
-                   EntryValidationData::Create{entry:test_entry,validation_package:_} =>
+                   EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
                         
                         (test_entry.stuff != "FAIL")
@@ -96,7 +96,7 @@ define_zome! {
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
                  match validation_data
                 {
-                   EntryValidationData::Create{entry:test_entry,validation_package:_} =>
+                   EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
                         
                         (test_entry.stuff != "FAIL")
@@ -121,7 +121,7 @@ define_zome! {
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
                  match validation_data
                 {
-                   EntryValidationData::Create{entry:test_entry,validation_package:_} =>
+                   EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
                         
                         (test_entry.stuff != "FAIL")
@@ -146,7 +146,7 @@ define_zome! {
             validation: | validation_data: hdk::EntryValidationData<TestEntryType>| {
                  match validation_data
                 {
-                   EntryValidationData::Create{entry:test_entry,validation_package:_} =>
+                   EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
                         
                         (test_entry.stuff != "FAIL")

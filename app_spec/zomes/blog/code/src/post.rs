@@ -57,17 +57,17 @@ pub fn definition() -> ValidatingEntryType {
         validation: |validation_data: hdk::EntryValidationData<Post>| {
             match validation_data
             {
-                EntryValidationData::Create{entry:post,validation_package:_valid} => 
+                EntryValidationData::Create{entry:post,validation_data:_} => 
                 {
                     (post.content.len() < 280)
                    .ok_or_else(|| String::from("Content too long"))
                 },
-                EntryValidationData::Modify{new_entry:new_post,old_entry:old_post,old_entry_header:_old_e,validation_package:_valid} =>
+                EntryValidationData::Modify{new_entry:new_post,old_entry:old_post,old_entry_header:_,validation_data:_} =>
                 {
                    (new_post.content != old_post.content)
                    .ok_or_else(|| String::from("Trying to modify with same data"))   
                 },
-                EntryValidationData::Delete{old_entry:old_post,old_entry_header:_old_en,validation_package:_valid_pac} =>
+                EntryValidationData::Delete{old_entry:old_post,old_entry_header:_,validation_data:_} =>
                 {
                    (old_post.content!="SYS")
                    .ok_or_else(|| String::from("Trying to delete native type with content SYS"))   
@@ -111,7 +111,7 @@ mod tests {
             dna::entry_types::{EntryTypeDef, LinkedFrom},
             entry::{entry_type::{EntryType,AppEntryType},Entry},
              dna::entry_types::Sharing,
-             validation::{EntryValidationData,ValidationPackage},
+             validation::{EntryValidationData,ValidationPackage,EntryLifecycle,ValidationData},
              chain_header::test_chain_header
         },
         holochain_wasm_utils::api_serialization::validation::LinkDirection
@@ -163,9 +163,13 @@ mod tests {
 
         let post_ok = Post::new("foo", "now");
         let entry = Entry::App(AppEntryType::from("post"),post_ok.into());
+        let validation_data = ValidationData{
+            package : ValidationPackage::only_header(test_chain_header()),
+            lifecycle : EntryLifecycle::Chain
+        };
         assert_eq!(
             (post_definition.validator)(
-               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header())}
+               EntryValidationData::Create{entry,validation_data}
             ),
             Ok(()),
         );
@@ -179,9 +183,13 @@ mod tests {
                     post_definition.name.clone().try_into().unwrap(),
                     post_not_ok.into(),
                 );
+        let validation_data = ValidationData{
+            package : ValidationPackage::only_header(test_chain_header()),
+            lifecycle : EntryLifecycle::Chain
+        };
         assert_eq!(
             (post_definition.validator)(
-               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header())}
+               EntryValidationData::Create{entry,validation_data}
             ),
             Err("Content too long".to_string()),
         );

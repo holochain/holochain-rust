@@ -17,4 +17,4 @@ tempfile = "3"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 lazy_static = "1.2"
 jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
-base64 = "0.10"
+base64 = "=0.10.1"

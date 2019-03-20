@@ -71,6 +71,10 @@ let
   ''
    cargo install cargo-edit
   '';
+  hc-cargo-toml-set-ver = pkgs.writeShellScriptBin "hc-cargo-toml-set-ver"
+  ''
+  find . -name "Cargo.toml" | xargs -I {} cargo upgrade "$1" --all --manifest-path {}
+  '';
 
   hc-install-cli = pkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
   hc-install-conductor = pkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain --release && cargo install -f --path conductor";
@@ -153,6 +157,8 @@ stdenv.mkDerivation rec {
     hc-cargo-lock-flush
     hc-cargo-lock-build
     hc-cargo-lock-refresh
+    hc-cargo-toml-set-ver
+    # hc-cargo-toml-test-ver
 
     hc-build-wasm
     hc-test

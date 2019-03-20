@@ -20,9 +20,12 @@ jobs:
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
+      # avoid pipefail
       shell: /bin/bash
       command: |
-        nix-shell --run hc-cargo-toml-grep-unpinned
+        UNPINNED = nix-shell --run hc-cargo-toml-grep-unpinned
+        echo "unpinned deps (must be empty):\n$UNPINNED"
+        test $( $UNPINNNED | wc -l ) = 0
 
  app-spec-tests:
   docker:

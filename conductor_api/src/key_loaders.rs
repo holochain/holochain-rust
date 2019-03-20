@@ -14,7 +14,7 @@ use std::{
 /// Key loader callback to use with conductor_api.
 /// This replaces filesystem access for getting keys mentioned in the config.
 /// Uses `test_keybundle` to create a deterministic key dependent on the (virtual) file name.
-pub fn test_keybundle_loader() -> KeyLoader {
+pub fn test_keystore_loader() -> KeyLoader {
     let loader = Box::new(|path: &PathBuf, _pm: Arc<PassphraseManager>| {
         Ok(test_keystore(&path.to_str().unwrap().to_string()))
     })

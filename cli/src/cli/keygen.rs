@@ -1,15 +1,16 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
-use holochain_dpki::{key_blob::Blobbable, key_bundle::KeyBundle, SEED_SIZE};
+use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
+use holochain_dpki::{key_bundle::KeyBundle, utils::SeedContext, AGENT_ID_CTX, SEED_SIZE};
 use holochain_sodium::secbuf::SecBuf;
 use rpassword;
-use std::{
-    fs::{create_dir_all, File},
-    io::prelude::*,
-    path::PathBuf,
-};
+use std::{fs::create_dir_all, path::PathBuf};
 
-pub fn keygen(agent_name: String, path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
+pub fn keygen(
+    agent_name: &str,
+    path: Option<PathBuf>,
+    passphrase: Option<String>,
+) -> DefaultResult<()> {
     println!(
         "This will create a new agent keystore - that is all keys needed to represent one agent."
     );
@@ -27,17 +28,16 @@ pub fn keygen(agent_name: String, path: Option<PathBuf>, passphrase: Option<Stri
         passphrase1
     });
 
-    let mut keystore = Keystore::new(mock_passphrase_manager(agent_name.clone()))?;
+    let mut keystore = Keystore::new(mock_passphrase_manager(agent_name.to_owned()))?;
     keystore.add_random_seed("root_seed", SEED_SIZE)?;
 
     let context = SeedContext::new(AGENT_ID_CTX);
-    let pub_key = keystore
-        .add_keybundle_from_seed("root_seed", &agent_name, &context, 1)?;
+    let (pub_key, _) = keystore.add_keybundle_from_seed("root_seed", agent_name, &context, 1)?;
 
     let path = if None == path {
         let p = keys_directory();
         create_dir_all(p.clone())?;
-        p.join(keybundle.get_id().clone())
+        p.join(pub_key.clone())
     } else {
         path.unwrap()
     };
@@ -68,7 +68,12 @@ pub mod test {
         let path = PathBuf::new().join("test.key");
         let passphrase = String::from("secret");
 
-        keygen(Some(path.clone()), Some(passphrase.clone())).expect("Keygen should work");
+        keygen(
+            "test-instance",
+            Some(path.clone()),
+            Some(passphrase.clone()),
+        )
+        .expect("Keygen should work");
 
         let mut file = File::open(path.clone()).unwrap();
         let mut contents = String::new();

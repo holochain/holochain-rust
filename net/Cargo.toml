@@ -13,7 +13,7 @@ serde = "=1.0.89"
 serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 rmp-serde = "0.13.7"
-serde_bytes = "0.10.4"
+serde_bytes = "=0.10.5"
 regex = "1"
 snowflake = "1.2"
 tungstenite = "0.6.1"

@@ -1,7 +1,7 @@
 # https://www.appveyor.com/docs/enterprise/running-builds-on-aws/
 
 build_cloud: master
-image: build-0.0.4
+image: hc-test
 
 shallow_clone: true
 version: 1.0.{build}
@@ -14,4 +14,4 @@ environment:
 
 test_script:
  - pwd       
- - cargo  test --release
+ - cargo test --release -p hc --target-dir C:\build\cli\target

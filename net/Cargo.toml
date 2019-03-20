@@ -8,7 +8,7 @@ edition = "2018"
 failure = "0.1.1"
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
-lazy_static = "=1.3.0"
+lazy_static = "=1.2.0"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }

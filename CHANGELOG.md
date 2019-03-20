@@ -6,15 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Adds the ability to pass in the token and provenance in zome calls for generating the capability request for the call. [PR#1077](https://github.com/holochain/holochain-rust/pull/1077)
 - Adds Validation For CrudStatus as well as changes api for Crud and Link Validation Rules. [PR#1117] (https://github.com/holochain/holochain-rust/pull/1117)
-
+- Adds `nix-shell` support for Mac OS X [#1132](https://github.com/holochain/holochain-rust/pull/1132)
+- Adds `hc-test-all` command to `nix-shell` [#1132](https://github.com/holochain/holochain-rust/pull/1132)
+- Adds `./scripts/nix/pod.sh` script to isolate/debug `nix-shell` commands [#1139](https://github.com/holochain/holochain-rust/pull/1139)
 
 ### Changed
 
-- Actually instantiate instance when creating through admin interface (the original intent of this PR)
-- Use Content-type: application/json for remote signing service HTTP requests
-- Check for duplicate IDs during integrity check
+- `nix-shell` is now the recommended development approach on supported platforms [#1132](https://github.com/holochain/holochain-rust/pull/1132)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.7-alpha] - 2019-03-19
+
+### Added
+
+- Adds the ability to pass in the token and provenance in zome calls for generating the capability request for the call. [PR#1077](https://github.com/holochain/holochain-rust/pull/1077)
+
+### Changed
+
+- Instantiate instance when creating through admin interface [#1067](https://github.com/holochain/holochain-rust/pull/1067)
+- Use Content-type: application/json for remote signing service HTTP requests [#1067](https://github.com/holochain/holochain-rust/pull/1067)
+- Check for duplicate IDs during integrity check [#1067](https://github.com/holochain/holochain-rust/pull/1067)
 
 ### Deprecated
 

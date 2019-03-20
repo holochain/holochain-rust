@@ -5,7 +5,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-base64 = "0.10.1"
+base64 = "=0.10.1"
 serde = { version = "=1.0.89", features = ["rc"] }
 serde_derive = "=1.0.89"
 chrono = "=0.4.6"

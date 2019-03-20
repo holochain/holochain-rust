@@ -13,6 +13,7 @@ let
 
   hc-node-flush = pkgs.writeShellScriptBin "hc-node-flush"
   ''
+  echo "flushing node artifacts"
   find . -wholename "**/node_modules" | xargs -I {} rm -rf  {};
   find . -wholename "./nodejs_conductor/bin-package" | xargs -I {} rm -rf {};
   find . -wholename "./nodejs_conductor/build" | xargs -I {} rm -rf {};
@@ -65,6 +66,42 @@ let
   hc-install-fmt = pkgs.writeShellScriptBin "hc-install-fmt"
   ''
    rustup component add rustfmt
+  '';
+
+  hc-install-edit = pkgs.writeShellScriptBin "hc-install-edit"
+  ''
+   cargo install cargo-edit
+  '';
+  hc-cargo-toml-set-ver = pkgs.writeShellScriptBin "hc-cargo-toml-set-ver"
+  ''
+   # node dist can mess with the process
+   hc-node-flush
+   find . -name "Cargo.toml" | xargs -I {} cargo upgrade "$1" --all --manifest-path {}
+  '';
+  hc-cargo-toml-grep-unpinned = pkgs.writeShellScriptBin "hc-cargo-toml-grep-unpinned"
+  ''
+   find . -type f \( -name "Cargo.toml" -or -name "Cargo.template.toml" \) \
+     | xargs cat \
+     | grep -Ev '=[0-9]+\.[0-9]+\.[0-9]+' \
+     | grep -E '[0-9]+' \
+     | grep -Ev '(version|edition)' \
+     | cat
+  '';
+  hc-cargo-toml-test-ver = pkgs.writeShellScriptBin "hc-cargo-toml-test-ver"
+  ''
+   # node dists can mess with the process
+   hc-node-flush
+
+   # loop over all tomls
+   # find all possible upgrades
+   # ignore upgrades that are just unpinning themselves (=x.y.z will suggest x.y.z)
+   # | grep -vE 'v=([0-9]+\.[0-9]+\.[0-9]+) -> v\1'
+   echo "attempting to suggest new pinnable crate versions"
+   find . -name "Cargo.toml" \
+     | xargs -P "$NIX_BUILD_CORES" -I {} cargo upgrade --dry-run --allow-prerelease --all --manifest-path {} \
+     | grep -vE 'v=[0-9]+\.[0-9]+\.[0-9]+'
+
+   hc-cargo-toml-grep-unpinned
   '';
 
   hc-install-cli = pkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
@@ -148,6 +185,9 @@ stdenv.mkDerivation rec {
     hc-cargo-lock-flush
     hc-cargo-lock-build
     hc-cargo-lock-refresh
+    hc-cargo-toml-set-ver
+    hc-cargo-toml-test-ver
+    hc-cargo-toml-grep-unpinned
 
     hc-build-wasm
     hc-test
@@ -156,6 +196,7 @@ stdenv.mkDerivation rec {
 
     hc-install-tarpaulin
     hc-install-fmt
+    hc-install-edit
     hc-install-cli
     hc-install-conductor
     hc-install-node-conductor

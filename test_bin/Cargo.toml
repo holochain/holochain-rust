@@ -13,7 +13,7 @@ serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 tempfile = "=3.0.7"
 failure = "=0.1.5"
 lazy_static = "=1.2.0"
-unwrap_to = "0.1.0"
+unwrap_to = "=0.1.0"
 backtrace = "=0.3.14"
 multihash = "0.8.0"
 

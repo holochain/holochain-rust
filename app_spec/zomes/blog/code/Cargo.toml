@@ -5,7 +5,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 serde = "1.0"
-serde_json = "1.0"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 hdk = { path = "../../../../hdk-rust" }
 holochain_core_types_derive = { path = "../../../../core_types_derive" }
 serde_derive = "1.0"

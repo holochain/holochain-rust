@@ -20,7 +20,7 @@ toml = "=0.5.0"
 boolinator = "=2.4.0"
 jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
 jsonrpc-http-server = { git = "https://github.com/paritytech/jsonrpc" }
-petgraph = "0.4.13"
+petgraph = "=0.4.13"
 colored = "=1.7.0"
 regex = "=1.1.2"
 maplit = "=1.0.1"

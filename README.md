@@ -136,6 +136,29 @@ Other commands that call `cargo` and `npm` may also write to the home directory.
 This is how `cargo` and `npm` work unfortunately.
 `hc-**-flush` commands delete relevant development artifacts.
 
+#### Troubleshooting
+
+Default `nix-shell` behaviour preserves some of the user's environment, simply
+_adding_ to it rather than _isolating_ from it.
+
+This can cause problems if your user has cruft that conflicts with what nix is
+doing, e.g. existing `cargo` or `npm` installations/environment variables.
+
+If you are seeing an issue in `nix-shell` that others are not seeing, try using
+our isolation script `./scripts/nix/pod.sh` to debug the command.
+
+For example:
+
+```shell
+./scripts/nix/pod.sh 'hc-build-wasm && hc-test'
+```
+
+or even:
+
+```shell
+./scripts/nix/pod.sh hc-test-all
+```
+
 #### Future deployments
 
 In the future we plan to distribute binaries through nixpkgs.

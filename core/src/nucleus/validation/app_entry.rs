@@ -11,7 +11,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::{entry_type::AppEntryType, Entry},
-    validation::ValidationPackage,
+    validation::ValidationData,
 };
 use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
 use std::sync::Arc;
@@ -21,7 +21,7 @@ pub async fn validate_app_entry(
     app_entry_type: AppEntryType,
     context: &Arc<Context>,
     link: Option<Address>,
-    validation_package: ValidationPackage,
+    validation_data: ValidationData,
 ) -> ValidationResult {
     let dna = context.get_dna().expect("Callback called without DNA set!");
 
@@ -39,7 +39,7 @@ pub async fn validate_app_entry(
             context.clone(),
             &entry,
             link,
-            validation_package,
+            validation_data,
         )
         .map_err(|_| ValidationError::Fail("Could not get entry validation".to_string()))?,
     };

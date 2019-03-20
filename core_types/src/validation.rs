@@ -60,6 +60,7 @@ pub enum EntryValidationData<T> {
     Create {
         entry: T,
         validation_package: ValidationPackage,
+        entry_lifecycle : EntryLifecycle
     },
     /// The Modify variant contains the new entry T, old entry of the same type, the entry header of the old entry and a validation package
     Modify {
@@ -67,12 +68,14 @@ pub enum EntryValidationData<T> {
         old_entry: T,
         old_entry_header: ChainHeader,
         validation_package: ValidationPackage,
+        entry_lifecycle : EntryLifecycle
     },
     /// The delete contains an old entry which is the entry being deleted and the old entry header of type ChainHeader and a validation package
     Delete {
         old_entry: T,
         old_entry_header: ChainHeader,
         validation_package: ValidationPackage,
+        entry_lifecycle : EntryLifecycle
     },
 }
 
@@ -100,11 +103,13 @@ impl TryFrom<EntryValidationData<Entry>> for EntryType {
             EntryValidationData::Create {
                 entry,
                 validation_package: _,
+                entry_lifecycle : _,
             } => Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?)),
             EntryValidationData::Delete {
                 old_entry,
                 old_entry_header: _,
                 validation_package: _,
+                entry_lifecycle : _
             } => Ok(EntryType::App(AppEntryType::try_from(
                 old_entry.entry_type(),
             )?)),
@@ -113,6 +118,7 @@ impl TryFrom<EntryValidationData<Entry>> for EntryType {
                 old_entry: _,
                 old_entry_header: _,
                 validation_package: _,
+                entry_lifecycle : _
             } => Ok(EntryType::App(AppEntryType::try_from(
                 new_entry.entry_type(),
             )?)),

@@ -570,7 +570,7 @@ impl Conductor {
                 .agent_by_id(agent_id)
                 .ok_or(format!("Agent '{}' not found", agent_id))?;
             let key_file_path = PathBuf::from(agent_config.key_file.clone());
-            let keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
+            let mut keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
                 &key_file_path,
                 self.passphrase_manager.clone(),
             )
@@ -580,7 +580,10 @@ impl Conductor {
                     agent_config.key_file,
                 ))
             })?;
-            /*
+            let keybundle = keystore
+                .get_keybundle(agent_id)
+                .map_err(|err| format!("{}", err,))?;
+
             if agent_config.public_address != keybundle.get_id() {
                 return Err(format!(
                     "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
@@ -588,7 +591,8 @@ impl Conductor {
                     keybundle.get_id(),
                     agent_config.public_address,
                 ));
-            }*/
+            }
+
             self.agent_keys
                 .insert(agent_id.clone(), Arc::new(Mutex::new(keystore)));
         }
@@ -605,14 +609,11 @@ impl Conductor {
     ) -> Result<Arc<Mutex<KeyBundle>>, String> {
         let keystore = self
             .get_keystore_for_agent(agent_id)
-            .map_err(|err| format!("got error:{} getting keystore for {}", err, agent_id))?;
+            .map_err(|err| format!("{}", err))?;
         let mut keystore = keystore.lock().unwrap();
-        let keybundle = keystore.get_keybundle(agent_id).map_err(|err| {
-            format!(
-                "got error:{} getting keybundle from keystore for {}",
-                err, agent_id
-            )
-        })?;
+        let keybundle = keystore
+            .get_keybundle(agent_id)
+            .map_err(|err| format!("{}", err))?;
         Ok(Arc::new(Mutex::new(keybundle)))
     }
 
@@ -1295,7 +1296,7 @@ pub mod tests {
         conductor.key_loader = test_key_loader();
         assert_eq!(
             conductor.load_config(),
-            Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
+            Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCiE4WAT9AX3zv3b3Gd7HkM8U6TA7vvZ4otQ5Me7K7cwkvvvh6eMAvfd5w6mi\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
                 .to_string()),
         );
     }

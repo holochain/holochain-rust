@@ -153,6 +153,12 @@ For example:
 ./scripts/nix/pod.sh 'hc-build-wasm && hc-test'
 ```
 
+or even:
+
+```shell
+./scripts/nix/pod.sh hc-test-all
+```
+
 #### Future deployments
 
 In the future we plan to distribute binaries through nixpkgs.

@@ -111,7 +111,7 @@ mod tests {
             dna::entry_types::{EntryTypeDef, LinkedFrom},
             entry::{entry_type::{EntryType,AppEntryType},Entry},
              dna::entry_types::Sharing,
-             validation::{EntryValidationData,ValidationPackage},
+             validation::{EntryValidationData,ValidationPackage,EntryLifecycle},
              chain_header::test_chain_header
         },
         holochain_wasm_utils::api_serialization::validation::LinkDirection
@@ -165,7 +165,7 @@ mod tests {
         let entry = Entry::App(AppEntryType::from("post"),post_ok.into());
         assert_eq!(
             (post_definition.validator)(
-               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header())}
+               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header()),lifecycle : EntryLifecycle::Chain}
             ),
             Ok(()),
         );
@@ -181,7 +181,7 @@ mod tests {
                 );
         assert_eq!(
             (post_definition.validator)(
-               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header())}
+               EntryValidationData::Create{entry,validation_package:ValidationPackage::only_header(test_chain_header()),lifecycle : EntryLifecycle::Chain}
             ),
             Err("Content too long".to_string()),
         );

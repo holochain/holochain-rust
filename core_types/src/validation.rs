@@ -59,23 +59,20 @@ pub enum EntryValidationData<T> {
     /// The create variant contains an entry T and the validation package.
     Create {
         entry: T,
-        validation_package: ValidationPackage,
-        lifecycle: EntryLifecycle,
+        validation_data : ValidationData
     },
     /// The Modify variant contains the new entry T, old entry of the same type, the entry header of the old entry and a validation package
     Modify {
         new_entry: T,
         old_entry: T,
         old_entry_header: ChainHeader,
-        validation_package: ValidationPackage,
-        lifecycle: EntryLifecycle,
+        validation_data : ValidationData
     },
     /// The delete contains an old entry which is the entry being deleted and the old entry header of type ChainHeader and a validation package
     Delete {
         old_entry: T,
         old_entry_header: ChainHeader,
-        validation_package: ValidationPackage,
-        lifecycle: EntryLifecycle,
+        validation_data : ValidationData
     },
 }
 
@@ -87,14 +84,12 @@ pub enum LinkValidationData {
     /// The LinkAdd variant contains a linkData and a validation package
     LinkAdd {
         link: LinkData,
-        validation_package: ValidationPackage,
-        lifecycle: EntryLifecycle,
+        validation_data : ValidationData
     },
     /// The LinkRemove variant contains a linkData and a validation package
     LinkRemove {
         link: LinkData,
-        validation_package: ValidationPackage,
-        lifecycle: EntryLifecycle,
+        validation_data : ValidationData
     },
 }
 
@@ -104,14 +99,12 @@ impl TryFrom<EntryValidationData<Entry>> for EntryType {
         match entry_validation {
             EntryValidationData::Create {
                 entry,
-                validation_package: _,
-                lifecycle: _,
+                validation_data:_,
             } => Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?)),
             EntryValidationData::Delete {
                 old_entry,
                 old_entry_header: _,
-                validation_package: _,
-                lifecycle: _,
+                validation_data:_
             } => Ok(EntryType::App(AppEntryType::try_from(
                 old_entry.entry_type(),
             )?)),
@@ -119,8 +112,7 @@ impl TryFrom<EntryValidationData<Entry>> for EntryType {
                 new_entry,
                 old_entry: _,
                 old_entry_header: _,
-                validation_package: _,
-                lifecycle: _,
+                validation_data:_,
             } => Ok(EntryType::App(AppEntryType::try_from(
                 new_entry.entry_type(),
             )?)),

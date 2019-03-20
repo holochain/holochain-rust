@@ -5,7 +5,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 build = "build.rs"
 
 [dependencies]
-arrayref = "0.3.5"
+arrayref = "=0.3.5"
 base64 = "=0.10.1"
 chrono = "=0.4.6"
 serde = "=1.0.89"

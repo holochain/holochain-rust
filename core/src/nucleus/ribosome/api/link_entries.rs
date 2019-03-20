@@ -106,7 +106,6 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
-        let netname = Some("create_test_instance");
         test_instance_and_context(dna, netname).expect("Could not create test instance")
     }
     fn create_test_instance() -> (Instance, Arc<Context>) {

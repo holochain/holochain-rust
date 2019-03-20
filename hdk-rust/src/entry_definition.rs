@@ -128,7 +128,7 @@ pub struct ValidatingLinkDefinition {
 ///         validation: |validation_data: hdk::EntryValidationData<Post>| {
 ///              match validation_data
 ///              {
-///              EntryValidationData::Create{entry:test_entry,validation_package:_,lifecycle:_} =>
+///              EntryValidationData::Create{entry:test_entry,validation_data::_} =>
 ///              {
 ///                        
 ///                        

@@ -1,6 +1,6 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::signature::Provenance;
-use holochain_sodium::secbuf::SecBuf;
+use holochain_dpki::utils::Verify;
 use holochain_wasm_utils::api_serialization::verify_signature::VerifySignatureArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -27,14 +27,10 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         }
     };
 
-    let Provenance(addr, signature) = verification_args.provenance;
-
-    let mut message_data = SecBuf::with_insecure_from_string(verification_args.payload.clone());
-    let mut signature_data = SecBuf::with_insecure_from_string(signature.into());
-
-    let verification_result =
-        holochain_dpki::utils::verify(addr.into(), &mut message_data, &mut signature_data)
-            .unwrap_or(false);
+    let verification_result = verification_args
+        .provenance
+        .verify(verification_args.payload.clone())
+        .unwrap_or(false);
 
     runtime.store_as_json_string(verification_result)
 }

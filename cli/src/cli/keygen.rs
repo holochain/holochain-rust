@@ -8,12 +8,11 @@ use std::{fs::create_dir_all, path::PathBuf};
 const PRIMARY_KEYBUNDLE_ID: &str = "primary_keybundle";
 
 pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
-    println!(
-        "This will create a new agent keystore - that is all keys needed to represent one agent."
-    );
-    println!("This keystore will be stored in a file, encrypted with a passphrase.");
+    println!("This will create a new agent keystore and populate it with an agent keybundle");
+    println!("(=all keys needed to represent an agent: public/private keys for signing/encryption");
+    println!("This keybundle will be stored encrypted by passphrase within the keystore file.");
     println!("The passphrase is securing the keys and will be needed, together with the file, in order to use the key.");
-    println!("Please enter a secret passphrase below, you will have to enter it again when unlocking this keystore to use within a Holochain conductor.");
+    println!("Please enter a secret passphrase below, you will have to enter it again when unlocking these keys to use within a Holochain conductor.");
 
     let passphrase = passphrase.unwrap_or_else(|| {
         let passphrase1 = rpassword::read_password_from_tty(Some("Passphrase: ")).unwrap();

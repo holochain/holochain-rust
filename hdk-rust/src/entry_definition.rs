@@ -363,7 +363,7 @@ pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(
             Ok(EntryValidationData::Create {
                 entry: native_type,
                 validation_package,
-                lifecycle
+                lifecycle,
             })
         }
         EntryValidationData::Modify {
@@ -371,7 +371,7 @@ pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(
             old_entry,
             old_entry_header,
             validation_package,
-            lifecycle
+            lifecycle,
         } => {
             let new_entry = convert_entry_validation_to_native::<T>(new_entry)?;
             let old_entry = convert_entry_validation_to_native::<T>(old_entry)?;
@@ -380,21 +380,21 @@ pub fn entry_to_native_type<T: TryFrom<AppEntryValue> + Clone>(
                 old_entry,
                 old_entry_header,
                 validation_package,
-                lifecycle
+                lifecycle,
             })
         }
         EntryValidationData::Delete {
             old_entry,
             old_entry_header,
             validation_package,
-            lifecycle
+            lifecycle,
         } => {
             let old_entry = convert_entry_validation_to_native::<T>(old_entry)?;
             Ok(EntryValidationData::Delete {
                 old_entry,
                 old_entry_header,
                 validation_package,
-                lifecycle
+                lifecycle,
             })
         }
     }

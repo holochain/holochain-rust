@@ -25,7 +25,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         passphrase1
     });
 
-    let mut keystore = Keystore::new(mock_passphrase_manager(passphrase))?;
+    let mut keystore = Keystore::new(mock_passphrase_manager(passphrase), None)?;
     keystore.add_random_seed("root_seed", SEED_SIZE)?;
 
     let context = SeedContext::new(AGENT_ID_CTX);
@@ -66,7 +66,7 @@ pub mod test {
         keygen(Some(path.clone()), Some(passphrase.clone())).expect("Keygen should work");
 
         let mut keystore =
-            Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase)).unwrap();
+            Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase), None).unwrap();
 
         let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
 

@@ -20,9 +20,9 @@ jobs:
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
-      # avoid pipefail
-      shell: /bin/bash
       command: |
+        # temporary avoid build fails due to greps
+        set +eo pipefail
         export UNPINNED=`nix-shell --run hc-cargo-toml-grep-unpinned`
         echo "unpinned deps (must be empty):"
         echo "$UNPINNED"

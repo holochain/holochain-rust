@@ -28,7 +28,7 @@
 # `./scripts/nix/pod.sh 'hc-build-wasm && hc-test`
 #
 # if the pod works where a normal `nix-shell` does not, chances are that you
-# have some user-specific logic being sourced/executed in the nix-shell session
+# have some incompatible user config being sourced/executed by `nix-shell`
 #
 # common culprits:
 #

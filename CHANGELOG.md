@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Fixed
-
+- Adds Validation for Crud Reinstates EntryLifecycle. [PR#1143] (https://github.com/holochain/holochain-rust/pull/1143)
 ### Security
 
 ## [0.0.7-alpha] - 2019-03-19

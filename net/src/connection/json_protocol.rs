@@ -615,6 +615,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             entry_content: json!("hello"),
+            headers : Vec::new()
         }));
     }
     #[test]
@@ -626,6 +627,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             entry_content: json!("hello"),
+            headers : Vec::new()
         }));
     }
     #[test]

@@ -67,6 +67,11 @@ let
    rustup component add rustfmt
   '';
 
+  hc-install-edit = pkgs.writeShellScriptBin "hc-install-edit"
+  ''
+   cargo install cargo-edit
+  '';
+
   hc-install-cli = pkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
   hc-install-conductor = pkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain --release && cargo install -f --path conductor";
 
@@ -156,6 +161,7 @@ stdenv.mkDerivation rec {
 
     hc-install-tarpaulin
     hc-install-fmt
+    hc-install-edit
     hc-install-cli
     hc-install-conductor
     hc-install-node-conductor

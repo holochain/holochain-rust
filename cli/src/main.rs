@@ -98,6 +98,8 @@ enum Cli {
             help = "Automatically package project before running"
         )]
         package: bool,
+        #[structopt(long, help = "Produce logging output")]
+        logging: bool,
         #[structopt(long, help = "Save generated data to file system")]
         persist: bool,
         #[structopt(long, help = "Use real networking")]
@@ -178,13 +180,20 @@ fn run() -> HolochainResult<()> {
             persist,
             networked,
             interface,
+            logging,
         } => {
             let dna_path =
                 util::std_package_path(&project_path).map_err(HolochainError::Default)?;
             let interface_type = cli::get_interface_type_string(interface);
-            let conductor_config =
-                cli::hc_run_configuration(&dna_path, port, persist, networked, &interface_type)
-                    .map_err(HolochainError::Default)?;
+            let conductor_config = cli::hc_run_configuration(
+                &dna_path,
+                port,
+                persist,
+                networked,
+                &interface_type,
+                logging,
+            )
+            .map_err(HolochainError::Default)?;
             cli::run(dna_path, package, port, interface_type, conductor_config)
                 .map_err(HolochainError::Default)?
         }

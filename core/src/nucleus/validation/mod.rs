@@ -1,10 +1,11 @@
-use crate::{context::Context, nucleus::actions::get_entry::get_entry_from_dht};
+use crate::{context::Context, workflows::get_entry_result::get_entry_with_meta_workflow};
 use holochain_core_types::{
     cas::content::Address,
     chain_header::ChainHeader,
-    entry::{entry_type::EntryType, Entry},
+    entry::{entry_type::EntryType, Entry,EntryWithMeta},
     error::HolochainError,
     validation::{EntryValidationData, ValidationData, ValidationPackage},
+    time::Timeout
 };
 
 use std::sync::Arc;
@@ -139,7 +140,7 @@ pub fn entry_to_validation_data(
                 get_entry_with_header(context.clone(), &link_update)
                     .map(|entry_with_header| {
                         Ok(EntryValidationData::Modify {
-                            old_entry: entry_with_header.0.clone(),
+                            old_entry: entry_with_header.0.entry.clone(),
                             new_entry: entry.clone(),
                             old_entry_header: entry_with_header.1.clone(),
                             validation_package: validation_package.clone(),
@@ -158,7 +159,7 @@ pub fn entry_to_validation_data(
             get_entry_with_header(context.clone(), &deletion_address)
                 .map(|entry_with_header| {
                     Ok(EntryValidationData::Delete {
-                        old_entry: entry_with_header.0.clone(),
+                        old_entry: entry_with_header.0.entry.clone(),
                         old_entry_header: entry_with_header.1.clone(),
                         validation_package,
                     })
@@ -180,16 +181,9 @@ pub fn entry_to_validation_data(
 fn get_entry_with_header(
     context: Arc<Context>,
     address: &Address,
-) -> Result<(Entry, ChainHeader), HolochainError> {
-    let state = context.state().ok_or(HolochainError::ErrorGeneric(
-        "Could not obtainn state".to_string(),
-    ))?;
-    let entry = get_entry_from_dht(&context.clone(), address)?.ok_or(
-        HolochainError::ErrorGeneric("Could not get Entry".to_string()),
-    )?;
-    let headers = state.get_headers(address.clone())?;
-    let entry_header = headers.last().ok_or(HolochainError::ErrorGeneric(
-        "Could not get header for entry".to_string(),
-    ))?;
-    Ok((entry, entry_header.clone()))
+) -> Result<(EntryWithMeta, ChainHeader), HolochainError> {
+    let pair = context.block_on(get_entry_with_meta_workflow(&context,address,&Timeout::default()))?;
+    let entry_chain = pair.ok_or(HolochainError::ErrorGeneric("Could not get chain".to_string()))?;
+    let latest_header = entry_chain.1.last().ok_or(HolochainError::ErrorGeneric("Could not get last entry from chain".to_string()))?;
+    Ok((entry_chain.0,latest_header.clone()))
 }

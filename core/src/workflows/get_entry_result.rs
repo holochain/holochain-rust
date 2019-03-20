@@ -22,12 +22,12 @@ pub async fn get_entry_with_meta_workflow<'a>(
 
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
+    
     let state = context
                     .state()
                     .ok_or(HolochainError::ErrorGeneric("Could not get state".to_string()))?;
-    let headers = state.get_headers(address.clone())?;
-
-    if maybe_entry_with_meta.is_some() || headers.is_empty()
+    
+    if let None = maybe_entry_with_meta
     {
         await!(network::actions::get_entry::get_entry(
         context.clone(),
@@ -35,10 +35,19 @@ pub async fn get_entry_with_meta_workflow<'a>(
         timeout.clone(),
          ))
     }
-    else
+    else 
     {
-        Ok(Some((maybe_entry_with_meta.expect("Should have no problem unwrapping maybe entry"),headers.clone())))
+        let entry = maybe_entry_with_meta.ok_or(HolochainError::ErrorGeneric("Could not get entry".to_string()))?;
+        state.get_headers(address.clone())
+                                     .map(|header|{
+                                         Ok(Some((entry.clone(),header.clone())))
+                                     })
+                                     .unwrap_or(await!(network::actions::get_entry::get_entry(context.clone(),address.clone(),timeout.clone())))
+                                     
+     
     }
+
+    
 }
 
 /// Get GetEntryResult workflow

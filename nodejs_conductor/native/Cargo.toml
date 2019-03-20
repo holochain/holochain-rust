@@ -16,7 +16,7 @@ neon-build = "0.2.0"
 [dependencies]
 neon = "0.2.0"
 serde = "1.0"
-serde_derive = "^1.0"
+serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 holochain_conductor_api = { path = "../../conductor_api" }
 holochain_core = { path = "../../core" }

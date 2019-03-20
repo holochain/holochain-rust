@@ -9,7 +9,7 @@ arrayref = "0.3.5"
 base64 = "=0.10.1"
 chrono = "0.4"
 serde = "1.0"
-serde_derive = "1.0"
+serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 lazy_static = "=1.2.0"
 multihash = "0.8.0"

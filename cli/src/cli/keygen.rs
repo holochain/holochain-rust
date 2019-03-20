@@ -56,7 +56,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     println!("Succesfully created new agent keys.");
     println!("");
     println!("Public address: {}", keybundle.get_id());
-    println!("Bundle written to: {}.", path.to_str().unwrap());
+    println!("Bundle written to: {}", path.to_str().unwrap());
     println!("");
     println!("You can set this file in a conductor config as key_file for an agent.");
     Ok(())

@@ -5,7 +5,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 serde_derive= "=1.0.89"
-serde_test="1"
+serde_test= "=1.0.89"
 multihash = "0.8.0"
 holochain_core_types = { path = "../core_types" }
 lazy_static = "=1.2.0"

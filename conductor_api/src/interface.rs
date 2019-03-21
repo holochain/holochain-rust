@@ -5,7 +5,6 @@ use holochain_core::{
         actions::call_zome_function::make_cap_request_for_call,
         ribosome::capabilities::CapabilityRequest,
     },
-    state::State,
 };
 
 use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance};
@@ -237,49 +236,6 @@ impl ConductorApiBuilder {
         instance_name: String,
         instance: Arc<RwLock<Holochain>>,
     ) -> Self {
-        let hc_lock = instance.clone();
-        let hc = hc_lock.read().unwrap();
-        let state: State = hc.state().unwrap();
-        let nucleus = state.nucleus();
-        let dna = nucleus.dna();
-        match dna {
-            Some(dna) => {
-                for (zome_name, zome) in dna.zomes {
-                    for fn_decl in zome.fn_declarations {
-                        let func_name = String::from(fn_decl.name);
-                        let zome_name = zome_name.clone();
-                        let method_name = format!("{}/{}/{}", instance_name, zome_name, func_name);
-                        let hc_lock_inner = hc_lock.clone();
-                        self.io.add_method(&method_name, move |params| {
-                            let mut hc = hc_lock_inner.write().unwrap();
-                            let params_string = serde_json::to_string(&params)
-                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                            println!("ZOME CALLING USING instance/zome/function ROUTE HAS BEEN DEPRECATED.  USE call INSTEAD");
-                            let cap_request = {
-                                // TODO: get the token from the parameters.  If not there assume public token.
-                                // currently we are always getting the public token and signing it ourself
-                                let context = hc.context();
-                                let token = context.get_public_token().ok_or(
-                                    jsonrpc_core::Error::invalid_params("public token not found"),
-                                )?;
-                                make_cap_request_for_call(
-                                    context.clone(),
-                                    token,
-                                    &func_name,
-                                    params_string.clone(),
-                                )
-                            };
-
-                            let response = hc
-                                .call(&zome_name, cap_request, &func_name, &params_string)
-                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                            Ok(Value::String(response.to_string()))
-                        })
-                    }
-                }
-            }
-            None => unreachable!(),
-        };
         self.instances
             .insert(instance_name.clone(), instance.clone());
         self.instance_ids_map.insert(

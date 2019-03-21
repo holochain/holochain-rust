@@ -24,7 +24,8 @@ use crate::nucleus::ribosome::{
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
         get_links::invoke_get_links, init_globals::invoke_init_globals,
         link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
-        remove_link::invoke_remove_link, send::invoke_send, sign::invoke_sign, sleep::invoke_sleep,
+        remove_link::invoke_remove_link, send::invoke_send,
+        sign::{invoke_sign, invoke_sign_one_time}, sleep::invoke_sleep,
         update_entry::invoke_update_entry, verify_signature::invoke_verify_signature,
     },
     runtime::Runtime,
@@ -96,7 +97,15 @@ pub enum ZomeApiFunction {
     RemoveLink,
 
     Sign,
+    SignOneTime,
     VerifySignature,
+
+    KeystoreList,
+    KeystoreNewRandom,
+    KeystoreDeriveSeed,
+    KeystoreDeriveKey,
+    KeystoreSign,
+
 }
 
 impl Defn for ZomeApiFunction {
@@ -119,7 +128,13 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::Sleep => "hc_sleep",
             ZomeApiFunction::RemoveLink => "hc_remove_link",
             ZomeApiFunction::Sign => "hc_sign",
+            ZomeApiFunction::SignOneTime => "hc_sign_one_time",
             ZomeApiFunction::VerifySignature => "hc_verify_signature",
+            ZomeApiFunction::KeystoreList => "hc_keystore_list",
+            ZomeApiFunction::KeystoreNewRandom => "hc_keystore_new_random",
+            ZomeApiFunction::KeystoreDeriveSeed => "hc_keystore_derive_seed",
+            ZomeApiFunction::KeystoreDeriveKey => "hc_keystore_derive_key",
+            ZomeApiFunction::KeystoreSign => "hc_keystore_sign",
         }
     }
 
@@ -152,7 +167,13 @@ impl FromStr for ZomeApiFunction {
             "hc_sleep" => Ok(ZomeApiFunction::Sleep),
             "hc_remove_link" => Ok(ZomeApiFunction::RemoveLink),
             "hc_sign" => Ok(ZomeApiFunction::Sign),
+            "hc_sign_one_time" => Ok(ZomeApiFunction::SignOneTime),
             "hc_verify_signature" => Ok(ZomeApiFunction::VerifySignature),
+            "hc_keystore_list" => Ok(ZomeApiFunction::KeystoreList),
+            "hc_keystore_new_random" => Ok(ZomeApiFunction::KeystoreNewRandom),
+            "hc_keystore_derive_seed" => Ok(ZomeApiFunction::KeystoreDeriveSeed),
+            "hc_keystore_derive_key" => Ok(ZomeApiFunction::KeystoreDeriveKey),
+            "hc_keystore_sign" => Ok(ZomeApiFunction::KeystoreSign),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -188,7 +209,13 @@ impl ZomeApiFunction {
             ZomeApiFunction::Sleep => invoke_sleep,
             ZomeApiFunction::RemoveLink => invoke_remove_link,
             ZomeApiFunction::Sign => invoke_sign,
+            ZomeApiFunction::SignOneTime => invoke_sign_one_time,
             ZomeApiFunction::VerifySignature => invoke_verify_signature,
+            ZomeApiFunction::KeystoreList => noop, //invoke_keystore_list,
+            ZomeApiFunction::KeystoreNewRandom => noop, //invoke_keystore_new_random,
+            ZomeApiFunction::KeystoreDeriveSeed => noop, //invoke_keystore_derive_seed,
+            ZomeApiFunction::KeystoreDeriveKey => noop, //invoke_keystore_derive_key,
+            ZomeApiFunction::KeystoreSign => noop, //invoke_keystore_sign,
         }
     }
 }
@@ -441,7 +468,13 @@ pub mod tests {
             ("hc_sleep", ZomeApiFunction::Sleep),
             ("hc_remove_link", ZomeApiFunction::RemoveLink),
             ("hc_sign", ZomeApiFunction::Sign),
+            ("hc_sign_one_time", ZomeApiFunction::SignOneTime),
             ("hc_verify_signature", ZomeApiFunction::VerifySignature),
+            ("hc_keystore_list", ZomeApiFunction::KeystoreList),
+            ("hc_keystore_new_random", ZomeApiFunction::KeystoreNewRandom),
+            ("hc_keystore_derive_seed", ZomeApiFunction::KeystoreDeriveSeed),
+            ("hc_keystore_derive_key", ZomeApiFunction::KeystoreDeriveKey),
+            ("hc_keystore_sign", ZomeApiFunction::KeystoreSign),
         ] {
             assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
         }
@@ -474,7 +507,13 @@ pub mod tests {
             (ZomeApiFunction::Sleep, "hc_sleep"),
             (ZomeApiFunction::RemoveLink, "hc_remove_link"),
             (ZomeApiFunction::Sign, "hc_sign"),
+            (ZomeApiFunction::SignOneTime, "hc_sign_one_time"),
             (ZomeApiFunction::VerifySignature, "hc_verify_signature"),
+            (ZomeApiFunction::KeystoreList, "hc_keystore_list"),
+            (ZomeApiFunction::KeystoreNewRandom, "hc_keystore_new_random"),
+            (ZomeApiFunction::KeystoreDeriveSeed, "hc_keystore_derive_seed"),
+            (ZomeApiFunction::KeystoreDeriveKey, "hc_keystore_derive_key"),
+            (ZomeApiFunction::KeystoreSign, "hc_keystore_sign"),
         ] {
             assert_eq!(output, input.as_str());
         }
@@ -498,7 +537,13 @@ pub mod tests {
             ("hc_sleep", 14),
             ("hc_remove_link", 15),
             ("hc_sign", 16),
-            ("hc_verify_signature", 17),
+            ("hc_sign_one_time", 17),
+            ("hc_verify_signature", 18),
+            ("hc_keystore_list", 19),
+            ("hc_keystore_new_random", 20),
+            ("hc_keystore_derive_seed", 21),
+            ("hc_keystore_derive_key", 22),
+            ("hc_keystore_sign", 23),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -522,7 +567,13 @@ pub mod tests {
             (14, ZomeApiFunction::Sleep),
             (15, ZomeApiFunction::RemoveLink),
             (16, ZomeApiFunction::Sign),
-            (17, ZomeApiFunction::VerifySignature),
+            (17, ZomeApiFunction::SignOneTime),
+            (18, ZomeApiFunction::VerifySignature),
+            (19, ZomeApiFunction::KeystoreList),
+            (20, ZomeApiFunction::KeystoreNewRandom),
+            (21, ZomeApiFunction::KeystoreDeriveSeed),
+            (22, ZomeApiFunction::KeystoreDeriveKey),
+            (23, ZomeApiFunction::KeystoreSign),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

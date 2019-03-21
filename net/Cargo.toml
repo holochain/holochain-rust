@@ -5,7 +5,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dev-dependencies]
-tempfile = "3"
+tempfile = "=3.0.7"
 
 [dependencies]
 directories = "=1.0.2"

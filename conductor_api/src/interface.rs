@@ -1,10 +1,8 @@
 use crate::holo_signing_service::request_signing_service;
 use base64;
-use holochain_core::{
-    nucleus::{
-        actions::call_zome_function::make_cap_request_for_call,
-        ribosome::capabilities::CapabilityRequest,
-    },
+use holochain_core::nucleus::{
+    actions::call_zome_function::make_cap_request_for_call,
+    ribosome::capabilities::CapabilityRequest,
 };
 
 use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance};
@@ -911,7 +909,7 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""test-instance-1/greeter/hello""#));
+        assert!(result.contains(r#""test-instance-1/call""#));
         assert!(!result.contains(r#""test-instance-2//test""#));
     }
 
@@ -931,7 +929,7 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""happ-store/greeter/hello""#));
+        assert!(result.contains(r#""test-instance-1/call""#));
         assert!(!result.contains(r#""test-instance-1//test""#));
     }
 

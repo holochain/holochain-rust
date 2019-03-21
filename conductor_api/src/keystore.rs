@@ -49,14 +49,56 @@ enum KeyType {
     Encrypting,
 }
 
+/// A type for providing high-level crypto functions and managing secrets securely.
+/// Keystore can store an arbitrary number of named secrets such as key pairs and seeds.
+/// It can be serialized and deserialized with serde and stores secrets in encrypted [KeyBlob]s,
+/// both in the serialized format as well as in memory, as long as secrets are not used.
+/// Once a secret is requested, it gets decrypted and cached in the clear in secure memory
+/// ([SecBuf]).
+///
+/// Passphrases for de-/encryption are requested from the [PassphraseManager] that has to be
+/// provided on creation.
+///
+/// Keystore makes sure that all secrets are encrypted with the same passphrase, so although
+/// every secrete is stored separately in its own [KeyBlob], the whole Keystore *has* a logical
+/// passphrase. If a function that requires a passphrase receives a different passphrase from the
+/// [PassphraseManager] as was used to create this keystore, it will fail.
+///
+/// It provides high-level functions for key/seed derivation such as:
+/// * [add_seed_from_seed]
+/// * [add_key_from_seed]
+/// * [add_signing_key_from_seed]
+/// * [add_encrypting_key_from_seed]
+///
+/// and a [sign] function for using stored keys to create signatures.
+///
 #[derive(Serialize, Deserialize)]
 pub struct Keystore {
+    /// This stores the cipher text of [PCHECK_HEADER] plus 32 random bytes encrypted
+    /// with the keystore's passphrase.
+    /// Any encryption will only happen after checking the provided passphrase to be
+    /// able to decrypt this cipher and get back the [PCHECK_HEADER], as to make sure
+    /// that every (separately) encrypted secret within this store is encrypted with
+    /// the same passphrase.
     passphrase_check: String,
+
+    /// These are the secrets (keys/seeds) stored encrypted, by name.
     secrets: BTreeMap<String, KeyBlob>,
+
+    // The following fields are transient, i.e. not serialized to the keystore file:
+
+    /// Using a secret from [secrets] will result in decrypting the secret and
+    /// storing it in this cache.
+    /// TODO: maybe clear the cache for certain (not agent keys) items after some time?
     #[serde(skip_serializing, skip_deserializing)]
     cache: HashMap<String, Arc<Mutex<Secret>>>,
+
+    /// Requested for passphrases needed to decrypt secrets
     #[serde(skip_serializing, skip_deserializing)]
     passphrase_manager: Option<Arc<PassphraseManager>>,
+
+    /// Hash config used for hashing passphrases.
+    /// Gets sets to non-default for quick tests.
     #[serde(skip_serializing, skip_deserializing)]
     hash_config: Option<PwHashConfig>,
 }

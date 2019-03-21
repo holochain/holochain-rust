@@ -1,17 +1,16 @@
 use holochain_core_types::{
     agent::Base32,
-    cas::content::Address,
     error::{HcResult, HolochainError},
     signature::Signature,
 };
 use holochain_dpki::{
     key_blob::{BlobType, Blobbable, KeyBlob},
     key_bundle::KeyBundle,
-    keypair::{generate_random_sign_keypair, EncryptingKeyPair, KeyPair, SigningKeyPair},
+    keypair::{EncryptingKeyPair, KeyPair, SigningKeyPair},
     seed::Seed,
     utils::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
-        generate_random_buf, verify as signingkey_verify, SeedContext,
+        generate_random_buf, SeedContext,
     },
     SEED_SIZE,
 };
@@ -489,23 +488,6 @@ impl Keystore {
     }
 }
 
-/// verifies data and signature against a public key
-pub fn verify(public_key: Base32, data: String, signature: Signature) -> HcResult<bool> {
-    signingkey_verify(Address::from(public_key), data, signature)
-}
-
-/// creates a one-time private key and sign data returning the signature and the public key
-pub fn sign_one_time(data: String) -> HcResult<(Base32, Signature)> {
-    let mut data_buf = SecBuf::with_insecure_from_string(data);
-    let mut sign_keys = generate_random_sign_keypair()?;
-
-    let mut signature_buf = sign_keys.sign(&mut data_buf)?;
-    let buf = signature_buf.read_lock();
-    // Return as base64 encoded string
-    let signature_str = base64::encode(&**buf);
-    Ok((sign_keys.public, Signature::from(signature_str)))
-}
-
 pub fn test_hash_config() -> Option<PwHashConfig> {
     Some(PwHashConfig(
         OPSLIMIT_INTERACTIVE,
@@ -723,21 +705,6 @@ pub mod tests {
                 "source secret is not a signing key".to_string()
             ))
         );
-    }
-
-    #[test]
-    fn test_keystore_sign_one_time() {
-        let data = base64::encode("the data to sign");
-        let result = sign_one_time(data.clone());
-        assert!(!result.is_err());
-
-        let (public_key, signature) = result.unwrap();
-
-        assert_eq!(String::from(signature.clone()).len(), 88); //88 is the size of a base64ized signature buf
-
-        let result = verify(public_key, data, signature);
-        assert!(!result.is_err());
-        assert!(result.unwrap());
     }
 
     #[test]

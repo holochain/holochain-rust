@@ -81,6 +81,9 @@ mod test_super {
         Defn,
     };
     use holochain_core_types::json::JsonString;
+    use super::sign_one_time;
+    use holochain_dpki::utils::verify;
+    use holochain_core_types::cas::content::Address;
 
     /// test that bytes passed to debug end up in the log
     #[test]
@@ -90,5 +93,20 @@ mod test_super {
             r#"{ "payload": "this is data" }"#.as_bytes().to_vec(),
         );
         assert_eq!(JsonString::from(r#"{"ok":true,"value":"xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA==","error":"null"}"#), call_result,);
+    }
+
+    #[test]
+    fn test_sign_one_time() {
+        let data = base64::encode("the data to sign");
+        let result = sign_one_time(data.clone());
+        assert!(!result.is_err());
+
+        let result = result.unwrap();
+
+        assert_eq!(String::from(result.signature.clone()).len(), 88); //88 is the size of a base64ized signature buf
+
+        let result = verify(Address::from(result.pub_key), data, result.signature);
+        assert!(!result.is_err());
+        assert!(result.unwrap());
     }
 }

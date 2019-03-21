@@ -28,7 +28,7 @@ use config::{
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
 use holochain_dpki::utils::SeedContext;
-use keystore::{sign_one_time, KeyType, Keystore};
+use keystore::{KeyType, Keystore};
 use serde_json::map::Map;
 
 pub type InterfaceError = String;
@@ -1008,17 +1008,6 @@ impl ConductorApiBuilder {
 
             Ok(json!({"payload": payload, "signature": signature}))
         });
-
-        self.io
-            .add_method("agent/keystore/sign_one_time", move |params| {
-                let params_map = Self::unwrap_params_map(params)?;
-                let payload = Self::get_as_string("payload", &params_map)?;
-
-                let (pub_key, signature) = sign_one_time(payload.clone())
-                    .map_err(|_| jsonrpc_core::Error::internal_error())?;
-
-                Ok(json!({"payload": payload, "pub_key": pub_key, "signature": signature}))
-            });
 
         self
     }

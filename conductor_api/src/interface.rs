@@ -909,7 +909,6 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""test-instance-1/call""#));
         assert!(!result.contains(r#""test-instance-2//test""#));
     }
 
@@ -929,7 +928,6 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""test-instance-1/call""#));
         assert!(!result.contains(r#""test-instance-1//test""#));
     }
 

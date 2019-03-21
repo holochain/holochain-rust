@@ -1,6 +1,6 @@
 use crate::{
     conductor::base::KeyLoader,
-    keystore::{Keystore, Secret},
+    keystore::{Keystore, Secret, PRIMARY_KEYBUNDLE_ID},
 };
 use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceMock};
 use holochain_core_types::error::HolochainError;
@@ -44,7 +44,7 @@ pub fn test_keystore(agent_name: &String) -> Keystore {
     keystore.add("root_seed", secret).unwrap();
 
     keystore
-        .add_keybundle_from_seed("root_seed", agent_name)
+        .add_keybundle_from_seed("root_seed", PRIMARY_KEYBUNDLE_ID)
         .unwrap();
     keystore
 }

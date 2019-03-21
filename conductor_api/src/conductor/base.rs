@@ -5,7 +5,7 @@ use crate::{
     },
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
-    keystore::Keystore,
+    keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     logger::DebugLogger,
     Holochain,
 };
@@ -575,7 +575,7 @@ impl Conductor {
                 ))
             })?;
             let keybundle = keystore
-                .get_keybundle(agent_id)
+                .get_keybundle(PRIMARY_KEYBUNDLE_ID)
                 .map_err(|err| format!("{}", err,))?;
 
             if agent_config.public_address != keybundle.get_id() {
@@ -606,7 +606,7 @@ impl Conductor {
             .map_err(|err| format!("{}", err))?;
         let mut keystore = keystore.lock().unwrap();
         let keybundle = keystore
-            .get_keybundle(agent_id)
+            .get_keybundle(PRIMARY_KEYBUNDLE_ID)
             .map_err(|err| format!("{}", err))?;
         Ok(Arc::new(Mutex::new(keybundle)))
     }
@@ -783,7 +783,7 @@ pub mod tests {
     use super::*;
     use conductor::passphrase_manager::PassphraseManager;
     use key_loaders::mock_passphrase_manager;
-    use keystore::{test_hash_config, Keystore, Secret};
+    use keystore::{test_hash_config, Keystore, Secret, PRIMARY_KEYBUNDLE_ID};
     extern crate tempfile;
     use crate::config::load_configuration;
     use holochain_core::{
@@ -852,15 +852,14 @@ pub mod tests {
         keystore.add("root_seed", secret).unwrap();
 
         keystore
-            .add_keybundle_from_seed("root_seed", &agent_name)
+            .add_keybundle_from_seed("root_seed", PRIMARY_KEYBUNDLE_ID)
             .unwrap();
         keystore
     }
 
     pub fn test_keybundle(index: u8) -> KeyBundle {
-        let agent_name = format!("test-agent-{}", index);
         let mut keystore = test_keystore(index);
-        keystore.get_keybundle(&agent_name).unwrap()
+        keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID).unwrap()
     }
 
     pub fn test_toml() -> String {

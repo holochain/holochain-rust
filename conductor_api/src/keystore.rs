@@ -37,6 +37,7 @@ const PCHECK_RANDOM_SIZE: usize = 32;
 const PCHECK_SIZE: usize = PCHECK_RANDOM_SIZE + PCHECK_HEADER_SIZE;
 const KEYBUNDLE_SIGNKEY_SUFFIX: &str = ":sign_key";
 const KEYBUNDLE_ENCKEY_SUFFIX: &str = ":enc_key";
+pub const PRIMARY_KEYBUNDLE_ID: &str = "primary_keybundle";
 
 pub enum Secret {
     SigningKey(SigningKeyPair),

@@ -1,11 +1,12 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
-use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
+use holochain_conductor_api::{
+    key_loaders::mock_passphrase_manager,
+    keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
+};
 use holochain_dpki::SEED_SIZE;
 use rpassword;
 use std::{fs::create_dir_all, path::PathBuf};
-
-const PRIMARY_KEYBUNDLE_ID: &str = "primary_keybundle";
 
 pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
     println!("This will create a new agent keystore and populate it with an agent keybundle");

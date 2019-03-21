@@ -9,8 +9,6 @@ use holochain_net::{
         net_connection::NetSend,
     },
     p2p_network::P2pNetwork,
-    // Enable this for debugging network
-    // tweetlog::*,
 };
 use std::sync::{Arc, Mutex};
 

@@ -49,7 +49,6 @@ enum KeyType {
     Encrypting,
 }
 
-#[allow(dead_code)]
 #[derive(Serialize, Deserialize)]
 pub struct Keystore {
     passphrase_check: String,
@@ -73,7 +72,6 @@ fn make_passphrase_check(
 }
 
 impl Keystore {
-    #[allow(dead_code)]
     pub fn new(
         passphrase_manager: Arc<PassphraseManager>,
         hash_config: Option<PwHashConfig>,
@@ -90,7 +88,6 @@ impl Keystore {
         })
     }
 
-    #[allow(dead_code)]
     pub fn new_from_file(
         path: PathBuf,
         passphrase_manager: Arc<PassphraseManager>,
@@ -105,7 +102,6 @@ impl Keystore {
         Ok(keystore)
     }
 
-    #[allow(dead_code)]
     fn check_passphrase(&self, mut passphrase: &mut SecBuf) -> HcResult<bool> {
         let mut decrypted_buf = decrypt_with_passphrase_buf(
             &self.passphrase_check,
@@ -121,7 +117,6 @@ impl Keystore {
         Ok(decrypted_header.compare(&mut expected_header) == 0)
     }
 
-    #[allow(dead_code)]
     pub fn change_passphrase(
         &mut self,
         old_passphrase: &mut SecBuf,
@@ -194,7 +189,6 @@ impl Keystore {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub fn save(&self, path: PathBuf) -> HcResult<()> {
         let json_string = serde_json::to_string(self)?;
         let mut file = File::create(path)?;
@@ -239,7 +233,6 @@ impl Keystore {
     }
 
     /// gets a secret from the keystore
-    #[allow(dead_code)]
     pub fn get(&mut self, src_id_str: &str) -> HcResult<Arc<Mutex<Secret>>> {
         let src_id = src_id_str.to_string();
         if !self.secrets.contains_key(&src_id) {
@@ -403,7 +396,6 @@ impl Keystore {
     /// adds a keybundle into the keystore based on a seed already in the keystore by
     /// adding two keypair secrets (signing and encrypting) under the named prefix
     /// returns the public keys of the secrets
-    #[allow(dead_code)]
     pub fn get_keybundle(&mut self, src_id_prefix_str: &str) -> HcResult<KeyBundle> {
         let src_sign_id_str = [src_id_prefix_str, KEYBUNDLE_SIGNKEY_SUFFIX].join("");
         let src_enc_id_str = [src_id_prefix_str, KEYBUNDLE_ENCKEY_SUFFIX].join("");

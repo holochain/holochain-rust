@@ -276,7 +276,7 @@ mod tests {
             AgentConfiguration {
                 id: "hc-run-agent".to_string(),
                 name: "testAgent".to_string(),
-                public_address: "HcScIZx6nehW5i748gzMWHgq8CwerskpjoqoUkdthkvf36roqv3Skk46Wyub4yz"
+                public_address: "HcScjN8wBwrn3tuyg89aab3a69xsIgdzmX5P9537BqQZ5A7TEZu7qCY4Xzzjhma"
                     .to_string(),
                 key_file: "testAgent".to_string(),
                 holo_remote_key: None,

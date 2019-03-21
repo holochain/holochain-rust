@@ -344,14 +344,12 @@ impl Keystore {
         &mut self,
         src_id_str: &str,
         dst_id_str: &str,
-        context: &SeedContext,
-        index: u64,
         key_type: KeyType,
     ) -> HcResult<Base32> {
         let (src_secret, dst_id) = self.check_identifiers(src_id_str, dst_id_str)?;
         let (secret, public_key) = {
             let mut src_secret = src_secret.lock().unwrap();
-            let ref mut seed = match *src_secret {
+            let ref mut seed_buf = match *src_secret {
                 Secret::Seed(ref mut src) => src,
                 _ => {
                     return Err(HolochainError::ErrorGeneric(
@@ -359,10 +357,9 @@ impl Keystore {
                     ));
                 }
             };
-            let mut key_seed_buf = generate_derived_seed_buf(seed, context, index, SEED_SIZE)?;
             match key_type {
                 KeyType::Signing => {
-                    let key_pair = SigningKeyPair::new_from_seed(&mut key_seed_buf)?;
+                    let key_pair = SigningKeyPair::new_from_seed(seed_buf)?;
                     let public_key = key_pair.public();
                     (
                         Arc::new(Mutex::new(Secret::SigningKey(key_pair))),
@@ -370,7 +367,7 @@ impl Keystore {
                     )
                 }
                 KeyType::Encrypting => {
-                    let key_pair = EncryptingKeyPair::new_from_seed(&mut key_seed_buf)?;
+                    let key_pair = EncryptingKeyPair::new_from_seed(seed_buf)?;
                     let public_key = key_pair.public();
                     (
                         Arc::new(Mutex::new(Secret::EncryptingKey(key_pair))),
@@ -391,10 +388,8 @@ impl Keystore {
         &mut self,
         src_id_str: &str,
         dst_id_str: &str,
-        context: &SeedContext,
-        index: u64,
     ) -> HcResult<Base32> {
-        self.add_key_from_seed(src_id_str, dst_id_str, context, index, KeyType::Signing)
+        self.add_key_from_seed(src_id_str, dst_id_str, KeyType::Signing)
     }
 
     /// adds an encrypting keypair into the keystore based on a seed already in the keystore
@@ -403,10 +398,8 @@ impl Keystore {
         &mut self,
         src_id_str: &str,
         dst_id_str: &str,
-        context: &SeedContext,
-        index: u64,
     ) -> HcResult<Base32> {
-        self.add_key_from_seed(src_id_str, dst_id_str, context, index, KeyType::Encrypting)
+        self.add_key_from_seed(src_id_str, dst_id_str, KeyType::Encrypting)
     }
 
     /// adds a keybundle into the keystore based on a seed already in the keystore by
@@ -416,26 +409,14 @@ impl Keystore {
         &mut self,
         src_id_str: &str,
         dst_id_prefix_str: &str,
-        context: &SeedContext,
-        index: u64,
     ) -> HcResult<(Base32, Base32)> {
         let dst_sign_id_str = [dst_id_prefix_str, KEYBUNDLE_SIGNKEY_SUFFIX].join("");
         let dst_enc_id_str = [dst_id_prefix_str, KEYBUNDLE_ENCKEY_SUFFIX].join("");
 
-        let sign_pub_key = self.add_key_from_seed(
-            src_id_str,
-            &dst_sign_id_str,
-            context,
-            index,
-            KeyType::Signing,
-        )?;
-        let enc_pub_key = self.add_key_from_seed(
-            src_id_str,
-            &dst_enc_id_str,
-            context,
-            index,
-            KeyType::Encrypting,
-        )?;
+        let sign_pub_key =
+            self.add_key_from_seed(src_id_str, &dst_sign_id_str, KeyType::Signing)?;
+        let enc_pub_key =
+            self.add_key_from_seed(src_id_str, &dst_enc_id_str, KeyType::Encrypting)?;
         Ok((sign_pub_key, enc_pub_key))
     }
 
@@ -537,7 +518,7 @@ pub mod tests {
     use super::*;
     use base64;
     use conductor::passphrase_manager::PassphraseServiceMock;
-    use holochain_dpki::{utils, AGENT_ID_CTX};
+    use holochain_dpki::utils;
 
     fn mock_passphrase_manager(passphrase: String) -> Arc<PassphraseManager> {
         Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
@@ -681,10 +662,9 @@ pub mod tests {
     #[test]
     fn test_keystore_add_signing_key_from_seed() {
         let mut keystore = new_test_keystore(random_test_passphrase());
-        let context = SeedContext::new(AGENT_ID_CTX);
 
         assert_eq!(
-            keystore.add_signing_key_from_seed("my_root_seed", "my_keypair", &context, 1),
+            keystore.add_signing_key_from_seed("my_root_seed", "my_keypair"),
             Err(HolochainError::ErrorGeneric(
                 "unknown source identifier".to_string()
             ))
@@ -692,13 +672,13 @@ pub mod tests {
 
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
 
-        let result = keystore.add_signing_key_from_seed("my_root_seed", "my_keypair", &context, 1);
+        let result = keystore.add_signing_key_from_seed("my_root_seed", "my_keypair");
         assert!(!result.is_err());
         let pubkey = result.unwrap();
         assert!(format!("{}", pubkey).starts_with("Hc"));
 
         assert_eq!(
-            keystore.add_signing_key_from_seed("my_root_seed", "my_keypair", &context, 1),
+            keystore.add_signing_key_from_seed("my_root_seed", "my_keypair"),
             Err(HolochainError::ErrorGeneric(
                 "identifier already exists".to_string()
             ))
@@ -708,8 +688,6 @@ pub mod tests {
     #[test]
     fn test_keystore_sign() {
         let mut keystore = new_test_keystore(random_test_passphrase());
-        let context = SeedContext::new(AGENT_ID_CTX);
-
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
 
         let data = base64::encode("the data to sign");
@@ -722,7 +700,7 @@ pub mod tests {
         );
 
         let public_key = keystore
-            .add_signing_key_from_seed("my_root_seed", "my_keypair", &context, 1)
+            .add_signing_key_from_seed("my_root_seed", "my_keypair")
             .unwrap();
 
         let result = keystore.sign("my_keypair", data.clone());
@@ -736,7 +714,7 @@ pub mod tests {
         assert!(result.unwrap());
 
         keystore
-            .add_encrypting_key_from_seed("my_root_seed", "my_enc_keypair", &context, 1)
+            .add_encrypting_key_from_seed("my_root_seed", "my_enc_keypair")
             .unwrap();
         assert_eq!(
             keystore.sign("my_enc_keypair", data.clone()),
@@ -764,10 +742,9 @@ pub mod tests {
     #[test]
     fn test_keystore_keybundle() {
         let mut keystore = new_test_keystore(random_test_passphrase());
-        let context = SeedContext::new(AGENT_ID_CTX);
 
         assert_eq!(
-            keystore.add_keybundle_from_seed("my_root_seed", "my_keybundle", &context, 1),
+            keystore.add_keybundle_from_seed("my_root_seed", "my_keybundle"),
             Err(HolochainError::ErrorGeneric(
                 "unknown source identifier".to_string()
             ))
@@ -775,13 +752,13 @@ pub mod tests {
 
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
 
-        let result = keystore.add_keybundle_from_seed("my_root_seed", "my_keybundle", &context, 1);
+        let result = keystore.add_keybundle_from_seed("my_root_seed", "my_keybundle");
         assert!(!result.is_err());
         let (sign_pubkey, enc_pubkey) = result.unwrap();
         assert!(format!("{}", sign_pubkey).starts_with("Hc"));
 
         assert_eq!(
-            keystore.add_keybundle_from_seed("my_root_seed", "my_keybundle", &context, 1),
+            keystore.add_keybundle_from_seed("my_root_seed", "my_keybundle"),
             Err(HolochainError::ErrorGeneric(
                 "identifier already exists".to_string()
             ))

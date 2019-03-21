@@ -4,7 +4,7 @@ use crate::{
 };
 use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceMock};
 use holochain_core_types::error::HolochainError;
-use holochain_dpki::{utils::SeedContext, AGENT_ID_CTX, SEED_SIZE};
+use holochain_dpki::SEED_SIZE;
 use holochain_sodium::{hash::sha256, secbuf::SecBuf};
 use keystore::test_hash_config;
 use std::{
@@ -42,10 +42,9 @@ pub fn test_keystore(agent_name: &String) -> Keystore {
 
     let secret = Arc::new(Mutex::new(Secret::Seed(seed)));
     keystore.add("root_seed", secret).unwrap();
-    let context = SeedContext::new(AGENT_ID_CTX);
 
     keystore
-        .add_keybundle_from_seed("root_seed", agent_name, &context, 1)
+        .add_keybundle_from_seed("root_seed", agent_name)
         .unwrap();
     keystore
 }

@@ -791,7 +791,7 @@ pub mod tests {
         signal::signal_channel,
     };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
-    use holochain_dpki::{key_bundle::KeyBundle, utils::SeedContext, AGENT_ID_CTX, SEED_SIZE};
+    use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
     use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
@@ -850,10 +850,9 @@ pub mod tests {
 
         let secret = Arc::new(Mutex::new(Secret::Seed(seed)));
         keystore.add("root_seed", secret).unwrap();
-        let context = SeedContext::new(AGENT_ID_CTX);
 
         keystore
-            .add_keybundle_from_seed("root_seed", &agent_name, &context, 1)
+            .add_keybundle_from_seed("root_seed", &agent_name)
             .unwrap();
         keystore
     }
@@ -1294,7 +1293,7 @@ pub mod tests {
         conductor.key_loader = test_key_loader();
         assert_eq!(
             conductor.load_config(),
-            Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCiE4WAT9AX3zv3b3Gd7HkM8U6TA7vvZ4otQ5Me7K7cwkvvvh6eMAvfd5w6mi\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
+            Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
                 .to_string()),
         );
     }

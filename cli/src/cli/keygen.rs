@@ -1,7 +1,7 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
-use holochain_dpki::{utils::SeedContext, AGENT_ID_CTX, SEED_SIZE};
+use holochain_dpki::SEED_SIZE;
 use rpassword;
 use std::{fs::create_dir_all, path::PathBuf};
 
@@ -27,9 +27,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     let mut keystore = Keystore::new(mock_passphrase_manager(passphrase), None)?;
     keystore.add_random_seed("root_seed", SEED_SIZE)?;
 
-    let context = SeedContext::new(AGENT_ID_CTX);
-    let (pub_key, _) =
-        keystore.add_keybundle_from_seed("root_seed", PRIMARY_KEYBUNDLE_ID, &context, 1)?;
+    let (pub_key, _) = keystore.add_keybundle_from_seed("root_seed", PRIMARY_KEYBUNDLE_ID)?;
 
     let path = if None == path {
         let p = keys_directory();

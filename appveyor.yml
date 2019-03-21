@@ -1,7 +1,7 @@
 # https://www.appveyor.com/docs/enterprise/running-builds-on-aws/
 
 build_cloud: master
-image: hc-scripted
+image: hc-test
 
 shallow_clone: true
 version: 1.0.{build}

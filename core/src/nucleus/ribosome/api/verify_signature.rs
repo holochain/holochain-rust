@@ -33,8 +33,7 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
     let mut signature_data = SecBuf::with_insecure_from_string(signature.into());
 
     let verification_result =
-        holochain_dpki::utils::verify(addr.into(), &mut message_data, &mut signature_data)
-            .unwrap_or(false);
+        holochain_dpki::utils::verify(addr.into(), &mut message_data, &mut signature_data);
 
-    runtime.store_as_json_string(verification_result)
+    runtime.store_result(verification_result)
 }

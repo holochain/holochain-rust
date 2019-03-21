@@ -154,7 +154,7 @@ scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
 
   const VerificationResult = alice.call("converse", "verify_message", { message, provenance: [bob.agentId, SignResult.Ok] });
 
-  t.equal(VerificationResult.Err, true);
+  t.deepEqual(VerificationResult, { Ok: true });
 })
 
 scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {

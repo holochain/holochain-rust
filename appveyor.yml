@@ -13,5 +13,5 @@ environment:
   APPVEYOR_BUILD_WORKER_CLOUD: master
 
 test_script:
- - setx RUSTFLAGS -D warnings -Z external-macro-backtrace -Z thinlto -C codegen-units=32 -C opt-level=z
+ - $Env:RUSTFLAGS = "-D warnings -Z external-macro-backtrace -Z thinlto -C codegen-units=32 -C opt-level=z"
  - cargo test --release -p hc --target-dir C:\build\cli\target

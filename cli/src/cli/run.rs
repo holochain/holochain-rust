@@ -6,11 +6,11 @@ use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
     config::*,
     key_loaders::{test_keystore, test_keystore_loader},
+    keystore::PRIMARY_KEYBUNDLE_ID,
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
 use std::{fs, path::PathBuf};
-use holochain_conductor_api::keystore::PRIMARY_KEYBUNDLE_ID;
 
 /// Starts a minimal configuration Conductor with the current application running
 pub fn run(

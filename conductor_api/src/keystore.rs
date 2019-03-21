@@ -45,7 +45,7 @@ pub enum Secret {
     Seed(SecBuf),
 }
 
-enum KeyType {
+pub enum KeyType {
     Signing,
     Encrypting,
 }
@@ -341,7 +341,7 @@ impl Keystore {
 
     /// adds a keypair into the keystore based on a seed already in the keystore
     /// returns the public key
-    fn add_key_from_seed(
+    pub fn add_key_from_seed(
         &mut self,
         src_id_str: &str,
         dst_id_str: &str,

@@ -1,7 +1,11 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_wasm_utils::api_serialization::sign::SignArgs;
+use holochain_wasm_utils::api_serialization::sign::{SignArgs, SignOneTimeResult};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
+use holochain_core_types::error::error::HcResult;
+use holochain_core_types::signature::Signature;
+use holochain_sodium::secbuf::SecBuf;
+use holochain_dpki::keypair::generate_random_sign_keypair;
 
 /// ZomeApiFunction::Sign function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -18,7 +22,7 @@ pub fn invoke_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         // Exit on error
         Err(_) => {
             context.log(format!(
-                "err/zome: invoke_sign failed to deserialize SerializedEntry: {:?}",
+                "err/zome: invoke_sign failed to deserialize SignArgs: {:?}",
                 args_str
             ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
@@ -28,6 +32,46 @@ pub fn invoke_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let signature = context.sign(sign_args.payload);
 
     runtime.store_result(signature)
+}
+
+/// ZomeApiFunction::SignOneTime function code
+/// args: [0] encoded MemoryAllocation as u64
+/// Expected argument: u64
+/// Returns an HcApiReturnCode as I64
+pub fn invoke_sign_one_time(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+
+    let sign_args = match SignArgs::try_from(args_str.clone()) {
+        Ok(entry_input) => entry_input,
+        // Exit on error
+        Err(_) => {
+            context.log(format!(
+                "err/zome: invoke_sign_one_time failed to deserialize SignArgs: {:?}",
+                args_str
+            ));
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
+    };
+
+    runtime.store_result(sign_one_time(sign_args.payload))
+}
+
+/// creates a one-time private key and sign data returning the signature and the public key
+pub fn sign_one_time(data: String) -> HcResult<SignOneTimeResult> {
+    let mut data_buf = SecBuf::with_insecure_from_string(data);
+    let mut sign_keys = generate_random_sign_keypair()?;
+
+    let mut signature_buf = sign_keys.sign(&mut data_buf)?;
+    let buf = signature_buf.read_lock();
+    // Return as base64 encoded string
+    let signature_str = base64::encode(&**buf);
+    Ok(SignOneTimeResult {
+        pub_key: sign_keys.public,
+        signature: Signature::from(signature_str),
+    })
 }
 
 #[cfg(test)]

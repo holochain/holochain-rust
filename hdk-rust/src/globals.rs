@@ -42,6 +42,8 @@ extern "C" {
 
     pub(crate) fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
 
+    pub(crate) fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
     pub(crate) fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
 
     pub(crate) fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits;

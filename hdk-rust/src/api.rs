@@ -39,6 +39,7 @@ use std::{
     convert::{TryFrom, TryInto},
     time::Duration,
 };
+use holochain_wasm_utils::api_serialization::sign::SignOneTimeResult;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -214,6 +215,7 @@ pub enum Dispatch {
     Sleep,
     RemoveLink,
     Sign,
+    SignOneTime,
     VerifySignature,
 }
 
@@ -247,6 +249,7 @@ impl Dispatch {
                 Dispatch::Sleep => hc_sleep,
                 Dispatch::RemoveLink => hc_remove_link,
                 Dispatch::Sign => hc_sign,
+                Dispatch::SignOneTime => hc_sign_one_time,
                 Dispatch::VerifySignature => hc_verify_signature,
             })(encoded_input)
         };
@@ -751,6 +754,13 @@ pub fn remove_link<S: Into<String>>(
 /// sign ( priv_id_str, base64payload ) -> ( base64signature )
 pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     Dispatch::Sign.with_input(SignArgs {
+        payload: payload.into(),
+    })
+}
+
+/// sign ( priv_id_str, base64payload ) -> ( base64signature )
+pub fn sign_one_time<S: Into<String>>(payload: S) -> ZomeApiResult<SignOneTimeResult> {
+    Dispatch::SignOneTime.with_input(SignArgs {
         payload: payload.into(),
     })
 }

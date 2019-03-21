@@ -31,3 +31,5 @@ conductor_api/tmp-storage/*
 conductor_api/tmp-test/*
 tmp-test-conductor-config.toml
 tmp-*-conductor-config.toml
+
+Cargo.lock

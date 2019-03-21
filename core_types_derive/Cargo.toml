@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core_types_derive"
-version = "0.0.7-alpha"
+version = "0.0.8-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]

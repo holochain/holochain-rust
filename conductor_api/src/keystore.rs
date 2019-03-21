@@ -86,7 +86,6 @@ pub struct Keystore {
     secrets: BTreeMap<String, KeyBlob>,
 
     // The following fields are transient, i.e. not serialized to the keystore file:
-
     /// Using a secret from [secrets] will result in decrypting the secret and
     /// storing it in this cache.
     /// TODO: maybe clear the cache for certain (not agent keys) items after some time?

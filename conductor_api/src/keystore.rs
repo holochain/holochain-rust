@@ -113,6 +113,8 @@ fn make_passphrase_check(
 }
 
 impl Keystore {
+    /// Create a new keystore.
+    /// This will query `passphrase_manager` immediately to set a passphrase for the keystore.
     pub fn new(
         passphrase_manager: Arc<PassphraseManager>,
         hash_config: Option<PwHashConfig>,
@@ -129,6 +131,9 @@ impl Keystore {
         })
     }
 
+    /// Load a keystore from file.
+    /// This won't ask for a passphrase until a secret is used via the other functions.
+    /// Secrets will get loaded to memory instantly but stay encrypted until requested.
     pub fn new_from_file(
         path: PathBuf,
         passphrase_manager: Arc<PassphraseManager>,
@@ -143,6 +148,9 @@ impl Keystore {
         Ok(keystore)
     }
 
+    /// This tries to decrypt `passphrase_check` with the given passphrase and
+    /// expects to read `PCHECK_HEADER` from the decrypted text, ignoring the
+    /// random bytes following the header.
     fn check_passphrase(&self, mut passphrase: &mut SecBuf) -> HcResult<bool> {
         let mut decrypted_buf = decrypt_with_passphrase_buf(
             &self.passphrase_check,
@@ -170,6 +178,8 @@ impl Keystore {
         Ok(())
     }
 
+    /// This function expects the named secret in `secrets`, decrypts it and stores the decrypted
+    /// representation in `cache`.
     fn decrypt(&mut self, id_str: &String) -> HcResult<()> {
         let blob = self
             .secrets
@@ -202,6 +212,8 @@ impl Keystore {
         Ok(())
     }
 
+    /// This expects an unencrypted named secret in `cache`, encrypts it and stores the
+    /// encrypted representation in `secrets`.
     fn encrypt(&mut self, id_str: &String) -> HcResult<()> {
         let secret = self
             .cache
@@ -230,6 +242,7 @@ impl Keystore {
         Ok(())
     }
 
+    /// Serialize the keystore to a file.
     pub fn save(&self, path: PathBuf) -> HcResult<()> {
         let json_string = serde_json::to_string(self)?;
         let mut file = File::create(path)?;

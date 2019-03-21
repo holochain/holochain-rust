@@ -10,6 +10,7 @@ use holochain_conductor_api::{
 };
 use holochain_core_types::agent::AgentId;
 use std::{fs, path::PathBuf};
+use holochain_conductor_api::keystore::PRIMARY_KEYBUNDLE_ID;
 
 /// Starts a minimal configuration Conductor with the current application running
 pub fn run(
@@ -99,7 +100,7 @@ fn agent_configuration() -> AgentConfiguration {
         .unwrap_or_else(|| String::from(AGENT_NAME_DEFAULT));
     let mut keystore = test_keystore(&agent_name);
     let pub_key = keystore
-        .get_keybundle(&agent_name)
+        .get_keybundle(PRIMARY_KEYBUNDLE_ID)
         .expect("should be able to get keybundle")
         .get_id();
     let agent_id = AgentId::new(&agent_name, pub_key);

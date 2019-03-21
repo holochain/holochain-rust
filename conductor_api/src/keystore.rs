@@ -239,13 +239,11 @@ impl Keystore {
     }
 
     /// return a list of the identifiers stored in the keystore
-    #[allow(dead_code)]
     pub fn list(&self) -> Vec<String> {
         self.secrets.keys().map(|k| k.to_string()).collect()
     }
 
     /// adds a secret to the keystore
-    #[allow(dead_code)]
     pub fn add(&mut self, dst_id_str: &str, secret: Arc<Mutex<Secret>>) -> HcResult<()> {
         let dst_id = self.check_dst_identifier(dst_id_str)?;
         self.cache.insert(dst_id.clone(), secret);
@@ -254,7 +252,6 @@ impl Keystore {
     }
 
     /// adds a random root seed into the keystore
-    #[allow(dead_code)]
     pub fn add_random_seed(&mut self, dst_id_str: &str, size: usize) -> HcResult<()> {
         let dst_id = self.check_dst_identifier(dst_id_str)?;
         let seed_buf = generate_random_buf(size);
@@ -301,7 +298,6 @@ impl Keystore {
     }
 
     /// adds a derived seed into the keystore
-    #[allow(dead_code)]
     pub fn add_seed_from_seed(
         &mut self,
         src_id_str: &str,
@@ -332,7 +328,6 @@ impl Keystore {
 
     /// adds a keypair into the keystore based on a seed already in the keystore
     /// returns the public key
-    #[allow(dead_code)]
     fn add_key_from_seed(
         &mut self,
         src_id_str: &str,
@@ -380,7 +375,6 @@ impl Keystore {
 
     /// adds a signing keypair into the keystore based on a seed already in the keystore
     /// returns the public key
-    #[allow(dead_code)]
     pub fn add_signing_key_from_seed(
         &mut self,
         src_id_str: &str,
@@ -393,7 +387,6 @@ impl Keystore {
 
     /// adds an encrypting keypair into the keystore based on a seed already in the keystore
     /// returns the public key
-    #[allow(dead_code)]
     pub fn add_encrypting_key_from_seed(
         &mut self,
         src_id_str: &str,
@@ -407,7 +400,6 @@ impl Keystore {
     /// adds a keybundle into the keystore based on a seed already in the keystore by
     /// adding two keypair secrets (signing and encrypting) under the named prefix
     /// returns the public keys of the secrets
-    #[allow(dead_code)]
     pub fn add_keybundle_from_seed(
         &mut self,
         src_id_str: &str,
@@ -481,7 +473,6 @@ impl Keystore {
 
     /// signs some data using a keypair in the keystore
     /// returns the signature
-    #[allow(dead_code)]
     pub fn sign(&mut self, src_id_str: &str, data: String) -> HcResult<Signature> {
         let src_secret = self.get(src_id_str)?;
         let mut src_secret = src_secret.lock().unwrap();
@@ -505,13 +496,11 @@ impl Keystore {
 }
 
 /// verifies data and signature against a public key
-#[allow(dead_code)]
 pub fn verify(public_key: Base32, data: String, signature: Signature) -> HcResult<bool> {
     signingkey_verify(Address::from(public_key), data, signature)
 }
 
 /// creates a one-time private key and sign data returning the signature and the public key
-#[allow(dead_code)]
 pub fn sign_one_time(data: String) -> HcResult<(Base32, Signature)> {
     let mut data_buf = SecBuf::with_insecure_from_string(data);
     let mut sign_keys = generate_random_sign_keypair()?;

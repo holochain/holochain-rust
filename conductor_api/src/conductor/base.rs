@@ -280,6 +280,7 @@ impl Conductor {
                 String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
                 String::from("N3H_LOG_LEVEL") => network_config.n3h_log_level.clone(),
             },
+            2000,
             true,
         )
         .map_err(|error| {

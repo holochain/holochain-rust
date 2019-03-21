@@ -9,6 +9,8 @@ use holochain_net::{
         net_connection::NetSend,
     },
     p2p_network::P2pNetwork,
+    // Enable this for debugging network
+    // tweetlog::*,
 };
 use std::sync::{Arc, Mutex};
 
@@ -31,6 +33,7 @@ pub fn reduce_init(
     //        tweetlog.set(LogLevel::Debug, Some("memory_server".to_string()));
     //        tweetlog.listen_to_tag("memory_server", Tweetlog::console);
     //        tweetlog.listen(Tweetlog::console);
+    //        tweetlog.i("TWEETLOG ENABLED");
     //    }
 
     let json = JsonProtocol::TrackDna(TrackDnaData {

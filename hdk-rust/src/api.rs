@@ -23,7 +23,7 @@ use holochain_wasm_utils::{
         get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
         link_entries::LinkEntriesArgs,
         send::{SendArgs, SendOptions},
-        sign::SignArgs,
+        sign::{SignArgs, SignOneTimeResult},
         verify_signature::VerifySignatureArgs,
         QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
@@ -39,7 +39,6 @@ use std::{
     convert::{TryFrom, TryInto},
     time::Duration,
 };
-use holochain_wasm_utils::api_serialization::sign::SignOneTimeResult;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES

@@ -1,6 +1,4 @@
-use holochain_core_types::{error::HolochainError, json::*};
-use holochain_core_types::agent::Base32;
-use holochain_core_types::signature::Signature;
+use holochain_core_types::{agent::Base32, error::HolochainError, json::*, signature::Signature};
 
 #[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize, DefaultJson)]
 pub struct SignArgs {

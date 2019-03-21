@@ -20,13 +20,22 @@ pub mod verify_signature;
 
 use crate::nucleus::ribosome::{
     api::{
-        call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
-        entry_address::invoke_entry_address, get_entry::invoke_get_entry,
-        get_links::invoke_get_links, init_globals::invoke_init_globals,
-        link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
-        remove_link::invoke_remove_link, send::invoke_send,
-        sign::{invoke_sign, invoke_sign_one_time}, sleep::invoke_sleep,
-        update_entry::invoke_update_entry, verify_signature::invoke_verify_signature,
+        call::invoke_call,
+        commit::invoke_commit_app_entry,
+        debug::invoke_debug,
+        entry_address::invoke_entry_address,
+        get_entry::invoke_get_entry,
+        get_links::invoke_get_links,
+        init_globals::invoke_init_globals,
+        link_entries::invoke_link_entries,
+        query::invoke_query,
+        remove_entry::invoke_remove_entry,
+        remove_link::invoke_remove_link,
+        send::invoke_send,
+        sign::{invoke_sign, invoke_sign_one_time},
+        sleep::invoke_sleep,
+        update_entry::invoke_update_entry,
+        verify_signature::invoke_verify_signature,
     },
     runtime::Runtime,
     Defn,
@@ -105,7 +114,6 @@ pub enum ZomeApiFunction {
     KeystoreDeriveSeed,
     KeystoreDeriveKey,
     KeystoreSign,
-
 }
 
 impl Defn for ZomeApiFunction {
@@ -472,7 +480,10 @@ pub mod tests {
             ("hc_verify_signature", ZomeApiFunction::VerifySignature),
             ("hc_keystore_list", ZomeApiFunction::KeystoreList),
             ("hc_keystore_new_random", ZomeApiFunction::KeystoreNewRandom),
-            ("hc_keystore_derive_seed", ZomeApiFunction::KeystoreDeriveSeed),
+            (
+                "hc_keystore_derive_seed",
+                ZomeApiFunction::KeystoreDeriveSeed,
+            ),
             ("hc_keystore_derive_key", ZomeApiFunction::KeystoreDeriveKey),
             ("hc_keystore_sign", ZomeApiFunction::KeystoreSign),
         ] {
@@ -511,7 +522,10 @@ pub mod tests {
             (ZomeApiFunction::VerifySignature, "hc_verify_signature"),
             (ZomeApiFunction::KeystoreList, "hc_keystore_list"),
             (ZomeApiFunction::KeystoreNewRandom, "hc_keystore_new_random"),
-            (ZomeApiFunction::KeystoreDeriveSeed, "hc_keystore_derive_seed"),
+            (
+                ZomeApiFunction::KeystoreDeriveSeed,
+                "hc_keystore_derive_seed",
+            ),
             (ZomeApiFunction::KeystoreDeriveKey, "hc_keystore_derive_key"),
             (ZomeApiFunction::KeystoreSign, "hc_keystore_sign"),
         ] {

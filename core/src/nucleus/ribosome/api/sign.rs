@@ -1,11 +1,10 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use holochain_core_types::{error::error::HcResult, signature::Signature};
+use holochain_dpki::keypair::generate_random_sign_keypair;
+use holochain_sodium::secbuf::SecBuf;
 use holochain_wasm_utils::api_serialization::sign::{SignArgs, SignOneTimeResult};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
-use holochain_core_types::error::error::HcResult;
-use holochain_core_types::signature::Signature;
-use holochain_sodium::secbuf::SecBuf;
-use holochain_dpki::keypair::generate_random_sign_keypair;
 
 /// ZomeApiFunction::Sign function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -76,14 +75,13 @@ pub fn sign_one_time(data: String) -> HcResult<SignOneTimeResult> {
 
 #[cfg(test)]
 mod test_super {
+    use super::sign_one_time;
     use crate::nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::json::JsonString;
-    use super::sign_one_time;
+    use holochain_core_types::{cas::content::Address, json::JsonString};
     use holochain_dpki::utils::verify;
-    use holochain_core_types::cas::content::Address;
 
     /// test that bytes passed to debug end up in the log
     #[test]

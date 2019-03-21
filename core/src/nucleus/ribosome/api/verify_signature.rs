@@ -27,6 +27,10 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         }
     };
 
+    context.log(format!(
+        "debug/zome: using provenance:{:?} to verify data:{:?}", verification_args.provenance.clone(), verification_args.payload.clone()
+    ));
+
     let Provenance(addr, signature) = verification_args.provenance;
 
     let mut message_data = SecBuf::with_insecure_from_string(verification_args.payload.clone());

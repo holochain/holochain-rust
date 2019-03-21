@@ -11,15 +11,15 @@ use holochain_core::{
     action::Action,
     context::Context,
     logger::{test_logger, TestLogger},
-    signal::Signal,
     nucleus::actions::call_zome_function::make_cap_request_for_call,
-    };
+    signal::Signal,
+};
 use holochain_core_types::{
     cas::content::AddressableContent,
     dna::{
-        traits::ReservedTraitNames,
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
+        traits::ReservedTraitNames,
         wasm::DnaWasm,
         zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,
@@ -165,6 +165,23 @@ pub fn create_test_dna_with_defs(
     dna
 }
 
+pub fn create_arbitrary_test_dna() -> Dna {
+    let wat = r#"
+    (module
+     (memory 1)
+     (export "memory" (memory 0))
+     (export "public_test_fn" (func $func0))
+     (func $func0 (param $p0 i64) (result i64)
+           i64.const 16
+           )
+     (data (i32.const 0)
+           "{\"holo\":\"world\"}"
+           )
+     )
+    "#;
+    create_test_dna_with_wat("test_zome", Some(wat))
+}
+
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger_with_network_name(
     agent_name: &str,
@@ -225,7 +242,7 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
     let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
 
     let params_string = String::from(params.into());
-    let cap_request =  make_cap_request_for_call(
+    let cap_request = make_cap_request_for_call(
         context.clone(),
         context.clone().agent_id.address(),
         fn_name,
@@ -235,12 +252,7 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
-    return hc.call(
-        "test_zome",
-        cap_request,
-        fn_name,
-        &params_string,
-    );
+    return hc.call("test_zome", cap_request, fn_name, &params_string);
 }
 
 /// create a test context and TestLogger pair so we can use the logger in assertions

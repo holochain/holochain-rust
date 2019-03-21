@@ -566,7 +566,7 @@ pub mod tests {
         format!(
             r#"[[agents]]
 id = 'test-agent-1'
-key_file = 'holo_tester1.key'
+keystore_file = 'holo_tester1.key'
 name = 'Holo Tester 1'
 public_address = '{}'"#,
             test_keybundle(1).get_id()
@@ -577,7 +577,7 @@ public_address = '{}'"#,
         format!(
             r#"[[agents]]
 id = 'test-agent-2'
-key_file = 'holo_tester2.key'
+keystore_file = 'holo_tester2.key'
 name = 'Holo Tester 2'
 public_address = '{}'"#,
             test_keybundle(2).get_id()
@@ -1379,7 +1379,7 @@ type = 'websocket'"#,
             id: String::from("new-agent"),
             name: String::from("Mr. New"),
             public_address: AgentId::generate_fake("new").address().to_string(),
-            key_file: String::from("new-test-path"),
+            keystore_file: String::from("new-test-path"),
             holo_remote_key: None,
         };
 
@@ -1399,7 +1399,7 @@ type = 'websocket'"#,
             String::from(
                 r#"[[agents]]
 id = 'new-agent'
-key_file = 'new-test-path'
+keystore_file = 'new-test-path'
 name = 'Mr. New'
 public_address = 'HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa'"#,
             ),

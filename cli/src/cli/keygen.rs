@@ -46,7 +46,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     println!("Public address: {}", pub_key);
     println!("Bundle written to: {}.", path.to_str().unwrap());
     println!("");
-    println!("You can set this file in a conductor config as key_file for an agent.");
+    println!("You can set this file in a conductor config as keystore_file for an agent.");
     Ok(())
 }
 

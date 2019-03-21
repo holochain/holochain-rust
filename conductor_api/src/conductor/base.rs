@@ -563,15 +563,15 @@ impl Conductor {
                 .config
                 .agent_by_id(agent_id)
                 .ok_or(format!("Agent '{}' not found", agent_id))?;
-            let key_file_path = PathBuf::from(agent_config.key_file.clone());
+            let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
             let mut keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
-                &key_file_path,
+                &keystore_file_path,
                 self.passphrase_manager.clone(),
             )
             .map_err(|_| {
                 HolochainError::ConfigError(format!(
                     "Could not load keystore \"{}\"",
-                    agent_config.key_file,
+                    agent_config.keystore_file,
                 ))
             })?;
             let keybundle = keystore
@@ -581,7 +581,7 @@ impl Conductor {
             if agent_config.public_address != keybundle.get_id() {
                 return Err(format!(
                     "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
-                    key_file_path.to_str().unwrap(),
+                    keystore_file_path.to_str().unwrap(),
                     keybundle.get_id(),
                     agent_config.public_address,
                 ));
@@ -869,19 +869,19 @@ pub mod tests {
     id = "test-agent-1"
     name = "Holo Tester 1"
     public_address = "{}"
-    key_file = "holo_tester1.key"
+    keystore_file = "holo_tester1.key"
 
     [[agents]]
     id = "test-agent-2"
     name = "Holo Tester 2"
     public_address = "{}"
-    key_file = "holo_tester2.key"
+    keystore_file = "holo_tester2.key"
 
     [[agents]]
     id = "test-agent-3"
     name = "Holo Tester 3"
     public_address = "{}"
-    key_file = "holo_tester3.key"
+    keystore_file = "holo_tester3.key"
 
     [[dnas]]
     id = "test-dna"
@@ -1272,7 +1272,7 @@ pub mod tests {
                 id = "test-agent-1"
                 name = "Holo Tester 1"
                 public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
-                key_file = "holo_tester1.key"
+                keystore_file = "holo_tester1.key"
 
                 [[dnas]]
                 id = "test-dna"

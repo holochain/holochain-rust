@@ -14,24 +14,39 @@ use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 /// Lets try to get it and trigger a response.
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     let address = Address::from(get_dht_data.entry_address.clone());
-    println!("handle fetch entry");
-    let maybe_entry_with_meta =
-        nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone()).unwrap_or_else(
+    let get_entry = nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone())
+        .map(|entry_with_meta|{
+                let state = context.state().expect("Could not get state for handle_fetch_entry");
+                state.get_headers(address)
+                .map(|headers|{
+                    entry_with_meta.map(|entry|{
+                    Some(EntryWithMetaAndHeader{
+                            entry_with_meta : entry.clone(),
+                            headers,
+                        })
+                    }).unwrap_or(None)
+                })
+                .map_err(|error|{
+                    context.log(format!("err/net: Error trying to get headers {:?}", error));
+                    None::<EntryWithMetaAndHeader>
+                })
+
+        })
+        .map_err(
             |error| {
                 context.log(format!("err/net: Error trying to find entry {:?}", error));
-                None
+               None::<EntryWithMetaAndHeader>
             },
-        );
+        ).unwrap_or(Ok(None));
+    let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data, get_entry.unwrap_or(None))));
+    dispatch_action(context.action_channel(), action_wrapper.clone());
+    /*
     if let None = maybe_entry_with_meta 
     {
         println!("could not find entry");
         let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data.clone(), None)));
         dispatch_action(context.action_channel(), action_wrapper.clone());
         return;
-    };
-    if let None = context.state() {
-        println!("Could no get state");
-        context.log(format!("err/net: Error trying to get state"));
     };
     let state = context
         .state()
@@ -56,7 +71,7 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
 
     let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data, entry_with_meta_and_header)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    }
+    }*/
     
 }
 

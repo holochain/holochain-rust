@@ -29,7 +29,7 @@ fn reduce_respond_fetch_data_inner(
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: get_dht_data.entry_address.clone(),
             entry_content: serde_json::from_str(
-                &serde_json::to_string(&maybe_entry.clone().ok_or(HolochainError::ErrorGeneric("Could not get maybe entry".to_string()))?).unwrap(),
+                &serde_json::to_string(&maybe_entry.clone()).unwrap(),
             )
             .unwrap()
         }),
@@ -43,7 +43,9 @@ pub fn reduce_respond_fetch_data(
 ) {
     let action = action_wrapper.action();
     let (get_dht_data, maybe_entry) = unwrap_to!(action => crate::action::Action::RespondFetch);
+    println!("reduce respond fetch data inner");
     let result = reduce_respond_fetch_data_inner(network_state, get_dht_data, maybe_entry);
+    println!("got result {:?}",result.clone());
     network_state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::RespondFetch(match result {

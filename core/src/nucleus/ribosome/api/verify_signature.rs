@@ -28,7 +28,9 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
     };
 
     context.log(format!(
-        "debug/zome: using provenance:{:?} to verify data:{:?}", verification_args.provenance.clone(), verification_args.payload.clone()
+        "debug/zome: using provenance:{:?} to verify data:{:?}",
+        verification_args.provenance.clone(),
+        verification_args.payload.clone()
     ));
 
     let Provenance(addr, signature) = verification_args.provenance;
@@ -40,4 +42,25 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         holochain_dpki::utils::verify(addr.into(), &mut message_data, &mut signature_data);
 
     runtime.store_result(verification_result)
+}
+
+/// test that bytes passed to debug end up in the log
+#[test]
+fn test_zome_api_function_verify() {
+    let (call_result, context) = test_zome_api_function(
+        ZomeApiFunction::Sign.as_str(),
+        r#"{ "payload": "this is data" }"#.as_bytes().to_vec(),
+    );
+    assert_eq!(JsonString::from(r#"{"ok":true,"value":"xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA==","error":"null"}"#), call_result,);
+
+    let args = format!(r#"{{ "provenance": ["{}","xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA=="], "payload": "this is data" }}"#,context.agent_id.address());
+    let (call_result, _) = test_zome_api_function(
+        ZomeApiFunction::VerifySignature.as_str(),
+        args.as_bytes().to_vec(),
+    );
+
+    assert_eq!(
+        JsonString::from(r#"{"ok":true,"value":"true","error":"null"}"#),
+        call_result,
+    );
 }

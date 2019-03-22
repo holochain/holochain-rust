@@ -9,8 +9,7 @@ use futures::{
 };
 use holochain_core_types::{
     cas::content::Address, chain_header::ChainHeader, entry::EntryWithMeta, error::HcResult,
-    time::Timeout,
-    error::HolochainError
+    time::Timeout
 };
 use std::{pin::Pin, sync::Arc, thread};
 

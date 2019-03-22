@@ -185,10 +185,7 @@ impl Tweetlog {
 
     /// Set the logging level, either globally, or for a tag
     pub fn set(&mut self, level: LogLevel, maybe_tag: Option<String>) {
-        let tag = match maybe_tag {
-            None => "_".to_string(),
-            Some(tag) => tag,
-        };
+        let tag = maybe_tag.unwrap_or_else(|| "_".to_string());
         // update existing logger
         {
             let maybe_logger = self.log_by_tag.get_mut(&tag);
@@ -237,30 +234,23 @@ impl Tweetlog {
 
     /// Check if a given level and tag would be logged
     pub fn should(&self, level: LogLevel, maybe_tag: Option<String>) -> bool {
-        let tag = match maybe_tag {
-            None => "_".to_string(),
-            Some(tag) => tag,
-        };
-        let maybe_logger = self.log_by_tag.get(&tag);
-        match maybe_logger {
-            None => false,
-            Some(logger) => (logger.level.clone() as usize) <= (level as usize),
-        }
+        let tag = maybe_tag.unwrap_or_else(|| "_".to_string());
+
+        self.log_by_tag.get(&tag).map_or(false, |logger| {
+            (logger.level.clone() as usize) <= (level as usize)
+        })
     }
 
     /// callback according to level and tag
     fn tweet(&self, level: LogLevel, maybe_tag: Option<&str>, msg: &str) {
-        // replace None to "_"
-        let tag = match maybe_tag {
-            None => "_",
-            Some(tag) => tag,
-        };
+        let tag = maybe_tag.unwrap_or("_");
+
         // Find logger, if unknown tag use general
-        let maybe_logger = self.log_by_tag.get(tag);
-        let logger = match maybe_logger {
-            None => self.log_by_tag.get("_").unwrap(),
-            Some(logger) => logger,
-        };
+        let logger = self
+            .log_by_tag
+            .get(tag)
+            .unwrap_or_else(|| &self.log_by_tag["_"]);
+
         // print if logger can
         if (logger.level.clone() as usize) <= (level.clone() as usize) {
             for cb in logger.callbacks.clone() {

@@ -139,8 +139,8 @@ pub struct EntryWithMeta {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct EntryWithMetaAndHeader {
-    pub entry_with_meta : EntryWithMeta,
-    pub headers : Vec<ChainHeader>
+    pub entry_with_meta: EntryWithMeta,
+    pub headers: Vec<ChainHeader>,
 }
 
 /// dummy entry value

@@ -601,7 +601,6 @@ impl InMemoryServer {
             provider_agent_id: msg.requester_agent_id.clone(),
             entry_address: msg.entry_address.clone(),
             entry_content: json!(null),
-            
         });
         self.priv_send_one(&msg.dna_address, &msg.requester_agent_id, response.into())?;
         // Done

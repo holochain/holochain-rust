@@ -5,7 +5,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry, EntryWithMeta},
     error::HolochainError,
     time::Timeout,
-    validation::{EntryValidationData,ValidationData}
+    validation::{EntryValidationData, ValidationData},
 };
 
 use std::sync::Arc;
@@ -190,8 +190,11 @@ fn get_entry_with_header(
     let entry_with_meta = pair.ok_or(HolochainError::ErrorGeneric(
         "Could not get chain".to_string(),
     ))?;
-    let latest_header = entry_with_meta.headers.last().ok_or(HolochainError::ErrorGeneric(
-        "Could not get last entry from chain".to_string(),
-    ))?;
+    let latest_header = entry_with_meta
+        .headers
+        .last()
+        .ok_or(HolochainError::ErrorGeneric(
+            "Could not get last entry from chain".to_string(),
+        ))?;
     Ok((entry_with_meta.entry_with_meta, latest_header.clone()))
 }

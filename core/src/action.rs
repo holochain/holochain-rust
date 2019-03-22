@@ -17,7 +17,7 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     dna::Dna,
-    entry::{Entry,EntryWithMetaAndHeader},
+    entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
     link::Link,
     validation::ValidationPackage,

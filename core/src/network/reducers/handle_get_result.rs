@@ -4,7 +4,7 @@ use crate::{
     network::state::NetworkState,
 };
 use holochain_core_types::{
-    cas::content::Address,  entry::EntryWithMetaAndHeader, error::HolochainError,
+    cas::content::Address, entry::EntryWithMetaAndHeader, error::HolochainError,
 };
 use holochain_net::connection::json_protocol::FetchEntryResultData;
 use std::sync::Arc;
@@ -18,13 +18,13 @@ fn reduce_handle_get_result_inner(
         HolochainError::ErrorGeneric("Could not serialize entry content".to_string())
     })?;
 
-    let entry_with_meta  = serde_json::from_str(&content).map_err(|_| {
+    let entry_with_meta = serde_json::from_str(&content).map_err(|_| {
         HolochainError::ErrorGeneric(
             "Failed to deserialize EntryWithMeta from HandleFetchResult action argument"
                 .to_string(),
         )
     })?;
-    
+
     Ok(entry_with_meta)
 }
 

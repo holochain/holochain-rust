@@ -25,11 +25,13 @@ pub mod tests {
         cas::content::{Address, AddressableContent},
         chain_header::ChainHeader,
         crud_status::CrudStatus,
-        entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMeta,EntryWithMetaAndHeader},
+        entry::{
+            entry_type::test_app_entry_type, test_entry, Entry, EntryWithMeta,
+            EntryWithMetaAndHeader,
+        },
         link::link_data::LinkData,
     };
     use test_utils::*;
-    
 
     // TODO: Should wait for a success or saturation response from the network module after Publish
     #[test]
@@ -77,7 +79,10 @@ pub mod tests {
         );
         let entry_with_meta_and_header = maybe_entry_with_meta.unwrap();
         assert_eq!(entry_with_meta_and_header.entry_with_meta.entry, entry);
-        assert_eq!(entry_with_meta_and_header.entry_with_meta.crud_status, CrudStatus::Live);
+        assert_eq!(
+            entry_with_meta_and_header.entry_with_meta.crud_status,
+            CrudStatus::Live
+        );
     }
 
     #[test]
@@ -184,7 +189,10 @@ pub mod tests {
         );
         let entry_with_meta_and_header = maybe_entry_with_meta.unwrap();
         assert_eq!(entry_with_meta_and_header.entry_with_meta.entry, entry);
-        assert_eq!(entry_with_meta_and_header.entry_with_meta.crud_status, CrudStatus::Live);
+        assert_eq!(
+            entry_with_meta_and_header.entry_with_meta.crud_status,
+            CrudStatus::Live
+        );
     }
 
     #[test]

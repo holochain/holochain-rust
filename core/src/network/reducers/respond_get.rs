@@ -3,9 +3,7 @@ use crate::{
     context::Context,
     network::{actions::ActionResponse, reducers::send, state::NetworkState},
 };
-use holochain_core_types::{
-     entry::EntryWithMetaAndHeader, error::HolochainError,
-};
+use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError};
 use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, JsonProtocol,
 };
@@ -31,7 +29,7 @@ fn reduce_respond_fetch_data_inner(
             entry_content: serde_json::from_str(
                 &serde_json::to_string(&maybe_entry.clone()).unwrap(),
             )
-            .unwrap()
+            .unwrap(),
         }),
     )
 }
@@ -45,7 +43,7 @@ pub fn reduce_respond_fetch_data(
     let (get_dht_data, maybe_entry) = unwrap_to!(action => crate::action::Action::RespondFetch);
     println!("reduce respond fetch data inner");
     let result = reduce_respond_fetch_data_inner(network_state, get_dht_data, maybe_entry);
-    println!("got result {:?}",result.clone());
+    println!("got result {:?}", result.clone());
     network_state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::RespondFetch(match result {

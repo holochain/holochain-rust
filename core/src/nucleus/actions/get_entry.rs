@@ -18,9 +18,8 @@ pub(crate) fn get_entry_from_cas(
     storage: &Arc<RwLock<dyn ContentAddressableStorage>>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    println!("fetching address");
     let json = (*storage.read().unwrap()).fetch(&address)?;
-    println!("got json");
+
     let entry: Option<Entry> = json
         .and_then(|js| js.try_into().ok())
         .map(|s: Entry| s.into());
@@ -68,9 +67,7 @@ pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    println!("trying to get dht state");
     let cas = context.state().unwrap().dht().content_storage().clone();
-    println!("got state");
     get_entry_from_cas(&cas.clone(), address)
 }
 
@@ -78,10 +75,9 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<(CrudStatus, Option<Address>)>, HolochainError> {
-    println!("trying to get crud meta state");
     let state_dht = context.state().unwrap().dht().clone();
     let dht = state_dht.meta_storage().clone();
-    println!("trying to get meta storage");
+
     let storage = &dht.clone();
     // Get crud-status
     let status_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
@@ -148,14 +144,12 @@ pub fn get_entry_with_meta<'a>(
     address: Address,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. try to get the entry
-    println!("trying to get entry");
     let entry = match get_entry_from_dht(context, &address) {
         Err(err) => return Err(err),
         Ok(None) => return Ok(None),
         Ok(Some(entry)) => entry,
     };
 
-    println!("trying to get crud");
     // 2. try to get the entry's metadata
     let (crud_status, maybe_link_update_delete) =
         match get_entry_crud_meta_from_dht(context, &address)? {
@@ -166,7 +160,6 @@ pub fn get_entry_with_meta<'a>(
                                      //added by a concurrent process but the CRUD status is still about
                                      //to get set. Either way, we should treat it as not existent (yet).
         };
-    println!("trying to get item");
     let item = EntryWithMeta {
         entry,
         crud_status,

@@ -87,7 +87,14 @@ link_zome_api! {
     "hc_sleep", Sleep, invoke_sleep;
     "hc_remove_link", RemoveLink, invoke_remove_link;
     "hc_sign", Sign, invoke_sign;
+    "hc_sign_one_time", SignOneTime, invoke_sign_one_time;
     "hc_verify_signature", VerifySignature, invoke_verify_signature;
+
+    "hc_keystore_list", KeystoreList, noop;
+    "hc_keystore_new_random", KeystoreNewRandom, noop;
+    "hc_keystore_derive_seed", KeystoreDeriveSeed, noop;
+    "hc_keystore_derive_key", KeystoreDeriveKey, noop;
+    "hc_keystore_sign", KeystoreSign, noop;
 }
 
 #[cfg(test)]

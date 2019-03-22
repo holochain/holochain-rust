@@ -25,15 +25,13 @@ pub fn invoke_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         }
     };
 
+    let signature = context.sign(sign_args.payload.clone());
+
     context.log(format!(
-        "debug/zome: signing data:{:?} as {:?}",
-        sign_args.payload.clone(),
-        context.agent_id
+        "debug/zome: signature of data:{:?} by:{:?} is:{:?}",
+        sign_args.payload, context.agent_id, signature
     ));
 
-    let signature = context.sign(sign_args.payload);
-
-    context.log(format!("debug/zome: signature: {:?}", signature));
     runtime.store_result(signature)
 }
 

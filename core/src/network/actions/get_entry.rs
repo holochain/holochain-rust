@@ -8,7 +8,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, entry::EntryWithMetaAndHeader, error::HcResult,
+    cas::content::Address, entry::EntryWithMetaAndHeader, error::HcResult,
     time::Timeout
 };
 use std::{pin::Pin, sync::Arc, thread};

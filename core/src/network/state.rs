@@ -4,7 +4,7 @@ use crate::{
 };
 use boolinator::*;
 use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, entry::{EntryWithMeta,EntryWithMetaAndHeader}, error::HolochainError,
+    cas::content::Address,  entry::{EntryWithMeta,EntryWithMetaAndHeader}, error::HolochainError,
     validation::ValidationPackage,
 };
 use holochain_net::p2p_network::P2pNetwork;

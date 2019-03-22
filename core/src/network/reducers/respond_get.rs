@@ -4,7 +4,7 @@ use crate::{
     network::{actions::ActionResponse, reducers::send, state::NetworkState},
 };
 use holochain_core_types::{
-    chain_header::ChainHeader, entry::EntryWithMetaAndHeader, error::HolochainError,
+     entry::EntryWithMetaAndHeader, error::HolochainError,
 };
 use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, JsonProtocol,

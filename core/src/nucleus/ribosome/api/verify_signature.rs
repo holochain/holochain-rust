@@ -26,10 +26,44 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         }
     };
 
+    context.log(format!(
+        "debug/zome: using provenance:{:?} to verify data:{:?}",
+        verification_args.provenance.clone(),
+        verification_args.payload.clone()
+    ));
+
     let verification_result = verification_args
         .provenance
-        .verify(verification_args.payload.clone())
-        .unwrap_or(false);
+        .verify(verification_args.payload.clone());
 
-    runtime.store_as_json_string(verification_result)
+    runtime.store_result(verification_result)
+}
+
+#[cfg(test)]
+mod test_super {
+    use crate::nucleus::ribosome::{
+        api::{tests::test_zome_api_function, ZomeApiFunction},
+        Defn,
+    };
+    use holochain_core_types::{cas::content::AddressableContent, json::JsonString};
+
+    #[test]
+    fn test_zome_api_function_verify() {
+        let (call_result, context) = test_zome_api_function(
+            ZomeApiFunction::Sign.as_str(),
+            r#"{ "payload": "this is data" }"#.as_bytes().to_vec(),
+        );
+        assert_eq!(JsonString::from(r#"{"ok":true,"value":"xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA==","error":"null"}"#), call_result,);
+
+        let args = format!(r#"{{ "provenance": ["{}","xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA=="], "payload": "this is data" }}"#,context.agent_id.address());
+        let (call_result, _) = test_zome_api_function(
+            ZomeApiFunction::VerifySignature.as_str(),
+            args.as_bytes().to_vec(),
+        );
+
+        assert_eq!(
+            JsonString::from(r#"{"ok":true,"value":"true","error":"null"}"#),
+            call_result,
+        );
+    }
 }

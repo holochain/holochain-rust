@@ -2,10 +2,7 @@
 //! developers! Detailed references and examples can be found here for how to use the
 //! HDK exposed functions to access powerful Holochain functions.
 
-use crate::{
-    error::{ZomeApiError, ZomeApiResult},
-    globals::*,
-};
+use crate::error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{
     cas::content::Address,
     entry::Entry,
@@ -26,26 +23,119 @@ use holochain_wasm_utils::{
         send::{SendArgs, SendOptions},
         sign::{SignArgs, SignOneTimeResult},
         verify_signature::VerifySignatureArgs,
-        QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
+        QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeApiGlobals,
+        ZomeFnCallArgs,
     },
     holochain_core_types::{
         hash::HashString,
         json::{JsonString, RawString},
     },
-    memory::ribosome::load_ribosome_encoded_json,
+    memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
 };
-use init_globals::hc_init_globals;
+use init_globals::init_globals;
 use serde_json;
 use std::{
     convert::{TryFrom, TryInto},
     time::Duration,
 };
 
+macro_rules! def_api_fns {
+    (
+        $(
+            $function_name:ident, $enum_variant:ident ;
+        )*
+    ) => {
+
+        pub enum Dispatch {
+            $( $enum_variant ),*
+        }
+
+        impl Dispatch {
+            pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(
+                &self,
+                input: I,
+            ) -> ZomeApiResult<O> {
+                let mut mem_stack = unsafe { G_MEM_STACK }
+                .ok_or_else(|| ZomeApiError::Internal("debug failed to load mem_stack".to_string()))?;
+
+                let wasm_allocation = mem_stack.write_json(input)?;
+
+                // Call Ribosome's commit_entry()
+                let encoded_input: RibosomeEncodingBits =
+                    RibosomeEncodedAllocation::from(wasm_allocation).into();
+                let encoded_output: RibosomeEncodingBits = unsafe {
+                    (match self {
+                        $(Dispatch::$enum_variant => $function_name),*
+                    })(encoded_input)
+                };
+
+                let result: ZomeApiInternalResult =
+                    load_ribosome_encoded_json(encoded_output).or_else(|e| {
+                        mem_stack.deallocate(wasm_allocation)?;
+                        Err(ZomeApiError::from(e))
+                    })?;
+
+                // Free result & input allocations
+                mem_stack.deallocate(wasm_allocation)?;
+
+                // Done
+                if result.ok {
+                    JsonString::from(result.value)
+                        .try_into()
+                        .map_err(|_| ZomeApiError::from(String::from("Failed to deserialize return value")))
+                } else {
+                    Err(ZomeApiError::from(result.error))
+                }
+            }
+        }
+
+        // Invokable functions in the Ribosome
+        // WARNING Names must be in sync with ZomeAPIFunction in holochain-rust
+        // WARNING All these fns need to be defined in wasms too @see the hdk integration_test.rs
+        #[allow(dead_code)]
+        extern "C" {
+            pub(crate) fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+            pub(crate) fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+            pub(crate) fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+            $( pub(crate) fn $function_name (_: RibosomeEncodingBits) -> RibosomeEncodingBits;) *
+        }
+    };
+
+}
+
+def_api_fns! {
+    hc_init_globals, InitGlobals;
+    hc_commit_entry, CommitEntry;
+    hc_get_entry, GetEntry;
+    hc_entry_address, EntryAddress;
+    hc_query, Query;
+    hc_update_entry, UpdateEntry;
+    hc_remove_entry, RemoveEntry;
+    hc_send, Send;
+    hc_debug, Debug;
+    hc_call, Call;
+    hc_sign, Sign;
+    hc_sign_one_time, SignOneTime;
+    hc_verify_signature, VerifySignature;
+    hc_link_entries, LinkEntries;
+    hc_remove_link, RemoveLink;
+    hc_get_links, GetLinks;
+    hc_sleep, Sleep;
+    hc_keystore_list, KeystoreList;
+}
+
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
 //--------------------------------------------------------------------------------------------------
 
+/// Internal global for memory usage
+pub static mut G_MEM_STACK: Option<WasmStack> = None;
+
 lazy_static! {
+    /// Internal global for retrieving all Zome API globals
+    pub(crate) static ref GLOBALS: ZomeApiGlobals = init_globals().unwrap();
+
     /// The `name` property as taken from the DNA.
     pub static ref DNA_NAME: &'static str = &GLOBALS.dna_name;
 
@@ -198,83 +288,6 @@ pub enum BundleOnClose {
 //--------------------------------------------------------------------------------------------------
 // API FUNCTIONS
 //--------------------------------------------------------------------------------------------------
-
-pub enum Dispatch {
-    Debug,
-    InitGlobals,
-    Call,
-    CommitEntry,
-    GetEntry,
-    GetLinks,
-    LinkEntries,
-    EntryAddress,
-    UpdateEntry,
-    RemoveEntry,
-    Query,
-    Send,
-    Sleep,
-    RemoveLink,
-    Sign,
-    SignOneTime,
-    VerifySignature,
-    KeystoreList,
-}
-
-impl Dispatch {
-    pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(
-        &self,
-        input: I,
-    ) -> ZomeApiResult<O> {
-        let mut mem_stack = unsafe { G_MEM_STACK }
-            .ok_or_else(|| ZomeApiError::Internal("debug failed to load mem_stack".to_string()))?;
-
-        let wasm_allocation = mem_stack.write_json(input)?;
-
-        // Call Ribosome's commit_entry()
-        let encoded_input: RibosomeEncodingBits =
-            RibosomeEncodedAllocation::from(wasm_allocation).into();
-        let encoded_output: RibosomeEncodingBits = unsafe {
-            (match self {
-                Dispatch::Debug => hc_debug,
-                Dispatch::Call => hc_call,
-                Dispatch::CommitEntry => hc_commit_entry,
-                Dispatch::GetEntry => hc_get_entry,
-                Dispatch::GetLinks => hc_get_links,
-                Dispatch::LinkEntries => hc_link_entries,
-                Dispatch::InitGlobals => hc_init_globals,
-                Dispatch::EntryAddress => hc_entry_address,
-                Dispatch::UpdateEntry => hc_update_entry,
-                Dispatch::RemoveEntry => hc_remove_entry,
-                Dispatch::Query => hc_query,
-                Dispatch::Send => hc_send,
-                Dispatch::Sleep => hc_sleep,
-                Dispatch::RemoveLink => hc_remove_link,
-                Dispatch::Sign => hc_sign,
-                Dispatch::SignOneTime => hc_sign_one_time,
-                Dispatch::VerifySignature => hc_verify_signature,
-                Dispatch::KeystoreList => hc_keystore_list,
-            })(encoded_input)
-        };
-
-        let result: ZomeApiInternalResult =
-            load_ribosome_encoded_json(encoded_output).or_else(|e| {
-                mem_stack.deallocate(wasm_allocation)?;
-                Err(ZomeApiError::from(e))
-            })?;
-
-        // Free result & input allocations
-        mem_stack.deallocate(wasm_allocation)?;
-
-        // Done
-        if result.ok {
-            JsonString::from(result.value)
-                .try_into()
-                .map_err(|_| ZomeApiError::from(String::from("Failed to deserialize return value")))
-        } else {
-            Err(ZomeApiError::from(result.error))
-        }
-    }
-}
 
 /// Call an exposed function from another zome or another (bridged) instance running
 /// on the same agent in the same conductor.

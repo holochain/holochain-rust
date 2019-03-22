@@ -4,7 +4,7 @@ use crate::{
     network::state::NetworkState,
 };
 use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, entry::EntryWithMetaAndHeader, error::HolochainError,
+    cas::content::Address,  entry::EntryWithMetaAndHeader, error::HolochainError,
 };
 use holochain_net::connection::json_protocol::FetchEntryResultData;
 use std::sync::Arc;

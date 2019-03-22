@@ -29,11 +29,11 @@ fn reduce_respond_fetch_data_inner(
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: get_dht_data.entry_address.clone(),
             entry_content: serde_json::from_str(
-                &serde_json::to_string(&maybe_entry.clone().unwrap().0).unwrap(),
+                &serde_json::to_string(&maybe_entry.clone().ok_or(HolochainError::ErrorGeneric("Could not get maybe entry".to_string()))?.0).unwrap(),
             )
             .unwrap(),
             headers: serde_json::from_str(
-                &serde_json::to_string(&maybe_entry.clone().unwrap().1).unwrap(),
+                &serde_json::to_string(&maybe_entry.clone().ok_or(HolochainError::ErrorGeneric("Could not get maybe entry".to_string()))?.1).unwrap(),
             )
             .unwrap(),
         }),

@@ -243,12 +243,10 @@ wasm_build: ensure_wasm_target
 .PHONY: build_holochain libsodium_version
 libsodium_version:
 	@[ ! -z "$${RUST_SODIUM_LIB_DIR+defined}" ] \
-	    && echo -e "\033[0;93m## Building rust_sodium-sys -- with system libsodium \"$(RUST_SODIUM_LIB)\" in: $${RUST_SODIUM_LIB_DIR:-(unknown)}) ##\033[0m" \
+	    && echo -e "\033[0;93m## Configured rust_sodium-sys -- with system libsodium \"$(RUST_SODIUM_LIB)\" in: $${RUST_SODIUM_LIB_DIR:-(unknown)}) ##\033[0m" \
 	    || ( [ ! -z "$${RUST_SODIUM_USE_PKG_CONFIG+defined}" ] \
-		&& echo -e "\033[0;93m## Building rust_sodium-sys -- with pkg_config libsodium ##\033[0m" \
-		|| ( echo -e "\033[0;93m## Building rust_sodium-sys -- with download/build libsodium ##\033[0m" ))
-	@$(CARGO) build --manifest-path rust_sodium-sys/Cargo.toml \
-	    || echo -e "\033[0;91m##  *** Building rust_sodium-sys failed: Ensure libsodium version 1.0.12+ is installed ##\033[0m" \
+		&& echo -e "\033[0;93m## Configured rust_sodium-sys -- with pkg_config libsodium ##\033[0m" \
+		|| ( echo -e "\033[0;93m## Configured rust_sodium-sys -- with download/build libsodium ##\033[0m" ))
 
 build_holochain: core_toolchain wasm_build libsodium_version
 	@echo -e "\033[0;93m## Building holochain... ##\033[0m"

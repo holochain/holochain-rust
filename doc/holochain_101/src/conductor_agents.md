@@ -13,10 +13,10 @@ Give an ID of your choice to the agent
 Give a name of your choice to the agent
 
 #### `public_address`: `string`
-A public address for the agent. Run ```hc keygen``` and copy the public address to this value 
+A public address for the agent. Run ```hc keygen``` and copy the public address to this value
 
-#### `key_file`: `string`
-Path to the private key file for this agent. Copy the path from when you ran ```hc keygen``` into this value.
+#### `keystore_file`: `string`
+Path to the keystore file for this agent. Copy the path from when you ran ```hc keygen``` into this value.
 
 
 ### Example
@@ -25,5 +25,5 @@ Path to the private key file for this agent. Copy the path from when you ran ```
 id = "test_agent2"
 name = "HoloTester2"
 public_address = "HcSCJts3fQ6Y4c4xr795Zj6inhTjecrfrsSFOrU9Jmnhnj5bdoXkoPSJivrm3wi"
-key_file = "/org.holochain.holochain/keys/HcSCJts3fQ6Y4c4xr795Zj6inhTjecrfrsSFOrU9Jmnhnj5bdoXkoPSJivrm3wi"
+keystore_file = "/org.holochain.holochain/keys/HcSCJts3fQ6Y4c4xr795Zj6inhTjecrfrsSFOrU9Jmnhnj5bdoXkoPSJivrm3wi"
 ```

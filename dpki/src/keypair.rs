@@ -164,6 +164,16 @@ impl EncryptingKeyPair {
     // TODO: Encrypt and decrypt functions
 }
 
+pub fn generate_random_sign_keypair() -> HcResult<SigningKeyPair> {
+    let mut seed = utils::generate_random_seed_buf();
+    SigningKeyPair::new_from_seed(&mut seed)
+}
+
+pub fn generate_random_enc_keypair() -> HcResult<EncryptingKeyPair> {
+    let mut seed = utils::generate_random_seed_buf();
+    EncryptingKeyPair::new_from_seed(&mut seed)
+}
+
 //--------------------------------------------------------------------------------------------------
 // Test
 //--------------------------------------------------------------------------------------------------
@@ -171,21 +181,14 @@ impl EncryptingKeyPair {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::SEED_SIZE;
 
-    fn test_generate_random_seed() -> SecBuf {
-        let mut seed = SecBuf::with_insecure(SEED_SIZE);
-        seed.randomize();
-        seed
+    pub fn test_generate_random_sign_keypair() -> SigningKeyPair {
+        generate_random_sign_keypair().unwrap()
     }
 
-    fn test_generate_random_sign_keypair() -> SigningKeyPair {
-        let mut seed = test_generate_random_seed();
-        SigningKeyPair::new_from_seed(&mut seed).unwrap()
-    }
-
-    fn test_generate_random_enc_keypair() -> EncryptingKeyPair {
-        let mut seed = test_generate_random_seed();
-        EncryptingKeyPair::new_from_seed(&mut seed).unwrap()
+    pub fn test_generate_random_enc_keypair() -> EncryptingKeyPair {
+        generate_random_enc_keypair().unwrap()
     }
 
     #[test]

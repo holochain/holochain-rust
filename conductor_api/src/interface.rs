@@ -398,7 +398,7 @@ impl ConductorApiBuilder {
     ///     * `name`: Nickname of this agent configuration
     ///     * `public_address`: Public part of this agents key. Has to match the private key in the
     ///         given key file.
-    ///     * `key_file`: Local path to the file that holds this agent configuration's private key
+    ///     * `keystore_file`: Local path to the file that holds this agent configuration's private key
     ///
     ///  * `admin/agent/remove`
     ///     Remove an agent from the conductor config.
@@ -619,7 +619,7 @@ impl ConductorApiBuilder {
             let id = Self::get_as_string("id", &params_map)?;
             let name = Self::get_as_string("name", &params_map)?;
             let public_address = Self::get_as_string("public_address", &params_map)?;
-            let key_file = Self::get_as_string("key_file", &params_map)?;
+            let keystore_file = Self::get_as_string("keystore_file", &params_map)?;
             let holo_remote_key = params_map
                 .get("holo_remote_key")
                 .map(|k| k.as_bool())
@@ -629,7 +629,7 @@ impl ConductorApiBuilder {
                 id,
                 name,
                 public_address,
-                key_file,
+                keystore_file,
                 holo_remote_key,
             };
             conductor_call!(|c| c.add_agent(agent))?;

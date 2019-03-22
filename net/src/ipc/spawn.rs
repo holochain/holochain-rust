@@ -67,9 +67,11 @@ pub fn ipc_spawn(
     let re_p2p_ready = regex::Regex::new("#P2P-READY#")?;
 
     // we need to know when our child process is ready for IPC connections
-    // it will run some startup algorithms, and then output some binding
-    // info on stdout and finally a `#IPC-READY#` message.
-    // collect the binding info, and proceed when `#IPC-READY#`
+    // and possibily P2P connections.
+    // It will run some startup algorithms, and then output some binding
+    // info on stdout and finally an `#IPC-READY#` message and a `#P2P-READY#` message.
+    // collect the binding info, and proceed when `#IPC-READY#`, 
+    // and `#P2P-READY#` if `can_wait_for_p2p` is set
     if let Some(ref mut stdout) = child.stdout {
         let mut has_ipc = false;
         let mut has_p2p = !can_wait_for_p2p;

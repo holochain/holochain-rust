@@ -2,13 +2,13 @@ bridges = []
 
 [[agents]]
 id = "test agent 1"
-key_file = "holo_tester.key"
+keystore_file = "holo_tester.key"
 name = "Holo Tester 1"
 public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
 
 [[agents]]
 id = "test agent 2"
-key_file = "holo_tester.key"
+keystore_file = "holo_tester.key"
 name = "Holo Tester 2"
 public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
 

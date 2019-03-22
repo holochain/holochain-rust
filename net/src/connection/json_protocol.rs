@@ -179,9 +179,6 @@ pub struct FetchEntryResultData {
     pub entry_address: Address,
     #[serde(rename = "content")]
     pub entry_content: serde_json::Value,
-
-    #[serde(rename = "chainHeader")]
-    pub headers: Vec<ChainHeader>,
 }
 
 //--------------------------------------------------------------------------------------------------

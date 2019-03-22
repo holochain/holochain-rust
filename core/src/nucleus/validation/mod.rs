@@ -187,11 +187,11 @@ fn get_entry_with_header(
         address,
         &Timeout::default(),
     ))?;
-    let entry_chain = pair.ok_or(HolochainError::ErrorGeneric(
+    let entry_with_meta = pair.ok_or(HolochainError::ErrorGeneric(
         "Could not get chain".to_string(),
     ))?;
-    let latest_header = entry_chain.1.last().ok_or(HolochainError::ErrorGeneric(
+    let latest_header = entry_with_meta.headers.last().ok_or(HolochainError::ErrorGeneric(
         "Could not get last entry from chain".to_string(),
     ))?;
-    Ok((entry_chain.0, latest_header.clone()))
+    Ok((entry_with_meta.entry_with_meta, latest_header.clone()))
 }

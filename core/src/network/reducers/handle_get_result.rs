@@ -18,14 +18,14 @@ fn reduce_handle_get_result_inner(
         HolochainError::ErrorGeneric("Could not serialize entry content".to_string())
     })?;
 
-    let entity = serde_json::from_str(&content).map_err(|_| {
+    let entry_with_meta = serde_json::from_str(&content).map_err(|_| {
         HolochainError::ErrorGeneric(
             "Failed to deserialize EntryWithMeta from HandleFetchResult action argument"
                 .to_string(),
         )
     })?;
-    let headers = dht_data.headers.clone();
-    Ok(Some((entity, headers)))
+    
+    Ok(Some(entry_with_meta))
 }
 
 pub fn reduce_handle_get_result(

@@ -4,7 +4,7 @@ use crate::{
     instance::dispatch_action,
     nucleus,
 };
-use holochain_core_types::{cas::content::Address, eav::Attribute};
+use holochain_core_types::{cas::content::Address, eav::Attribute,entry::EntryWithMetaAndHeader};
 use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
@@ -45,16 +45,16 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     }
     else 
     {
-        let tuple = maybe_entry_with_meta
+        let entry_with_meta_and_header = maybe_entry_with_meta
         .map(|s| {
-            Some((
-                s,
-                header_res.expect("Could not get headers for handle_fetch_entry"),
-            ))
+            Some(EntryWithMetaAndHeader{
+                entry_with_meta : s.clone(),
+                headers : header_res.expect("Could not get headers")
+            })
         })
         .unwrap_or(None);
 
-    let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data, tuple)));
+    let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data, entry_with_meta_and_header)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     }
     

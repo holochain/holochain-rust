@@ -351,7 +351,7 @@ impl P2pNode {
                         provider_agent_id: self.agent_id.clone(),
                         entry_address: request.entry_address.clone(),
                         entry_content: data.clone(),
-                        headers: Vec::new(),
+                        
                     };
                     JsonProtocol::HandleFetchEntryResult(msg_data).into()
                 }

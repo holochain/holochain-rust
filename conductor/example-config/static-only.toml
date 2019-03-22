@@ -2,7 +2,7 @@
 id = "test agent 1"
 name = "Holo Tester 1"
 public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
-key_file = "holo_tester.key"
+keystore_file = "holo_tester.key"
 
 [[ui_bundles]]
 id = "bundle1"

@@ -344,8 +344,8 @@ pub struct AgentConfiguration {
     pub id: String,
     pub name: String,
     pub public_address: Base32,
-    pub key_file: String,
-    /// If set to true conductor will ignore key_file and instead use the remote signer
+    pub keystore_file: String,
+    /// If set to true conductor will ignore keystore_file and instead use the remote signer
     /// accessible through signing_service_uri to request signatures.
     pub holo_remote_key: Option<bool>,
 }
@@ -591,13 +591,13 @@ pub mod tests {
     id = "bob"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file="file/to/serialize"
+    keystore_file = "file/to/serialize"
 
     [[agents]]
     id="alex"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file="another/file"
+    keystore_file = "another/file"
 
     [[dnas]]
     id="dna"
@@ -611,7 +611,7 @@ pub mod tests {
                 .get(0)
                 .expect("expected at least 2 agents")
                 .clone()
-                .key_file,
+                .keystore_file,
             "file/to/serialize"
         );
         assert_eq!(
@@ -627,7 +627,7 @@ pub mod tests {
     id="agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file="whatever"
+    keystore_file = "whatever"
 
     [[dnas]]
     id = "app spec rust"
@@ -648,7 +648,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -735,7 +735,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -820,7 +820,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -850,7 +850,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -893,7 +893,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -936,7 +936,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -1114,7 +1114,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"

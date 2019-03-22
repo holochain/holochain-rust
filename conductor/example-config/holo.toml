@@ -3,7 +3,7 @@ signing_service_uri = "http://localhost:8888"
 
 [[agents]]
 id = "test agent 1"
-key_file = "holo_tester.key"
+keystore_file = "holo_tester.key"
 name = "Holo Tester 1"
 public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
 holo_remote_key = true

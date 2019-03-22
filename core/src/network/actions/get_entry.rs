@@ -10,6 +10,7 @@ use futures::{
 use holochain_core_types::{
     cas::content::Address, chain_header::ChainHeader, entry::EntryWithMeta, error::HcResult,
     time::Timeout,
+    error::HolochainError
 };
 use std::{pin::Pin, sync::Arc, thread};
 
@@ -64,8 +65,10 @@ impl Future for GetEntryFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
+        println!("context from get_entry_with_meta {:?}",self.context.state().expect("Could not get state in future").network().get_entry_with_meta_results.get(&self.key));
         match self.context.state().expect("Could not get state in future").network().get_entry_with_meta_results.get(&self.key) {
             Some(Some(result)) => Poll::Ready(result.clone()),
+            Some(None) => Poll::Ready(Ok(None)),
             _ => Poll::Pending,
         }
     }

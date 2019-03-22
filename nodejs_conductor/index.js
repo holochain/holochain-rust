@@ -26,7 +26,7 @@ const Config = {
     agent: name => ({ name }),
     dna: (path, name = `${path}`) => ({ path, name }),
     instance: (agent, dna, name = `${agent.name}`) => ({ agent, dna, name }),
-    conductor: (instances, opts=defaultOpts) => makeConfig(instances, opts)
+    conductor: (instances, opts = defaultOpts) => makeConfig(instances, opts)
 }
 
 /////////////////////////////////////////////////////////////
@@ -138,7 +138,7 @@ class DnaInstance {
 /////////////////////////////////////////////////////////////
 
 class Scenario {
-    constructor(instanceConfigs, opts=defaultOpts) {
+    constructor(instanceConfigs, opts = defaultOpts) {
         this.instanceConfigs = instanceConfigs
         this.opts = opts
     }
@@ -185,8 +185,8 @@ class Scenario {
             this.run((stop, instances) => {
                 return fn(t, instances).then(() => stop())
             })
-            .catch(e => t.fail(e))
-            .then(t.end)
+                .catch(e => t.fail(e))
+                .then(t.end)
         })
     }
 }

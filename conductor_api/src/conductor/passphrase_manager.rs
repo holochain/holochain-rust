@@ -108,3 +108,13 @@ impl PassphraseService for PassphraseServiceCmd {
         Ok(passphrase_buf)
     }
 }
+
+pub struct PassphraseServiceMock {
+    pub passphrase: String,
+}
+
+impl PassphraseService for PassphraseServiceMock {
+    fn request_passphrase(&self) -> Result<SecBuf, HolochainError> {
+        Ok(SecBuf::with_insecure_from_string(self.passphrase.clone()))
+    }
+}

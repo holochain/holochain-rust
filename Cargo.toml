@@ -12,7 +12,7 @@ members = [
   "net",
   "nodejs_waiter",
   "sodium",
-  "hc_dpki",
+  "dpki",
   "test_bin",
 ]
 exclude = [

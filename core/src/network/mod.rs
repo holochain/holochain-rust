@@ -23,10 +23,9 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        chain_header::ChainHeader,
         crud_status::CrudStatus,
         entry::{
-            entry_type::test_app_entry_type, test_entry, Entry, EntryWithMeta,
+            entry_type::test_app_entry_type, test_entry, Entry, 
             EntryWithMetaAndHeader,
         },
         link::link_data::LinkData,

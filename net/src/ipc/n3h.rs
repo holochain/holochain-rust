@@ -15,7 +15,7 @@ macro_rules! tlog_e {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(unix)]
 use std::os::unix::fs::OpenOptionsExt;
 
 static N3H_PIN: &'static str = include_str!("n3h_pin.json");
@@ -250,7 +250,7 @@ fn download(dest: &std::ffi::OsStr, url: &str, sha256: &str) -> NetResult<()> {
         tlog_d!("downloading {}...", url);
         let mut open_opts = std::fs::OpenOptions::new();
         open_opts.create(true).write(true);
-        if cfg!(not(windows)) {
+        if cfg!(unix) {
             // make sure the file is executable
             open_opts.mode(0o755);
         }

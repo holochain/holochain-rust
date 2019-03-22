@@ -46,7 +46,7 @@ pub fn receive(
 
     match ribosome::run_dna(
         wasm.code.clone(),
-        Some(call.clone().parameters.into_bytes()),
+        Some(call.clone().parameters.to_bytes()),
         WasmCallData::new_callback_call(context, dna.name, call),
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),

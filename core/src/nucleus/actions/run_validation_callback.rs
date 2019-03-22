@@ -44,7 +44,7 @@ pub async fn run_validation_callback(
     thread::spawn(move || {
         let validation_result: ValidationResult = match ribosome::run_dna(
             wasm.code.clone(),
-            Some(call.clone().parameters.into_bytes()),
+            Some(call.clone().parameters.to_bytes()),
             WasmCallData::new_callback_call(cloned_context.clone(), dna_name, call),
         ) {
             Ok(call_result) => match call_result.is_null() {

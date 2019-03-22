@@ -36,8 +36,8 @@ impl JsonString {
     }
 
     /// achieves the same outcome as serde_json::to_vec()
-    pub fn into_bytes(self) -> Vec<u8> {
-        self.0.to_owned().into_bytes()
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.as_bytes().to_vec()
     }
 }
 

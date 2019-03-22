@@ -177,7 +177,10 @@ pub mod tests {
         assert!(maybe_entry_with_meta.is_some());
         let entry_with_meta = maybe_entry_with_meta.unwrap();
         assert_eq!(entry_with_meta.entry_with_meta.entry, entry);
-        assert_eq!(entry_with_meta.entry_with_meta.crud_status, CrudStatus::Live);
+        assert_eq!(
+            entry_with_meta.entry_with_meta.crud_status,
+            CrudStatus::Live
+        );
     }
     #[test]
     fn get_validation_package_roundtrip() {

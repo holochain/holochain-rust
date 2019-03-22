@@ -106,7 +106,7 @@ pub fn ipc_spawn(
                 }
             }
             if wait_ms >= timeout_ms.clone() {
-                bail!("ipc_spawn timed out");
+                bail!("ipc_spawn() timed out. N3H might need more time or something is dysfunctional in the network interface");
             }
             std::thread::sleep(std::time::Duration::from_millis(10));
             wait_ms += 10;

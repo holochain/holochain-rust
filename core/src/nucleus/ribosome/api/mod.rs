@@ -83,18 +83,17 @@ link_zome_api! {
 #[cfg(test)]
 pub mod tests {
     use self::wabt::Wat2Wasm;
-    use super::ZomeApiFunction;
     use crate::{
         context::Context,
         instance::{tests::test_instance_and_context, Instance},
         nucleus::{
-            ribosome::{self, runtime::WasmCallData, Defn},
+            ribosome::{self, runtime::WasmCallData},
             tests::test_capability_request,
             ZomeFnCall,
         },
     };
     use holochain_core_types::json::JsonString;
-    use std::{str::FromStr, sync::Arc};
+    use std::sync::Arc;
     use test_utils;
     use wabt;
 

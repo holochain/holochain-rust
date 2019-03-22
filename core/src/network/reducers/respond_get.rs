@@ -4,7 +4,7 @@ use crate::{
     network::{actions::ActionResponse, reducers::send, state::NetworkState},
 };
 use holochain_core_types::{
-    chain_header::ChainHeader, entry::EntryWithMeta, error::HolochainError,
+    chain_header::ChainHeader, entry::EntryWithMetaAndHeader, error::HolochainError,
 };
 use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, JsonProtocol,
@@ -16,7 +16,7 @@ use std::sync::Arc;
 fn reduce_respond_fetch_data_inner(
     network_state: &mut NetworkState,
     get_dht_data: &FetchEntryData,
-    maybe_entry: &Option<(EntryWithMeta, Vec<ChainHeader>)>,
+    maybe_entry: &Option<EntryWithMetaAndHeader>,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
@@ -31,11 +31,7 @@ fn reduce_respond_fetch_data_inner(
             entry_content: serde_json::from_str(
                 &serde_json::to_string(&maybe_entry.clone().ok_or(HolochainError::ErrorGeneric("Could not get maybe entry".to_string()))?.0).unwrap(),
             )
-            .unwrap(),
-            headers: serde_json::from_str(
-                &serde_json::to_string(&maybe_entry.clone().ok_or(HolochainError::ErrorGeneric("Could not get maybe entry".to_string()))?.1).unwrap(),
-            )
-            .unwrap(),
+            .unwrap()
         }),
     )
 }

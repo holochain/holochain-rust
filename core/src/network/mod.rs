@@ -29,6 +29,7 @@ pub mod tests {
         link::link_data::LinkData,
     };
     use test_utils::*;
+    
 
     // TODO: Should wait for a success or saturation response from the network module after Publish
     #[test]
@@ -163,19 +164,27 @@ pub mod tests {
         assert!(result.is_ok(), "commit_entry() result = {:?}", result);
         let result = context1.block_on(publish(entry.address(), &context1));
         assert!(result.is_ok(), "publish() result = {:?}", result);
-
-        // Get it from the network
-        let result = context1.block_on(get_entry(
-            context1.clone(),
-            entry.address(),
-            Default::default(),
-        ));
-        assert!(result.is_ok(), "get_entry() result = {:?}", result);
-        let maybe_entry_with_meta = result.unwrap();
-        assert!(maybe_entry_with_meta.is_some());
-        let entry_with_meta = maybe_entry_with_meta.unwrap();
-        assert_eq!(entry_with_meta.0.entry, entry);
-        assert_eq!(entry_with_meta.0.crud_status, CrudStatus::Live);
+        let mut maybe_entry_with_meta: Option<(EntryWithMeta, Vec<ChainHeader>)> = None;
+        let mut loop_count = 0;
+        while maybe_entry_with_meta.is_none() && loop_count < 10 {
+            loop_count += 1;
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            let result = context1.block_on(get_entry(
+                context1.clone(),
+                entry.address(),
+                Default::default(),
+            ));
+            assert!(result.is_ok(), "get_entry() result = {:?}", result);
+            maybe_entry_with_meta = result.unwrap();
+        }
+        assert!(
+            maybe_entry_with_meta.is_some(),
+            "maybe_entry_with_meta = {:?}",
+            maybe_entry_with_meta
+        );
+        let entry_with_meta = maybe_entry_with_meta.unwrap().0;
+        assert_eq!(entry_with_meta.entry, entry);
+        assert_eq!(entry_with_meta.crud_status, CrudStatus::Live);
     }
 
     #[test]

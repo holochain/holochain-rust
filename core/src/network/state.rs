@@ -4,7 +4,7 @@ use crate::{
 };
 use boolinator::*;
 use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, entry::EntryWithMeta, error::HolochainError,
+    cas::content::Address, chain_header::ChainHeader, entry::{EntryWithMeta,EntryWithMetaAndHeader}, error::HolochainError,
     validation::ValidationPackage,
 };
 use holochain_net::p2p_network::P2pNetwork;
@@ -22,7 +22,7 @@ type Actions = HashMap<ActionWrapper, ActionResponse>;
 /// Some(Ok(None)): no problem but also no entry -> it does not exist
 /// Some(Ok(Some(entry_with_meta))): we have it
 type GetEntryWithMetaResult =
-    Option<Result<Option<(EntryWithMeta, Vec<ChainHeader>)>, HolochainError>>;
+    Option<Result<Option<EntryWithMetaAndHeader>, HolochainError>>;
 
 /// This represents the state of a get_links network process:
 /// None: process started, but no response yet from the network

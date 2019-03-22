@@ -137,6 +137,11 @@ pub struct EntryWithMeta {
     pub maybe_link_update_delete: Option<Address>,
 }
 
+pub struct EntryWithMetaAndHeader {
+    pub entry_with_meta : EntryWithMeta,
+    pub headers : Vec<ChainHeader>
+}
+
 /// dummy entry value
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_value() -> JsonString {

@@ -17,7 +17,7 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     dna::Dna,
-    entry::{Entry, EntryWithMeta},
+    entry::{Entry, EntryWithMeta,EntryWithMetaAndHeader},
     error::HolochainError,
     link::Link,
     validation::ValidationPackage,
@@ -130,7 +130,7 @@ pub enum Action {
     /// Lets the network module respond to a FETCH request.
     /// Triggered from the corresponding workflow after retrieving the
     /// requested entry from our local DHT shard.
-    RespondFetch((FetchEntryData, Option<(EntryWithMeta, Vec<ChainHeader>)>)),
+    RespondFetch((FetchEntryData, Option<EntryWithMetaAndHeader>)),
 
     /// We got a response for our FETCH request which needs to be added to the state.
     /// Triggered from the network handler.

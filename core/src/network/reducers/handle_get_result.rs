@@ -4,7 +4,7 @@ use crate::{
     network::state::NetworkState,
 };
 use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, entry::EntryWithMeta, error::HolochainError,
+    cas::content::Address, chain_header::ChainHeader, entry::EntryWithMetaAndHeader, error::HolochainError,
 };
 use holochain_net::connection::json_protocol::FetchEntryResultData;
 use std::sync::Arc;
@@ -12,7 +12,7 @@ use std::sync::Arc;
 fn reduce_handle_get_result_inner(
     network_state: &mut NetworkState,
     dht_data: &FetchEntryResultData,
-) -> Result<Option<(EntryWithMeta, Vec<ChainHeader>)>, HolochainError> {
+) -> Result<Option<EntryWithMetaAndHeader>, HolochainError> {
     network_state.initialized()?;
     let content = serde_json::to_string(&dht_data.entry_content).map_err(|_| {
         HolochainError::ErrorGeneric("Could not serialize entry content".to_string())

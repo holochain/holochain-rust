@@ -338,7 +338,7 @@ pub mod tests {
 
     #[test]
     fn json_into_bytes_test() {
-        assert_eq!(JsonString::from("foo").into_bytes(), vec![102, 111, 111],);
+        assert_eq!(JsonString::from("foo").to_bytes(), vec![102, 111, 111],);
     }
 
     #[test]

@@ -17,6 +17,20 @@ jobs:
   steps:
    - checkout
    - run: nix-shell --run hc-fmt-check
+   # don't allow unpinned deps
+   - run:
+      name: no unpinnned deps
+      command: |
+        # temporary avoid build fails due to greps
+        set +eo pipefail
+        export UNPINNED=`nix-shell --run hc-cargo-toml-grep-unpinned`
+        set -eo pipefail
+        if [[ $UNPINNED ]]
+        then
+         echo "unpinned deps must be empty:"
+         echo "$UNPINNED"
+         exit 1
+        fi
 
  app-spec-tests:
   docker:

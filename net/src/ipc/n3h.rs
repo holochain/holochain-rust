@@ -239,6 +239,15 @@ fn check_hash(file: &std::ffi::OsStr, sha256: &str) -> bool {
     true
 }
 
+#[cfg(windows)]
+fn set_executable(_o: &mut std::fs::OpenOptions) {}
+
+#[cfg(unix)]
+fn set_executable(o: &mut std::fs::OpenOptions) {
+    // make sure the file is executable
+    o.mode(0o755);
+}
+
 /// 1 - if file exists - check compare its hash
 /// 2 - if file doesn't exist, or hash check fails, download it
 /// 3 - compare downloaded file's hash
@@ -250,10 +259,7 @@ fn download(dest: &std::ffi::OsStr, url: &str, sha256: &str) -> NetResult<()> {
         tlog_d!("downloading {}...", url);
         let mut open_opts = std::fs::OpenOptions::new();
         open_opts.create(true).write(true);
-        if cfg!(unix) {
-            // make sure the file is executable
-            open_opts.mode(0o755);
-        }
+        set_executable(&mut open_opts);
         let mut file = open_opts.open(dest)?;
         let mut res = reqwest::get(url)?;
         res.copy_to(&mut file)?;

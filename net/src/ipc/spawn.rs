@@ -70,7 +70,7 @@ pub fn ipc_spawn(
     // and possibily P2P connections.
     // It will run some startup algorithms, and then output some binding
     // info on stdout and finally an `#IPC-READY#` message and a `#P2P-READY#` message.
-    // collect the binding info, and proceed when `#IPC-READY#`, 
+    // collect the binding info, and proceed when `#IPC-READY#`,
     // and `#P2P-READY#` if `can_wait_for_p2p` is set
     if let Some(ref mut stdout) = child.stdout {
         let mut has_ipc = false;

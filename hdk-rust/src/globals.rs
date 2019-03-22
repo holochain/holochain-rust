@@ -57,4 +57,6 @@ extern "C" {
     pub(crate) fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
 
     pub(crate) fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_keystore_list(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
 }

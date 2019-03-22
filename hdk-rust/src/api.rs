@@ -39,6 +39,7 @@ use std::{
     convert::{TryFrom, TryInto},
     time::Duration,
 };
+use holochain_wasm_utils::api_serialization::keystore::KeystoreListResult;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -216,6 +217,7 @@ pub enum Dispatch {
     Sign,
     SignOneTime,
     VerifySignature,
+    KeystoreList,
 }
 
 impl Dispatch {
@@ -250,6 +252,7 @@ impl Dispatch {
                 Dispatch::Sign => hc_sign,
                 Dispatch::SignOneTime => hc_sign_one_time,
                 Dispatch::VerifySignature => hc_verify_signature,
+                Dispatch::KeystoreList => hc_keystore_list,
             })(encoded_input)
         };
 
@@ -762,6 +765,10 @@ pub fn sign_one_time<S: Into<String>>(payload: S) -> ZomeApiResult<SignOneTimeRe
     Dispatch::SignOneTime.with_input(SignArgs {
         payload: payload.into(),
     })
+}
+
+pub fn keystore_list() -> ZomeApiResult<KeystoreListResult> {
+    Dispatch::KeystoreList.with_input("")
 }
 
 /// NOT YET AVAILABLE

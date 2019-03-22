@@ -19,6 +19,7 @@ pub mod sign;
 pub mod sleep;
 pub mod update_entry;
 pub mod verify_signature;
+pub mod keystore;
 
 use crate::nucleus::ribosome::{
     api::{
@@ -29,6 +30,7 @@ use crate::nucleus::ribosome::{
         get_entry::invoke_get_entry,
         get_links::invoke_get_links,
         init_globals::invoke_init_globals,
+        keystore::invoke_keystore_list,
         link_entries::invoke_link_entries,
         query::invoke_query,
         remove_entry::invoke_remove_entry,

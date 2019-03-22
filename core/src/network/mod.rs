@@ -25,7 +25,7 @@ pub mod tests {
         cas::content::{Address, AddressableContent},
         chain_header::ChainHeader,
         crud_status::CrudStatus,
-        entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMeta},
+        entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMeta,EntryWithMetaAndHeader},
         link::link_data::LinkData,
     };
     use test_utils::*;
@@ -57,7 +57,7 @@ pub mod tests {
 
         // Get it from the network
         // HACK: doing a loop because publish returns before actual confirmation from the network
-        let mut maybe_entry_with_meta: Option<(EntryWithMeta, Vec<ChainHeader>)> = None;
+        let mut maybe_entry_with_meta: Option<EntryWithMetaAndHeader> = None;
         let mut loop_count = 0;
         while maybe_entry_with_meta.is_none() && loop_count < 10 {
             loop_count += 1;
@@ -75,9 +75,9 @@ pub mod tests {
             "maybe_entry_with_meta = {:?}",
             maybe_entry_with_meta
         );
-        let entry_with_meta = maybe_entry_with_meta.unwrap().0;
-        assert_eq!(entry_with_meta.entry, entry);
-        assert_eq!(entry_with_meta.crud_status, CrudStatus::Live);
+        let entry_with_meta_and_header = maybe_entry_with_meta.unwrap();
+        assert_eq!(entry_with_meta_and_header.entry_with_meta.entry, entry);
+        assert_eq!(entry_with_meta_and_header.entry_with_meta.crud_status, CrudStatus::Live);
     }
 
     #[test]
@@ -164,7 +164,7 @@ pub mod tests {
         assert!(result.is_ok(), "commit_entry() result = {:?}", result);
         let result = context1.block_on(publish(entry.address(), &context1));
         assert!(result.is_ok(), "publish() result = {:?}", result);
-        let mut maybe_entry_with_meta: Option<(EntryWithMeta, Vec<ChainHeader>)> = None;
+        let mut maybe_entry_with_meta: Option<EntryWithMetaAndHeader> = None;
         let mut loop_count = 0;
         while maybe_entry_with_meta.is_none() && loop_count < 10 {
             loop_count += 1;
@@ -182,9 +182,9 @@ pub mod tests {
             "maybe_entry_with_meta = {:?}",
             maybe_entry_with_meta
         );
-        let entry_with_meta = maybe_entry_with_meta.unwrap().0;
-        assert_eq!(entry_with_meta.entry, entry);
-        assert_eq!(entry_with_meta.crud_status, CrudStatus::Live);
+        let entry_with_meta_and_header = maybe_entry_with_meta.unwrap();
+        assert_eq!(entry_with_meta_and_header.entry_with_meta.entry, entry);
+        assert_eq!(entry_with_meta_and_header.entry_with_meta.crud_status, CrudStatus::Live);
     }
 
     #[test]

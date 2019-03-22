@@ -15,7 +15,7 @@ macro_rules! tlog_e {
     }
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(not(windows))]
 use std::os::unix::fs::OpenOptionsExt;
 
 static N3H_PIN: &'static str = include_str!("n3h_pin.json");
@@ -175,7 +175,7 @@ fn get_os_arch() -> NetResult<(&'static str, &'static str)> {
         Ok(("linux", "x64"))
     } else if cfg!(target_os = "linux") && cfg!(target_arch = "aarch64") {
         Ok(("linux", "aarch64"))
-    } else if cfg!(target_os = "windows") && cfg!(target_arch = "x86_64") {
+    } else if cfg!(windows) && cfg!(target_arch = "x86_64") {
         Ok(("win", "x64"))
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
         Ok(("mac", "x64"))
@@ -250,7 +250,7 @@ fn download(dest: &std::ffi::OsStr, url: &str, sha256: &str) -> NetResult<()> {
         tlog_d!("downloading {}...", url);
         let mut open_opts = std::fs::OpenOptions::new();
         open_opts.create(true).write(true);
-        if cfg!(not(target_os = "windows")) {
+        if cfg!(not(windows)) {
             // make sure the file is executable
             open_opts.mode(0o755);
         }
@@ -294,26 +294,26 @@ mod tests {
     }
 
     #[test]
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     fn it_checks_path_true() {
         exec_output("cmd", vec!["/C", "echo"], ".", false).unwrap();
     }
 
     #[test]
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(windows))]
     fn it_checks_path_true() {
         exec_output("sh", vec!["-c", "exit"], ".", false).unwrap();
     }
 
     #[test]
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     fn it_checks_path_false() {
         let args: Vec<&str> = Vec::new();
         exec_output("badcommand", args, ".", false).unwrap_err();
     }
 
     #[test]
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(windows))]
     fn it_checks_path_false() {
         let args: Vec<&str> = Vec::new();
         exec_output("badcommand", args, ".", false).unwrap_err();

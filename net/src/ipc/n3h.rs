@@ -274,7 +274,11 @@ fn download(dest: &std::ffi::OsStr, url: &str, sha256: &str) -> NetResult<()> {
 mod tests {
     use super::*;
 
+    /// XXX (david.b) - windows electron is super funky... even with
+    /// --enable-logging, it seems to spawn a separate terminal output
+    /// and we can't capture it as a sub-process
     #[test]
+    #[cfg(not(windows))]
     fn can_dl_n3h() {
         {
             let mut tweetlog = TWEETLOG.write().unwrap();

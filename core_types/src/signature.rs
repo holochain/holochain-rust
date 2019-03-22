@@ -15,7 +15,7 @@ impl Provenance {
         Provenance(source, signature)
     }
     pub fn source(&self) -> Address {
-        Address::from(self.0.clone())
+        self.0.clone()
     }
     pub fn signature(&self) -> Signature {
         self.1.clone()

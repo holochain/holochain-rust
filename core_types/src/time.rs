@@ -126,7 +126,7 @@ impl fmt::Display for Period {
         let is_ns = (nsecs % 1000) > 0;
         let is_us = (nsecs / 1_000 % 1_000) > 0;
         let is_ms = (nsecs / 1_000_000) > 0;
-        if (s > 0 && is_ms) || (is_ms && is_ns) {
+        if is_ms && (s > 0 || is_ns) {
             // s+ms, or both ms and ns resolution data; default to fractional.
             let ss = format!("{:0>9}", nsecs); // eg.       2100  --> "000002100"
             let ss = ss.trim_end_matches('0'); // eg. "000002100" --> "0000021"
@@ -612,7 +612,7 @@ impl FromStr for Iso8601 {
 //     2018-10-11 03:23:38+00:00
 //
 pub fn test_iso_8601() -> Iso8601 {
-    Iso8601::from(1539228218) // 2018-10-11T03:23:38+00:00
+    Iso8601::from(1_539_228_218) // 2018-10-11T03:23:38+00:00
 }
 
 #[cfg(test)]

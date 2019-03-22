@@ -105,7 +105,7 @@ impl FromStr for RibosomeEncodedValue {
     type Err = HolochainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.as_ref() {
+        Ok(match s {
             "Success" => RibosomeEncodedValue::Success,
             _ => RibosomeEncodedValue::Failure(s.parse()?),
         })

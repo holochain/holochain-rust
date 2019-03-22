@@ -106,18 +106,14 @@ impl From<char> for LogLevel {
     }
 }
 impl LogLevel {
-    pub fn to_char(level: &LogLevel) -> char {
-        match level {
+    pub fn as_char(&self) -> char {
+        match self {
             LogLevel::Trace => 't',
             LogLevel::Debug => 'd',
             LogLevel::Info => 'i',
             LogLevel::Warning => 'w',
             LogLevel::Error => 'e',
         }
-    }
-
-    pub fn as_char(&self) -> char {
-        LogLevel::to_char(self)
     }
 }
 
@@ -165,13 +161,19 @@ pub struct Tweetlog {
     log_by_tag: HashMap<String, TweetLogger>,
 }
 
-impl Tweetlog {
-    pub fn new() -> Self {
+impl Default for Tweetlog {
+    fn default() -> Tweetlog {
         let mut tlog = Tweetlog {
             log_by_tag: HashMap::new(),
         };
         tlog.log_by_tag.insert("_".to_string(), TweetLogger::new());
         tlog
+    }
+}
+
+impl Tweetlog {
+    pub fn new() -> Self {
+        Default::default()
     }
 }
 

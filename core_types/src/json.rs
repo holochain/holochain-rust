@@ -36,7 +36,7 @@ impl JsonString {
     }
 
     /// achieves the same outcome as serde_json::to_vec()
-    pub fn into_bytes(&self) -> Vec<u8> {
+    pub fn into_bytes(self) -> Vec<u8> {
         self.0.to_owned().into_bytes()
     }
 }
@@ -267,7 +267,7 @@ impl From<f64> for RawString {
 
 impl From<i32> for RawString {
     fn from(i: i32) -> RawString {
-        RawString::from(i as f64)
+        RawString::from(f64::from(i))
     }
 }
 
@@ -276,10 +276,12 @@ impl From<RawString> for String {
         // this will panic if RawString does not contain a string!
         // use JsonString::from(...) to stringify numbers or other values
         // @see raw_from_number_test()
-        String::from(raw_string.0.as_str().expect(&format!(
-            "could not extract inner string for RawString: {:?}",
-            &raw_string
-        )))
+        String::from(raw_string.0.as_str().unwrap_or_else(|| {
+            panic!(
+                "could not extract inner string for RawString: {:?}",
+                &raw_string
+            )
+        }))
     }
 }
 
@@ -288,7 +290,7 @@ impl From<RawString> for JsonString {
     fn from(raw_string: RawString) -> JsonString {
         JsonString::from(
             serde_json::to_string(&raw_string.0)
-                .expect(&format!("could not Jsonify RawString: {:?}", &raw_string)),
+                .unwrap_or_else(|_| panic!("could not Jsonify RawString: {:?}", &raw_string)),
         )
     }
 }

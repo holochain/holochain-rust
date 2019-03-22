@@ -47,7 +47,7 @@ impl FnDeclaration {
 }
 
 /// Represents a group of named functions in the Zomes's "traits" array
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct TraitFns {
     /// "functions" array
     #[serde(default)]
@@ -57,14 +57,12 @@ pub struct TraitFns {
 impl TraitFns {
     /// TraitFns Constructor
     pub fn new() -> Self {
-        TraitFns {
-            functions: Vec::new(),
-        }
+        Default::default()
     }
 }
 
 /// Represents an trait definition for bridging
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Trait {
     /// "functions" array
     #[serde(default)]
@@ -74,9 +72,7 @@ pub struct Trait {
 impl Trait {
     /// Trait Constructor
     pub fn new() -> Self {
-        Trait {
-            functions: Vec::new(),
-        }
+        Default::default()
     }
 }
 

@@ -125,7 +125,7 @@ impl From<PUBLIC_TOKEN> for JsonString {
 // HC.GetMask
 bitflags! {
   pub struct GetEntryMask: u8 {
-    const ENTRY      = 1 << 0;
+    const ENTRY      = 1;
     const ENTRY_TYPE = 1 << 1;
     const SOURCES    = 1 << 2;
   }
@@ -1011,7 +1011,7 @@ pub fn query(
     limit: usize,
 ) -> ZomeApiResult<Vec<Address>> {
     // The hdk::query API always returns a simple Vec<Address>
-    match query_result(
+    query_result(
         entry_type_names,
         QueryArgsOptions {
             start: start,
@@ -1019,13 +1019,11 @@ pub fn query(
             headers: false,
             entries: false,
         },
-    ) {
-        Ok(result) => match result {
-            QueryResult::Addresses(addresses) => Ok(addresses),
-            _ => return Err(ZomeApiError::FunctionNotImplemented), // should never occur
-        },
-        Err(e) => Err(e),
-    }
+    )
+    .and_then(|result| match result {
+        QueryResult::Addresses(addresses) => Ok(addresses),
+        _ => Err(ZomeApiError::FunctionNotImplemented), // should never occur
+    })
 }
 
 pub fn query_result(

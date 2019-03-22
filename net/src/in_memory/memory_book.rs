@@ -44,7 +44,7 @@ pub(crate) fn _undo_meta_id(meta_id: &MetaId) -> MetaTuple {
 /// Tells if metaId is of given entry and attribute
 pub(crate) fn _meta_id_is(meta_id: &MetaId, entry_address: Address, attribute: String) -> bool {
     let meta_tuple = _undo_meta_id(meta_id);
-    return meta_tuple.0 == entry_address && meta_tuple.1 == attribute;
+    meta_tuple.0 == entry_address && meta_tuple.1 == attribute
 }
 
 //--------------------------------------------------------------------------------------------------

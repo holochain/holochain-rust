@@ -501,6 +501,7 @@ pub mod tests {
     use super::*;
     use base64;
     use conductor::passphrase_manager::PassphraseServiceMock;
+    use holochain_core_types::cas::content::Address;
     use holochain_dpki::utils;
 
     fn mock_passphrase_manager(passphrase: String) -> Arc<PassphraseManager> {
@@ -692,7 +693,7 @@ pub mod tests {
         let signature = result.unwrap();
         assert_eq!(String::from(signature.clone()).len(), 88); //88 is the size of a base64ized signature buf
 
-        let result = verify(public_key, data.clone(), signature);
+        let result = utils::verify(Address::from(public_key), data.clone(), signature);
         assert!(!result.is_err());
         assert!(result.unwrap());
 

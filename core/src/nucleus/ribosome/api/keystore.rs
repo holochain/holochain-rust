@@ -1,18 +1,22 @@
-use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::{error::error::{HcResult, HolochainError}, signature::Signature};
-use holochain_dpki::keypair::generate_random_sign_keypair;
-use holochain_sodium::secbuf::SecBuf;
-use holochain_wasm_utils::api_serialization::sign::{SignArgs, SignOneTimeResult};
-use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue};
-use std::sync::Arc;
-use crate::context::Context;
-use snowflake::ProcessUniqueId;
-use jsonrpc_lite::JsonRpc;
+use crate::{
+    context::Context,
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+};
+use holochain_core_types::{
+    error::error::{HcResult, HolochainError},
+    json::JsonString,
+};
 use holochain_wasm_utils::api_serialization::keystore::KeystoreListResult;
-use holochain_core_types::json::JsonString;
+use jsonrpc_lite::JsonRpc;
+use snowflake::ProcessUniqueId;
+use std::sync::Arc;
+use wasmi::{RuntimeArgs, RuntimeValue};
 
-fn conductor_callback<S: Into<String>>(method: S, params: S, context: Arc<Context>) -> HcResult<JsonString> {
+fn conductor_callback<S: Into<String>>(
+    method: S,
+    params: S,
+    context: Arc<Context>,
+) -> HcResult<JsonString> {
     let conductor_api = context.conductor_api.clone();
 
     let handler = conductor_api.write().unwrap();
@@ -20,10 +24,13 @@ fn conductor_callback<S: Into<String>>(method: S, params: S, context: Arc<Contex
     let id = ProcessUniqueId::new();
     let request = format!(
         r#"{{"jsonrpc": "2.0", "method": "{}", "params": {}, "id": "{}"}}"#,
-        method.into(), params.into(), id
+        method.into(),
+        params.into(),
+        id
     );
 
-    let response = handler.handle_request_sync(&request)
+    let response = handler
+        .handle_request_sync(&request)
         .ok_or(HolochainError::new("Callback failed"))?;
 
     let response = JsonRpc::parse(&response)?;
@@ -41,22 +48,22 @@ fn conductor_callback<S: Into<String>>(method: S, params: S, context: Arc<Contex
     }
 }
 
-
-pub fn invoke_keystore_list(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+pub fn invoke_keystore_list(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     let result = conductor_callback("agent/keystore/list", "{}", context.clone());
     let string_list: Vec<String> = match result {
         Ok(json_array) => serde_json::from_str(&json_array.to_string()).unwrap(),
         Err(err) => {
-            context.log(format!("err/zome: agent/keystore/list callback failed: {:?}", err));
+            context.log(format!(
+                "err/zome: agent/keystore/list callback failed: {:?}",
+                err
+            ));
             return ribosome_error_code!(CallbackFailed);
         }
     };
 
     runtime.store_result(Ok(KeystoreListResult::new(string_list)))
 }
-
-
 
 /*
     let conductor_api = context.conductor_api.clone();

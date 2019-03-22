@@ -21,6 +21,7 @@ use holochain_wasm_utils::{
             StatusRequestKind,
         },
         get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
+        keystore::KeystoreListResult,
         link_entries::LinkEntriesArgs,
         send::{SendArgs, SendOptions},
         sign::{SignArgs, SignOneTimeResult},
@@ -39,7 +40,6 @@ use std::{
     convert::{TryFrom, TryInto},
     time::Duration,
 };
-use holochain_wasm_utils::api_serialization::keystore::KeystoreListResult;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES

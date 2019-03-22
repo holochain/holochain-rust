@@ -11,6 +11,7 @@ pub mod init_globals;
 pub mod link_entries;
 #[macro_use]
 mod macros;
+pub mod keystore;
 pub mod query;
 pub mod remove_entry;
 pub mod remove_link;
@@ -19,7 +20,6 @@ pub mod sign;
 pub mod sleep;
 pub mod update_entry;
 pub mod verify_signature;
-pub mod keystore;
 
 use crate::nucleus::ribosome::{
     api::{
@@ -74,28 +74,55 @@ link_zome_api! {
     /// hc_init_globals() -> InitGlobalsOutput
     "hc_init_globals", InitGlobals, invoke_init_globals;
 
-    /// Call a zome function in a different capability or zome
+    /// Call a zome function in a different zome or dna via a bridge
     /// hc_call(zome_name: String, cap_token: Address, fn_name: String, args: String);
     "hc_call", Call, invoke_call;
+
+    /// Create a link entry
     "hc_link_entries", LinkEntries, invoke_link_entries;
+
+    /// Retrieve links from the DHT
     "hc_get_links", GetLinks, invoke_get_links;
+
+    /// Query the local chain for entries
     "hc_query", Query, invoke_query;
 
     /// Pass an entry to retrieve its address
     /// the address algorithm is specific to the entry, typically sha256 but can differ
     /// entry_address(entry: Entry) -> Address
     "hc_entry_address", EntryAddress, invoke_entry_address;
+
+    /// Send a message directly to another node
     "hc_send", Send, invoke_send;
+
+    /// Allow a specified amount of time to pass
     "hc_sleep", Sleep, invoke_sleep;
+
+    /// Commit link deletion entry
     "hc_remove_link", RemoveLink, invoke_remove_link;
+
+    /// Sign a block of data with the Agent key
     "hc_sign", Sign, invoke_sign;
+
+    /// Sign a block of data with a one-time key that is then shredded
     "hc_sign_one_time", SignOneTime, invoke_sign_one_time;
+
+    /// Verify that a block of data was signed by a given public key
     "hc_verify_signature", VerifySignature, invoke_verify_signature;
 
-    "hc_keystore_list", KeystoreList, noop;
+    /// Retrieve a list of identifiers of the secrets in the keystore
+    "hc_keystore_list", KeystoreList, invoke_keystore_list;
+
+    /// Create a new random seed Secret in the keystore
     "hc_keystore_new_random", KeystoreNewRandom, noop;
+
+    /// Derive a new seed from an existing seed in the keystore
     "hc_keystore_derive_seed", KeystoreDeriveSeed, noop;
+
+    /// Create a new key (signing or encrypting) as derived from an existing seed in the keystore
     "hc_keystore_derive_key", KeystoreDeriveKey, noop;
+
+    /// Sign a block of data using a key in the keystore
     "hc_keystore_sign", KeystoreSign, noop;
 }
 

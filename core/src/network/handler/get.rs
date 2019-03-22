@@ -14,6 +14,7 @@ use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 /// Lets try to get it and trigger a response.
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     let address = Address::from(get_dht_data.entry_address.clone());
+    println!("handle fetch entry");
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone()).unwrap_or_else(
             |error| {
@@ -21,17 +22,30 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
                 None
             },
         );
+    if let None = maybe_entry_with_meta 
+    {
+        println!("could not find entry");
+        let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data.clone(), None)));
+        dispatch_action(context.action_channel(), action_wrapper.clone());
+        return;
+    };
     if let None = context.state() {
+        println!("Could no get state");
         context.log(format!("err/net: Error trying to get state"));
-    }
+    };
     let state = context
         .state()
         .expect("Couuld not get state for handle_fetch_entry");
     let header_res = state.get_headers(address);
-    if let Err(error) = header_res.clone() {
-        context.log(format!("err/net: Error trying to get headers {:?}", error));
+    if header_res.clone().is_err() {
+        println!("problem getting header");
+        context.log(format!("err/net: Error trying to get headers {:?}", header_res.clone().err()));
+        let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data.clone(), None)));
+        dispatch_action(context.action_channel(), action_wrapper.clone());
     }
-    let tuple = maybe_entry_with_meta
+    else 
+    {
+        let tuple = maybe_entry_with_meta
         .map(|s| {
             Some((
                 s,
@@ -42,6 +56,8 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
 
     let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data, tuple)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
+    }
+    
 }
 
 /// The network comes back with a result to our previous GET request.

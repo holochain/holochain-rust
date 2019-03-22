@@ -19,25 +19,26 @@ pub async fn get_entry_with_meta_workflow<'a>(
     timeout: &'a Timeout,
 ) -> Result<Option<(EntryWithMeta, Vec<ChainHeader>)>, HolochainError> {
     // 1. Try to get the entry locally (i.e. local DHT shard)
-
+    println!("maybe entry with meta");
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
-
-    let state = context.state().ok_or(HolochainError::ErrorGeneric(
-        "Could not get state".to_string(),
-    ))?;
-
+    
     if let None = maybe_entry_with_meta {
+        println!("none maybe ");
         await!(network::actions::get_entry::get_entry(
             context.clone(),
             address.clone(),
             timeout.clone(),
         ))
     } else {
+        println!("entry else");
         let entry = maybe_entry_with_meta.ok_or(HolochainError::ErrorGeneric(
             "Could not get entry".to_string(),
         ))?;
-        match state.get_headers(address.clone()) {
+        println!("time to get headers");
+        match context.state().ok_or(HolochainError::ErrorGeneric(
+        "Could not get state".to_string(),
+    ))?.get_headers(address.clone()) {
             Ok(headers) => Ok(Some((entry.clone(), headers.clone()))),
             Err(_) => await!(network::actions::get_entry::get_entry(
                 context.clone(),

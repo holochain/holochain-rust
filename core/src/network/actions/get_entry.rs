@@ -56,8 +56,7 @@ impl Future for GetEntryFuture {
     type Output = HcResult<Option<(EntryWithMeta, Vec<ChainHeader>)>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
-        let state = self.context.state().unwrap().network();
-        if let Err(error) = state.initialized() {
+        if let Err(error) = self.context.state().expect("Could not get state  in future").network().initialized() {
             return Poll::Ready(Err(error));
         }
         //
@@ -65,7 +64,7 @@ impl Future for GetEntryFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        match state.get_entry_with_meta_results.get(&self.key) {
+        match self.context.state().expect("Could not get state in future").network().get_entry_with_meta_results.get(&self.key) {
             Some(Some(result)) => Poll::Ready(result.clone()),
             _ => Poll::Pending,
         }

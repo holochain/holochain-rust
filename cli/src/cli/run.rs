@@ -181,9 +181,7 @@ fn interface_configuration(
 }
 
 // LOGGER
-fn logger_configuration(
-    logging: bool,
-) -> LoggerConfiguration {
+fn logger_configuration(logging: bool) -> LoggerConfiguration {
     // temporary log rules, should come from a configuration
     LoggerConfiguration {
         logger_type: "debug".to_string(),

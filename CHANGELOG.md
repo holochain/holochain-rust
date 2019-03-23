@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds logging flag to `hc run` command [#1151](https://github.com/holochain/holochain-rust/pull/1151)
 
 ### Changed
-
+- Conductor now waits for N3H to return p2p bindings [#1149](https://github.com/holochain/holochain-rust/pull/1149)
 - `nix-shell` is now the recommended development approach on supported platforms [#1132](https://github.com/holochain/holochain-rust/pull/1132)
 - Pins every dependant crate version with `=x.y.z` at the Cargo.toml level [#1140](https://github.com/holochain/holochain-rust/pull/1140)
 - Breaking Change: `key_file` value now renamed to `keystore_file` in both config.toml files and the conductor's `admin/agent/add` interface [#1104](https://github.com/holochain/holochain-rust/pull/1104)

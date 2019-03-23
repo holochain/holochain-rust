@@ -290,7 +290,6 @@ impl Context {
             let cas = state.agent().chain_store().content_storage();
 
             // Get according Token Grant entry from CAS
-            println!("for token");
             let entry = get_entry_from_cas(&cas, &addr).ok()??;
 
             // Make sure entry is a public grant and return it

@@ -49,12 +49,12 @@ pub fn invoke_sign_one_time(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     let args_str = runtime.load_json_string_from_args(&args);
 
     let sign_args = match SignArgs::try_from(args_str.clone()) {
-        Ok(entry_input) => entry_input,
+        Ok(sign_input) => sign_input,
         // Exit on error
-        Err(_) => {
+        Err(err) => {
             context.log(format!(
-                "err/zome: invoke_sign_one_time failed to deserialize SignArgs: {:?}",
-                args_str
+                "err/zome: invoke_sign_one_time failed to deserialize SignArgs: {:?} got err: {:?}",
+                args_str, err
             ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }

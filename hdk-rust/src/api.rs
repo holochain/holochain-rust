@@ -18,7 +18,10 @@ use holochain_wasm_utils::{
             StatusRequestKind,
         },
         get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
-        keystore::KeystoreListResult,
+        keystore::{
+            KeyType, KeystoreDeriveKeyArgs, KeystoreDeriveSeedArgs, KeystoreListResult,
+            KeystoreNewRandomArgs, KeystoreSignArgs,
+        },
         link_entries::LinkEntriesArgs,
         send::{SendArgs, SendOptions},
         sign::{SignArgs, SignOneTimeResult},
@@ -123,6 +126,10 @@ def_api_fns! {
     hc_get_links, GetLinks;
     hc_sleep, Sleep;
     hc_keystore_list, KeystoreList;
+    hc_keystore_new_random, KeystoreNewRandom;
+    hc_keystore_derive_seed, KeystoreDeriveSeed;
+    hc_keystore_derive_key, KeystoreDeriveKey;
+    hc_keystore_sign, KeystoreSign;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -773,15 +780,60 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     })
 }
 
-/// sign ( priv_id_str, base64payload ) -> ( base64signature )
+/// sign_one_time ( priv_id_str, base64payload ) -> ( base64signature )
 pub fn sign_one_time<S: Into<String>>(payload: S) -> ZomeApiResult<SignOneTimeResult> {
     Dispatch::SignOneTime.with_input(SignArgs {
         payload: payload.into(),
     })
 }
 
+/// keystore_list ( ) -> ( Vec<String> )
 pub fn keystore_list() -> ZomeApiResult<KeystoreListResult> {
     Dispatch::KeystoreList.with_input("")
+}
+
+/// keystore_new_random ( dst_id, size ) -> ( () )
+pub fn keystore_new_random<S: Into<String>>(dst_id: S, size: usize) -> ZomeApiResult<()> {
+    Dispatch::KeystoreNewRandom.with_input(KeystoreNewRandomArgs {
+        dst_id: dst_id.into(),
+        size,
+    })
+}
+
+/// keystore_derive_seed ( ) -> ( () )
+pub fn keystore_derive_seed<S: Into<String>>(
+    src_id: S,
+    dst_id: S,
+    context: S,
+    index: u64,
+) -> ZomeApiResult<()> {
+    Dispatch::KeystoreDeriveSeed.with_input(KeystoreDeriveSeedArgs {
+        src_id: src_id.into(),
+        dst_id: dst_id.into(),
+        context: context.into(),
+        index,
+    })
+}
+
+/// keystore_derive_key ( ) -> (  )
+pub fn keystore_derive_key<S: Into<String>>(
+    src_id: S,
+    dst_id: S,
+    key_type: KeyType,
+) -> ZomeApiResult<()> {
+    Dispatch::KeystoreDeriveKey.with_input(KeystoreDeriveKeyArgs {
+        src_id: src_id.into(),
+        dst_id: dst_id.into(),
+        key_type,
+    })
+}
+
+/// keystore_sign ( ) -> (  )
+pub fn keystore_sign<S: Into<String>>(src_id: S, payload: S) -> ZomeApiResult<String> {
+    Dispatch::KeystoreSign.with_input(KeystoreSignArgs {
+        src_id: src_id.into(),
+        payload: payload.into(),
+    })
 }
 
 /// NOT YET AVAILABLE
@@ -1306,4 +1358,30 @@ mod tests {
     pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
         RibosomeEncodedValue::Success.into()
     }
+
+    #[no_mangle]
+    pub fn hc_keystore_list(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_keystore_new_random(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_keystore_derive_seed(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
 }

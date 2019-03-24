@@ -30,7 +30,10 @@ use crate::nucleus::ribosome::{
         get_entry::invoke_get_entry,
         get_links::invoke_get_links,
         init_globals::invoke_init_globals,
-        keystore::invoke_keystore_list,
+        keystore::{
+            invoke_keystore_derive_key, invoke_keystore_derive_seed, invoke_keystore_list,
+            invoke_keystore_new_random, invoke_keystore_sign,
+        },
         link_entries::invoke_link_entries,
         query::invoke_query,
         remove_entry::invoke_remove_entry,
@@ -114,16 +117,16 @@ link_zome_api! {
     "hc_keystore_list", KeystoreList, invoke_keystore_list;
 
     /// Create a new random seed Secret in the keystore
-    "hc_keystore_new_random", KeystoreNewRandom, noop;
+    "hc_keystore_new_random", KeystoreNewRandom, invoke_keystore_new_random;
 
     /// Derive a new seed from an existing seed in the keystore
-    "hc_keystore_derive_seed", KeystoreDeriveSeed, noop;
+    "hc_keystore_derive_seed", KeystoreDeriveSeed, invoke_keystore_derive_seed;
 
     /// Create a new key (signing or encrypting) as derived from an existing seed in the keystore
-    "hc_keystore_derive_key", KeystoreDeriveKey, noop;
+    "hc_keystore_derive_key", KeystoreDeriveKey, invoke_keystore_derive_key;
 
     /// Sign a block of data using a key in the keystore
-    "hc_keystore_sign", KeystoreSign, noop;
+    "hc_keystore_sign", KeystoreSign, invoke_keystore_sign;
 }
 
 #[cfg(test)]

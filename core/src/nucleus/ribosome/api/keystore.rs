@@ -8,6 +8,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::keystore::KeystoreListResult;
 use jsonrpc_lite::JsonRpc;
+use serde_json;
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -65,44 +66,98 @@ pub fn invoke_keystore_list(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeA
     runtime.store_result(Ok(KeystoreListResult::new(string_list)))
 }
 
-/*
-    let conductor_api = context.conductor_api.clone();
+pub fn invoke_keystore_new_random(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
 
-    let method = "agent/keystore/list".to_string();
-    let params = "{}".to_string();
-    let handler = conductor_api.write().unwrap();
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
 
-    let id = ProcessUniqueId::new();
-    let request = format!(
-        r#"{{"jsonrpc": "2.0", "method": "{}", "params": {}, "id": "{}"}}"#,
-        method, params, id
+    let result = conductor_callback(
+        "agent/keystore/add_random_seed",
+        &args_str.to_string(),
+        context.clone(),
     );
-
-    let response = match handler.handle_request_sync(&request) {
-        Some(response) => response,
-        None => {
-            context.log(format!("err/zome: agent/keystore/sign_one_time call failed"));
-            return ribosome_error_code!(CallbackFailed);
-        }
-    };
-
-    let response = match JsonRpc::parse(&response) {
-        Ok(response) => response,
+    match result {
+        Ok(_) => (),
         Err(err) => {
-            context.log(format!("err/zome: agent/keystore/sign_one_time could not parse callback response: {:?}", err));
+            context.log(format!(
+                "err/zome: agent/keystore/add_random_seed callback failed: {:?}",
+                err
+            ));
+            return ribosome_error_code!(CallbackFailed);
+        }
+    };
+    runtime.store_result(Ok(()))
+}
+
+pub fn invoke_keystore_derive_seed(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+
+    let result = conductor_callback(
+        "agent/keystore/add_seed_from_seed",
+        &args_str.to_string(),
+        context.clone(),
+    );
+    match result {
+        Ok(_) => (),
+        Err(err) => {
+            context.log(format!(
+                "err/zome: agent/keystore/add_seed_from_seed callback failed: {:?}",
+                err
+            ));
             return ribosome_error_code!(CallbackFailed);
         }
     };
 
-    let result = match response {
-        JsonRpc::Success(_) => Ok(JsonString::from(
-            serde_json::to_string(&response.get_result().unwrap()).unwrap(),
-        )),
-        JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
-            serde_json::to_string(&response.get_error().unwrap()).unwrap(),
-        )),
-        _ => Err(HolochainError::ErrorGeneric(
-            "sign_one_time call failed".to_string(),
-        )),
+    runtime.store_result(Ok(()))
+}
+
+pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+
+    let result = conductor_callback(
+        "agent/keystore/add_key_from_seed",
+        &args_str.to_string(),
+        context.clone(),
+    );
+    match result {
+        Ok(_) => (),
+        Err(err) => {
+            context.log(format!(
+                "err/zome: agent/keystore/add_key_from_seed callback failed: {:?}",
+                err
+            ));
+            return ribosome_error_code!(CallbackFailed);
+        }
     };
-*/
+
+    runtime.store_result(Ok(()))
+}
+
+pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+
+    let result = conductor_callback(
+        "agent/keystore/sign",
+        &args_str.to_string(),
+        context.clone(),
+    );
+    let string: String = match result {
+        Ok(json_string) => serde_json::from_str(&json_string.to_string()).unwrap(),
+        Err(err) => {
+            context.log(format!(
+                "err/zome: agent/keystore/sign callback failed: {:?}",
+                err
+            ));
+            return ribosome_error_code!(CallbackFailed);
+        }
+    };
+
+    runtime.store_result(Ok(string))
+}

@@ -14,7 +14,6 @@ use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
-use serde_json;
 use std::{
     collections::HashMap,
     convert::TryFrom,
@@ -29,7 +28,7 @@ use config::{
 };
 use holochain_dpki::utils::SeedContext;
 use keystore::{KeyType, Keystore};
-use serde_json::map::Map;
+use serde_json::{self, map::Map};
 
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
@@ -930,7 +929,7 @@ impl ConductorApiBuilder {
         self.io
             .add_method("agent/keystore/add_random_seed", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
-                let id = Self::get_as_string("id", &params_map)?;
+                let id = Self::get_as_string("dst_id", &params_map)?;
                 let size = Self::get_as_int("size", &params_map)? as usize;
                 k.lock()
                     .unwrap()

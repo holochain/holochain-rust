@@ -19,6 +19,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
     // 1. Try to get the entry locally (i.e. local DHT shard)
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
+    // 2. No result, so try on the network
     if let None = maybe_entry_with_meta {
         await!(network::actions::get_entry::get_entry(
             context.clone(),
@@ -26,6 +27,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
             timeout.clone(),
         ))
     } else {
+        // 3. If we've found the entry locally we also need to get the header from the local state:
         let entry = maybe_entry_with_meta.ok_or(HolochainError::ErrorGeneric(
             "Could not get entry".to_string(),
         ))?;

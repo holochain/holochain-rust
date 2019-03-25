@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds getting of Headers over the network [#1141](https://github.com/holochain/holochain-rust/pull/1141)
 - Adds keystore and passphrase management service [#1104](https://github.com/holochain/holochain-rust/pull/1104)
 - Adds tooling to manage dependencies in Cargo.toml [#1140](https://github.com/holochain/holochain-rust/pull/1140)
+- Adds `hc chain` command, which prints a raw text dump of a source chain [#1126](https://github.com/holochain/holochain-rust/pull/1126)
 
 
 ### Changed

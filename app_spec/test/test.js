@@ -17,6 +17,16 @@ const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
 
+scenario2.runTape('secrets', async (t, { alice }) => {
+    const ListResult = alice.call("converse", "list_secrets", { });
+    // it should start out with the genesis made seed
+    t.deepEqual(ListResult, { Ok: ["fish"] });
+
+    const AddKeyResult = alice.call("converse", "add_key", {id:"app_key" });
+    t.deepEqual(AddKeyResult, "fish")
+
+
+})
 
 scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
@@ -144,6 +154,7 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const entryWithOptionsGetResult = bob.call("blog", "get_post_with_options", entryWithOptionsGet);
   t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.result.All.items[0].entry.App[1]), { content: "Hello Holo world 321", date_created: "now" })
 })
+
 
 scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
   const message = "Hello everyone! Time to start the secret meeting";

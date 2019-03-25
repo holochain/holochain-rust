@@ -844,7 +844,7 @@ pub fn keystore_derive_key<S: Into<String>>(
     src_id: S,
     dst_id: S,
     key_type: KeyType,
-) -> ZomeApiResult<()> {
+) -> ZomeApiResult<String> {
     Dispatch::KeystoreDeriveKey.with_input(KeystoreDeriveKeyArgs {
         src_id: src_id.into(),
         dst_id: dst_id.into(),

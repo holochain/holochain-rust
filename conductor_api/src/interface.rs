@@ -975,12 +975,12 @@ impl ConductorApiBuilder {
                 let src_id = Self::get_as_string("src_id", &params_map)?;
                 let dst_id = Self::get_as_string("dst_id", &params_map)?;
                 let key_type_string = Self::get_as_string("key_type", &params_map)?;
-                let key_type = match key_type_string.as_str() {
+                let key_type = match key_type_string.to_lowercase().as_str() {
                     "signing" => KeyType::Signing,
                     "encrypting" => KeyType::Encrypting,
                     _ => {
-                        return Err(jsonrpc_core::Error::invalid_params(String::from(
-                            "`key_type` has to be one of 'signing' or 'encrypting'.",
+                        return Err(jsonrpc_core::Error::invalid_params(format!(
+                            "`key_type` has to be one of 'signing' or 'encrypting'. params were: {:?}",params_map
                         )));
                     }
                 };

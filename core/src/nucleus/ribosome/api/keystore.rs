@@ -124,8 +124,8 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
         &args_str.to_string(),
         context.clone(),
     );
-    match result {
-        Ok(_) => (),
+    let string: String = match result {
+        Ok(json_string) => serde_json::from_str(&json_string.to_string()).unwrap(),
         Err(err) => {
             context.log(format!(
                 "err/zome: agent/keystore/add_key_from_seed callback failed: {:?}",
@@ -135,7 +135,7 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
         }
     };
 
-    runtime.store_result(Ok(()))
+    runtime.store_result(Ok(string))
 }
 
 pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {

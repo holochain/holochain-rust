@@ -12,6 +12,7 @@ use hdk::{
         json::JsonString,
         signature::{Provenance, Signature},
     },
+    holochain_wasm_utils::api_serialization::keystore::KeyType,
 };
 
 pub fn handle_sign_message(message: String) -> ZomeApiResult<Signature> {
@@ -22,10 +23,25 @@ pub fn handle_verify_message(message: String, provenance: Provenance) -> ZomeApi
     hdk::verify_signature(provenance, message)
 }
 
+pub fn handle_add_key(id: String) -> ZomeApiResult<String> {
+    hdk::keystore_derive_key("app_seed", &id, KeyType::Signing)
+}
+
+pub fn handle_list_secrets() -> ZomeApiResult<Vec<String>> {
+    hdk::keystore_list().map(|keystore_ids| keystore_ids.list())
+}
+
 define_zome! {
     entries: []
 
-    genesis: || { Ok(()) }
+    genesis: || {
+        {
+            hdk::keystore_new_random("app_seed", 32)
+                .map_err(|err|
+                         format!("new seed generation failed: {}",err)
+            )
+        }
+    }
 
     functions: [
         sign_message: {
@@ -39,9 +55,22 @@ define_zome! {
             outputs: |result: ZomeApiResult<bool>|,
             handler: handle_verify_message
         }
+
+        add_key: {
+            inputs: |id: String|,
+            outputs: |result: ZomeApiResult<String>|,
+            handler: handle_add_key
+        }
+
+        list_secrets: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Vec<String>>|,
+            handler: handle_list_secrets
+        }
+
     ]
 
     traits: {
-        hc_public [sign_message, verify_message]
+        hc_public [sign_message, verify_message, add_key, list_secrets]
     }
 }

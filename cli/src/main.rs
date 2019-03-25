@@ -1,4 +1,6 @@
 #![warn(unused_extern_crates)]
+#![feature(try_from)]
+extern crate holochain_cas_implementations;
 extern crate holochain_common;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
@@ -142,6 +144,15 @@ enum Cli {
         #[structopt(long, short, help = "Don't ask for passphrase")]
         silent: bool,
     },
+    #[structopt(name = "chain", about = "View the contents of a source chain")]
+    ChainLog {
+        #[structopt(name = "INSTANCE", help = "Instance ID to view")]
+        instance_id: Option<String>,
+        #[structopt(long, short, help = "Location of chain storage")]
+        path: Option<PathBuf>,
+        #[structopt(long, short, help = "List available instances")]
+        list: bool,
+    },
 }
 
 fn main() {
@@ -167,11 +178,15 @@ fn run() -> HolochainResult<()> {
             };
             cli::package(strip_meta, output).map_err(HolochainError::Default)?
         }
+
         Cli::Unpack { path, to } => cli::unpack(&path, &to).map_err(HolochainError::Default)?,
+
         Cli::Init { path } => cli::init(&path).map_err(HolochainError::Default)?,
+
         Cli::Generate { zome, language } => {
             cli::generate(&zome, &language).map_err(HolochainError::Default)?
         }
+
         Cli::Run {
             package,
             port,
@@ -188,6 +203,7 @@ fn run() -> HolochainResult<()> {
             cli::run(dna_path, package, port, interface_type, conductor_config)
                 .map_err(HolochainError::Default)?
         }
+
         Cli::Test {
             dir,
             testfile,
@@ -198,6 +214,7 @@ fn run() -> HolochainResult<()> {
             cli::test(&current_path, &dir, &testfile, skip_build)
         }
         .map_err(HolochainError::Default)?,
+
         Cli::KeyGen { silent } => {
             let passphrase = if silent {
                 Some(String::from(holochain_common::DEFAULT_PASSPHRASE))
@@ -207,6 +224,22 @@ fn run() -> HolochainResult<()> {
             cli::keygen(None, passphrase)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
+
+        Cli::ChainLog {
+            instance_id,
+            list,
+            path,
+        } => match (list, instance_id) {
+            (true, _) => cli::chain_list(path),
+            (false, None) => {
+                Cli::clap().print_help().expect("Couldn't print help!");
+                println!("\n\nTry `hc help chain` for more info");
+            }
+            (false, Some(instance_id)) => {
+                cli::chain_log(path, instance_id)
+                    .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
+            }
+        },
     }
 
     Ok(())

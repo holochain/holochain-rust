@@ -1,44 +1,45 @@
 [package]
 name = "holochain_conductor_api"
-version = "0.0.6-alpha"
+version = "0.0.7-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
-holochain_dpki = { path = "../hc_dpki" }
+holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
 holochain_sodium = { path = "../sodium" }
 holochain_common = { path = "../common" }
-chrono = "0.4"
-serde = "1.0"
-serde_derive = "1.0"
-serde_json = { version = "1.0", features = ["preserve_order"] }
-serde_regex = "0.3.1"
-toml = "0.4.8"
-boolinator = "2.4"
+chrono = "=0.4.6"
+serde = "=1.0.89"
+serde_derive = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde_regex = "=0.3.1"
+toml = "=0.5.0"
+boolinator = "=2.4.0"
 jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
 jsonrpc-http-server = { git = "https://github.com/paritytech/jsonrpc" }
-petgraph = "0.4.13"
-colored = "1.6"
-regex = "1"
-maplit = "1.0.1"
-lazy_static = "1.2"
-directories = "1.0"
-json-patch = "0.2.2"
-hyper = "0.12.21"
-hyper-staticfile = "0.3.0"
-tokio = "0.1.14"
-fs_extra = "1.1"
-rpassword = "2.1.0"
-dirs = "1.0.4"
-base64 = "0.10"
-reqwest = "0.9"
+petgraph = "=0.4.13"
+colored = "=1.7.0"
+regex = "=1.1.2"
+maplit = "=1.0.1"
+lazy_static = "=1.2.0"
+directories = "=1.0.2"
+json-patch = "=0.2.2"
+hyper = "=0.12.25"
+hyper-staticfile = "=0.3.1"
+tokio = "=0.1.17"
+fs_extra = "=1.1.0"
+rpassword = "=2.1.0"
+dirs = "=1.0.5"
+base64 = "=0.10.1"
+reqwest = "=0.9.11"
+crossbeam-channel = "=0.3.8"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
-tempfile = "3"
+tempfile = "=3.0.7"
 holochain_wasm_utils = { path = "../wasm_utils" }
-structopt = "0.2"
-pretty_assertions = "*"
+structopt = "=0.2.15"
+pretty_assertions = "=0.6.1"

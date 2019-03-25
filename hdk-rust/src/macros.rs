@@ -104,6 +104,8 @@ macro_rules! load_string {
 /// # #[no_mangle]
 /// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -140,7 +142,7 @@ macro_rules! load_string {
 ///             validation: |validation_data: hdk::EntryValidationData<Post>| {
 ///              match validation_data
 ///              {
-///              EntryValidationData::Create{entry:test_entry,validation_package:_} =>
+///              EntryValidationData::Create{entry:test_entry,validation_data:_} =>
 ///              {
 ///                        
 ///                        

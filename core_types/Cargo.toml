@@ -1,18 +1,18 @@
 [package]
 name = "holochain_core_types"
-version = "0.0.6-alpha"
+version = "0.0.7-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 build = "build.rs"
 
 [dependencies]
-arrayref = "0.3.5"
-base64 = "0.10.0"
-chrono = "0.4"
-serde = "1.0"
-serde_derive = "1.0"
-serde_json = { version = "1.0", features = ["preserve_order"] }
-lazy_static = "1.2"
-multihash = "0.8.0"
+arrayref = "=0.3.5"
+base64 = "=0.10.1"
+chrono = "=0.4.6"
+serde = "=1.0.89"
+serde_derive = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+lazy_static = "=1.2.0"
+multihash = "=0.8.0"
 futures-preview = "=0.3.0-alpha.12"
 futures-core-preview = "=0.3.0-alpha.12"
 futures-channel-preview = "=0.3.0-alpha.12"
@@ -21,16 +21,16 @@ futures-io-preview = "=0.3.0-alpha.12"
 futures-sink-preview = "=0.3.0-alpha.12"
 futures-util-preview = "=0.3.0-alpha.12"
 
-hcid = "0.0.3-alpha"
+hcid = "=0.0.3-alpha"
 
-rust-base58 = "0.0.4"
-snowflake = "1.2"
-objekt="0.1.1"
+rust-base58 = "=0.0.4"
+snowflake = "=1.3.0"
+objekt= "=0.1.2"
 holochain_core_types_derive = { path = "../core_types_derive" }
 uuid = { version = "=0.7.1", features = ["v4"] }
-regex = "^1.1"
+regex = "=1.1.2"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
 holochain_core = { path = "../core"}
-maplit = "1.0.1"
+maplit = "=1.0.1"

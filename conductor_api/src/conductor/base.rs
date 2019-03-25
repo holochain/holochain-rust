@@ -5,6 +5,7 @@ use crate::{
     },
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
+    keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     logger::DebugLogger,
     Holochain,
 };
@@ -17,11 +18,7 @@ use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{
-    key_blob::{Blobbable, KeyBlob},
-    key_bundle::KeyBundle,
-};
-use holochain_sodium::secbuf::SecBuf;
+use holochain_dpki::key_bundle::KeyBundle;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     clone::Clone,
@@ -81,7 +78,7 @@ pub fn mount_conductor_from_config(config: Configuration) {
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
-    agent_keys: HashMap<String, Arc<Mutex<KeyBundle>>>,
+    agent_keys: HashMap<String, Arc<Mutex<Keystore>>>,
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
@@ -92,7 +89,7 @@ pub struct Conductor {
     logger: DebugLogger,
     p2p_config: Option<P2pConfig>,
     network_spawn: Option<SpawnResult>,
-    passphrase_manager: PassphraseManager,
+    passphrase_manager: Arc<PassphraseManager>,
 }
 
 impl Drop for Conductor {
@@ -107,7 +104,7 @@ impl Drop for Conductor {
 
 type SignalSender = SyncSender<Signal>;
 pub type KeyLoader = Arc<
-    Box<FnMut(&PathBuf, &PassphraseManager) -> Result<KeyBundle, HolochainError> + Send + Sync>,
+    Box<FnMut(&PathBuf, Arc<PassphraseManager>) -> Result<Keystore, HolochainError> + Send + Sync>,
 >;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
@@ -135,9 +132,9 @@ impl Conductor {
             logger: DebugLogger::new(rules),
             p2p_config: None,
             network_spawn: None,
-            passphrase_manager: PassphraseManager::new(Arc::new(Mutex::new(
+            passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
                 PassphraseServiceCmd {},
-            ))),
+            )))),
         }
     }
 
@@ -280,6 +277,7 @@ impl Conductor {
                 String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
                 String::from("N3H_LOG_LEVEL") => network_config.n3h_log_level.clone(),
             },
+            2000,
             true,
         )
         .map_err(|error| {
@@ -550,46 +548,68 @@ impl Conductor {
             // !!!!!!!!!!!!!!!!!!!!!!!
             return Ok(());
         }
-        self.get_keybundle_for_agent(agent_id)?;
+        self.get_keystore_for_agent(agent_id)?;
         Ok(())
     }
 
-    /// Get reference to key for given agent ID.
+    /// Get reference to keystore for given agent ID.
+    /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
+    /// to do so.
+    fn get_keystore_for_agent(
+        &mut self,
+        agent_id: &String,
+    ) -> Result<Arc<Mutex<Keystore>>, String> {
+        if !self.agent_keys.contains_key(agent_id) {
+            let agent_config = self
+                .config
+                .agent_by_id(agent_id)
+                .ok_or(format!("Agent '{}' not found", agent_id))?;
+            let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
+            let mut keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
+                &keystore_file_path,
+                self.passphrase_manager.clone(),
+            )
+            .map_err(|_| {
+                HolochainError::ConfigError(format!(
+                    "Could not load keystore \"{}\"",
+                    agent_config.keystore_file,
+                ))
+            })?;
+            let keybundle = keystore
+                .get_keybundle(PRIMARY_KEYBUNDLE_ID)
+                .map_err(|err| format!("{}", err,))?;
+
+            if agent_config.public_address != keybundle.get_id() {
+                return Err(format!(
+                    "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
+                    keystore_file_path.to_str().unwrap(),
+                    keybundle.get_id(),
+                    agent_config.public_address,
+                ));
+            }
+
+            self.agent_keys
+                .insert(agent_id.clone(), Arc::new(Mutex::new(keystore)));
+        }
+        let keystore_ref = self.agent_keys.get(agent_id).unwrap();
+        Ok(keystore_ref.clone())
+    }
+
+    /// Get reference to the keybundle stored in the keystore for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
     fn get_keybundle_for_agent(
         &mut self,
         agent_id: &String,
     ) -> Result<Arc<Mutex<KeyBundle>>, String> {
-        if !self.agent_keys.contains_key(agent_id) {
-            let agent_config = self
-                .config
-                .agent_by_id(agent_id)
-                .ok_or(format!("Agent '{}' not found", agent_id))?;
-            let key_file_path = PathBuf::from(agent_config.key_file.clone());
-            let keybundle = Arc::get_mut(&mut self.key_loader).unwrap()(
-                &key_file_path,
-                &self.passphrase_manager,
-            )
-            .map_err(|_| {
-                HolochainError::ConfigError(format!(
-                    "Could not load key file \"{}\"",
-                    agent_config.key_file,
-                ))
-            })?;
-            if agent_config.public_address != keybundle.get_id() {
-                return Err(format!(
-                    "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
-                    key_file_path.to_str().unwrap(),
-                    keybundle.get_id(),
-                    agent_config.public_address,
-                ));
-            }
-            self.agent_keys
-                .insert(agent_id.clone(), Arc::new(Mutex::new(keybundle)));
-        }
-        let keybundle_ref = self.agent_keys.get(agent_id).unwrap();
-        Ok(keybundle_ref.clone())
+        let keystore = self
+            .get_keystore_for_agent(agent_id)
+            .map_err(|err| format!("{}", err))?;
+        let mut keystore = keystore.lock().unwrap();
+        let keybundle = keystore
+            .get_keybundle(PRIMARY_KEYBUNDLE_ID)
+            .map_err(|err| format!("{}", err))?;
+        Ok(Arc::new(Mutex::new(keybundle)))
     }
 
     fn start_interface(&mut self, config: &InterfaceConfiguration) -> Result<(), String> {
@@ -614,25 +634,12 @@ impl Conductor {
     /// Default KeyLoader that actually reads files from the filesystem
     fn load_key(
         file: &PathBuf,
-        passphrase_manager: &PassphraseManager,
-    ) -> Result<KeyBundle, HolochainError> {
-        notify(format!("Reading agent key from {}", file.display()));
+        passphrase_manager: Arc<PassphraseManager>,
+    ) -> Result<Keystore, HolochainError> {
+        notify(format!("Reading keystore from {}", file.display()));
 
-        // Read key file
-        let mut file = File::open(file)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        let blob: KeyBlob = serde_json::from_str(&contents)?;
-
-        // Try default passphrase:
-        let mut default_passphrase =
-            SecBuf::with_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
-        KeyBundle::from_blob(&blob, &mut default_passphrase, None).or_else(|_| {
-            let mut passphrase_buf = passphrase_manager.get_passphrase()?;
-
-            // Unblob into KeyBundle
-            KeyBundle::from_blob(&blob, &mut passphrase_buf, None)
-        })
+        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager, None)?;
+        Ok(keystore)
     }
 
     fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {
@@ -775,6 +782,9 @@ impl Logger for NullLogger {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use conductor::passphrase_manager::PassphraseManager;
+    use key_loaders::mock_passphrase_manager;
+    use keystore::{test_hash_config, Keystore, Secret, PRIMARY_KEYBUNDLE_ID};
     extern crate tempfile;
     use crate::config::load_configuration;
     use holochain_core::{
@@ -806,34 +816,51 @@ pub mod tests {
     }
 
     pub fn test_key_loader() -> KeyLoader {
-        let loader = Box::new(|path: &PathBuf, _pm: &PassphraseManager| {
+        let loader = Box::new(|path: &PathBuf, _pm: Arc<PassphraseManager>| {
             match path.to_str().unwrap().as_ref() {
-                "holo_tester1.key" => Ok(test_keybundle(1)),
-                "holo_tester2.key" => Ok(test_keybundle(2)),
-                "holo_tester3.key" => Ok(test_keybundle(3)),
+                "holo_tester1.key" => Ok(test_keystore(1)),
+                "holo_tester2.key" => Ok(test_keystore(2)),
+                "holo_tester3.key" => Ok(test_keystore(3)),
                 unknown => Err(HolochainError::ErrorGeneric(format!(
-                    "No test key for {}",
+                    "No test keystore for {}",
                     unknown
                 ))),
             }
         })
             as Box<
-                FnMut(&PathBuf, &PassphraseManager) -> Result<KeyBundle, HolochainError>
+                FnMut(&PathBuf, Arc<PassphraseManager>) -> Result<Keystore, HolochainError>
                     + Send
                     + Sync,
             >;
         Arc::new(loader)
     }
 
-    pub fn test_keybundle(index: u8) -> KeyBundle {
+    pub fn test_keystore(index: u8) -> Keystore {
+        let agent_name = format!("test-agent-{}", index);
+        let mut keystore = Keystore::new(
+            mock_passphrase_manager(agent_name.clone()),
+            test_hash_config(),
+        )
+        .unwrap();
+
         // Create deterministic seed
         let mut seed = SecBuf::with_insecure(SEED_SIZE);
         let mock_seed: Vec<u8> = (1..SEED_SIZE).map(|e| e as u8 + index).collect();
         seed.write(0, mock_seed.as_slice())
             .expect("SecBuf must be writeable");
 
-        // Create KeyBundle from seed
-        KeyBundle::new_from_seed_buf(&mut seed, holochain_dpki::seed::SeedType::Mock).unwrap()
+        let secret = Arc::new(Mutex::new(Secret::Seed(seed)));
+        keystore.add("root_seed", secret).unwrap();
+
+        keystore
+            .add_keybundle_from_seed("root_seed", PRIMARY_KEYBUNDLE_ID)
+            .unwrap();
+        keystore
+    }
+
+    pub fn test_keybundle(index: u8) -> KeyBundle {
+        let mut keystore = test_keystore(index);
+        keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID).unwrap()
     }
 
     pub fn test_toml() -> String {
@@ -843,19 +870,19 @@ pub mod tests {
     id = "test-agent-1"
     name = "Holo Tester 1"
     public_address = "{}"
-    key_file = "holo_tester1.key"
+    keystore_file = "holo_tester1.key"
 
     [[agents]]
     id = "test-agent-2"
     name = "Holo Tester 2"
     public_address = "{}"
-    key_file = "holo_tester2.key"
+    keystore_file = "holo_tester2.key"
 
     [[agents]]
     id = "test-agent-3"
     name = "Holo Tester 3"
     public_address = "{}"
-    key_file = "holo_tester3.key"
+    keystore_file = "holo_tester3.key"
 
     [[dnas]]
     id = "test-dna"
@@ -1246,7 +1273,7 @@ pub mod tests {
                 id = "test-agent-1"
                 name = "Holo Tester 1"
                 public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
-                key_file = "holo_tester1.key"
+                keystore_file = "holo_tester1.key"
 
                 [[dnas]]
                 id = "test-dna"

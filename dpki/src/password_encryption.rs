@@ -6,6 +6,7 @@ pub type OpsLimit = u64;
 pub type MemLimit = usize;
 pub type PwHashAlgo = i8;
 
+#[derive(Clone)]
 pub struct PwHashConfig(pub OpsLimit, pub MemLimit, pub PwHashAlgo);
 
 /// Struct holding the result of a passphrase encryption

@@ -105,7 +105,7 @@ impl IpcNetWorker {
         bootstrap_nodes: Vec<String>,
     ) -> NetResult<Self> {
         // Spawn a process with given `cmd` that we will have an IPC connection with
-        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, config, env, true)?;
+        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, config, env, 2000, false)?;
         // Get spawn result info
         let ipc_binding = spawn_result.ipc_binding;
         let kill = spawn_result.kill;

@@ -28,7 +28,7 @@ pub fn handle_add_key(id: String) -> ZomeApiResult<String> {
 }
 
 pub fn handle_list_secrets() -> ZomeApiResult<Vec<String>> {
-    hdk::keystore_list().map(|keystore_ids| keystore_ids.list())
+    hdk::keystore_list().map(|keystore_ids| keystore_ids.ids)
 }
 
 define_zome! {

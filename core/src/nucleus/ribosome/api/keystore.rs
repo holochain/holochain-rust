@@ -63,7 +63,7 @@ pub fn invoke_keystore_list(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeA
         }
     };
 
-    runtime.store_result(Ok(KeystoreListResult::new(string_list)))
+    runtime.store_result(Ok(KeystoreListResult { ids: string_list }))
 }
 
 pub fn invoke_keystore_new_random(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {

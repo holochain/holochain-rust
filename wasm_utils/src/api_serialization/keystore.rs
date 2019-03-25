@@ -1,14 +1,8 @@
 use holochain_core_types::{error::HolochainError, json::*};
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Hash, Debug, Serialize, DefaultJson)]
-pub struct KeystoreListResult(Vec<String>);
-impl KeystoreListResult {
-    pub fn new(string_list: Vec<String>) -> Self {
-        KeystoreListResult(string_list)
-    }
-    pub fn list(&self) -> Vec<String> {
-        self.0.clone()
-    }
+pub struct KeystoreListResult {
+    pub ids: Vec<String>,
 }
 
 // NOTE: These properties must match the attributes in the conductor

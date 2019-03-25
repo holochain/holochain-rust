@@ -16,6 +16,19 @@ const scenario1 = new Scenario([instanceAlice], { debugLog: true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
+scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
+    const message = "Hello everyone! Time to start the secret meeting";
+
+    const SignResult = bob.call("converse", "sign_message", { key_id:"", message: message });
+
+    t.deepEqual(SignResult, { Ok: 'YVystBCmNEJGW/91bg43cUUybbtiElex0B+QWYy+PlB+nE3W8TThYGE4QzuUexvzkGqSutV04dSN8oyZxTJiBg==' });
+
+    const provenance = [bob.agentId, SignResult.Ok];
+
+    const VerificationResult = alice.call("converse", "verify_message", { message, provenance });
+
+    t.deepEqual(VerificationResult, { Ok: true });
+})
 
 scenario2.runTape('secrets', async (t, { alice }) => {
     const ListResult = alice.call("converse", "list_secrets", { });
@@ -24,6 +37,21 @@ scenario2.runTape('secrets', async (t, { alice }) => {
 
     const AddKeyResult = alice.call("converse", "add_key", {id:"app_key" });
     t.ok(AddKeyResult)
+
+    const message = "Hello everyone! Time to start the secret meeting";
+
+    const SignResult = alice.call("converse", "sign_message", { key_id:"app_key", message: message });
+
+    // use the public key returned by add key as the provenance source
+    const provenance = [AddKeyResult.Ok, SignResult.Ok];
+    const VerificationResult = alice.call("converse", "verify_message", { message, provenance });
+    t.deepEqual(VerificationResult, { Ok: true });
+
+    // use the agent key as the provenance source (which should fail)
+    const provenance1 = [alice.agentId, SignResult.Ok];
+    const VerificationResult1 = alice.call("converse", "verify_message", { message, provenance1 });
+    t.deepEqual(VerificationResult1, { Ok: false });
+
 })
 
 scenario2.runTape('agentId', async (t, { alice, bob }) => {
@@ -151,21 +179,6 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const entryWithOptionsGet = { post_address: createResult.Ok }
   const entryWithOptionsGetResult = bob.call("blog", "get_post_with_options", entryWithOptionsGet);
   t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.result.All.items[0].entry.App[1]), { content: "Hello Holo world 321", date_created: "now" })
-})
-
-
-scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
-  const message = "Hello everyone! Time to start the secret meeting";
-
-  const SignResult = bob.call("converse", "sign_message", { message });
-
-  t.deepEqual(SignResult, { Ok: 'YVystBCmNEJGW/91bg43cUUybbtiElex0B+QWYy+PlB+nE3W8TThYGE4QzuUexvzkGqSutV04dSN8oyZxTJiBg==' });
-
-  const provenance = [bob.agentId, SignResult.Ok];
-
-  const VerificationResult = alice.call("converse", "verify_message", { message, provenance });
-
-  t.deepEqual(VerificationResult, { Ok: true });
 })
 
 scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {

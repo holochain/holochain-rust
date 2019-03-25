@@ -15,8 +15,12 @@ use hdk::{
     holochain_wasm_utils::api_serialization::keystore::KeyType,
 };
 
-pub fn handle_sign_message(message: String) -> ZomeApiResult<Signature> {
-    hdk::sign(message).map(Signature::from)
+pub fn handle_sign_message(key_id: String, message: String) -> ZomeApiResult<Signature> {
+    if key_id == "" {
+        hdk::sign(message).map(Signature::from)
+    } else {
+        hdk::keystore_sign(key_id, message).map(Signature::from)
+    }
 }
 
 pub fn handle_verify_message(message: String, provenance: Provenance) -> ZomeApiResult<bool> {
@@ -45,7 +49,7 @@ define_zome! {
 
     functions: [
         sign_message: {
-            inputs: |message: String|,
+            inputs: |key_id: String, message: String|,
             outputs: |result: ZomeApiResult<Signature>|,
             handler: handle_sign_message
         }

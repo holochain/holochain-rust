@@ -13,7 +13,7 @@ environment:
   APPVEYOR_BUILD_WORKER_CLOUD: master
 
 test_script:
- - setx %hc_target_prefix% C:\build\
+ - setx hc_target_prefix C:\build\
  - setx test_p hc
  - setx test_path cli\
  - cargo test --release -p %test_p% --target-dir %hc_target_prefix%%test_path%target

@@ -2,7 +2,7 @@ use crate::{context::Context, network, nucleus};
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
+    cas::content::Address,
     crud_status::CrudStatus,
     entry::EntryWithMetaAndHeader,
     error::HolochainError,
@@ -65,17 +65,17 @@ pub async fn get_entry_result_workflow<'a>(
         let address = maybe_address.unwrap();
         maybe_address = None;
         // Try to get entry
-        let maybe_entry_with_meta = await!(get_entry_with_meta_workflow(
+        let maybe_entry_with_meta_and_headers = await!(get_entry_with_meta_workflow(
             context,
             &address,
             &args.options.timeout
         ))?;
 
         // Entry found
-        if let Some(entry_with_meta) = maybe_entry_with_meta {
+        if let Some(entry_with_meta_and_headers) = maybe_entry_with_meta_and_headers {
             // Erase history if request is for latest
             if args.options.status_request == StatusRequestKind::Latest {
-                if entry_with_meta.entry_with_meta.crud_status == CrudStatus::Deleted {
+                if entry_with_meta_and_headers.entry_with_meta.crud_status == CrudStatus::Deleted {
                     entry_result.clear();
                     break;
                 }
@@ -83,29 +83,26 @@ pub async fn get_entry_result_workflow<'a>(
 
             // Add entry
             let headers: Vec<ChainHeader> = if args.options.headers {
-                context
-                    .state()
-                    .expect("state uninitialized! :)")
-                    .get_headers(entry_with_meta.entry_with_meta.entry.address().clone())?
+                entry_with_meta_and_headers.headers
             } else {
                 Vec::new()
             };
-            entry_result.push(&entry_with_meta.entry_with_meta, headers);
+            entry_result.push(&entry_with_meta_and_headers.entry_with_meta, headers);
 
             if args.options.status_request == StatusRequestKind::Initial {
                 break;
             }
 
             // Follow crud-link if possible
-            if entry_with_meta
+            if entry_with_meta_and_headers
                 .entry_with_meta
                 .maybe_link_update_delete
                 .is_some()
-                && entry_with_meta.entry_with_meta.crud_status != CrudStatus::Deleted
+                && entry_with_meta_and_headers.entry_with_meta.crud_status != CrudStatus::Deleted
                 && args.options.status_request != StatusRequestKind::Initial
             {
                 maybe_address = Some(
-                    entry_with_meta
+                    entry_with_meta_and_headers
                         .entry_with_meta
                         .maybe_link_update_delete
                         .unwrap(),

@@ -22,7 +22,6 @@ use holochain_core_types::{
     entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
-
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_lite::JsonRpc;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -156,10 +155,7 @@ impl Context {
     }
 
     pub fn state(&self) -> Option<RwLockReadGuard<State>> {
-        match self.state {
-            None => None,
-            Some(ref s) => Some(s.read().unwrap()),
-        }
+        self.state.as_ref().map(|s| s.read().unwrap())
     }
 
     pub fn get_dna(&self) -> Option<Dna> {
@@ -286,7 +282,7 @@ impl Context {
                 .agent()
                 .chain_store()
                 .iter_type(&Some(top), &EntryType::CapTokenGrant)
-                .nth(0)?
+                .next()?
                 .entry_address()
                 .to_owned();
 

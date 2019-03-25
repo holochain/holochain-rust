@@ -1,6 +1,6 @@
 [package]
 name = "nucleus-actions-tests"
-version = "0.0.7-alpha"
+version = "0.0.8-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
@@ -15,7 +15,7 @@ members = []
 [dependencies]
 hdk = { path = "../../../../../hdk-rust" }
 holochain_core_types_derive = { path = "../../../../../core_types_derive" }
-serde = "1.0"
-serde_json = "1.0"
-serde_derive = "1.0"
-boolinator = "2.4"
+serde = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde_derive = "=1.0.89"
+boolinator = "=2.4.0"

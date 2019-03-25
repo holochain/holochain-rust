@@ -54,6 +54,40 @@ macro_rules! def_api_fns {
         }
 
         impl Dispatch {
+
+            pub fn without_input<O: TryFrom<JsonString> + Into<JsonString>>(
+                &self,
+            ) -> ZomeApiResult<O> {
+                let mut mem_stack = unsafe { G_MEM_STACK }
+                .ok_or_else(|| ZomeApiError::Internal("debug failed to load mem_stack".to_string()))?;
+
+                let wasm_allocation = mem_stack.write_json("{}")?;
+                let encoded_input: RibosomeEncodingBits =
+                    RibosomeEncodedAllocation::from(wasm_allocation).into();
+                let encoded_output: RibosomeEncodingBits = unsafe {
+                    (match self {
+                        $(Dispatch::$enum_variant => $function_name),*
+                    })(encoded_input)
+                };
+
+                let result: ZomeApiInternalResult =
+                    load_ribosome_encoded_json(encoded_output).or_else(|e| {
+                        Err(ZomeApiError::from(e))
+                    })?;
+
+                // Free result & input allocations
+                mem_stack.deallocate(wasm_allocation)?;
+
+                // Done
+                if result.ok {
+                    JsonString::from(result.value)
+                        .try_into()
+                        .map_err(|_| ZomeApiError::from(String::from("Failed to deserialize return value")))
+                } else {
+                    Err(ZomeApiError::from(result.error))
+                }
+            }
+
             pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(
                 &self,
                 input: I,
@@ -63,7 +97,7 @@ macro_rules! def_api_fns {
 
                 let wasm_allocation = mem_stack.write_json(input)?;
 
-                // Call Ribosome's commit_entry()
+                // Call Ribosome's function
                 let encoded_input: RibosomeEncodingBits =
                     RibosomeEncodedAllocation::from(wasm_allocation).into();
                 let encoded_output: RibosomeEncodingBits = unsafe {
@@ -100,7 +134,6 @@ macro_rules! def_api_fns {
             pub(crate) fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
             pub(crate) fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
             pub(crate) fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
-
             $( pub(crate) fn $function_name (_: RibosomeEncodingBits) -> RibosomeEncodingBits;) *
         }
     };
@@ -813,7 +846,7 @@ pub fn sign_one_time<S: Into<String>>(payload: S) -> ZomeApiResult<SignOneTimeRe
 
 /// keystore_list ( ) -> ( Vec<String> )
 pub fn keystore_list() -> ZomeApiResult<KeystoreListResult> {
-    Dispatch::KeystoreList.with_input("")
+    Dispatch::KeystoreList.without_input()
 }
 
 /// keystore_new_random ( dst_id, size ) -> ( () )

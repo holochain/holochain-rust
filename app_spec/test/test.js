@@ -18,14 +18,12 @@ const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { de
 
 
 scenario2.runTape('secrets', async (t, { alice }) => {
-    //const ListResult = alice.call("converse", "list_secrets", { });
+    const ListResult = alice.call("converse", "list_secrets", { });
     // it should start out with the genesis made seed
-    //t.deepEqual(ListResult, { Ok: ["fish"] });
+    t.deepEqual(ListResult, { Ok: [ 'app_seed', 'primary_keybundle:enc_key', 'primary_keybundle:sign_key', 'root_seed' ]  });
 
     const AddKeyResult = alice.call("converse", "add_key", {id:"app_key" });
     t.ok(AddKeyResult)
-
-
 })
 
 scenario2.runTape('agentId', async (t, { alice, bob }) => {

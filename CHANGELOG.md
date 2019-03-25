@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds `./scripts/nix/pod.sh` script to isolate/debug `nix-shell` commands [#1139](https://github.com/holochain/holochain-rust/pull/1139)
 - Adds keystore and passphrase management service [#1104](https://github.com/holochain/holochain-rust/pull/1104)
 - Adds tooling to manage dependencies in Cargo.toml [#1140](https://github.com/holochain/holochain-rust/pull/1140)
-- Adds logging flag to `hc run` command [#1151](https://github.com/holochain/holochain-rust/pull/1151)
+- Adds ability to enable logging via flag (`--logging`) to `hc run` command [#1151](https://github.com/holochain/holochain-rust/pull/1151)
 
 ### Changed
 - Conductor now waits for N3H to return p2p bindings [#1149](https://github.com/holochain/holochain-rust/pull/1149)

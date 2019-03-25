@@ -152,7 +152,10 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
         context.clone(),
     );
     let string: String = match result {
-        Ok(json_string) => serde_json::from_str(&json_string.to_string()).unwrap(),
+        Ok(json_string) => {
+            let value: Value = serde_json::from_str(&json_string.to_string()).unwrap();
+            value["signature"].to_string()
+        }
         Err(err) => {
             context.log(format!(
                 "err/zome: agent/keystore/sign callback failed: {:?}",

@@ -68,7 +68,7 @@ pub(crate) fn get_entry_from_dht(
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
     let cas = context.state().unwrap().dht().content_storage().clone();
-    get_entry_from_cas(&cas.clone(), address)
+    get_entry_from_cas(&cas, address)
 }
 
 pub(crate) fn get_entry_crud_meta_from_dht(

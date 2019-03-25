@@ -234,7 +234,6 @@ mod tests {
         assert!(maybe_entry_with_meta_result.is_some());
         let maybe_entry_with_meta = maybe_entry_with_meta_result.unwrap().unwrap();
         let result = maybe_entry_with_meta.unwrap();
-        println!("{:?}", result);
         let entry_with_meta = result.unwrap();
         assert_eq!(entry_with_meta.entry, entry.clone());
 

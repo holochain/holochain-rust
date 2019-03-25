@@ -304,10 +304,11 @@ pub struct MetaListData {
 #[serde(tag = "method")]
 pub enum JsonProtocol {
     // -- Generic responses -- //
-    /// Success response to a request (any message with an _id field.)
+    /// Generic success response to a request (any message with an _id field.).
+    /// Used when the request is not expecting a response holding specific data.
     #[serde(rename = "successResult")]
     SuccessResult(SuccessResultData),
-    /// Failure response to a request (any message with an _id field.)
+    /// Generic failure response to a request (any message with an _id field.)
     /// Can also be a response to a mal-formed request.
     #[serde(rename = "failureResult")]
     FailureResult(FailureResultData),
@@ -321,10 +322,13 @@ pub enum JsonProtocol {
     #[serde(rename = "untrackDna")]
     UntrackDna(TrackDnaData),
 
-    /// Connect to the specified multiaddr
+    /// Request the network module to connect to a specific Peer. Used for bootstrapping only.
+    /// Connection address should be an opaque transport-layer connection string,
+    /// which will generally be a URI, but in the case of libp2p is a multiaddr.
     #[serde(rename = "connect")]
     Connect(ConnectData),
-    /// Notification of a connection from another peer.
+    /// Notify that another Peer has connected to this Dna.
+    /// This is sent when another Peer joins the Network.
     #[serde(rename = "peerConnected")]
     PeerConnected(PeerData),
 
@@ -355,76 +359,87 @@ pub enum JsonProtocol {
     /// Request to handle a message another peer has sent us.
     #[serde(rename = "handleSendMessage")]
     HandleSendMessage(MessageData),
-    /// Our response to a message from another peer.
+    /// Core's response to a `HandleSendMessage`
     #[serde(rename = "handleSendMessageResult")]
     HandleSendMessageResult(MessageData),
 
     // -- Entry -- //
-    /// Request data from the dht network
+    /// Request an Entry from the DHT network of a DNA.
     #[serde(rename = "fetchEntry")]
     FetchEntry(FetchEntryData),
-    /// Response from requesting dht data from the network
+    /// The network's reponse from `FetchEntry`
     #[serde(rename = "fetchEntryResult")]
     FetchEntryResult(FetchEntryResultData),
-    /// Another node, or the network module itself is requesting data from us
+    /// The network module is requesting it's Core to respond to a `FetchEntry`
     #[serde(rename = "handleFetchEntry")]
     HandleFetchEntry(FetchEntryData),
-    /// Successful data response for a `HandleFetchDhtData` request
+    /// Successful response for a `FetchEntry` request from Core
     #[serde(rename = "handleFetchEntryResult")]
     HandleFetchEntryResult(FetchEntryResultData),
 
-    /// Publish data to the dht.
+    /// Core's request to add an Entry to the DHT network.
+    /// The network will take care to figure out which nodes are going to store it.
     #[serde(rename = "publishEntry")]
     PublishEntry(EntryData),
-    /// Store data on a node's dht slice.
+    /// Network request for Core to store an Entry in its DHT shard.
     #[serde(rename = "handleStoreEntry")]
     HandleStoreEntry(EntryData),
+    /// Network informing Core that it isn't required to hold an Entry in its DHT shard anymore.
     #[serde(rename = "handleDropEntry")]
     HandleDropEntry(DropEntryData),
 
     // -- Meta -- //
-    /// Request metadata from the dht
+    /// Request a Meta from the DHT network of a DNA.
     #[serde(rename = "fetchMeta")]
     FetchMeta(FetchMetaData),
-    /// Response by the network for our metadata request
+    /// The network's reponse from `FetchMeta`
     #[serde(rename = "fetchMetaResult")]
     FetchMetaResult(FetchMetaResultData),
-    /// Another node, or the network module itself, is requesting data from us
+    /// The network module is requesting it's Core to respond to a `FetchMeta`
     #[serde(rename = "handleFetchMeta")]
     HandleFetchMeta(FetchMetaData),
-    /// Successful metadata response for a `HandleFetchMeta` request
+    /// Successful response for a `HandleFetchMeta` request from Core
     #[serde(rename = "handleFetchMetaResult")]
     HandleFetchMetaResult(FetchMetaResultData),
 
-    /// Publish metadata to the dht.
+    /// Core's request to add a Meta to the DHT network.
+    /// The network will take care to figure out which nodes are going to store it.
     #[serde(rename = "publishMeta")]
     PublishMeta(DhtMetaData),
-    /// Store metadata on a node's dht slice.
+    /// Network request for Core to store a Meta in its DHT shard.
     #[serde(rename = "handleStoreMeta")]
     HandleStoreMeta(DhtMetaData),
-    /// Drop metadata on a node's dht slice.
+    /// Network informing Core that it isn't required to hold a Meta in its DHT shard anymore.
     #[serde(rename = "handleDropData")]
     HandleDropMeta(DropMetaData),
 
     // -- Entry lists -- //
+    /// The p2p module requests from Core the list of entries it has authored
+    /// and wants published on the network.
     #[serde(rename = "handleGetPublishingEntryList")]
     HandleGetPublishingEntryList(GetListData),
+    /// Core's response to a `HandleGetPublishingEntryList`
     #[serde(rename = "handleGetPublishingEntryListResult")]
     HandleGetPublishingEntryListResult(EntryListData),
-
+    /// The p2p module requests from Core the list of entries it is holding for the network.
     #[serde(rename = "handleGetHoldingEntryList")]
     HandleGetHoldingEntryList(GetListData),
+    /// Core's response to a `HandleGetHoldingEntryList`
     #[serde(rename = "handleGetHoldingEntryListResult")]
     HandleGetHoldingEntryListResult(EntryListData),
 
     // -- Meta lists -- //
+    /// The p2p module requests from Core the list of Meta it has authored
+    /// and wants published on the network.
     #[serde(rename = "handleGetPublishingMetaList")]
     HandleGetPublishingMetaList(GetListData),
+    /// Core's response to a `HandleGetPublishingMetaList`
     #[serde(rename = "handleGetPublishingMetaListResult")]
     HandleGetPublishingMetaListResult(MetaListData),
-
+    /// The p2p module requests from Core the list of Meta it is holding for the network.
     #[serde(rename = "handleGetHoldingMetaList")]
     HandleGetHoldingMetaList(GetListData),
+    /// Core's response to a `HandleGetHoldingMetaList`
     #[serde(rename = "handleGetHoldingMetaListResult")]
     HandleGetHoldingMetaListResult(MetaListData),
 }

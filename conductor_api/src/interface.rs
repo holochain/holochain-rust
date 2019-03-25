@@ -985,12 +985,12 @@ impl ConductorApiBuilder {
                     }
                 };
 
-                k.lock()
+                let pub_key = k.lock()
                     .unwrap()
                     .add_key_from_seed(&src_id, &dst_id, key_type)
                     .map_err(|_| jsonrpc_core::Error::internal_error())?;
 
-                Ok(json!({"success": true}))
+                Ok(json!({"pub_key": pub_key}))
             });
 
         let k = keystore.clone();

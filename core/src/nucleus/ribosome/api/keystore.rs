@@ -8,7 +8,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::keystore::KeystoreListResult;
 use jsonrpc_lite::JsonRpc;
-use serde_json;
+use serde_json::{self, Value};
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -125,7 +125,10 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
         context.clone(),
     );
     let string: String = match result {
-        Ok(json_string) => serde_json::from_str(&json_string.to_string()).unwrap(),
+        Ok(json_string) => {
+            let value: Value = serde_json::from_str(&json_string.to_string()).unwrap();
+            value["pub_key"].to_string()
+        }
         Err(err) => {
             context.log(format!(
                 "err/zome: agent/keystore/add_key_from_seed callback failed: {:?}",

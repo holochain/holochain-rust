@@ -170,7 +170,7 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
             .and_then(|mut link_definition| {
                 let package = (*link_definition.package_creator)();
                 Some(return_code_for_allocation_result(::global_fns::write_json(
-                    package,
+                    JsonString::from_json(&package),
                 )))
             })
             .unwrap_or(RibosomeEncodedValue::Failure(
@@ -217,7 +217,7 @@ pub extern "C" fn __hdk_validate_link(
                 Some(match validation_result {
                     Ok(()) => RibosomeEncodedValue::Success,
                     Err(fail_string) => {
-                        return_code_for_allocation_result(::global_fns::write_json(fail_string))
+                        return_code_for_allocation_result(::global_fns::write_json(JsonString::from_json(&fail_string)))
                     }
                 })
             })

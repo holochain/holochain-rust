@@ -179,37 +179,6 @@ _conductor_deploy_template: &_conductor_deploy_template
         tags: true
     name: $TRAVIS_TAG
 
-_windows_template_lite: &_windows_template_lite
-  os: windows
-  language: rust
-  rust: nightly-2019-01-24-x86_64-pc-windows-msvc
-  before_install:
-   - CARGO_INCREMENTAL=1
-   - RUSTFLAGS="-Z thinlto -C codegen-units=16"
-  cache:
-   timeout: 1000
-   directories:
-    # only keep target directories
-    # as we don't keep .cargo everything will be redownloaded every time
-    # as travis downloads the cache every time, this doesn't make much
-    # difference, actually it can be a bit faster or slightly slower to pull
-    # the crates down vs. loading the cache - seems to be an overall benefit
-    # as we do CARGO_INCREMENTAL and keep the targets, the newly downloaded
-    # crates don't recompile, so we save *a lot* of time there
-    - target
-    - ${HC_TARGET_PREFIX}${TEST_PATH}target
-    - ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH}target
-    - ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH_2}target
-  install:
-    # "none" is a hack here to avoid "" ending up in the cache, potentially
-    # caching everything in the repo (we never want to accidentally do that)
-    - if [ ! -z "$WASM_PATH" ]; then rustup target add wasm32-unknown-unknown; fi;
-    - if [ ! -z "$WASM_PATH" ]; then cargo build --manifest-path ${TEST_PATH}${WASM_PATH}Cargo.toml --release --target wasm32-unknown-unknown --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH}target; fi;
-    - if [ ! -z "$WASM_PATH_2" ]; then cargo build --manifest-path ${TEST_PATH}${WASM_PATH_2}Cargo.toml --release --target wasm32-unknown-unknown --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH_2}target; fi;
-
-  script:
-    - cargo test -p $TEST_P --release --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}target
-
 jobs:
   # test builds are ordered from slowest to quickest
   # this allows us to keep walltimes down

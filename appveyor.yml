@@ -18,11 +18,12 @@ test_script:
 
  - SET hc_target_prefix=C:\build\
 
- - SET "test_p=holochain_cas_implementations"
- - SET "test_path=cas_implementations\"
- - SET "wasm_path="
- - SET "wasm_path_2="
- - scripts\windows\do-ci-test.bat
+#   Temp due to re-compile issue
+#  - SET "test_p=holochain_cas_implementations"
+#  - SET "test_path=cas_implementations\"
+#  - SET "wasm_path="
+#  - SET "wasm_path_2="
+#  - scripts\windows\do-ci-test.bat
 
  - SET "test_p=holochain_dna_c_binding"
  - SET "test_path=dna_c_binding\"
@@ -30,17 +31,17 @@ test_script:
  - SET "wasm_path_2="
  - scripts\windows\do-ci-test.bat
 
- - SET "test_p=holochain_sodium"
- - SET "test_path=sodium\"
- - SET "wasm_path="
- - SET "wasm_path_2="
- - scripts\windows\do-ci-test.bat
+#  - SET "test_p=holochain_sodium"
+#  - SET "test_path=sodium\"
+#  - SET "wasm_path="
+#  - SET "wasm_path_2="
+#  - scripts\windows\do-ci-test.bat
 
- - SET "test_p=hc"
- - SET "test_path=cli\"
- - SET "wasm_path="
- - SET "wasm_path_2="
- - scripts\windows\do-ci-test.bat
+#  - SET "test_p=hc"
+#  - SET "test_path=cli\"
+#  - SET "wasm_path="
+#  - SET "wasm_path_2="
+#  - scripts\windows\do-ci-test.bat
 
  - SET "test_p=holochain_core_types"
  - SET "test_path=core_types\"

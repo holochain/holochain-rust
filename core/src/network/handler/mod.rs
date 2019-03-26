@@ -9,33 +9,14 @@ use crate::{
         handler::{get::*, send::*, store::*},
     },
 };
-use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    hash::HashString,
-};
+use holochain_core_types::hash::HashString;
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
-fn is_my_dna(context: &Arc<Context>, dna_address: &Address) -> bool {
-    // TODO: we also need a better way to easily get the DNA hash!!
-    let state = context
-        .state()
-        .ok_or("is_my_dna() could not get application state".to_string())
-        .unwrap();
-    let dna = state
-        .nucleus()
-        .dna()
-        .ok_or("is_my_dna() called without DNA".to_string())
-        .unwrap();
-    let my_dna_address = dna.address();
-
-    if my_dna_address != *dna_address {
-        context.log("debug/net/handle: ignoring, not my dna");
-        return false;
-    }
-    true
+fn is_my_dna(my_dna_address: &String, dna_address: &String) -> bool {
+    my_dna_address == dna_address
 }
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
@@ -51,7 +32,7 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
-pub fn create_handler(c: &Arc<Context>) -> NetHandler {
+pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
     Box::new(move |message| {
         let message = message.unwrap();
@@ -65,7 +46,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
         }
         match maybe_json_msg.unwrap() {
             JsonProtocol::FailureResult(failure_data) => {
-                if !is_my_dna(&context, &failure_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &failure_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -75,7 +56,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 // TODO: Handle the reception of a FailureResult
             }
             JsonProtocol::HandleStoreEntry(dht_entry_data) => {
-                if !is_my_dna(&context, &dht_entry_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &dht_entry_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -85,7 +66,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_store_entry(dht_entry_data, context.clone())
             }
             JsonProtocol::HandleStoreMeta(dht_meta_data) => {
-                if !is_my_dna(&context, &dht_meta_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &dht_meta_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -95,7 +76,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_store_meta(dht_meta_data, context.clone())
             }
             JsonProtocol::HandleFetchEntry(fetch_entry_data) => {
-                if !is_my_dna(&context, &fetch_entry_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &fetch_entry_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -105,7 +86,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_fetch_entry(fetch_entry_data, context.clone())
             }
             JsonProtocol::FetchEntryResult(fetch_result_data) => {
-                if !is_my_dna(&context, &fetch_result_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &fetch_result_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if I'm not the requester
@@ -119,7 +100,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_fetch_entry_result(fetch_result_data, context.clone())
             }
             JsonProtocol::HandleFetchMeta(fetch_meta_data) => {
-                if !is_my_dna(&context, &fetch_meta_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &fetch_meta_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -129,7 +110,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_fetch_meta(fetch_meta_data, context.clone())
             }
             JsonProtocol::FetchMetaResult(fetch_meta_result_data) => {
-                if !is_my_dna(&context, &fetch_meta_result_data.dna_address) {
+                if !is_my_dna(
+                    &my_dna_address,
+                    &fetch_meta_result_data.dna_address.to_string(),
+                ) {
                     return Ok(());
                 }
                 // ignore if I'm not the requester
@@ -163,7 +147,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 //}
             }
             JsonProtocol::HandleSendMessage(message_data) => {
-                if !is_my_dna(&context, &message_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &message_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
@@ -177,7 +161,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_send_message(message_data, context.clone())
             }
             JsonProtocol::SendMessageResult(message_data) => {
-                if !is_my_dna(&context, &message_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &message_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me

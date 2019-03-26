@@ -16,30 +16,6 @@ test_script:
  - rustup target add wasm32-unknown-unknown
  - SET hc_target_prefix=C:\build\
 
- - SET "test_p=hdk"
- - SET "test_path=hdk-rust\"
- - SET "wasm_path=wasm-test\"
- - SET "wasm_path_2="
- - scripts\windows\do-ci-test.bat
-
- - SET "test_p=holochain_wasm_utils"
- - SET "test_path=wasm_utils\"
- - SET "wasm_path=wasm-test\integration-test\"
- - SET "wasm_path_2="
- - scripts\windows\do-ci-test.bat
-
- - SET "test_p=holochain_conductor_api"
- - SET "test_path=conductor_api\"
- - SET "wasm_path=wasm-test\"
- - SET "wasm_path_2=test-bridge-caller\"
- - scripts\windows\do-ci-test.bat
-
- - SET "test_p=holochain_core"
- - SET "test_path=core\"
- - SET "wasm_path=src\nucleus\actions\wasm-test"
- - SET "wasm_path_2="
- - scripts\windows\do-ci-test.bat
-
  - SET "test_p=holochain_cas_implementations"
  - SET "test_path=cas_implementations\"
  - SET "wasm_path="
@@ -74,4 +50,28 @@ test_script:
  - SET "test_path=net\"
  - SET "wasm_path="
  - SET "wasm_path_2="
+ - scripts\windows\do-ci-test.bat
+
+ - SET "test_p=holochain_wasm_utils"
+ - SET "test_path=wasm_utils\"
+ - SET "wasm_path=wasm-test\integration-test\"
+ - SET "wasm_path_2="
+ - scripts\windows\do-ci-test.bat
+
+ - SET "test_p=hdk"
+ - SET "test_path=hdk-rust\"
+ - SET "wasm_path=wasm-test\"
+ - SET "wasm_path_2="
+ - scripts\windows\do-ci-test.bat
+
+ - SET "test_p=holochain_core"
+ - SET "test_path=core\"
+ - SET "wasm_path=src\nucleus\actions\wasm-test"
+ - SET "wasm_path_2="
+ - scripts\windows\do-ci-test.bat
+
+ - SET "test_p=holochain_conductor_api"
+ - SET "test_path=conductor_api\"
+ - SET "wasm_path=wasm-test\"
+ - SET "wasm_path_2=test-bridge-caller\"
  - scripts\windows\do-ci-test.bat

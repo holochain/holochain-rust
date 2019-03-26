@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Pins nixpkgs to 19.03 channel in shell and CI [#1162](https://github.com/holochain/holochain-rust/pull/1162)
+
 ### Deprecated
 
 ### Removed

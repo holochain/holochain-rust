@@ -1,9 +1,10 @@
 [package]
 name = "hc"
-version = "0.0.7-alpha"
+version = "0.0.8-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
+holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core_types = { path = "../core_types" }
 holochain_core = { path = "../core" }
 holochain_common = { path = "../common" }

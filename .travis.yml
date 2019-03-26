@@ -396,7 +396,7 @@ jobs:
       <<: *_windows_template
       <<: *_nodejs_deploy_template
       <<: *_windows_nodejs_conductor_template
-      if: branch = develop
+      if: (branch = develop) AND NOT (type = pull_request)
       env:
        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
        - NODIST_X64=1

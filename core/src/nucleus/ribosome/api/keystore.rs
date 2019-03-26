@@ -3,7 +3,7 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
 use holochain_core_types::{
-    error::error::{HcResult, HolochainError},
+    error::{HcResult, HolochainError},
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::keystore::KeystoreListResult;

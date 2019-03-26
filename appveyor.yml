@@ -21,8 +21,8 @@ test_script:
  - echo "%test_path%"
  - cargo test --release -p "%test_p%" --target-dir "%hc_target_prefix%%test_path%target"
 
- # - setx test_p hdk
- # - setx test_path hdk-rust\
- # - setx wasm_path wasm-test\
- # - cargo build --manifest-path %TEST_PATH%%WASM_PATH%Cargo.toml --release --target wasm32-unknown-unknown --target-dir %HC_TARGET_PREFIX%%TEST_PATH%%WASM_PATH%target
- # - cargo test --release -p %TEST_P% --target-dir %HC_TARGET_PREFIX%%TEST_PATH%target
+ - SET test_p="hdk"
+ - SET test_path="hdk-rust\"
+ - SET wasm_path="wasm-test\"
+ - cargo build --manifest-path "%test_path%%wasm_path%Cargo.toml" --release --target wasm32-unknown-unknown --target-dir "%hc_target_prefix%%test_path%%wasm_path%target"
+ - cargo test --release -p "%test_p%" --target-dir "%hc_target_prefix%%test_path%target"

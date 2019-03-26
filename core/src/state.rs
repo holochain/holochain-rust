@@ -98,7 +98,7 @@ impl State {
                 "No DNA entry found in storage while creating state from agent".to_string(),
             ))??;
         match entry {
-            Entry::Dna(dna) => Ok(dna),
+            Entry::Dna(dna) => Ok(*dna),
             _ => Err(HolochainError::SerializationError(
                 "Tried to get Dna from non-Dna Entry".into(),
             )),

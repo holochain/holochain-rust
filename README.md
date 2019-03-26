@@ -18,7 +18,7 @@ This code is loosely based on the [Golang prototype](https://github.com/holochai
 
 **Code Status:** Rust version is alpha. Not for production use. The code is guaranteed NOT secure. We will aggressively restructure code APIs and data chains until Beta.
 
-There are [4 developer preview releases](https://github.com/holochain/holochain-rust/releases) of the Rust version.
+[Releases](https://github.com/holochain/holochain-rust/releases) happen weekly.
 <br/>
 
 | Holochain Links: | [FAQ](https://developer.holochain.org/guide/latest/faq.html) | [Developer Docs](https://developer.holochain.org) | [White Paper](https://github.com/holochain/holochain-proto/blob/whitepaper/holochain.pdf) |

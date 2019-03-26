@@ -84,7 +84,7 @@ pub fn get_validation_package_definition(
 
             ribosome::run_dna(
                 wasm.code.clone(),
-                Some(call.parameters.into_bytes()),
+                Some(call.parameters.to_bytes()),
                 WasmCallData::new_callback_call(context.clone(), dna.name, call),
             )?
         }
@@ -124,7 +124,7 @@ pub fn get_validation_package_definition(
 
             ribosome::run_dna(
                 wasm.code.clone(),
-                Some(call.parameters.into_bytes()),
+                Some(call.parameters.to_bytes()),
                 WasmCallData::new_callback_call(context.clone(), dna.name.clone(), call),
             )?
         }

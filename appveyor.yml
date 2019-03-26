@@ -11,10 +11,29 @@ max_jobs: 20
 environment:
  global:
   APPVEYOR_BUILD_WORKER_CLOUD: master
+  hc_target_prefix: C:\build\
+
+ matrix:
+  - test_p: holochain_dna_c_binding
+    test_path: dna_c_binding\
+
+  - test_p: holochain_core_types
+    test_path: core_types\
+
+  - test_p: holochain_wasm_utils
+    test_path: wasm_utils\
+    wasm_path: wasm-test\integration-test\
+
+  - test_p: hdk
+    test_path: hdk-rust\
+    wasm_path: wasm-test\
+
+  - test_p: holochain_conductor_api
+    test_path: conductor_api\
+    wasm_path: wasm-test\
+    wasm_path_2: test-bridge-caller\
 
 test_script:
-
- - SET hc_target_prefix=C:\build\
 
 #   Temp due to re-compile issue
 #  - SET "test_p=holochain_cas_implementations"
@@ -23,10 +42,6 @@ test_script:
 #  - SET "wasm_path_2="
 #  - scripts\windows\do-ci-test.bat
 
- - SET "test_p=holochain_dna_c_binding"
- - SET "test_path=dna_c_binding\"
- - SET "wasm_path="
- - SET "wasm_path_2="
  - scripts\windows\do-ci-test.bat
 
  # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23358358
@@ -43,12 +58,6 @@ test_script:
  # - SET "wasm_path_2="
  # - scripts\windows\do-ci-test.bat
 
- - SET "test_p=holochain_core_types"
- - SET "test_path=core_types\"
- - SET "wasm_path="
- - SET "wasm_path_2="
- - scripts\windows\do-ci-test.bat
-
  # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23357334
  # - SET "test_p=holochain_net"
  # - SET "test_path=net\"
@@ -56,27 +65,9 @@ test_script:
  # - SET "wasm_path_2="
  # - scripts\windows\do-ci-test.bat
 
- - SET "test_p=holochain_wasm_utils"
- - SET "test_path=wasm_utils\"
- - SET "wasm_path=wasm-test\integration-test\"
- - SET "wasm_path_2="
- - scripts\windows\do-ci-test.bat
-
- - SET "test_p=hdk"
- - SET "test_path=hdk-rust\"
- - SET "wasm_path=wasm-test\"
- - SET "wasm_path_2="
- - scripts\windows\do-ci-test.bat
-
  # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23357334
  # - SET "test_p=holochain_core"
  # - SET "test_path=core\"
  # - SET "wasm_path=src\nucleus\actions\wasm-test"
  # - SET "wasm_path_2="
  # - scripts\windows\do-ci-test.bat
-
- - SET "test_p=holochain_conductor_api"
- - SET "test_path=conductor_api\"
- - SET "wasm_path=wasm-test\"
- - SET "wasm_path_2=test-bridge-caller\"
- - scripts\windows\do-ci-test.bat

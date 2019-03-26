@@ -81,33 +81,33 @@ pub fn ipc_spawn(
             // read stdout
             let mut buf: [u8; 4096] = [0; 4096];
             let size = stdout.read(&mut buf)?;
+
             if size > 0 {
                 data.extend_from_slice(&buf[..size]);
                 let tmp = String::from_utf8_lossy(&data);
 
                 // look for IPC-READY
-                if !has_ipc.clone() {
-                    if re_ipc_ready.is_match(&tmp) {
-                        for m in re_ipc.captures_iter(&tmp) {
-                            out.ipc_binding = m[1].to_string();
-                            break;
-                        }
-                        has_ipc = true
+                if !has_ipc.clone() && re_ipc_ready.is_match(&tmp) {
+                    for m in re_ipc.captures_iter(&tmp) {
+                        out.ipc_binding = m[1].to_string();
+                        break;
                     }
+                    has_ipc = true
                 }
+
                 // look for P2P-READY
-                if !has_p2p.clone() {
-                    if re_p2p_ready.is_match(&tmp) {
-                        for m in re_p2p.captures_iter(&tmp) {
-                            out.p2p_bindings.push(m[1].to_string());
-                        }
-                        has_p2p = true
+                if !has_p2p.clone() && re_p2p_ready.is_match(&tmp) {
+                    for m in re_p2p.captures_iter(&tmp) {
+                        out.p2p_bindings.push(m[1].to_string());
                     }
+                    has_p2p = true
                 }
             }
+
             if wait_ms >= timeout_ms.clone() {
                 bail!("ipc_spawn() timed out. N3H might need more time or something is dysfunctional in the network interface");
             }
+
             std::thread::sleep(std::time::Duration::from_millis(10));
             wait_ms += 10;
         }
@@ -122,10 +122,9 @@ pub fn ipc_spawn(
 
     // Set shutdown function to kill the sub-process
     out.kill = Some(Box::new(move || {
-        match child.kill() {
-            Ok(()) => (),
-            Err(e) => println!("failed to kill ipc sub-process: {:?}", e),
-        };
+        child
+            .kill()
+            .unwrap_or_else(|e| println!("failed to kill ipc sub-process: {:?}", e));
     }));
 
     Ok(out)

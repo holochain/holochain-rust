@@ -181,14 +181,15 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .join(wild_card)
             .join(wild_card)
             .join(Path::new(&text_file));
-        let find_glob_path = glob_path.to_str().ok_or(HolochainError::ErrorGeneric("Could not obtain string".to_string()))?;
+        let find_glob_path = glob_path.to_str().ok_or(HolochainError::ErrorGeneric(
+            "Could not obtain string".to_string(),
+        ))?;
         //query directory to return all paths and then get last path
         let last_insert = glob(find_glob_path)
             .map_err(|_| HolochainError::ErrorGeneric("Glob path invalid".to_string()))?
             .last();
 
         if let Some(last_path) = last_insert {
-
             //get last path
             let last = last_path
                 .map_err(|_| HolochainError::ErrorGeneric("Could not get last".to_string()))?;

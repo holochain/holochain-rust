@@ -148,7 +148,9 @@ impl Dna {
     /// Find a Zome and return it's WASM bytecode
     pub fn get_wasm_from_zome_name<T: Into<String>>(&self, zome_name: T) -> Option<&wasm::DnaWasm> {
         let zome_name = zome_name.into();
-        self.get_zome(&zome_name).ok().map(|ref zome| &zome.code)
+        self.get_zome(&zome_name)
+            .ok()
+            .map(|zome: &zome::Zome| &zome.code)
     }
 
     /// Return a Zome's Trait functions from a Zome name and trait name.

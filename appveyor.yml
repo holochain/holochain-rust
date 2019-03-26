@@ -37,11 +37,12 @@ test_script:
  # - SET "wasm_path_2="
  # - scripts\windows\do-ci-test.bat
 
- - SET "test_p=hc"
- - SET "test_path=cli\"
- - SET "wasm_path="
- - SET "wasm_path_2="
- - scripts\windows\do-ci-test.bat
+ # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23358584
+ # - SET "test_p=hc"
+ # - SET "test_path=cli\"
+ # - SET "wasm_path="
+ # - SET "wasm_path_2="
+ # - scripts\windows\do-ci-test.bat
 
  - SET "test_p=holochain_core_types"
  - SET "test_path=core_types\"

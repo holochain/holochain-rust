@@ -31,6 +31,7 @@ pub fn reduce_init(
     //        tweetlog.set(LogLevel::Debug, Some("memory_server".to_string()));
     //        tweetlog.listen_to_tag("memory_server", Tweetlog::console);
     //        tweetlog.listen(Tweetlog::console);
+    //        tweetlog.i("TWEETLOG ENABLED");
     //    }
 
     let json = JsonProtocol::TrackDna(TrackDnaData {

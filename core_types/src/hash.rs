@@ -3,7 +3,7 @@
 //! and as a base type for Address to use.
 
 use crate::{
-    error::error::HolochainError,
+    error::HolochainError,
     json::{default_try_from_json, JsonString},
 };
 use multihash::{encode, Hash};

@@ -14,10 +14,12 @@ environment:
 
 test_script:
  - rustup target add wasm32-unknown-unknown
-
  - SET hc_target_prefix=C:\build\
+
  - SET test_p=hc
  - SET test_path=cli\
+ - SET wasm_path=
+ - SET wasm_path_2=
  - echo "%hc_target_prefix%"
  - echo "%test_p%"
  - echo "%test_path%"
@@ -26,10 +28,12 @@ test_script:
  - SET test_p=hdk
  - SET test_path=hdk-rust\
  - SET wasm_path=wasm-test\
+ - SET wasm_path_2=
  - cargo build --manifest-path "%test_path%%wasm_path%Cargo.toml" --release --target wasm32-unknown-unknown --target-dir "%hc_target_prefix%%test_path%%wasm_path%target"
  - cargo test --release -p "%test_p%" --target-dir "%hc_target_prefix%%test_path%target"
 
  - SET test_p=holochain_wasm_utils
  - SET test_path=wasm_utils\
  - SET wasm_path=wasm-test\integration-test\
+ - SET wasm_path_2=
  - scripts\windows\do-ci-test.bat

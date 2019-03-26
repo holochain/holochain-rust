@@ -9,10 +9,7 @@ use crate::{
         handler::{get::*, send::*, store::*},
     },
 };
-use holochain_core_types::{
-    cas::content::{AddressableContent},
-    hash::HashString,
-};
+use holochain_core_types::{cas::content::AddressableContent, hash::HashString};
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 use std::{convert::TryFrom, sync::Arc};
 
@@ -36,19 +33,22 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
 pub fn create_handler(c: &Arc<Context>) -> NetHandler {
+    let my_dna_address = {
+        let context = c.clone();
+        // TODO: we need a better way to easily get the DNA hash!!
+        let state = context
+            .state()
+            .ok_or("is_my_dna() could not get application state".to_string())
+            .unwrap();
+        let dna = state
+            .nucleus()
+            .dna()
+            .ok_or("is_my_dna() called without DNA".to_string())
+            .unwrap();
+        dna.address().to_string()
+    };
+
     let context = c.clone();
-    // TODO: we need a better way to easily get the DNA hash!!
-    let state = context
-        .state()
-        .ok_or("is_my_dna() could not get application state".to_string())
-        .unwrap();
-    let dna = state
-        .nucleus()
-        .dna()
-        .ok_or("is_my_dna() called without DNA".to_string())
-        .unwrap();
-    let my_dna_address = dna.address().to_string();
-    let context = context.clone();
     Box::new(move |message| {
         let message = message.unwrap();
         // context.log(format!(
@@ -125,7 +125,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_fetch_meta(fetch_meta_data, context.clone())
             }
             JsonProtocol::FetchMetaResult(fetch_meta_result_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_meta_result_data.dna_address.to_string()) {
+                if !is_my_dna(
+                    &my_dna_address,
+                    &fetch_meta_result_data.dna_address.to_string(),
+                ) {
                     return Ok(());
                 }
                 // ignore if I'm not the requester

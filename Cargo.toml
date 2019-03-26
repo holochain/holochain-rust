@@ -1,4 +1,3 @@
-cargo-features = ["profile-overrides"]
 [workspace]
 
 members = [
@@ -21,7 +20,3 @@ exclude = [
   "app_spec",
   "nodejs_conductor/native",
 ]
-
-[profile.release.overrides.hyper]
-codegen-units = 16
-incremental = true

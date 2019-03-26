@@ -690,7 +690,7 @@ pub mod tests {
             ),
         );
 
-        let maybe_instance = test_instance(dna, None);
+        let maybe_instance = test_instance(dna, Some("test_genesis_ok"));
         assert!(maybe_instance.is_ok());
 
         let instance = maybe_instance.unwrap();

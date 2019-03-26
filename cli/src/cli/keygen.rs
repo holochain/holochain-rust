@@ -6,7 +6,11 @@ use holochain_conductor_api::{
 };
 use holochain_dpki::SEED_SIZE;
 use rpassword;
-use std::{fs::create_dir_all, path::PathBuf};
+use std::{
+    fs::create_dir_all,
+    io::{self, Write},
+    path::PathBuf,
+};
 
 pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
     println!("This will create a new agent keystore and populate it with an agent keybundle");
@@ -16,8 +20,12 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     println!("Please enter a secret passphrase below, you will have to enter it again when unlocking these keys to use within a Holochain conductor.");
 
     let passphrase = passphrase.unwrap_or_else(|| {
-        let passphrase1 = rpassword::read_password_from_tty(Some("Passphrase: ")).unwrap();
-        let passphrase2 = rpassword::read_password_from_tty(Some("Reenter Passphrase: ")).unwrap();
+        print!("Passphrase: ");
+        io::stdout().flush().expect("Could not flush stdout");
+        let passphrase1 = rpassword::read_password().unwrap();
+        print!("Re-enter passphrase: ");
+        io::stdout().flush().expect("Could not flush stdout");
+        let passphrase2 = rpassword::read_password().unwrap();
         if passphrase1 != passphrase2 {
             println!("Passphrases do not match. Please retry...");
             ::std::process::exit(1);

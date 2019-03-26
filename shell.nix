@@ -1,8 +1,20 @@
 let
+
+  # https://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/
+  inherit (import <nixpkgs> {}) fetchgit;
+  # nixos-19.03 channel @ 2019-03-25
+  channel-19-03 = fetchgit {
+    url    = "https://github.com/NixOS/nixpkgs-channels.git";
+    rev    = "23fd1394dc6bef03a2ff010278a24403a97f0647";
+    sha256 = "1snry2ab0gjhg394ryfw8jwswjyj31fjxv79pxk219r76031fx20";
+  };
+
   moz_overlay = import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz);
-  pkgs = import <nixpkgs> {
+
+  pkgs = import channel-19-03 {
     overlays = [ moz_overlay ];
   };
+
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 

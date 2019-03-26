@@ -733,7 +733,7 @@ pub mod tests {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex", netname);
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
-        let dna_entry = Entry::Dna(dna);
+        let dna_entry = Entry::Dna(Box::new(dna));
         let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None)));
 
         // Set up instance and process the action

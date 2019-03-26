@@ -415,13 +415,13 @@ pub mod tests {
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 
-    pub fn test_dna() -> Dna {
+    fn test_empty_dna() -> Dna {
         Dna::new()
     }
 
     #[test]
     fn get_entry_type_def_test() {
-        let mut dna = test_dna();
+        let mut dna = test_empty_dna();
         let mut zome = test_zome();
         let entry_type = EntryType::App(AppEntryType::from("bar"));
         let entry_type_def = EntryTypeDef::new();
@@ -436,7 +436,7 @@ pub mod tests {
 
     #[test]
     fn can_parse_and_output_json() {
-        let dna = test_dna();
+        let dna = test_empty_dna();
 
         let serialized = serde_json::to_string(&dna).unwrap();
 
@@ -447,7 +447,7 @@ pub mod tests {
 
     #[test]
     fn can_parse_and_output_json_helpers() {
-        let dna = test_dna();
+        let dna = test_empty_dna();
 
         let json_string = JsonString::from(dna);
 

@@ -15,24 +15,22 @@ environment:
 test_script:
   - cargo test --release -p "holochain_cas_implementations" --target-dir "C:\build\cas_implementations\target"
   - cargo test --release -p "holochain_dna_c_binding" --target-dir "C:\build\dna_c_binding\target"
-  
-#  - SET "test_p=holochain_sodium"
-#  - SET "test_path=sodium\"
-#  - SET "wasm_path="
-#  - SET "wasm_path_2="
-#  - scripts\windows\do-ci-test.bat
+  - cargo test --release -p "holochain_sodium" --target-dir "C:\build\sodium\target"
+  - cargo test --release -p "hc" --target-dir "C:\build\cli\target"
+  - cargo test --release -p "holochain_core_types" --target-dir "C:\build\core_types\target"
+  - cargo test --release -p "holochain_net" --target-dir "C:\build\net\target"
 
-#  - SET "test_p=hc"
-#  - SET "test_path=cli\"
-#  - SET "wasm_path="
-#  - SET "wasm_path_2="
-#  - scripts\windows\do-ci-test.bat
+  - cargo build --manifest-path "wasm_utils\wasm-test\integration-test\Cargo.toml" --release --target wasm32-unknown-unknown --target-dir "C:\build\wasm_utils\wasm-test\integration-test\target"
+  - cargo test --release -p "holochain_wasm_utils" --target-dir "C:\build\holochain_wasm_utils\target"
 
-#  - SET "test_p=holochain_core_types"
-#  - SET "test_path=core_types\"
-#  - SET "wasm_path="
-#  - SET "wasm_path_2="
-#  - scripts\windows\do-ci-test.bat
+
+  - cargo build --manifest-path "hdk-rust\wasm-test\Cargo.toml" --release --target wasm32-unknown-unknown --target-dir "C:\build\hdk-rust\wasm_utils\target"
+  - cargo test --release -p "hdk" --target-dir "C:\build\hdk\target"
+
+
+  - cargo build --manifest-path "conductor_api\wasm-test\Cargo.toml" --release --target wasm32-unknown-unknown --target-dir "C:\build\conductor_api\wasm-test\target"
+  - cargo build --manifest-path "conductor_api\test-bridge-caller\Cargo.toml" --release --target wasm32-unknown-unknown --target-dir "C:\build\conductor_api\test-bridge-caller\target"
+  - cargo test --release -p "holochain_conductor_api" --target-dir "C:\build\holochain_conductor_api\target"
 
  # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23357334
  # - SET "test_p=holochain_net"

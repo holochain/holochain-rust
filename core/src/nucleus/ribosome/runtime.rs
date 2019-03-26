@@ -189,7 +189,7 @@ impl Runtime {
     pub fn store_as_json_string<J: Into<JsonString>>(&mut self, jsonable: J) -> ZomeApiResult {
         let j: JsonString = jsonable.into();
         // write str to runtime memory
-        let mut s_bytes: Vec<_> = j.into_bytes();
+        let mut s_bytes: Vec<_> = j.to_bytes();
         s_bytes.push(0); // Add string terminate character (important)
 
         match self.memory_manager.write(&s_bytes) {

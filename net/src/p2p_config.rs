@@ -198,9 +198,13 @@ impl P2pConfig {
             res.map_err(|_e| std::io::Error::new(std::io::ErrorKind::Other, "serde fail"))
         }
 
-        maybe_end_user_config_filepath
-            .and_then(|filepath| load_config_file(filepath).ok())
-            .unwrap_or_else(|| P2pConfig::default_end_user_config())
+        match maybe_end_user_config_filepath {
+            None => P2pConfig::default_end_user_config(),
+            Some(filepath) => match load_config_file(filepath) {
+                Err(_) => return P2pConfig::default_end_user_config(),
+                Ok(json) => json,
+            },
+        }
     }
 }
 

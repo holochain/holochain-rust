@@ -34,35 +34,45 @@ impl NetWorker for InMemoryWorker {
             .lock()
             .unwrap();
         if let Ok(json_msg) = JsonProtocol::try_from(&data) {
-            if let JsonProtocol::TrackDna(track_msg) = json_msg {
-                match self
-                    .receiver_per_dna
-                    .entry(track_msg.dna_address.to_owned())
-                {
-                    Entry::Occupied(_) => (),
-                    Entry::Vacant(e) => {
-                        let (tx, rx) = mpsc::channel();
-                        server.register_cell(&track_msg.dna_address, &track_msg.agent_id, tx)?;
-                        e.insert(rx);
-                    }
-                };
+            match json_msg {
+                JsonProtocol::TrackDna(track_msg) => {
+                    match self
+                        .receiver_per_dna
+                        .entry(track_msg.dna_address.to_owned())
+                    {
+                        Entry::Occupied(_) => (),
+                        Entry::Vacant(e) => {
+                            let (tx, rx) = mpsc::channel();
+                            server.register_cell(
+                                &track_msg.dna_address,
+                                &track_msg.agent_id,
+                                tx,
+                            )?;
+                            e.insert(rx);
+                        }
+                    };
+                }
+                _ => (),
             }
         }
         // Serve
         server.serve(data.clone())?;
         // After serve
         if let Ok(json_msg) = JsonProtocol::try_from(&data) {
-            if let JsonProtocol::UntrackDna(untrack_msg) = json_msg {
-                match self
-                    .receiver_per_dna
-                    .entry(untrack_msg.dna_address.to_owned())
-                {
-                    Entry::Vacant(_) => (),
-                    Entry::Occupied(e) => {
-                        server.unregister_cell(&untrack_msg.dna_address, &untrack_msg.agent_id);
-                        e.remove();
-                    }
-                };
+            match json_msg {
+                JsonProtocol::UntrackDna(untrack_msg) => {
+                    match self
+                        .receiver_per_dna
+                        .entry(untrack_msg.dna_address.to_owned())
+                    {
+                        Entry::Vacant(_) => (),
+                        Entry::Occupied(e) => {
+                            server.unregister_cell(&untrack_msg.dna_address, &untrack_msg.agent_id);
+                            e.remove();
+                        }
+                    };
+                }
+                _ => (),
             }
         }
         // Done

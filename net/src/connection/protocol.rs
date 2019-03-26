@@ -113,7 +113,7 @@ macro_rules! simple_access {
                 }
             }
 
-            pub fn $as(&self) -> &$t {
+            pub fn $as<'a>(&'a self) -> &'a $t {
                 if let Protocol::$d(data) = self {
                     &data
                 } else {

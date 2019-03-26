@@ -32,7 +32,7 @@ pub struct ZomeFnCall {
 }
 
 impl ZomeFnCall {
-    pub fn new<J: Into<JsonString>>(
+    pub fn new<J: Into<String>>(
         zome: &str,
         cap: CapabilityRequest,
         function: &str,
@@ -45,7 +45,7 @@ impl ZomeFnCall {
             zome_name: zome.to_string(),
             cap: cap,
             fn_name: function.to_string(),
-            parameters: parameters.into(),
+            parameters: JsonString::from_json(&parameters.into()),
         }
     }
 

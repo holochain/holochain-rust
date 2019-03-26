@@ -13,13 +13,13 @@ environment:
   APPVEYOR_BUILD_WORKER_CLOUD: master
 
 test_script:
- - $env:hc_target_prefix='C:\build\'
- - $env:test_p='hc'
- - $env:test_path='cli\'
- - echo $env:test_p
- - echo $env:test_path
- - echo $env:hc_target_prefix
- - cargo test --release -p "$env:test_p" --target-dir "$env:hc_target_prefix$env_test_pathtarget"
+ - $hc_target_prefix="C:\build\"
+ - $test_p="hc"
+ - $test_path"="cli\"
+ - echo "$hc_target_prefix"
+ - echo "$test_p"
+ - echo "$test_path"
+ - cargo test --release -p "$test_p" --target-dir "$hc_target_prefix$test_pathtarget"
 
  # - setx test_p hdk
  # - setx test_path hdk-rust\

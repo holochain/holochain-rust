@@ -407,6 +407,7 @@ fn can_get_entry_ok() {
 fn can_get_entry_bad() {
     let (mut hc, _) = start_holochain_instance("can_get_entry_bad", "alice");
     // Call the exposed wasm function that calls the Commit API function
+
     let result = make_test_call(
         &mut hc,
         "check_commit_entry_macro",

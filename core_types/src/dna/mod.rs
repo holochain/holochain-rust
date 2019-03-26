@@ -268,6 +268,20 @@ impl PartialEq for Dna {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    extern crate base64;
+    use crate::{
+        cas::content::Address,
+        dna::{
+            bridges::{Bridge, BridgePresence, BridgeReference},
+            entry_types::EntryTypeDef,
+            fn_declarations::{FnDeclaration, FnParameter, Trait},
+            zome::tests::test_zome,
+        },
+        entry::entry_type::{AppEntryType, EntryType},
+        json::JsonString,
+    };
+    use std::convert::TryFrom;
+
     fn test_dna() -> Dna {
         let fixture = String::from(
             r#"{
@@ -398,25 +412,6 @@ pub mod tests {
             "FnDeclaration { name: \"test\", inputs: [], outputs: [] }"
         );
     }
-
-}
-
-#[cfg(test)]
-pub mod tests {
-    use super::*;
-    extern crate base64;
-    use crate::{
-        cas::content::Address,
-        dna::{
-            bridges::{Bridge, BridgePresence, BridgeReference},
-            entry_types::EntryTypeDef,
-            fn_declarations::{FnDeclaration, FnParameter, Trait},
-            zome::tests::test_zome,
-        },
-        entry::entry_type::{AppEntryType, EntryType},
-        json::JsonString,
-    };
-    use std::convert::TryFrom;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 

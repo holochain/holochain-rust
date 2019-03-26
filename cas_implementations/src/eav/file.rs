@@ -173,12 +173,12 @@ impl EntityAttributeValueStorage for EavFileStorage {
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         let _guard = self.lock.write()?;
         let wild_card = Path::new("*");
-        //create glob path to query file system parentdir_/*/*/*/{address}.txt
+        //create glob path to query file system parentdir/*/*/*/{address}.txt
         let text_file = vec![eav.address().to_string(), "txt".to_string()].join(".");
         let glob_path = self
             .dir_path
             .join(wild_card)
-            .join(wild_card)
+            .join(Path::new("a"))
             .join(wild_card)
             .join(Path::new(&text_file));
         let find_glob_path = glob_path.to_str().ok_or(HolochainError::ErrorGeneric(

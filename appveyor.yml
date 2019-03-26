@@ -16,10 +16,10 @@ test_script:
  - SET hc_target_prefix="C:\build\"
  - SET test_p="hc"
  - SET test_path"="cli\"
- - echo "$hc_target_prefix"
- - echo "$test_p"
- - echo "$test_path"
- - cargo test --release -p "$test_p" --target-dir "$hc_target_prefix$test_pathtarget"
+ - echo "%hc_target_prefix%"
+ - echo "%test_p%"
+ - echo "%test_path%"
+ - cargo test --release -p "%test_p%" --target-dir "%hc_target_prefix%%test_path%target"
 
  # - setx test_p hdk
  # - setx test_path hdk-rust\

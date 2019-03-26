@@ -239,12 +239,13 @@ pub mod tests {
     extern crate tempfile;
     use self::tempfile::tempdir;
     use eav::file::EavFileStorage;
+    #[cfg(any(not(windows), feature = "broken-tests"))]
+    use holochain_core_types::eav::Attribute;
     use holochain_core_types::{
         cas::{
             content::{AddressableContent, ExampleAddressableContent},
             storage::EavTestSuite,
         },
-        eav::Attribute,
         json::RawString,
     };
 

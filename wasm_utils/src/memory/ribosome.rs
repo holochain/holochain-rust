@@ -134,7 +134,7 @@ where
     J::Error: Into<HolochainError>,
 {
     let s = load_ribosome_encoded_string(encoded_value)?;
-    let j = JsonString::from(s);
+    let j = JsonString::from_json(&s);
 
     J::try_from(j).map_err(|e| e.into())
 }

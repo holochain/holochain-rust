@@ -210,7 +210,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .clone()
             .into_iter()
             .filter_map(|content| {
-                EntityAttributeValueIndex::try_from_content(&JsonString::from(content)).ok()
+                EntityAttributeValueIndex::try_from_content(&JsonString::from_json(&content)).ok()
             })
             .collect();
         if eavis.len() < total {

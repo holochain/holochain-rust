@@ -56,7 +56,7 @@ impl ::std::convert::TryFrom<ZomeApiInternalResult> for CoreError {
                 "Attempted to deserialize CoreError from a non-error ZomeApiInternalResult".into(),
             ))
         } else {
-            CoreError::try_from(JsonString::from(zome_api_internal_result.error))
+            CoreError::try_from(JsonString::from_json(&zome_api_internal_result.error))
         }
     }
 }

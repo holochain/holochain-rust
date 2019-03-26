@@ -103,7 +103,7 @@ impl TryFrom<JsonString> for u64 {
 
 impl From<serde_json::Value> for JsonString {
     fn from(v: serde_json::Value) -> JsonString {
-        JsonString::from(v.to_string())
+        JsonString::from_json(&v.to_string())
     }
 }
 
@@ -127,13 +127,13 @@ impl<'a> From<&'a JsonString> for String {
 
 impl From<&'static str> for JsonString {
     fn from(s: &str) -> JsonString {
-        JsonString::from(String::from(s))
+        JsonString::from_json(&String::from(s))
     }
 }
 
 impl<T: Serialize> From<Vec<T>> for JsonString {
     fn from(vector: Vec<T>) -> JsonString {
-        JsonString::from(serde_json::to_string(&vector).expect("could not Jsonify vector"))
+        JsonString::from_json(&serde_json::to_string(&vector).expect("could not Jsonify vector"))
     }
 }
 
@@ -151,12 +151,13 @@ impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> fo
             Err(inner) => inner.into(),
         };
         let inner_string = String::from(inner_json);
-        format!(
-            "{{\"{}\":{}}}",
-            if is_ok { "Ok" } else { "Err" },
-            inner_string
+        JsonString::from_json(
+            &format!(
+                "{{\"{}\":{}}}",
+                if is_ok { "Ok" } else { "Err" },
+                inner_string
+            )
         )
-        .into()
     }
 }
 
@@ -169,12 +170,13 @@ impl<T: Into<JsonString>> From<Result<T, String>> for JsonString {
             Err(inner) => RawString::from(inner).into(),
         };
         let inner_string = String::from(inner_json);
-        format!(
-            "{{\"{}\":{}}}",
-            if is_ok { "Ok" } else { "Err" },
-            inner_string
+        JsonString::from_json(
+            &format!(
+                "{{\"{}\":{}}}",
+                if is_ok { "Ok" } else { "Err" },
+                inner_string
+            )
         )
-        .into()
     }
 }
 
@@ -211,7 +213,7 @@ impl Display for JsonString {
 /// }
 pub fn default_to_json<V: Serialize + Debug>(v: V) -> JsonString {
     serde_json::to_string(&v)
-        .map(JsonString::from)
+        .map(|s| JsonString::from_json(&s))
         .map_err(|e| HolochainError::SerializationError(e.to_string()))
         .unwrap_or_else(|_| panic!("could not Jsonify: {:?}", v))
 }
@@ -284,8 +286,8 @@ impl From<RawString> for String {
 /// it should always be possible to Jsonify RawString, if not something is very wrong
 impl From<RawString> for JsonString {
     fn from(raw_string: RawString) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&raw_string.0)
+        JsonString::from_json(
+            &serde_json::to_string(&raw_string.0)
                 .expect(&format!("could not Jsonify RawString: {:?}", &raw_string)),
         )
     }

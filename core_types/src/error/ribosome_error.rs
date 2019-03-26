@@ -114,7 +114,7 @@ impl FromStr for RibosomeEncodedValue {
 
 impl From<RibosomeEncodedValue> for JsonString {
     fn from(ribosome_return_code: RibosomeEncodedValue) -> JsonString {
-        JsonString::from(ribosome_return_code.to_string())
+        JsonString::from_json(&ribosome_return_code.to_string())
     }
 }
 

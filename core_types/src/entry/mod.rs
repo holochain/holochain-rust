@@ -52,7 +52,7 @@ where
     let serialized_app_entry = SerializedAppEntry::deserialize(deserializer)?;
     Ok((
         AppEntryType::from(serialized_app_entry.0),
-        AppEntryValue::from(serialized_app_entry.1),
+        AppEntryValue::from_json(&serialized_app_entry.1),
     ))
 }
 

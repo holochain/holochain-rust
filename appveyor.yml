@@ -14,6 +14,8 @@ environment:
 
 test_script:
  - rustup target add wasm32-unknown-unknown
+ - rustup default nightly-2019-01-24
+
  - SET hc_target_prefix=C:\build\
 
  - SET "test_p=holochain_cas_implementations"

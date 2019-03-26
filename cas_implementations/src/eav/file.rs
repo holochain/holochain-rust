@@ -183,25 +183,21 @@ impl EntityAttributeValueStorage for EavFileStorage {
         let find_glob_path = glob_path.to_str().ok_or(HolochainError::ErrorGeneric(
             "Could not obtain string".to_string(),
         ))?;
-		
-		let mut glob_query = glob(find_glob_path)
+
+        let mut glob_query = glob(find_glob_path)
             .map_err(|_| HolochainError::ErrorGeneric("Glob path invalid".to_string()))?;
-        
+
         //if next exists create a new eav with a different index
-        let eav = if glob_query.next().is_some()
-        {
+        let eav = if glob_query.next().is_some() {
             EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?
-        }
-        else 
-        {
+        } else {
             eav.clone()
         };
 
         self.write_to_file(ENTITY_DIR.to_string(), &eav)
-                .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &eav))
-                .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &eav))?;
-            Ok(Some(eav.clone()))
-
+            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &eav))
+            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &eav))?;
+        Ok(Some(eav.clone()))
     }
 
     fn fetch_eavi(

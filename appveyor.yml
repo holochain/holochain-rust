@@ -13,6 +13,8 @@ environment:
   APPVEYOR_BUILD_WORKER_CLOUD: master
 
 test_script:
+ - rustup target add wasm32-unknown-unknown
+
  - SET hc_target_prefix=C:\build\
  - SET test_p=hc
  - SET test_path=cli\

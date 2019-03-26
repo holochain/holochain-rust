@@ -33,14 +33,22 @@ scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
 scenario2.runTape('secrets', async (t, { alice }) => {
     const ListResult = alice.call("converse", "list_secrets", { });
     // it should start out with the genesis made seed
-    t.deepEqual(ListResult, { Ok: [ 'app_seed', 'primary_keybundle:enc_key', 'primary_keybundle:sign_key', 'root_seed' ]  });
+    t.deepEqual(ListResult, { Ok: [ 'app_root_seed', 'primary_keybundle:enc_key', 'primary_keybundle:sign_key', 'root_seed' ]  });
 
-    const AddKeyResult = alice.call("converse", "add_key", {id:"app_key" });
+    const AddSeedResult = alice.call("converse", "add_seed", {src_id: "app_root_seed", dst_id: "app_seed:1", index: 1 });
+    t.ok(AddSeedResult)
+
+    const AddKeyResult = alice.call("converse", "add_key", {src_id: "app_seed:1", dst_id: "app_key:1" });
     t.ok(AddKeyResult)
+
+    const ListResult1 = alice.call("converse", "list_secrets", { });
+    // it should start out with the genesis made seed
+    t.deepEqual(ListResult1, { Ok: [ 'app_key:1', 'app_root_seed', 'app_seed:1', 'primary_keybundle:enc_key', 'primary_keybundle:sign_key', 'root_seed' ]  });
 
     const message = "Hello everyone! Time to start the secret meeting";
 
-    const SignResult = alice.call("converse", "sign_message", { key_id:"app_key", message: message });
+    const SignResult = alice.call("converse", "sign_message", { key_id:"app_key:1", message: message });
+    t.ok(SignResult)
 
     // use the public key returned by add key as the provenance source
     const provenance = [AddKeyResult.Ok, SignResult.Ok];
@@ -49,7 +57,7 @@ scenario2.runTape('secrets', async (t, { alice }) => {
 
     // use the agent key as the provenance source (which should fail)
     const provenance1 = [alice.agentId, SignResult.Ok];
-    const VerificationResult1 = alice.call("converse", "verify_message", { message, provenance1 });
+    const VerificationResult1 = alice.call("converse", "verify_message", { message, provenance: provenance1 });
     t.deepEqual(VerificationResult1, { Ok: false });
 
 })

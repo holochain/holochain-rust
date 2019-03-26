@@ -126,6 +126,10 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
     );
     let string: String = match result {
         Ok(json_string) => {
+            context.log(format!(
+                "debug/zome: keystore_add_key_from_seed json_string:{:?}",
+                json_string
+            ));
             let value: Value = serde_json::from_str(&json_string.to_string()).unwrap();
             value["pub_key"].to_string()
         }
@@ -138,6 +142,10 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
         }
     };
 
+    context.log(format!(
+        "debug/zome: pubkey derive of args:{:?} is:{:?}",
+        args_str, string
+    ));
     runtime.store_result(Ok(string))
 }
 
@@ -153,8 +161,13 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     );
     let string: String = match result {
         Ok(json_string) => {
+            context.log(format!(
+                "debug/zome: keystore_sign json_string:{:?}",
+                json_string
+            ));
+
             let value: Value = serde_json::from_str(&json_string.to_string()).unwrap();
-            value["signature"].to_string()
+            value["signature"].as_str().unwrap().to_owned()
         }
         Err(err) => {
             context.log(format!(
@@ -164,6 +177,11 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
             return ribosome_error_code!(CallbackFailed);
         }
     };
+
+    context.log(format!(
+        "debug/zome: signature of args:{:?} is:{:?}",
+        args_str, string
+    ));
 
     runtime.store_result(Ok(string))
 }

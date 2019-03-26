@@ -884,7 +884,7 @@ impl ConductorApiBuilder {
             // Return as base64 encoded string
             let signature = base64::encode(&**message_signature);
 
-            Ok(json!({"signature": signature}))
+            Ok(json!({ "signature": signature }))
         });
         self
     }
@@ -907,7 +907,7 @@ impl ConductorApiBuilder {
                     jsonrpc_core::Error::internal_error()
                 })?;
 
-            Ok(json!({"signature": signature}))
+            Ok(json!({ "signature": signature }))
         });
         self
     }
@@ -1005,7 +1005,7 @@ impl ConductorApiBuilder {
                 .sign(&src_id, payload.clone())
                 .map_err(|_| jsonrpc_core::Error::internal_error())?;
 
-            Ok(json!({"signature": signature}))
+            Ok(json!({ "signature": String::from(signature) }))
         });
 
         self

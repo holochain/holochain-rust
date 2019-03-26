@@ -27,8 +27,12 @@ pub fn handle_verify_message(message: String, provenance: Provenance) -> ZomeApi
     hdk::verify_signature(provenance, message)
 }
 
-pub fn handle_add_key(id: String) -> ZomeApiResult<String> {
-    hdk::keystore_derive_key("app_seed", &id, KeyType::Signing)
+pub fn handle_add_key(src_id: String, dst_id: String) -> ZomeApiResult<String> {
+    hdk::keystore_derive_key(src_id, dst_id, KeyType::Signing)
+}
+
+pub fn handle_add_seed(src_id: String, dst_id: String, index: u64) -> ZomeApiResult<()> {
+    hdk::keystore_derive_seed(src_id, dst_id, "mycntext".to_string(), index)
 }
 
 pub fn handle_list_secrets() -> ZomeApiResult<Vec<String>> {
@@ -40,7 +44,7 @@ define_zome! {
 
     genesis: || {
         {
-            hdk::keystore_new_random("app_seed", 32)
+            hdk::keystore_new_random("app_root_seed", 32)
                 .map_err(|err|
                          format!("new seed generation failed: {}",err)
             )
@@ -60,8 +64,14 @@ define_zome! {
             handler: handle_verify_message
         }
 
+        add_seed: {
+            inputs: |src_id: String, dst_id: String, index: u64|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_add_seed
+        }
+
         add_key: {
-            inputs: |id: String|,
+            inputs: |src_id: String, dst_id: String|,
             outputs: |result: ZomeApiResult<String>|,
             handler: handle_add_key
         }
@@ -75,6 +85,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [sign_message, verify_message, add_key, list_secrets]
+        hc_public [sign_message, verify_message, add_key, add_seed, list_secrets]
     }
 }

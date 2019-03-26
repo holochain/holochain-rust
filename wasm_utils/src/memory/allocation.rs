@@ -14,7 +14,7 @@ impl From<Offset> for MemoryInt {
 
 impl From<Offset> for MemoryBits {
     fn from(offset: Offset) -> Self {
-        offset.0 as MemoryBits
+        MemoryBits::from(offset.0)
     }
 }
 
@@ -32,7 +32,7 @@ impl From<Length> for MemoryInt {
 
 impl From<Length> for MemoryBits {
     fn from(length: Length) -> Self {
-        length.0 as MemoryBits
+        MemoryBits::from(length.0)
     }
 }
 

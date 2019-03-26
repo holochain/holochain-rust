@@ -140,7 +140,7 @@ pub fn encrypt_with_passphrase_buf(
 
 /// unencode base64 and decrypt a passphrase encrypted blob
 pub fn decrypt_with_passphrase_buf(
-    blob: &String,
+    blob: &str,
     passphrase: &mut SecBuf,
     config: Option<PwHashConfig>,
     size: usize,

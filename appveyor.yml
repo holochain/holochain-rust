@@ -26,3 +26,8 @@ test_script:
  - SET wasm_path=wasm-test\
  - cargo build --manifest-path "%test_path%%wasm_path%Cargo.toml" --release --target wasm32-unknown-unknown --target-dir "%hc_target_prefix%%test_path%%wasm_path%target"
  - cargo test --release -p "%test_p%" --target-dir "%hc_target_prefix%%test_path%target"
+
+ - SET test_p=holochain_wasm_utils
+ - SET test_path=wasm_utils\
+ - SET wasm_path=wasm-test\integration-test\
+ - scripts\windows\do-ci-test.bat

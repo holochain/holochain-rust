@@ -171,9 +171,9 @@ impl EntityAttributeValueStorage for EavFileStorage {
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
-        let wild_card = Path::new("*");
         let _guard = self.lock.write()?;
-        let holochain_error = HolochainError::ErrorGeneric("Could not obtain string".to_string());
+        let wild_card = Path::new("*");
+        //create glob path to query file system parentdir_/*/*/*/{address}.txt
         let text_file = vec![eav.address().to_string(), "txt".to_string()].join(".");
         let glob_path = self
             .dir_path
@@ -181,22 +181,28 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .join(wild_card)
             .join(wild_card)
             .join(Path::new(&text_file));
-        let find_glob_path = glob_path.to_str().ok_or(holochain_error)?;
-        glob(find_glob_path.clone()).unwrap();
+        let find_glob_path = glob_path.to_str().ok_or(HolochainError::ErrorGeneric("Could not obtain string".to_string()))?;
+        //query directory to return all paths and then get last path
         let last_insert = glob(find_glob_path)
             .map_err(|_| HolochainError::ErrorGeneric("Glob path invalid".to_string()))?
             .last();
 
         if let Some(last_path) = last_insert {
+
+            //get last path
             let last = last_path
                 .map_err(|_| HolochainError::ErrorGeneric("Could not get last".to_string()))?;
             let mut path_iter = last.iter();
             let count = path_iter.clone().count();
+
+            //get name of index directory
             let last_index = path_iter
                 .nth(count - 1)
                 .ok_or(HolochainError::ErrorGeneric(
                     "Could not get value".to_string(),
                 ))?;
+
+            //parse index
             let parsed_index = i64::from_str(
                 last_index
                     .to_str()
@@ -205,11 +211,15 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .map_err(|_| {
                 HolochainError::ErrorGeneric("Could not parse index for eav".to_string())
             })?;
+
+            //check if there is a collision
             let new_eav = if parsed_index == eav.index() {
                 EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?
             } else {
                 eav.clone()
             };
+
+            //write to eav file
             self.write_to_file(ENTITY_DIR.to_string(), &new_eav)
                 .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &new_eav))
                 .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &new_eav))?;

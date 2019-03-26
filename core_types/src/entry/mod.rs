@@ -64,7 +64,7 @@ pub enum Entry {
     #[serde(deserialize_with = "deserialize_app_entry")]
     App(AppEntryType, AppEntryValue),
 
-    Dna(Dna),
+    Dna(Box<Dna>),
     AgentId(AgentId),
     Deletion(DeletionEntry),
     LinkAdd(LinkData),
@@ -231,7 +231,7 @@ pub fn test_sys_entry_address() -> Address {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_unpublishable_entry() -> Entry {
-    Entry::Dna(Dna::new())
+    Entry::Dna(Box::new(Dna::new()))
 }
 
 #[cfg(test)]

@@ -97,36 +97,36 @@ impl fmt::Debug for Period {
 impl fmt::Display for Period {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let secs = self.0.as_secs();
-        let y = secs / YR;
-        if y > 0 {
-            write!(f, "{}y", y)?
+        let years = secs / YR;
+        if years > 0 {
+            write!(f, "{}y", years)?
         }
         let y_secs = secs % YR;
-        let w = y_secs / WK;
-        if w > 0 {
-            write!(f, "{}w", w)?
+        let weeks = y_secs / WK;
+        if weeks > 0 {
+            write!(f, "{}w", weeks)?
         }
         let w_secs = y_secs % WK;
-        let d = w_secs / DY;
-        if d > 0 {
-            write!(f, "{}d", d)?
+        let days = w_secs / DY;
+        if days > 0 {
+            write!(f, "{}d", days)?
         }
         let d_secs = w_secs % DY;
-        let h = d_secs / HR;
-        if h > 0 {
-            write!(f, "{}h", h)?
+        let hours = d_secs / HR;
+        if hours > 0 {
+            write!(f, "{}h", hours)?
         }
         let h_secs = d_secs % HR;
-        let m = h_secs / MN;
-        if m > 0 {
-            write!(f, "{}m", m)?
+        let minutes = h_secs / MN;
+        if minutes > 0 {
+            write!(f, "{}m", minutes)?
         }
         let s = h_secs % MN;
         let nsecs = self.0.subsec_nanos();
         let is_ns = (nsecs % 1000) > 0;
         let is_us = (nsecs / 1_000 % 1_000) > 0;
         let is_ms = (nsecs / 1_000_000) > 0;
-        if (s > 0 && is_ms) || (is_ms && is_ns) {
+        if is_ms && (s > 0 || is_ns) {
             // s+ms, or both ms and ns resolution data; default to fractional.
             let ss = format!("{:0>9}", nsecs); // eg.       2100  --> "000002100"
             let ss = ss.trim_end_matches('0'); // eg. "000002100" --> "0000021"
@@ -612,7 +612,7 @@ impl FromStr for Iso8601 {
 //     2018-10-11 03:23:38+00:00
 //
 pub fn test_iso_8601() -> Iso8601 {
-    Iso8601::from(1539228218) // 2018-10-11T03:23:38+00:00
+    Iso8601::from(1_539_228_218) // 2018-10-11T03:23:38+00:00
 }
 
 #[cfg(test)]

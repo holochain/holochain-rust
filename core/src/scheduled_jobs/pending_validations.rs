@@ -6,7 +6,7 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    error::error::HolochainError,
+    error::HolochainError,
     json::JsonString,
 };
 use std::{fmt, sync::Arc, thread};

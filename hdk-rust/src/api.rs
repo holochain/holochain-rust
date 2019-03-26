@@ -218,7 +218,7 @@ pub enum Dispatch {
 }
 
 impl Dispatch {
-    pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(
+    pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<String>>(
         &self,
         input: I,
     ) -> ZomeApiResult<O> {

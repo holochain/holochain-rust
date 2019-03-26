@@ -24,11 +24,11 @@ impl JsonString {
     /// a null JSON value
     /// e.g. represents None when implementing From<Option<Foo>>
     pub fn null() -> JsonString {
-        JsonString::from("null")
+        JsonString::from_json("null")
     }
 
     pub fn empty_object() -> JsonString {
-        JsonString::from("{}")
+        JsonString::from_json("{}")
     }
 
     pub fn is_null(&self) -> bool {

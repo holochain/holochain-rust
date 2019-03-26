@@ -9,7 +9,7 @@ use crate::{
         handler::{get::*, send::*, store::*},
     },
 };
-use holochain_core_types::{cas::content::AddressableContent, hash::HashString};
+use holochain_core_types::hash::HashString;
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 use std::{convert::TryFrom, sync::Arc};
 
@@ -32,22 +32,7 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
-pub fn create_handler(c: &Arc<Context>) -> NetHandler {
-    let my_dna_address = {
-        let context = c.clone();
-        // TODO: we need a better way to easily get the DNA hash!!
-        let state = context
-            .state()
-            .ok_or("is_my_dna() could not get application state".to_string())
-            .unwrap();
-        let dna = state
-            .nucleus()
-            .dna()
-            .ok_or("is_my_dna() called without DNA".to_string())
-            .unwrap();
-        dna.address().to_string()
-    };
-
+pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
     Box::new(move |message| {
         let message = message.unwrap();

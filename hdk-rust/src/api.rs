@@ -461,7 +461,7 @@ pub fn call<S: Into<String>>(
     Dispatch::Call.with_input(ZomeFnCallArgs {
         instance_handle: instance_handle.into(),
         zome_name: zome_name.into(),
-        cap_token: cap_token,
+        cap_token,
         fn_name: fn_name.into(),
         fn_args: String::from(fn_args),
     })
@@ -1014,8 +1014,8 @@ pub fn query(
     query_result(
         entry_type_names,
         QueryArgsOptions {
-            start: start,
-            limit: limit,
+            start,
+            limit,
             headers: false,
             entries: false,
         },

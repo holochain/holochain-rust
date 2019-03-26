@@ -97,29 +97,29 @@ impl fmt::Debug for Period {
 impl fmt::Display for Period {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let secs = self.0.as_secs();
-        let y = secs / YR;
-        if y > 0 {
-            write!(f, "{}y", y)?
+        let years = secs / YR;
+        if years > 0 {
+            write!(f, "{}y", years)?
         }
         let y_secs = secs % YR;
-        let w = y_secs / WK;
-        if w > 0 {
-            write!(f, "{}w", w)?
+        let weeks = y_secs / WK;
+        if weeks > 0 {
+            write!(f, "{}w", weeks)?
         }
         let w_secs = y_secs % WK;
-        let d = w_secs / DY;
-        if d > 0 {
-            write!(f, "{}d", d)?
+        let days = w_secs / DY;
+        if days > 0 {
+            write!(f, "{}d", days)?
         }
         let d_secs = w_secs % DY;
-        let h = d_secs / HR;
-        if h > 0 {
-            write!(f, "{}h", h)?
+        let hours = d_secs / HR;
+        if hours > 0 {
+            write!(f, "{}h", hours)?
         }
         let h_secs = d_secs % HR;
-        let m = h_secs / MN;
-        if m > 0 {
-            write!(f, "{}m", m)?
+        let minutes = h_secs / MN;
+        if minutes > 0 {
+            write!(f, "{}m", minutes)?
         }
         let s = h_secs % MN;
         let nsecs = self.0.subsec_nanos();

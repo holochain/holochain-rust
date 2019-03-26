@@ -12,7 +12,7 @@ use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 use holochain_core_types::cas::content::Address;
 use holochain_core_types::{
     dna::Dna,
-    error::{error::HolochainError, HcResult},
+    error::{HcResult, HolochainError},
 };
 use std::{
     sync::{

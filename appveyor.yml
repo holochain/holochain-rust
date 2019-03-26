@@ -13,16 +13,16 @@ environment:
   APPVEYOR_BUILD_WORKER_CLOUD: master
 
 test_script:
- - setx hc_target_prefix C:\build\
- - setx test_p hc
- - setx test_path cli\
- - echo %TEST_P%
- - echo %TEST_PATH%
- - echo %HC_TARGET_PREFIX%
- - cargo test --release -p %TEST_P% --target-dir %HC_TARGET_PREFIX%%TEST_PATH%target
+ - $env:hc_target_prefix=C:\build\
+ - $env:test_p=hc
+ - $env:test_path=cli\
+ - echo $env:test_p
+ - echo $env:test_path
+ - echo $env:hc_target_prefix
+ - cargo test --release -p $env:test_p --target-dir $env:hc_target_prefix$env_test_pathtarget
 
- - setx test_p hdk
- - setx test_path hdk-rust\
- - setx wasm_path wasm-test\
- - cargo build --manifest-path %TEST_PATH%%WASM_PATH%Cargo.toml --release --target wasm32-unknown-unknown --target-dir %HC_TARGET_PREFIX%%TEST_PATH%%WASM_PATH%target
- - cargo test --release -p %TEST_P% --target-dir %HC_TARGET_PREFIX%%TEST_PATH%target
+ # - setx test_p hdk
+ # - setx test_path hdk-rust\
+ # - setx wasm_path wasm-test\
+ # - cargo build --manifest-path %TEST_PATH%%WASM_PATH%Cargo.toml --release --target wasm32-unknown-unknown --target-dir %HC_TARGET_PREFIX%%TEST_PATH%%WASM_PATH%target
+ # - cargo test --release -p %TEST_P% --target-dir %HC_TARGET_PREFIX%%TEST_PATH%target

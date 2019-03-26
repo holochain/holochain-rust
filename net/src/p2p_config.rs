@@ -103,7 +103,7 @@ impl P2pConfig {
         maybe_end_user_config_filepath: Option<String>,
     ) -> Self {
         let backend_config = json!({
-            "socketType": "zmq",
+            "socketType": "ws",
             "blockConnect": false,
             "bootstrapNodes": bootstrap_nodes,
             "ipcUri": maybe_ipc_binding
@@ -124,7 +124,7 @@ impl P2pConfig {
                 .expect("Invalid backend_config json on P2pConfig creation."),
             Some(ipc_binding) => {
                 let backend_config = json!({
-                    "socketType": "zmq",
+                    "socketType": "ws",
                     "blockConnect": false,
                     "ipcUri": ipc_binding
                 })
@@ -214,12 +214,13 @@ impl P2pConfig {
     {
       "backend_kind": "IPC",
       "backend_config": {
-        "socketType": "zmq",
+        "socketType": "ws",
         "spawn": {
           "cmd": "node",
           "env": {
             "N3H_MODE": "HACK",
-            "N3H_IPC_SOCKET": "tcp://127.0.0.1:*"
+            "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
+            "N3H_LOG_LEVEL": "i"
           }
         }
       }
@@ -229,7 +230,7 @@ impl P2pConfig {
     {
       "backend_kind": "IPC",
       "backend_config": {
-        "socketType": "zmq",
+        "socketType": "ws",
         "ipcUri": "tcp://127.0.0.1:0",
         "blockConnect": false
       }

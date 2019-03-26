@@ -95,7 +95,6 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dpki;
 extern crate holochain_net;
-extern crate holochain_net_ipc;
 extern crate holochain_sodium;
 
 extern crate chrono;
@@ -123,14 +122,14 @@ extern crate directories;
 extern crate hyper;
 extern crate hyper_staticfile;
 extern crate json_patch;
-#[cfg(test)]
-extern crate reqwest;
+// #[cfg(test)]
+// extern crate reqwest;
 extern crate tokio;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
 extern crate base64;
-extern crate rpassword;
+extern crate crossbeam_channel;
 
 pub mod conductor;
 pub mod config;
@@ -141,6 +140,7 @@ pub mod holochain;
 pub mod interface;
 pub mod interface_impls;
 pub mod key_loaders;
+pub mod keystore;
 pub mod logger;
 pub mod static_file_server;
 

@@ -4,23 +4,29 @@ pub mod actions;
 pub mod reducers;
 pub mod ribosome;
 pub mod state;
+pub mod validation;
 
-use holochain_core_types::{
-    cas::content::Address, dna::capabilities::CapabilityCall, error::HcResult, json::JsonString,
+pub use crate::{
+    context::Context,
+    nucleus::{
+        actions::call_zome_function::{
+            call_zome_function, make_cap_request_for_call, ExecuteZomeFnResponse,
+        },
+        reducers::reduce,
+        ribosome::capabilities::CapabilityRequest,
+    },
 };
+use holochain_core_types::{cas::content::Address, error::HcResult, json::JsonString};
+
 use snowflake;
-
-pub use crate::nucleus::{
-    actions::call_zome_function::{call_zome_function, ExecuteZomeFnResponse},
-    reducers::reduce,
-};
+use std::sync::Arc;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ZomeFnCall {
     id: snowflake::ProcessUniqueId,
     pub zome_name: String,
-    pub cap: Option<CapabilityCall>,
+    pub cap: CapabilityRequest,
     pub fn_name: String,
     pub parameters: JsonString,
 }
@@ -28,7 +34,7 @@ pub struct ZomeFnCall {
 impl ZomeFnCall {
     pub fn new<J: Into<JsonString>>(
         zome: &str,
-        cap: Option<CapabilityCall>,
+        cap: CapabilityRequest,
         function: &str,
         parameters: J,
     ) -> Self {
@@ -43,6 +49,22 @@ impl ZomeFnCall {
         }
     }
 
+    pub fn create<J: Into<JsonString>>(
+        context: Arc<Context>,
+        zome: &str,
+        token: Address,
+        function: &str,
+        parameters: J,
+    ) -> Self {
+        let params = parameters.into();
+        ZomeFnCall::new(
+            zome,
+            make_cap_request_for_call(context, token, function, params.clone()),
+            function,
+            params,
+        )
+    }
+
     pub fn same_fn_as(&self, fn_call: &ZomeFnCall) -> bool {
         self.zome_name == fn_call.zome_name
             && self.cap == fn_call.cap
@@ -50,14 +72,33 @@ impl ZomeFnCall {
     }
 
     pub fn cap_token(&self) -> Address {
-        match self.cap.clone() {
-            Some(call) => call.cap_token,
-            None => panic!("null cap call unimplemented!"),
-        }
+        self.cap.cap_token.clone()
     }
 }
 
 pub type ZomeFnResult = HcResult<JsonString>;
+
+/// Struct holding data for requesting the execution of a callback function
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct CallbackFnCall {
+    id: snowflake::ProcessUniqueId,
+    pub zome_name: String,
+    pub fn_name: String,
+    pub parameters: JsonString,
+}
+
+impl CallbackFnCall {
+    pub fn new<J: Into<JsonString>>(zome: &str, function: &str, parameters: J) -> Self {
+        CallbackFnCall {
+            // @TODO can we defer to the ActionWrapper id?
+            // @see https://github.com/holochain/holochain-rust/issues/198
+            id: snowflake::ProcessUniqueId::new(),
+            zome_name: zome.to_string(),
+            fn_name: function.to_string(),
+            parameters: parameters.into(),
+        }
+    }
+}
 
 #[cfg(test)]
 pub mod tests {
@@ -69,15 +110,17 @@ pub mod tests {
         },
         nucleus::{
             call_zome_function,
+            ribosome::{api::call::tests::setup_test, capabilities::CapabilityRequest},
             state::{NucleusState, NucleusStatus},
         },
     };
-    use holochain_core_types::dna::capabilities::CapabilityCall;
     use test_utils;
 
     use holochain_core_types::{
+        cas::content::AddressableContent,
         error::{DnaError, HolochainError},
         json::{JsonString, RawString},
+        signature::Signature,
     };
 
     /// dummy zome name compatible with ZomeFnCall
@@ -86,23 +129,64 @@ pub mod tests {
     }
 
     /// dummy capability token
-    pub fn test_capability_token() -> Address {
-        Address::from(test_capability_token_str())
+    pub fn dummy_capability_token() -> Address {
+        Address::from(dummy_capability_token_str())
+    }
+
+    /// dummy capability token
+    pub fn dummy_caller() -> Address {
+        Address::from(dummy_caller_str())
     }
 
     /// dummy capability token compatible with ZomeFnCall
-    pub fn test_capability_token_str() -> String {
-        "test_token".to_string()
+    pub fn dummy_capability_token_str() -> String {
+        "dummy_token".to_string()
     }
 
+    /// dummy capability caller compatible with ZomeFnCall
+    pub fn dummy_caller_str() -> String {
+        "dummy_caller".to_string()
+    }
+
+    /// test capability call
+    pub fn test_capability_request<J: Into<JsonString>>(
+        context: Arc<Context>,
+        function: &str,
+        parameters: J,
+    ) -> CapabilityRequest {
+        make_cap_request_for_call(
+            context.clone(),
+            dummy_capability_token(),
+            function,
+            parameters,
+        )
+    }
+
+    /// test self agent capability call
+    pub fn test_agent_capability_request<J: Into<JsonString>>(
+        context: Arc<Context>,
+        function: &str,
+        parameters: J,
+    ) -> CapabilityRequest {
+        make_cap_request_for_call(
+            context.clone(),
+            Address::from(context.agent_id.address()),
+            function,
+            parameters,
+        )
+    }
     /// dummy capability call
-    pub fn test_capability_call() -> CapabilityCall {
-        CapabilityCall::new(test_capability_token(), None)
+    pub fn dummy_capability_request() -> CapabilityRequest {
+        CapabilityRequest::new(
+            dummy_capability_token(),
+            Address::from("test caller"),
+            Signature::fake(),
+        )
     }
 
     /// dummy capability name compatible with ZomeFnCall
     pub fn test_capability_name() -> String {
-        "test_cap".to_string()
+        "hc_public".to_string()
     }
 
     /// dummy function name compatible with ZomeFnCall
@@ -119,7 +203,7 @@ pub mod tests {
     pub fn test_zome_call() -> ZomeFnCall {
         ZomeFnCall::new(
             &test_zome(),
-            Some(test_capability_call()),
+            dummy_capability_request(),
             &test_function(),
             test_parameters(),
         )
@@ -161,6 +245,7 @@ pub mod tests {
         let nucleus_state = NucleusState::new();
         assert_eq!(nucleus_state.dna, None);
         assert_eq!(nucleus_state.has_initialized(), false);
+        assert_eq!(nucleus_state.initialization().is_some(), false);
         assert_eq!(nucleus_state.has_initialization_failed(), false);
         assert_eq!(nucleus_state.status(), NucleusStatus::New);
     }
@@ -169,18 +254,17 @@ pub mod tests {
     /// tests that calling a valid zome function returns a valid result
     fn test_call_zome_function() {
         let _netname = Some("test_call_zome_function");
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let (_, context) =
-            test_instance_and_context(dna, None).expect("Could not initialize test instance");
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
+        //let (_, context) =
+        //    test_instance_and_context(dna, None).expect("Could not initialize test instance");
         //let context = instance.initialize_context(test_context("janet", netname));
+        let test_setup = setup_test(dna, "test_call_zome_function");
+        let context = test_setup.context.clone();
+        let token = context.get_public_token().unwrap();
 
         // Create zome function call
-        let zome_call = ZomeFnCall::new(
-            "test_zome",
-            Some(test_capability_call()),
-            "public_test_fn",
-            "",
-        );
+        let zome_call =
+            ZomeFnCall::create(context.clone(), "test_zome", token, "public_test_fn", "");
 
         let result = context.block_on(call_zome_function(zome_call, &context));
 
@@ -197,7 +281,7 @@ pub mod tests {
 
         let call = ZomeFnCall::new(
             "test_zome",
-            Some(test_capability_call()),
+            dummy_capability_request(),
             "public_test_fn",
             "{}",
         );
@@ -212,12 +296,12 @@ pub mod tests {
     #[test]
     /// tests that calling a valid zome with invalid function returns the correct error
     fn call_ribosome_wrong_function() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let (_, context) =
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         // Create zome function call:
-        let call = ZomeFnCall::new("test_zome", Some(test_capability_call()), "xxx", "{}");
+        let call = ZomeFnCall::new("test_zome", dummy_capability_request(), "xxx", "{}");
 
         let result = context.block_on(call_zome_function(call, &context));
 
@@ -232,12 +316,12 @@ pub mod tests {
     #[test]
     /// tests that calling the wrong zome/capability returns the correct errors
     fn call_wrong_zome_function() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let (_, context) =
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         // Create bad zome function call
-        let call = ZomeFnCall::new("xxx", Some(test_capability_call()), "public_test_fn", "{}");
+        let call = ZomeFnCall::new("xxx", dummy_capability_request(), "public_test_fn", "{}");
 
         let result = context.block_on(call_zome_function(call, &context));
 
@@ -248,7 +332,7 @@ pub mod tests {
 
         /*
         convert when we actually have capabilities on a chain
-                let mut cap_call = test_capability_call();
+                let mut cap_call = test_capability_request();
                 cap_call.cap_name = "xxx".to_string();
 
                 // Create bad capability function call
@@ -268,11 +352,11 @@ pub mod tests {
 
     #[test]
     fn test_zomefncall_same_as() {
-        let base = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu", "papa");
-        let copy = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu", "papa");
-        let same = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu", "papa1");
-        let diff1 = ZomeFnCall::new("yoyo1", Some(test_capability_call()), "fufu", "papa");
-        let diff2 = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu3", "papa");
+        let base = ZomeFnCall::new("yoyo", dummy_capability_request(), "fufu", "papa");
+        let copy = ZomeFnCall::new("yoyo", dummy_capability_request(), "fufu", "papa");
+        let same = ZomeFnCall::new("yoyo", dummy_capability_request(), "fufu", "papa1");
+        let diff1 = ZomeFnCall::new("yoyo1", dummy_capability_request(), "fufu", "papa");
+        let diff2 = ZomeFnCall::new("yoyo", dummy_capability_request(), "fufu3", "papa");
 
         assert_ne!(base, copy);
         assert!(base.same_fn_as(&copy));

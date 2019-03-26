@@ -31,6 +31,7 @@ pub mod logger;
 pub mod network;
 pub mod nucleus;
 pub mod persister;
+pub mod scheduled_jobs;
 pub mod signal;
 pub mod state;
 pub mod workflows;

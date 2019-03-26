@@ -139,6 +139,24 @@ define_zome! {
 
 `functions` is where the function declarations will be made.
 
+### Adding Traits:
+
+Here are some sample traits
+
+```rust
+...
+
+define_zome! {
+    ...
+    traits: {
+        hc_public [read_post]
+        authoring [create_post, update_post]
+    }
+}
+```
+
+In this example, `hc_public` is the reserved trait name which creates a `Public` Capbility-type grant at genesis time for access to the `read_post` function.  Additionally it names an `authoring` trait for the `create_post` and `update_post` functions.
+
 ### Adding a Zome Function
 
 In order to add a Zome function, there are two primary steps that are involved.
@@ -186,9 +204,9 @@ Notice right away how the arguments match perfectly with the `inputs: |...|` sec
 
 The name of the function, `handle_send_message` is the same as the name given as the `handler` in the `define_zome!` function declaration.
 
-Within the function, `handle_send_message` makes use of a Holochain/HDK function that [sends messages directly node-to-node](https://developer.holochain.org/api/0.0.4-alpha/hdk/api/fn.send.html).
+Within the function, `handle_send_message` makes use of a Holochain/HDK function that [sends messages directly node-to-node](https://developer.holochain.org/api/0.0.7-alpha/hdk/api/fn.send.html).
 
-The available functions, their purpose, and how to use them is fully documented elsewhere, in the [API reference](https://developer.holochain.org/api/0.0.4-alpha/hdk/api/index.html#functions) and the [List of API Functions](./api_functions.md).
+The available functions, their purpose, and how to use them is fully documented elsewhere, in the [API reference](https://developer.holochain.org/api/0.0.7-alpha/hdk/api/index.html#functions) and the [List of API Functions](./api_functions.md).
 
 In the example, `handle_send_message` simply forwards the result of calling `hdk::send` as its' own result.
 
@@ -230,6 +248,6 @@ define_zome! {
 }
 ```
 
-In this example, `hc_public` is the reserved trait name which create a `Public` Capbility-type grant at genesis time for access to the `read_post` function.  Additionally it names an `authoring` trait the `create_post` and `update_post` functions.
+In this example, `hc_public` is the reserved trait name which create a `Public` Capability-type grant at genesis time for access to the `read_post` function.  Additionally it names an `authoring` trait the `create_post` and `update_post` functions.
 
 Continue reading to learn all about the API Functions and examples of how to use them.

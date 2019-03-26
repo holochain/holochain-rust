@@ -1,8 +1,8 @@
 [package]
 name = "holochain_common"
-version = "0.0.4-alpha"
+version = "0.0.8-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-directories = "1.0"
+directories = "=1.0.2"

@@ -232,14 +232,12 @@ impl SecBuf {
     /// helper for writing data to our internal buffer
     pub fn write(&mut self, offset: usize, data: &[u8]) -> Result<(), SodiumError> {
         if offset + data.len() > self.len() {
-            return Err(SodiumError::new("bad write offset / length"));
+            return Err(SodiumError::new("SecBuf write overflow"));
         }
-
         unsafe {
             let mut b = self.write_lock();
             std::ptr::copy(data.as_ptr(), (**b).as_mut_ptr().add(offset), data.len());
         }
-
         Ok(())
     }
 }

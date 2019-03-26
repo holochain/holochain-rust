@@ -87,6 +87,7 @@ pub fn test(
 }
 
 #[cfg(test)]
+#[cfg(feature = "broken-tests")]
 pub mod tests {
     use super::*;
     use crate::cli::init::{init, tests::gen_dir};

@@ -37,6 +37,18 @@ pub async fn respond_validation_package_request(
         Err(_) => None,
     };
 
+    if maybe_validation_package.is_some() {
+        context.log(format!(
+            "Sending validation package of entry {} to agent {}",
+            requested_entry_address, to_agent_id
+        ));
+    } else {
+        context.log(format!(
+            "Got request for validation package of unknown entry {} from agent {}!",
+            requested_entry_address, to_agent_id
+        ));
+    };
+
     let direct_message = DirectMessage::ValidationPackage(maybe_validation_package);
     let direct_message_data = DirectMessageData {
         address: to_agent_id,
@@ -44,6 +56,7 @@ pub async fn respond_validation_package_request(
         msg_id,
         is_response: true,
     };
+
     let action_wrapper = ActionWrapper::new(Action::SendDirectMessage(direct_message_data));
     dispatch_action(context.action_channel(), action_wrapper);
 }

@@ -5,6 +5,7 @@ use holochain_core_types::error::HolochainError;
 pub enum SodiumError {
     Generic(String),
     OutputLength(String),
+    OutOfMemory,
 }
 
 impl SodiumError {
@@ -18,6 +19,7 @@ impl From<SodiumError> for HolochainError {
         match error {
             SodiumError::Generic(s) => HolochainError::new(&s),
             SodiumError::OutputLength(s) => HolochainError::new(&s),
+            SodiumError::OutOfMemory => HolochainError::new("libSodium went out of memory"),
         }
     }
 }

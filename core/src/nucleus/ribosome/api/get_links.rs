@@ -13,13 +13,13 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetLinksArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         Err(_) => {
-            zome_call_data.context.log(format!(
+            context.log(format!(
                 "err/zome: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
                 args_str
             ));
@@ -28,22 +28,18 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     };
 
     if input.options.status_request != LinksStatusRequestKind::Live {
-        zome_call_data
-            .context
-            .log("get links status request other than Live not implemented!");
+        context.log("get links status request other than Live not implemented!");
         return ribosome_error_code!(Unspecified);
     }
 
     if input.options.sources {
-        zome_call_data
-            .context
-            .log("get links retrieve sources not implemented!");
+        context.log("get links retrieve sources not implemented!");
         return ribosome_error_code!(Unspecified);
     }
 
     // Get links from DHT
-    let maybe_links = zome_call_data.context.block_on(get_links(
-        zome_call_data.context.clone(),
+    let maybe_links = context.block_on(get_links(
+        context.clone(),
         input.entry_address,
         input.tag,
         input.options.timeout,
@@ -63,12 +59,9 @@ pub mod tests {
         agent::actions::commit::commit_entry,
         dht::actions::add_link::add_link,
         instance::tests::{test_context_and_logger, test_instance},
-        nucleus::{
-            ribosome::{
-                api::{tests::*, ZomeApiFunction},
-                Defn,
-            },
-            tests::*,
+        nucleus::ribosome::{
+            api::{tests::*, ZomeApiFunction},
+            Defn,
         },
     };
     use holochain_core_types::{
@@ -95,11 +88,7 @@ pub mod tests {
     #[test]
     fn returns_list_of_links() {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
-        let dna = test_utils::create_test_dna_with_wasm(
-            &test_zome_name(),
-            &test_capability_name(),
-            wasm.clone(),
-        );
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
         let dna_name = &dna.name.to_string().clone();
         let netname = Some("returns_list_of_links");

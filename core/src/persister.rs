@@ -1,6 +1,7 @@
 use crate::{
     agent::state::{AgentStateSnapshot, AGENT_SNAPSHOT_ADDRESS},
     context::Context,
+    nucleus::state::{NucleusStateSnapshot, NUCLEUS_SNAPSHOT_ADDRESS},
     state::State,
 };
 use holochain_core_types::{
@@ -10,10 +11,7 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
-use std::{
-    convert::TryFrom,
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
 /// trait that defines the persistence functionality that holochain_core requires
 pub trait Persister: Send {
@@ -21,7 +19,7 @@ pub trait Persister: Send {
     // snowflake is only unique across a single process, not a reboot save/load round trip
     // we'd need real UUIDs for persistant uniqueness
     // @see https://github.com/holochain/holochain-rust/issues/203
-    fn save(&mut self, state: State) -> Result<(), HolochainError>;
+    fn save(&mut self, state: &State) -> Result<(), HolochainError>;
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError>;
 }
 
@@ -37,28 +35,49 @@ impl PartialEq for SimplePersister {
 }
 
 impl Persister for SimplePersister {
-    fn save(&mut self, state: State) -> Result<(), HolochainError> {
+    fn save(&mut self, state: &State) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();
-        let mut store = lock.write().unwrap();
-        let snapshot = AgentStateSnapshot::try_from(state)?;
-        Ok(store.add(&snapshot)?)
+        let mut store = lock
+            .try_write()
+            .map_err(|_| HolochainError::new("Could not get write lock on storage"))?;
+        let agent_snapshot = AgentStateSnapshot::from(state);
+        let nucleus_snapshot = NucleusStateSnapshot::from(state);
+        store.add(&agent_snapshot)?;
+        store.add(&nucleus_snapshot)?;
+        Ok(())
     }
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
         let lock = &*self.storage.clone();
-        let store = lock.write().unwrap();
-        let address = Address::from(AGENT_SNAPSHOT_ADDRESS);
-        let snapshot: Option<AgentStateSnapshot> = store.fetch(&address)?.map(|s: Content| {
-            AgentStateSnapshot::try_from_content(&s)
-                .expect("could not load AgentStateSnapshot from content")
-        });
-        let state = snapshot.map(|snap| State::try_from_agent_snapshot(context, snap).ok());
-        Ok(state.unwrap_or(None))
+        let store = lock.read().unwrap();
+
+        let agent_snapshot: Option<AgentStateSnapshot> = store
+            .fetch(&Address::from(AGENT_SNAPSHOT_ADDRESS))?
+            .map(|s: Content| {
+                AgentStateSnapshot::try_from_content(&s)
+                    .expect("could not load AgentStateSnapshot from content")
+            });
+
+        let nucleus_snapshot: Option<NucleusStateSnapshot> = store
+            .fetch(&Address::from(NUCLEUS_SNAPSHOT_ADDRESS))?
+            .map(|s: Content| {
+                NucleusStateSnapshot::try_from_content(&s)
+                    .expect("could not load NucleusStateSnapshot from content")
+            });
+
+        if agent_snapshot.is_none() || nucleus_snapshot.is_none() {
+            return Ok(None);
+        }
+
+        Ok(
+            State::try_from_snapshots(context, agent_snapshot.unwrap(), nucleus_snapshot.unwrap())
+                .ok(),
+        )
     }
 }
 
 impl SimplePersister {
     pub fn new(storage: Arc<RwLock<ContentAddressableStorage>>) -> Self {
-        SimplePersister { storage: storage }
+        SimplePersister { storage }
     }
 }
 
@@ -82,7 +101,7 @@ mod tests {
         File::create(temp_path.clone()).unwrap();
         let mut persistance = SimplePersister::new(context.dht_storage.clone());
         let state = context.state().unwrap().clone();
-        persistance.save(state.clone()).unwrap();
+        persistance.save(&state).unwrap();
         let state_from_file = persistance.load(context).unwrap().unwrap();
         assert_eq!(state.agent(), state_from_file.agent());
         assert_eq!(state.nucleus(), state_from_file.nucleus());

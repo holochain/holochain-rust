@@ -11,14 +11,14 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: GetEntryArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetEntryArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            zome_call_data.context.log(format!(
+            context.log(format!(
                 "err/zome: invoke_get_entry() failed to deserialize: {:?}",
                 args_str
             ));
@@ -26,9 +26,7 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
     // Create workflow future and block on it
-    let result = zome_call_data
-        .context
-        .block_on(get_entry_result_workflow(&zome_call_data.context, &input));
+    let result = context.block_on(get_entry_result_workflow(&context, &input));
     // Store result in wasm memory
     runtime.store_result(result)
 }
@@ -50,7 +48,7 @@ pub mod tests {
                 },
                 runtime::WasmCallData,
             },
-            tests::{test_capability_call, test_capability_name},
+            tests::test_capability_request,
             ZomeFnCall,
         },
     };
@@ -75,7 +73,7 @@ pub mod tests {
                 Default::default(),
             ),
         };
-        JsonString::from(entry_args).into_bytes()
+        JsonString::from(entry_args).to_bytes()
     }
 
     /// dummy get args from standard test entry
@@ -89,7 +87,7 @@ pub mod tests {
                 Default::default(),
             ),
         };
-        JsonString::from(entry_args).into_bytes()
+        JsonString::from(entry_args).to_bytes()
     }
 
     /// wat string that exports both get and a commit dispatches so we can test a round trip
@@ -192,11 +190,7 @@ pub mod tests {
     fn test_get_round_trip() {
         let netname = Some("test_get_round_trip");
         let wasm = test_get_round_trip_wat();
-        let dna = test_utils::create_test_dna_with_wasm(
-            &test_zome_name(),
-            &test_capability_name(),
-            wasm.clone(),
-        );
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
         let (instance, context) = test_instance_and_context(dna.clone(), netname)
             .expect("Could not initialize test instance");
         let context = instance.initialize_context(context);
@@ -214,7 +208,7 @@ pub mod tests {
 
         let commit_call = ZomeFnCall::new(
             &test_zome_name(),
-            Some(test_capability_call()),
+            test_capability_request(context.clone(), "commit_dispatch", test_parameters()),
             "commit_dispatch",
             test_parameters(),
         );
@@ -236,7 +230,7 @@ pub mod tests {
 
         let get_call = ZomeFnCall::new(
             &test_zome_name(),
-            Some(test_capability_call()),
+            test_capability_request(context.clone(), "get_dispatch", test_parameters()),
             "get_dispatch",
             test_parameters(),
         );
@@ -251,7 +245,7 @@ pub mod tests {
         let entry_with_meta = EntryWithMeta {
             entry: entry.clone(),
             crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
+            maybe_link_update_delete: None,
         };
         // let header = create_new_chain_header(&entry, context.clone(), &None);
         let entry_result =
@@ -271,7 +265,6 @@ pub mod tests {
         // let wasm = test_get_round_trip_wat();
         // let dna = test_utils::create_test_dna_with_wasm(
         //     &test_zome_name(),
-        //     &test_capability_name(),
         //     wasm.clone(),
         // );
         // let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
@@ -291,7 +284,7 @@ pub mod tests {
         //
         // let get_call = ZomeFnCall::new(
         //     &test_zome_name(),
-        //     Some(test_capability_call()),
+        //     test_capability_request(),
         //     "get_dispatch",
         //     test_parameters(),
         // );

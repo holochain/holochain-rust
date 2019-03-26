@@ -1,17 +1,17 @@
 [package]
 name = "holochain_cas_implementations"
-version = "0.0.4-alpha"
+version = "0.0.8-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-serde_derive="1"
-serde_test="1"
-multihash = "0.8.0"
+serde_derive= "=1.0.89"
+serde_test= "=1.0.89"
+multihash = "=0.8.0"
 holochain_core_types = { path = "../core_types" }
-lazy_static = "1.2"
-glob = "0.2.11"
-uuid = { version = "0.7", features = ["v4"] }
+lazy_static = "=1.2.0"
+glob = "=0.3.0"
+uuid = { version = "=0.7.1", features = ["v4"] }
 
 [dev-dependencies]
 holochain_core_types = { path = "../core_types" }
-tempfile = "3"
+tempfile = "=3.0.7"

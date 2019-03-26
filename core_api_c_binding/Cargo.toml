@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core_api_c_binding"
-version = "0.0.4-alpha"
+version = "0.0.8-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]

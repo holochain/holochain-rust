@@ -36,8 +36,8 @@ impl JsonString {
     }
 
     /// achieves the same outcome as serde_json::to_vec()
-    pub fn into_bytes(&self) -> Vec<u8> {
-        self.0.to_owned().into_bytes()
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.as_bytes().to_vec()
     }
 }
 
@@ -49,6 +49,12 @@ impl From<String> for JsonString {
             // remove null characters from both ends
             .trim_matches(char::from(0));
         JsonString(cleaned.to_owned())
+    }
+}
+
+impl From<bool> for JsonString {
+    fn from(u: bool) -> JsonString {
+        default_to_json(u)
     }
 }
 
@@ -73,6 +79,13 @@ impl From<u64> for JsonString {
 impl From<u128> for JsonString {
     fn from(u: u128) -> JsonString {
         default_to_json(u)
+    }
+}
+
+impl TryFrom<JsonString> for bool {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
     }
 }
 
@@ -199,11 +212,10 @@ impl Display for JsonString {
 ///     }
 /// }
 pub fn default_to_json<V: Serialize + Debug>(v: V) -> JsonString {
-    match serde_json::to_string(&v) {
-        Ok(s) => Ok(JsonString::from(s)),
-        Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-    }
-    .expect(&format!("could not Jsonify: {:?}", v))
+    serde_json::to_string(&v)
+        .map(JsonString::from)
+        .map_err(|e| HolochainError::SerializationError(e.to_string()))
+        .unwrap_or_else(|_| panic!("could not Jsonify: {:?}", v))
 }
 
 /// if all you want to do is implement the default behaviour then use #[derive(DefaultJson)]
@@ -217,10 +229,8 @@ pub fn default_to_json<V: Serialize + Debug>(v: V) -> JsonString {
 pub fn default_try_from_json<D: DeserializeOwned>(
     json_string: JsonString,
 ) -> Result<D, HolochainError> {
-    match serde_json::from_str(&String::from(&json_string)) {
-        Ok(d) => Ok(d),
-        Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-    }
+    serde_json::from_str(&String::from(&json_string))
+        .map_err(|e| HolochainError::SerializationError(e.to_string()))
 }
 
 pub trait DefaultJson:
@@ -257,7 +267,7 @@ impl From<f64> for RawString {
 
 impl From<i32> for RawString {
     fn from(i: i32) -> RawString {
-        RawString::from(i as f64)
+        RawString::from(f64::from(i))
     }
 }
 
@@ -266,10 +276,12 @@ impl From<RawString> for String {
         // this will panic if RawString does not contain a string!
         // use JsonString::from(...) to stringify numbers or other values
         // @see raw_from_number_test()
-        String::from(raw_string.0.as_str().expect(&format!(
-            "could not extract inner string for RawString: {:?}",
-            &raw_string
-        )))
+        String::from(raw_string.0.as_str().unwrap_or_else(|| {
+            panic!(
+                "could not extract inner string for RawString: {:?}",
+                &raw_string
+            )
+        }))
     }
 }
 
@@ -278,7 +290,7 @@ impl From<RawString> for JsonString {
     fn from(raw_string: RawString) -> JsonString {
         JsonString::from(
             serde_json::to_string(&raw_string.0)
-                .expect(&format!("could not Jsonify RawString: {:?}", &raw_string)),
+                .unwrap_or_else(|_| panic!("could not Jsonify RawString: {:?}", &raw_string)),
         )
     }
 }
@@ -326,7 +338,7 @@ pub mod tests {
 
     #[test]
     fn json_into_bytes_test() {
-        assert_eq!(JsonString::from("foo").into_bytes(), vec![102, 111, 111],);
+        assert_eq!(JsonString::from("foo").to_bytes(), vec![102, 111, 111],);
     }
 
     #[test]

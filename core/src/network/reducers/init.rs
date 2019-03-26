@@ -3,10 +3,12 @@ use crate::{
     context::Context,
     network::{handler::create_handler, state::NetworkState},
 };
-use holochain_net::p2p_network::P2pNetwork;
-use holochain_net_connection::{
-    json_protocol::{JsonProtocol, TrackDnaData},
-    net_connection::NetSend,
+use holochain_net::{
+    connection::{
+        json_protocol::{JsonProtocol, TrackDnaData},
+        net_connection::NetSend,
+    },
+    p2p_network::P2pNetwork,
 };
 use std::sync::{Arc, Mutex};
 
@@ -17,8 +19,11 @@ pub fn reduce_init(
 ) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
-    let mut network =
-        P2pNetwork::new(create_handler(&context), &network_settings.p2p_config).unwrap();
+    let mut network = P2pNetwork::new(
+        create_handler(&context, network_settings.dna_address.to_string()),
+        &network_settings.p2p_config,
+    )
+    .unwrap();
 
     // Configure network logger
     // Enable this for debugging network
@@ -29,6 +34,7 @@ pub fn reduce_init(
     //        tweetlog.set(LogLevel::Debug, Some("memory_server".to_string()));
     //        tweetlog.listen_to_tag("memory_server", Tweetlog::console);
     //        tweetlog.listen(Tweetlog::console);
+    //        tweetlog.i("TWEETLOG ENABLED");
     //    }
 
     let json = JsonProtocol::TrackDna(TrackDnaData {

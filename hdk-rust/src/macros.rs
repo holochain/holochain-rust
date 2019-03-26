@@ -75,6 +75,7 @@ macro_rules! load_string {
 /// use holochain_core_types::{
 ///     cas::content::Address,
 ///     dna::entry_types::Sharing,
+///     validation::EntryValidationData
 /// };
 /// # use holochain_core_types::error::RibosomeEncodingBits;
 /// # // Adding empty functions so that the cfg(test) build can link.
@@ -101,6 +102,10 @@ macro_rules! load_string {
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -108,7 +113,7 @@ macro_rules! load_string {
 /// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # fn main() {
 ///
-/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 /// pub struct Post {
 ///     content: String,
 ///     date_created: String,
@@ -129,16 +134,27 @@ macro_rules! load_string {
 ///             name: "post",
 ///             description: "",
 ///             sharing: Sharing::Public,
-///             native_type: Post,
 ///
 ///             validation_package: || {
 ///                 hdk::ValidationPackageDefinition::ChainFull
 ///             },
 ///
-///             validation: |post: Post, _validation_data: hdk::ValidationData| {
-///                 (post.content.len() < 280)
-///                     .ok_or_else(|| String::from("Content too long"))
-///             }
+///             validation: |validation_data: hdk::EntryValidationData<Post>| {
+///              match validation_data
+///              {
+///              EntryValidationData::Create{entry:test_entry,validation_data:_} =>
+///              {
+///                        
+///                        
+///                        (test_entry.content != "FAIL")
+///                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+///                }
+///                _ =>
+///                 {
+///                      Err("Failed to validate with wrong entry type".to_string())
+///                }
+///         }}
+///
 ///         )
 ///     ]
 ///
@@ -349,7 +365,7 @@ macro_rules! define_zome {
                 let _ = debug(RawString::from(
                     info.payload().downcast_ref::<String>().unwrap().clone(),
                 ));
-                //let _ = debug(RawString::from(format!("{}", info.message().unwrap().clone())));
+
                 let _ = if let Some(location) = info.location() {
                     debug(RawString::from(format!(
                         "panic occurred in file '{}' at line {}",

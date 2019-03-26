@@ -13,7 +13,9 @@ macro_rules! sys_prefix {
     };
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Eq)]
+#[derive(
+    Debug, Clone, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Eq, DefaultJson,
+)]
 pub struct AppEntryType(String);
 
 impl From<&'static str> for AppEntryType {

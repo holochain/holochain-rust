@@ -4,39 +4,98 @@ use crate::{
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
-    nucleus::actions::validate::validate_entry,
+    nucleus::{
+        actions::add_pending_validation::add_pending_validation, validation::validate_entry,
+    },
 };
 
+use crate::{
+    nucleus::validation::ValidationError, scheduled_jobs::pending_validations::ValidatingWorkflow,
+};
 use holochain_core_types::{
-    cas::content::Address,
+    cas::content::AddressableContent,
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 
 pub async fn hold_entry_workflow<'a>(
-    entry_with_header: EntryWithHeader,
+    entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
-) -> Result<Address, HolochainError> {
-    let EntryWithHeader { entry, header } = &entry_with_header;
+) -> Result<(), HolochainError> {
+    let EntryWithHeader { entry, header } = entry_with_header;
 
     // 1. Get validation package from source
-    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
-    let validation_package = maybe_validation_package
-        .ok_or("Could not get validation package from source".to_string())?;
+    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))
+        .map_err(|err| {
+            let message = "Could not get validation package from source! -> Add to pending...";
+            context.log(format!("debug/workflow/hold_entry: {}", message));
+            context.log(format!("debug/workflow/hold_entry: Error was: {:?}", err));
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                Vec::new(),
+                ValidatingWorkflow::HoldEntry,
+                &context,
+            );
+            HolochainError::ValidationPending
+        })?;
+    let validation_package = maybe_validation_package.ok_or_else(|| {
+        let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
+        context.log(format!("debug/workflow/hold_entry: {}", message));
+        add_pending_validation(
+            entry_with_header.to_owned(),
+            Vec::new(),
+            ValidatingWorkflow::HoldEntry,
+            &context,
+        );
+        HolochainError::ValidationPending
+    })?;
+    context.log(format!("debug/workflow/hold_entry: got validation package"));
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Dht,
-        action: EntryAction::Create,
     };
 
     // 3. Validate the entry
-    await!(validate_entry(entry.clone(), validation_data, &context))?;
+    await!(validate_entry(
+        entry.clone(),
+        None,
+        validation_data,
+        &context
+    ))
+    .map_err(|err| {
+        context.log(format!(
+            "err/workflow/hold_entry: {} is NOT valid! {:?}",
+            entry_with_header.entry.address(),
+            err,
+        ));
+        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                dependencies.clone(),
+                ValidatingWorkflow::HoldEntry,
+                &context,
+            );
+        }
+        HolochainError::ValidationPending
+    })?;
+
+    context.log(format!(
+        "debug/workflow/hold_entry: is valid! {}",
+        entry_with_header.entry.address()
+    ));
 
     // 3. If valid store the entry in the local DHT shard
-    await!(hold_entry(entry_with_header, context))
+    await!(hold_entry(entry_with_header, context.clone()))?;
+
+    context.log(format!(
+        "debug/workflow/hold_entry: HOLDING: {}",
+        entry_with_header.entry.address()
+    ));
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -60,11 +119,9 @@ pub mod tests {
     /// hold_entry_workflow is then expected to fail in its validation step
     fn test_reject_invalid_entry_on_hold_workflow() {
         // Hacked DNA that regards everything as valid
-        let hacked_dna =
-            create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_valid()));
+        let hacked_dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_valid()));
         // Original DNA that regards nothing as valid
-        let mut dna =
-            create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_invalid()));
+        let mut dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_invalid()));
         dna.uuid = String::from("test_reject_invalid_entry_on_hold_workflow");
 
         // Address of the original DNA

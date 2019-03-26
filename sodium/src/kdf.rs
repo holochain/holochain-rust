@@ -59,14 +59,13 @@ pub fn derive(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::random::random_secbuf;
 
     #[test]
     fn it_should_derive_consistantly() {
         let mut context = SecBuf::with_secure(CONTEXTBYTES);
         let mut parent = SecBuf::with_secure(32);
-        random_secbuf(&mut context);
-        random_secbuf(&mut parent);
+        context.randomize();
+        parent.randomize();
         let mut out1 = SecBuf::with_secure(32);
         let mut out2 = SecBuf::with_secure(32);
         {
@@ -83,8 +82,8 @@ mod tests {
     fn it_should_return_error_on_bad_output_buffer() {
         let mut context = SecBuf::with_secure(8);
         let mut parent = SecBuf::with_secure(32);
-        random_secbuf(&mut context);
-        random_secbuf(&mut parent);
+        context.randomize();
+        parent.randomize();
         let mut out = SecBuf::with_insecure(2);
         {
             derive(&mut out, 3, &mut context, &mut parent).expect_err("should have failed");

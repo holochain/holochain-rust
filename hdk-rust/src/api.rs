@@ -8,9 +8,9 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    dna::capabilities::CapabilityCall,
     entry::Entry,
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
+    signature::Provenance,
     time::Timeout,
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
@@ -23,6 +23,8 @@ use holochain_wasm_utils::{
         get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
         link_entries::LinkEntriesArgs,
         send::{SendArgs, SendOptions},
+        sign::SignArgs,
+        verify_signature::VerifySignatureArgs,
         QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
@@ -43,31 +45,35 @@ use std::{
 //--------------------------------------------------------------------------------------------------
 
 lazy_static! {
-  /// The `name` property as taken from the DNA.
-  pub static ref DNA_NAME: &'static str = &GLOBALS.dna_name;
+    /// The `name` property as taken from the DNA.
+    pub static ref DNA_NAME: &'static str = &GLOBALS.dna_name;
 
-  /// The address of the DNA the Zome is embedded within.
-  /// This is often useful as a fixed value that is known by all
-  /// participants running the DNA.
-  pub static ref DNA_ADDRESS: &'static Address = &GLOBALS.dna_address;
+    /// The address of the DNA the Zome is embedded within.
+    /// This is often useful as a fixed value that is known by all
+    /// participants running the DNA.
+    pub static ref DNA_ADDRESS: &'static Address = &GLOBALS.dna_address;
 
-  /// The identity string used when the chain was first initialized.
-  pub static ref AGENT_ID_STR: &'static str = &GLOBALS.agent_id_str;
+    /// The identity string used when the chain was first initialized.
+    pub static ref AGENT_ID_STR: &'static str = &GLOBALS.agent_id_str;
 
-  /// The hash of your public key.
-  /// This is your node address on the DHT.
-  /// It can be used for node-to-node messaging with `send` and `receive` functions.
-  pub static ref AGENT_ADDRESS: &'static Address = &GLOBALS.agent_address;
+    /// The hash of your public key.
+    /// This is your node address on the DHT.
+    /// It can be used for node-to-node messaging with `send` and `receive` functions.
+    pub static ref AGENT_ADDRESS: &'static Address = &GLOBALS.agent_address;
 
-  /// The hash of the first identity entry on your chain (The second entry on your chain).
-  /// This is your peer's identity on the DHT.
-  pub static ref AGENT_INITIAL_HASH: &'static HashString = &GLOBALS.agent_initial_hash;
+    /// The hash of the first identity entry on your chain (The second entry on your chain).
+    /// This is your peer's identity on the DHT.
+    pub static ref AGENT_INITIAL_HASH: &'static HashString = &GLOBALS.agent_initial_hash;
 
-  #[doc(hidden)]
-  /// The hash of the most recent identity entry that has been committed to your chain.
-  /// Starts with the same value as AGENT_INITIAL_HASH.
-  /// After a call to `update_agent` it will have the value of the hash of the newly committed identity entry.
-  pub static ref AGENT_LATEST_HASH: &'static HashString = &GLOBALS.agent_latest_hash;
+    #[doc(hidden)]
+    /// The hash of the most recent identity entry that has been committed to your chain.
+    /// Starts with the same value as AGENT_INITIAL_HASH.
+    /// After a call to `update_agent` it will have the value of the hash of the newly committed identity entry.
+    pub static ref AGENT_LATEST_HASH: &'static HashString = &GLOBALS.agent_latest_hash;
+
+    /// The Address of the public token (if any)
+    pub static ref PUBLIC_TOKEN: &'static Address = &GLOBALS.public_token;
+
 }
 
 impl From<DNA_NAME> for JsonString {
@@ -106,6 +112,12 @@ impl From<AGENT_LATEST_HASH> for JsonString {
     }
 }
 
+impl From<PUBLIC_TOKEN> for JsonString {
+    fn from(public_token: PUBLIC_TOKEN) -> JsonString {
+        JsonString::from(Address::from(public_token.to_string()))
+    }
+}
+
 //--------------------------------------------------------------------------------------------------
 // SYSTEM CONSTS
 //--------------------------------------------------------------------------------------------------
@@ -113,7 +125,7 @@ impl From<AGENT_LATEST_HASH> for JsonString {
 // HC.GetMask
 bitflags! {
   pub struct GetEntryMask: u8 {
-    const ENTRY      = 1 << 0;
+    const ENTRY      = 1;
     const ENTRY_TYPE = 1 << 1;
     const SOURCES    = 1 << 2;
   }
@@ -201,6 +213,8 @@ pub enum Dispatch {
     Send,
     Sleep,
     RemoveLink,
+    Sign,
+    VerifySignature,
 }
 
 impl Dispatch {
@@ -208,14 +222,8 @@ impl Dispatch {
         &self,
         input: I,
     ) -> ZomeApiResult<O> {
-        let mut mem_stack = match unsafe { G_MEM_STACK } {
-            Some(mem_stack) => mem_stack,
-            None => {
-                return Err(ZomeApiError::Internal(
-                    "debug failed to load mem_stack".to_string(),
-                ));
-            }
-        };
+        let mut mem_stack = unsafe { G_MEM_STACK }
+            .ok_or_else(|| ZomeApiError::Internal("debug failed to load mem_stack".to_string()))?;
 
         let wasm_allocation = mem_stack.write_json(input)?;
 
@@ -238,28 +246,25 @@ impl Dispatch {
                 Dispatch::Send => hc_send,
                 Dispatch::Sleep => hc_sleep,
                 Dispatch::RemoveLink => hc_remove_link,
+                Dispatch::Sign => hc_sign,
+                Dispatch::VerifySignature => hc_verify_signature,
             })(encoded_input)
         };
 
-        let result: ZomeApiInternalResult = match load_ribosome_encoded_json(encoded_output) {
-            Ok(r) => r,
-            Err(e) => {
+        let result: ZomeApiInternalResult =
+            load_ribosome_encoded_json(encoded_output).or_else(|e| {
                 mem_stack.deallocate(wasm_allocation)?;
-                return Err(e.into());
-            }
-        };
+                Err(ZomeApiError::from(e))
+            })?;
 
         // Free result & input allocations
         mem_stack.deallocate(wasm_allocation)?;
 
         // Done
         if result.ok {
-            match JsonString::from(result.value).try_into() {
-                Ok(v) => Ok(v),
-                Err(_) => Err(ZomeApiError::from(String::from(
-                    "Failed to deserialize return value",
-                ))),
-            }
+            JsonString::from(result.value)
+                .try_into()
+                .map_err(|_| ZomeApiError::from(String::from("Failed to deserialize return value")))
         } else {
             Err(ZomeApiError::from(result.error))
         }
@@ -303,6 +308,10 @@ impl Dispatch {
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -323,7 +332,7 @@ impl Dispatch {
 ///
 /// fn handle_sum(num1: u32, num2: u32) -> JsonString {
 ///     let sum = num1 + num2;
-///     json!({"sum": format!("{}",sum)}).into()
+///     json!({"sum": sum.to_string()}).into()
 /// }
 ///
 /// define_zome! {
@@ -369,6 +378,7 @@ impl Dispatch {
 /// # use std::convert::TryInto;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
+/// # use hdk::holochain_core_types::cas::content::Address;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
@@ -383,6 +393,10 @@ impl Dispatch {
 /// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -412,7 +426,7 @@ impl Dispatch {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     hdk::call(hdk::THIS_INSTANCE, "summer", "test_token", "sum", call_input.into())
+///     hdk::call(hdk::THIS_INSTANCE, "summer", Address::from(hdk::PUBLIC_TOKEN.to_string()), "sum", call_input.into())
 /// }
 ///
 /// define_zome! {
@@ -440,14 +454,14 @@ impl Dispatch {
 pub fn call<S: Into<String>>(
     instance_handle: S,
     zome_name: S,
-    cap_token: S,
+    cap_token: Address,
     fn_name: S,
     fn_args: JsonString,
 ) -> ZomeApiResult<JsonString> {
     Dispatch::Call.with_input(ZomeFnCallArgs {
         instance_handle: instance_handle.into(),
         zome_name: zome_name.into(),
-        cap: Some(CapabilityCall::new(Address::from(cap_token.into()), None)),
+        cap_token,
         fn_name: fn_name.into(),
         fn_args: String::from(fn_args),
     })
@@ -734,6 +748,13 @@ pub fn remove_link<S: Into<String>>(
     })
 }
 
+/// sign ( priv_id_str, base64payload ) -> ( base64signature )
+pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
+    Dispatch::Sign.with_input(SignArgs {
+        payload: payload.into(),
+    })
+}
+
 /// NOT YET AVAILABLE
 // Returns a DNA property, which are defined by the DNA developer.
 // They are custom values that are defined in the DNA file
@@ -788,17 +809,14 @@ pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
 }
 
 /// NOT YET AVAILABLE
-pub fn sign<S: Into<String>>(_doc: S) -> ZomeApiResult<String> {
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// NOT YET AVAILABLE
 pub fn verify_signature<S: Into<String>>(
-    _signature: S,
-    _data: S,
-    _pub_key: S,
+    provenance: Provenance,
+    payload: S,
 ) -> ZomeApiResult<bool> {
-    Err(ZomeApiError::FunctionNotImplemented)
+    Dispatch::VerifySignature.with_input(VerifySignatureArgs {
+        provenance,
+        payload: payload.into(),
+    })
 }
 
 /// Commit an entry to your local source chain that "updates" a previous entry, meaning when getting
@@ -993,21 +1011,19 @@ pub fn query(
     limit: usize,
 ) -> ZomeApiResult<Vec<Address>> {
     // The hdk::query API always returns a simple Vec<Address>
-    match query_result(
+    query_result(
         entry_type_names,
         QueryArgsOptions {
-            start: start,
-            limit: limit,
+            start,
+            limit,
             headers: false,
             entries: false,
         },
-    ) {
-        Ok(result) => match result {
-            QueryResult::Addresses(addresses) => Ok(addresses),
-            _ => return Err(ZomeApiError::FunctionNotImplemented), // should never occur
-        },
-        Err(e) => Err(e),
-    }
+    )
+    .and_then(|result| match result {
+        QueryResult::Addresses(addresses) => Ok(addresses),
+        _ => Err(ZomeApiError::FunctionNotImplemented), // should never occur
+    })
 }
 
 pub fn query_result(
@@ -1057,6 +1073,10 @@ pub fn query_result(
 /// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -1148,4 +1168,111 @@ pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
     // internally returns RibosomeEncodedValue::Success which is a zero length allocation
     // return Ok(()) unconditionally instead of the "error" from success
     Ok(())
+}
+
+/// Add stubs for all core API functions when compiled in test mode.
+/// This makes it possible to actually build test executable from zome projects to run unit tests
+/// on zome functions (though: without being able to actually test integration with core - that is
+/// what we need holochain-nodejs for).
+///
+/// Without these stubs we would have unresolved references since the API functions are
+/// provided by the Ribosome runtime.
+///
+/// Attention:
+/// We need to make sure to only add these function stubs when compiling tests
+/// BUT NOT when building to a WASM binary to be run in a Holochain instance.
+/// Hence the `#[cfg(test)]` which is really important!
+#[cfg(test)]
+mod tests {
+    use crate::holochain_core_types::error::{RibosomeEncodedValue, RibosomeEncodingBits};
+
+    #[no_mangle]
+    pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
 }

@@ -78,8 +78,8 @@ impl WasmAllocation {
         }
     }
 
-    pub fn as_ribosome_encoding(&self) -> RibosomeEncodingBits {
-        RibosomeEncodedValue::from(self.clone()).into()
+    pub fn as_ribosome_encoding(self) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::from(self).into()
     }
 }
 

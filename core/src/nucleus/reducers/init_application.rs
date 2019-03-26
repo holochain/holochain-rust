@@ -5,12 +5,12 @@ use crate::{
 };
 use std::sync::Arc;
 
-/// Reduce InitApplication Action
+/// Reduce InitializeChain Action
 /// Switch status to failed if an initialization is tried for an
 /// already initialized, or initializing instance.
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
-pub fn reduce_init_application(
+pub fn reduce_initialize_chain(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
@@ -20,13 +20,13 @@ pub fn reduce_init_application(
             state.status =
                 NucleusStatus::InitializationFailed("Nucleus already initializing".to_string())
         }
-        NucleusStatus::Initialized => {
+        NucleusStatus::Initialized(_) => {
             state.status =
                 NucleusStatus::InitializationFailed("Nucleus already initialized".to_string())
         }
         NucleusStatus::New | NucleusStatus::InitializationFailed(_) => {
             let ia_action = action_wrapper.action();
-            let dna = unwrap_to!(ia_action => Action::InitApplication);
+            let dna = unwrap_to!(ia_action => Action::InitializeChain);
             // Update status
             state.status = NucleusStatus::Initializing;
             // Set DNA
@@ -53,7 +53,7 @@ pub mod tests {
     /// smoke test the init of a nucleus reduction
     fn can_reduce_initialize_action() {
         let dna = Dna::new();
-        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
+        let action_wrapper = ActionWrapper::new(Action::InitializeChain(dna.clone()));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);

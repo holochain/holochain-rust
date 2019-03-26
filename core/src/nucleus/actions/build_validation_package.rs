@@ -201,7 +201,9 @@ impl Future for ValidationPackageFuture {
                 None => Poll::Pending,
             }
         } else {
-            Poll::Pending
+            Poll::Ready(Err(HolochainError::ErrorGeneric(
+                "State not initialized".to_string(),
+            )))
         }
     }
 }
@@ -256,6 +258,7 @@ mod tests {
             &test_entry_package_chain_entries(),
             context.clone(),
         ));
+        println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
 
         let expected = ValidationPackage {

@@ -2,6 +2,7 @@ use crate::{
     action::ActionWrapper,
     instance::Observer,
     logger::Logger,
+    nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
     state::State,
@@ -18,9 +19,9 @@ use holochain_core_types::{
     },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
+    entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
-
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_lite::JsonRpc;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -57,9 +58,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn default_channel_buffer_size() -> usize {
-        100
-    }
+    pub const DEFAULT_CHANNEL_BUF_SIZE: usize = 100;
 
     // test_check_conductor_api() is used to inject a conductor_api with a working
     // mock of agent/sign to be used in tests.
@@ -104,7 +103,7 @@ impl Context {
             persister,
             state: None,
             action_channel: None,
-            signal_tx: signal_tx,
+            signal_tx,
             observer_channel: None,
             chain_storage,
             dht_storage,
@@ -156,10 +155,7 @@ impl Context {
     }
 
     pub fn state(&self) -> Option<RwLockReadGuard<State>> {
-        match self.state {
-            None => None,
-            Some(ref s) => Some(s.read().unwrap()),
-        }
+        self.state.as_ref().map(|s| s.read().unwrap())
     }
 
     pub fn get_dna(&self) -> Option<Dna> {
@@ -272,10 +268,39 @@ impl Context {
             JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
                 serde_json::to_string(&response.get_error().unwrap()).unwrap(),
             )),
-            _ => Err(HolochainError::ErrorGeneric(
-                "Bridge call failed".to_string(),
-            )),
+            _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
         }
+    }
+
+    /// returns the public capability token (if any)
+    pub fn get_public_token(&self) -> Option<Address> {
+        self.state().and_then(|state| {
+            let top = state.agent().top_chain_header()?;
+
+            // Get address of first Token Grant entry (return early if none)
+            let addr = state
+                .agent()
+                .chain_store()
+                .iter_type(&Some(top), &EntryType::CapTokenGrant)
+                .next()?
+                .entry_address()
+                .to_owned();
+
+            // Get CAS
+            let cas = state.agent().chain_store().content_storage();
+
+            // Get according Token Grant entry from CAS
+            let entry = get_entry_from_cas(&cas, &addr).ok()??;
+
+            // Make sure entry is a public grant and return it
+            if let Entry::CapTokenGrant(grant) = entry {
+                if grant.cap_type() == CapabilityType::Public {
+                    return Some(addr);
+                }
+            }
+
+            None
+        })
     }
 }
 
@@ -286,7 +311,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
     let agent_state = state.agent();
 
     let agent = await!(agent_state.get_agent(&context))?;
-    let agent_id = agent.key;
+    let agent_id = agent.pub_sign_key;
 
     let dna = state
         .nucleus()
@@ -320,7 +345,7 @@ pub mod tests {
 
     #[test]
     fn default_buffer_size_test() {
-        assert_eq!(Context::default_channel_buffer_size(), 100);
+        assert_eq!(Context::DEFAULT_CHANNEL_BUF_SIZE, 100);
     }
 
     #[test]

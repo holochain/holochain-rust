@@ -46,13 +46,14 @@ macro_rules! raw_ptr_ichar_immut {
         $name.as_ptr() as *const libc::c_char
     };
 }
+
 pub mod aead;
 pub mod error;
 pub mod hash;
 pub mod kdf;
 pub mod kx;
 pub mod pwhash;
-pub mod random;
 pub mod secbuf;
+pub mod secbuf_random;
+pub mod secbuf_util;
 pub mod sign;
-pub mod util;

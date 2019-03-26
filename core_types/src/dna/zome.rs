@@ -95,7 +95,7 @@ impl Zome {
         description: &str,
         config: &Config,
         entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
-        fn_declarations: &Vec<FnDeclaration>,
+        fn_declarations: &[FnDeclaration],
         traits: &BTreeMap<String, TraitFns>,
         code: &DnaWasm,
     ) -> Zome {
@@ -118,6 +118,7 @@ impl Zome {
             .collect()
     }
 
+    /// Add a function declaration to a Zome
     pub fn add_fn_declaration(
         &mut self,
         name: String,
@@ -215,5 +216,18 @@ pub mod tests {
 
         let expected = "[FnDeclaration { name: \"hello\", inputs: [], outputs: [FnParameter { parameter_type: \"String\", name: \"greeting\" }] }]";
         assert_eq!(expected, format!("{:?}", zome.fn_declarations),);
+    }
+
+    #[test]
+    fn test_zome_get_function() {
+        let mut zome = Zome::default();
+        zome.add_fn_declaration(String::from("test"), vec![], vec![]);
+        let result = zome.get_function("foo func");
+        assert!(result.is_none());
+        let fun = zome.get_function("test").unwrap();
+        assert_eq!(
+            format!("{:?}", fun),
+            "FnDeclaration { name: \"test\", inputs: [], outputs: [] }"
+        );
     }
 }

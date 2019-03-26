@@ -1,10 +1,15 @@
 use crate::holo_signing_service::request_signing_service;
 use base64;
-use holochain_core::state::State;
-use holochain_core_types::{
-    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityCall,
+use holochain_core::{
+    nucleus::{
+        actions::call_zome_function::make_cap_request_for_call,
+        ribosome::capabilities::CapabilityRequest,
+    },
+    state::State,
 };
-use holochain_dpki::keypair::{Keypair, SIGNATURESIZE};
+
+use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance};
+use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
@@ -26,6 +31,20 @@ use serde_json::map::Map;
 
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
+
+/// An identifier for an instance that is usable by UI in making calls to the conductor
+/// this type allows us to implement this identifier differently, i.e. as a DNA/agent ID pair, etc
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Hash, Eq)]
+pub struct PublicInstanceIdentifier(String);
+
+/// A mapper type between the public identifier and the conductor config identifier string
+pub type PublicInstanceMap = HashMap<PublicInstanceIdentifier, String>;
+
+impl From<String> for PublicInstanceIdentifier {
+    fn from(s: String) -> PublicInstanceIdentifier {
+        PublicInstanceIdentifier(s)
+    }
+}
 
 pub trait DispatchRpc {
     fn handler(self) -> IoHandler;
@@ -76,6 +95,7 @@ macro_rules! conductor_call {
 /// with spawn() to retrieve the IoHandler.
 pub struct ConductorApiBuilder {
     instances: InstanceMap,
+    instance_ids_map: PublicInstanceMap,
     instance_configs: HashMap<String, InstanceConfiguration>,
     io: Box<IoHandler>,
 }
@@ -84,6 +104,7 @@ impl ConductorApiBuilder {
     pub fn new() -> Self {
         ConductorApiBuilder {
             instances: HashMap::new(),
+            instance_ids_map: HashMap::new(),
             instance_configs: HashMap::new(),
             io: Box::new(IoHandler::new()),
         }
@@ -92,7 +113,71 @@ impl ConductorApiBuilder {
     /// Finish the building and retrieve the populated handler
     pub fn spawn(mut self) -> IoHandler {
         self.setup_info_api();
+        self.setup_call_api();
         *self.io
+    }
+
+    /// Adds a "call" method for making zome function calls
+    fn setup_call_api(&mut self) {
+        let instances = self.instances.clone();
+        let instance_ids_map = self.instance_ids_map.clone();
+        self.io.add_method("call", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let public_id_str = Self::get_as_string("instance_id", &params_map)?;
+            let id = instance_ids_map
+                .get(&PublicInstanceIdentifier::from(public_id_str))
+                .ok_or(jsonrpc_core::Error::invalid_params(
+                    "instance identifier invalid",
+                ))?;
+            let instance = instances
+                .get(id)
+                .ok_or(jsonrpc_core::Error::invalid_params("unknown instance"))?;
+            let hc_lock = instance.clone();
+            let hc_lock_inner = hc_lock.clone();
+            let mut hc = hc_lock_inner.write().unwrap();
+            let call_params = params_map.get("params");
+            let params_string = serde_json::to_string(&call_params)
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            let zome_name = Self::get_as_string("zome", &params_map)?;
+            let func_name = Self::get_as_string("function", &params_map)?;
+
+            let cap_request = {
+                let context = hc.context();
+                // Get the token from the parameters.  If not there assume public token.
+                let maybe_token = Self::get_as_string("token", &params_map);
+                let token = match maybe_token {
+                    Err(_err) => context.get_public_token().ok_or_else(|| {
+                        jsonrpc_core::Error::invalid_params("public token not found")
+                    })?,
+                    Ok(token) => Address::from(token),
+                };
+
+                let maybe_provenance = params_map.get("provenance");
+                match maybe_provenance {
+                    None => make_cap_request_for_call(
+                        context.clone(),
+                        token,
+                        &func_name,
+                        params_string.clone(),
+                    ),
+                    Some(json_provenance) => {
+                        let provenance: Provenance =
+                            serde_json::from_value(json_provenance.to_owned()).map_err(|e| {
+                                jsonrpc_core::Error::invalid_params(format!(
+                                    "invalid provenance: {}",
+                                    e
+                                ))
+                            })?;
+                        CapabilityRequest::new(token, provenance.source(), provenance.signature())
+                    }
+                }
+            };
+
+            let response = hc
+                .call(&zome_name, cap_request, &func_name, &params_string)
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            Ok(Value::String(response.to_string()))
+        });
     }
 
     /// Adds a "info/instances" method that returns a JSON object describing all registered
@@ -169,13 +254,24 @@ impl ConductorApiBuilder {
                             let mut hc = hc_lock_inner.write().unwrap();
                             let params_string = serde_json::to_string(&params)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                            let response = hc
-                                .call(
-                                    &zome_name,
-                                    Some(CapabilityCall::new(Address::from("fake_token"), None)),
+                            println!("ZOME CALLING USING instance/zome/function ROUTE HAS BEEN DEPRECATED.  USE call INSTEAD");
+                            let cap_request = {
+                                // TODO: get the token from the parameters.  If not there assume public token.
+                                // currently we are always getting the public token and signing it ourself
+                                let context = hc.context();
+                                let token = context.get_public_token().ok_or(
+                                    jsonrpc_core::Error::invalid_params("public token not found"),
+                                )?;
+                                make_cap_request_for_call(
+                                    context.clone(),
+                                    token,
                                     &func_name,
-                                    &params_string,
+                                    params_string.clone(),
                                 )
+                            };
+
+                            let response = hc
+                                .call(&zome_name, cap_request, &func_name, &params_string)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
                             Ok(Value::String(response.to_string()))
                         })
@@ -186,6 +282,10 @@ impl ConductorApiBuilder {
         };
         self.instances
             .insert(instance_name.clone(), instance.clone());
+        self.instance_ids_map.insert(
+            PublicInstanceIdentifier::from(instance_name.clone()),
+            instance_name.clone(),
+        );
         self
     }
 
@@ -263,6 +363,7 @@ impl ConductorApiBuilder {
     ///     Params:
     ///     * `id`: [string] internal handle/name of the newly created DNA config
     ///     * `path`: [string] local file path to DNA file
+    ///     * `expected_hash`: [string] (optional) the hash of this DNA. If this does not match the actual hash, installation will fail.
     ///
     ///  * `admin/dna/uninstall`
     ///     Uninstalls a DNA from the conductor config. Recursively also removes (and stops)
@@ -343,7 +444,7 @@ impl ConductorApiBuilder {
     ///     * `name`: Nickname of this agent configuration
     ///     * `public_address`: Public part of this agents key. Has to match the private key in the
     ///         given key file.
-    ///     * `key_file`: Local path to the file that holds this agent configuration's private key
+    ///     * `keystore_file`: Local path to the file that holds this agent configuration's private key
     ///
     ///  * `admin/agent/remove`
     ///     Remove an agent from the conductor config.
@@ -378,11 +479,24 @@ impl ConductorApiBuilder {
                 let id = Self::get_as_string("id", &params_map)?;
                 let path = Self::get_as_string("path", &params_map)?;
                 let copy = Self::get_as_bool("copy", &params_map).unwrap_or(false);
+                let expected_hash = match params_map.get("expected_hash") {
+                    Some(value) => Some(
+                        value
+                            .as_str()
+                            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                                "`{}` is not a valid json string",
+                                &value
+                            )))?
+                            .into(),
+                    ),
+                    None => None,
+                };
                 let properties = params_map.get("properties");
                 conductor_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
                     id.to_string(),
                     copy,
+                    expected_hash,
                     properties
                 ))?;
                 Ok(json!({"success": true}))
@@ -551,14 +665,18 @@ impl ConductorApiBuilder {
             let id = Self::get_as_string("id", &params_map)?;
             let name = Self::get_as_string("name", &params_map)?;
             let public_address = Self::get_as_string("public_address", &params_map)?;
-            let key_file = Self::get_as_string("key_file", &params_map)?;
+            let keystore_file = Self::get_as_string("keystore_file", &params_map)?;
+            let holo_remote_key = params_map
+                .get("holo_remote_key")
+                .map(|k| k.as_bool())
+                .unwrap_or_default();
 
             let agent = AgentConfiguration {
                 id,
                 name,
                 public_address,
-                key_file,
-                holo_remote_key: None,
+                keystore_file,
+                holo_remote_key,
             };
             conductor_call!(|c| c.add_agent(agent))?;
             Ok(json!({"success": true}))
@@ -619,13 +737,13 @@ impl ConductorApiBuilder {
     ///     Params:
     ///     - `id` ID used to refer to this bundle
     ///     - `root_dir` Directory to host on the HTTP server
-    ///     
+    ///
     /// - `admin/ui/uninstall`
     ///     Uninstall and remove from the config a UI bundle by ID. This will also stop and remove
     ///     any ui interfaces that are serving this bundle
     ///     Params:
     ///     - `id` ID of the UI bundle to remove
-    ///     
+    ///
     /// - `admin/ui/list`
     ///     List all the currently installed UI bundles
     ///
@@ -639,25 +757,25 @@ impl ConductorApiBuilder {
     ///     - `port` Port to host the HTTP server on
     ///     - `bundle` UI bundle to serve on this port
     ///     - `dna_interface` DNA interface this UI can connect to (Optional)
-    ///     
+    ///
     /// - `admin/ui_interface/remove`
     ///     Remove an interface by ID
     ///     Params:
     ///     - `id` ID of the UI interface to remove
-    ///     
+    ///
     /// - `admin/ui_interface/list`
     ///     List all the UI interfaces
-    ///     
+    ///
     /// - `admin/ui_interface/start`
     ///     Start a UI interface given an ID
     ///     Params:
     ///     - `id` ID of the UI interface to start
-    ///     
+    ///
     /// - `admin/ui_interface/stop`
     ///     Stop a UI interface given an ID
     ///     Params:
-    ///     - `id` ID of the UI interface to stop    
-    ///     
+    ///     - `id` ID of the UI interface to stop
+    ///
     pub fn with_admin_ui_functions(mut self) -> Self {
         self.io.add_method("admin/ui/install", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
@@ -746,26 +864,24 @@ impl ConductorApiBuilder {
         self
     }
 
-    pub fn with_agent_signature_callback(mut self, keypair: Arc<Mutex<Keypair>>) -> Self {
+    pub fn with_agent_signature_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
         self.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
             let mut message = SecBuf::with_insecure_from_string(payload.clone());
-            // Create signature
-            let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            keypair
+            let mut message_signature = keybundle
                 .lock()
                 .unwrap()
-                .sign(&mut message, &mut message_signed)
-                .unwrap();
+                .sign(&mut message)
+                .expect("Failed to sign with keybundle.");
 
-            let message_signed = message_signed.read_lock();
+            let message_signature = message_signature.read_lock();
             // Return as base64 encoded string
-            let signature = base64::encode(&**message_signed);
+            let signature = base64::encode(&**message_signature);
 
             Ok(json!({"payload": payload, "signature": signature}))
         });
@@ -817,7 +933,7 @@ pub mod tests {
         (conductor.config(), instances)
     }
 
-    fn create_call_str(method: &str, params: Option<&str>) -> String {
+    fn create_call_str(method: &str, params: Option<serde_json::Value>) -> String {
         json!({"jsonrpc": "2.0", "id": "0", "method": method, "params": params}).to_string()
     }
 
@@ -883,6 +999,137 @@ pub mod tests {
         assert_eq!(
             result,
             r#"[{"id":"test-instance-1","dna":"bridge-callee","agent":"test-agent-1"}]"#
+        );
+    }
+
+    #[test]
+    fn test_rpc_call_method() {
+        let (config, instances) = example_config_and_instances();
+        let handler = ConductorApiBuilder::new()
+            .with_instances(instances.clone())
+            .with_instance_configs(config.instances)
+            .spawn();
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str("call", None))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"expected params map"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str("call", Some(json!({}))))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"`instance_id` param not provided"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({"instance_id" : "bad instance id"})),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"instance identifier invalid"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({"instance_id" : "test-instance-1"})),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"`zome` param not provided"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({
+                    "instance_id" : "test-instance-1",
+                    "zome" : "greeter"
+                })),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"`function` param not provided"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({
+                    "instance_id" : "test-instance-1",
+                    "zome" : "greeter",
+                    "function" : "hello",
+                })),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({
+                    "instance_id" : "test-instance-1",
+                    "zome" : "greeter",
+                    "function" : "hello",
+                    "token" : "bogus token",
+                })),
+            ))
+            .expect("Invalid call to handler");
+
+        // This is equal to success because it did all the processing correctly before getting
+        // to calling the instance (which doesn't exist in this test setup)
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({
+                    "instance_id" : "test-instance-1",
+                    "zome" : "greeter",
+                    "function" : "hello",
+                    "provenance" : {"bad_provenance_shouldn't be an object!" : "bogus"},
+                })),
+            ))
+            .expect("Invalid call to handler");
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"invalid provenance: invalid type: map, expected tuple struct Provenance"},"id":"0"}"#
+        );
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str(
+                "call",
+                Some(json!({
+                    "instance_id" : "test-instance-1",
+                    "zome" : "greeter",
+                    "function" : "hello",
+                    "token" : "bogus token",
+                    "provenance" : ["some_source", "some_signature"],
+                })),
+            ))
+            .expect("Invalid call to handler");
+
+        // This is equal to success because it did all the processing correctly before getting
+        // to calling the instance (which doesn't exist in this test setup)
+        assert_eq!(
+            response_str,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
         );
     }
 }

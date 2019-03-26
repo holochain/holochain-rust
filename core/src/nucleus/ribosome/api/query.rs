@@ -57,7 +57,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// `**/`       Zero or more of any namespace component
 ///
 pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
     // deserialize args.
     let args_str = runtime.load_json_string_from_args(&args);
     let query = match QueryArgs::try_from(args_str) {
@@ -66,7 +66,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     };
 
     // Perform query
-    let agent = zome_call_data.context.state().unwrap().agent();
+    let agent = context.state().unwrap().agent();
     let top = agent
         .top_chain_header()
         .expect("Should have genesis entries.");
@@ -110,7 +110,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                 let maybe_entries: Result<Vec<(Address, Entry)>, HolochainError> = addresses
                     .iter()
                     .map(|address| // -> Result<Entry, HolochainError>
-                         Ok((address.to_owned(), get_entry_from_chain(&zome_call_data.context, address)?)))
+                         Ok((address.to_owned(), get_entry_from_chain(&context, address)?)))
                     .collect();
 
                 match maybe_entries {
@@ -122,7 +122,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                 let maybe_headers_with_entries: Result<Vec<(ChainHeader,Entry)>,HolochainError> = headers
                     .iter()
                     .map(|header| // -> Result<Entry, HolochainError>
-                         Ok((header.to_owned(), get_entry_from_chain(&zome_call_data.context,header.entry_address())?)))
+                         Ok((header.to_owned(), get_entry_from_chain(&context,header.entry_address())?)))
                     .collect();
                 match maybe_headers_with_entries {
                     Ok(headers_with_entries) => {
@@ -143,14 +143,7 @@ fn get_entry_from_chain(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Entry, HolochainError> {
-    let entry = match get_entry_from_agent(context, address)? {
-        Some(entry) => entry,
-        None => {
-            return Err(HolochainError::ErrorGeneric(format!(
-                "Failed to obtain Entry for Address {}",
-                address
-            )));
-        }
-    };
-    Ok(entry)
+    get_entry_from_agent(context, address)?.ok_or_else(|| {
+        HolochainError::ErrorGeneric(format!("Failed to obtain Entry for Address {}", address))
+    })
 }

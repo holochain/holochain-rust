@@ -1,5 +1,9 @@
 use crate::nucleus::{
-    ribosome::{api::ZomeApiFunction, memory::WasmPageManager, runtime::WasmCallData, Runtime},
+    ribosome::{
+        api::ZomeApiFunction,
+        memory::WasmPageManager,
+        runtime::{Runtime, WasmCallData},
+    },
     ZomeFnResult,
 };
 use holochain_core_types::{

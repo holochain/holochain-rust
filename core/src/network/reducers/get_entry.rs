@@ -4,7 +4,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::error::HolochainError;
-use holochain_net_connection::json_protocol::{FetchEntryData, JsonProtocol};
+use holochain_net::connection::json_protocol::{FetchEntryData, JsonProtocol};
 use std::sync::Arc;
 
 fn reduce_fetch_entry_inner(
@@ -203,7 +203,7 @@ mod tests {
         let entry_with_meta = EntryWithMeta {
             entry: entry.clone(),
             crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
+            maybe_link_update_delete: None,
         };
         let new_key = GetEntryKey {
             address: entry.address(),
@@ -234,7 +234,6 @@ mod tests {
         assert!(maybe_entry_with_meta_result.is_some());
         let maybe_entry_with_meta = maybe_entry_with_meta_result.unwrap().unwrap();
         let result = maybe_entry_with_meta.unwrap();
-        println!("{:?}", result);
         let entry_with_meta = result.unwrap();
         assert_eq!(entry_with_meta.entry, entry.clone());
 

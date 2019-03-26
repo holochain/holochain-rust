@@ -14,14 +14,15 @@ use hdk::{
 };
 use hdk::holochain_core_types::{
     cas::content::Address, entry::Entry, dna::entry_types::Sharing, error::HolochainError, json::JsonString,
+    validation::EntryValidationData
 };
 
-// see https://developer.holochain.org/api/0.0.4-alpha/hdk/ for info on using the hdk library
+// see https://developer.holochain.org/api/0.0.8-alpha/hdk/ for info on using the hdk library
 
 // This is a sample zome that defines an entry type "MyEntry" that can be committed to the
 // agent's chain via the exposed function create_my_entry
 
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 pub struct MyEntry {
     content: String,
 }
@@ -41,12 +42,11 @@ fn definition() -> ValidatingEntryType {
         name: "my_entry",
         description: "this is a same entry defintion",
         sharing: Sharing::Public,
-        native_type: MyEntry,
         validation_package: || {
             hdk::ValidationPackageDefinition::Entry
         },
 
-        validation: |_my_entry: MyEntry, _validation_data: hdk::ValidationData| {
+        validation: | _validation_data: hdk::EntryValidationData<MyEntry>| {
             Ok(())
         }
     )

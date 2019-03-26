@@ -7,3 +7,4 @@ native/artifacts.json
 dist/*
 bin-package/*
 build/*
+yarn-error.log

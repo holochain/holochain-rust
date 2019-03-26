@@ -10,7 +10,7 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
+    cas::content::{AddressableContent},
     hash::HashString,
 };
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
@@ -18,7 +18,7 @@ use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
-fn is_my_dna(my_dna_address: &Address, dna_address: &Address) -> bool {
+fn is_my_dna(my_dna_address: &String, dna_address: &String) -> bool {
     my_dna_address == dna_address
 }
 
@@ -47,7 +47,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
         .dna()
         .ok_or("is_my_dna() called without DNA".to_string())
         .unwrap();
-    let my_dna_address = dna.address();
+    let my_dna_address = dna.address().to_string();
     let context = context.clone();
     Box::new(move |message| {
         let message = message.unwrap();
@@ -61,7 +61,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
         }
         match maybe_json_msg.unwrap() {
             JsonProtocol::FailureResult(failure_data) => {
-                if !is_my_dna(&my_dna_address, &failure_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &failure_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -71,7 +71,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 // TODO: Handle the reception of a FailureResult
             }
             JsonProtocol::HandleStoreEntry(dht_entry_data) => {
-                if !is_my_dna(&my_dna_address, &dht_entry_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &dht_entry_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -81,7 +81,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_store_entry(dht_entry_data, context.clone())
             }
             JsonProtocol::HandleStoreMeta(dht_meta_data) => {
-                if !is_my_dna(&my_dna_address, &dht_meta_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &dht_meta_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -91,7 +91,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_store_meta(dht_meta_data, context.clone())
             }
             JsonProtocol::HandleFetchEntry(fetch_entry_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_entry_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &fetch_entry_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -101,7 +101,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_fetch_entry(fetch_entry_data, context.clone())
             }
             JsonProtocol::FetchEntryResult(fetch_result_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_result_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &fetch_result_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if I'm not the requester
@@ -115,7 +115,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_fetch_entry_result(fetch_result_data, context.clone())
             }
             JsonProtocol::HandleFetchMeta(fetch_meta_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_meta_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &fetch_meta_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -125,7 +125,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_fetch_meta(fetch_meta_data, context.clone())
             }
             JsonProtocol::FetchMetaResult(fetch_meta_result_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_meta_result_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &fetch_meta_result_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if I'm not the requester
@@ -159,7 +159,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 //}
             }
             JsonProtocol::HandleSendMessage(message_data) => {
-                if !is_my_dna(&my_dna_address, &message_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &message_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
@@ -173,7 +173,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_send_message(message_data, context.clone())
             }
             JsonProtocol::SendMessageResult(message_data) => {
-                if !is_my_dna(&my_dna_address, &message_data.dna_address) {
+                if !is_my_dna(&my_dna_address, &message_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me

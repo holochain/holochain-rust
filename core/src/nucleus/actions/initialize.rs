@@ -83,7 +83,7 @@ pub async fn initialize_chain(
     }
 
     // Commit DNA to chain
-    let dna_entry = Entry::Dna(dna.clone());
+    let dna_entry = Entry::Dna(Box::new(dna.clone()));
     let dna_commit = await!(commit_entry(dna_entry, None, &context_clone));
     if dna_commit.is_err() {
         dispatch_error_result(&context_clone, dna_commit.err().unwrap());

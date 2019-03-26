@@ -73,7 +73,7 @@ pub mod tests {
                 Default::default(),
             ),
         };
-        JsonString::from(entry_args).into_bytes()
+        JsonString::from(entry_args).to_bytes()
     }
 
     /// dummy get args from standard test entry
@@ -87,7 +87,7 @@ pub mod tests {
                 Default::default(),
             ),
         };
-        JsonString::from(entry_args).into_bytes()
+        JsonString::from(entry_args).to_bytes()
     }
 
     /// wat string that exports both get and a commit dispatches so we can test a round trip

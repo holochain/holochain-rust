@@ -125,11 +125,11 @@ pub(crate) mod tests {
             data[0] = 88;
             data[1] = 101;
         }
-        let mut encrypted_data = pw_enc(&mut data, &mut password, TEST_CONFIG).unwrap();
+        let encrypted_data = pw_enc(&mut data, &mut password, TEST_CONFIG).unwrap();
 
         let mut decrypted_data = SecBuf::with_insecure(32);
         pw_dec(
-            &mut encrypted_data,
+            &encrypted_data,
             &mut password,
             &mut decrypted_data,
             TEST_CONFIG,

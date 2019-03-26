@@ -841,7 +841,7 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
 /// metadata, which will be used by validation routes.
 pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
-    Dispatch::RemoveEntry.with_input(address.to_owned())
+    Dispatch::RemoveEntry.with_input(JsonString::from_json(&address.to_owned()))
 }
 
 /// Consumes three values; the address of an entry get get links from (the base), the tag of the links

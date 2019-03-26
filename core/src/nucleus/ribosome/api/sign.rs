@@ -1,4 +1,5 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use holochain_core_types::json::JsonString;
 use holochain_wasm_utils::api_serialization::sign::SignArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -32,7 +33,7 @@ pub fn invoke_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         sign_args.payload, context.agent_id, signature
     ));
 
-    runtime.store_result(signature)
+    runtime.store_result(signature.map(|v| JsonString::from_json(&v)))
 }
 
 #[cfg(test)]

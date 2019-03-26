@@ -30,7 +30,7 @@ pub fn receive(
     let call = CallbackFnCall::new(
         zome,
         &Callback::Receive.as_str().to_string(),
-        params.clone(),
+        JsonString::from_json(&params),
     );
 
     let dna = context.get_dna().expect("Callback called without DNA set!");

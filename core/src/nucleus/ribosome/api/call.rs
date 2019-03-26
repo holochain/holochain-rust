@@ -22,7 +22,7 @@ impl ZomeFnCall {
             context.clone(),
             args.cap_token,
             &args.fn_name,
-            args.fn_args.clone(),
+            JsonString::from_json(&args.fn_args),
         );
         ZomeFnCall::new(&args.zome_name, cap_call, &args.fn_name, args.fn_args)
     }

@@ -39,16 +39,14 @@ impl JsonString {
     pub fn into_bytes(&self) -> Vec<u8> {
         self.0.to_owned().into_bytes()
     }
-}
 
-impl From<String> for JsonString {
-    fn from(s: String) -> JsonString {
+    pub fn from_json(s: &str) -> JsonString {
         let cleaned = s
             // remove whitespace from both ends
             .trim()
             // remove null characters from both ends
             .trim_matches(char::from(0));
-        JsonString(cleaned.to_owned())
+        JsonString(cleaned.to_owned())        
     }
 }
 

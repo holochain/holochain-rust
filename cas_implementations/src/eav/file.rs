@@ -2,8 +2,8 @@ use glob::glob;
 use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
-        increment_key_till_no_collision, Attribute, EavFilter, EaviQuery, Entity,
-        EntityAttributeValueIndex, EntityAttributeValueStorage, IndexFilter, Value,
+         Attribute, EavFilter, EaviQuery, Entity,
+        EntityAttributeValueIndex, EntityAttributeValueStorage,Value,
     },
     error::{HcResult, HolochainError},
     json::JsonString,
@@ -15,6 +15,7 @@ use std::{
     io::prelude::*,
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
+    str::FromStr
 };
 use uuid::Uuid;
 
@@ -107,7 +108,7 @@ impl EavFileStorage {
             .join(&eav.index().to_string());
 
         create_dir_all(&path)?;
-
+      
         let address_path = path.join(eav.address().to_string());
 
         let full_path = address_path.with_extension("txt");
@@ -170,19 +171,47 @@ impl EntityAttributeValueStorage for EavFileStorage {
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
-        let fetched = self.fetch_eavi(&EaviQuery::new(
-            Some(eav.entity()).into(),
-            Some(eav.attribute()).into(),
-            Some(eav.value()).into(),
-            IndexFilter::LatestByAttribute,
-        ))?;
+        let wild_card = Path::new("*");
         let _guard = self.lock.write()?;
-        create_dir_all(self.dir_path.clone())?;
-        let new_eav = increment_key_till_no_collision(eav.clone(), fetched.clone())?;
-        self.write_to_file(ENTITY_DIR.to_string(), &new_eav)
-            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &new_eav))
-            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &new_eav))?;
-        Ok(Some(new_eav.clone()))
+        let holochain_error = HolochainError::ErrorGeneric("Could not obtain string".to_string());
+        let text_file = vec![eav.address().to_string(),"txt".to_string()].join(".");
+        let glob_path = self.dir_path.join(wild_card).join(wild_card).join(wild_card).join(Path::new(&text_file));
+        let find_glob_path = glob_path.to_str().ok_or(holochain_error)?;
+        glob(find_glob_path.clone()).unwrap();
+        let last_insert = glob(find_glob_path).map_err(|_|{
+            HolochainError::ErrorGeneric("Glob path invalid".to_string())
+        })?.
+        last();
+        
+        if let Some(last_path)  = last_insert
+        {
+            let last = last_path.map_err(|_|HolochainError::ErrorGeneric("Could not get last".to_string()))?;
+            let mut path_iter = last.iter();
+            let count = path_iter.clone().count();
+            let last_index = path_iter.nth(count-1).ok_or(HolochainError::ErrorGeneric("Could not get value".to_string()))?;
+            let parsed_index = i64::from_str(last_index.to_str().ok_or(HolochainError::ErrorGeneric("Could not parse".to_string()))?).map_err(|_|HolochainError::ErrorGeneric("Could not parse index for eav".to_string()))?;
+            let new_eav = if parsed_index == eav.index()
+            {
+                EntityAttributeValueIndex::new(&eav.entity(),&eav.attribute(),&eav.value())?
+            }
+            else 
+            {
+                eav.clone()
+            };
+                self.write_to_file(ENTITY_DIR.to_string(), &new_eav)
+                    .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &new_eav))
+                    .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &new_eav))?;
+                Ok(Some(new_eav.clone()))
+        }
+        else 
+        {
+            create_dir_all(self.dir_path.clone())?;
+            self.write_to_file(ENTITY_DIR.to_string(), &eav)
+            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &eav))
+            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &eav))?;
+            Ok(Some(eav.clone()))
+        }
+        
     }
 
     fn fetch_eavi(

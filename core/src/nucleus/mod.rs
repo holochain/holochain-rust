@@ -88,14 +88,14 @@ pub struct CallbackFnCall {
 }
 
 impl CallbackFnCall {
-    pub fn new<J: Into<JsonString>>(zome: &str, function: &str, parameters: J) -> Self {
+    pub fn new<J: Into<String>>(zome: &str, function: &str, parameters: J) -> Self {
         CallbackFnCall {
             // @TODO can we defer to the ActionWrapper id?
             // @see https://github.com/holochain/holochain-rust/issues/198
             id: snowflake::ProcessUniqueId::new(),
             zome_name: zome.to_string(),
             fn_name: function.to_string(),
-            parameters: parameters.into(),
+            parameters: JsonString::from_json(&parameters.into()),
         }
     }
 }

@@ -207,12 +207,10 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .collect();
 
         //still a O(n) structure because they are slipt in different places.
-        let (eavis,errors): (BTreeSet<_>,BTreeSet<_>) = entity_attribute_value_inter
+        let (eavis, errors): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
             .clone()
             .into_iter()
-            .map(|content| {
-                EntityAttributeValueIndex::try_from_content(&JsonString::from(content))
-            })
+            .map(|content| EntityAttributeValueIndex::try_from_content(&JsonString::from(content)))
             .partition(Result::is_ok);
         if !errors.is_empty() {
             // not all EAVs were converted
@@ -228,7 +226,10 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 Default::default(),
                 query.index().clone(),
             );
-            let it = eavis.iter().map(|e|e.clone().expect("no problem here since we have filtered out all bad conversions"));
+            let it = eavis.iter().map(|e| {
+                e.clone()
+                    .expect("no problem here since we have filtered out all bad conversions")
+            });
             let results = index_query.run(it);
             Ok(results)
         }

@@ -468,6 +468,11 @@ impl Conductor {
                     );
                 }
 
+                let keystore = self
+                    .get_keystore_for_agent(&instance_config.agent)
+                    .map_err(|err| format!("{}", err))?;
+                api_builder = api_builder.with_agent_keystore_functions(keystore);
+
                 // Bridges:
                 let id = instance_config.id.clone();
                 for bridge in config.bridge_dependencies(id.clone()) {

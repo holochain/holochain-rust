@@ -8,7 +8,8 @@ use regex::Regex;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, fmt, str::FromStr, time::Duration};
 
-/// Represents a timeout for an HDK function
+/// Represents a timeout for an HDK function. The usize interface defaults to ms.  Also convertible
+/// to/from a Duration at full precision.
 #[derive(Clone, Deserialize, Debug, Eq, PartialEq, Hash, Serialize, DefaultJson)]
 pub struct Timeout(usize);
 
@@ -39,6 +40,325 @@ impl From<&Timeout> for Duration {
 impl From<usize> for Timeout {
     fn from(millis: usize) -> Timeout {
         Timeout::new(millis)
+    }
+}
+
+/// A human-readable time Period, implemented as a time::Duration.  Conversion to/from and
+/// Serializable to/from readable form: "1w2d3h4.567s", at full Duration precision; values > 1s w/
+/// ms precision are formatted to fractional seconds w/ full precision, while values < 1s are
+/// formatted to integer ms, us or ns as appropriate.  Accepts y/yr/year, w/wk/week, d/dy/day,
+/// h/hr/hour, m/min/minute, s/sec/second, ms/millis/millisecond, u/μ/micros/microsecond,
+/// n/nanos/nanosecond, singlular or plural.  The humantime and parse_duration crates are complex,
+/// incompatible with each other, depend on crates and/or do not compile to WASM.
+#[derive(Clone, Eq, PartialEq, Hash, DefaultJson)]
+pub struct Period(Duration);
+
+/// Serialization w/ serde_json to/from String.  This means that a timestamp will be deserialized to
+/// an Period specification and validated, which may fail, returning a serde::de::Error.  Upon
+/// serialization, the canonicalized Period specification will be used.
+impl Serialize for Period {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'d> Deserialize<'d> for Period {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'d>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Period::from_str(&s).map_err(|e| de::Error::custom(e.to_string()))
+    }
+}
+
+// The humantime and parse_duration periods are incompatible; We choose compatibility w/ humantime's
+// 365.25 days/yr.  An actual year is about 365.242196 days =~= 31,556,925.7344 seconds.  The
+// official "leap year" calculation yields (365 + 1/4 - 1/100 + 1/400) * 86,400 == 31,556,952
+// seconds/yr.  We're dealing with human-scale time periods with this data structure, so use the
+// simpler definition of a year, to avoid seemingly-random remainders when years are involved.
+const YR: u64 = 31_557_600_u64;
+const WK: u64 = 604_800_u64;
+const DY: u64 = 86_400_u64;
+const HR: u64 = 3_600_u64;
+const MN: u64 = 60_u64;
+
+/// Outputs the human-readable form of the Period's Duration, eg. "1y2w3d4h56m7.89s", "456ms".
+/// Debug output of Period specifier instead of underlying Duration seconds.
+impl fmt::Debug for Period {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Period({})", self)
+    }
+}
+
+impl fmt::Display for Period {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let secs = self.0.as_secs();
+        let years = secs / YR;
+        if years > 0 {
+            write!(f, "{}y", years)?
+        }
+        let y_secs = secs % YR;
+        let weeks = y_secs / WK;
+        if weeks > 0 {
+            write!(f, "{}w", weeks)?
+        }
+        let w_secs = y_secs % WK;
+        let days = w_secs / DY;
+        if days > 0 {
+            write!(f, "{}d", days)?
+        }
+        let d_secs = w_secs % DY;
+        let hours = d_secs / HR;
+        if hours > 0 {
+            write!(f, "{}h", hours)?
+        }
+        let h_secs = d_secs % HR;
+        let minutes = h_secs / MN;
+        if minutes > 0 {
+            write!(f, "{}m", minutes)?
+        }
+        let s = h_secs % MN;
+        let nsecs = self.0.subsec_nanos();
+        let is_ns = (nsecs % 1000) > 0;
+        let is_us = (nsecs / 1_000 % 1_000) > 0;
+        let is_ms = (nsecs / 1_000_000) > 0;
+        if is_ms && (s > 0 || is_ns) {
+            // s+ms, or both ms and ns resolution data; default to fractional.
+            let ss = format!("{:0>9}", nsecs); // eg.       2100  --> "000002100"
+            let ss = ss.trim_end_matches('0'); // eg. "000002100" --> "0000021"
+            write!(f, "{}.{}s", s, ss)
+        } else if nsecs > 0 || s > 0 {
+            // Seconds, and/or sub-seconds remain; auto-scale to s/ms/us/ns, whichever is the finest
+            // precision that contains data.
+            if s > 0 {
+                write!(f, "{}s", s)?;
+            }
+            if is_ns {
+                write!(f, "{}ns", nsecs)
+            } else if is_us {
+                write!(f, "{}us", nsecs / 1_000)
+            } else if is_ms {
+                write!(f, "{}ms", nsecs / 1_000_000)
+            } else {
+                Ok(())
+            }
+        } else if nsecs == 0 && secs == 0 {
+            // A zero Duration
+            write!(f, "0s")
+        } else {
+            // There were either secs or nsecs output above; no further output required
+            Ok(())
+        }
+    }
+}
+
+impl FromStr for Period {
+    type Err = HolochainError;
+
+    fn from_str(period_str: &str) -> Result<Self, Self::Err> {
+        lazy_static! {
+            static ref PERIOD_RE: Regex = Regex::new(
+                r"(?xi) # whitespace-mode, case-insensitive
+                ^
+                (?:\s*(?P<y>\d+)\s*y((((ea)?r)s?)?)?)? # y|yr|yrs|year|years
+                (?:\s*(?P<w>\d+)\s*w((((ee)?k)s?)?)?)?
+                (?:\s*(?P<d>\d+)\s*d((((a )?y)s?)?)?)?
+                (?:\s*(?P<h>\d+)\s*h((((ou)?r)s?)?)?)?
+                (?:\s*(?P<m>\d+)\s*m((in(ute)?)s?)?)?  # m|min|minute|mins|minutes
+                (?:
+                  (?:\s* # seconds mantissa (optional) + fraction (required)
+                    (?P<s_man>\d+)?
+                    [.,](?P<s_fra>\d+)\s*             s((ec(ond)?)s?)?
+                  )?
+                | (?:
+                    (:?\s*(?P<s> \d+)\s*              s((ec(ond)?)s?)?)?
+                    (?:\s*(?P<ms>\d+)\s*(m|(milli))   s((ec(ond)?)s?)?)?
+                    (?:\s*(?P<us>\d+)\s*(u|μ|(micro)) s((ec(ond)?)s?)?)?
+                    (?:\s*(?P<ns>\d+)\s*(n|(nano))    s((ec(ond)?)s?)?)?
+                  )
+                )
+                \s*
+                $"
+            )
+            .unwrap();
+        }
+
+        Ok(Period({
+            PERIOD_RE.captures(period_str).map_or_else(
+                || {
+                    Err(HolochainError::ErrorGeneric(format!(
+                        "Failed to find Period specification in {:?}",
+                        period_str
+                    )))
+                },
+                |cap| {
+                    let seconds: u64 = YR
+                        * cap
+                            .name("y")
+                            .map_or("0", |y| y.as_str())
+                            .parse::<u64>()
+                            .map_err(|e| {
+                                HolochainError::ErrorGeneric(format!(
+                                    "Invalid year(s) in period {:?}: {:?}",
+                                    period_str, e
+                                ))
+                            })?
+                        + WK * cap
+                            .name("w")
+                            .map_or("0", |w| w.as_str())
+                            .parse::<u64>()
+                            .map_err(|e| {
+                                HolochainError::ErrorGeneric(format!(
+                                    "Invalid week(s) in period {:?}: {:?}",
+                                    period_str, e
+                                ))
+                            })?
+                        + DY * cap
+                            .name("d")
+                            .map_or("0", |d| d.as_str())
+                            .parse::<u64>()
+                            .map_err(|e| {
+                                HolochainError::ErrorGeneric(format!(
+                                    "Invalid days(s) in period {:?}: {:?}",
+                                    period_str, e
+                                ))
+                            })?
+                        + HR * cap
+                            .name("h")
+                            .map_or("0", |w| w.as_str())
+                            .parse::<u64>()
+                            .map_err(|e| {
+                                HolochainError::ErrorGeneric(format!(
+                                    "Invalid hour(s) in period {:?}: {:?}",
+                                    period_str, e
+                                ))
+                            })?
+                        + MN * cap
+                            .name("m")
+                            .map_or("0", |m| m.as_str())
+                            .parse::<u64>()
+                            .map_err(|e| {
+                                HolochainError::ErrorGeneric(format!(
+                                    "Invalid minute(s) in period {:?}: {:?}",
+                                    period_str, e
+                                ))
+                            })?
+                        + cap
+                            .name("s")
+                            .map_or_else(
+                                || cap.name("s_man").map_or("0", |s_man| s_man.as_str()),
+                                |s| s.as_str(),
+                            )
+                            .parse::<u64>()
+                            .map_err(|e| {
+                                HolochainError::ErrorGeneric(format!(
+                                    "Invalid seconds in period {:?}: {:?}",
+                                    period_str, e
+                                ))
+                            })?;
+                    let nanos: u64 = cap
+                        .name("s_fra")
+                        .map_or(Ok(0_u64), |s_fra| {
+                            // ".5" ==> "500000000" (truncate/fill to exactly 9 width)
+                            format!("{:0<9.9}", s_fra.as_str()).parse::<u64>()
+                        })
+                        .map_err(|e| {
+                            HolochainError::ErrorGeneric(format!(
+                                "Invalid fractional seconds in period {:?}: {:?}",
+                                period_str, e
+                            ))
+                        })?
+                        + 1_000_000
+                            * cap
+                                .name("ms")
+                                .map_or("0", |ms| ms.as_str())
+                                .parse::<u64>()
+                                .map_err(|e| {
+                                    HolochainError::ErrorGeneric(format!(
+                                        "Invalid milliseconds in period {:?}: {:?}",
+                                        period_str, e
+                                    ))
+                                })?
+                        + 1_000
+                            * cap
+                                .name("us")
+                                .map_or("0", |us| us.as_str())
+                                .parse::<u64>()
+                                .map_err(|e| {
+                                    HolochainError::ErrorGeneric(format!(
+                                        "Invalid microseconds in period {:?}: {:?}",
+                                        period_str, e
+                                    ))
+                                })?
+                        + cap
+                            .name("ns")
+                            .map_or("0", |ns| ns.as_str())
+                            .parse::<u64>()
+                            .map_err(|e| {
+                                HolochainError::ErrorGeneric(format!(
+                                    "Invalid nanoseconds in period {:?}: {:?}",
+                                    period_str, e
+                                ))
+                            })?;
+                    // Migrate nanoseconds beyond 1s into seconds, to support specifying larger
+                    // Periods in terms of ms, us or ns.
+                    Ok(Duration::new(
+                        seconds + nanos / 1_000_000_000,
+                        (nanos % 1_000_000_000) as u32,
+                    ))
+                },
+            )?
+        }))
+    }
+}
+
+impl TryFrom<String> for Period {
+    type Error = HolochainError;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        Period::from_str(&s)
+    }
+}
+
+impl TryFrom<&str> for Period {
+    type Error = HolochainError;
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        Period::from_str(s)
+    }
+}
+
+// Conversion of a Period into a Timeout, in ms.  This is an infallible conversion; if the number of
+// ms. exceeds the capacity of a usize, default to the maximum possible duration.  Since usize is
+// likely a 64-bit value, this will essentially be forever.  Even on 32-bit systems, it will be a
+// long duration, but not forever: 2^32/1000 =~= 2^22 seconds =~= 48 days.  We don't want to use
+// Duration.as_millis(), because its u128 return type are not supported by WASM.
+impl From<Period> for Timeout {
+    fn from(p: Period) -> Self {
+        Timeout(if p.0.as_secs() as usize >= usize::max_value() / 1000 {
+            // The # of seconds overflows the ms-capacity of a usize.  Eg. say a usize could only
+            // contain 123,000 ms.; if the number of seconds was >= 123, then 123 * 1000 + 999 ==
+            // 123,999 would overflow the capacity, while 122,999 wouldn't.
+            usize::max_value()
+        } else {
+            // We know that secs + 1000 * millis won't overflow a usize.
+            (p.0.as_secs() as usize) * 1000 + (p.0.subsec_millis() as usize)
+        })
+    }
+}
+
+// Conversion of Period into Duration
+impl From<Period> for Duration {
+    fn from(p: Period) -> Self {
+        p.0
+    }
+}
+
+impl From<&Period> for Duration {
+    fn from(p: &Period) -> Self {
+        p.0.to_owned()
     }
 }
 
@@ -180,7 +500,7 @@ impl FromStr for Iso8601 {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         lazy_static! {
             static ref ISO8601_RE: Regex = Regex::new(
-                r"(?x)
+                r"(?x)         # whitespace-mode
                 ^
                 \s*
                 (?P<Y>\d{4})
@@ -292,7 +612,7 @@ impl FromStr for Iso8601 {
 //     2018-10-11 03:23:38+00:00
 //
 pub fn test_iso_8601() -> Iso8601 {
-    Iso8601::from(1539228218) // 2018-10-11T03:23:38+00:00
+    Iso8601::from(1_539_228_218) // 2018-10-11T03:23:38+00:00
 }
 
 #[cfg(test)]
@@ -300,6 +620,161 @@ pub mod tests {
     use super::*;
     use serde_json;
     use std::convert::TryInto;
+
+    #[test]
+    fn test_period_basic() {
+        assert_eq!(format!("{}", Period(Duration::from_millis(0))), "0s");
+        assert_eq!(format!("{}", Period(Duration::from_millis(123))), "123ms");
+        assert_eq!(format!("{}", Period(Duration::from_nanos(120000))), "120us");
+        assert_eq!(format!("{}", Period(Duration::from_nanos(100))), "100ns");
+        assert_eq!(
+            format!("{}", Period(Duration::from_millis(1000 * 604_800 + 1123))),
+            "1w1.123s"
+        );
+        assert_eq!(
+            format!("{}", Period(Duration::from_millis(1000 * 604_800 + 123))),
+            "1w123ms"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                Period(Duration::from_nanos(
+                    (2 * YR + 3 * WK + 4 * DY + 5 * HR + 6 * MN + 7) * 1_000_000_000_u64
+                        + 123456789
+                ))
+            ),
+            "2y3w4d5h6m7.123456789s"
+        );
+
+        // Errors; cannot mix fractional seconds and ms/ns/us
+        assert_eq!(
+            Period::from_str("1.23s456ns"),
+            Err(HolochainError::ErrorGeneric(
+                "Failed to find Period specification in \"1.23s456ns\"".to_string()
+            ))
+        );
+        // time scale ordering cannot be mixed up
+        assert_eq!(
+            Period::from_str("456ns123us"),
+            Err(HolochainError::ErrorGeneric(
+                "Failed to find Period specification in \"456ns123us\"".to_string()
+            ))
+        );
+
+        // Canonicalization, incl. case insensitivity, long names, plurals
+        vec![
+            // Elide empty smaller timespans
+            ("1 week", Duration::new(1 * WK, 0), "1w"),
+            // 1y == 364.25d
+            (
+                "123w456ns",
+                Duration::new(123 * WK, 456_u32),
+                "2y18w4d12h456ns",
+            ),
+            (
+                "2y18w4d12h0.000003456s",
+                Duration::new(123 * WK, 3456_u32),
+                "2y18w4d12h3456ns",
+            ),
+            (
+                "2 years 18 Weeks 4 dy 12 hrs 0.000456 SEC",
+                Duration::new(123 * WK, 456_u32 * 1000),
+                "2y18w4d12h456us",
+            ),
+            // Truncation beyond ns precision
+            (
+                "2y18w4d12h0.00000345678s",
+                Duration::new(123 * WK, 3456_u32),
+                "2y18w4d12h3456ns",
+            ),
+            // ms/us/ns beyond 1s supported
+            (
+                "1y60000ms25μs100nanos",
+                Duration::new(1 * YR + 60, 25100_u32),
+                "1y1m25100ns",
+            ),
+            // sub-second ranging into appropriate ms/us/ns.
+            (
+                "600millisecond25usecs100nanos",
+                Duration::new(0, 600025100_u32),
+                "0.6000251s",
+            ),
+            ("25us100ns", Duration::new(0, 25100_u32), "25100ns"),
+            (".0000251s", Duration::new(0, 25100_u32), "25100ns"),
+            (".000025s", Duration::new(0, 25000_u32), "25us"),
+            (
+                "1y2w3d4h5m6s7ms8us9ns",
+                Duration::new(YR + 2 * WK + 3 * DY + 4 * HR + 5 * MN + 6, 7008009),
+                "1y2w3d4h5m6.007008009s",
+            ),
+            (
+                "1yr2wk3dy4hr5min6sec7msec8μsec9nsec",
+                Duration::new(YR + 2 * WK + 3 * DY + 4 * HR + 5 * MN + 6, 7008009),
+                "1y2w3d4h5m6.007008009s",
+            ),
+            (
+                "1year2week3day4hour5minute6second7msecond8usecond9nsecond",
+                Duration::new(YR + 2 * WK + 3 * DY + 4 * HR + 5 * MN + 6, 7008009),
+                "1y2w3d4h5m6.007008009s",
+            ),
+            (
+                "1years2weeks3days4hours5minutes6seconds7milliseconds8microseconds9nanoseconds",
+                Duration::new(YR + 2 * WK + 3 * DY + 4 * HR + 5 * MN + 6, 7008009),
+                "1y2w3d4h5m6.007008009s",
+            ),
+            (
+                "1 yrs 2 wks 3 dys 4 hrs 5 mins 6 secs 7 millis 8 micros 9 nanos ",
+                Duration::new(YR + 2 * WK + 3 * DY + 4 * HR + 5 * MN + 6, 7008009),
+                "1y2w3d4h5m6.007008009s",
+            ),
+        ]
+        .iter()
+        .map(|(ps, dur, ps_out)| {
+            let period = Period::try_from(*ps)?;
+
+            // Conversion into/from Duration
+            let duration: Duration = period.clone().into();
+            assert_eq!(duration, *dur);
+            let period_from_duration = Period(duration);
+            assert_eq!(period_from_duration, period);
+
+            // Debug formatting just encapsulates canonicalized human-readable period specifier
+            assert_eq!(format!("{:?}", period), format!("Period({})", ps_out));
+
+            // Basic to/from String serialization
+            assert_eq!(period, Period(*dur));
+            assert_eq!(&period.to_string(), ps_out);
+
+            // JSON serialization via serde_json
+            let serialized = serde_json::to_string(&period)?;
+            assert_eq!(serialized.to_string(), format!("\"{}\"", ps_out));
+            let deserialized: Period = serde_json::from_str(&serialized.to_string())?;
+            assert_eq!(&deserialized.to_string(), ps_out);
+
+            // JSON serialization via JsonSring
+            let period_ser = JsonString::from(&period);
+            assert_eq!(period_ser.to_string(), format!("\"{}\"", ps_out));
+            let period_des = Period::try_from(period_ser);
+            assert!(period_des.is_ok());
+            assert_eq!(&period_des.unwrap().to_string(), ps_out);
+
+            // JSON round-tripping w/o serde or intermediates
+            assert_eq!(Period::try_from(JsonString::from(period))?, Period(*dur));
+
+            Ok(())
+        })
+        .collect::<Result<(()), HolochainError>>()
+        .map_err(|e| panic!("Unexpected failure of checked Period::try_from: {:?}", e))
+        .unwrap();
+    }
+
+    #[test]
+    fn test_period_timeout() {
+        let period = Period::try_from("1w1.23s").unwrap();
+
+        // We can specify timeouts in human-readable Periods
+        assert_eq!(Timeout::from(period), Timeout(1230 + 1000 * WK as usize));
+    }
 
     #[test]
     fn test_iso_8601_basic() {

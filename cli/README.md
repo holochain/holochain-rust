@@ -39,7 +39,7 @@ $ cargo install hc --force --git https://github.com/holochain/holochain-rust.git
 
 To install the latest released version of the Holochain conductor, run the following command in a terminal
 ```shell
-$ cargo install hc --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.6-alpha
+$ cargo install hc --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.8-alpha
 ```
 
 The command line tools are now available in your command line using the `hc` command.
@@ -82,7 +82,7 @@ To read about `hc test`, used for running tests over your source code, see [http
 
 ### hc run: Running your application
 
-To read about `hc run`, used for spinning up a quick developement version of your app with an HTTP or Websocket interface, that you can connect to from a UI, or any client, see [https://developer.holochain.org/guide/latest/development_conductor.html](https://developer.holochain.org/guide/latest/development_conductor.html).
+To read about `hc run`, used for spinning up a quick development version of your app with an HTTP or Websocket interface, that you can connect to from a UI, or any client, see [https://developer.holochain.org/guide/latest/development_conductor.html](https://developer.holochain.org/guide/latest/development_conductor.html).
 
 ### hc keygen: Create agent key pair
 

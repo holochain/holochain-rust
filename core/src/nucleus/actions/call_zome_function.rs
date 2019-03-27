@@ -18,8 +18,7 @@ use holochain_core_types::{
     json::JsonString,
     signature::{Provenance, Signature},
 };
-use holochain_dpki::utils;
-use holochain_sodium::secbuf::SecBuf;
+use holochain_dpki::utils::Verify;
 
 use base64;
 use futures::{
@@ -96,7 +95,7 @@ pub async fn call_zome_function(
         // Have Ribosome spin up DNA and call the zome function
         let call_result = ribosome::run_dna(
             wasm.code,
-            Some(zome_call_clone.clone().parameters.into_bytes()),
+            Some(zome_call_clone.clone().parameters.to_bytes()),
             WasmCallData::new_zome_call(
                 context_clone.clone(),
                 dna_name.clone(),
@@ -203,20 +202,7 @@ pub fn verify_call_sig<J: Into<JsonString>>(
     parameters: J,
 ) -> bool {
     let what_was_signed = encode_call_data_for_signing(function, parameters);
-    let mut data = SecBuf::with_insecure_from_string(what_was_signed);
-    let sig_string = String::from(provenance.signature());
-    let signature_bytes: Vec<u8> = base64::decode(&sig_string).expect("should decode");
-    let mut signature_buf = SecBuf::with_insecure(signature_bytes.len());
-    signature_buf
-        .write(0, signature_bytes.as_slice())
-        .expect("SecBuf must be writeable");
-
-    utils::verify(
-        provenance.source().to_string(),
-        &mut data,
-        &mut signature_buf,
-    )
-    .unwrap()
+    provenance.verify(what_was_signed).unwrap()
 }
 
 /// creates a capability request for a zome call by signing the function name and parameters

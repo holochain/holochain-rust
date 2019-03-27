@@ -78,7 +78,7 @@ impl IpcNetWorker {
             .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string()))
             .collect();
         // create a new IpcNetWorker witch spawns the n3h process
-        IpcNetWorker::priv_new_with_spawn(
+        return IpcNetWorker::priv_new_with_spawn(
             handler,
             spawn_config["cmd"].as_str().unwrap().to_string(),
             spawn_config["args"]
@@ -91,7 +91,7 @@ impl IpcNetWorker {
             enduser_config,
             env,
             bootstrap_nodes,
-        )
+        );
     }
 
     /// Constructor with IpcNetWorker instance pointing to a process that we spawn here
@@ -105,7 +105,7 @@ impl IpcNetWorker {
         bootstrap_nodes: Vec<String>,
     ) -> NetResult<Self> {
         // Spawn a process with given `cmd` that we will have an IPC connection with
-        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, config, env, true)?;
+        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, config, env, 2000, false)?;
         // Get spawn result info
         let ipc_binding = spawn_result.ipc_binding;
         let kill = spawn_result.kill;

@@ -1,1 +1,3 @@
-- [ ] I have added a summary of my changes to the changelog
+Please check one of the following, relating to the [CHANGELOG](https://github.com/holochain/holochain-rust/blob/develop/CHANGELOG.md), which should be updated if relevant
+- [ ] my changes to the code affect some exposed aspect of the developer experience, and I have added an item to relevant 'Added, Fixed, Changed, Removed, Deprecated, or Security' heading under the 'Unreleased' heading of the CHANGELOG, with the format `- summary of change [PR#1234](https://github.com/holochain/holochain-rust/pull/1234)`
+- [ ] my changes to the code do not affect any exposed aspect of the developer experience

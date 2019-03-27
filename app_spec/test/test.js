@@ -16,6 +16,52 @@ const scenario1 = new Scenario([instanceAlice], { debugLog: true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
+scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
+    const message = "Hello everyone! Time to start the secret meeting";
+
+    const SignResult = bob.call("converse", "sign_message", { key_id:"", message: message });
+
+    t.deepEqual(SignResult, { Ok: 'YVystBCmNEJGW/91bg43cUUybbtiElex0B+QWYy+PlB+nE3W8TThYGE4QzuUexvzkGqSutV04dSN8oyZxTJiBg==' });
+
+    const provenance = [bob.agentId, SignResult.Ok];
+
+    const VerificationResult = alice.call("converse", "verify_message", { message, provenance });
+
+    t.deepEqual(VerificationResult, { Ok: true });
+})
+
+scenario2.runTape('secrets', async (t, { alice }) => {
+    const ListResult = alice.call("converse", "list_secrets", { });
+    // it should start out with the genesis made seed
+    t.deepEqual(ListResult, { Ok: [ 'app_root_seed', 'primary_keybundle:enc_key', 'primary_keybundle:sign_key', 'root_seed' ]  });
+
+    const AddSeedResult = alice.call("converse", "add_seed", {src_id: "app_root_seed", dst_id: "app_seed:1", index: 1 });
+    t.ok(AddSeedResult)
+
+    const AddKeyResult = alice.call("converse", "add_key", {src_id: "app_seed:1", dst_id: "app_key:1" });
+    t.ok(AddKeyResult)
+
+    const ListResult1 = alice.call("converse", "list_secrets", { });
+    // it should start out with the genesis made seed
+    t.deepEqual(ListResult1, { Ok: [ 'app_key:1', 'app_root_seed', 'app_seed:1', 'primary_keybundle:enc_key', 'primary_keybundle:sign_key', 'root_seed' ]  });
+
+    const message = "Hello everyone! Time to start the secret meeting";
+
+    const SignResult = alice.call("converse", "sign_message", { key_id:"app_key:1", message: message });
+    t.ok(SignResult)
+
+    // use the public key returned by add key as the provenance source
+    const provenance = [AddKeyResult.Ok, SignResult.Ok];
+    const VerificationResult = alice.call("converse", "verify_message", { message, provenance });
+    t.deepEqual(VerificationResult, { Ok: true });
+
+    // use the agent key as the provenance source (which should fail)
+    const provenance1 = [alice.agentId, SignResult.Ok];
+    const VerificationResult1 = alice.call("converse", "verify_message", { message, provenance: provenance1 });
+    t.deepEqual(VerificationResult1, { Ok: false });
+
+})
+
 scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
@@ -131,17 +177,39 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
 
 
   //delete should fail
-  const failedDelete = await alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
-  console.log("failed delete " + failedDelete);
-  t.deepEqual(failedDelete.Err,{ Internal: 'Unspecified' });
+  const failedDelete = await bob.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
+  t.deepEqual(failedDelete.Err, { Internal: 'Unspecified' });
 
   //get initial entry
-  const GetInitialParamsResult = alice.call("blog", "get_initial_post", { post_address: createResult.Ok })
-  t.deepEqual(JSON.parse(GetInitialParamsResult.Ok.App[1]),{content: "Hello Holo world 321", date_created: "now" });
-  
-  const entryWithOptionsGet = { post_address: createResult.Ok}
-  const entryWithOptionsGetResult = alice.call("blog", "get_post_with_options", entryWithOptionsGet);
-  t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.result.All.items[0].entry.App[1]),{content: "Hello Holo world 321", date_created: "now" })
+  const GetInitialParamsResult = bob.call("blog", "get_initial_post", { post_address: createResult.Ok })
+  t.deepEqual(JSON.parse(GetInitialParamsResult.Ok.App[1]), { content: "Hello Holo world 321", date_created: "now" });
+
+  const entryWithOptionsGet = { post_address: createResult.Ok }
+  const entryWithOptionsGetResult = bob.call("blog", "get_post_with_options", entryWithOptionsGet);
+  t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.result.All.items[0].entry.App[1]), { content: "Hello Holo world 321", date_created: "now" })
+})
+
+scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
+  //update entry does not exist
+  const updateParams = { post_address: "1234", new_content: "Hello Holo V2" }
+  const UpdateResult = await bob.callSync("blog", "update_post", updateParams)
+
+  t.deepEqual(UpdateResult.Err, { Internal: 'failed to update post' });
+
+  const content = "Hello Holo world 321"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+
+  //commit create_post
+  const createResult = await alice.callSync("blog", "create_post", params)
+
+  t.ok(createResult.Ok)
+
+  const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo world 321" }
+  const UpdateResultV2 = await bob.callSync("blog", "update_post", updateParamsV2)
+  t.deepEqual(JSON.parse(UpdateResultV2.Err.Internal).kind.ValidationFailed, "Trying to modify with same data");
+
+
 })
 
 scenario2.runTape('update_post', async (t, { alice, bob }) => {
@@ -152,98 +220,110 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
   //commit version 1
   const createResult = await alice.callSync("blog", "create_post", params)
   t.ok(createResult.Ok)
-   //get v1
+
+  //get v1
   const updatedPostV1 = alice.call("blog", "get_post", { post_address: createResult.Ok })
   const UpdatePostV1Content = { content: "Hello Holo world 123", date_created: "now" };
   t.ok(updatedPostV1.Ok)
-  t.deepEqual(JSON.parse(updatedPostV1.Ok.App[1]),UpdatePostV1Content)
+  t.deepEqual(JSON.parse(updatedPostV1.Ok.App[1]), UpdatePostV1Content)
 
   //update to version 2
   const updatePostContentV2 = { content: "Hello Holo V2", date_created: "now" };
   const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo V2" }
   const UpdateResultV2 = await bob.callSync("blog", "update_post", updateParamsV2)
   t.ok(UpdateResultV2.Ok)
+  t.notOk(UpdateResultV2.Err)
 
   //get v2 using initial adderss
   const updatedPostv2Initial = alice.call("blog", "get_post", { post_address: createResult.Ok })
   t.ok(updatedPostv2Initial.Ok)
+  t.notOk(updatedPostv2Initial.Err)
   t.deepEqual(JSON.parse(updatedPostv2Initial.Ok.App[1]), updatePostContentV2)
 
   //get v2 latest address
   const updatedPostv2Latest = alice.call("blog", "get_post", { post_address: UpdateResultV2.Ok })
   t.ok(updatedPostv2Latest.Ok)
+  t.notOk(updatedPostv2Latest.Err)
   t.deepEqual(JSON.parse(updatedPostv2Latest.Ok.App[1]), updatePostContentV2)
 
 
-   //get v1 using initial address
-   const GetInitialPostV1Initial = alice.call("blog", "get_initial_post", { post_address: createResult.Ok })
-   t.ok(GetInitialPostV1Initial.Ok)
-   t.deepEqual(JSON.parse(GetInitialPostV1Initial.Ok.App[1]), { content: "Hello Holo world 123", date_created: "now" })
- 
-   //get v2 latest address
-   const GetInitialPostV2Latest = alice.call("blog", "get_initial_post", { post_address: UpdateResultV2.Ok })
-   t.ok(GetInitialPostV2Latest.Ok)
-   t.deepEqual(JSON.parse(GetInitialPostV2Latest.Ok.App[1]),updatePostContentV2)
+  //get v1 using initial address
+  const GetInitialPostV1Initial = alice.call("blog", "get_initial_post", { post_address: createResult.Ok })
+  t.ok(GetInitialPostV1Initial.Ok)
+  t.notOk(GetInitialPostV1Initial.Err)
+  t.deepEqual(JSON.parse(GetInitialPostV1Initial.Ok.App[1]), { content: "Hello Holo world 123", date_created: "now" })
+
+  //get v2 latest address
+  const GetInitialPostV2Latest = alice.call("blog", "get_initial_post", { post_address: UpdateResultV2.Ok })
+  t.ok(GetInitialPostV2Latest.Ok)
+  t.notOk(GetInitialPostV2Latest.Err)
+  t.deepEqual(JSON.parse(GetInitialPostV2Latest.Ok.App[1]), updatePostContentV2)
 
   //update to version 3
   const UpdatePostV3Content = { content: "Hello Holo V3", date_created: "now" };
   const updateParamsV3 = { post_address: createResult.Ok, new_content: "Hello Holo V3" }
-  const UpdateResultV3 = await bob.callSync("blog", "update_post", updateParamsV3)
+  const UpdateResultV3 = await alice.callSync("blog", "update_post", updateParamsV3)
   t.ok(UpdateResultV3.Ok)
+  t.notOk(UpdateResultV3.Err)
 
   //get v3 using initial adderss
   const updatedPostV3Initial = alice.call("blog", "get_post", { post_address: createResult.Ok })
   t.ok(updatedPostV3Initial.Ok)
+  t.notOk(updatedPostV3Initial.Err)
   t.deepEqual(JSON.parse(updatedPostV3Initial.Ok.App[1]), UpdatePostV3Content)
 
   //get v3 using address of v2
   const updatedPostV3Latest = alice.call("blog", "get_post", { post_address: UpdateResultV2.Ok })
   t.ok(updatedPostV3Latest.Ok)
+  t.notOk(updatedPostV3Latest.Err)
   t.deepEqual(JSON.parse(updatedPostV3Latest.Ok.App[1]), UpdatePostV3Content)
 
-   //update to version 4
-   const updatePostV4Content = { content: "Hello Holo V4", date_created: "now" };
-   const updateParamsV4 = { post_address: createResult.Ok, new_content: "Hello Holo V4" }
-   const UpdateResultV4 = await bob.callSync("blog", "update_post", updateParamsV4)
-   t.ok(UpdateResultV4.Ok)
-   
+  //update to version 4
+  const updatePostV4Content = { content: "Hello Holo V4", date_created: "now" };
+  const updateParamsV4 = { post_address: createResult.Ok, new_content: "Hello Holo V4" }
+  const UpdateResultV4 = await alice.callSync("blog", "update_post", updateParamsV4)
+  t.notOk(UpdateResultV4.Err)
+  t.ok(UpdateResultV4.Ok)
+
   //get history entry v4
-   const entryHistoryV4Params = { post_address: UpdateResultV4.Ok}
-   const entryHistoryV4 =  alice.call("blog", "get_history_post", entryHistoryV4Params)
-   t.deepEqual(entryHistoryV4.Ok.items.length,1);
-   t.deepEqual(JSON.parse(entryHistoryV4.Ok.items[0].entry.App[1]),updatePostV4Content);
-   t.deepEqual(entryHistoryV4.Ok.items[0].meta.address,UpdateResultV4.Ok);
-   t.deepEqual(entryHistoryV4.Ok.items[0].meta.crud_status,"live");
+  const entryHistoryV4Params = { post_address: UpdateResultV4.Ok }
+  const entryHistoryV4 = alice.call("blog", "get_history_post", entryHistoryV4Params)
+  t.ok(UpdateResultV4.Ok)
+  t.notOk(UpdateResultV4.Err)
+  t.deepEqual(entryHistoryV4.Ok.items.length, 1);
+  t.deepEqual(JSON.parse(entryHistoryV4.Ok.items[0].entry.App[1]), updatePostV4Content);
+  t.deepEqual(entryHistoryV4.Ok.items[0].meta.address, UpdateResultV4.Ok);
+  t.deepEqual(entryHistoryV4.Ok.items[0].meta.crud_status, "live");
 
-    //get history entry all
-     const entryHistoryAllParams = { post_address: createResult.Ok}
-     const entryHistoryAll = alice.call("blog", "get_history_post", entryHistoryAllParams)
+  //get history entry all
+  const entryHistoryAllParams = { post_address: createResult.Ok }
+  const entryHistoryAll = alice.call("blog", "get_history_post", entryHistoryAllParams)
 
-     t.deepEqual(entryHistoryAll.Ok.items.length,4);
-     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[0].entry.App[1]),{ content: "Hello Holo world 123", date_created: "now" });
-     t.deepEqual(entryHistoryAll.Ok.items[0].meta.address,createResult.Ok);
-     t.deepEqual(entryHistoryAll.Ok.items[0].meta.crud_status,"modified");
-     t.deepEqual(entryHistoryAll.Ok.crud_links[createResult.Ok],UpdateResultV2.Ok)
+  t.deepEqual(entryHistoryAll.Ok.items.length, 4);
+  t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[0].entry.App[1]), { content: "Hello Holo world 123", date_created: "now" });
+  t.deepEqual(entryHistoryAll.Ok.items[0].meta.address, createResult.Ok);
+  t.deepEqual(entryHistoryAll.Ok.items[0].meta.crud_status, "modified");
+  t.deepEqual(entryHistoryAll.Ok.crud_links[createResult.Ok], UpdateResultV2.Ok)
 
-     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[1].entry.App[1]),updatePostContentV2);
-     t.deepEqual(entryHistoryAll.Ok.items[1].meta.address,UpdateResultV2.Ok);
-     t.deepEqual(entryHistoryAll.Ok.items[1].meta.crud_status,"modified");
-     t.deepEqual(entryHistoryAll.Ok.crud_links[UpdateResultV2.Ok],UpdateResultV3.Ok)
+  t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[1].entry.App[1]), updatePostContentV2);
+  t.deepEqual(entryHistoryAll.Ok.items[1].meta.address, UpdateResultV2.Ok);
+  t.deepEqual(entryHistoryAll.Ok.items[1].meta.crud_status, "modified");
+  t.deepEqual(entryHistoryAll.Ok.crud_links[UpdateResultV2.Ok], UpdateResultV3.Ok)
 
-     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[2].entry.App[1]),UpdatePostV3Content);
-     t.deepEqual(entryHistoryAll.Ok.items[2].meta.address,UpdateResultV3.Ok);
-     t.deepEqual(entryHistoryAll.Ok.items[2].meta.crud_status,"modified");
-     t.deepEqual(entryHistoryAll.Ok.crud_links[UpdateResultV3.Ok],UpdateResultV4.Ok)
+  t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[2].entry.App[1]), UpdatePostV3Content);
+  t.deepEqual(entryHistoryAll.Ok.items[2].meta.address, UpdateResultV3.Ok);
+  t.deepEqual(entryHistoryAll.Ok.items[2].meta.crud_status, "modified");
+  t.deepEqual(entryHistoryAll.Ok.crud_links[UpdateResultV3.Ok], UpdateResultV4.Ok)
 
-     t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[3].entry.App[1]),updatePostV4Content);
-     t.deepEqual(entryHistoryAll.Ok.items[3].meta.address,UpdateResultV4.Ok);
-     t.deepEqual(entryHistoryAll.Ok.items[3].meta.crud_status,"live");
-     t.notOk(entryHistoryAll.Ok.crud_links[UpdateResultV4.Ok])
+  t.deepEqual(JSON.parse(entryHistoryAll.Ok.items[3].entry.App[1]), updatePostV4Content);
+  t.deepEqual(entryHistoryAll.Ok.items[3].meta.address, UpdateResultV4.Ok);
+  t.deepEqual(entryHistoryAll.Ok.items[3].meta.crud_status, "live");
+  t.notOk(entryHistoryAll.Ok.crud_links[UpdateResultV4.Ok])
 
-     const entryWithOptionsGet = { post_address: createResult.Ok}
-     const entryWithOptionsGetResult = alice.call("blog", "get_post_with_options_latest", entryWithOptionsGet);
+  const entryWithOptionsGet = { post_address: createResult.Ok }
+  const entryWithOptionsGetResult = alice.call("blog", "get_post_with_options_latest", entryWithOptionsGet);
 
-     t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.App[1]),updatePostV4Content);  
+  t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.App[1]), updatePostV4Content);
 })
 
 
@@ -255,7 +335,7 @@ scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
   //commit version 1
   const createResult = await alice.callSync("blog", "create_post", params)
   t.ok(createResult.Ok)
-   //get entry
+  //get entry
   const updatedPostV1 = alice.call("blog", "get_post", { post_address: createResult.Ok })
   t.ok(updatedPostV1.Ok)
   t.deepEqual(JSON.parse(updatedPostV1.Ok.App[1]), { content: "Hello Holo world 123", date_created: "now" })
@@ -272,8 +352,7 @@ scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
 
   //failed delete
   const failedDelete = await alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
-  console.log("failed delete " + failedDelete);
-  t.deepEqual(failedDelete.Err,{ Internal: 'Unspecified' });
+  t.deepEqual(failedDelete.Err, { Internal: 'Unspecified' });
 })
 
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {

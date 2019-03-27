@@ -1,4 +1,9 @@
-use crate::{key_bundle::KeyBundle, password_encryption::*, SEED_SIZE};
+use crate::{
+    key_bundle::KeyBundle,
+    password_encryption::*,
+    utils::{generate_derived_seed_buf, SeedContext},
+    AGENT_ID_CTX, SEED_SIZE,
+};
 use bip39::{Language, Mnemonic};
 use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_sodium::{kdf, pwhash, secbuf::SecBuf};
@@ -26,12 +31,12 @@ pub enum SeedType {
     Root,
     /// Revocation seed
     Revocation,
-    /// Device specific seed
+    /// Device seed
     Device,
     /// Derivative of a Device seed with a PIN
     DevicePin,
-    /// Application specific seed
-    Application,
+    /// DNA specific seed
+    DNA,
     /// Seed for a one use only key
     OneShot,
     /// Seed used only in tests or mocks
@@ -73,18 +78,14 @@ impl Seed {
 
     // TODO: We need some way of zeroing the internal memory used by mnemonic
     pub fn new_with_mnemonic(phrase: String, seed_type: SeedType) -> HcResult<Self> {
-        let maybe_mnemonic = Mnemonic::from_phrase(phrase, Language::English);
-        if let Err(e) = maybe_mnemonic {
-            return Err(HolochainError::ErrorGeneric(format!(
-                "Error loading Mnemonic phrase: {}",
-                e
-            )));
-        }
-        let mnemonic = maybe_mnemonic.unwrap();
-        let entropy = mnemonic.entropy().clone();
+        let mnemonic = Mnemonic::from_phrase(phrase, Language::English).map_err(|e| {
+            HolochainError::ErrorGeneric(format!("Error loading Mnemonic phrase: {}", e))
+        })?;
+
+        let entropy = mnemonic.entropy().to_owned();
         assert_eq!(entropy.len(), SEED_SIZE);
         let mut seed_buf = SecBuf::with_secure(entropy.len());
-        seed_buf.from_array(entropy)?;
+        seed_buf.from_array(entropy.as_slice())?;
         // Done
         Ok(Seed {
             kind: seed_type,
@@ -153,19 +154,14 @@ impl RootSeed {
     }
 
     /// Generate Device Seed
-    /// @param {number} index - device index, must not be zero
-    pub fn generate_device_seed(&mut self, index: u64) -> HcResult<DeviceSeed> {
-        if index == 0 {
-            return Err(HolochainError::ErrorGeneric("Invalid index".to_string()));
-        }
-        let mut device_seed_buf = SecBuf::with_secure(SEED_SIZE);
-        let mut context = SecBuf::with_insecure_from_string("HCDEVICE".to_string());
-        kdf::derive(
-            &mut device_seed_buf,
-            index,
-            &mut context,
-            &mut self.inner.buf,
-        )?;
+    /// @param {number} index - the index number in this seed group, must not be zero
+    pub fn generate_device_seed(
+        &mut self,
+        seed_context: &SeedContext,
+        index: u64,
+    ) -> HcResult<DeviceSeed> {
+        let device_seed_buf =
+            generate_derived_seed_buf(&mut self.inner.buf, seed_context, index, SEED_SIZE)?;
         Ok(DeviceSeed::new(device_seed_buf))
     }
 }
@@ -236,21 +232,19 @@ impl DevicePinSeed {
         }
     }
 
-    /// generate an application KeyBundle given an index based on this seed
-    /// @param {number} index - device index, must not be zero
+    /// generate a DNA agent KeyBundle given an index based on this seed
+    /// @param {number} index - must not be zero
     /// @return {KeyBundle} Resulting keybundle
-    pub fn generate_application_key(&mut self, index: u64) -> HcResult<KeyBundle> {
+    pub fn generate_dna_key(&mut self, index: u64) -> HcResult<KeyBundle> {
         if index == 0 {
             return Err(HolochainError::ErrorGeneric("Invalid index".to_string()));
         }
-        let mut app_seed_buf = SecBuf::with_secure(SEED_SIZE);
-        let mut context = SecBuf::with_insecure_from_string("HCAPPLIC".to_string());
-        kdf::derive(&mut app_seed_buf, index, &mut context, &mut self.inner.buf)?;
+        let mut dna_seed_buf = SecBuf::with_secure(SEED_SIZE);
+        let context = SeedContext::new(AGENT_ID_CTX);
+        let mut context = context.to_sec_buf();
+        kdf::derive(&mut dna_seed_buf, index, &mut context, &mut self.inner.buf)?;
 
-        Ok(KeyBundle::new_from_seed_buf(
-            &mut app_seed_buf,
-            SeedType::Application,
-        )?)
+        Ok(KeyBundle::new_from_seed_buf(&mut dna_seed_buf)?)
     }
 }
 
@@ -261,17 +255,15 @@ impl DevicePinSeed {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::password_encryption::tests::TEST_CONFIG;
-
-    fn test_generate_random_seed(s: usize) -> SecBuf {
-        let mut seed_buf = SecBuf::with_insecure(s);
-        seed_buf.randomize();
-        seed_buf
-    }
+    use crate::{
+        password_encryption::tests::TEST_CONFIG,
+        utils::{self, generate_random_seed_buf},
+        SEED_SIZE,
+    };
 
     #[test]
     fn it_should_create_a_new_seed() {
-        let seed_buf = test_generate_random_seed(32);
+        let seed_buf = utils::generate_random_seed_buf();
         let seed_type = SeedType::OneShot;
         let seed = Seed::new_with_initializer(SeedInitializer::Seed(seed_buf), seed_type.clone());
         assert_eq!(seed_type, seed.kind);
@@ -279,21 +271,22 @@ mod tests {
 
     #[test]
     fn it_should_create_a_new_root_seed() {
-        let seed_buf = test_generate_random_seed(32);
+        let seed_buf = generate_random_seed_buf();
         let root_seed = RootSeed::new(seed_buf);
         assert_eq!(SeedType::Root, root_seed.seed().kind);
     }
 
     #[test]
     fn it_should_create_a_device_seed() {
-        let seed_buf = test_generate_random_seed(32);
+        let seed_buf = generate_random_seed_buf();
+        let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
 
-        let mut device_seed_3 = root_seed.generate_device_seed(3).unwrap();
+        let mut device_seed_3 = root_seed.generate_device_seed(&context, 3).unwrap();
         assert_eq!(SeedType::Device, device_seed_3.seed().kind);
-        let _ = root_seed.generate_device_seed(0).unwrap_err();
-        let mut device_seed_1 = root_seed.generate_device_seed(1).unwrap();
-        let mut device_seed_3_b = root_seed.generate_device_seed(3).unwrap();
+        let _ = root_seed.generate_device_seed(&context, 0).unwrap_err();
+        let mut device_seed_1 = root_seed.generate_device_seed(&context, 1).unwrap();
+        let mut device_seed_3_b = root_seed.generate_device_seed(&context, 3).unwrap();
         assert!(
             device_seed_3
                 .seed_mut()
@@ -312,11 +305,12 @@ mod tests {
 
     #[test]
     fn it_should_create_a_device_pin_seed() {
-        let seed_buf = test_generate_random_seed(32);
-        let mut pin = test_generate_random_seed(32);
+        let seed_buf = generate_random_seed_buf();
+        let mut pin = generate_random_seed_buf();
 
+        let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
-        let mut device_seed = root_seed.generate_device_seed(3).unwrap();
+        let mut device_seed = root_seed.generate_device_seed(&context, 3).unwrap();
         let device_pin_seed = device_seed
             .generate_device_pin_seed(&mut pin, TEST_CONFIG)
             .unwrap();
@@ -324,31 +318,31 @@ mod tests {
     }
 
     #[test]
-    fn it_should_create_app_key_from_root_seed() {
-        let seed_buf = test_generate_random_seed(32);
-        let mut pin = test_generate_random_seed(32);
+    fn it_should_create_dna_key_from_root_seed() {
+        let seed_buf = generate_random_seed_buf();
+        let mut pin = generate_random_seed_buf();
 
+        let context = SeedContext::new(*b"HCDEVICE");
         let mut rs = RootSeed::new(seed_buf);
-        let mut ds = rs.generate_device_seed(3).unwrap();
+        let mut ds = rs.generate_device_seed(&context, 3).unwrap();
         let mut dps = ds.generate_device_pin_seed(&mut pin, TEST_CONFIG).unwrap();
-        let mut keybundle_5 = dps.generate_application_key(5).unwrap();
+        let mut keybundle_5 = dps.generate_dna_key(5).unwrap();
 
         assert_eq!(crate::SIGNATURE_SIZE, keybundle_5.sign_keys.private.len());
         assert_eq!(SEED_SIZE, keybundle_5.enc_keys.private.len());
-        assert_eq!(SeedType::Application, keybundle_5.seed_type);
 
-        let res = dps.generate_application_key(0);
+        let res = dps.generate_dna_key(0);
         assert!(res.is_err());
 
-        let mut keybundle_1 = dps.generate_application_key(1).unwrap();
-        let mut keybundle_5_b = dps.generate_application_key(5).unwrap();
+        let mut keybundle_1 = dps.generate_dna_key(1).unwrap();
+        let mut keybundle_5_b = dps.generate_dna_key(5).unwrap();
         assert!(keybundle_5.is_same(&mut keybundle_5_b));
         assert!(!keybundle_5.is_same(&mut keybundle_1));
     }
 
     #[test]
     fn it_should_roundtrip_mnemonic() {
-        let mut seed_buf = SecBuf::with_insecure(32);
+        let mut seed_buf = SecBuf::with_insecure(SEED_SIZE);
         {
             let mut seed_buf = seed_buf.write_lock();
             seed_buf[0] = 12;
@@ -367,7 +361,7 @@ mod tests {
     #[test]
     fn it_should_change_into_typed() {
         // Root
-        let seed_buf = test_generate_random_seed(32);
+        let seed_buf = generate_random_seed_buf();
         let seed = Seed::new(seed_buf, SeedType::Root);
         let unknown_seed = seed.into_typed().unwrap();
         let _ = match unknown_seed {
@@ -375,7 +369,7 @@ mod tests {
             _ => unreachable!(),
         };
         // Device
-        let seed_buf = test_generate_random_seed(32);
+        let seed_buf = generate_random_seed_buf();
         let seed = Seed::new(seed_buf, SeedType::Device);
         let unknown_seed = seed.into_typed().unwrap();
         let _ = match unknown_seed {
@@ -383,7 +377,7 @@ mod tests {
             _ => unreachable!(),
         };
         // DevicePin
-        let seed_buf = test_generate_random_seed(32);
+        let seed_buf = generate_random_seed_buf();
         let seed = Seed::new(seed_buf, SeedType::DevicePin);
         let unknown_seed = seed.into_typed().unwrap();
         let _ = match unknown_seed {
@@ -391,8 +385,8 @@ mod tests {
             _ => unreachable!(),
         };
         // App
-        let seed_buf = test_generate_random_seed(32);
-        let seed = Seed::new(seed_buf, SeedType::Application);
+        let seed_buf = generate_random_seed_buf();
+        let seed = Seed::new(seed_buf, SeedType::DNA);
         let maybe_seed = seed.into_typed();
         assert!(maybe_seed.is_err());
     }

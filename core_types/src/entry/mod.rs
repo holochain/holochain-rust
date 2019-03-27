@@ -25,7 +25,6 @@ use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;
 use std::convert::TryFrom;
-use validation::EntryAction;
 
 pub type AppEntryValue = JsonString;
 
@@ -65,7 +64,7 @@ pub enum Entry {
     #[serde(deserialize_with = "deserialize_app_entry")]
     App(AppEntryType, AppEntryValue),
 
-    Dna(Dna),
+    Dna(Box<Dna>),
     AgentId(AgentId),
     Deletion(DeletionEntry),
     LinkAdd(LinkData),
@@ -87,24 +86,6 @@ impl TryFrom<JsonString> for Option<Entry> {
     type Error = HolochainError;
     fn try_from(j: JsonString) -> Result<Self, Self::Error> {
         default_try_from_json(j)
-    }
-}
-
-pub fn entry_to_entry_action(
-    entry: &Entry,
-    maybe_link_update_delete: Option<Address>,
-) -> Result<EntryAction, HolochainError> {
-    match entry {
-        Entry::App(_, _) => Ok(maybe_link_update_delete
-            .map(|_| EntryAction::Modify)
-            .unwrap_or(EntryAction::Create)),
-        Entry::Deletion(_) => Ok(EntryAction::Delete),
-        Entry::LinkAdd(_) => Ok(EntryAction::Create),
-        Entry::LinkRemove(_) => Ok(EntryAction::Delete),
-        Entry::CapTokenGrant(_) => Ok(EntryAction::Create),
-        _ => Err(HolochainError::NotImplemented(
-            "Not implemented".to_string(),
-        )),
     }
 }
 
@@ -156,6 +137,12 @@ pub struct EntryWithMeta {
     pub maybe_link_update_delete: Option<Address>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct EntryWithMetaAndHeader {
+    pub entry_with_meta: EntryWithMeta,
+    pub headers: Vec<ChainHeader>,
+}
+
 /// dummy entry value
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_value() -> JsonString {
@@ -191,6 +178,10 @@ pub fn test_sys_entry_value() -> AgentId {
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry() -> Entry {
     Entry::App(test_app_entry_type(), test_entry_value())
+}
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_entry_with_value(value: &'static str) -> Entry {
+    Entry::App(test_app_entry_type(), JsonString::from(value))
 }
 
 pub fn expected_serialized_entry_content() -> JsonString {
@@ -240,7 +231,7 @@ pub fn test_sys_entry_address() -> Address {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_unpublishable_entry() -> Entry {
-    Entry::Dna(Dna::new())
+    Entry::Dna(Box::new(Dna::new()))
 }
 
 #[cfg(test)]

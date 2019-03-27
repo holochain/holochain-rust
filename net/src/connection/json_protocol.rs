@@ -611,7 +611,7 @@ mod tests {
             requester_agent_id: "test_to".to_string(),
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
-            entry_content: json!("hello"),
+            entry_content: json!("hello")
         }));
     }
     #[test]
@@ -622,7 +622,7 @@ mod tests {
             requester_agent_id: "test_to".to_string(),
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
-            entry_content: json!("hello"),
+            entry_content: json!("hello")
         }));
     }
     #[test]

@@ -20,7 +20,14 @@ use holochain_core_types::{
 };
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
-use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryFrom,
+    env,
+    fs::File,
+    io::prelude::*,
+    path::PathBuf,
+};
 use toml;
 
 /// Main conductor configuration struct
@@ -97,10 +104,38 @@ impl Default for LoggerConfiguration {
     }
 }
 
+/// Check for duplicate items in a list of strings
+fn detect_dupes<'a, I: Iterator<Item = &'a String>>(
+    name: &'static str,
+    items: I,
+) -> Result<(), String> {
+    let mut set = HashSet::<&str>::new();
+    let mut dupes = Vec::<String>::new();
+    for item in items {
+        if !set.insert(item) {
+            dupes.push(item.to_string())
+        }
+    }
+    if !dupes.is_empty() {
+        Err(format!(
+            "Duplicate {} IDs detected: {}",
+            name,
+            dupes.join(", ")
+        ))
+    } else {
+        Ok(())
+    }
+}
+
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.
-    pub fn check_consistency(&self) -> Result<(), String> {
+    pub fn check_consistency<'a>(&'a self) -> Result<(), String> {
+        detect_dupes("agent", self.agents.iter().map(|c| &c.id))?;
+        detect_dupes("dna", self.dnas.iter().map(|c| &c.id))?;
+        detect_dupes("instance", self.instances.iter().map(|c| &c.id))?;
+        detect_dupes("interface", self.interfaces.iter().map(|c| &c.id))?;
+
         for ref instance in self.instances.iter() {
             self.agent_by_id(&instance.agent).is_some().ok_or_else(|| {
                 format!(
@@ -309,8 +344,8 @@ pub struct AgentConfiguration {
     pub id: String,
     pub name: String,
     pub public_address: Base32,
-    pub key_file: String,
-    /// If set to true conductor will ignore key_file and instead use the remote signer
+    pub keystore_file: String,
+    /// If set to true conductor will ignore keystore_file and instead use the remote signer
     /// accessible through signing_service_uri to request signatures.
     pub holo_remote_key: Option<bool>,
 }
@@ -556,13 +591,13 @@ pub mod tests {
     id = "bob"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file="file/to/serialize"
+    keystore_file = "file/to/serialize"
 
     [[agents]]
     id="alex"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file="another/file"
+    keystore_file = "another/file"
 
     [[dnas]]
     id="dna"
@@ -576,7 +611,7 @@ pub mod tests {
                 .get(0)
                 .expect("expected at least 2 agents")
                 .clone()
-                .key_file,
+                .keystore_file,
             "file/to/serialize"
         );
         assert_eq!(
@@ -592,7 +627,7 @@ pub mod tests {
     id="agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file="whatever"
+    keystore_file = "whatever"
 
     [[dnas]]
     id = "app spec rust"
@@ -613,7 +648,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -700,7 +735,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -785,7 +820,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -815,7 +850,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -858,7 +893,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -901,7 +936,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
@@ -1079,7 +1114,7 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"

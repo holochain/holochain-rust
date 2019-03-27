@@ -214,46 +214,6 @@ jobs:
   # test builds are ordered from slowest to quickest
   # this allows us to keep walltimes down
   include:
-    - name: "windows hdk"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=hdk
-       - TEST_PATH=hdk-rust/
-       - WASM_PATH=wasm-test/
-
-    - name: "windows wasm_utils"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_wasm_utils
-       - TEST_PATH=wasm_utils/
-       - WASM_PATH=wasm-test/integration-test/
-
-    - name: "windows conductor_api"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_conductor_api
-       - TEST_PATH=conductor_api/
-       - WASM_PATH=wasm-test/
-       - WASM_PATH_2=test-bridge-caller/
-
-    - name: "windows core"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core
-       - TEST_PATH=core/
-       - WASM_PATH=src/nucleus/actions/wasm-test/
-
-    - name: "windows holochain_cas_implementations"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_cas_implementations
-       - TEST_PATH=cas_implementations/
-
-    - name: "windows dna_c_binding"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_dna_c_binding
-       - TEST_PATH=dna_c_binding/
 
     - name: "windows holochain_sodium"
       <<: *_windows_template_lite
@@ -267,17 +227,18 @@ jobs:
        - TEST_P=hc
        - TEST_PATH=cli/
 
-    - name: "windows core_types"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core_types
-       - TEST_PATH=core_types/
-
     - name: "windows holochain_net"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_net
        - TEST_PATH=net/
+
+    - name: "windows core"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_core
+       - TEST_PATH=core/
+       - WASM_PATH=src/nucleus/actions/wasm-test/
 
     - name: "C binding tests"
       <<: *_trusty_bash
@@ -435,6 +396,7 @@ jobs:
       <<: *_windows_template
       <<: *_nodejs_deploy_template
       <<: *_windows_nodejs_conductor_template
+      if: (branch = develop) AND NOT (type = pull_request)
       env:
        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
        - NODIST_X64=1

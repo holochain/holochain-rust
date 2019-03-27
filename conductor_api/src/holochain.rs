@@ -44,7 +44,7 @@
 //! let mut seed = SecBuf::with_insecure(SEED_SIZE);
 //! seed.randomize();
 //!
-//! let keybundle = KeyBundle::new_from_seed_buf(&mut seed, SeedType::Mock).unwrap();
+//! let keybundle = KeyBundle::new_from_seed_buf(&mut seed).unwrap();
 //!
 //! // The keybundle's public part is the agent's address
 //! let agent = AgentId::new("bob", keybundle.get_id());
@@ -155,7 +155,11 @@ impl Holochain {
 
     pub fn load(context: Arc<Context>) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.dht_storage.clone());
-        let loaded_state = persister.load(context.clone())??;
+        let loaded_state = persister
+            .load(context.clone())?
+            .ok_or(HolochainError::ErrorGeneric(
+                "State could not be loaded due to NoneError".to_string(),
+            ))?;
         let mut instance = Instance::from_state(loaded_state.clone());
         let new_context = instance.initialize(None, context.clone())?;
         Ok(Holochain {

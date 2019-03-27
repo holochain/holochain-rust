@@ -13,14 +13,15 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-use hdk::error::{ZomeApiError, ZomeApiResult};
+#[cfg(not(windows))]
+use hdk::error::ZomeApiError;
+use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    crud_status::CrudStatus,
     dna::{
         entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
@@ -28,12 +29,14 @@ use holochain_core_types::{
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
-        Entry, EntryWithMeta,
+        Entry,
     },
-    error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
+    error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     hash::HashString,
     json::JsonString,
 };
+#[cfg(not(windows))]
+use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error::CoreError};
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
@@ -49,6 +52,9 @@ use std::{
 };
 use test_utils::*;
 
+//
+// These empty function definitions below are needed for the windows linker
+//
 #[no_mangle]
 pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
@@ -110,6 +116,11 @@ pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 }
 
 #[no_mangle]
+pub fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
 pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
@@ -159,6 +170,31 @@ pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
+#[no_mangle]
+pub fn hc_keystore_list(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_keystore_new_random(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_keystore_derive_seed(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
 pub fn create_test_defs_with_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {
     let mut traitfns = TraitFns::new();
     let mut fn_declarations = Vec::new();
@@ -190,6 +226,7 @@ fn example_valid_entry() -> Entry {
     )
 }
 
+#[cfg(not(windows))]
 fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
     let entry_with_meta = &EntryWithMeta {
@@ -403,6 +440,7 @@ fn can_get_entry_ok() {
 fn can_get_entry_bad() {
     let (mut hc, _) = start_holochain_instance("can_get_entry_bad", "alice");
     // Call the exposed wasm function that calls the Commit API function
+
     let result = make_test_call(
         &mut hc,
         "check_commit_entry_macro",
@@ -523,8 +561,9 @@ fn can_remove_link() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
 }
+
 #[test]
-#[cfg(not(windows))]
+#[cfg(test)]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
     // Create links

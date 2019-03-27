@@ -5,7 +5,8 @@ use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
     config::*,
-    key_loaders::{test_keybundle, test_keybundle_loader},
+    key_loaders::{test_keystore, test_keystore_loader},
+    keystore::PRIMARY_KEYBUNDLE_ID,
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
@@ -26,7 +27,7 @@ pub fn run(
     mount_conductor_from_config(conductor_config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
-    conductor.key_loader = test_keybundle_loader();
+    conductor.key_loader = test_keystore_loader();
 
     conductor
         .load_config()
@@ -73,6 +74,7 @@ pub fn hc_run_configuration(
     persist: bool,
     networked: bool,
     interface_type: &String,
+    logging: bool,
 ) -> DefaultResult<Configuration> {
     Ok(Configuration {
         agents: vec![agent_configuration()],
@@ -80,7 +82,7 @@ pub fn hc_run_configuration(
         instances: vec![instance_configuration(storage_configuration(persist)?)],
         interfaces: vec![interface_configuration(&interface_type, port)?],
         network: networking_configuration(networked),
-        logger: logger_configuration(),
+        logger: logger_configuration(logging),
         ..Default::default()
     })
 }
@@ -97,13 +99,17 @@ fn agent_configuration() -> AgentConfiguration {
         .value()
         .ok()
         .unwrap_or_else(|| String::from(AGENT_NAME_DEFAULT));
-    let keybundle = test_keybundle(&agent_name);
-    let agent_id = AgentId::new(&agent_name, keybundle.get_id());
+    let mut keystore = test_keystore(&agent_name);
+    let pub_key = keystore
+        .get_keybundle(PRIMARY_KEYBUNDLE_ID)
+        .expect("should be able to get keybundle")
+        .get_id();
+    let agent_id = AgentId::new(&agent_name, pub_key);
     AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
         name: agent_id.nick,
         public_address: agent_id.pub_sign_key,
-        key_file: agent_name,
+        keystore_file: agent_name,
         holo_remote_key: None,
     }
 }
@@ -175,11 +181,15 @@ fn interface_configuration(
 }
 
 // LOGGER
-fn logger_configuration() -> LoggerConfiguration {
+fn logger_configuration(logging: bool) -> LoggerConfiguration {
     // temporary log rules, should come from a configuration
     LoggerConfiguration {
         logger_type: "debug".to_string(),
-        rules: LogRules::new(),
+        rules: if logging {
+            LogRules::default()
+        } else {
+            LogRules::new()
+        },
     }
 }
 
@@ -274,7 +284,7 @@ mod tests {
                 name: "testAgent".to_string(),
                 public_address: "HcScjN8wBwrn3tuyg89aab3a69xsIgdzmX5P9537BqQZ5A7TEZu7qCY4Xzzjhma"
                     .to_string(),
-                key_file: "testAgent".to_string(),
+                keystore_file: "testAgent".to_string(),
                 holo_remote_key: None,
             },
         );

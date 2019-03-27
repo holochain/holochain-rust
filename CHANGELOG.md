@@ -5,16 +5,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
-- Adds the ability to pass in the token and provenance in zome calls for generating the capability request for the call. [PR#1077](https://github.com/holochain/holochain-rust/pull/1077)
+- Adds hdk access to keystore [#1148](https://github.com/holochain/holochain-rust/pull/1148)
 
 ### Changed
+- Performance optimization: don't recalculate DNA hash during handling of every network message but instead cache the DNA hash. [PR#1163](https://github.com/holochain/holochain-rust/pull/1163)
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+### Security
+
+
+## [0.0.8-alpha] - 2019-03-21
+
+### Added
+
+- Adds Validation For CrudStatus as well as changes api for Crud and Link Validation Rules. [PR#1117] (https://github.com/holochain/holochain-rust/pull/1117)
+- Adds `nix-shell` support for Mac OS X [#1132](https://github.com/holochain/holochain-rust/pull/1132)
+- Adds `hc-test-all` command to `nix-shell` [#1132](https://github.com/holochain/holochain-rust/pull/1132)
+- Adds `./scripts/nix/pod.sh` script to isolate/debug `nix-shell` commands [#1139](https://github.com/holochain/holochain-rust/pull/1139)
+- Adds getting of Headers over the network [#1141](https://github.com/holochain/holochain-rust/pull/1141)
+- Adds keystore and passphrase management service [#1104](https://github.com/holochain/holochain-rust/pull/1104)
+- Adds tooling to manage dependencies in Cargo.toml [#1140](https://github.com/holochain/holochain-rust/pull/1140)
+- Adds ability to enable logging via flag (`--logging`) to `hc run` command [#1151](https://github.com/holochain/holochain-rust/pull/1151)
+- Adds `hc chain` command, which prints a raw text dump of a source chain [#1126](https://github.com/holochain/holochain-rust/pull/1126)
+
+
+### Changed
+- Conductor now waits for N3H to return p2p bindings [#1149](https://github.com/holochain/holochain-rust/pull/1149)
+- `nix-shell` is now the recommended development approach on supported platforms [#1132](https://github.com/holochain/holochain-rust/pull/1132)
+- Pins every dependant crate version with `=x.y.z` at the Cargo.toml level [#1140](https://github.com/holochain/holochain-rust/pull/1140)
+- Breaking Change: `key_file` value now renamed to `keystore_file` in both config.toml files and the conductor's `admin/agent/add` interface [#1104](https://github.com/holochain/holochain-rust/pull/1104)
+
+### Deprecated
+
+### Removed
+
+- Removes all Cargo.lock files [#1140](https://github.com/holochain/holochain-rust/pull/1140)
+
+### Fixed
+- Adds Validation for Crud Reinstates EntryLifecycle. [PR#1143] (https://github.com/holochain/holochain-rust/pull/1143)
+### Security
+
+## [0.0.7-alpha] - 2019-03-19
+
+### Added
+
+- Adds the ability to pass in the token and provenance in zome calls for generating the capability request for the call. [PR#1077](https://github.com/holochain/holochain-rust/pull/1077)
+
+### Changed
+
+- Instantiate instance when creating through admin interface [#1067](https://github.com/holochain/holochain-rust/pull/1067)
+- Use Content-type: application/json for remote signing service HTTP requests [#1067](https://github.com/holochain/holochain-rust/pull/1067)
+- Check for duplicate IDs during integrity check [#1067](https://github.com/holochain/holochain-rust/pull/1067)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+- Conductors running on Windows will be able to hit '/' route for UI server [PR#1128](https://github.com/holochain/holochain-rust/pull/1128)
 
 ### Security
 
@@ -41,9 +94,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - commit_and_link - Save a line and commit and link in a single function
 - Adds a `call` route to the json rpc for the conductor for making zome calls [PR#1090](https://github.com/holochain/holochain-rust/pull/1090).  Please note this route deprecates the `instance_id/zome/function` which will be removed in the future
 - The `admin/dna/install_from_file` RPC method now takes an optional `expected_hash`, which performs an integrity check of the DNA file before installing it in the conductor [PR#1093](https://github.com/holochain/holochain-rust/pull/1093)
+- Adds empty API function definitions to HDK that are only compiled for test targets to enable Rust native unit tests for Zomes [#989](https://github.com/holochain/holochain-rust/pull/989)
 - Moves Crud Status tests to app_spec [#1096](https://github.com/holochain/holochain-rust/pull/1096)
 - Adds cold build tests + support for debian and ubuntu xenial [#1105](https://github.com/holochain/holochain-rust/pull/1105)
-
 
 ### Fixed
 - Validation of link entries gets retried now if base or target of the link were not yet accessible on the validating node. This fixes a bug where links have been invalid due to network timing issues [PR#1054](https://github.com/holochain/holochain-rust/pull/1054)

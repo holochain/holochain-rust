@@ -221,12 +221,6 @@ jobs:
        - TEST_P=holochain_sodium
        - TEST_PATH=sodium/
 
-    - name: "windows hc"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=hc
-       - TEST_PATH=cli/
-
     - name: "windows holochain_net"
       <<: *_windows_template_lite
       env:

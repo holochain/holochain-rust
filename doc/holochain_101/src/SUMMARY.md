@@ -31,7 +31,7 @@
   - [(E) Linking](./zome/linking.md)
   - [(E) Node to Node Messaging](./zome/node_to_node_messages.md)
   - [(E) Calling Other Zomes](./zome/calling_other_zomes.md)
-  - [(E) Cryptographic Signatures](./zome/signatures.md)
+  - [(E) Crypto Functions](./zome/crypto.md)
   - [(E) Bundling](./zome/bundling.md)
   - [(E) Emitting Signals](./zome/emitting_signals.md)
   - [API DNA Variables](./zome/dna_variables.md)

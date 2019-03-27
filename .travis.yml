@@ -227,12 +227,6 @@ jobs:
        - TEST_P=hc
        - TEST_PATH=cli/
 
-    - name: "windows holochain_net"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_net
-       - TEST_PATH=net/
-
     - name: "windows core"
       <<: *_windows_template_lite
       env:

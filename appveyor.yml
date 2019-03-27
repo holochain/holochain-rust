@@ -36,6 +36,9 @@ environment:
   # - test_p: holochain_cas_implementations
   #   test_path: cas_implementations\
 
+  - test_p: holochain_net
+    test_path: net\
+
 test_script:
 
  - scripts\windows\do-ci-test.bat
@@ -50,13 +53,6 @@ test_script:
  # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23358584
  # - SET "test_p=hc"
  # - SET "test_path=cli\"
- # - SET "wasm_path="
- # - SET "wasm_path_2="
- # - scripts\windows\do-ci-test.bat
-
- # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23357334
- # - SET "test_p=holochain_net"
- # - SET "test_path=net\"
  # - SET "wasm_path="
  # - SET "wasm_path_2="
  # - scripts\windows\do-ci-test.bat

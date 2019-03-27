@@ -13,14 +13,15 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-use hdk::error::{ZomeApiError, ZomeApiResult};
+#[cfg(not(windows))]
+use hdk::error::ZomeApiError;
+use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    crud_status::CrudStatus,
     dna::{
         entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
@@ -28,12 +29,14 @@ use holochain_core_types::{
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
-        Entry, EntryWithMeta,
+        Entry,
     },
-    error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
+    error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     hash::HashString,
     json::JsonString,
 };
+#[cfg(not(windows))]
+use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error::CoreError};
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},

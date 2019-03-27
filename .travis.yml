@@ -215,12 +215,6 @@ jobs:
   # this allows us to keep walltimes down
   include:
 
-    - name: "windows holochain_sodium"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_sodium
-       - TEST_PATH=sodium/
-
     - name: "windows hc"
       <<: *_windows_template_lite
       env:

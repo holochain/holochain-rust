@@ -174,21 +174,16 @@ impl EntityAttributeValueStorage for EavFileStorage {
         let wild_card = Path::new("*");
         //create glob path to query file system parentdir/*/*/*/{address}.txt
         let text_file = vec![eav.address().to_string(), "txt".to_string()].join(".");
-        let glob_path = self
+        let path = self
             .dir_path
             .join(wild_card)
-            .join(Path::new("a"))
+            .join(Path::new("e"))
             .join(&*eav.index().to_string())
             .join(Path::new(&text_file));
-        let find_glob_path = glob_path.to_str().ok_or(HolochainError::ErrorGeneric(
-            "Could not obtain string".to_string(),
-        ))?;
 
-        let mut glob_query = glob(find_glob_path)
-            .map_err(|_| HolochainError::ErrorGeneric("Glob path invalid".to_string()))?;
 
         //if next exists create a new eav with a different index
-        let eav = if glob_query.next().is_some() {
+        let eav = if path.exists() {
             EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?
         } else {
             eav.clone()
@@ -262,6 +257,7 @@ pub mod tests {
         eav::Attribute,
         json::RawString,
     };
+    use std::time::{Duration, SystemTime};
 
     #[test]
     fn file_eav_round_trip() {
@@ -284,10 +280,12 @@ pub mod tests {
 
     #[test]
     fn file_eav_one_to_many() {
+        let now = SystemTime::now();
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
-        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage)
+        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage);
+        println!("time elapsed {:?}", now.elapsed().unwrap().as_millis());
     }
 
     #[test]

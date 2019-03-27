@@ -2,6 +2,7 @@
 name = "holochain_cas_implementations"
 version = "0.0.8-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
 
 [dependencies]
 serde_derive= "=1.0.89"
@@ -11,6 +12,7 @@ holochain_core_types = { path = "../core_types" }
 lazy_static = "=1.2.0"
 glob = "=0.3.0"
 uuid = { version = "=0.7.1", features = ["v4"] }
+pickledb = "0.3.0"
 
 
 [dev-dependencies]

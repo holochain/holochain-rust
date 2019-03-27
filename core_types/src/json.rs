@@ -17,7 +17,7 @@ use std::{
 /// instead, implement and use the native `From` trait to move between types
 /// - moving to/from String, str, JsonString and JsonString simply (un)wraps it as raw JSON data
 /// - moving to/from any other type must offer a reliable serialization/deserialization strategy
-#[derive(Debug, PartialEq, Clone, Hash, Eq)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq, Serialize)]
 pub struct JsonString(String);
 
 impl JsonString {

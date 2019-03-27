@@ -33,14 +33,10 @@ environment:
     wasm_path: wasm-test\
     wasm_path_2: test-bridge-caller\
 
-test_script:
+  # - test_p: holochain_cas_implementations
+  #   test_path: cas_implementations\
 
-#   Temp due to re-compile issue
-#  - SET "test_p=holochain_cas_implementations"
-#  - SET "test_path=cas_implementations\"
-#  - SET "wasm_path="
-#  - SET "wasm_path_2="
-#  - scripts\windows\do-ci-test.bat
+test_script:
 
  - scripts\windows\do-ci-test.bat
 

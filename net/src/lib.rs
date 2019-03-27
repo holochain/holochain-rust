@@ -1,6 +1,7 @@
 #![feature(fnbox)]
 #![feature(try_from)]
 #![feature(vec_remove_item)]
+#![allow(clippy::all)] // As per the request of the networking subteam
 
 //! holochain_net is a library that defines an abstract networking layer for
 //! different network transports, providing a configurable interface

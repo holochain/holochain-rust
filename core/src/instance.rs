@@ -12,7 +12,7 @@ use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 use holochain_core_types::cas::content::Address;
 use holochain_core_types::{
     dna::Dna,
-    error::{error::HolochainError, HcResult},
+    error::{HcResult, HolochainError},
 };
 use std::{
     sync::{
@@ -690,7 +690,7 @@ pub mod tests {
             ),
         );
 
-        let maybe_instance = test_instance(dna, None);
+        let maybe_instance = test_instance(dna, Some("test_genesis_ok"));
         assert!(maybe_instance.is_ok());
 
         let instance = maybe_instance.unwrap();
@@ -733,7 +733,7 @@ pub mod tests {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex", netname);
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
-        let dna_entry = Entry::Dna(dna);
+        let dna_entry = Entry::Dna(Box::new(dna));
         let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None)));
 
         // Set up instance and process the action

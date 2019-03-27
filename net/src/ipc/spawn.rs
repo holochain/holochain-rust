@@ -20,12 +20,15 @@ pub struct SpawnResult {
     pub p2p_bindings: Vec<String>,
 }
 
-/// spawn a holochain networking ipc sub-process
+/// Spawn a holochain networking ipc sub-process
+/// Will block for IPC connection until timeout_ms is reached.
+/// Can also block for P2P connection
 pub fn ipc_spawn(
     work_dir: String,
     end_user_config: String,
     env: HashMap<String, String>,
-    block_connect: bool,
+    timeout_ms: usize,
+    can_wait_for_p2p: bool,
 ) -> NetResult<SpawnResult> {
     let n3h = get_verify_n3h()?;
 
@@ -58,39 +61,56 @@ pub fn ipc_spawn(
     // transport info (multiaddr) for any p2p interface bindings
     let re_p2p = regex::Regex::new("(?m)^#P2P-BINDING#:(.+)$")?;
 
-    // the child process is ready for connections
-    let re_ready = regex::Regex::new("#IPC-READY#")?;
+    // the child process is ready for ipc connections
+    let re_ipc_ready = regex::Regex::new("#IPC-READY#")?;
+
+    // the child process is ready for p2p connections
+    let re_p2p_ready = regex::Regex::new("#P2P-READY#")?;
 
     // we need to know when our child process is ready for IPC connections
-    // it will run some startup algorithms, and then output some binding
-    // info on stdout and finally a `#IPC-READY#` message.
-    // collect the binding info, and proceed when `#IPC-READY#`
+    // and possibily P2P connections.
+    // It will run some startup algorithms, and then output some binding
+    // info on stdout and finally an `#IPC-READY#` message and a `#P2P-READY#` message.
+    // collect the binding info, and proceed when `#IPC-READY#`,
+    // and `#P2P-READY#` if `can_wait_for_p2p` is set
     if let Some(ref mut stdout) = child.stdout {
+        let mut has_ipc = false;
+        let mut has_p2p = !can_wait_for_p2p;
+        let mut wait_ms = 0;
         let mut data: Vec<u8> = Vec::new();
-        loop {
+        while !(has_ipc.clone() && has_p2p.clone()) {
+            // read stdout
             let mut buf: [u8; 4096] = [0; 4096];
             let size = stdout.read(&mut buf)?;
             if size > 0 {
                 data.extend_from_slice(&buf[..size]);
-
                 let tmp = String::from_utf8_lossy(&data);
-                if re_ready.is_match(&tmp) {
-                    for m in re_ipc.captures_iter(&tmp) {
-                        out.ipc_binding = m[1].to_string();
-                        break;
-                    }
-                    for m in re_p2p.captures_iter(&tmp) {
-                        out.p2p_bindings.push(m[1].to_string());
-                    }
-                    break;
-                }
-            } else {
-                std::thread::sleep(std::time::Duration::from_millis(10));
-            }
 
-            if !block_connect {
-                break;
+                // look for IPC-READY
+                if !has_ipc.clone() {
+                    if re_ipc_ready.is_match(&tmp) {
+                        for m in re_ipc.captures_iter(&tmp) {
+                            out.ipc_binding = m[1].to_string();
+                            break;
+                        }
+                        has_ipc = true
+                    }
+                }
+                // look for P2P-READY
+                if !has_p2p.clone() {
+                    if re_p2p_ready.is_match(&tmp) {
+                        for m in re_p2p.captures_iter(&tmp) {
+                            out.p2p_bindings.push(m[1].to_string());
+                        }
+                        has_p2p = true
+                    }
+                }
             }
+            if wait_ms >= timeout_ms.clone() {
+                bail!("ipc_spawn() timed out. N3H might need more time or something is dysfunctional in the network interface");
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+            wait_ms += 10;
         }
     } else {
         bail!("pipe fail");

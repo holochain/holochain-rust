@@ -272,6 +272,7 @@ impl Conductor {
                 String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
                 String::from("N3H_LOG_LEVEL") => network_config.n3h_log_level.clone(),
             },
+            2000,
             true,
         )
         .map_err(|error| {
@@ -461,6 +462,11 @@ impl Conductor {
                         self.get_keybundle_for_agent(&instance_config.agent)?,
                     );
                 }
+
+                let keystore = self
+                    .get_keystore_for_agent(&instance_config.agent)
+                    .map_err(|err| format!("{}", err))?;
+                api_builder = api_builder.with_agent_keystore_functions(keystore);
 
                 // Bridges:
                 let id = instance_config.id.clone();

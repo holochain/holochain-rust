@@ -48,7 +48,8 @@ pub fn get_links_and_load_type<S: Into<String>, R: TryFrom<AppEntryValue>>(
 ///
 pub fn get_as_type<R: TryFrom<AppEntryValue>>(address: Address) -> ZomeApiResult<R> {
     let get_result = hdk::get_entry(&address)?;
-    let entry = get_result.ok_or(ZomeApiError::Internal("No entry at this address".into()))?;
+    let entry =
+        get_result.ok_or_else(|| ZomeApiError::Internal("No entry at this address".into()))?;
     match entry {
         Entry::App(_, entry_value) => R::try_from(entry_value.to_owned()).map_err(|_| {
             ZomeApiError::Internal(

@@ -37,7 +37,6 @@ pub mod utils;
 pub mod entry_definition;
 pub mod error;
 pub mod global_fns;
-pub mod globals;
 pub mod init_globals;
 pub mod macros;
 

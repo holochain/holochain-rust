@@ -74,6 +74,7 @@ pub fn hc_run_configuration(
     persist: bool,
     networked: bool,
     interface_type: &String,
+    logging: bool,
 ) -> DefaultResult<Configuration> {
     Ok(Configuration {
         agents: vec![agent_configuration()],
@@ -81,7 +82,7 @@ pub fn hc_run_configuration(
         instances: vec![instance_configuration(storage_configuration(persist)?)],
         interfaces: vec![interface_configuration(&interface_type, port)?],
         network: networking_configuration(networked),
-        logger: logger_configuration(),
+        logger: logger_configuration(logging),
         ..Default::default()
     })
 }
@@ -180,11 +181,15 @@ fn interface_configuration(
 }
 
 // LOGGER
-fn logger_configuration() -> LoggerConfiguration {
+fn logger_configuration(logging: bool) -> LoggerConfiguration {
     // temporary log rules, should come from a configuration
     LoggerConfiguration {
         logger_type: "debug".to_string(),
-        rules: LogRules::new(),
+        rules: if logging {
+            LogRules::default()
+        } else {
+            LogRules::new()
+        },
     }
 }
 

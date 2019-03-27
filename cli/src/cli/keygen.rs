@@ -52,7 +52,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     println!("Succesfully created new agent keystore.");
     println!("");
     println!("Public address: {}", pub_key);
-    println!("Bundle written to: {}", path.to_str().unwrap());
+    println!("Keystore written to: {}", path.to_str().unwrap());
     println!("");
     println!("You can set this file in a conductor config as keystore_file for an agent.");
     Ok(())

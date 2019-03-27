@@ -33,8 +33,8 @@ environment:
     wasm_path: wasm-test\
     wasm_path_2: test-bridge-caller\
 
-  - test_p: holochain_cas_implementations
-    test_path: cas_implementations\
+  # - test_p: holochain_cas_implementations
+  #   test_path: cas_implementations\
 
 test_script:
 

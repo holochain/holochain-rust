@@ -233,13 +233,6 @@ jobs:
        - TEST_P=holochain_net
        - TEST_PATH=net/
 
-    - name: "windows core"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core
-       - TEST_PATH=core/
-       - WASM_PATH=src/nucleus/actions/wasm-test/
-
     - name: "C binding tests"
       <<: *_trusty_bash
       # sudo is needed for codecov, && system library install which makes things 20-50s slower

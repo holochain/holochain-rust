@@ -1,5 +1,5 @@
 [package]
-name = "holochain_cas_implementations"
+name = "benchmarks"
 version = "0.0.8-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
@@ -8,12 +8,12 @@ serde_derive= "=1.0.89"
 serde_test= "=1.0.89"
 multihash = "=0.8.0"
 holochain_core_types = { path = "../core_types" }
-lazy_static = "=1.2.0"
-glob = "=0.3.0"
-uuid = { version = "=0.7.1", features = ["v4"] }
-
-
-[dev-dependencies]
-holochain_core_types = { path = "../core_types" }
+holochain_cas_implementations  = { path = "../cas_implementations" }
+bencher = "0.1.5"
 tempfile = "=3.0.7"
 
+
+
+[[bench]]
+name = "my_benchmark"
+harness = false

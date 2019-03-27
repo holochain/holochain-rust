@@ -181,7 +181,6 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .join(&*eav.index().to_string())
             .join(Path::new(&text_file));
 
-
         //if next exists create a new eav with a different index
         let eav = if path.exists() {
             EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?

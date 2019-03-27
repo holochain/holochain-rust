@@ -26,6 +26,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use std::{pin::Pin, sync::Arc, thread};
+use serde::Serialize;
 
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub struct ExecuteZomeFnResponse {
@@ -178,12 +179,12 @@ pub fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
     }
 }
 
-pub fn encode_call_data_for_signing<J: Into<JsonString>>(function: &str, parameters: J) -> String {
+pub fn encode_call_data_for_signing<J: Serialize>(function: &str, parameters: J) -> String {
     base64::encode(&format!("{}:{}", function, parameters.into()))
 }
 
 // temporary function to create a mock signature of for a zome call cap request
-fn make_call_sig<J: Into<JsonString>>(
+fn make_call_sig<J: Serialize>(
     context: Arc<Context>,
     function: &str,
     parameters: J,
@@ -196,7 +197,7 @@ fn make_call_sig<J: Into<JsonString>>(
 }
 
 // temporary function to verify a mock signature of for a zome call cap request
-pub fn verify_call_sig<J: Into<JsonString>>(
+pub fn verify_call_sig<J: Serialize>(
     provenance: &Provenance,
     function: &str,
     parameters: J,
@@ -206,7 +207,7 @@ pub fn verify_call_sig<J: Into<JsonString>>(
 }
 
 /// creates a capability request for a zome call by signing the function name and parameters
-pub fn make_cap_request_for_call<J: Into<JsonString>>(
+pub fn make_cap_request_for_call<J: Serialize>(
     callers_context: Arc<Context>,
     cap_token: Address,
     function: &str,

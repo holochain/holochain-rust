@@ -3,9 +3,9 @@ use crate::memory::{
     stack::WasmStack,
     MemoryBits, MemoryInt,
 };
-use holochain_core_types::json::JsonString;
 use memory::allocation::{AllocationResult, Length};
-use std::{convert::TryInto, os::raw::c_char, slice};
+use std::{os::raw::c_char, slice};
+use serde::Serialize;
 
 impl WasmStack {
     /// Write in wasm memory according to stack state.
@@ -33,12 +33,11 @@ impl WasmStack {
     }
 
     /// Write a data struct as a json string in wasm memory according to stack state.
-    pub fn write_json<J: TryInto<JsonString>>(&mut self, jsonable: J) -> AllocationResult {
-        let j: JsonString = jsonable
-            .try_into()
+    pub fn write_json<J: Serialize>(&mut self, jsonable: J) -> AllocationResult {
+        let json_bytes = serde_json::to_vec(&jsonable)
             .map_err(|_| AllocationError::Serialization)?;
 
-        let json_bytes = j.into_bytes();
+        // let json_bytes = JsonString::from(j).into_bytes();
         let json_bytes_len = json_bytes.len() as MemoryInt;
         if MemoryBits::from(json_bytes_len) > WasmStack::max() {
             return Err(AllocationError::OutOfBounds);

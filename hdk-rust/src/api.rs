@@ -35,6 +35,7 @@ use holochain_wasm_utils::{
 };
 use init_globals::hc_init_globals;
 use serde_json;
+use serde::Serialize;
 use std::{
     convert::{TryFrom, TryInto},
     time::Duration,
@@ -218,7 +219,7 @@ pub enum Dispatch {
 }
 
 impl Dispatch {
-    pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<String>>(
+    pub fn with_input<I: Serialize, O: TryFrom<JsonString> + Into<String>>(
         &self,
         input: I,
     ) -> ZomeApiResult<O> {

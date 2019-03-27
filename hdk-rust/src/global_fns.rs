@@ -2,12 +2,13 @@
 //! and serialization used throughout the HDK.
 
 use crate::globals::G_MEM_STACK;
-use holochain_core_types::{error::RibosomeEncodingBits, json::JsonString};
+use holochain_core_types::{error::RibosomeEncodingBits};
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},
     stack::WasmStack,
 };
+use serde::Serialize;
 use std::convert::{TryFrom, TryInto};
 
 /// Init global memory stack
@@ -26,7 +27,7 @@ pub fn init_global_memory_from_ribosome_encoding(
 }
 
 /// Serialize output as json in WASM memory
-pub fn write_json<J: TryInto<JsonString>>(jsonable: J) -> AllocationResult {
+pub fn write_json<J: Serialize>(jsonable: J) -> AllocationResult {
     let mut mem_stack = unsafe {
         match G_MEM_STACK {
             Some(mem_stack) => mem_stack,

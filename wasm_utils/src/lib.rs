@@ -4,6 +4,7 @@
 #![feature(try_from)]
 #![warn(unused_extern_crates)]
 extern crate serde_json;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 pub extern crate holochain_core_types;

@@ -205,15 +205,16 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .intersection(&entity_set)
             .cloned()
             .collect();
-        let total = entity_attribute_value_inter.len();
-        let eavis: BTreeSet<_> = entity_attribute_value_inter
+
+        //still a O(n) structure because they are slipt in different places.
+        let (eavis,errors): (BTreeSet<_>,BTreeSet<_>) = entity_attribute_value_inter
             .clone()
             .into_iter()
-            .filter_map(|content| {
-                EntityAttributeValueIndex::try_from_content(&JsonString::from(content)).ok()
+            .map(|content| {
+                EntityAttributeValueIndex::try_from_content(&JsonString::from(content))
             })
-            .collect();
-        if eavis.len() < total {
+            .partition(Result::is_ok);
+        if !errors.is_empty() {
             // not all EAVs were converted
             Err(HolochainError::ErrorGeneric(
                 "Error Converting EAVs".to_string(),
@@ -227,7 +228,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 Default::default(),
                 query.index().clone(),
             );
-            let it = eavis.iter().cloned();
+            let it = eavis.iter().map(|e|e.clone().expect("no problem here since we have filtered out all bad conversions"));
             let results = index_query.run(it);
             Ok(results)
         }

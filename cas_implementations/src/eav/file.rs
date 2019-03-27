@@ -177,7 +177,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         let path = self
             .dir_path
             .join(wild_card)
-            .join(Path::new("e"))
+            .join(ENTITY_DIR)
             .join(&*eav.index().to_string())
             .join(Path::new(&text_file));
 

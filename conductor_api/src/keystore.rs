@@ -208,12 +208,18 @@ impl Keystore {
             .secrets
             .get(id_str)
             .ok_or(HolochainError::new("Secret not found"))?;
-        let passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
-        let secret = self.inner_decrypt(blob, passphrase)?;
-        //Err(HolochainError::ErrorGeneric(format!(
-        //    "Tried to decrypt unsupported BlobType in Keystore: {}",
-        //    id_str
-        //)))
+
+        let default_passphrase = SecBuf::with_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
+        let secret = self.inner_decrypt(blob, default_passphrase)
+            .or_else(|_| {
+                let passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
+                self.inner_decrypt(blob, passphrase)
+            })
+            .map_err(|err| {
+                HolochainError::ErrorGeneric(format!("Could not decrypt '{}': {:?}", id_str, err))
+            })?;
+
+
         self.cache
             .insert(id_str.clone(), Arc::new(Mutex::new(secret)));
         Ok(())

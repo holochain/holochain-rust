@@ -178,15 +178,8 @@ impl Keystore {
         Ok(())
     }
 
-    /// This function expects the named secret in `secrets`, decrypts it and stores the decrypted
-    /// representation in `cache`.
-    fn decrypt(&mut self, id_str: &String) -> HcResult<()> {
-        let blob = self
-            .secrets
-            .get(id_str)
-            .ok_or(HolochainError::new("Secret not found"))?;
-        let mut passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
-        let secret = match blob.blob_type {
+    fn inner_decrypt(&self, blob: &KeyBlob, mut passphrase: SecBuf) -> Result<Secret, HolochainError> {
+        Ok(match blob.blob_type {
             BlobType::Seed => {
                 Secret::Seed(Seed::from_blob(blob, &mut passphrase, self.hash_config.clone())?.buf)
             }
@@ -201,12 +194,26 @@ impl Keystore {
                 self.hash_config.clone(),
             )?),
             _ => {
-                return Err(HolochainError::ErrorGeneric(format!(
-                    "Tried to decrypt unsupported BlobType in Keystore: {}",
-                    id_str
-                )));
+                return Err(HolochainError::ErrorGeneric(
+                    "Tried to decrypt unsupported BlobType in Keystore: {}".to_string()
+                ));
             }
-        };
+        })
+    }
+
+    /// This function expects the named secret in `secrets`, decrypts it and stores the decrypted
+    /// representation in `cache`.
+    fn decrypt(&mut self, id_str: &String) -> HcResult<()> {
+        let blob = self
+            .secrets
+            .get(id_str)
+            .ok_or(HolochainError::new("Secret not found"))?;
+        let passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
+        let secret = self.inner_decrypt(blob, passphrase)?;
+        //Err(HolochainError::ErrorGeneric(format!(
+        //    "Tried to decrypt unsupported BlobType in Keystore: {}",
+        //    id_str
+        //)))
         self.cache
             .insert(id_str.clone(), Arc::new(Mutex::new(secret)));
         Ok(())

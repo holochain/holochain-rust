@@ -11,7 +11,7 @@ use holochain_core_types::{
 use std::{
     collections::BTreeSet,
     convert::{TryFrom, TryInto},
-    fs::{create_dir_all, File, OpenOptions},
+    fs::{self, create_dir_all, File},
     io::prelude::*,
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
@@ -46,34 +46,19 @@ pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<String>> {
 
     // let path_result = paths.last().ok_or(HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
     let (eav, error): (BTreeSet<_>, BTreeSet<_>) = paths
+        .filter_map(Result::ok)
         .map(|path| {
-            let path_buf: PathBuf = path.unwrap_or_default();
-            OpenOptions::new()
-                .read(true)
-                .open(path_buf.clone())
-                .map(|mut file| {
-                    let mut content = String::new();
-                    file.read_to_string(&mut content)
-                        .map(|_| Ok(content))
-                        .unwrap_or_else(|_| {
-                            Err(HolochainError::ErrorGeneric(
-                                "Could not read from string".to_string(),
-                            ))
-                        })
-                })
-                .unwrap_or_else(|_| {
-                    Err(HolochainError::ErrorGeneric(
-                        "Could not read from string".to_string(),
-                    ))
-                })
+            fs::read_to_string(&path)
+                .map_err(|_| HolochainError::ErrorGeneric("Could not read from string".to_string()))
         })
         .partition(Result::is_ok);
+
     if !error.is_empty() {
         Err(HolochainError::ErrorGeneric(
             "Could not read from string".to_string(),
         ))
     } else {
-        Ok(eav.iter().cloned().map(|s| s.unwrap_or_default()).collect())
+        Ok(eav.iter().cloned().filter_map(Result::ok).collect())
     }
 }
 

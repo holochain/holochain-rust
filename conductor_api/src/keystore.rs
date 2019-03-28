@@ -178,6 +178,9 @@ impl Keystore {
         Ok(())
     }
 
+    /// Actually runs the decryption of the given KeyBlob with the given passphrase.
+    /// Called by decrypt().
+    /// Calls the matching from_blob function depending on the type of the KeyBlob.
     fn inner_decrypt(
         &self,
         blob: &KeyBlob,

@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- FIX nix installation command [https://github.com/holochain/holochain-rust/issues/1179]
+
 ### Security
 
 

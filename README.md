@@ -100,7 +100,7 @@ To install `nix-shell`:
 apt-get update && apt-get install -y curl bzip2
 
 # this installs on all (non-windows) systems
-curl https://nixos.org/nix/install | sh
+sh <(curl https://nixos.org/nix/install) --no-daemon
 ```
 
 Follow any further instructions output to the terminal during installation.

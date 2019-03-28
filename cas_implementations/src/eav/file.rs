@@ -167,16 +167,16 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .join(&text_file_path);
 
         //if next exists create a new eav with a different index
-        let new_eav = if path.exists() {
+        let eav = if path.exists() {
             EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?
         } else {
             eav.clone()
         };
 
-        self.write_to_file(ENTITY_DIR.to_string(), &new_eav)
-            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &new_eav))
-            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &new_eav))
-            .map(|_| Some(new_eav.clone()))
+        self.write_to_file(ENTITY_DIR.to_string(), &eav)
+            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &eav))
+            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &eav))
+            .map(|_| Some(eav.clone()))
     }
 
     fn fetch_eavi(

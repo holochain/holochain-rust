@@ -1,6 +1,6 @@
 # Crypto Functions
 
-Holochain DNA instances are designed to function in the context of a Distributed Public Key Insfrastructure (DPKI) which:
+Holochain DNA instances are designed to function in the context of a [Distributed Public Key Insfrastructure (DPKI)](./dpki.md) which:
 
 1. manages key creation and revocation
 2. manages an agency context that allows grouping and verifying that sets of DNA instances are controlled by the same agent.
@@ -8,7 +8,7 @@ Holochain DNA instances are designed to function in the context of a Distributed
 
 Holochain assumes that there may be different DPKI implementations but provides a reference implementation we call DeepKey.   We assume that the DPKI implementation is itself a Holochain application, and we provide access to a set of generic cryptographic functions.  These functions also allow DNA authors to build ad-hoc cryptogrpahic protocols.
 
-For each Holochain DNA instance, the conductor maintains a Keystore, which holds "secrets" (seeds and keys) needed for cryptographic signing and encrypting. Each of the secrets in the Keystore is associated with a string which is a handle needed when using that secret for some cryptographic operation.  Our cryptographic implementation is based on libsodium, and the seeds use their notions of context and index for key derivation paths.  This implementation allows DNA developers to securely call cryptographic functions from wasm which will be executed in the conductors secure memory space when actually doing the cryptographic processing.
+For each Holochain DNA instance, the conductor maintains a Keystore, which holds "secrets" (seeds and keys) needed for cryptographic signing and encrypting. Each of the secrets in the Keystore is associated with a string which is a handle needed when using that secret for some cryptographic operation.  Our cryptographic implementation is based on libsodium, and the seeds use their notions of context and index for key derivation paths.  This implementation allows DNA developers to securely call cryptographic functions from wasm which will be executed in the conductor's secure memory space when actually doing the cryptographic processing.
 
 Here are the available functions:
 
@@ -20,3 +20,8 @@ Here are the available functions:
 - `sign(payload)` -> signs the payload using the DNA's instance agent ID public key.  This is a convenience function which is equivalent to calling `keystore_sign("primary_keybundle:sign_key",payload)`
 - `sign-one-time(payload)` -> signs the payload with a randomly generated key-pair, returning the signature and the public key of the key-pair after shredding the private-key.
 - `verify_signature(provenance, payload)` -> verifies that the `payload` matches the `provenance` which is a public key/signature pair.
+
+Not Yet Implemented:
+
+- `encrypt(payload)` -> encrypts
+- `keystore_encrypt(src_id,payload)`

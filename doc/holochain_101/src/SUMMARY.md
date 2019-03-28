@@ -84,6 +84,7 @@
 - [(E) Extending Holochain](./extending_holochain.md)
   - [(E) Embedding Holochain](./embedding_holochain.md)
     - [(E) Core API](./core_api.md)
+  - [Key Management (DPKI)](./dpki.md)
   - [Naming conventions](./naming_conventions.md)
   - [Writing a Development Kit (HDK)](./writing_development_kit.md)
   - [Implementing Zome API functions](./zome/implementation.md)

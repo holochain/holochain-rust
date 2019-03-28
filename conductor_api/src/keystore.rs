@@ -178,7 +178,11 @@ impl Keystore {
         Ok(())
     }
 
-    fn inner_decrypt(&self, blob: &KeyBlob, mut passphrase: SecBuf) -> Result<Secret, HolochainError> {
+    fn inner_decrypt(
+        &self,
+        blob: &KeyBlob,
+        mut passphrase: SecBuf,
+    ) -> Result<Secret, HolochainError> {
         Ok(match blob.blob_type {
             BlobType::Seed => {
                 Secret::Seed(Seed::from_blob(blob, &mut passphrase, self.hash_config.clone())?.buf)
@@ -195,7 +199,7 @@ impl Keystore {
             )?),
             _ => {
                 return Err(HolochainError::ErrorGeneric(
-                    "Tried to decrypt unsupported BlobType in Keystore: {}".to_string()
+                    "Tried to decrypt unsupported BlobType in Keystore: {}".to_string(),
                 ));
             }
         })
@@ -209,8 +213,10 @@ impl Keystore {
             .get(id_str)
             .ok_or(HolochainError::new("Secret not found"))?;
 
-        let default_passphrase = SecBuf::with_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
-        let secret = self.inner_decrypt(blob, default_passphrase)
+        let default_passphrase =
+            SecBuf::with_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
+        let secret = self
+            .inner_decrypt(blob, default_passphrase)
             .or_else(|_| {
                 let passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
                 self.inner_decrypt(blob, passphrase)
@@ -218,7 +224,6 @@ impl Keystore {
             .map_err(|err| {
                 HolochainError::ErrorGeneric(format!("Could not decrypt '{}': {:?}", id_str, err))
             })?;
-
 
         self.cache
             .insert(id_str.clone(), Arc::new(Mutex::new(secret)));

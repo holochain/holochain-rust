@@ -173,7 +173,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         let _guard = self.lock.write()?;
         let wild_card = Path::new("*");
         //create glob path to query file system parentdir/*/*/*/{address}.txt
-        let text_file_path = Path::new(eav.address().to_string()).with_extension("txt");
+        let text_file_path = Path::new(&eav.address().to_string()).with_extension("txt");
         let path = self
             .dir_path
             .join(wild_card)

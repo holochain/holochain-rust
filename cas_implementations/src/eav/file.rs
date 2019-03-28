@@ -2,8 +2,8 @@ use glob::glob;
 use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
-        increment_key_till_no_collision, Attribute, EavFilter, EaviQuery, Entity,
-        EntityAttributeValueIndex, EntityAttributeValueStorage, IndexFilter, Value,
+        Attribute, EavFilter, EaviQuery, Entity, EntityAttributeValueIndex,
+        EntityAttributeValueStorage, Value,
     },
     error::{HcResult, HolochainError},
     json::JsonString,
@@ -170,19 +170,28 @@ impl EntityAttributeValueStorage for EavFileStorage {
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
-        let fetched = self.fetch_eavi(&EaviQuery::new(
-            Some(eav.entity()).into(),
-            Some(eav.attribute()).into(),
-            Some(eav.value()).into(),
-            IndexFilter::LatestByAttribute,
-        ))?;
         let _guard = self.lock.write()?;
-        create_dir_all(self.dir_path.clone())?;
-        let new_eav = increment_key_till_no_collision(eav.clone(), fetched.clone())?;
-        self.write_to_file(ENTITY_DIR.to_string(), &new_eav)
-            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &new_eav))
-            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &new_eav))?;
-        Ok(Some(new_eav.clone()))
+        let wild_card = Path::new("*");
+        //create glob path to query file system parentdir/*/*/*/{address}.txt
+        let text_file_path = Path::new(&eav.address().to_string()).with_extension("txt");
+        let path = self
+            .dir_path
+            .join(wild_card)
+            .join(ENTITY_DIR)
+            .join(&*eav.index().to_string())
+            .join(&text_file_path);
+
+        //if next exists create a new eav with a different index
+        let eav = if path.exists() {
+            EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?
+        } else {
+            eav.clone()
+        };
+
+        self.write_to_file(ENTITY_DIR.to_string(), &eav)
+            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &eav))
+            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &eav))?;
+        Ok(Some(eav.clone()))
     }
 
     fn fetch_eavi(
@@ -275,7 +284,7 @@ pub mod tests {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
-        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage)
+        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage);
     }
 
     #[test]
@@ -285,7 +294,7 @@ pub mod tests {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
-        EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavFileStorage>(eav_storage)
+        EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavFileStorage>(eav_storage);
     }
 
     #[test]

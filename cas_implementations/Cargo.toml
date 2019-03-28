@@ -12,7 +12,7 @@ holochain_core_types = { path = "../core_types" }
 lazy_static = "=1.2.0"
 glob = "=0.3.0"
 uuid = { version = "=0.7.1", features = ["v4"] }
-pickledb = "0.3.0"
+pickledb = "=0.3.0"
 
 
 [dev-dependencies]

@@ -214,15 +214,14 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .intersection(&entity_set)
             .cloned()
             .collect();
-        let total = entity_attribute_value_inter.len();
-        let eavis: BTreeSet<_> = entity_attribute_value_inter
+
+        //still a O(n) structure because they are slipt in different places.
+        let (eavis, errors): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
             .clone()
             .into_iter()
-            .filter_map(|content| {
-                EntityAttributeValueIndex::try_from_content(&JsonString::from(content)).ok()
-            })
-            .collect();
-        if eavis.len() < total {
+            .map(|content| EntityAttributeValueIndex::try_from_content(&JsonString::from(content)))
+            .partition(Result::is_ok);
+        if !errors.is_empty() {
             // not all EAVs were converted
             Err(HolochainError::ErrorGeneric(
                 "Error Converting EAVs".to_string(),
@@ -236,7 +235,10 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 Default::default(),
                 query.index().clone(),
             );
-            let it = eavis.iter().cloned();
+            let it = eavis.iter().map(|e| {
+                e.clone()
+                    .expect("no problem here since we have filtered out all bad conversions")
+            });
             let results = index_query.run(it);
             Ok(results)
         }
@@ -248,13 +250,12 @@ pub mod tests {
     extern crate tempfile;
     use self::tempfile::tempdir;
     use eav::file::EavFileStorage;
-    #[cfg(any(not(windows), feature = "broken-tests"))]
-    use holochain_core_types::eav::Attribute;
     use holochain_core_types::{
         cas::{
             content::{AddressableContent, ExampleAddressableContent},
             storage::EavTestSuite,
         },
+        eav::Attribute,
         json::RawString,
     };
 
@@ -278,8 +279,6 @@ pub mod tests {
     }
 
     #[test]
-    // breaks on av https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23356009
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn file_eav_one_to_many() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
@@ -288,8 +287,6 @@ pub mod tests {
     }
 
     #[test]
-    // breaks on av https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23356009
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn file_eav_many_to_one() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
@@ -298,8 +295,6 @@ pub mod tests {
     }
 
     #[test]
-    // breaks on av https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23356009
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn file_eav_range() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
@@ -308,8 +303,6 @@ pub mod tests {
     }
 
     #[test]
-    // breaks on av https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23356009
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn file_eav_prefixes() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));

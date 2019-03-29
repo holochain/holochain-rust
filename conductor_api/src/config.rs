@@ -589,7 +589,6 @@ pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
     })
 }
 
-
 /// Configure which app instance id to treat as the DPKI application handler
 /// as well as what parameters to pass it on its initialization
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
@@ -597,7 +596,6 @@ pub struct DpkiConfiguration {
     pub instance_id: String,
     pub init_params: String,
 }
-
 
 #[cfg(test)]
 pub mod tests {
@@ -1235,7 +1233,10 @@ pub mod tests {
             .expect("Config should be syntactically correct");
         assert_eq!(
             config.check_consistency(),
-            Err("Instance configuration \"bogus instance\" not found, mentioned in dpki".to_string())
+            Err(
+                "Instance configuration \"bogus instance\" not found, mentioned in dpki"
+                    .to_string()
+            )
         );
     }
 }

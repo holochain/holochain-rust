@@ -524,12 +524,21 @@ pub mod tests {
     use super::*;
     use base64;
     use conductor::passphrase_manager::PassphraseServiceMock;
+    use holochain_common::DEFAULT_PASSPHRASE;
     use holochain_core_types::cas::content::Address;
     use holochain_dpki::utils;
 
     fn mock_passphrase_manager(passphrase: String) -> Arc<PassphraseManager> {
         Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
             PassphraseServiceMock { passphrase },
+        ))))
+    }
+
+    fn default_passphrase_manager() -> Arc<PassphraseManager> {
+        Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
+            PassphraseServiceMock {
+                passphrase: DEFAULT_PASSPHRASE.to_string(),
+            },
         ))))
     }
 
@@ -762,6 +771,28 @@ pub mod tests {
 
         assert_eq!(key_bundle.sign_keys.public(), sign_pubkey);
         assert_eq!(key_bundle.enc_keys.public(), enc_pubkey);
+    }
+
+    #[test]
+    /// Tests if the keystore encrypted with holochain_common::DEFAULT_PASSPHRASE can be decrypted.
+    fn test_keystore_default_passphrase() {
+        let loaded_keystore = Keystore::new_from_file(
+            PathBuf::from("test_keystore"),
+            default_passphrase_manager(),
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            loaded_keystore.list(),
+            vec![
+                "primary_keybundle:enc_key",
+                "primary_keybundle:sign_key",
+                "root_seed"
+            ]
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+        );
     }
 
 }

@@ -12,7 +12,7 @@ DPKI needs to fulfill at least the following design requirements:
 
 1. Provide a way create new keys for nodes.
 2. Provide a way to revoke compromised keys and re-issue keys for a node.
-3. Provide a way to verify the proveneance of keys by grouping them as originating from a single actor.
+3. Provide a way to verify the provenance of keys by grouping them as originating from a single actor.
 4. Securely manage the private keys.
 5. Reliably distribute and make available information about public keys.
 
@@ -35,13 +35,16 @@ TODO: merge the various docs we developed to explain DeepKey here.
 ## Technical Details
 
 ### Keystore
-For each Holochain DNA instance, the Conductor maintains a Keystore, which holds "secrets" (seeds and keys) needed for cryptographic signing and encrypting. Each of the secrets in the Keystore is associated with a string which is a handle needed when using that secret for some cryptographic operation.  Our cryptographic implementation is based on libsodium, and the seeds use their notions of context and index for key derivation paths.  This implementation allows DNA developers to securely call cryptographic functions from wasm which will be executed in the conductor's secure memory space when actually doing the cryptographic processing.
+For each Holochain DNA instance, the Conductor maintains a Keystore, which holds "secrets" (seeds and keys) needed for cryptographic signing and encrypting. Each of the secrets in the Keystore is associated with a string which is a handle needed when using that secret for some cryptographic operation.  Our cryptographic implementation is based on libsodium, and the seeds use their notions of context and index for key derivation paths.  This implementation allows DNA developers to securely call cryptographic functions from WASM which will be executed in the conductor's secure memory space when actually doing the cryptographic processing.
 
-Decrypting a secret from the keystore invokes a pasphrase manager service, which is used to collect the passphrase from some end-user.
+Decrypting a secret from the keystore invokes a passphrase manager service, which is used to collect the passphrase from some end-user.
 
 ### Flows
+TODO
 
 #### Bootstrap
+TODO: flesh out
+
 1. Agent context generates initial keystore contents and config file with dpki section
 2. If dpki section exists, conductor calls `is_initialized` on the named dpki instance, and if not, calls `init()` with the given parameters.
 
@@ -53,7 +56,11 @@ TODO
 
 ### DPKI Interface
 
-- `init(params)` [here: params=Option<RootKeysetId>]
-- `is_initialized()` -> bool
-- `create_agent_key(agent_name)`
-- `get_root_keyset_id()` -> RootKeysetId
+The Holochain conductor expects the following exposed functions to exist in any dpki application so that it can call them at various times to manage keys and identity.
+
+- `init(params)` [here: params=Option<RootKeysetId>] :  Called during bootstrap with initialization parameters retrieved from the DPKI configuration.  This function is only called if a prior call to `is_initialied()` returned false.
+- `is_initialized()` -> bool : Should return a boolean value if the DPKI DNA has been initialized or not
+- `get_root_keyset_id()` -> RootKeysetId : Should return a root keyset id that identifies which identity group this instance of the DPKI app is part of.
+- `create_agent_key(agent_name)` :  Called any time the conductor creates a new DNA instance. Should create a keystore record for the instance.
+
+TODO: add more functions for the trait.

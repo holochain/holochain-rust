@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Removes deprecated zome calling route [#1147](https://github.com/holochain/holochain-rust/pull/1147)
+
 ### Fixed
 
 ### Security
@@ -46,7 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Removes all Cargo.lock files [#1140](https://github.com/holochain/holochain-rust/pull/1140)
-- Removes deprecated zome calling route [#1147](https://github.com/holochain/holochain-rust/pull/1147)
 
 ### Fixed
 - Adds Validation for Crud Reinstates EntryLifecycle. [PR#1143] (https://github.com/holochain/holochain-rust/pull/1143)

@@ -460,7 +460,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from("{\"holo\":\"world\"}")
+            JsonString::from_json("{\"holo\":\"world\"}")
         );
     }
 
@@ -496,7 +496,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from(r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#),
+            JsonString::from_json(r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#),
         );
     }
 
@@ -535,7 +535,7 @@ mod tests {
         // @TODO fragile test!
         assert_ne!(
             result.clone().ok().unwrap(),
-            JsonString::from("{\"Err\":\"Argument deserialization failed\"}")
+            JsonString::from_json("{\"Err\":\"Argument deserialization failed\"}")
         );
 
         expect_action(&signal_rx, |action| {
@@ -574,7 +574,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from("{\"Err\":\"Argument deserialization failed\"}"),
+            JsonString::from_json("{\"Err\":\"Argument deserialization failed\"}"),
         );
 
         expect_action(&signal_rx, |action| {
@@ -675,7 +675,7 @@ mod tests {
             RawString::from(""),
         );
         assert_eq!(
-            JsonString::from("{\"value\":\"fish\"}"),
+            JsonString::from_json("{\"value\":\"fish\"}"),
             call_result.unwrap()
         );
     }

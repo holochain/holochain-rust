@@ -39,6 +39,18 @@ impl JsonString {
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.as_bytes().to_vec()
     }
+
+    // Creates a JsonString from stringified json
+    // replaces From<String> for JsonString and allows
+    // for implementation of TryFrom<JsonString> on generic types
+    pub fn from_json(s: &str) -> JsonString {
+        let cleaned = s
+            // remove whitespace from both ends
+            .trim()
+            // remove null characters from both endsi
+            .trim_matches(char::from(0));
+        JsonString(cleaned.to_owned())        
+    }
 }
 
 impl From<String> for JsonString {

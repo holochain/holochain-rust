@@ -26,7 +26,6 @@ const VALUE_DIR: &str = "v";
 pub struct EavFileStorage {
     dir_path: PathBuf,
     id: Uuid,
-
     lock: Arc<RwLock<()>>,
 }
 

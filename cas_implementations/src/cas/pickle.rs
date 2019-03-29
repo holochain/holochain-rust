@@ -9,7 +9,7 @@ use pickledb::{PickleDb, PickleDbDumpPolicy, SerializationMethod};
 use std::{
     fmt::{Debug, Error, Formatter},
     path::Path,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
     time::Duration,
 };
 use uuid::Uuid;
@@ -19,7 +19,7 @@ const PERSISTENCE_INTERVAL: Duration = Duration::from_millis(5000);
 #[derive(Clone)]
 pub struct PickleStorage {
     id: Uuid,
-    db: Arc<Mutex<PickleDb>>,
+    db: Arc<RwLock<PickleDb>>,
 }
 
 impl Debug for PickleStorage {
@@ -34,7 +34,7 @@ impl PickleStorage {
     pub fn new<P: AsRef<Path>>(db_path: P) -> PickleStorage {
         PickleStorage {
             id: Uuid::new_v4(),
-            db: Arc::new(Mutex::new(PickleDb::new(
+            db: Arc::new(RwLock::new(PickleDb::new(
                 db_path,
                 PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),
                 SerializationMethod::Cbor,
@@ -45,7 +45,7 @@ impl PickleStorage {
 
 impl ContentAddressableStorage for PickleStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-        let mut inner = self.db.lock()?;
+        let mut inner = self.db.write()?;
 
         inner
             .set(&content.address().to_string(), &content.content())
@@ -55,13 +55,13 @@ impl ContentAddressableStorage for PickleStorage {
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
-        let inner = self.db.lock()?;
+        let inner = self.db.read()?;
 
         Ok(inner.exists(&address.to_string()))
     }
 
     fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
-        let inner = self.db.lock()?;
+        let inner = self.db.read()?;
 
         Ok(inner.get(&address.to_string()))
     }

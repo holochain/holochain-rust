@@ -91,7 +91,7 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 /// Not thread-safe CAS implementation with a HashMap
 pub struct ExampleContentAddressableStorageContent {
     storage: HashMap<Address, Content>,
@@ -99,9 +99,7 @@ pub struct ExampleContentAddressableStorageContent {
 
 impl ExampleContentAddressableStorageContent {
     pub fn new() -> ExampleContentAddressableStorageContent {
-        ExampleContentAddressableStorageContent {
-            storage: HashMap::new(),
-        }
+        Default::default()
     }
 
     fn unthreadable_add(

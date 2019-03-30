@@ -107,9 +107,11 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     let response = JsonRpc::parse(&response)?;
 
     match response {
-        JsonRpc::Success(_) => Ok(JsonString::try_from(
-            response.get_result().unwrap().to_owned()
-        ).unwrap()),
+        JsonRpc::Success(_) => Ok(
+            JsonString::from(
+                response.get_result().unwrap().to_owned()
+            )
+        ),
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
             serde_json::to_string(&response.get_error().unwrap()).unwrap(),
         )),

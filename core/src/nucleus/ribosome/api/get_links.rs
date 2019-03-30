@@ -124,18 +124,18 @@ pub mod tests {
             test_get_links_args_bytes(&entry_addresses[0], "test-tag"),
         );
 
-        let expected_1 = JsonString::from(
-            format!(
+        let expected_1 = JsonString::from_json(
+            &(format!(
                 r#"{{"ok":true,"value":"{{\"addresses\":[\"{}\",\"{}\"]}}","error":"null"}}"#,
                 entry_addresses[1], entry_addresses[2]
-            ) + "\u{0}",
+            ) + "\u{0}"),
         );
 
-        let expected_2 = JsonString::from(
-            format!(
+        let expected_2 = JsonString::from_json(
+            &(format!(
                 r#"{{"ok":true,"value":"{{\"addresses\":[\"{}\",\"{}\"]}}","error":"null"}}"#,
                 entry_addresses[2], entry_addresses[1]
-            ) + "\u{0}",
+            ) + "\u{0}"),
         );
 
         assert!(
@@ -156,9 +156,9 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(r#"{"ok":true,"value":"{\"addresses\":[]}","error":"null"}"#)
-                    + "\u{0}"
+            JsonString::from_json(
+                &(String::from(r#"{"ok":true,"value":"{\"addresses\":[]}","error":"null"}"#)
+                    + "\u{0}")
             ),
         );
     }

@@ -37,9 +37,11 @@ fn conductor_callback<S: Into<String>>(
     let response = JsonRpc::parse(&response)?;
 
     match response {
-        JsonRpc::Success(_) => Ok(JsonString::from(
-            serde_json::to_string(&response.get_result().unwrap()).unwrap(),
-        )),
+        JsonRpc::Success(_) => Ok(
+            JsonString::from(
+                response.get_result().unwrap().to_owned()
+            ),
+        ),
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
             serde_json::to_string(&response.get_error().unwrap()).unwrap(),
         )),

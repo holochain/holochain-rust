@@ -67,7 +67,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         entry::{entry_type::test_app_entry_type, Entry},
-        json::JsonString,
+        json::{JsonString, RawString},
         link::Link,
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
@@ -99,7 +99,7 @@ pub mod tests {
 
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
+            let entry = Entry::App(test_app_entry_type(), JsonString::from(RawString::from(format!("entry{} value", i))));
             let address = initialized_context
                 .block_on(commit_entry(entry, None, &initialized_context))
                 .expect("Could not commit entry for testing");

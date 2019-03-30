@@ -1258,7 +1258,7 @@ pub mod tests {
                 context.clone(),
                 Address::from(context.clone().agent_id.address()),
                 "call_bridge",
-                "{}".to_string(),
+                JsonString::empty_object(),
             )
         };
         let result = instance

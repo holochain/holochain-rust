@@ -118,7 +118,7 @@ fn big_string_output_static_test() {
     let expected = "(ಥ⌣ಥ)".repeat(U16_MAX as usize);
     assert_eq!(String::from(s).len(), expected.len());
     assert_eq!(
-        Ok(JsonString::from(expected)),
+        Ok(JsonString::from_json(&expected)),
         call_zome_function_with_hc("big_string_output_static", RawString::from("")),
     );
 }

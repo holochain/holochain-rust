@@ -196,7 +196,7 @@ pub mod tests {
             zome_name: test_zome_name(),
             cap_token: Address::from("test_token"),
             fn_name: test_function_name(),
-            fn_args: test_parameters(),
+            fn_args: test_parameters().to_string(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")

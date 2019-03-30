@@ -201,8 +201,8 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
+            JsonString::from_json(
+                &(String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}")
             ),
         );
     }

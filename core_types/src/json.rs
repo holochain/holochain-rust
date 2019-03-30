@@ -41,28 +41,29 @@ impl JsonString {
     }
 
     // Creates a JsonString from stringified json
-    // replaces From<String> for JsonString and allows
-    // for implementation of TryFrom<JsonString> on generic types
+    // replaces From<String> for JsonString and requires conversions to be explicit
+    // This is because string types must be handled differently depending on if 
+    // they are strinfigied JSON or JSON strings 
     pub fn from_json(s: &str) -> JsonString {
         let cleaned = s
             // remove whitespace from both ends
             .trim()
             // remove null characters from both endsi
             .trim_matches(char::from(0));
-        JsonString(cleaned.to_owned())
+        JsonString(cleaned.to_owned())        
     }
 }
 
-impl From<String> for JsonString {
-    fn from(s: String) -> JsonString {
-        let cleaned = s
-            // remove whitespace from both ends
-            .trim()
-            // remove null characters from both ends
-            .trim_matches(char::from(0));
-        JsonString(cleaned.to_owned())
-    }
-}
+// impl From<String> for JsonString {
+//     fn from(s: String) -> JsonString {
+//         let cleaned = s
+//             // remove whitespace from both ends
+//             .trim()
+//             // remove null characters from both ends
+//             .trim_matches(char::from(0));
+//         JsonString(cleaned.to_owned())
+//     }
+// }
 
 impl From<bool> for JsonString {
     fn from(u: bool) -> JsonString {
@@ -157,36 +158,45 @@ pub trait JsonError {}
 
 impl JsonError for HolochainError {}
 
+fn result_to_json_string<T: Into<JsonString>, E: Into<JsonString>>(result: Result<T, E>) -> JsonString {
+    let is_ok = result.is_ok();
+    let inner_json: JsonString = match result {
+        Ok(inner) => inner.into(),
+        Err(inner) => inner.into(),
+    };
+    let inner_string = String::from(inner_json);
+    JsonString::from_json(&format!(
+        "{{\"{}\":{}}}",
+        if is_ok { "Ok" } else { "Err" },
+        inner_string
+    ))
+}
+
 impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
-        let is_ok = result.is_ok();
-        let inner_json: JsonString = match result {
-            Ok(inner) => inner.into(),
-            Err(inner) => inner.into(),
-        };
-        let inner_string = String::from(inner_json);
-        JsonString::from_json(&format!(
-            "{{\"{}\":{}}}",
-            if is_ok { "Ok" } else { "Err" },
-            inner_string
-        ))
+        result_to_json_string(result)
     }
 }
 
 impl<T: Into<JsonString>> From<Result<T, String>> for JsonString {
     fn from(result: Result<T, String>) -> JsonString {
-        let is_ok = result.is_ok();
-        let inner_json: JsonString = match result {
-            Ok(inner) => inner.into(),
-            // strings need this special handling c.f. Error
-            Err(inner) => RawString::from(inner).into(),
-        };
-        let inner_string = String::from(inner_json);
-        JsonString::from_json(&format!(
-            "{{\"{}\":{}}}",
-            if is_ok { "Ok" } else { "Err" },
-            inner_string
-        ))
+        result_to_json_string(result.map_err(|e| RawString::from(e)))
+    }
+}
+
+impl<E: Into<JsonString>> From<Result<String, E>> for JsonString {
+    fn from(result: Result<String, E>) -> JsonString {
+        result_to_json_string(result.map(|v| RawString::from(v)))
+    }
+}
+
+impl From<Result<String, String>> for JsonString {
+    fn from(result: Result<String, String>) -> JsonString {
+        result_to_json_string(
+            result
+            .map(|v| RawString::from(v))
+            .map_err(|e| RawString::from(e))
+        )
     }
 }
 
@@ -349,10 +359,7 @@ pub mod tests {
     #[test]
     fn json_into_bytes_test() {
         // note that the byte array has the quote character '/"' at the beginnging and end so it is actually valid json
-        assert_eq!(
-            JsonString::from(RawString::from("foo")).to_bytes(),
-            vec![34, 102, 111, 111, 34],
-        );
+        assert_eq!(JsonString::from(RawString::from("foo")).to_bytes(), vec![34, 102, 111, 111, 34],);
     }
 
     #[test]

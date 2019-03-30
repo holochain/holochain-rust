@@ -98,7 +98,7 @@ mod tests {
     use super::*;
 
     pub fn test_identity_value() -> Content {
-        format!("{{\"nick\":\"bob\",\"pub_sign_key\":\"{}\"}}", GOOD_ID).into()
+        Content::from_json(&format!("{{\"nick\":\"bob\",\"pub_sign_key\":\"{}\"}}", GOOD_ID))
     }
 
     #[test]
@@ -141,7 +141,7 @@ mod tests {
     /// show AddressableContent implementation for Agent
     fn agent_addressable_content_test() {
         let expected_content =
-            Content::from("{\"AgentId\":{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}");
+            Content::from_json("{\"AgentId\":{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}");
         // content()
         assert_eq!(expected_content, test_agent_id().content(),);
 

@@ -285,7 +285,7 @@ mod tests {
             context.clone(),
             Address::from(context.clone().agent_id.address()),
             fn_name,
-            params.to_string(),
+            JsonString::from_json(params),
         )
     }
 

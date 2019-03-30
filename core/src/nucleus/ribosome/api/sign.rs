@@ -1,5 +1,5 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::{error::HcResult, signature::Signature};
+use holochain_core_types::{error::HcResult, signature::Signature, json::JsonString};
 use holochain_dpki::keypair::generate_random_sign_keypair;
 use holochain_sodium::secbuf::SecBuf;
 use holochain_wasm_utils::api_serialization::sign::{SignArgs, SignOneTimeResult};
@@ -28,7 +28,9 @@ pub fn invoke_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         }
     };
 
-    let signature = context.sign(sign_args.payload.clone());
+    let signature = 
+        context.sign(sign_args.payload.clone())
+        .map(|sig| JsonString::from_json(&sig));
 
     context.log(format!(
         "debug/zome: signature of data:{:?} by:{:?} is:{:?}",

@@ -33,10 +33,8 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         passphrase1
     });
 
-    let (keystore, public_address) = Keystore::new_standalone(
-        mock_passphrase_manager(passphrase),
-        None,
-        )?;
+    let (keystore, public_address) =
+        Keystore::new_standalone(mock_passphrase_manager(passphrase), None)?;
 
     let path = if None == path {
         let p = keys_directory();

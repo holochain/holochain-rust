@@ -225,7 +225,7 @@ impl Display for JsonString {
 /// }
 pub fn default_to_json<V: Serialize + Debug>(v: V) -> JsonString {
     serde_json::to_string(&v)
-        .map(JsonString::from)
+        .map(|s| JsonString::from_json(&s))
         .map_err(|e| HolochainError::SerializationError(e.to_string()))
         .unwrap_or_else(|_| panic!("could not Jsonify: {:?}", v))
 }
@@ -300,8 +300,8 @@ impl From<RawString> for String {
 /// it should always be possible to Jsonify RawString, if not something is very wrong
 impl From<RawString> for JsonString {
     fn from(raw_string: RawString) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&raw_string.0)
+        JsonString::from_json(
+            &serde_json::to_string(&raw_string.0)
                 .unwrap_or_else(|_| panic!("could not Jsonify RawString: {:?}", &raw_string)),
         )
     }
@@ -332,7 +332,7 @@ pub mod tests {
     #[test]
     fn default_json_round_trip_test() {
         let test = DeriveTest { foo: "bar".into() };
-        let expected = JsonString::from("{\"foo\":\"bar\"}");
+        let expected = JsonString::from_json("{\"foo\":\"bar\"}");
         assert_eq!(expected, JsonString::from(test.clone()),);
 
         assert_eq!(&DeriveTest::try_from(expected).unwrap(), &test,);
@@ -350,7 +350,8 @@ pub mod tests {
 
     #[test]
     fn json_into_bytes_test() {
-        assert_eq!(JsonString::from("foo").to_bytes(), vec![102, 111, 111],);
+        // note that the byte array has the quote character '/"' at the beginnging and end so it is actually valid json
+        assert_eq!(JsonString::from(RawString::from("foo")).to_bytes(), vec![34, 102, 111, 111, 34],);
     }
 
     #[test]
@@ -360,28 +361,34 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(result),
-            JsonString::from("{\"Err\":{\"ErrorGeneric\":\"foo\"}}"),
+            JsonString::from_json("{\"Err\":{\"ErrorGeneric\":\"foo\"}}"),
         );
 
         let result: Result<String, String> = Err(String::from("foo"));
 
         assert_eq!(
             JsonString::from(result),
-            JsonString::from("{\"Err\":\"foo\"}"),
+            JsonString::from_json("{\"Err\":\"foo\"}"),
         )
     }
 
     #[test]
     /// show From<&str> and From<String> for JsonString
     fn json_from_string_test() {
-        assert_eq!(String::from("foo"), String::from(JsonString::from("foo")),);
-
         assert_eq!(
-            String::from("foo"),
-            String::from(JsonString::from(String::from("foo"))),
+            String::from("\"foo\""),
+            String::from(JsonString::from(RawString::from("foo"))),
         );
 
-        assert_eq!(String::from("foo"), String::from(&JsonString::from("foo")),);
+        assert_eq!(
+            String::from("\"foo\""),
+            String::from(JsonString::from_json(&String::from("\"foo\""))),
+        );
+
+        assert_eq!(
+            String::from("\"foo\""),
+            String::from(&JsonString::from(RawString::from("foo"))),
+        );
     }
 
     #[test]

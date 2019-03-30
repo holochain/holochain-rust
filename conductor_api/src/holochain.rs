@@ -199,7 +199,7 @@ impl Holochain {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
 
-        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
+        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
         let context = self.context();
         Ok(context.block_on(call_zome_function(zome_call, context))?)
     }

@@ -58,10 +58,10 @@ macro_rules! def_api_fns {
             pub fn without_input<O: TryFrom<JsonString> + Into<JsonString>>(
                 &self,
             ) -> ZomeApiResult<O> {
-                self.with_input("{}")
+                self.with_input(JsonString::empty_object())
             }
 
-            pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(
+            pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString>>(
                 &self,
                 input: I,
             ) -> ZomeApiResult<O> {
@@ -563,8 +563,8 @@ pub fn call<S: Into<String>>(
 ///
 /// # }
 /// ```
-pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
-    let _: ZomeApiResult<()> = Dispatch::Debug.with_input(msg);
+pub fn debug<J: Into<String>>(msg: J) -> ZomeApiResult<()> {
+    let _: ZomeApiResult<()> = Dispatch::Debug.with_input(JsonString::from_json(&msg.into()));
     // internally returns RibosomeEncodedValue::Success which is a zero length allocation
     // return Ok(()) unconditionally instead of the "error" from success
     Ok(())

@@ -148,7 +148,7 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
         "debug/zome: pubkey derive of args:{:?} is:{:?}",
         args_str, string
     ));
-    runtime.store_result(Ok(string))
+    runtime.store_result(Ok(JsonString::from_json(&string)))
 }
 
 pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
@@ -185,5 +185,5 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
         args_str, string
     ));
 
-    runtime.store_result(Ok(string))
+    runtime.store_result(Ok(JsonString::from_json(&string)))
 }

@@ -5,7 +5,7 @@ use holochain_core::nucleus::{
     ribosome::capabilities::CapabilityRequest,
 };
 
-use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance};
+use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance, json::JsonString};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
@@ -156,7 +156,7 @@ impl ConductorApiBuilder {
                         context.clone(),
                         token,
                         &func_name,
-                        params_string.clone(),
+                        JsonString::from_json(&params_string.clone()),
                     ),
                     Some(json_provenance) => {
                         let provenance: Provenance =

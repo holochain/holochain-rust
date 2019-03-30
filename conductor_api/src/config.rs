@@ -352,7 +352,7 @@ pub struct AgentConfiguration {
 
 impl From<AgentConfiguration> for AgentId {
     fn from(config: AgentConfiguration) -> Self {
-        AgentId::try_from(JsonString::try_from(config.id).expect("bad agent json"))
+        AgentId::try_from(JsonString::from_json(&config.id))
             .expect("bad agent json")
     }
 }

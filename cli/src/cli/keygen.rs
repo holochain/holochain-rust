@@ -4,7 +4,6 @@ use holochain_conductor_api::{
     key_loaders::mock_passphrase_manager,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_dpki::SEED_SIZE;
 use rpassword;
 use std::{
     fs::create_dir_all,
@@ -33,8 +32,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         passphrase1
     });
 
-    let (keystore, public_address) =
-        Keystore::new_standalone(mock_passphrase_manager(passphrase), None)?;
+    let (keystore, pub_key) = Keystore::new_standalone(mock_passphrase_manager(passphrase), None)?;
 
     let path = if None == path {
         let p = keys_directory();

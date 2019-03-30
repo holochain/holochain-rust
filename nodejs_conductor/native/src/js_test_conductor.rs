@@ -22,6 +22,7 @@ use holochain_core::{
 use holochain_core_types::{
     cas::content::AddressableContent,
     entry::Entry,
+    json::JsonString,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
@@ -168,7 +169,7 @@ declare_types! {
                         context.clone(),
                         token,
                         &fn_name,
-                        params.clone(),
+                        JsonString::from_json(&params),
                     )
                 };
                 instance.call(&zome, cap, &fn_name, &params)

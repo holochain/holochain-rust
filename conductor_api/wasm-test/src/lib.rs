@@ -109,7 +109,7 @@ pub extern "C" fn debug_stacked_hello(
     let fish = mem_stack.write_json(TestStruct {
         value: "fish".to_string(),
     });
-    hdk_debug(&mut mem_stack, &JsonString::from("disruptive debug log"));
+    hdk_debug(&mut mem_stack, &JsonString::from(RawString::from(RawString::from("disruptive debug log"))));
     return_code_for_allocation_result(fish).into()
 }
 
@@ -146,7 +146,7 @@ fn hdk_commit(
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    match JsonString::from(result.value).try_into() {
+    match JsonString::from_json(&result.value).try_into() {
         Ok(address) => Ok(address),
         Err(hc_err) => Err(hc_err.into()),
     }
@@ -174,7 +174,7 @@ fn hdk_commit_fail(mem_stack: &mut WasmStack) -> Result<Address, String> {
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    let address = JsonString::from(result.value).try_into()?;
+    let address = JsonString::from_json(&result.value).try_into()?;
 
     Ok(address)
 }

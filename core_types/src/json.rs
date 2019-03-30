@@ -165,12 +165,11 @@ impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> fo
             Err(inner) => inner.into(),
         };
         let inner_string = String::from(inner_json);
-        format!(
+        JsonString::from_json(&format!(
             "{{\"{}\":{}}}",
             if is_ok { "Ok" } else { "Err" },
             inner_string
-        )
-        .into()
+        ))
     }
 }
 
@@ -183,12 +182,11 @@ impl<T: Into<JsonString>> From<Result<T, String>> for JsonString {
             Err(inner) => RawString::from(inner).into(),
         };
         let inner_string = String::from(inner_json);
-        format!(
+        JsonString::from_json(&format!(
             "{{\"{}\":{}}}",
             if is_ok { "Ok" } else { "Err" },
             inner_string
-        )
-        .into()
+        ))
     }
 }
 

@@ -129,8 +129,9 @@ pub extern "C" fn __hdk_validate_app_entry(
             match validation_result {
                 Ok(()) => RibosomeEncodedValue::Success.into(),
                 Err(fail_string) => {
-                    return_code_for_allocation_result(crate::global_fns::write_json(fail_string))
-                        .into()
+                    return_code_for_allocation_result(crate::global_fns::write_json(
+                        JsonString::from_json(&fail_string))
+                    ).into()
                 }
             }
         }

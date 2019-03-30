@@ -308,7 +308,7 @@ pub mod tests {
             entry_type::{test_entry_type_b, AppEntryType},
             test_entry, test_entry_b, test_entry_c, Entry,
         },
-        json::JsonString,
+        json::{JsonString, RawString},
         time::test_iso_8601,
     };
     use tempfile;
@@ -462,7 +462,7 @@ pub mod tests {
         );
         let entry = Entry::App(
             AppEntryType::from("another/something"),
-            JsonString::from("Hello, World!"),
+            JsonString::from(RawString::from("Hello, World!")),
         );
         let chain_header_d = ChainHeader::new(
             &entry.entry_type(),
@@ -475,7 +475,7 @@ pub mod tests {
         );
         let entry = Entry::App(
             AppEntryType::from("another/different"),
-            JsonString::from("Kthxbye"),
+            JsonString::from(RawString::from("Kthxbye")),
         );
         let chain_header_e = ChainHeader::new(
             &entry.entry_type(),
@@ -611,7 +611,7 @@ pub mod tests {
         ];
         assert_eq!(expected, found);
 
-        let entry = Entry::App(AppEntryType::from("ns/one"), JsonString::from("1"));
+        let entry = Entry::App(AppEntryType::from("ns/one"), JsonString::from(RawString::from("1")));
         let chain_header_f = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
@@ -621,7 +621,7 @@ pub mod tests {
             &None,
             &test_iso_8601(),
         );
-        let entry = Entry::App(AppEntryType::from("ns/sub/two"), JsonString::from("2"));
+        let entry = Entry::App(AppEntryType::from("ns/sub/two"), JsonString::from(RawString::from("2")));
         let chain_header_g = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
@@ -631,7 +631,7 @@ pub mod tests {
             &None,
             &test_iso_8601(),
         );
-        let entry = Entry::App(AppEntryType::from("ns/sub/three"), JsonString::from("3"));
+        let entry = Entry::App(AppEntryType::from("ns/sub/three"), JsonString::from(RawString::from("3")));
         let chain_header_h = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
@@ -694,7 +694,7 @@ pub mod tests {
 
         let entry = Entry::App(
             AppEntryType::from("%system_entry_type"),
-            JsonString::from("System Entry"),
+            JsonString::from(RawString::from("System Entry")),
         );
         let chain_header_i = ChainHeader::new(
             &entry.entry_type(),

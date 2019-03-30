@@ -359,7 +359,7 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(partial_zome),
-            JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
+            JsonString::from_json("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
         );
     }
 }

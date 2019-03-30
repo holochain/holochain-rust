@@ -90,7 +90,7 @@ macro_rules! def_api_fns {
 
                 // Done
                 if result.ok {
-                    JsonString::from(result.value)
+                    JsonString::from_json(&result.value)
                         .try_into()
                         .map_err(|_| ZomeApiError::from(String::from("Failed to deserialize return value")))
                 } else {

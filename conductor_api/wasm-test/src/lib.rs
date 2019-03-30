@@ -126,12 +126,12 @@ extern "C" {
 fn hdk_commit(
     mem_stack: &mut WasmStack,
     entry_type_name: &str,
-    entry_value: &str,
+    entry_value: &'static str,
 ) -> Result<Address, String> {
     // Put args in struct and serialize into memory
     let entry = Entry::App(
         entry_type_name.to_owned().into(),
-        entry_value.to_owned().into(),
+        RawString::from(entry_value).into(),
     );
     let allocation_of_input = mem_stack.write_json(entry)?;
 

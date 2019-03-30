@@ -24,11 +24,11 @@ impl JsonString {
     /// a null JSON value
     /// e.g. represents None when implementing From<Option<Foo>>
     pub fn null() -> JsonString {
-        JsonString::from("null")
+        JsonString::from_json("null")
     }
 
     pub fn empty_object() -> JsonString {
-        JsonString::from("{}")
+        JsonString::from_json("{}")
     }
 
     pub fn is_null(&self) -> bool {
@@ -117,7 +117,7 @@ impl TryFrom<JsonString> for u64 {
 
 impl From<serde_json::Value> for JsonString {
     fn from(v: serde_json::Value) -> JsonString {
-        JsonString::from(v.to_string())
+        JsonString::from_json(&v.to_string())
     }
 }
 
@@ -141,13 +141,13 @@ impl<'a> From<&'a JsonString> for String {
 
 impl From<&'static str> for JsonString {
     fn from(s: &str) -> JsonString {
-        JsonString::from(String::from(s))
+        JsonString::from_json(&String::from(s))
     }
 }
 
 impl<T: Serialize> From<Vec<T>> for JsonString {
     fn from(vector: Vec<T>) -> JsonString {
-        JsonString::from(serde_json::to_string(&vector).expect("could not Jsonify vector"))
+        JsonString::from_json(&serde_json::to_string(&vector).expect("could not Jsonify vector"))
     }
 }
 

@@ -5,7 +5,9 @@ use holochain_core::nucleus::{
     ribosome::capabilities::CapabilityRequest,
 };
 
-use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance, json::JsonString};
+use holochain_core_types::{
+    agent::AgentId, cas::content::Address, json::JsonString, signature::Provenance,
+};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;

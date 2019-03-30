@@ -611,7 +611,10 @@ pub mod tests {
         ];
         assert_eq!(expected, found);
 
-        let entry = Entry::App(AppEntryType::from("ns/one"), JsonString::from(RawString::from("1")));
+        let entry = Entry::App(
+            AppEntryType::from("ns/one"),
+            JsonString::from(RawString::from("1")),
+        );
         let chain_header_f = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
@@ -621,7 +624,10 @@ pub mod tests {
             &None,
             &test_iso_8601(),
         );
-        let entry = Entry::App(AppEntryType::from("ns/sub/two"), JsonString::from(RawString::from("2")));
+        let entry = Entry::App(
+            AppEntryType::from("ns/sub/two"),
+            JsonString::from(RawString::from("2")),
+        );
         let chain_header_g = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
@@ -631,7 +637,10 @@ pub mod tests {
             &None,
             &test_iso_8601(),
         );
-        let entry = Entry::App(AppEntryType::from("ns/sub/three"), JsonString::from(RawString::from("3")));
+        let entry = Entry::App(
+            AppEntryType::from("ns/sub/three"),
+            JsonString::from(RawString::from("3")),
+        );
         let chain_header_h = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),

@@ -28,7 +28,7 @@ impl ZomeFnCall {
             &args.zome_name,
             cap_call,
             &args.fn_name,
-            JsonString::from_json(&args.fn_args)
+            JsonString::from_json(&args.fn_args),
         )
     }
 }
@@ -112,11 +112,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     let response = JsonRpc::parse(&response)?;
 
     match response {
-        JsonRpc::Success(_) => Ok(
-            JsonString::from(
-                response.get_result().unwrap().to_owned()
-            )
-        ),
+        JsonRpc::Success(_) => Ok(JsonString::from(response.get_result().unwrap().to_owned())),
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
             serde_json::to_string(&response.get_error().unwrap()).unwrap(),
         )),

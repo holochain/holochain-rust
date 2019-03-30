@@ -496,7 +496,9 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from_json(r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#),
+            JsonString::from_json(
+                r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#
+            ),
         );
     }
 

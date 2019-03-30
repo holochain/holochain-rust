@@ -81,7 +81,8 @@ pub mod tests {
 
         let zome_api_internal_result = ZomeApiInternalResult::try_from(call_result).unwrap();
         let globals =
-            ZomeApiGlobals::try_from(JsonString::from_json(&zome_api_internal_result.value)).unwrap();
+            ZomeApiGlobals::try_from(JsonString::from_json(&zome_api_internal_result.value))
+                .unwrap();
 
         assert_eq!(globals.dna_name, "TestApp");
         let expected_agent = registered_test_agent("jane");

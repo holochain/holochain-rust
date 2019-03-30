@@ -33,7 +33,8 @@ pub extern "C" fn holochain_dna_create_from_json(buf: *const c_char) -> *mut Dna
     match catch_unwind(|| {
         let json = unsafe { CStr::from_ptr(buf).to_string_lossy().into_owned() };
 
-        let dna = Dna::try_from(JsonString::from_json(&json)).expect("could not restore DNA from JSON");
+        let dna =
+            Dna::try_from(JsonString::from_json(&json)).expect("could not restore DNA from JSON");
 
         Box::into_raw(Box::new(dna))
     }) {

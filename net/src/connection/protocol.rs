@@ -67,11 +67,9 @@ impl<'a> From<&'a NamedBinaryData> for Protocol {
                 let sub: NamedBinaryData = rmp_serde::from_slice(&nb.data).unwrap();
                 Protocol::NamedBinary(sub)
             }
-            b"json" => Protocol::Json(
-                JsonString::from_json(
-                    &String::from_utf8_lossy(&nb.data).to_string()
-                )
-            ),
+            b"json" => Protocol::Json(JsonString::from_json(
+                &String::from_utf8_lossy(&nb.data).to_string(),
+            )),
             b"ping" => {
                 let sub: PingData = rmp_serde::from_slice(&nb.data).unwrap();
                 Protocol::Ping(sub)

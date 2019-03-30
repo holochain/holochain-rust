@@ -197,7 +197,10 @@ pub mod tests {
             JsonString::from(zome.clone()),
         );
 
-        assert_eq!(zome, Zome::try_from(JsonString::from_json(expected)).unwrap(),);
+        assert_eq!(
+            zome,
+            Zome::try_from(JsonString::from_json(expected)).unwrap(),
+        );
     }
 
     #[test]

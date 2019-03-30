@@ -2,8 +2,8 @@ use crate::{
     network::{actions::custom_send::custom_send, direct_message::CustomDirectMessage},
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
-use holochain_wasm_utils::api_serialization::send::SendArgs;
 use holochain_core_types::json::JsonString;
+use holochain_wasm_utils::api_serialization::send::SendArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -25,12 +25,15 @@ pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         zome: call_data.zome_name.clone(),
     };
 
-    let result = call_data.context.block_on(custom_send(
-        args.to_agent,
-        message,
-        args.options.0,
-        call_data.context.clone(),
-    )).map(|s| JsonString::from_json(&s));
+    let result = call_data
+        .context
+        .block_on(custom_send(
+            args.to_agent,
+            message,
+            args.options.0,
+            call_data.context.clone(),
+        ))
+        .map(|s| JsonString::from_json(&s));
 
     runtime.store_result(result)
 }

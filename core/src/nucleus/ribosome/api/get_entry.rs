@@ -251,9 +251,7 @@ pub mod tests {
         let entry_result =
             GetEntryResult::new(StatusRequestKind::Latest, Some((&entry_with_meta, vec![])));
         assert_eq!(
-            JsonString::from(
-                ZomeApiInternalResult::success(entry_result)
-            ),
+            JsonString::from(ZomeApiInternalResult::success(entry_result)),
             call_result,
         );
     }

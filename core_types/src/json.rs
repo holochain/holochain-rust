@@ -49,7 +49,7 @@ impl JsonString {
             .trim()
             // remove null characters from both endsi
             .trim_matches(char::from(0));
-        JsonString(cleaned.to_owned())        
+        JsonString(cleaned.to_owned())
     }
 }
 
@@ -349,7 +349,10 @@ pub mod tests {
     #[test]
     fn json_into_bytes_test() {
         // note that the byte array has the quote character '/"' at the beginnging and end so it is actually valid json
-        assert_eq!(JsonString::from(RawString::from("foo")).to_bytes(), vec![34, 102, 111, 111, 34],);
+        assert_eq!(
+            JsonString::from(RawString::from("foo")).to_bytes(),
+            vec![34, 102, 111, 111, 34],
+        );
     }
 
     #[test]

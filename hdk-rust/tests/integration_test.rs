@@ -612,7 +612,7 @@ fn can_roundtrip_links() {
     // (i.e. longer on a slow CI and when multiple tests are run simultaneausly).
     let mut both_links_present = false;
     let mut tries = 0;
-    let mut result_of_get = JsonString::from("");
+    let mut result_of_get = JsonString::from_json("{}");
     while !both_links_present && tries < 10 {
         tries = tries + 1;
         // Now get_links on the base and expect both to be there

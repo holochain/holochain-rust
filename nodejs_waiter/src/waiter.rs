@@ -380,7 +380,7 @@ mod tests {
     }
 
     fn mk_entry(ty: &'static str, content: &'static str) -> Entry {
-        Entry::App(ty.into(), JsonString::from(content))
+        Entry::App(ty.into(), JsonString::from_json(content))
     }
 
     fn mk_entry_wh(entry: Entry) -> EntryWithHeader {
@@ -417,7 +417,7 @@ mod tests {
     }
 
     fn zf_response(call: ZomeFnCall) -> ExecuteZomeFnResponse {
-        ExecuteZomeFnResponse::new(call, Ok(JsonString::from("")))
+        ExecuteZomeFnResponse::new(call, Ok(JsonString::from_json("{}")))
     }
 
     fn num_conditions(waiter: &Waiter, call: &ZomeFnCall) -> usize {

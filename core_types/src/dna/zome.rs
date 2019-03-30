@@ -193,11 +193,11 @@ pub mod tests {
         let expected = "{\"description\":\"\",\"config\":{},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[],\"code\":{\"code\":\"\"},\"bridges\":[]}";
 
         assert_eq!(
-            JsonString::from(expected.clone()),
+            JsonString::from_json(expected),
             JsonString::from(zome.clone()),
         );
 
-        assert_eq!(zome, Zome::try_from(JsonString::from(expected)).unwrap(),);
+        assert_eq!(zome, Zome::try_from(JsonString::from_json(expected)).unwrap(),);
     }
 
     #[test]

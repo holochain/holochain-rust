@@ -181,11 +181,11 @@ pub fn test_entry() -> Entry {
 }
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_with_value(value: &'static str) -> Entry {
-    Entry::App(test_app_entry_type(), JsonString::from(value))
+    Entry::App(test_app_entry_type(), JsonString::from_json(&value))
 }
 
 pub fn expected_serialized_entry_content() -> JsonString {
-    JsonString::from("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
+    JsonString::from_json("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
 }
 
 /// the correct address for test_entry()
@@ -301,7 +301,7 @@ pub mod tests {
         assert_eq!(entry, Entry::from(entry.clone()));
 
         let sys_entry = test_sys_entry();
-        let expected = JsonString::from(format!(
+        let expected = JsonString::from_json(&format!(
             "{{\"AgentId\":{{\"nick\":\"{}\",\"pub_sign_key\":\"{}\"}}}}",
             "bob",
             crate::agent::GOOD_ID,

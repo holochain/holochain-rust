@@ -33,10 +33,10 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         passphrase1
     });
 
-    let mut keystore = Keystore::new(mock_passphrase_manager(passphrase), None)?;
-    keystore.add_random_seed("root_seed", SEED_SIZE)?;
-
-    let (pub_key, _) = keystore.add_keybundle_from_seed("root_seed", PRIMARY_KEYBUNDLE_ID)?;
+    let (keystore, public_address) = Keystore::new_standalone(
+        mock_passphrase_manager(passphrase),
+        None,
+        )?;
 
     let path = if None == path {
         let p = keys_directory();

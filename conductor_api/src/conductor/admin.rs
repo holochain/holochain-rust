@@ -5,13 +5,14 @@ use crate::{
         InstanceReferenceConfiguration, InterfaceConfiguration, StorageConfiguration,
     },
     error::HolochainInstanceError,
+    keystore::Keystore,
 };
 use holochain_core_types::{
     cas::content::AddressableContent, error::HolochainError, hash::HashString,
 };
 use json_patch;
 use std::{
-    fs,
+    fs::{self, create_dir_all},
     path::PathBuf,
     sync::{Arc, RwLock},
 };
@@ -48,7 +49,12 @@ pub trait ConductorAdmin {
         interface_id: &String,
         instance_id: &String,
     ) -> Result<(), HolochainError>;
-    fn add_agent(&mut self, new_agent: AgentConfiguration) -> Result<(), HolochainError>;
+    fn add_agent(
+        &mut self,
+        id: String,
+        name: String,
+        holo_remote_key: Option<bool>,
+    ) -> Result<String, HolochainError>;
     fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_bridge(&mut self, new_bridge: Bridge) -> Result<(), HolochainError>;
     fn remove_bridge(
@@ -381,22 +387,47 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
-    fn add_agent(&mut self, new_agent: AgentConfiguration) -> Result<(), HolochainError> {
+    fn add_agent(
+        &mut self,
+        id: String,
+        name: String,
+        holo_remote_key: Option<bool>,
+    ) -> Result<String, HolochainError> {
         let mut new_config = self.config.clone();
-        if new_config.agents.iter().any(|i| i.id == new_agent.id) {
+        if new_config.agents.iter().any(|i| i.id == id) {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Agent with ID '{}' already exists",
-                new_agent.id
+                id
             )));
         }
-        new_config.agents.push(new_agent.clone());
+
+        let (keystore, public_address) =
+            Keystore::new_standalone(self.passphrase_manager.clone(), self.hash_config.clone())?;
+
+        let keystore_file = self
+            .instance_storage_dir_path()
+            .join(public_address.clone());
+
+        let new_agent = AgentConfiguration {
+            id: id.clone(),
+            name,
+            public_address: public_address.clone(),
+            keystore_file: keystore_file.to_string_lossy().into_owned(),
+            holo_remote_key,
+        };
+
+        create_dir_all(self.instance_storage_dir_path())?;
+        keystore.save(keystore_file)?;
+        self.add_agent_keystore(id.clone(), keystore);
+
+        new_config.agents.push(new_agent);
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
 
-        notify(format!("Added agent \"{}\"", new_agent.id));
+        notify(format!("Added agent \"{}\"", id));
 
-        Ok(())
+        Ok(public_address)
     }
 
     fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError> {
@@ -516,9 +547,11 @@ pub mod tests {
             DnaLoader,
         },
         config::{load_configuration, Configuration, InterfaceConfiguration, InterfaceDriver},
+        key_loaders::mock_passphrase_manager,
+        keystore::test_hash_config,
     };
     use holochain_common::paths::DNA_EXTENSION;
-    use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
+    use holochain_core_types::{dna::Dna, json::JsonString};
     use std::{
         convert::TryFrom,
         env::current_dir,
@@ -679,6 +712,8 @@ pattern = '.*'"#
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         conductor.load_config().unwrap();
+        conductor.hash_config = test_hash_config();
+        conductor.passphrase_manager = mock_passphrase_manager(test_name.to_string());
         conductor
     }
 
@@ -1375,15 +1410,9 @@ type = 'websocket'"#,
         let test_name = "test_add_agent";
         let mut conductor = create_test_conductor(test_name, 3009);
 
-        let agent_config = AgentConfiguration {
-            id: String::from("new-agent"),
-            name: String::from("Mr. New"),
-            public_address: AgentId::generate_fake("new").address().to_string(),
-            keystore_file: String::from("new-test-path"),
-            holo_remote_key: None,
-        };
-
-        assert_eq!(conductor.add_agent(agent_config), Ok(()),);
+        let result = conductor.add_agent(String::from("new-agent"), String::from("Mr. New"), None);
+        assert!(result.is_ok());
+        let pub_key = result.unwrap();
 
         let mut config_contents = String::new();
         let mut file =
@@ -1391,17 +1420,21 @@ type = 'websocket'"#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
+        let keystore_file = conductor.instance_storage_dir_path().join(pub_key.clone());
+
         let mut toml = header_block(test_name);
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(
             toml,
-            String::from(
+            format!(
                 r#"[[agents]]
 id = 'new-agent'
-keystore_file = 'new-test-path'
+keystore_file = '{}'
 name = 'Mr. New'
-public_address = 'HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa'"#,
+public_address = '{}'"#,
+                keystore_file.to_string_lossy(),
+                pub_key
             ),
         );
         toml = add_block(toml, dna());

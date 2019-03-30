@@ -37,6 +37,7 @@ const PCHECK_SIZE: usize = PCHECK_RANDOM_SIZE + PCHECK_HEADER_SIZE;
 const KEYBUNDLE_SIGNKEY_SUFFIX: &str = ":sign_key";
 const KEYBUNDLE_ENCKEY_SUFFIX: &str = ":enc_key";
 pub const PRIMARY_KEYBUNDLE_ID: &str = "primary_keybundle";
+pub const STANDALONE_ROOT_SEED: &str = "root_seed";
 
 pub enum Secret {
     SigningKey(SigningKeyPair),
@@ -129,6 +130,18 @@ impl Keystore {
             passphrase_manager: Some(passphrase_manager),
             hash_config,
         })
+    }
+
+    /// Create a new keystore for "standalone" use, i.e. not initialized by a DPKI instance
+    pub fn new_standalone(
+        passphrase_manager: Arc<PassphraseManager>,
+        hash_config: Option<PwHashConfig>,
+    ) -> HcResult<(Self, Base32)> {
+        let mut keystore = Keystore::new(passphrase_manager, hash_config)?;
+        keystore.add_random_seed(STANDALONE_ROOT_SEED, SEED_SIZE)?;
+        let (pub_key, _) =
+            keystore.add_keybundle_from_seed(STANDALONE_ROOT_SEED, PRIMARY_KEYBUNDLE_ID)?;
+        Ok((keystore, pub_key))
     }
 
     /// Load a keystore from file.

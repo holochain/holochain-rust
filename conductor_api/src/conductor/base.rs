@@ -18,7 +18,7 @@ use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::key_bundle::KeyBundle;
+use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     clone::Clone,
@@ -89,7 +89,8 @@ pub struct Conductor {
     logger: DebugLogger,
     p2p_config: Option<P2pConfig>,
     network_spawn: Option<SpawnResult>,
-    passphrase_manager: Arc<PassphraseManager>,
+    pub passphrase_manager: Arc<PassphraseManager>,
+    pub hash_config: Option<PwHashConfig>, // currently this has to be pub for testing.  would like to remove
 }
 
 impl Drop for Conductor {
@@ -104,7 +105,15 @@ impl Drop for Conductor {
 
 type SignalSender = SyncSender<Signal>;
 pub type KeyLoader = Arc<
-    Box<FnMut(&PathBuf, Arc<PassphraseManager>) -> Result<Keystore, HolochainError> + Send + Sync>,
+    Box<
+        FnMut(
+                &PathBuf,
+                Arc<PassphraseManager>,
+                Option<PwHashConfig>,
+            ) -> Result<Keystore, HolochainError>
+            + Send
+            + Sync,
+    >,
 >;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
@@ -135,7 +144,13 @@ impl Conductor {
             passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
                 PassphraseServiceCmd {},
             )))),
+            hash_config: None,
         }
+    }
+
+    pub fn add_agent_keystore(&mut self, agent_id: String, keystore: Keystore) {
+        self.agent_keys
+            .insert(agent_id, Arc::new(Mutex::new(keystore)));
     }
 
     pub fn with_signal_channel(mut self, signal_tx: SyncSender<Signal>) -> Self {
@@ -573,6 +588,7 @@ impl Conductor {
             let mut keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
                 &keystore_file_path,
                 self.passphrase_manager.clone(),
+                self.hash_config.clone(),
             )
             .map_err(|_| {
                 HolochainError::ConfigError(format!(
@@ -640,10 +656,11 @@ impl Conductor {
     fn load_key(
         file: &PathBuf,
         passphrase_manager: Arc<PassphraseManager>,
+        hash_config: Option<PwHashConfig>,
     ) -> Result<Keystore, HolochainError> {
         notify(format!("Reading keystore from {}", file.display()));
 
-        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager, None)?;
+        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager, hash_config)?;
         Ok(keystore)
     }
 
@@ -797,7 +814,7 @@ pub mod tests {
         signal::signal_channel,
     };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
-    use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
+    use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
     use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
@@ -821,19 +838,25 @@ pub mod tests {
     }
 
     pub fn test_key_loader() -> KeyLoader {
-        let loader = Box::new(|path: &PathBuf, _pm: Arc<PassphraseManager>| {
-            match path.to_str().unwrap().as_ref() {
-                "holo_tester1.key" => Ok(test_keystore(1)),
-                "holo_tester2.key" => Ok(test_keystore(2)),
-                "holo_tester3.key" => Ok(test_keystore(3)),
-                unknown => Err(HolochainError::ErrorGeneric(format!(
-                    "No test keystore for {}",
-                    unknown
-                ))),
-            }
-        })
+        let loader = Box::new(
+            |path: &PathBuf, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
+                match path.to_str().unwrap().as_ref() {
+                    "holo_tester1.key" => Ok(test_keystore(1)),
+                    "holo_tester2.key" => Ok(test_keystore(2)),
+                    "holo_tester3.key" => Ok(test_keystore(3)),
+                    unknown => Err(HolochainError::ErrorGeneric(format!(
+                        "No test keystore for {}",
+                        unknown
+                    ))),
+                }
+            },
+        )
             as Box<
-                FnMut(&PathBuf, Arc<PassphraseManager>) -> Result<Keystore, HolochainError>
+                FnMut(
+                        &PathBuf,
+                        Arc<PassphraseManager>,
+                        Option<PwHashConfig>,
+                    ) -> Result<Keystore, HolochainError>
                     + Send
                     + Sync,
             >;

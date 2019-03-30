@@ -10,7 +10,7 @@ Addressing these needs is the function of Public Key Infrastructure, and in our 
 
 DPKI needs to fulfill at least the following design requirements:
 
-1. Provide a way create new keys for nodes.
+1. Provide a way to create new keys for nodes.
 2. Provide a way to revoke compromised keys and re-issue keys for a node.
 3. Provide a way to verify the provenance of keys by grouping them as originating from a single actor.
 4. Securely manage the private keys.
@@ -60,7 +60,11 @@ The Holochain conductor expects the following exposed functions to exist in any 
 
 - `init(params)` [here: params=Option<RootKeysetId>] :  Called during bootstrap with initialization parameters retrieved from the DPKI configuration.  This function is only called if a prior call to `is_initialied()` returned false.
 - `is_initialized()` -> bool : Should return a boolean value if the DPKI DNA has been initialized or not
-- `get_root_keyset_id()` -> RootKeysetId : Should return a root keyset id that identifies which identity group this instance of the DPKI app is part of.
 - `create_agent_key(agent_name)` :  Called any time the conductor creates a new DNA instance. Should create a keystore record for the instance.
+
+DeepKey specific functions:
+
+- `get_initialization_data()` -> String : Returns the root keyset id that identifies which identity group this instance of the DPKI app is part of.
+
 
 TODO: add more functions for the trait.

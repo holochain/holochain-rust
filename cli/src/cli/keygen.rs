@@ -1,9 +1,6 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
-use holochain_conductor_api::{
-    key_loaders::mock_passphrase_manager,
-    keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
-};
+use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
 use rpassword;
 use std::{
     fs::create_dir_all,
@@ -57,7 +54,10 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
+    use holochain_conductor_api::{
+        key_loaders::mock_passphrase_manager,
+        keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
+    };
     use std::{fs::remove_file, path::PathBuf};
 
     #[test]

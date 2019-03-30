@@ -67,7 +67,11 @@ impl<'a> From<&'a NamedBinaryData> for Protocol {
                 let sub: NamedBinaryData = rmp_serde::from_slice(&nb.data).unwrap();
                 Protocol::NamedBinary(sub)
             }
-            b"json" => Protocol::Json(String::from_utf8_lossy(&nb.data).to_string().into()),
+            b"json" => Protocol::Json(
+                JsonString::from_json(
+                    &String::from_utf8_lossy(&nb.data).to_string()
+                )
+            ),
             b"ping" => {
                 let sub: PingData = rmp_serde::from_slice(&nb.data).unwrap();
                 Protocol::Ping(sub)
@@ -90,7 +94,7 @@ impl From<NamedBinaryData> for Protocol {
 
 impl<'a> From<&'a str> for Protocol {
     fn from(s: &'a str) -> Self {
-        Protocol::Json(s.to_string().into())
+        Protocol::Json(JsonString::from_json(&s.to_string()))
     }
 }
 
@@ -135,7 +139,7 @@ impl Protocol {
     /// get a json string straight out of the Protocol enum
     pub fn as_json_string(&self) -> JsonString {
         if let Protocol::Json(data) = self {
-            String::from(data).into()
+            JsonString::from_json(&String::from(data))
         } else {
             panic!("as_json_string called with bad type");
         }

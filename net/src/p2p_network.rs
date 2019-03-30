@@ -9,7 +9,7 @@ use crate::connection::{
     NetResult,
 };
 use std::{thread::sleep, time::Duration};
-
+use holochain_core_types::json::JsonString;
 use crate::{
     in_memory::memory_worker::InMemoryWorker, ipc_net_worker::IpcNetWorker, p2p_config::*,
 };
@@ -28,7 +28,7 @@ impl P2pNetwork {
     /// `handler` is the closure for handling Protocol messages received from the network.
     pub fn new(handler: NetHandler, p2p_config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
-        let backend_config = p2p_config.backend_config.to_string().into();
+        let backend_config = JsonString::from_json(&p2p_config.backend_config.to_string());
         // Provide worker factory depending on backend kind
         let worker_factory: NetWorkerFactory = match p2p_config.backend_kind {
             // Create an IpcNetWorker with the passed backend config

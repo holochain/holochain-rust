@@ -173,7 +173,7 @@ mod tests {
     #[cfg_attr(tarpaulin, skip)]
     fn can_memory_worker_double_track() {
         // setup client 1
-        let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_string());
+        let memory_config = &JsonString::from_json(&P2pConfig::unique_memory_backend_string());
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
 
         let mut memory_worker_1 = Box::new(

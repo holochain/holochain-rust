@@ -99,7 +99,10 @@ pub mod tests {
 
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::App(test_app_entry_type(), JsonString::from(RawString::from(format!("entry{} value", i))));
+            let entry = Entry::App(
+                test_app_entry_type(),
+                JsonString::from(RawString::from(format!("entry{} value", i))),
+            );
             let address = initialized_context
                 .block_on(commit_entry(entry, None, &initialized_context))
                 .expect("Could not commit entry for testing");

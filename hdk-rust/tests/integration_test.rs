@@ -328,7 +328,12 @@ fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainR
     let cap_call = {
         let context = hc.context();
         let token = context.get_public_token().unwrap();
-        make_cap_request_for_call(context.clone(), token, fn_name, JsonString::from_json(params))
+        make_cap_request_for_call(
+            context.clone(),
+            token,
+            fn_name,
+            JsonString::from_json(params),
+        )
     };
     hc.call("test_zome", cap_call, fn_name, params)
 }

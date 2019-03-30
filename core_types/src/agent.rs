@@ -98,7 +98,10 @@ mod tests {
     use super::*;
 
     pub fn test_identity_value() -> Content {
-        Content::from_json(&format!("{{\"nick\":\"bob\",\"pub_sign_key\":\"{}\"}}", GOOD_ID))
+        Content::from_json(&format!(
+            "{{\"nick\":\"bob\",\"pub_sign_key\":\"{}\"}}",
+            GOOD_ID
+        ))
     }
 
     #[test]

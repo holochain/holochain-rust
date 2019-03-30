@@ -218,7 +218,9 @@ pub extern "C" fn __hdk_validate_link(
                 Some(match validation_result {
                     Ok(()) => RibosomeEncodedValue::Success,
                     Err(fail_string) => {
-                        return_code_for_allocation_result(::global_fns::write_json(fail_string))
+                        return_code_for_allocation_result(::global_fns::write_json(
+                            JsonString::from_json(&fail_string))
+                        )
                     }
                 })
             })

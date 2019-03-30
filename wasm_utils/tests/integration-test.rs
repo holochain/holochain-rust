@@ -60,7 +60,7 @@ fn fake_test_struct() -> TestStruct {
 #[test]
 fn store_string_test() {
     assert_eq!(
-        Ok(JsonString::from("fish")),
+        Ok(JsonString::from_json("fish")),
         call_zome_function_with_hc("store_string", RawString::from("")),
     );
 }
@@ -78,7 +78,7 @@ fn store_string_err_test() {
 #[test]
 fn load_string_test() {
     assert_eq!(
-        Ok(JsonString::from("fish")),
+        Ok(JsonString::from_json("fish")),
         call_zome_function_with_hc("load_string", RawString::from("")),
     );
 }
@@ -86,7 +86,7 @@ fn load_string_test() {
 #[test]
 fn stacked_strings_test() {
     assert_eq!(
-        Ok(JsonString::from("first")),
+        Ok(JsonString::from_json("first")),
         call_zome_function_with_hc("stacked_strings", RawString::from("")),
     );
 }
@@ -126,7 +126,7 @@ fn big_string_output_static_test() {
 #[test]
 pub fn round_trip_foo_test() {
     assert_eq!(
-        Ok(JsonString::from("foo")),
+        Ok(JsonString::from_json("foo")),
         call_zome_function_with_hc("round_trip_foo", RawString::from("")),
     );
 }

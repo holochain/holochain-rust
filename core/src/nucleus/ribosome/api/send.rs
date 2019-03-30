@@ -3,6 +3,7 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
 use holochain_wasm_utils::api_serialization::send::SendArgs;
+use holochain_core_types::json::JsonString;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -29,7 +30,7 @@ pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         message,
         args.options.0,
         call_data.context.clone(),
-    ));
+    )).map(|s| JsonString::from_json(&s));
 
     runtime.store_result(result)
 }

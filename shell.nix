@@ -217,36 +217,38 @@ let
 
   hc-prepare-crate-versions = pkgs.writeShellScriptBin "hc-prepare-crate-versions"
   ''
-   echo
    echo "bumping core version from ${core-previous-version} to ${core-version} in Cargo.toml"
-   echo
    find . \
-   -name "Cargo.toml" \
-   -not -path "**/.git/**" \
-   -not -path "**/.cargo/**" \
-   -not -path "./nodejs_conductor*" \
-   | xargs -I {} \
-   sed -i 's/^\s*version\s*=\s*"${core-previous-version}"\s*$/version = "${core-version}"/g' {}
+    -name "Cargo.toml" \
+    -not -path "**/.git/**" \
+    -not -path "**/.cargo/**" \
+    -not -path "./nodejs_conductor*" \
+    | xargs -I {} \
+    sed -i 's/^\s*version\s*=\s*"${core-previous-version}"\s*$/version = "${core-version}"/g' {}
 
-   echo
+   echo "bumping core versions from ${core-previous-version} to ${core-version} in readmes"
+   find . \
+    -iname "readme.md" \
+    -not -path "**/.git/**" \
+    -not -path "**/.cargo/**" \
+    | xargs -I {} \
+    sed -i 's/${core-previous-version}/${core-version}/g' {}
+
    echo "bumping versions from ${core-previous-version} to ${core-version} in CLI"
-   echo
    find . \
-   -type f \
-   -not -path "**/.git/**" \
-   -path "./cli/*" \
-   | xargs -I {} \
-   sed -i 's/${core-previous-version}/${core-version}/g' {}
+    -type f \
+    -not -path "**/.git/**" \
+    -path "./cli/*" \
+    | xargs -I {} \
+    sed -i 's/${core-previous-version}/${core-version}/g' {}
 
-   echo
    echo "bumping node conductor version from ${node-conductor-previous-version} to ${node-conductor-version} in Cargo.toml"
-   echo
    find . \
-   -name "Cargo.toml" \
-   -not -path "**/.git/**" \
-   -path "./nodejs_conductor*" \
-   | xargs -I {} \
-   sed -i 's/^\s*version\s*=\s*"${node-conductor-previous-version}"\s*$/version = "${node-conductor-version}"/g' {}
+    -name "Cargo.toml" \
+    -not -path "**/.git/**" \
+    -path "./nodejs_conductor*" \
+    | xargs -I {} \
+    sed -i 's/^\s*version\s*=\s*"${node-conductor-previous-version}"\s*$/version = "${node-conductor-version}"/g' {}
   '';
 
   # a few things should already be done by this point so precheck them :)

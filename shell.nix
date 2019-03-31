@@ -252,11 +252,31 @@ let
   ''
 Release ${core-version}
 
+## Preparation
+
+This should all be handled by `nix-shell --run hc-prepare-release`
+
 - [x] develop is green
 - [x] dev pulse commit for release candidate
 - [x] core/hdk version updated in CLI scaffold
 - [x] reviewed and updated the version numbers in Cargo.toml
 - [x] holochain nodejs minor version bumped in CLI scaffold `package.json`
+
+## Test builds
+
+Kick these off with `nix-shell --run hc-test-release`
+
+Move on to "release docs" below while waiting for CI.
+
+- [ ] green core release test tag + linux/mac/windows artifacts on github
+    - [ ] build: {{build URL}}
+    - [ ] artifacts: {{artifacts URL}}
+- [ ] green node release test tag + linux/mac/windows artifacts on github
+    - [ ] build: {{build URL}}
+    - [ ] artifacts: {{artifacts URL}}
+
+## Release docs
+
 - [ ] reviewed and updated CHANGELOG
 - [ ] reviewed and updated README files
 - [ ] written github release notes
@@ -267,16 +287,16 @@ Release ${core-version}
     - [ ] correct rust nightly version
     - [ ] correct installation instructions
     - [ ] correct version number in binary file names
-- [ ] green core release test tag + linux/mac/windows artifacts on github
-    - [ ] build: {{build URL}}
-    - [ ] artifacts: {{artifacts URL}}
-- [ ] green node release test tag + linux/mac/windows artifacts on github
-    - [ ] build: {{build URL}}
-    - [ ] artifacts: {{artifacts URL}}
+
+## QA
+
 - [ ] QA: artifacts install on supported platforms
 - [ ] QA: @Connoropolous :+1: docs
 - [ ] QA: hApps run
 - [ ] QA: hc generate run
+
+## Deploy artifacts
+
 - [ ] release PR merged into `master`
 - [ ] core release tag + linux/mac/windows artifacts on github
 - [ ] node release tag + linux/mac/windows artifacts on github
@@ -285,6 +305,9 @@ Release ${core-version}
 - [ ] test build artifacts deleted from github
 - [ ] release notes copied into github
 - [ ] `unknown` release assets renamed to `ubuntu`
+
+## Finalise
+
 - [ ] developer docs updated
 - [ ] social medias
   '';

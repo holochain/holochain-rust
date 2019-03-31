@@ -281,10 +281,14 @@ Move on to "release docs" below while waiting for CI.
 
 Run the basic linter with `nix-shell --run hc-lint-release-docs`
 
+The linter will do some things for you and provide helpful debug info.
+
 - [ ] reviewed and updated CHANGELOG
     - [ ] correct version + date
     - [ ] inserted template for next release
+    - [ ] all root items have a PR link
 - [ ] reviewed and updated README files
+    - [ ] correct rust nightly version
 - [ ] written github release notes
     - [ ] correct medium post link for dev pulse
     - [ ] correct CHANGELOG link
@@ -425,6 +429,15 @@ Run the basic linter with `nix-shell --run hc-lint-release-docs`
   echo "the following LOC in the CHANGELOG.md are missing a PR reference:"
   echo
   cat CHANGELOG.md | grep -E '^-\s' | grep -Ev '[0-9]\]'
+
+  echo
+  echo "the following LOC in README files reference the WRONG rust nightly date (should be ${date}):"
+  echo
+  find . \
+   -iname "readme.*" \
+   | xargs cat \
+   | grep -E 'nightly-' \
+   | grep -v '${date}'
   '';
 
 in

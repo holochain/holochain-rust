@@ -223,12 +223,22 @@ let
 
   hc-prepare-crate-versions = pkgs.writeShellScriptBin "hc-prepare-crate-versions"
   ''
+   echo
+   echo "bumping core version from ${core-previous-version} to ${core-version}"
+   echo
    find . \
    -name "Cargo.toml" \
    -not -path "**/.cargo/**" \
    -not -path "./nodejs_*" \
    | xargs -I {} \
    sed -i 's/^\s*version\s*=\s*"${core-previous-version}"\s*$/version = "${core-version}"/g' {}
+
+   echo
+   echo "bumping node conductor version from ${node-conductor-previous-version} to ${node-conductor-version}"
+   echo
+   find . \
+   -name "Cargo.toml" \
+   -path "./nodejs_*"
   '';
 
   # a few things should already be done by this point so precheck them :)

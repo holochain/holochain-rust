@@ -256,7 +256,7 @@ Release ${core-version}
 - [x] dev pulse commit for release candidate
 - [x] core/hdk version updated in CLI scaffold
 - [x] reviewed and updated the version numbers in Cargo.toml
-- [ ] holochain nodejs minor version bumped in CLI scaffold `package.json`
+- [x] holochain nodejs minor version bumped in CLI scaffold `package.json`
 - [ ] reviewed and updated CHANGELOG
 - [ ] reviewed and updated README files
 - [ ] written github release notes
@@ -297,7 +297,10 @@ Release ${core-version}
   git config --local hub.forkremote ${upstream}
   if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release-branch}" ]
    then
-    git hub pull new -b 'master' -m '${release-details}' --no-triangular ${release-branch}
+    git add . \
+    && git commit -am 'Release ${core-version}' \
+    && git push \
+    && git hub pull new -b 'master' -m '${release-details}' --no-triangular ${release-branch}
    else
     echo "current branch is not ${release-branch}!"
     exit 1
@@ -328,6 +331,7 @@ Release ${core-version}
      git hub --version \
      && hc-prepare-pulse-tag \
      && hc-prepare-release-branch \
+     && hc-prepare-crate-versions \
      && hc-prepare-release-pr \
      ;;
     *)

@@ -4,8 +4,9 @@ use crate::{
         AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration,
         InstanceReferenceConfiguration, InterfaceConfiguration, StorageConfiguration,
     },
+    dpki_instance::DpkiInstance,
     error::HolochainInstanceError,
-    keystore::Keystore,
+    keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
 use holochain_core_types::{
     cas::content::AddressableContent, error::HolochainError, hash::HashString,
@@ -401,8 +402,31 @@ impl ConductorAdmin for Conductor {
             )));
         }
 
-        let (keystore, public_address) =
-            Keystore::new_standalone(self.passphrase_manager.clone(), self.hash_config.clone())?;
+        let (keystore, public_address) = if self.using_dpki() {
+            let dpki_instance_id = self.dpki_instance_id().unwrap();
+
+            // try to create the keystore first so that if the passphrase fails we don't have
+            // to clean-up any dkpi calls
+            let mut keystore =
+                Keystore::new(self.passphrase_manager.clone(), self.hash_config.clone())?;
+            {
+                let instance = self.instances.get(&dpki_instance_id)?;
+                let hc_lock = instance.clone();
+                let hc_lock_inner = hc_lock.clone();
+                let mut hc = hc_lock_inner.write().unwrap();
+                hc.dpki_create_agent_key(name.clone())?;
+            }
+            // TODO: how do we clean-up now if this fails? i.e. the dpki dna will have registered
+            // the identity to its DHT, but we failed, for what ever reason, to set up
+            // the agent in the conductor, so we should do something...
+            let dpki_keystore = self.get_keystore_for_agent(&dpki_instance_id)?;
+            let mut dpki_keystore = dpki_keystore.lock().unwrap();
+            let mut keybundle = dpki_keystore.get_keybundle(&id)?;
+            keystore.add_keybundle(PRIMARY_KEYBUNDLE_ID, &mut keybundle)?;
+            (keystore, keybundle.get_id())
+        } else {
+            Keystore::new_standalone(self.passphrase_manager.clone(), self.hash_config.clone())?
+        };
 
         let keystore_file = self
             .instance_storage_dir_path()

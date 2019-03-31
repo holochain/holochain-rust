@@ -575,7 +575,7 @@ impl Conductor {
     /// Get reference to keystore for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
-    fn get_keystore_for_agent(
+    pub fn get_keystore_for_agent(
         &mut self,
         agent_id: &String,
     ) -> Result<Arc<Mutex<Keystore>>, String> {
@@ -619,7 +619,7 @@ impl Conductor {
     /// Get reference to the keybundle stored in the keystore for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
-    fn get_keybundle_for_agent(
+    pub fn get_keybundle_for_agent(
         &mut self,
         agent_id: &String,
     ) -> Result<Arc<Mutex<KeyBundle>>, String> {
@@ -781,6 +781,17 @@ impl Conductor {
         })?;
         serde_json::to_writer_pretty(&file, dna.into())?;
         Ok(path)
+    }
+
+    pub fn using_dpki(&self) -> bool {
+        self.config.dpki.is_some()
+    }
+
+    pub fn dpki_instance_id(&self) -> Option<String> {
+        match self.config.dpki {
+            Some(ref dpki) => Some(dpki.instance_id.clone()),
+            None => None,
+        }
     }
 }
 

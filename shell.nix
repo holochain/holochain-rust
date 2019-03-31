@@ -320,10 +320,8 @@ Move on to "release docs" below while waiting for CI.
   git config --local hub.forkremote ${upstream}
   if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release-branch}" ]
    then
-    git add . \
-    && git commit -am 'Release ${core-version}' \
-    && git push \
-    && git hub pull new -b 'master' -m '${release-details}' --no-triangular ${release-branch}
+    git add . && git commit -am 'Release ${core-version}'
+    git push && git hub pull new -b 'master' -m '${release-details}' --no-triangular ${release-branch}
    else
     echo "current branch is not ${release-branch}!"
     exit 1

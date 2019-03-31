@@ -253,6 +253,8 @@ let
   ''
 Release ${core-version}
 
+current release process: https://hackmd.io/6HH-O1KuQ7uYzKrsI6ooIw
+
 ## Preparation
 
 This should all be handled by `nix-shell --run hc-prepare-release`

@@ -228,7 +228,7 @@ let
    -not -path "**/.cargo/**" \
    -not -path "./nodejs_*" \
    | xargs -I {} \
-   sed 's/^\s*version\s*=\s*"${core-previous-version}"\s*$/version = ${core-version}/g' {}
+   sed -i 's/^\s*version\s*=\s*"${core-previous-version}"\s*$/version = "${core-version}"/g' {}
   '';
 
   # a few things should already be done by this point so precheck them :)

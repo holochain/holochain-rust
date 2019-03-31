@@ -160,7 +160,7 @@ let
   pulse-commit = "0a524d3be580249d54cf5073591fa9fe1f30a174";
   core-previous-version = "0.0.8-alpha";
   core-version = "0.0.9-alpha";
-  node-conductor-previous-version = "0.0.8-alpha";
+  node-conductor-previous-version = "0.4.7-alpha";
   node-conductor-version = "0.4.8-alpha";
 
   pulse-tag = "dev-pulse-${pulse-version}";
@@ -242,13 +242,9 @@ let
     | xargs -I {} \
     sed -i 's/${core-previous-version}/${core-version}/g' {}
 
-   echo "bumping node conductor version from ${node-conductor-previous-version} to ${node-conductor-version} in Cargo.toml"
-   find . \
-    -name "Cargo.toml" \
-    -not -path "**/.git/**" \
-    -path "./nodejs_conductor*" \
-    | xargs -I {} \
-    sed -i 's/^\s*version\s*=\s*"${node-conductor-previous-version}"\s*$/version = "${node-conductor-version}"/g' {}
+   echo "bumping node conductor version from ${node-conductor-previous-version} to ${node-conductor-version}"
+   sed -i 's/^\s*version\s*=\s*"${node-conductor-previous-version}"\s*$/version = "${node-conductor-version}"/g' ./nodejs_conductor/native/Cargo.toml
+   sed -i 's/"version": "${node-conductor-previous-version}"/"version": "${node-conductor-version}"/g' ./nodejs_conductor/package.json
   '';
 
   # a few things should already be done by this point so precheck them :)

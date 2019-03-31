@@ -429,7 +429,7 @@ ${changelog-intro}
 
   if ! $(grep -q "\[${core-version}\]" ./CHANGELOG.md)
    then
-    sed -i "s/[Unreleased]/[${core-version}] - $(date --iso --u)/" ./CHANGELOG.md
+    sed -i "s/\[Unreleased\]/\[${core-version}\] - $(date --iso --u)/" ./CHANGELOG.md
     sed -i 's/${changelog-intro}/${changelog-template}/' ./CHANGELOG.md
   fi
   '';

@@ -156,6 +156,7 @@ let
 
   repo = "holochain/holochain-rust";
   upstream = "origin";
+  pulse-url = "https://medium.com/@holochain/64326f4897a";
   pulse-version = "22";
   pulse-commit = "0a524d3be580249d54cf5073591fa9fe1f30a174";
   core-previous-version = "0.0.8-alpha";
@@ -289,6 +290,9 @@ The linter will do some things for you and provide helpful debug info.
     - [ ] all root items have a PR link
 - [ ] reviewed and updated README files
     - [ ] correct rust nightly version
+
+Generate the github release notes with `nix-shell --run hc-generate-release-notes`
+
 - [ ] written github release notes
     - [ ] correct medium post link for dev pulse
     - [ ] correct CHANGELOG link
@@ -349,6 +353,7 @@ The linter will do some things for you and provide helpful debug info.
    echo
    echo "Current nix-shell config:"
    echo
+   echo "pulse-url: ${pulse-url}"
    echo "pulse-version: ${pulse-version}"
    echo "pulse-commit: ${pulse-commit}"
    echo "core-previous-version: ${core-previous-version}"
@@ -440,6 +445,61 @@ The linter will do some things for you and provide helpful debug info.
    | grep -v '${date}'
   '';
 
+
+  release-notes-template = ''
+# ${core-version} release {{ release date }}
+
+## Summary
+
+{{ dev pulse summary }}
+
+## Highlights
+
+{{ dev pulse highlights }}
+
+See the [Dev Pulse](${pulse-url}) & [change log](https://github.com/holochain/holochain-rust/blob/release-${core-version}/CHANGELOG.md) for complete details.
+
+## Installation
+This release consists of binary builds of:
+
+- the [`hc` development command-line tool](https://github.com/holochain/holochain-rust/blob/v${core-version}/cli/README.md)
+- [`holochain` deployment conductor](https://github.com/holochain/holochain-rust/blob/v${core-version}/conductor/README.md) for different platforms.
+
+To install, simply download and extract the binary for your platform.
+See our [installation quick-start instructions](https://developer.holochain.org/start.html) for details.
+
+Rust and NodeJS are both required for `hc` to build and test DNA:
+
+- [Rust](https://www.rust-lang.org/en-US/install.html)
+  - Must be `nightly-${date}` build with the WASM build target.
+    Once you have first installed rustup:
+    ```
+    rustup toolchain install nightly-${date}
+    rustup default nightly-${date}
+    rustup target add wasm32-unknown-unknown --toolchain nightly-${date}
+    ```
+- [Node.js](https://nodejs.org) version 8 or higher
+  - E2E tests for Holochain apps are written in Javascript client-side and executed in NodeJS through websockets
+  - For further info, check out [the holochain-nodejs module](https://www.npmjs.com/package/@holochain/holochain-nodejs)
+
+### Which Binary?
+Download only the binaries for your operating system.
+
+- MacOS: `holochain-cli-v${core-version}-x86_64-apple-darwin.tar.gz`
+- Linux: `holochain-cli-v${core-version}-x86_64-ubuntu-linux-gnu.tar.gz`
+- Windows:
+  - mingw build system: `holochain-cli-v${core-version}-x86_64-pc-windows-gnu.tar.gz`
+  - Visual Studio build system: `holochain-cli-v${core-version}-x86_64-pc-windows-msvc.tar.gz`
+
+All binaries are for 64-bit operating systems.
+32-bit systems are NOT supported.
+  '';
+  hc-generate-release-notes = pkgs.writeShellScriptBin "hc-generate-release-notes"
+  ''
+   echo '${release-notes-template}' \
+    | sed "s/{{ release date }}/`date --iso -u`/"
+  '';
+
 in
 with pkgs;
 stdenv.mkDerivation rec {
@@ -507,6 +567,7 @@ stdenv.mkDerivation rec {
     hc-prepare-release
     hc-test-release
     hc-lint-release-docs
+    hc-generate-release-notes
 
   ] ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ];
 

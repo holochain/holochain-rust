@@ -161,6 +161,7 @@ let
    && hc-test-app-spec
   '';
 
+  repo = "holochain/holochain-rust";
   upstream = "origin";
   pulse-version = "22";
   pulse-commit = "0a524d3be580249d54cf5073591fa9fe1f30a174";
@@ -170,7 +171,9 @@ let
   pulse-tag = "dev-pulse-${pulse-version}";
   hc-prepare-pulse-tag = pkgs.writeShellScriptBin "hc-prepare-pulse-tag"
   ''
-  echo $'\ntagging commit for pulse version ${pulse-version}\n'
+  echo
+  echo 'tagging commit for pulse version ${pulse-version}'
+  echo
   git fetch --tags
   if git tag | grep -q "${pulse-tag}"
    then
@@ -184,21 +187,66 @@ let
     git push ${upstream} ${pulse-tag}
     echo $'pulse tag ${pulse-tag} created and pushed'
   fi
-  echo $'\npulse tag on github: https://github.com/holochain/holochain-rust/releases/tag/${pulse-tag}\n'
+  echo
+  echo 'pulse tag on github: https://github.com/holochain/holochain-rust/releases/tag/${pulse-tag}'
+  echo
   '';
 
   release-branch = "release-${core-version}";
+  release-details =
+  ''
+Release ${core-version}
+
+- [x] develop is green
+- [x] dev pulse commit for release candidate
+- [ ] core/hdk version updated in CLI scaffold
+- [ ] reviewed and updated the version numbers in Cargo.toml
+- [ ] holochain nodejs minor version bumped in CLI scaffold `package.json`
+- [ ] reviewed and updated CHANGELOG
+- [ ] reviewed and updated README files
+- [ ] written github release notes
+    - [ ] correct medium post link for dev pulse
+    - [ ] correct CHANGELOG link
+    - [ ] hackmd link: {{URL}}
+    - [ ] correct tags in blob links
+    - [ ] correct rust nightly version
+    - [ ] correct installation instructions
+    - [ ] correct version number in binary file names
+- [ ] green core release test tag + linux/mac/windows artifacts on github
+    - [ ] build: {{build URL}}
+    - [ ] artifacts: {{artifacts URL}}
+- [ ] green node release test tag + linux/mac/windows artifacts on github
+    - [ ] build: {{build URL}}
+    - [ ] artifacts: {{artifacts URL}}
+- [ ] QA: artifacts install on supported platforms
+- [ ] QA: @Connoropolous :+1: docs
+- [ ] QA: hApps run
+- [ ] QA: hc generate run
+- [ ] release PR merged into `master`
+- [ ] core release tag + linux/mac/windows artifacts on github
+- [ ] node release tag + linux/mac/windows artifacts on github
+- [ ] npm deploy
+- [ ] release branch merged into `develop`
+- [ ] test build artifacts deleted from github
+- [ ] release notes copied into github
+- [ ] `unknown` release assets renamed to `ubuntu`
+- [ ] developer docs updated
+- [ ] social medias
+  '';
   hc-prepare-release-branch = pkgs.writeShellScriptBin "hc-prepare-release-branch"
   ''
-   echo $'\npreparing release branch & PR\n'
-   git fetch
+   echo
+   echo 'preparing release branch & PR'
+   echo
 
+   git fetch
    if git tag | grep -q "${release-branch}"
    then
     echo "There is a tag with the same name as the release branch ${release-branch}! aborting..."
     exit 1
    fi
 
+   echo
    echo 'checkout or create release branch'
    if git branch | grep -q "${release-branch}"
     then
@@ -209,17 +257,31 @@ let
      git checkout -b ${release-branch}
      git push -u ${upstream} ${release-branch}
    fi
+   echo
+
+   echo
+   echo 'ensure github PR'
+   git config --local hub.upstream ${repo}
+   git config --local hub.forkrepo ${repo}
+   git config --local hub.forkremote ${upstream}
+   if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release-branch}" ]
+    then
+     git hub -v pull new -b 'master' -m '${release-details}' --no-triangular ${release-branch}
+    else
+     echo "current branch is not ${release-branch}!"
+     exit 1
+   fi
   '';
 
   hc-prepare-release = pkgs.writeShellScriptBin "hc-prepare-release"
   ''
-   echo ""
+   echo
    echo "IMPORTANT: make sure git-hub is setup on your machine"
    echo "1. Visit https://github.com/settings/tokens/new"
    echo "2. Generate a token called 'git-hub' with 'user' and 'repo' scopes"
    echo "3. git config --global hub.oauthtoken <token>"
    echo "4. git config --global hub.username <username>"
-   echo ""
+   echo
    read -r -p "Are you sure you want to cut a new release based on the current config in shell.nix? [y/N] " response
    case "$response" in
     [yY][eE][sS]|[yY])

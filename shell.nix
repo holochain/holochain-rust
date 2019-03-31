@@ -161,6 +161,78 @@ let
    && hc-test-app-spec
   '';
 
+  upstream = "origin";
+  pulse-version = "22";
+  pulse-commit = "0a524d3be580249d54cf5073591fa9fe1f30a174";
+  core-version = "0.0.9-alpha";
+  node-conductor-version = "0.4.8-alpha";
+
+  pulse-tag = "dev-pulse-${pulse-version}";
+  hc-prepare-pulse-tag = pkgs.writeShellScriptBin "hc-prepare-pulse-tag"
+  ''
+  echo $'\ntagging commit for pulse version ${pulse-version}\n'
+  git fetch --tags
+  if git tag | grep -q "${pulse-tag}"
+   then
+    echo "pulse tag for pulse ${pulse-version} already exists locally! doing nothing..."
+    echo "pulse commit: $(git show-ref -s ${pulse-tag})"
+    echo "to push upstream run: git push ${upstream} ${pulse-tag}"
+   else
+    echo "tagging..."
+    git tag -a ${pulse-tag} ${pulse-commit} -m 'Dev pulse ${pulse-version}'
+    echo "pushing..."
+    git push ${upstream} ${pulse-tag}
+    echo $'pulse tag ${pulse-tag} created and pushed'
+  fi
+  echo $'\npulse tag on github: https://github.com/holochain/holochain-rust/releases/tag/${pulse-tag}\n'
+  '';
+
+  release-branch = "release-${core-version}";
+  hc-prepare-release-branch = pkgs.writeShellScriptBin "hc-prepare-release-branch"
+  ''
+   echo $'\npreparing release branch & PR\n'
+   git fetch
+
+   if git tag | grep -q "${release-branch}"
+   then
+    echo "There is a tag with the same name as the release branch ${release-branch}! aborting..."
+    exit 1
+   fi
+
+   echo 'checkout or create release branch'
+   if git branch | grep -q "${release-branch}"
+    then
+     git checkout ${release-branch}
+     git pull
+    else
+     git checkout ${pulse-commit}
+     git checkout -b ${release-branch}
+     git push -u ${upstream} ${release-branch}
+   fi
+  '';
+
+  hc-prepare-release = pkgs.writeShellScriptBin "hc-prepare-release"
+  ''
+   echo ""
+   echo "IMPORTANT: make sure git-hub is setup on your machine"
+   echo "1. Visit https://github.com/settings/tokens/new"
+   echo "2. Generate a token called 'git-hub' with 'user' and 'repo' scopes"
+   echo "3. git config --global hub.oauthtoken <token>"
+   echo "4. git config --global hub.username <username>"
+   echo ""
+   read -r -p "Are you sure you want to cut a new release based on the current config in shell.nix? [y/N] " response
+   case "$response" in
+    [yY][eE][sS]|[yY])
+     git hub --version \
+     && hc-prepare-pulse-tag \
+     && hc-prepare-release-branch \
+     ;;
+    *)
+     exit 1
+     ;;
+   esac
+  '';
+
 in
 with pkgs;
 stdenv.mkDerivation rec {
@@ -218,6 +290,12 @@ stdenv.mkDerivation rec {
     circleci-cli
     hc-codecov
     ci
+
+    # release tooling
+    gitAndTools.git-hub
+    hc-prepare-pulse-tag
+    hc-prepare-release-branch
+    hc-prepare-release
 
   ] ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ];
 

@@ -5,6 +5,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.9-alpha] - 2019-03-31
+
+### Added
 - Adds hdk access to keystore [#1148](https://github.com/holochain/holochain-rust/pull/1148)
 
 ### Changed

@@ -282,6 +282,13 @@ Release ${core-version}
    echo "3. git config --global hub.oauthtoken <token>"
    echo "4. git config --global hub.username <username>"
    echo
+   echo "Current nix-shell config:"
+   echo
+   echo "pulse-version: ${pulse-version}"
+   echo "pulse-commit: ${pulse-commit}"
+   echo "core-version: ${core-version}"
+   echo "node-conductor-version: ${node-conductor-version}"
+   echo
    read -r -p "Are you sure you want to cut a new release based on the current config in shell.nix? [y/N] " response
    case "$response" in
     [yY][eE][sS]|[yY])

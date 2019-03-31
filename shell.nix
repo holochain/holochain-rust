@@ -282,6 +282,8 @@ Move on to "release docs" below while waiting for CI.
 Run the basic linter with `nix-shell --run hc-lint-release-docs`
 
 - [ ] reviewed and updated CHANGELOG
+    - [ ] correct version + date
+    - [ ] inserted template for next release
 - [ ] reviewed and updated README files
 - [ ] written github release notes
     - [ ] correct medium post link for dev pulse
@@ -418,6 +420,11 @@ Run the basic linter with `nix-shell --run hc-lint-release-docs`
     echo "timestamping and retemplating changelog"
     sed -i "s/\[Unreleased\]/${changelog-template}\#\# \[${core-version}\] - $(date --iso --u)/" ./CHANGELOG.md
   fi
+
+  echo
+  echo "the following LOC in the CHANGELOG.md are missing a PR reference:"
+  echo
+  cat CHANGELOG.md | grep -E '^-\s' | grep -Ev '[0-9]\]'
   '';
 
 in

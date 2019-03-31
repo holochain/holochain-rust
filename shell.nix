@@ -266,6 +266,8 @@ This should all be handled by `nix-shell --run hc-prepare-release`
 
 Kick these off with `nix-shell --run hc-test-release`
 
+Every run of `hc-test-release` will cut new tags incrementally and trigger new builds on CI.
+
 Move on to "release docs" below while waiting for CI.
 
 - [ ] green core release test tag + linux/mac/windows artifacts on github

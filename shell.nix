@@ -347,12 +347,12 @@ Move on to "release docs" below while waiting for CI.
    echo "core-version: ${core-version}"
    echo "node-conductor-previous-version: ${node-conductor-previous-version}"
    echo "node-conductor-version: ${node-conductor-version}"
+   git hub --version
    echo
    read -r -p "Are you sure you want to cut a new release based on the current config in shell.nix? [y/N] " response
    case "$response" in
     [yY][eE][sS]|[yY])
-     git hub --version \
-     && hc-prepare-pulse-tag \
+     hc-prepare-pulse-tag \
      && hc-prepare-release-branch \
      && hc-prepare-crate-versions \
      && hc-prepare-release-pr \

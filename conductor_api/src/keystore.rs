@@ -433,6 +433,25 @@ impl Keystore {
         Ok((sign_pub_key, enc_pub_key))
     }
 
+    /// adds a keybundle into the keystore based on an actual keybundle object by
+    /// adding two keypair secrets (signing and encrypting) under the named prefix
+    pub fn add_keybundle(
+        &mut self,
+        dst_id_prefix_str: &str,
+        keybundle: &mut KeyBundle,
+    ) -> HcResult<()> {
+        let dst_sign_id_str = [dst_id_prefix_str, KEYBUNDLE_SIGNKEY_SUFFIX].join("");
+        let dst_enc_id_str = [dst_id_prefix_str, KEYBUNDLE_ENCKEY_SUFFIX].join("");
+
+        let mut sign_keypair = keybundle.sign_keys.new_from_self()?;
+        let mut enc_keypair = keybundle.enc_keys.new_from_self()?;
+        let sign_secret = Arc::new(Mutex::new(Secret::SigningKey(sign_keypair)));
+        let enc_secret = Arc::new(Mutex::new(Secret::EncryptingKey(enc_keypair)));
+        self.add(&dst_sign_id_str, sign_secret)?;
+        self.add(&dst_enc_id_str, enc_secret)?;
+        Ok(())
+    }
+
     /// adds a keybundle into the keystore based on a seed already in the keystore by
     /// adding two keypair secrets (signing and encrypting) under the named prefix
     /// returns the public keys of the secrets
@@ -736,10 +755,21 @@ pub mod tests {
 
         let result = keystore.get_keybundle("my_keybundle");
         assert!(!result.is_err());
-        let key_bundle = result.unwrap();
+        let mut key_bundle = result.unwrap();
 
         assert_eq!(key_bundle.sign_keys.public(), sign_pubkey);
         assert_eq!(key_bundle.enc_keys.public(), enc_pubkey);
+
+        let result = keystore.add_keybundle("copy_of_keybundle", &mut key_bundle);
+        assert!(!result.is_err());
+
+        let result = keystore.get_keybundle("copy_of_keybundle");
+        assert!(!result.is_err());
+
+        let mut key_bundle_copy = result.unwrap();
+
+        assert!(key_bundle.sign_keys.is_same(&mut key_bundle_copy.sign_keys));
+        assert!(key_bundle.enc_keys.is_same(&mut key_bundle_copy.enc_keys));
     }
 
 }

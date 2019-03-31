@@ -167,6 +167,7 @@ let
   pulse-commit = "0a524d3be580249d54cf5073591fa9fe1f30a174";
   core-previous-version = "0.0.8-alpha";
   core-version = "0.0.9-alpha";
+  node-conductor-previous-version = "0.0.8-alpha";
   node-conductor-version = "0.4.8-alpha";
 
   pulse-tag = "dev-pulse-${pulse-version}";
@@ -229,7 +230,7 @@ let
    find . \
    -name "Cargo.toml" \
    -not -path "**/.cargo/**" \
-   -not -path "./nodejs_*" \
+   -not -path "./nodejs_conductor*" \
    | xargs -I {} \
    sed -i 's/^\s*version\s*=\s*"${core-previous-version}"\s*$/version = "${core-version}"/g' {}
 
@@ -238,7 +239,7 @@ let
    echo
    find . \
    -name "Cargo.toml" \
-   -path "./nodejs_*"
+   -path "./nodejs_conductor"
   '';
 
   # a few things should already be done by this point so precheck them :)
@@ -313,6 +314,7 @@ Release ${core-version}
    echo "pulse-commit: ${pulse-commit}"
    echo "core-previous-version: ${core-previous-version}"
    echo "core-version: ${core-version}"
+   echo "node-conductor-previous-version: ${node-conductor-previous-version}"
    echo "node-conductor-version: ${node-conductor-version}"
    echo
    read -r -p "Are you sure you want to cut a new release based on the current config in shell.nix? [y/N] " response

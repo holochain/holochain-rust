@@ -361,6 +361,40 @@ Move on to "release docs" below while waiting for CI.
    esac
   '';
 
+  hc-test-release = pkgs.writeShellScriptBin "hc-test-release"
+  ''
+  echo
+  echo "kicking off new test release build"
+  echo
+
+  git push || exit 1
+
+  i="0"
+  while [ $(git tag -l "test-$i-v${core-version}") ]
+  do
+   echo $i
+   i=$[$i+1]
+  done
+  echo "tagging test-$i-v${core-version}"
+  git tag -a "test-$i-v${core-version}" -m "Version ${core-version} release test $i"
+  git push ${upstream} "test-$i-v${core-version}"
+
+  n="0"
+  while [ $(git tag -l "holochain-nodejs-test-$n-v${node-conductor-version}") ]
+  do
+   echo $n
+   n=$[$n+1]
+  done
+  echo "tagging holochain-nodejs-test-$n-v${node-conductor-version}"
+  git tag -a "holochain-nodejs-test-$n-v${node-conductor-version}" -m "Node conductor version ${node-conductor-version} release test $n"
+  git push ${upstream} "holochain-nodejs-test-$n-v${node-conductor-version}"
+
+  echo "testing tags pushed"
+  echo "travis builds: https://travis-ci.com/holochain/holochain-rust/branches"
+  echo "core artifacts: https://github.com/holochain/holochain-rust/releases/tag/test-$i-v${core-version}"
+  echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/holochain-nodejs-test-$n-v${node-conductor-version}"
+  '';
+
 in
 with pkgs;
 stdenv.mkDerivation rec {
@@ -423,8 +457,10 @@ stdenv.mkDerivation rec {
     hc-prepare-pulse-tag
     hc-prepare-release-branch
     hc-prepare-release-pr
-    hc-prepare-release
     hc-prepare-crate-versions
+    hc-prepare-release
+
+    hc-test-release
 
   ] ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ];
 

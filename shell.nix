@@ -165,6 +165,7 @@ let
   upstream = "origin";
   pulse-version = "22";
   pulse-commit = "0a524d3be580249d54cf5073591fa9fe1f30a174";
+  core-previous-version = "0.0.8-alpha";
   core-version = "0.0.9-alpha";
   node-conductor-version = "0.4.8-alpha";
 
@@ -193,7 +194,44 @@ let
   '';
 
   release-branch = "release-${core-version}";
-  # develop should be green and dev pulse tagged by this point :)
+  hc-prepare-release-branch = pkgs.writeShellScriptBin "hc-prepare-release-branch"
+  ''
+   echo
+   echo 'preparing release branch'
+   echo
+
+   git fetch
+   if git tag | grep -q "${release-branch}"
+   then
+    echo "There is a tag with the same name as the release branch ${release-branch}! aborting..."
+    exit 1
+   fi
+
+   echo
+   echo 'checkout or create release branch'
+   if git branch | grep -q "${release-branch}"
+    then
+     git checkout ${release-branch}
+     git pull
+    else
+     git checkout ${pulse-commit}
+     git checkout -b ${release-branch}
+     git push -u ${upstream} ${release-branch}
+   fi
+   echo
+  '';
+
+  hc-prepare-crate-versions = pkgs.writeShellScriptBin "hc-prepare-crate-versions"
+  ''
+   find . \
+   -name "Cargo.toml" \
+   -not -path "**/.cargo/**" \
+   -not -path "./nodejs_*" \
+   | xargs -I {} \
+   sed 's/^\s*version\s*=\s*"${core-previous-version}"\s*$/version = ${core-version}/g' {}
+  '';
+
+  # a few things should already be done by this point so precheck them :)
   release-details =
   ''
 Release ${core-version}
@@ -234,44 +272,20 @@ Release ${core-version}
 - [ ] developer docs updated
 - [ ] social medias
   '';
-  hc-prepare-release-branch = pkgs.writeShellScriptBin "hc-prepare-release-branch"
+  hc-prepare-release-pr = pkgs.writeShellScriptBin "hc-prepare-release-pr"
   ''
-   echo
-   echo 'preparing release branch & PR'
-   echo
-
-   git fetch
-   if git tag | grep -q "${release-branch}"
+  echo
+  echo 'ensure github PR'
+  git config --local hub.upstream ${repo}
+  git config --local hub.forkrepo ${repo}
+  git config --local hub.forkremote ${upstream}
+  if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release-branch}" ]
    then
-    echo "There is a tag with the same name as the release branch ${release-branch}! aborting..."
+    git hub pull new -b 'master' -m '${release-details}' --no-triangular ${release-branch}
+   else
+    echo "current branch is not ${release-branch}!"
     exit 1
-   fi
-
-   echo
-   echo 'checkout or create release branch'
-   if git branch | grep -q "${release-branch}"
-    then
-     git checkout ${release-branch}
-     git pull
-    else
-     git checkout ${pulse-commit}
-     git checkout -b ${release-branch}
-     git push -u ${upstream} ${release-branch}
-   fi
-   echo
-
-   echo
-   echo 'ensure github PR'
-   git config --local hub.upstream ${repo}
-   git config --local hub.forkrepo ${repo}
-   git config --local hub.forkremote ${upstream}
-   if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release-branch}" ]
-    then
-     git hub pull new -b 'master' -m '${release-details}' --no-triangular ${release-branch}
-    else
-     echo "current branch is not ${release-branch}!"
-     exit 1
-   fi
+  fi
   '';
 
   hc-prepare-release = pkgs.writeShellScriptBin "hc-prepare-release"
@@ -287,6 +301,7 @@ Release ${core-version}
    echo
    echo "pulse-version: ${pulse-version}"
    echo "pulse-commit: ${pulse-commit}"
+   echo "core-previous-version: ${core-previous-version}"
    echo "core-version: ${core-version}"
    echo "node-conductor-version: ${node-conductor-version}"
    echo
@@ -296,6 +311,7 @@ Release ${core-version}
      git hub --version \
      && hc-prepare-pulse-tag \
      && hc-prepare-release-branch \
+     && hc-prepare-release-pr \
      ;;
     *)
      exit 1
@@ -365,7 +381,9 @@ stdenv.mkDerivation rec {
     gitAndTools.git-hub
     hc-prepare-pulse-tag
     hc-prepare-release-branch
+    hc-prepare-release-pr
     hc-prepare-release
+    hc-prepare-crate-versions
 
   ] ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ];
 

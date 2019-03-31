@@ -218,7 +218,7 @@ let
   hc-prepare-crate-versions = pkgs.writeShellScriptBin "hc-prepare-crate-versions"
   ''
    echo
-   echo "bumping core version from ${core-previous-version} to ${core-version}"
+   echo "bumping core version from ${core-previous-version} to ${core-version} in Cargo.toml"
    echo
    find . \
    -name "Cargo.toml" \
@@ -228,7 +228,15 @@ let
    sed -i 's/^\s*version\s*=\s*"${core-previous-version}"\s*$/version = "${core-version}"/g' {}
 
    echo
-   echo "bumping node conductor version from ${node-conductor-previous-version} to ${node-conductor-version}"
+   echo "bumping versions from ${core-previous-version} to ${core-version} in CLI"
+   echo
+   find . \
+   -path "./cli/* \
+   | xargs -I {} \
+   sed -i 's/${core-previous-version}/${core-version}/g' {}
+
+   echo
+   echo "bumping node conductor version from ${node-conductor-previous-version} to ${node-conductor-version} in Cargo.toml"
    echo
    find . \
    -name "Cargo.toml" \
@@ -244,8 +252,8 @@ Release ${core-version}
 
 - [x] develop is green
 - [x] dev pulse commit for release candidate
-- [ ] core/hdk version updated in CLI scaffold
-- [ ] reviewed and updated the version numbers in Cargo.toml
+- [x] core/hdk version updated in CLI scaffold
+- [x] reviewed and updated the version numbers in Cargo.toml
 - [ ] holochain nodejs minor version bumped in CLI scaffold `package.json`
 - [ ] reviewed and updated CHANGELOG
 - [ ] reviewed and updated README files

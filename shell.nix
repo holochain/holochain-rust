@@ -232,7 +232,9 @@ let
    echo
    find . \
    -name "Cargo.toml" \
-   -path "./nodejs_conductor*"
+   -path "./nodejs_conductor*" \
+   | xargs -I {} \
+   sed -i 's/^\s*version\s*=\s*"${node-conductor-previous-version}"\s*$/version = "${node-conductor-version}"/g' {}
   '';
 
   # a few things should already be done by this point so precheck them :)

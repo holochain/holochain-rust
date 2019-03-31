@@ -222,6 +222,7 @@ let
    echo
    find . \
    -name "Cargo.toml" \
+   -not -path "**/.git/**" \
    -not -path "**/.cargo/**" \
    -not -path "./nodejs_conductor*" \
    | xargs -I {} \
@@ -231,7 +232,9 @@ let
    echo "bumping versions from ${core-previous-version} to ${core-version} in CLI"
    echo
    find . \
-   -path "./cli/* \
+   -type f \
+   -not -path "**/.git/**" \
+   -path "./cli/*" \
    | xargs -I {} \
    sed -i 's/${core-previous-version}/${core-version}/g' {}
 
@@ -240,6 +243,7 @@ let
    echo
    find . \
    -name "Cargo.toml" \
+   -not -path "**/.git/**" \
    -path "./nodejs_conductor*" \
    | xargs -I {} \
    sed -i 's/^\s*version\s*=\s*"${node-conductor-previous-version}"\s*$/version = "${node-conductor-version}"/g' {}

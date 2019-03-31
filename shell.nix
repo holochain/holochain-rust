@@ -193,6 +193,7 @@ let
   '';
 
   release-branch = "release-${core-version}";
+  # develop should be green and dev pulse tagged by this point :)
   release-details =
   ''
 Release ${core-version}
@@ -266,7 +267,7 @@ Release ${core-version}
    git config --local hub.forkremote ${upstream}
    if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release-branch}" ]
     then
-     git hub -v pull new -b 'master' -m '${release-details}' --no-triangular ${release-branch}
+     git hub pull new -b 'master' -m '${release-details}' --no-triangular ${release-branch}
     else
      echo "current branch is not ${release-branch}!"
      exit 1

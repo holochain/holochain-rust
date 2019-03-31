@@ -443,13 +443,7 @@ impl Keystore {
         let sign_secret = self.get(&src_sign_id_str)?;
         let mut sign_secret = sign_secret.lock().unwrap();
         let sign_key = match *sign_secret {
-            Secret::SigningKey(ref mut key_pair) => {
-                let mut buf = SecBuf::with_secure(key_pair.private().len());
-                let pub_key = key_pair.public();
-                let lock = key_pair.private().read_lock();
-                buf.write(0, &**lock)?;
-                SigningKeyPair::new(pub_key, buf)
-            }
+            Secret::SigningKey(ref mut key_pair) => key_pair.new_from_self()?,
             _ => {
                 return Err(HolochainError::ErrorGeneric(
                     "source secret is not a signing key".to_string(),
@@ -460,13 +454,7 @@ impl Keystore {
         let enc_secret = self.get(&src_enc_id_str)?;
         let mut enc_secret = enc_secret.lock().unwrap();
         let enc_key = match *enc_secret {
-            Secret::EncryptingKey(ref mut key_pair) => {
-                let mut buf = SecBuf::with_secure(key_pair.private().len());
-                let pub_key = key_pair.public();
-                let lock = key_pair.private().read_lock();
-                buf.write(0, &**lock)?;
-                EncryptingKeyPair::new(pub_key, buf)
-            }
+            Secret::EncryptingKey(ref mut key_pair) => key_pair.new_from_self()?,
             _ => {
                 return Err(HolochainError::ErrorGeneric(
                     "source secret is not an encrypting key".to_string(),

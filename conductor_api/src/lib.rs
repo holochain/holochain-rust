@@ -134,6 +134,7 @@ extern crate crossbeam_channel;
 pub mod conductor;
 pub mod config;
 pub mod context_builder;
+pub mod dpki_instance;
 pub mod error;
 pub mod holo_signing_service;
 pub mod holochain;

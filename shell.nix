@@ -397,15 +397,13 @@ Run the basic linter with `nix-shell --run hc-lint-release-docs`
   echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/holochain-nodejs-test-$n-v${node-conductor-version}"
   '';
 
-  changelog-intro =
+  # intro is the first 3 lines
+  intro-regex = "\#.*\n.*\n.*$";
+  changelog-template =
   ''
 # Changelog
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-  '';
-  changelog-template =
-  ''
-${changelog-intro}
 
 ## [Unreleased]
 
@@ -430,7 +428,7 @@ ${changelog-intro}
   if ! $(grep -q "\[${core-version}\]" ./CHANGELOG.md)
    then
     sed -i "s/\[Unreleased\]/\[${core-version}\] - $(date --iso --u)/" ./CHANGELOG.md
-    sed -i 's/${changelog-intro}/${changelog-template}/' ./CHANGELOG.md
+    sed -i 's@${intro-regex}@${changelog-template}@' ./CHANGELOG.md
   fi
   '';
 

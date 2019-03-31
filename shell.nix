@@ -558,12 +558,12 @@ stdenv.mkDerivation rec {
     ci
 
     # release tooling
-    perl
     gitAndTools.git-hub
     hc-prepare-pulse-tag
     hc-prepare-release-branch
     hc-prepare-release-pr
     hc-prepare-crate-versions
+
     hc-prepare-release
     hc-test-release
     hc-lint-release-docs

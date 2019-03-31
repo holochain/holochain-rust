@@ -22,6 +22,7 @@ let
 
   hc-cargo-flush = pkgs.writeShellScriptBin "hc-cargo-flush"
   ''
+   echo "flushing cargo"
    rm -rf ~/.cargo/registry;
    rm -rf ~/.cargo/git;
    find . -wholename "**/.cargo" | xargs -I {} rm -rf {};
@@ -29,23 +30,15 @@ let
   '';
   hc-cargo-lock-flush = pkgs.writeShellScriptBin "hc-cargo-lock-flush"
   ''
+  echo "flushing cargo locks"
   find . -name "Cargo.lock" | xargs -I {} rm {};
   '';
-  hc-cargo-lock-build = pkgs.writeShellScriptBin "hc-cargo-lock-build"
+
+  hc-flush-all = pkgs.writeShellScriptBin "hc-flush-all"
   ''
-  find . \
-  -name "Cargo.toml" \
-  -not -path "**/.cargo/**" \
-  -not -path "./nodejs_*" \
-  | xargs -I {} \
-  bash -c 'cd `dirname {}` && cargo build && cargo build --release'
-  '';
-  hc-cargo-lock-refresh = pkgs.writeShellScriptBin "hc-cargo-lock-refresh"
-  ''
-  hc-cargo-flush;
-  hc-cargo-lock-flush;
-  hc-cargo-lock-build;
-  hc-install-node-conductor;
+  hc-node-flush
+  hc-cargo-flush
+  hc-cargo-lock-flush
   '';
 
   hc-install-node-conductor = pkgs.writeShellScriptBin "hc-install-node-conductor"
@@ -239,7 +232,7 @@ let
    echo
    find . \
    -name "Cargo.toml" \
-   -path "./nodejs_conductor"
+   -path "./nodejs_conductor*"
   '';
 
   # a few things should already be done by this point so precheck them :)
@@ -351,10 +344,9 @@ stdenv.mkDerivation rec {
 
     hc-node-flush
     hc-cargo-flush
-
     hc-cargo-lock-flush
-    hc-cargo-lock-build
-    hc-cargo-lock-refresh
+    hc-flush-all
+
     hc-cargo-toml-set-ver
     hc-cargo-toml-test-ver
     hc-cargo-toml-grep-unpinned

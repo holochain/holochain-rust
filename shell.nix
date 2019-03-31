@@ -372,7 +372,6 @@ Move on to "release docs" below while waiting for CI.
   i="0"
   while [ $(git tag -l "test-$i-v${core-version}") ]
   do
-   echo $i
    i=$[$i+1]
   done
   echo "tagging test-$i-v${core-version}"
@@ -382,7 +381,6 @@ Move on to "release docs" below while waiting for CI.
   n="0"
   while [ $(git tag -l "holochain-nodejs-test-$n-v${node-conductor-version}") ]
   do
-   echo $n
    n=$[$n+1]
   done
   echo "tagging holochain-nodejs-test-$n-v${node-conductor-version}"

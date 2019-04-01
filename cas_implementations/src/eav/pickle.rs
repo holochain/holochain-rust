@@ -14,7 +14,6 @@ use uuid::Uuid;
 
 const PERSISTENCE_INTERVAL: Duration = Duration::from_millis(5000);
 
-
 #[derive(Clone)]
 pub struct EavPickleStorage {
     db: Arc<RwLock<PickleDb>>,
@@ -42,9 +41,6 @@ impl Debug for EavPickleStorage {
     }
 }
 
-
-
-
 impl EntityAttributeValueStorage for EavPickleStorage {
     fn add_eavi(
         &mut self,
@@ -52,19 +48,17 @@ impl EntityAttributeValueStorage for EavPickleStorage {
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         let index_str = eav.index().to_string();
         let value = self.db.read()?.get::<EntityAttributeValueIndex>(&index_str);
-        if let Some(_) = value
-        {
-            let new_eav = EntityAttributeValueIndex::new(&eav.entity(),&eav.attribute(),&eav.value())?;
+        if let Some(_) = value {
+            let new_eav =
+                EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?;
             self.add_eavi(&new_eav)
-            
-        }
-        else 
-        {
-            self.db.write()?.set(&*index_str,&eav)
-             .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
+        } else {
+            self.db
+                .write()?
+                .set(&*index_str, &eav)
+                .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
             Ok(Some(eav.clone()))
         }
-    
     }
 
     fn fetch_eavi(
@@ -75,19 +69,16 @@ impl EntityAttributeValueStorage for EavPickleStorage {
 
         //this not too bad because it is lazy evaluated
         let entries = inner
-        .iter()
-        .map(|item|{
-            item.get_value()      
-        })
-        .filter(|filter|filter.is_some())
-        .map(|y|y.unwrap())
-        .collect::<BTreeSet<EntityAttributeValueIndex>>();
+            .iter()
+            .map(|item| item.get_value())
+            .filter(|filter| filter.is_some())
+            .map(|y| y.unwrap())
+            .collect::<BTreeSet<EntityAttributeValueIndex>>();
 
         let entries_iter = entries.iter().cloned();
         Ok(query.run(entries_iter))
     }
 }
-
 
 #[cfg(test)]
 pub mod tests {

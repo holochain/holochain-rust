@@ -18,7 +18,7 @@ Here are the available functions:
 - `keystore_derive_key(src_id,dst_id,key_type)`-> derives a key (signing or encrypting) to be identified by `dst_id` from a previously created seed identified by `src_id`.  This function returns the public key of the keypair.
 - `keystore_sign(src_id,payload)` -> returns a signature of the payload as signed by the key identified by `src_id`
 - `sign(payload)` -> signs the payload using the DNA's instance agent ID public key.  This is a convenience function which is equivalent to calling `keystore_sign("primary_keybundle:sign_key",payload)`
-- `sign-one-time(payload)` -> signs the payload with a randomly generated key-pair, returning the signature and the public key of the key-pair after shredding the private-key.
+- `sign_one_time(payload_list)` -> signs the payloads with a randomly generated key-pair, returning the signatures and the public key of the key-pair after shredding the private-key.
 - `verify_signature(provenance, payload)` -> verifies that the `payload` matches the `provenance` which is a public key/signature pair.
 
 Not Yet Implemented:

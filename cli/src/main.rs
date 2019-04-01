@@ -144,6 +144,8 @@ enum Cli {
     KeyGen {
         #[structopt(long, short, help = "Don't ask for passphrase")]
         silent: bool,
+        #[structopt(long, short, help = "Specify path of file")]
+        path: Option<PathBuf>,
     },
     #[structopt(name = "chain", about = "View the contents of a source chain")]
     ChainLog {
@@ -223,13 +225,13 @@ fn run() -> HolochainResult<()> {
         }
         .map_err(HolochainError::Default)?,
 
-        Cli::KeyGen { silent } => {
+        Cli::KeyGen { silent, path } => {
             let passphrase = if silent {
                 Some(String::from(holochain_common::DEFAULT_PASSPHRASE))
             } else {
                 None
             };
-            cli::keygen(None, passphrase)
+            cli::keygen(path, passphrase)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
 

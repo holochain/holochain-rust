@@ -4,10 +4,10 @@ use crate::{
         StorageConfiguration,
     },
     context_builder::ContextBuilder,
+    dpki_instance::DpkiInstance,
     error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     logger::DebugLogger,
-    dpki_instance::DpkiInstance,
     Holochain,
 };
 use holochain_common::paths::DNA_EXTENSION;
@@ -819,7 +819,6 @@ impl Conductor {
         }
         Ok(())
     }
-
 }
 
 /// This can eventually be dependency injected for third party Interface definitions

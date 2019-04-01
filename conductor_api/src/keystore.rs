@@ -191,15 +191,15 @@ impl Keystore {
         Ok(())
     }
 
-    /// This function expects the named secret in `secrets`, decrypts it and stores the decrypted
-    /// representation in `cache`.
-    fn decrypt(&mut self, id_str: &String) -> HcResult<()> {
-        let blob = self
-            .secrets
-            .get(id_str)
-            .ok_or(HolochainError::new("Secret not found"))?;
-        let mut passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
-        let secret = match blob.blob_type {
+    /// Actually runs the decryption of the given KeyBlob with the given passphrase.
+    /// Called by decrypt().
+    /// Calls the matching from_blob function depending on the type of the KeyBlob.
+    fn inner_decrypt(
+        &self,
+        blob: &KeyBlob,
+        mut passphrase: SecBuf,
+    ) -> Result<Secret, HolochainError> {
+        Ok(match blob.blob_type {
             BlobType::Seed => {
                 Secret::Seed(Seed::from_blob(blob, &mut passphrase, self.hash_config.clone())?.buf)
             }
@@ -214,12 +214,35 @@ impl Keystore {
                 self.hash_config.clone(),
             )?),
             _ => {
-                return Err(HolochainError::ErrorGeneric(format!(
-                    "Tried to decrypt unsupported BlobType in Keystore: {}",
-                    id_str
-                )));
+                return Err(HolochainError::ErrorGeneric(
+                    "Tried to decrypt unsupported BlobType in Keystore: {}".to_string(),
+                ));
             }
+        })
+    }
+
+    /// This function expects the named secret in `secrets`, decrypts it and stores the decrypted
+    /// representation in `cache`.
+    fn decrypt(&mut self, id_str: &String) -> HcResult<()> {
+        let blob = self
+            .secrets
+            .get(id_str)
+            .ok_or(HolochainError::new("Secret not found"))?;
+
+        let mut default_passphrase =
+            SecBuf::with_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
+
+        let maybe_secret = if Ok(true) == self.check_passphrase(&mut default_passphrase) {
+            self.inner_decrypt(blob, default_passphrase)
+        } else {
+            let passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
+            self.inner_decrypt(blob, passphrase)
         };
+
+        let secret = maybe_secret.map_err(|err| {
+            HolochainError::ErrorGeneric(format!("Could not decrypt '{}': {:?}", id_str, err))
+        })?;
+
         self.cache
             .insert(id_str.clone(), Arc::new(Mutex::new(secret)));
         Ok(())
@@ -770,6 +793,51 @@ pub mod tests {
 
         assert!(key_bundle.sign_keys.is_same(&mut key_bundle_copy.sign_keys));
         assert!(key_bundle.enc_keys.is_same(&mut key_bundle_copy.enc_keys));
+    }
+
+    #[test]
+    /// Tests if the keystore encrypted with holochain_common::DEFAULT_PASSPHRASE can be decrypted,
+    /// no matter what passphrase we get from the passphrase manager
+    /// ("definitely wrong passphrase" should not be used at all since the default passphrase should
+    /// be tried before even asking the passphrase manager)
+    fn test_keystore_default_passphrase() {
+        let mut loaded_keystore = Keystore::new_from_file(
+            PathBuf::from("test_keystore"),
+            mock_passphrase_manager("definitely wrong passphrase".to_string()),
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            loaded_keystore.list(),
+            vec![
+                "primary_keybundle:enc_key",
+                "primary_keybundle:sign_key",
+                "root_seed"
+            ]
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+        );
+
+        let result = loaded_keystore.get_keybundle("primary_keybundle");
+
+        assert!(!result.is_err());
+        let mut key_bundle = result.unwrap();
+
+        assert_eq!(
+            key_bundle.sign_keys.public(),
+            "HcSCIowJEUHintsxps7dnz5V38ypdDoadU986V476InyYicyWQBx937Y8dxQrgi"
+        );
+        assert_eq!(
+            key_bundle.enc_keys.public(),
+            "HcKciaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        );
+
+        assert_eq!(base64::encode(&**key_bundle.sign_keys.private().read_lock()), "1cqLOpr5Zs7ZgEN3R+ocYQ0ygJf0It1MCFaxMWQpXU42qSTOhko2dHo2Y3TPruGNoBz/7lNd4hl7oFerw2/ntw==".to_string());
+        assert_eq!(
+            base64::encode(&**key_bundle.enc_keys.private().read_lock()),
+            "VX4j1zRvIT7FojcTsqJJfu81NU1bUgiKxqWZOl/bCR4=".to_string()
+        );
     }
 
 }

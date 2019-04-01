@@ -783,10 +783,12 @@ impl Conductor {
         Ok(path)
     }
 
+    /// check for determining if the conductor is using dpki to manage instance keys
     pub fn using_dpki(&self) -> bool {
         self.config.dpki.is_some()
     }
 
+    /// returns the instance_id of the dpki app if it is configured
     pub fn dpki_instance_id(&self) -> Option<String> {
         match self.config.dpki {
             Some(ref dpki) => Some(dpki.instance_id.clone()),

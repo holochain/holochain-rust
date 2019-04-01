@@ -32,39 +32,23 @@ TODO: merge the various docs we developed to explain DeepKey here.
 - https://hackmd.io/8c8rZCyaTTqH_7TIBVtEUQ
 - https://hackmd.io/oobu0sKMSMadLXza4rHY_g
 
-## Technical Details
+## DPKI Implementation Technical Details
 
 ### Keystore
 For each Holochain DNA instance, the Conductor maintains a Keystore, which holds "secrets" (seeds and keys) needed for cryptographic signing and encrypting. Each of the secrets in the Keystore is associated with a string which is a handle needed when using that secret for some cryptographic operation.  Our cryptographic implementation is based on libsodium, and the seeds use their notions of context and index for key derivation paths.  This implementation allows DNA developers to securely call cryptographic functions from WASM which will be executed in the conductor's secure memory space when actually doing the cryptographic processing.
 
-Decrypting a secret from the keystore invokes a passphrase manager service, which is used to collect the passphrase from some end-user.
+Decrypting a secret from the keystore invokes a passphrase manager service, which is used to collect the passphrase from some end-user.  This service is implementation specific.  Currently we have implementations for command-line passphrase collection for use in the `hc keyget` command, and also an implementation that routes through the same JSON RPC pathway for other admin commands sent to the conductor for other admin actions.
 
-### Flows
-TODO
+### Standalone Mode
+If the Conductor config does not include a DPKI section, then the conductor assumes it's in standalone mode and takes responsibility for adding generating new agent secrets when it receives `admin/add_agent` requests through the admin interface.  This mode is also used by the `hc` command-line tool.
 
-#### Bootstrap
-TODO: flesh out
+### DPKI Mode
+If the Conductor config specifies a DPKI instance, then the conductor will initially bootstrap the DPKI instance, and also delegate any `admin/add_agent` requests to the DPKI app for processing.  Note that the Conductor does assume that basic agent key will be created by the DPKI app so that it can actually create the agent keystore file on behalf of the DPKI app.
 
-1. Agent context generates initial keystore contents and config file with dpki section
-2. If dpki section exists, conductor calls `is_initialized` on the named dpki instance, and if not, calls `init()` with the given parameters.
+The Holochain conductor expects the following exposed functions to exist in any DPKI application as a trait so that it can call them at various times to manage keys and identity.
 
-#### Instance Creation
-1. If config has a dpki section, then all new instance keystore creation is is delegated to the dpki app using the `create_agent_key()` function
-
-#### Instance Key Revocation
-TODO
-
-### DPKI Interface
-
-The Holochain conductor expects the following exposed functions to exist in any dpki application so that it can call them at various times to manage keys and identity.
-
-- `init(params)` [here: params=Option<RootKeysetId>] :  Called during bootstrap with initialization parameters retrieved from the DPKI configuration.  This function is only called if a prior call to `is_initialied()` returned false.
+- `init(params)`:  Called during bootstrap with initialization parameters retrieved from the DPKI configuration.  This function is only called if a prior call to `is_initialied()` returned false.
 - `is_initialized()` -> bool : Should return a boolean value if the DPKI DNA has been initialized or not
 - `create_agent_key(agent_name)` :  Called any time the conductor creates a new DNA instance. Should create a keystore record for the instance.
-
-DeepKey specific functions:
-
-- `get_initialization_data()` -> String : Returns the root keyset id that identifies which identity group this instance of the DPKI app is part of.
-
 
 TODO: add more functions for the trait.

@@ -443,8 +443,8 @@ impl Keystore {
         let dst_sign_id_str = [dst_id_prefix_str, KEYBUNDLE_SIGNKEY_SUFFIX].join("");
         let dst_enc_id_str = [dst_id_prefix_str, KEYBUNDLE_ENCKEY_SUFFIX].join("");
 
-        let mut sign_keypair = keybundle.sign_keys.new_from_self()?;
-        let mut enc_keypair = keybundle.enc_keys.new_from_self()?;
+        let sign_keypair = keybundle.sign_keys.new_from_self()?;
+        let enc_keypair = keybundle.enc_keys.new_from_self()?;
         let sign_secret = Arc::new(Mutex::new(Secret::SigningKey(sign_keypair)));
         let enc_secret = Arc::new(Mutex::new(Secret::EncryptingKey(enc_keypair)));
         self.add(&dst_sign_id_str, sign_secret)?;

@@ -7,6 +7,7 @@ use crate::{
     error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     logger::DebugLogger,
+    dpki_instance::DpkiInstance,
     Holochain,
 };
 use holochain_common::paths::DNA_EXTENSION;
@@ -795,6 +796,30 @@ impl Conductor {
             None => None,
         }
     }
+
+    /// returns the init_params for the dpki app if it is configured
+    pub fn dpki_init_params(&self) -> Option<String> {
+        match self.config.dpki {
+            Some(ref dpki) => Some(dpki.init_params.clone()),
+            None => None,
+        }
+    }
+
+    /// bootstraps the conductor for the dpki usecase
+    pub fn dpki_bootstrap(&mut self) -> Result<(), HolochainError> {
+        if self.using_dpki() {
+            let dpki_instance_id = self.dpki_instance_id().unwrap();
+            let instance = self.instances.get(&dpki_instance_id)?;
+            let hc_lock = instance.clone();
+            let hc_lock_inner = hc_lock.clone();
+            let mut hc = hc_lock_inner.write().unwrap();
+            if !hc.dpki_is_initialized()? {
+                hc.dpki_init(self.dpki_init_params().unwrap())?;
+            }
+        }
+        Ok(())
+    }
+
 }
 
 /// This can eventually be dependency injected for third party Interface definitions

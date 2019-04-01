@@ -359,7 +359,7 @@ impl EavTestSuite {
             expected.insert(eavi);
         }
 
-        println!("expected {:?}", expected.clone());
+
 
         // show the many results for one
         assert_eq!(
@@ -595,7 +595,7 @@ impl EavTestSuite {
             expected.insert(eavi);
         }
 
-        println!("expected {:?}", expected.clone());
+  
 
         let query = EaviQuery::new(
             EavFilter::default(),

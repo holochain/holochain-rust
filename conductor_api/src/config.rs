@@ -400,6 +400,7 @@ pub struct InstanceConfiguration {
 pub enum StorageConfiguration {
     Memory,
     File { path: String },
+    Pickle {path : String}
 }
 
 /// Here, interfaces are user facing and make available zome functions to

@@ -13,6 +13,9 @@ use std::{
 use uuid::Uuid;
 
 const PERSISTENCE_INTERVAL: Duration = Duration::from_millis(5000);
+const ENTITY : &str = "ENTITY";
+const ATTRIBUTE : &str = "ATTRIBUTE";
+const VALUE : &str = "VALUE";
 
 #[derive(Clone)]
 pub struct EavPickleStorage {
@@ -41,20 +44,28 @@ impl Debug for EavPickleStorage {
     }
 }
 
+
+
+
 impl EntityAttributeValueStorage for EavPickleStorage {
     fn add_eavi(
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
-        let mut inner = self.db.write()?;
-
-        let eav_str = format!("{:?}", eav);
-
-        inner
-            .set(&eav_str, &())
-            .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
-
-        Ok(None)
+        let index_str = eav.index().to_string();
+        let value = self.db.read()?.get::<EntityAttributeValueIndex>(&index_str);
+        if let Some(new_eav) = value
+        {
+            self.add_eavi(&new_eav)
+            
+        }
+        else 
+        {
+            self.db.write()?.set(&*index_str,&eav)
+             .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
+            Ok(Some(eav.clone()))
+        }
+    
     }
 
     fn fetch_eavi(
@@ -63,8 +74,90 @@ impl EntityAttributeValueStorage for EavPickleStorage {
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let inner = self.db.read()?;
 
-        let all_entrys = inner.get_all();
+        //this not too bad because it is lazy evaluated
+        let entries = inner
+        .iter()
+        .map(|item|{
+            item.get_value()      
+        })
+        .filter(|filter|filter.is_some())
+        .map(|y|y.unwrap())
+        .collect::<BTreeSet<EntityAttributeValueIndex>>();
 
-        Ok(all_entrys.into())
+        let entries_iter = entries.iter().cloned();
+        Ok(query.run(entries_iter))
     }
+}
+
+
+#[cfg(test)]
+pub mod tests {
+    use crate::eav::pickle::EavPickleStorage;
+    use holochain_core_types::{
+        cas::{
+            content::{AddressableContent, ExampleAddressableContent},
+            storage::EavTestSuite,
+        },
+        eav::Attribute,
+        json::RawString,
+    };
+    use tempfile::tempdir;
+
+    #[test]
+    fn pickle_eav_round_trip() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let entity_content =
+            ExampleAddressableContent::try_from_content(&RawString::from("foo").into()).unwrap();
+        let attribute = "favourite-color".to_string();
+        let value_content =
+            ExampleAddressableContent::try_from_content(&RawString::from("blue").into()).unwrap();
+
+        EavTestSuite::test_round_trip(
+            EavPickleStorage::new(temp_path),
+            entity_content,
+            attribute,
+            value_content,
+        )
+    }
+
+    #[test]
+    fn pickle_eav_one_to_many() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let eav_storage = EavPickleStorage::new(temp_path);
+        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavPickleStorage>(eav_storage);
+    }
+
+    #[test]
+    fn pickle_eav_many_to_one() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let eav_storage = EavPickleStorage::new(temp_path);
+        EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavPickleStorage>(eav_storage);
+    }
+
+    #[test]
+    fn pickle_eav_range() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let eav_storage = EavPickleStorage::new(temp_path);
+        EavTestSuite::test_range::<ExampleAddressableContent, EavPickleStorage>(eav_storage);
+    }
+
+    #[test]
+    fn pickle_eav_prefixes() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let eav_storage = EavPickleStorage::new(temp_path);
+        EavTestSuite::test_multiple_attributes::<ExampleAddressableContent, EavPickleStorage>(
+            eav_storage,
+            vec!["a_", "b_", "c_", "d_"]
+                .into_iter()
+                .map(|p| Attribute::LinkTag(p.to_string() + "one_to_many"))
+                .collect(),
+        );
+    }
+
 }

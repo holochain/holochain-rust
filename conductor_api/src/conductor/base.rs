@@ -440,10 +440,13 @@ impl Conductor {
                     StorageConfiguration::Memory => {
                         context_builder = context_builder.with_memory_storage()
                     }
-                    StorageConfiguration::Pickle{path} =>{
-                       context_builder =  context_builder.with_pickle_storage(path).map_err(|hc_err| {
-                                format!("Error creating context: {}", hc_err.to_string())
-                            })?
+                    StorageConfiguration::Pickle { path } => {
+                        context_builder =
+                            context_builder
+                                .with_pickle_storage(path)
+                                .map_err(|hc_err| {
+                                    format!("Error creating context: {}", hc_err.to_string())
+                                })?
                     }
                 }
 

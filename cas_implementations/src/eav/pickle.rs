@@ -13,9 +13,7 @@ use std::{
 use uuid::Uuid;
 
 const PERSISTENCE_INTERVAL: Duration = Duration::from_millis(5000);
-const ENTITY : &str = "ENTITY";
-const ATTRIBUTE : &str = "ATTRIBUTE";
-const VALUE : &str = "VALUE";
+
 
 #[derive(Clone)]
 pub struct EavPickleStorage {
@@ -54,8 +52,9 @@ impl EntityAttributeValueStorage for EavPickleStorage {
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         let index_str = eav.index().to_string();
         let value = self.db.read()?.get::<EntityAttributeValueIndex>(&index_str);
-        if let Some(new_eav) = value
+        if let Some(_) = value
         {
+            let new_eav = EntityAttributeValueIndex::new(&eav.entity(),&eav.attribute(),&eav.value())?;
             self.add_eavi(&new_eav)
             
         }

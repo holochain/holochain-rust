@@ -9,11 +9,10 @@ use bencher::Bencher;
 use holochain_cas_implementations::eav::{file::EavFileStorage,pickle::EavPickleStorage};
 use holochain_core_types::{
     cas::{
-        content::{AddressableContent, ExampleAddressableContent},
+        content::{ExampleAddressableContent},
         storage::EavTestSuite,
     },
-    eav::Attribute,
-    json::RawString,
+
 };
 fn bench_file_eav_one_to_many(b: &mut Bencher) {
     b.iter(|| {

@@ -13,13 +13,14 @@ use std::{
 };
 
 pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
-    println!("This will create a new agent keystore and populate it with an agent keybundle");
-    println!("(=all keys needed to represent an agent: public/private keys for signing/encryption");
-    println!("This keybundle will be stored encrypted by passphrase within the keystore file.");
-    println!("The passphrase is securing the keys and will be needed, together with the file, in order to use the key.");
-    println!("Please enter a secret passphrase below, you will have to enter it again when unlocking these keys to use within a Holochain conductor.");
-
     let passphrase = passphrase.unwrap_or_else(|| {
+        println!("This will create a new agent keystore and populate it with an agent keybundle,");
+        println!("containing a public and a private key, for signing and encryption by the agent.");
+        println!("This keybundle will be stored encrypted by passphrase within the keystore file.");
+        println!("The passphrase is securing the keys and will be needed, together with the file,");
+        println!("in order to use the key.");
+        println!("Please enter a secret passphrase below. You will have to enter it again");
+        println!("when unlocking the keybundle to use within a Holochain conductor.");
         print!("Passphrase: ");
         io::stdout().flush().expect("Could not flush stdout");
         let passphrase1 = rpassword::read_password().unwrap();
@@ -32,6 +33,8 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         }
         passphrase1
     });
+
+    println!("Generating keystore (this will take a few moments)...");
 
     let mut keystore = Keystore::new(mock_passphrase_manager(passphrase), None)?;
     keystore.add_random_seed("root_seed", SEED_SIZE)?;

@@ -156,7 +156,7 @@ impl Conductor {
 
     pub fn with_signal_channel(mut self, signal_tx: SyncSender<Signal>) -> Self {
         if !self.instances.is_empty() {
-            panic!("Cannot set a signal channel after having run load_config()");
+            panic!("Cannot set a signal channel after having run from_config()");
         }
         self.signal_tx = Some(signal_tx);
         self
@@ -348,10 +348,7 @@ impl Conductor {
     /// @TODO: clean up the conductor creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config_with_signal(
-        &mut self,
-        signal_tx: Option<SignalSender>,
-    ) -> Result<(), String> {
+    pub fn boot_from_config(&mut self, signal_tx: Option<SignalSender>) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
 
         if self.p2p_config.is_none() {
@@ -399,11 +396,9 @@ impl Conductor {
             );
         }
 
-        Ok(())
-    }
+        self.dpki_bootstrap()?;
 
-    pub fn load_config(&mut self) -> Result<(), String> {
-        self.load_config_with_signal(None)
+        Ok(())
     }
 
     /// Creates one specific Holochain instance from a given Configuration,
@@ -805,7 +800,7 @@ impl Conductor {
         }
     }
 
-    /// bootstraps the conductor for the dpki usecase
+    /// bootstraps the dpki app if configured
     pub fn dpki_bootstrap(&mut self) -> Result<(), HolochainError> {
         if self.using_dpki() {
             let dpki_instance_id = self.dpki_instance_id().unwrap();
@@ -1032,7 +1027,7 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config().unwrap();
+        conductor.boot_from_config(None).unwrap();
         conductor
     }
 
@@ -1041,7 +1036,7 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config().unwrap();
+        conductor.boot_from_config(None).unwrap();
         conductor
     }
 
@@ -1109,7 +1104,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_conductor_load_config() {
+    fn test_conductor_boot_from_config() {
         let mut conductor = test_conductor();
         assert_eq!(conductor.instances.len(), 3);
 
@@ -1305,7 +1300,9 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config().expect("Test config must be sane");
+        conductor
+            .boot_from_config(None)
+            .expect("Test config must be sane");
         conductor
             .start_all_instances()
             .expect("Instances must be spawnable");
@@ -1357,7 +1354,7 @@ pub mod tests {
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         assert_eq!(
-            conductor.load_config(),
+            conductor.boot_from_config(None),
             Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
                 .to_string()),
         );

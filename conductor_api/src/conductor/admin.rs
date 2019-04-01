@@ -735,7 +735,7 @@ pattern = '.*'"#
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config().unwrap();
+        conductor.boot_from_config(None).unwrap();
         conductor.hash_config = test_hash_config();
         conductor.passphrase_manager = mock_passphrase_manager(test_name.to_string());
         conductor

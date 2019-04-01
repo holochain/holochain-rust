@@ -524,21 +524,12 @@ pub mod tests {
     use super::*;
     use base64;
     use conductor::passphrase_manager::PassphraseServiceMock;
-    use holochain_common::DEFAULT_PASSPHRASE;
     use holochain_core_types::cas::content::Address;
     use holochain_dpki::utils;
 
     fn mock_passphrase_manager(passphrase: String) -> Arc<PassphraseManager> {
         Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
             PassphraseServiceMock { passphrase },
-        ))))
-    }
-
-    fn default_passphrase_manager() -> Arc<PassphraseManager> {
-        Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
-            PassphraseServiceMock {
-                passphrase: DEFAULT_PASSPHRASE.to_string(),
-            },
         ))))
     }
 
@@ -774,11 +765,14 @@ pub mod tests {
     }
 
     #[test]
-    /// Tests if the keystore encrypted with holochain_common::DEFAULT_PASSPHRASE can be decrypted.
+    /// Tests if the keystore encrypted with holochain_common::DEFAULT_PASSPHRASE can be decrypted,
+    /// no matter what passphrase we get from the passphrase manager
+    /// ("definitely wrong passphrase" should not be used at all since the default passphrase should
+    /// be tried before even asking the passphrase manager)
     fn test_keystore_default_passphrase() {
-        let loaded_keystore = Keystore::new_from_file(
+        let mut loaded_keystore = Keystore::new_from_file(
             PathBuf::from("test_keystore"),
-            default_passphrase_manager(),
+            mock_passphrase_manager("definitely wrong passphrase".to_string()),
             None,
         )
         .unwrap();
@@ -792,6 +786,26 @@ pub mod tests {
             .iter()
             .map(|x| x.to_string())
             .collect::<Vec<String>>()
+        );
+
+        let result = loaded_keystore.get_keybundle("primary_keybundle");
+
+        assert!(!result.is_err());
+        let mut key_bundle = result.unwrap();
+
+        assert_eq!(
+            key_bundle.sign_keys.public(),
+            "HcSCIowJEUHintsxps7dnz5V38ypdDoadU986V476InyYicyWQBx937Y8dxQrgi"
+        );
+        assert_eq!(
+            key_bundle.enc_keys.public(),
+            "HcKciaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        );
+
+        assert_eq!(base64::encode(&**key_bundle.sign_keys.private().read_lock()), "1cqLOpr5Zs7ZgEN3R+ocYQ0ygJf0It1MCFaxMWQpXU42qSTOhko2dHo2Y3TPruGNoBz/7lNd4hl7oFerw2/ntw==".to_string());
+        assert_eq!(
+            base64::encode(&**key_bundle.enc_keys.private().read_lock()),
+            "VX4j1zRvIT7FojcTsqJJfu81NU1bUgiKxqWZOl/bCR4=".to_string()
         );
     }
 

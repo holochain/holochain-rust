@@ -485,12 +485,12 @@ impl Conductor {
                     api_builder = api_builder.with_agent_signature_callback(
                         self.get_keybundle_for_agent(&instance_config.agent)?,
                     );
-                }
 
-                let keystore = self
-                    .get_keystore_for_agent(&instance_config.agent)
-                    .map_err(|err| format!("{}", err))?;
-                api_builder = api_builder.with_agent_keystore_functions(keystore);
+                    let keystore = self
+                        .get_keystore_for_agent(&instance_config.agent)
+                        .map_err(|err| format!("{}", err))?;
+                    api_builder = api_builder.with_agent_keystore_functions(keystore);
+                }
 
                 // Bridges:
                 let id = instance_config.id.clone();
@@ -588,6 +588,9 @@ impl Conductor {
                 .config
                 .agent_by_id(agent_id)
                 .ok_or(format!("Agent '{}' not found", agent_id))?;
+            if let Some(true) = agent_config.holo_remote_key {
+                return Err("agent is holo_remote, no keystore".to_string());
+            }
             let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
             let mut keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
                 &keystore_file_path,

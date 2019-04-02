@@ -2,7 +2,7 @@ use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{error::HcResult, signature::Signature};
 use holochain_dpki::keypair::generate_random_sign_keypair;
 use holochain_sodium::secbuf::SecBuf;
-use holochain_wasm_utils::api_serialization::sign::{SignArgs, SignOneTimeResult};
+use holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignArgs, SignOneTimeResult};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -48,33 +48,37 @@ pub fn invoke_sign_one_time(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
 
-    let sign_args = match SignArgs::try_from(args_str.clone()) {
+    let sign_args = match OneTimeSignArgs::try_from(args_str.clone()) {
         Ok(sign_input) => sign_input,
         // Exit on error
         Err(err) => {
             context.log(format!(
-                "err/zome: invoke_sign_one_time failed to deserialize SignArgs: {:?} got err: {:?}",
+                "err/zome: invoke_sign_one_time failed to deserialize OneTimeSignArgs: {:?} got err: {:?}",
                 args_str, err
             ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
 
-    runtime.store_result(sign_one_time(sign_args.payload))
+    runtime.store_result(sign_one_time(sign_args.payloads))
 }
 
 /// creates a one-time private key and sign data returning the signature and the public key
-pub fn sign_one_time(data: String) -> HcResult<SignOneTimeResult> {
-    let mut data_buf = SecBuf::with_insecure_from_string(data);
+pub fn sign_one_time(payloads: Vec<String>) -> HcResult<SignOneTimeResult> {
     let mut sign_keys = generate_random_sign_keypair()?;
+    let mut signatures = Vec::new();
+    for data in payloads {
+        let mut data_buf = SecBuf::with_insecure_from_string(data);
 
-    let mut signature_buf = sign_keys.sign(&mut data_buf)?;
-    let buf = signature_buf.read_lock();
-    // Return as base64 encoded string
-    let signature_str = base64::encode(&**buf);
+        let mut signature_buf = sign_keys.sign(&mut data_buf)?;
+        let buf = signature_buf.read_lock();
+        // Return as base64 encoded string
+        let signature_str = base64::encode(&**buf);
+        signatures.push(Signature::from(signature_str))
+    }
     Ok(SignOneTimeResult {
         pub_key: sign_keys.public,
-        signature: Signature::from(signature_str),
+        signatures,
     })
 }
 
@@ -101,15 +105,26 @@ mod test_super {
     #[test]
     fn test_sign_one_time() {
         let data = base64::encode("the data to sign");
-        let result = sign_one_time(data.clone());
+        let more_data = base64::encode("more data to sign");
+        let result = sign_one_time(vec![data.clone(), more_data.clone()]);
         assert!(!result.is_err());
 
         let result = result.unwrap();
 
-        assert_eq!(String::from(result.signature.clone()).len(), 88); //88 is the size of a base64ized signature buf
+        assert_eq!(result.signatures.len(), 2);
 
-        let result = verify(Address::from(result.pub_key), data, result.signature);
-        assert!(!result.is_err());
-        assert!(result.unwrap());
+        let sig1 = result.signatures[0].clone();
+        let sig2 = result.signatures[1].clone();
+
+        let source = Address::from(result.pub_key);
+        let vresult = verify(source.clone(), data, sig1.clone());
+        assert!(!vresult.is_err());
+        assert!(vresult.unwrap());
+
+        let vresult = verify(source, more_data, sig2.clone());
+        assert!(!vresult.is_err());
+        assert!(vresult.unwrap());
+
+        assert_ne!(sig1, sig2);
     }
 }

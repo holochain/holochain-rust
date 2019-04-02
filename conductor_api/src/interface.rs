@@ -620,11 +620,18 @@ impl ConductorApiBuilder {
             let id = Self::get_as_string("id", &params_map)?;
             let name = Self::get_as_string("name", &params_map)?;
             let public_address = Self::get_as_string("public_address", &params_map)?;
-            let keystore_file = Self::get_as_string("keystore_file", &params_map)?;
             let holo_remote_key = params_map
                 .get("holo_remote_key")
                 .map(|k| k.as_bool())
                 .unwrap_or_default();
+            let keystore_file = {
+                let result = Self::get_as_string("keystore_file", &params_map);
+                if holo_remote_key.unwrap_or_default() {
+                    result.unwrap_or("[IGNORED]".to_string())
+                } else {
+                    result?
+                }
+            };
 
             let agent = AgentConfiguration {
                 id,

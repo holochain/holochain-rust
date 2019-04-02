@@ -22,6 +22,7 @@ A table for configuring the approach to storage of the local source chain and DH
 Select between different storage implementations. There are two so far:
 - `memory`: Persist actions taken in this instance only to memory. Everything will disappear when the Conductor process stops.
 - `file`: Persist actions taken in this instance to the disk of the device the Conductor is running on. If the Conductor process stops and then restarts, the actions taken will resume at the place in the local source chain they last were at.
+- `pickledb` : Persists to a fast rust implementation. This persists every 5 minutes and on a drop trait, actions will continue from where they were last were at if application is every restarted. Takes in path string which is directory where pickledb instance will be persisting to
 
 #### `StorageConfiguration.path`: `string`
 Path to the folder in which to store the data for this instance.

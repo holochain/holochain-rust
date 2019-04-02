@@ -24,7 +24,7 @@ use holochain_wasm_utils::{
         },
         link_entries::LinkEntriesArgs,
         send::{SendArgs, SendOptions},
-        sign::{SignArgs, SignOneTimeResult},
+        sign::{OneTimeSignArgs, SignArgs, SignOneTimeResult},
         verify_signature::VerifySignatureArgs,
         QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeApiGlobals,
         ZomeFnCallArgs,
@@ -833,10 +833,14 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     })
 }
 
-/// sign_one_time ( priv_id_str, base64payload ) -> ( base64signature )
-pub fn sign_one_time<S: Into<String>>(payload: S) -> ZomeApiResult<SignOneTimeResult> {
-    Dispatch::SignOneTime.with_input(SignArgs {
-        payload: payload.into(),
+/// sign_one_time ( priv_id_str, base64payloads ) -> ( base64signature )
+pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOneTimeResult> {
+    let mut converted_payloads = Vec::new();
+    for p in payloads {
+        converted_payloads.push(p.into());
+    }
+    Dispatch::SignOneTime.with_input(OneTimeSignArgs {
+        payloads: converted_payloads,
     })
 }
 

@@ -312,7 +312,7 @@ mod tests {
         let persist_store = super::storage_configuration(true).unwrap();
         assert_eq!(
             persist_store,
-            StorageConfiguration::File {
+            StorageConfiguration::Pickle {
                 path: ".hc".to_string()
             }
         );

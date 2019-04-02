@@ -38,7 +38,7 @@ impl WasmStack {
             .try_into()
             .map_err(|_| AllocationError::Serialization)?;
 
-        let json_bytes = j.into_bytes();
+        let json_bytes = j.to_bytes();
         let json_bytes_len = json_bytes.len() as MemoryInt;
         if MemoryBits::from(json_bytes_len) > WasmStack::max() {
             return Err(AllocationError::OutOfBounds);

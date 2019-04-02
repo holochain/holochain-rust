@@ -50,7 +50,7 @@ pub mod tests {
         let entry = test_entry();
 
         let serialized_entry = Entry::from(entry);
-        JsonString::from(serialized_entry).into_bytes()
+        JsonString::from(serialized_entry).to_bytes()
     }
 
     #[test]

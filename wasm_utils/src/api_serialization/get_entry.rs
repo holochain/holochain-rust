@@ -104,17 +104,14 @@ impl GetEntryResultItem {
 
 /// Structure that holds a whole crud status history if the status request
 /// in the GetEntryOptions was set to StatusRequestKind::All
-#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, Default)]
 pub struct EntryHistory {
     pub items: Vec<GetEntryResultItem>,
     pub crud_links: HashMap<Address, Address>,
 }
 impl EntryHistory {
     pub fn new() -> Self {
-        EntryHistory {
-            items: Vec::new(),
-            crud_links: HashMap::new(),
-        }
+        Default::default()
     }
 
     pub fn push(&mut self, entry_with_meta: &EntryWithMeta, headers: Vec<ChainHeader>) {

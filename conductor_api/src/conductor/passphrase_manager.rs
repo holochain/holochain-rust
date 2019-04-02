@@ -1,7 +1,8 @@
 use crossbeam_channel::{unbounded, Sender};
-use holochain_core_types::error::error::HolochainError;
+use holochain_core_types::error::HolochainError;
 use holochain_sodium::secbuf::SecBuf;
 use std::{
+    io::{self, Write},
     sync::{Arc, Mutex},
     thread,
     time::{Duration, Instant},
@@ -93,7 +94,9 @@ pub struct PassphraseServiceCmd {}
 impl PassphraseService for PassphraseServiceCmd {
     fn request_passphrase(&self) -> Result<SecBuf, HolochainError> {
         // Prompt for passphrase
-        let mut passphrase_string = rpassword::read_password_from_tty(Some("Passphrase: "))?;
+        print!("Passphrase: ");
+        io::stdout().flush().expect("Could not flush stdout!");
+        let mut passphrase_string = rpassword::read_password()?;
 
         // Move passphrase in secure memory
         let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
@@ -106,5 +109,15 @@ impl PassphraseService for PassphraseServiceCmd {
         }
 
         Ok(passphrase_buf)
+    }
+}
+
+pub struct PassphraseServiceMock {
+    pub passphrase: String,
+}
+
+impl PassphraseService for PassphraseServiceMock {
+    fn request_passphrase(&self) -> Result<SecBuf, HolochainError> {
+        Ok(SecBuf::with_insecure_from_string(self.passphrase.clone()))
     }
 }

@@ -1,13 +1,13 @@
 [package]
 name = "holochain_conductor_api"
-version = "0.0.8-alpha"
+version = "0.0.9-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
-holochain_dpki = { path = "../hc_dpki" }
+holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
 holochain_sodium = { path = "../sodium" }
 holochain_common = { path = "../common" }

@@ -44,8 +44,6 @@ define_zome! {
     }
 
     functions: []
-
-    capabilitites: {}
 }
 ```
 

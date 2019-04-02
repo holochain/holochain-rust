@@ -284,7 +284,7 @@ The linter will do some things for you and provide helpful debug info.
 
 Generate the github release notes with `nix-shell --run hc-generate-release-notes`
 
-- [ ] written github release notes
+- [ ] review generated github release notes
     - [ ] correct medium post link for dev pulse
     - [ ] correct CHANGELOG link
     - [ ] hackmd link: {{URL}}

@@ -1,7 +1,7 @@
 FROM nixorg/nix:circleci
 
 # keep this matching nix-shell!
-ENV NIX_PATH nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/23fd1394dc6bef03a2ff010278a24403a97f0647.tar.gz
+ENV NIX_PATH nixpkgs=https://github.com/Holo-Host/nixpkgs-channels/archive/680f9d7ea90dd0b48b51f29899c3110196b0e913.tar.gz
 ENV HC_TARGET_PREFIX /tmp/holochain/
 
 WORKDIR /holochain-rust/build

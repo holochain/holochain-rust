@@ -46,20 +46,23 @@ impl EntityAttributeValueStorage for EavPickleStorage {
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
-        let index_str = eav.index().to_string();
-        let value = self.db.write().unwrap().get::<EntityAttributeValueIndex>(&index_str);
-        if let Some(_) = value {
-            let new_eav =
-                EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?;
-            self.add_eavi(&new_eav)
-        } else {
-            self.db
-                .write()
-                .unwrap()
-                .set(&*index_str, &eav)
-                .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
-            Ok(Some(eav.clone()))
-        }
+        let mut inner = self.db.write().unwrap();
+
+        //hate to introduce mutability but it is saved by the immutable clones at the end
+        let mut index_str = eav.index().to_string();
+        let mut value = inner.get::<EntityAttributeValueIndex>(&index_str);
+        let mut new_eav = eav.clone();
+        while value.is_some()
+        {
+            new_eav= EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?;
+            index_str = new_eav.index().to_string();
+            value = inner.get::<EntityAttributeValueIndex>(&index_str);
+        };
+        inner
+        .set(&*index_str, &new_eav)
+        .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
+        Ok(Some(new_eav.clone()))
+    
     }
 
     fn fetch_eavi(

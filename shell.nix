@@ -6,7 +6,7 @@ let
   channel = fetchgit {
     url = "https://github.com/Holo-Host/nixpkgs-channels.git";
     rev = "680f9d7ea90dd0b48b51f29899c3110196b0e913";
-    sha256 = "1snry2ab0gjhg394ryfw8jwswjyj31fjxv79pxk219r76031fx20";
+    sha256 = "07glx6r08l8hwzh8xzj8i0hj6ak42iswqfb9hbhs75rqq56zq43a";
   };
 
   moz_overlay = import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz);

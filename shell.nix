@@ -508,6 +508,79 @@ All binaries are for 64-bit operating systems.
    echo "$WITH_NOTES"
   '';
 
+  hc-check-release-artifacts = pkgs.writeShellScriptBin "hc-check-release-artifacts"
+  ''
+  echo
+  echo "Checking core artifacts"
+  echo
+
+  i="0"
+  while [ $(git tag -l "test-$i-v${core-version}") ]
+  do
+   i=$[$i+1]
+  done
+  i=$[$i-1]
+
+  core_binaries=( "cli" "conductor" )
+  core_platforms=( "apple-darwin" "pc-windows-gnu" "pc-windows-msvc" "unknown-linux-gnu" )
+  deployments=( "test-$i-" "" )
+
+  for deployment in "''${deployments[@]}"
+  do
+   for binary in "''${core_binaries[@]}"
+   do
+    for platform in "''${core_platforms[@]}"
+    do
+     file="$binary-''${deployment}v${core-version}-x86_64-$platform.tar.gz"
+     release="''${deployment}v${core-version}"
+     url="https://github.com/holochain/holochain-rust/releases/download/$release/$file"
+     echo
+     echo "pinging $file for release $release..."
+     if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
+      then echo "FOUND ✔"
+      else echo "NOT FOUND ⨯"
+     fi
+     echo
+    done
+   done
+  done
+
+  echo
+  echo "Checking node conductor artifacts"
+  echo
+
+  n="0"
+  while [ $(git tag -l "holochain-nodejs-test-$n-v${node-conductor-version}") ]
+  do
+   n=$[$n+1]
+  done
+  n=$[$n-1]
+
+  node_versions=( "57" "64" "67" )
+  conductor_platforms=( "darwin" "linux" "win32" )
+  deployments=( "test-$n-" "" )
+
+  for deployment in "''${deployments[@]}"
+  do
+   for node_version in "''${node_versions[@]}"
+   do
+    for platform in "''${conductor_platforms[@]}"
+    do
+     file="index-v${node-conductor-version}-node-v''${node_version}-''${platform}-x64.tar.gz"
+     release="holochain-nodejs-''${deployment}v${node-conductor-version}"
+     url="https://github.com/holochain/holochain-rust/releases/download/$release/$file"
+     echo
+     echo "pinging $file for release $release..."
+     if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
+      then echo "FOUND ✔"
+      else echo "NOT FOUND ⨯"
+     fi
+     echo
+    done
+   done
+  done
+  '';
+
 in
 with pkgs;
 stdenv.mkDerivation rec {
@@ -571,6 +644,7 @@ stdenv.mkDerivation rec {
     hc-prepare-release-branch
     hc-prepare-release-pr
     hc-prepare-crate-versions
+    hc-check-release-artifacts
 
     hc-prepare-release
     hc-test-release

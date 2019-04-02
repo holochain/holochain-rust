@@ -83,7 +83,7 @@ mod tests {
     };
     use tempfile::{tempdir, TempDir};
 
-    pub fn test_file_cas() -> (PickleStorage, TempDir) {
+    pub fn test_pickle_cas() -> (PickleStorage, TempDir) {
         let dir = tempdir().expect("Could not create a tempdir for CAS testing");
         (PickleStorage::new(dir.path()), dir)
     }

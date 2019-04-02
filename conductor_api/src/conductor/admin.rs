@@ -402,8 +402,8 @@ impl ConductorAdmin for Conductor {
             )));
         }
 
-        let (keystore_file, public_address) = if holo_remote_key.is_some() {
-            ("".to_string(), holo_remote_key.unwrap().to_string())
+        let (keystore_file, public_address) = if let Some(public_address) = holo_remote_key {
+            ("".to_string(), public_address.to_string())
         } else {
             let (keystore, public_address) = if self.using_dpki() {
                 let dpki_instance_id = self.dpki_instance_id().unwrap();

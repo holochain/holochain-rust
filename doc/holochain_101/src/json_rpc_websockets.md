@@ -67,6 +67,8 @@ The following discusses how to use `rpc-websockets` to make calls to Zome functi
 To use as the JSON-RPC "method" the instance ID (as seen in the `info/instances` example), the Zome name, and the function name are combined into a single string, separated by forward slash (`/`) characters. It could look like the following:
 `'test-instance/blogs/create_blog'`
 
+**TODO: update to reflect the new "call" method**
+
 A JSON object is constructed to give arguments. It could look like the following:
 `{ blog: { content: 'sample content' }}`
 

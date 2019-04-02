@@ -37,8 +37,11 @@ A response something like the following might be returned:
 
 The following discusses how to use cURL (and thus HTTP generally) to make calls to Zome functions.
 
+The JSON-RPC method
 To use as the JSON-RPC "method" the instance ID (as seen in the `info/instances` example), the Zome name, and the function name are combined into a single string, separated by forward slash (`/`) characters. It could look like the following:
 `"method": "test-instance/blogs/create_blog"`
+
+**TODO: update to reflect the new "call" method**
 
 Unlike `info/instances`, Zome functions usually expect arguments. To give arguments, a JSON object should be constructed. It may look like the following:
 `"params": {"blog": {"content": "sample content"}}`

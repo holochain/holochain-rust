@@ -622,8 +622,12 @@ impl ConductorApiBuilder {
 
             let holo_remote_key = params_map
                 .get("holo_remote_key")
-                .map(|k| k.as_str().ok_or("holo_remote_key must be a string"))
-                .unwrap_or_default();
+                .map(|k| {
+                    k.as_str()
+                        .ok_or("holo_remote_key must be a string")
+                        .map_err(|e| jsonrpc_core::Error::invalid_params(e))
+                }) // Option<Result<_, _>>
+                .transpose()?; // Result<Option<_>, _>
 
             conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;
             Ok(json!({"success": true}))

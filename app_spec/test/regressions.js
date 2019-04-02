@@ -12,7 +12,7 @@ const instanceTash = Config.instance(agentTash, dna)
 
 const scenario = new Scenario([instanceAlice, instanceTash], { debugLog: true })
 
-scenario.runTape('calling get_links before link_entries makes no difference', async (t, {alice}) => {
+/*scenario.runTape('calling get_links before link_entries makes no difference', async (t, {alice}) => {
 
   const get1 = alice.call("blog", "my_posts", {})
   t.ok(get1.Ok)
@@ -125,4 +125,4 @@ scenario.runTape('create & publish post -> recommend to other agent', async (t, 
   console.log('agent addresses: ', alice.agentId, tash.agentId)
 
   t.equal(recommendedPosts.Ok.addresses.length, 1)
-})
+})*/

@@ -140,6 +140,7 @@ pub mod tests {
         let eav_storage = EavPickleStorage::new(temp_path);
         EavTestSuite::test_range::<ExampleAddressableContent, EavPickleStorage>(eav_storage);
     }
+    
 
     #[test]
     fn pickle_eav_prefixes() {

@@ -154,9 +154,13 @@ let
    && hc-test-app-spec
   '';
 
+  release-process-url = "https://hackmd.io/6HH-O1KuQ7uYzKrsI6ooIw";
   repo = "holochain/holochain-rust";
   upstream = "origin";
-  pulse-url = "https://medium.com/@holochain/64326f4897a";
+  # the unique hash at the end of the medium post url
+  # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
+  # would be 4867d777de94
+  pulse-url-hash = "4867d777de94";
   pulse-version = "22";
   pulse-commit = "0a524d3be580249d54cf5073591fa9fe1f30a174";
   core-previous-version = "0.0.8-alpha";
@@ -253,7 +257,7 @@ let
   ''
 Release ${core-version}
 
-current release process: https://hackmd.io/6HH-O1KuQ7uYzKrsI6ooIw
+current release process: ${release-process-url}
 
 ## Preparation
 
@@ -264,21 +268,6 @@ This should all be handled by `nix-shell --run hc-prepare-release`
 - [x] core/hdk version updated in CLI scaffold
 - [x] reviewed and updated the version numbers in Cargo.toml
 - [x] holochain nodejs minor version bumped in CLI scaffold `package.json`
-
-## Test builds
-
-Kick these off with `nix-shell --run hc-test-release`
-
-Every run of `hc-test-release` will cut new tags incrementally and trigger new builds on CI.
-
-Move on to "release docs" below while waiting for CI.
-
-- [ ] green core release test tag + linux/mac/windows artifacts on github
-    - [ ] build: {{build URL}}
-    - [ ] artifacts: {{artifacts URL}}
-- [ ] green node release test tag + linux/mac/windows artifacts on github
-    - [ ] build: {{build URL}}
-    - [ ] artifacts: {{artifacts URL}}
 
 ## Release docs
 
@@ -304,12 +293,20 @@ Generate the github release notes with `nix-shell --run hc-generate-release-note
     - [ ] correct installation instructions
     - [ ] correct version number in binary file names
 
-## QA
+ ## Test builds
 
-- [ ] QA: artifacts install on supported platforms
-- [ ] QA: @Connoropolous :+1: docs
-- [ ] QA: hApps run
-- [ ] QA: hc generate run
+ Kick these off with `nix-shell --run hc-test-release`
+
+ Every run of `hc-test-release` will cut new tags incrementally and trigger new builds on CI.
+
+ Move on to "release docs" below while waiting for CI.
+
+ - [ ] green core release test tag + linux/mac/windows artifacts on github
+     - [ ] build: {{build URL}}
+     - [ ] artifacts: {{artifacts URL}}
+ - [ ] green node release test tag + linux/mac/windows artifacts on github
+     - [ ] build: {{build URL}}
+     - [ ] artifacts: {{artifacts URL}}
 
 ## Deploy artifacts
 
@@ -355,7 +352,7 @@ Generate the github release notes with `nix-shell --run hc-generate-release-note
    echo
    echo "Current nix-shell config:"
    echo
-   echo "pulse-url: ${pulse-url}"
+   echo "pulse-url-hash: ${pulse-url-hash}"
    echo "pulse-version: ${pulse-version}"
    echo "pulse-commit: ${pulse-commit}"
    echo "core-previous-version: ${core-previous-version}"
@@ -448,6 +445,7 @@ Generate the github release notes with `nix-shell --run hc-generate-release-note
   '';
 
 
+  pulse-url = "https://medium.com/@holochain/${pulse-url-hash}";
   release-notes-template = ''
 # ${core-version} release {{ release date }}
 
@@ -487,11 +485,11 @@ Rust and NodeJS are both required for `hc` to build and test DNA:
 ### Which Binary?
 Download only the binaries for your operating system.
 
-- MacOS: `holochain-cli-v${core-version}-x86_64-apple-darwin.tar.gz`
-- Linux: `holochain-cli-v${core-version}-x86_64-ubuntu-linux-gnu.tar.gz`
+- MacOS: `cli-v${core-version}-x86_64-apple-darwin.tar.gz`
+- Linux: `cli-v${core-version}-x86_64-ubuntu-linux-gnu.tar.gz`
 - Windows:
-  - mingw build system: `holochain-cli-v${core-version}-x86_64-pc-windows-gnu.tar.gz`
-  - Visual Studio build system: `holochain-cli-v${core-version}-x86_64-pc-windows-msvc.tar.gz`
+  - mingw build system: `cli-v${core-version}-x86_64-pc-windows-gnu.tar.gz`
+  - Visual Studio build system: `cli-v${core-version}-x86_64-pc-windows-msvc.tar.gz`
 
 All binaries are for 64-bit operating systems.
 32-bit systems are NOT supported.

@@ -135,7 +135,7 @@ fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
     if persist {
         fs::create_dir_all(LOCAL_STORAGE_PATH)?;
 
-        Ok(StorageConfiguration::File {
+        Ok(StorageConfiguration::Pickle {
             path: LOCAL_STORAGE_PATH.into(),
         })
     } else {

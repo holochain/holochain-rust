@@ -447,19 +447,14 @@ Generate the github release notes with `nix-shell --run hc-generate-release-note
 
   pulse-url = "https://medium.com/@holochain/${pulse-url-hash}";
   release-notes-template = ''
-# ${core-version} release {{ release date }}
+# ${core-version} release {{ release-date }}
 
-## Summary
-
-{{ dev pulse summary }}
-
-## Highlights
-
-{{ dev pulse highlights }}
+{{ pulse-notes }}
 
 See the [Dev Pulse](${pulse-url}) & [change log](https://github.com/holochain/holochain-rust/blob/release-${core-version}/CHANGELOG.md) for complete details.
 
-## Installation
+## **Installation**
+
 This release consists of binary builds of:
 
 - the [`hc` development command-line tool](https://github.com/holochain/holochain-rust/blob/v${core-version}/cli/README.md)
@@ -482,7 +477,8 @@ Rust and NodeJS are both required for `hc` to build and test DNA:
   - E2E tests for Holochain apps are written in Javascript client-side and executed in NodeJS through websockets
   - For further info, check out [the holochain-nodejs module](https://www.npmjs.com/package/@holochain/holochain-nodejs)
 
-### Which Binary?
+### **Which Binary?**
+
 Download only the binaries for your operating system.
 
 - MacOS: `cli-v${core-version}-x86_64-apple-darwin.tar.gz`
@@ -496,8 +492,20 @@ All binaries are for 64-bit operating systems.
   '';
   hc-generate-release-notes = pkgs.writeShellScriptBin "hc-generate-release-notes"
   ''
-   echo '${release-notes-template}' \
-    | sed "s/{{ release date }}/`date --iso -u`/"
+   TEMPLATE=$( echo '${release-notes-template}' )
+
+   DATE_PLACEHOLDER='{{ release-date }}'
+   DATE=$( date --iso -u )
+   WITH_DATE=''${TEMPLATE/$DATE_PLACEHOLDER/$DATE}
+
+   PULSE_PLACEHOLDER='{{ pulse-notes }}'
+   # magic
+   # gets a markdown version of pulse
+   # greps for everything from summary to details (not including details heading)
+   # deletes null characters that throw warnings in bash
+   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${pulse-url} | grep -Pzo "(?s)(###.*Summary.*)(?=###.*Details)" | tr -d '\0' )
+   WITH_NOTES=''${WITH_DATE/$PULSE_PLACEHOLDER/$PULSE_NOTES}
+   echo "$WITH_NOTES"
   '';
 
 in

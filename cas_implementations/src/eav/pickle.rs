@@ -47,14 +47,15 @@ impl EntityAttributeValueStorage for EavPickleStorage {
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         let index_str = eav.index().to_string();
-        let value = self.db.read()?.get::<EntityAttributeValueIndex>(&index_str);
+        let value = self.db.read().unwrap().get::<EntityAttributeValueIndex>(&index_str);
         if let Some(_) = value {
             let new_eav =
                 EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?;
             self.add_eavi(&new_eav)
         } else {
             self.db
-                .write()?
+                .write()
+                .unwrap()
                 .set(&*index_str, &eav)
                 .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
             Ok(Some(eav.clone()))

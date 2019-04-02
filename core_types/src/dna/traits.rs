@@ -54,5 +54,4 @@ mod tests {
     fn test_reserved_traits_as_str() {
         assert_eq!(ReservedTraitNames::Public.as_str(), "hc_public");
     }
-
 }

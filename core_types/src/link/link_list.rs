@@ -1,4 +1,4 @@
-use crate::{error::error::HolochainError, json::JsonString, link::Link};
+use crate::{error::HolochainError, json::JsonString, link::Link};
 
 //-------------------------------------------------------------------------------------------------
 // LinkList

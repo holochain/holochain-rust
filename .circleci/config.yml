@@ -5,26 +5,43 @@ jobs:
  # is actually unit tests
  build:
   docker:
-   - image: holochain/holochain-rust:circle.zz.end
+   - image: holochain/holochain-rust:latest
+  resource_class: large
   steps:
    - checkout
-
-   - run: nix-shell --run hc-fmt-check
    - run: nix-shell --run hc-test
 
- integration-tests:
+ fmt:
   docker:
-   - image: holochain/holochain-rust:circle.zz.end
+   - image: holochain/holochain-rust:latest
+  steps:
+   - checkout
+   - run: nix-shell --run hc-fmt-check
+   # don't allow unpinned deps
+   - run:
+      name: no unpinnned deps
+      command: |
+        # temporary avoid build fails due to greps
+        set +eo pipefail
+        export UNPINNED=`nix-shell --run hc-cargo-toml-grep-unpinned`
+        set -eo pipefail
+        if [[ $UNPINNED ]]
+        then
+         echo "unpinned deps must be empty:"
+         echo "$UNPINNED"
+         exit 1
+        fi
+
+ app-spec-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
   steps:
    - checkout
 
    - run:
        name: install cli
        command: nix-shell --run hc-install-cli
-
-   - run:
-      name: test cli
-      command: nix-shell --run hc-test-cli
 
    - run:
        name: install node conductor
@@ -37,6 +54,20 @@ jobs:
    - run:
        name: nodejs conductor tests
        command: nix-shell --run hc-test-node-conductor
+
+ cli-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  steps:
+   - checkout
+
+   - run:
+       name: install cli
+       command: nix-shell --run hc-install-cli
+
+   - run:
+      name: test cli
+      command: nix-shell --run hc-test-cli
 
  # https://circleci.com/docs/2.0/building-docker-images/
  docker.start:
@@ -51,6 +82,7 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker pull holochain/holochain-rust:circle..start
    - run: docker build -f .circleci/Dockerfile.01.warm.nix -t holochain/holochain-rust:circle.01.warm.nix .
    - run: docker push holochain/holochain-rust:circle.01.warm.nix
  docker.02:
@@ -58,6 +90,7 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker pull holochain/holochain-rust:circle.01.warm.nix
    - run: docker build -f .circleci/Dockerfile.02.warm.tests -t holochain/holochain-rust:circle.02.warm.tests .
    - run: docker push holochain/holochain-rust:circle.02.warm.tests
  docker.03:
@@ -65,6 +98,7 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker pull holochain/holochain-rust:circle.02.warm.tests
    - run: docker build -f .circleci/Dockerfile.03.warm.tools -t holochain/holochain-rust:circle.03.warm.tools .
    - run: docker push holochain/holochain-rust:circle.03.warm.tools
  docker.end:
@@ -72,27 +106,146 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end .
+   - run: docker pull holochain/holochain-rust:circle.03.warm.tools
+   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end -t holochain/holochain-rust:develop -t holochain/holochain-rust:latest .
    - run: docker push holochain/holochain-rust:circle.zz.end
+   - run: docker push holochain/holochain-rust:develop
+   - run: docker push holochain/holochain-rust:latest
 
- cold.ubuntu:
+ cold.ubuntu.bionic.auto:
   docker:
-   - image: ubuntu
+   - image: ubuntu:bionic
+  resource_class: xlarge
   steps:
    - checkout
    - run: . ./scripts/install/auto.sh
    - run: make test
+
+ # https://github.com/NixOS/nix/issues/1559
+ # cold.ubuntu.bionic.nix:
+ #  docker:
+ #   - image: ubuntu:bionic
+ #  resource_class: xlarge
+ #  steps:
+ #   - checkout
+ #   - run:
+ #      name: Install and run all tests via nix
+ #      command: |
+ #       export USER=`whoami`
+ #       apt-get update && apt-get install -y curl bzip2 sudo
+ #       curl https://nixos.org/nix/install | sh
+ #       nix-shell --run hc-test-all
+
+ cold.ubuntu.xenial.auto:
+  docker:
+   - image: ubuntu:xenial
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
+
+ # https://github.com/NixOS/nix/issues/1559
+ # cold.ubuntu.xenial.nix:
+ #  docker:
+ #   - image: ubuntu:xenial
+ #  resource_class: xlarge
+ #  steps:
+ #   - checkout
+ #   - run:
+ #      name: Install and run all tests via nix
+ #      command: |
+ #       export USER=`whoami`
+ #       apt-get update && apt-get install -y curl bzip2 sudo
+ #       curl https://nixos.org/nix/install | sh
+ #       nix-shell --run hc-test-all
+
+ cold.debian.stable.auto:
+  docker:
+   - image: debian:stable
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
+
+ # https://github.com/NixOS/nix/issues/1559
+ # cold.debian.stable.nix:
+ #  docker:
+ #   - image: debian:stable
+ #  resource_class: xlarge
+ #  steps:
+ #   - checkout
+ #   - run:
+ #      name: Install and run all tests via nix
+ #      command: |
+ #       export USER=`whoami`
+ #       apt-get update && apt-get install -y curl bzip2 sudo
+ #       curl https://nixos.org/nix/install | sh
+ #       nix-shell --run hc-test-all
+
+ cold.mac.10.auto:
+  macos:
+   xcode: "10.2.0"
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
+
+ cold.mac.10.nix:
+  macos:
+   xcode: "10.2.0"
+  steps:
+   - checkout
+   - run:
+      name: Install and run all tests via nix
+      command: |
+       curl https://nixos.org/nix/install | sh
+       . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
+       nix-shell --run hc-test-all
 
 workflows:
  version: 2
  tests:
   jobs:
    - build
-   - integration-tests
+   - fmt
+   - app-spec-tests
+   - cli-tests
 
- cold:
+ cold.ubuntu:
   jobs:
-   - cold.ubuntu:
+   - cold.ubuntu.bionic.auto:
+      filters:
+       branches:
+        only:
+         - develop
+   # - cold.ubuntu.bionic.nix
+
+   - cold.ubuntu.xenial.auto:
+      filters:
+       branches:
+        only:
+         - develop
+   # - cold.ubuntu.xenial.nix
+
+ cold.debian:
+  jobs:
+   - cold.debian.stable.auto:
+      filters:
+       branches:
+        only:
+         - develop
+   # - cold.debian.stable.nix
+
+ cold.mac:
+  jobs:
+   - cold.mac.10.auto:
+      filters:
+       branches:
+        only:
+         - develop
+   - cold.mac.10.nix:
       filters:
        branches:
         only:

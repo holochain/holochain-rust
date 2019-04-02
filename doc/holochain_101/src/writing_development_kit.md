@@ -148,6 +148,7 @@ This is done by calling `hc_init_globals` with an input value of 0. The result o
 - agent_address
 - agent_initial_hash
 - agent_latest_hash
+- public_token
 
 See the [API global variables](/zome/api_globals.html) page for details on what these are.
 

@@ -54,6 +54,12 @@ We use rust-fmt to enforce code style so that we don't spend time arguing about 
 
 Run the formatter with:
 
+``` shell
+nix-shell --run hc-fmt
+```
+
+or
+
 ```shell
 . docker/run-fmt
 ```
@@ -61,12 +67,6 @@ or
 
 ``` shell
 make fmt
-```
-
-or
-
-``` shell
-nix-shell --run hc-fmt
 ```
 
 ## Continuous Integration
@@ -171,7 +171,7 @@ This section describes our practices and guidelines for using git and making cha
 
 ## License
 The default licensing for our repos is currently [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
-Copyright (C) 2018, Holochain Trust
+Copyright (C) 2018, Holochain Foundation
 
 **Note:** We are considering other 'looser' licensing options (like MIT license) but at this stage are using GPL while we're getting the matter sorted out.  See [this article](https://medium.com/holochain/licensing-needs-for-truly-p2p-software-a3e0fa42be6c) for some of our thinking on licensing for distributed application frameworks.
 

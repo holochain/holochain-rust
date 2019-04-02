@@ -49,8 +49,8 @@ void TestHcDna::canSetName() {
 void TestHcDna::canGetZomeNames() {
   Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
                                             "\"zomes\":{"
-                                            "\"zome1\":{\"description\":\"lorem\",\"config\":{},\"entry_types\":{},\"capabilities\":{}},"
-                                            "\"zome2\":{\"description\":\"lorem\",\"config\":{},\"entry_types\":{},\"capabilities\":{}}"
+                                            "\"zome1\":{\"description\":\"lorem\",\"config\":{},\"entry_types\":{},\"traits\":{}},"
+                                            "\"zome2\":{\"description\":\"lorem\",\"config\":{},\"entry_types\":{},\"traits\":{}}"
                                             "}}");
   QVERIFY(dna != 0);
 
@@ -69,7 +69,7 @@ void TestHcDna::canGetZomeNames() {
   holochain_dna_free(dna);
 }
 
-void TestHcDna::canGetCapabilityNames() {
+void TestHcDna::canGetTraitNames() {
     Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
                                               "\"zomes\":{"
                                               "\"zome1\":{\"description\":\"lorem\",\"config\":{},\"traits\":{"

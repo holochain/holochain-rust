@@ -4,6 +4,8 @@ use crate::{
     error::DefaultResult,
     util,
 };
+use colored::*;
+use holochain_common::env_vars::EnvVar;
 use holochain_wasm_utils::wasm_target_dir;
 use std::{
     fs::{self, OpenOptions},
@@ -27,7 +29,13 @@ fn generate_cargo_toml(name: &str, contents: &str) -> DefaultResult<String> {
 
     let authors_default = Value::from("[\"TODO\"]");
     let edition_default = Value::from("\"TODO\"");
-    let version_default = String::from("branch = \"develop\"");
+
+    let maybe_version = EnvVar::ScaffoldVersion.value().ok();
+    let version_default = if maybe_version.is_some() {
+        maybe_version.unwrap()
+    } else {
+        String::from("tag = \"v0.0.8-alpha\"")
+    };
     let maybe_package = config.get("package");
 
     let name = Value::from(name);
@@ -110,6 +118,16 @@ impl RustScaffold {
 
 impl Scaffold for RustScaffold {
     fn gen<P: AsRef<Path>>(&self, base_path: P) -> DefaultResult<()> {
+        // First, check whether they have `cargo` installed
+        let should_continue = util::check_for_cargo(
+            "Generating a Rust based Zome depends on having Rust installed.",
+            None,
+        )?;
+        if !should_continue {
+            // early exit, but user will have received feedback within check_for_cargo about why
+            return Ok(());
+        }
+
         fs::create_dir_all(&base_path)?;
 
         // use cargo to initialise a library Rust crate without any version control
@@ -129,6 +147,13 @@ impl Scaffold for RustScaffold {
         // create and fill in a build file appropriate for Rust
         let build_file_path = base_path.as_ref().join(package::BUILD_CONFIG_FILE_NAME);
         self.build_template.save_as(build_file_path)?;
+
+        // CLI feedback
+        println!(
+            "{} {:?} Zome",
+            "Generated".green().bold(),
+            self.package_name
+        );
 
         Ok(())
     }

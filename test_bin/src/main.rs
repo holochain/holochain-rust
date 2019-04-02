@@ -1,12 +1,13 @@
 #![feature(try_from)]
+#![warn(unused_extern_crates)]
 
+#[macro_use]
+extern crate failure;
 extern crate holochain_core_types;
 #[macro_use]
 extern crate holochain_net;
-extern crate holochain_net_connection;
 #[macro_use]
 extern crate serde_json;
-extern crate tempfile;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
@@ -23,8 +24,7 @@ pub mod publish_hold_workflows;
 pub mod three_workflows;
 
 use constants::*;
-use holochain_net::tweetlog::*;
-use holochain_net_connection::NetResult;
+use holochain_net::{connection::NetResult, tweetlog::*};
 use p2p_node::P2pNode;
 use std::{collections::HashMap, fs::File};
 
@@ -43,16 +43,20 @@ type MultiNodesTestFn = fn(nodes: &mut Vec<P2pNode>, can_test_connect: bool) -> 
 lazy_static! {
     // List of tests
     pub static ref TWO_NODES_BASIC_TEST_FNS: Vec<TwoNodesTestFn> = vec![
+        basic_workflows::setup_one_node,
+        basic_workflows::no_setup_test,
         basic_workflows::setup_two_nodes,
         basic_workflows::send_test,
-         basic_workflows::dht_test,
+        basic_workflows::untrack_alex_test,
+        basic_workflows::untrack_billy_test,
+        basic_workflows::retrack_test,
+        basic_workflows::dht_test,
         basic_workflows::meta_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,
         publish_hold_workflows::publish_entry_list_test,
         publish_hold_workflows::publish_meta_list_test,
-        publish_hold_workflows::hold_entry_list_test,
         publish_hold_workflows::hold_meta_list_test,
         publish_hold_workflows::double_publish_entry_list_test,
         publish_hold_workflows::double_publish_meta_list_test,

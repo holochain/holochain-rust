@@ -2,25 +2,19 @@
 
 [![Project](https://img.shields.io/badge/project-holochain-blue.svg?style=flat-square)](http://holochain.org/)
 [![PM](https://img.shields.io/badge/pm-waffle-blue.svg?style=flat-square)](https://waffle.io/holochain/org)
-[![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.net)
+[![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.org)
 
-This crate implements a set of tools for building and running Holochain DNA from the command line.
+This crate implements a set of development tools for building and running Holochain DNA from the command line.
 
 ## Install
 
-Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.  Note, on Mac and Linux as well as installing the binaries you will need to install the `zmq` dependency e.g.:
+### Scripted installation
 
-On MacOS:
+The install scripts provided by holochain core (see [README](../README.md)) install all the dependencies required for holochain cli.
 
-```
-brew install zmq
-```
+### Manual installation
 
-On Ubuntu:
-
-```
-apt-get install libzmq3-dev
-```
+An option for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
 
 ### Building From Source
 
@@ -36,15 +30,16 @@ These dependencies need to be installed in order to compile, and use `hc`:
 - [Node.js](https://nodejs.org) version 8 or higher
   - Tests for Holochain apps are now written in Javascript and executed in Nodejs
   - To read further, check out [the holochain-nodejs module](https://www.npmjs.com/package/@holochain/holochain-nodejs)
-- [Zmq](http://zeromq.org/intro:get-the-software)
-  - zeromq is a "distributed messaging" software package utilized in the networking stack of Holochain
-  - the link above has common platform installation instructions
-  - without ZMQ the installation command that follows will fail
 
 
-To install the latest version of the Holochain command line, run the following command in a terminal
+To install the cutting edge version of the Holochain conductor, run the following command in a terminal
 ```shell
 $ cargo install hc --force --git https://github.com/holochain/holochain-rust.git --branch develop
+```
+
+To install the latest released version of the Holochain conductor, run the following command in a terminal
+```shell
+$ cargo install hc --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.8-alpha
 ```
 
 The command line tools are now available in your command line using the `hc` command.
@@ -87,7 +82,7 @@ To read about `hc test`, used for running tests over your source code, see [http
 
 ### hc run: Running your application
 
-To read about `hc run`, used for spinning up a quick developement version of your app with an HTTP or Websocket interface, that you can connect to from a UI, or any client, see [https://developer.holochain.org/guide/latest/development_conductor.html](https://developer.holochain.org/guide/latest/development_conductor.html).
+To read about `hc run`, used for spinning up a quick development version of your app with an HTTP or Websocket interface, that you can connect to from a UI, or any client, see [https://developer.holochain.org/guide/latest/development_conductor.html](https://developer.holochain.org/guide/latest/development_conductor.html).
 
 ### hc keygen: Create agent key pair
 
@@ -101,7 +96,7 @@ Holochain is an open source project.  We welcome all sorts of participation and 
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-Copyright (C) 2018, Holochain Trust
+Copyright (C) 2018, Holochain Foundation
 
 This program is free software: you can redistribute it and/or modify it under the terms of the license p
 rovided in the LICENSE file (GPLv3).  This program is distributed in the hope that it will be useful, bu

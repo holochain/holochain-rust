@@ -3,7 +3,7 @@
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
-use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
+use crate::{api::G_MEM_STACK, entry_definition::ValidatingEntryType};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
@@ -23,7 +23,7 @@ use holochain_wasm_utils::{
         ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
     },
 };
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, convert::TryFrom};
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -112,15 +112,19 @@ pub extern "C" fn __hdk_validate_app_entry(
         Err(e) => return RibosomeEncodedValue::from(e).into(),
     };
 
+    let entry_type = match EntryType::try_from(input.validation_data.clone()) {
+        Ok(v) => v,
+        Err(e) => return RibosomeEncodedValue::from(e).into(),
+    };
+
     match zd
         .entry_types
         .into_iter()
-        .find(|ref validating_entry_type| validating_entry_type.name == input.entry_type)
+        .find(|ref validating_entry_type| validating_entry_type.name == entry_type)
     {
         None => RibosomeErrorCode::CallbackFailed as RibosomeEncodingBits,
         Some(mut entry_type_definition) => {
-            let validation_result =
-                (*entry_type_definition.validator)(input.entry, input.validation_data);
+            let validation_result = (*entry_type_definition.validator)(input.validation_data);
 
             match validation_result {
                 Ok(()) => RibosomeEncodedValue::Success.into(),
@@ -209,11 +213,7 @@ pub extern "C" fn __hdk_validate_link(
                     })
             })
             .and_then(|mut link_definition| {
-                let validation_result = (*link_definition.validator)(
-                    input.link.base().clone(),
-                    input.link.target().clone(),
-                    input.validation_data,
-                );
+                let validation_result = (*link_definition.validator)(input.validation_data);
                 Some(match validation_result {
                     Ok(()) => RibosomeEncodedValue::Success,
                     Err(fail_string) => {
@@ -225,6 +225,28 @@ pub extern "C" fn __hdk_validate_link(
                 RibosomeErrorCode::CallbackFailed,
             )),
     )
+}
+
+#[no_mangle]
+pub extern "C" fn __hdk_git_hash(
+    encoded_allocation_of_input: RibosomeEncodingBits,
+) -> RibosomeEncodingBits {
+    if let Err(allocation_error) =
+        ::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+    {
+        return allocation_error.as_ribosome_encoding();
+    }
+
+    let mut mem_stack = unsafe {
+        match G_MEM_STACK {
+            Some(mem_stack) => mem_stack,
+            None => {
+                return AllocationError::BadStackAlignment.as_ribosome_encoding();
+            }
+        }
+    };
+
+    return_code_for_allocation_result(mem_stack.write_string(holochain_core_types::GIT_HASH)).into()
 }
 
 #[no_mangle]
@@ -289,10 +311,12 @@ pub mod tests {
     // Adding empty zome_setup() so that the cfg(test) build can link.
     #[no_mangle]
     pub fn zome_setup(_: &mut super::ZomeDefinition) {}
+
     #[no_mangle]
     pub fn __list_traits() -> ZomeTraits {
         BTreeMap::new()
     }
+
     #[no_mangle]
     pub fn __list_functions() -> ZomeFnDeclarations {
         Vec::new()
@@ -300,7 +324,7 @@ pub mod tests {
 
     #[test]
     fn partial_zome_json() {
-        #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+        #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
         pub struct Post {
             content: String,
             date_created: String,
@@ -312,13 +336,13 @@ pub mod tests {
             name: "post",
             description: "blog entry post",
             sharing: Sharing::Public,
-            native_type: Post,
+
 
             validation_package: || {
                 ValidationPackageDefinition::Entry
             },
 
-            validation: |_post: Post, _validation_data: hdk::ValidationData| {
+            validation: |_validation_data: hdk::EntryValidationData<Post>| {
                 Ok(())
             }
 

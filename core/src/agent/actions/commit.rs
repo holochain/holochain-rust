@@ -1,4 +1,3 @@
-extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
     agent::state::ActionResponse,
@@ -20,10 +19,11 @@ use std::{pin::Pin, sync::Arc};
 /// Returns a future that resolves to an ActionResponse.
 pub async fn commit_entry(
     entry: Entry,
-    maybe_crud_link: Option<Address>,
+    maybe_link_update_delete: Option<Address>,
     context: &Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::Commit((entry, maybe_crud_link)));
+    let action_wrapper =
+        ActionWrapper::new(Action::Commit((entry.clone(), maybe_link_update_delete)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     await!(CommitFuture {
         context: context.clone(),

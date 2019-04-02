@@ -13,14 +13,21 @@ use crate::logger::LogRules;
 use boolinator::*;
 use directories;
 use holochain_core_types::{
-    agent::AgentId,
+    agent::{AgentId, Base32},
     dna::Dna,
     error::{HcResult, HolochainError},
     json::JsonString,
 };
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
-use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryFrom,
+    env,
+    fs::File,
+    io::prelude::*,
+    path::PathBuf,
+};
 use toml;
 
 /// Main conductor configuration struct
@@ -61,6 +68,12 @@ pub struct Configuration {
     /// where to persist the config file and DNAs. Optional.
     #[serde(default = "default_persistence_dir")]
     pub persistence_dir: PathBuf,
+
+    /// Optional URI for a websocket connection to an outsourced signing service.
+    /// Bootstrapping step for Holo closed-alpha.
+    /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures
+    /// over this websocket.
+    pub signing_service_uri: Option<String>,
 }
 
 pub fn default_persistence_dir() -> PathBuf {
@@ -91,10 +104,38 @@ impl Default for LoggerConfiguration {
     }
 }
 
+/// Check for duplicate items in a list of strings
+fn detect_dupes<'a, I: Iterator<Item = &'a String>>(
+    name: &'static str,
+    items: I,
+) -> Result<(), String> {
+    let mut set = HashSet::<&str>::new();
+    let mut dupes = Vec::<String>::new();
+    for item in items {
+        if !set.insert(item) {
+            dupes.push(item.to_string())
+        }
+    }
+    if !dupes.is_empty() {
+        Err(format!(
+            "Duplicate {} IDs detected: {}",
+            name,
+            dupes.join(", ")
+        ))
+    } else {
+        Ok(())
+    }
+}
+
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.
-    pub fn check_consistency(&self) -> Result<(), String> {
+    pub fn check_consistency<'a>(&'a self) -> Result<(), String> {
+        detect_dupes("agent", self.agents.iter().map(|c| &c.id))?;
+        detect_dupes("dna", self.dnas.iter().map(|c| &c.id))?;
+        detect_dupes("instance", self.instances.iter().map(|c| &c.id))?;
+        detect_dupes("interface", self.interfaces.iter().map(|c| &c.id))?;
+
         for ref instance in self.instances.iter() {
             self.agent_by_id(&instance.agent).is_some().ok_or_else(|| {
                 format!(
@@ -298,12 +339,15 @@ impl Configuration {
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct AgentConfiguration {
     pub id: String,
     pub name: String,
-    pub public_address: String,
-    pub key_file: String,
+    pub public_address: Base32,
+    pub keystore_file: String,
+    /// If set to true conductor will ignore keystore_file and instead use the remote signer
+    /// accessible through signing_service_uri to request signatures.
+    pub holo_remote_key: Option<bool>,
 }
 
 impl From<AgentConfiguration> for AgentId {
@@ -336,7 +380,7 @@ impl TryFrom<DnaConfiguration> for Dna {
 
 /// An instance combines a DNA with an agent.
 /// Each instance has its own storage configuration.
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct InstanceConfiguration {
     pub id: String,
     pub dna: String,
@@ -351,11 +395,12 @@ pub struct InstanceConfiguration {
 /// * file
 ///
 /// Projected are various DB adapters.
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum StorageConfiguration {
     Memory,
     File { path: String },
+    Pickle { path: String },
 }
 
 /// Here, interfaces are user facing and make available zome functions to
@@ -370,7 +415,7 @@ pub enum StorageConfiguration {
 /// The instances (referenced by ID) that are to be made available via that interface should be listed.
 /// An admin flag will enable conductor functions for programatically changing the configuration
 /// (e.g. installing apps)
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct InterfaceConfiguration {
     pub id: String,
     pub driver: InterfaceDriver,
@@ -380,7 +425,7 @@ pub struct InterfaceConfiguration {
     pub instances: Vec<InstanceReferenceConfiguration>,
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum InterfaceDriver {
     Websocket { port: u16 },
@@ -389,7 +434,7 @@ pub enum InterfaceDriver {
     Custom(toml::value::Value),
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct InstanceReferenceConfiguration {
     pub id: String,
 }
@@ -446,6 +491,9 @@ pub struct NetworkConfig {
     /// List of URIs that point to other nodes to bootstrap p2p connections.
     #[serde(default)]
     pub bootstrap_nodes: Vec<String>,
+    /// Global logging level output by N3H
+    #[serde(default = "default_n3h_log_level")]
+    pub n3h_log_level: String,
     /// Absolute path to the local installation/repository of n3h
     #[serde(default)]
     pub n3h_path: String,
@@ -471,6 +519,13 @@ pub struct NetworkConfig {
 // if this logic changes
 pub fn default_n3h_mode() -> String {
     String::from("HACK")
+}
+
+// note that this behaviour is documented within
+// holochain_common::env_vars module and should be updated
+// if this logic changes
+pub fn default_n3h_log_level() -> String {
+    String::from("i")
 }
 
 // note that this behaviour is documented within
@@ -537,13 +592,13 @@ pub mod tests {
     id = "bob"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file="file/to/serialize"
+    keystore_file = "file/to/serialize"
 
     [[agents]]
     id="alex"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file="another/file"
+    keystore_file = "another/file"
 
     [[dnas]]
     id="dna"
@@ -557,7 +612,7 @@ pub mod tests {
                 .get(0)
                 .expect("expected at least 2 agents")
                 .clone()
-                .key_file,
+                .keystore_file,
             "file/to/serialize"
         );
         assert_eq!(
@@ -573,17 +628,17 @@ pub mod tests {
     id="agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file="whatever"
+    keystore_file = "whatever"
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
     "#;
         let dnas = load_configuration::<Configuration>(toml).unwrap().dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(dna_config.file, "app_spec.hcpkg");
+        assert_eq!(dna_config.file, "app_spec.dna.json");
         assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
     }
 
@@ -594,11 +649,11 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -634,10 +689,11 @@ pub mod tests {
     id = "app spec instance"
 
     [network]
-    bootstrap_nodes = ["/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"]
+    bootstrap_nodes = ["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"]
     n3h_path = "/Users/cnorris/.holochain/n3h"
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     networking_config_file = "/Users/cnorris/.holochain/network_config.json"
+    n3h_log_level = "d"
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -646,7 +702,7 @@ pub mod tests {
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(dna_config.file, "app_spec.hcpkg");
+        assert_eq!(dna_config.file, "app_spec.dna.json");
         assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
 
         let instances = config.instances;
@@ -659,8 +715,9 @@ pub mod tests {
             config.network.unwrap(),
             NetworkConfig {
                 bootstrap_nodes: vec![String::from(
-                    "/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"
+                    "wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"
                 )],
+                n3h_log_level: String::from("d"),
                 n3h_path: String::from("/Users/cnorris/.holochain/n3h"),
                 n3h_mode: String::from("HACK"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
@@ -679,11 +736,11 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -743,7 +800,7 @@ pub mod tests {
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(dna_config.file, "app_spec.hcpkg");
+        assert_eq!(dna_config.file, "app_spec.dna.json");
         assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
 
         let instances = config.instances;
@@ -764,11 +821,11 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -794,11 +851,11 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -837,11 +894,11 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
+    file = "app-spec-rust.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -880,11 +937,11 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
+    file = "app-spec-rust.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -1058,11 +1115,11 @@ pub mod tests {
     id = "test agent"
     name = "Holo Tester 1"
     public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
-    key_file = "holo_tester.key"
+    keystore_file = "holo_tester.key"
 
     [[dnas]]
     id = "app spec rust"
-    file = "app_spec.hcpkg"
+    file = "app_spec.dna.json"
     hash = "Qm328wyq38924y"
 
     [[instances]]

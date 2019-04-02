@@ -1,5 +1,6 @@
 #![recursion_limit = "128"]
 #![cfg_attr(tarpaulin, skip)]
+#![warn(unused_extern_crates)]
 
 extern crate proc_macro;
 extern crate syn;
@@ -16,7 +17,10 @@ fn impl_default_json_macro(ast: &syn::DeriveInput) -> TokenStream {
             fn from(v: &#name) -> JsonString {
                 match ::serde_json::to_string(v) {
                     Ok(s) => Ok(JsonString::from(s)),
-                    Err(e) => Err(HolochainError::SerializationError(e.to_string())),
+                    Err(e) => {
+                        eprintln!("Error serializing to JSON: {:?}", e);
+                        Err(HolochainError::SerializationError(e.to_string()))
+                    },
                 }.expect(&format!("could not Jsonify {}: {:?}", stringify!(#name), v))
             }
         }

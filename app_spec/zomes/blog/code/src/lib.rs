@@ -1,11 +1,11 @@
 #![feature(try_from)]
-
+#![warn(unused_extern_crates)]
 #[macro_use]
 extern crate hdk;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
@@ -18,9 +18,8 @@ use hdk::{
     holochain_core_types::{
         cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
     },
-    holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
+    holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}}
 };
-
 use blog::Env;
 
 define_zome! {
@@ -31,6 +30,12 @@ define_zome! {
 
     genesis: || {
         Ok(())
+    }
+
+    receive: |message| {
+        json!({
+            "message": message
+        }).to_string()
     }
 
     functions: [
@@ -51,6 +56,12 @@ define_zome! {
             inputs: |num1: u32, num2: u32|,
             outputs: |sum: ZomeApiResult<JsonString>|,
             handler: blog::handle_check_sum
+        }
+
+        check_send: {
+            inputs: |to_agent: Address, message: String|,
+            outputs: |response: ZomeApiResult<String>|,
+            handler: blog::handle_check_send
         }
 
         post_address: {
@@ -79,7 +90,7 @@ define_zome! {
 
         update_post: {
             inputs: |post_address: Address, new_content: String|,
-            outputs: |result: ZomeApiResult<()>|,
+            outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_update_post
         }
 
@@ -95,10 +106,34 @@ define_zome! {
             handler: blog::handle_get_post
         }
 
+        get_initial_post: {
+            inputs: |post_address: Address|,
+            outputs: |post: ZomeApiResult<Option<Entry>>|,
+            handler : blog::handle_get_initial_post
+        }
+
+        get_history_post : {
+            inputs: |post_address: Address|,
+            outputs: |post: ZomeApiResult<EntryHistory>|,
+            handler : blog::handle_get_history_post
+        }
+
         my_posts: {
             inputs: | |,
             outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
             handler: blog::handle_my_posts
+        }
+
+        get_post_with_options_latest :{
+            inputs: |post_address: Address|,
+            outputs: |post: ZomeApiResult<Entry>|,
+            handler:  blog::handle_get_post_with_options_latest
+        }
+
+        get_post_with_options :{
+            inputs: |post_address: Address|,
+            outputs: |post: ZomeApiResult<GetEntryResult>|,
+            handler:  blog::handle_my_post_with_options
         }
 
         my_posts_immediate_timeout: {
@@ -128,7 +163,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [show_env, check_sum, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
+        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post,get_history_post,get_post_with_options,get_post_with_options_latest]
     }
-
 }

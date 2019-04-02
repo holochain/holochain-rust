@@ -19,5 +19,5 @@ A hash can optionally be provided, which could be used to validate that the DNA 
 ```toml
 [[dnas]]
 id = "app spec rust"
-file = "example-config/app_spec.hcpkg"
+file = "example-config/app_spec.dna.json"
 ```

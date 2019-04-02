@@ -1,31 +1,26 @@
+#![warn(unused_extern_crates)]
+#![feature(try_from)]
 extern crate holochain_cas_implementations;
 extern crate holochain_common;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dpki;
-extern crate holochain_net;
 extern crate holochain_sodium;
 extern crate holochain_wasm_utils;
 extern crate structopt;
 #[macro_use]
 extern crate failure;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate assert_cmd;
 extern crate base64;
 extern crate colored;
-extern crate dir_diff;
 extern crate semver;
 extern crate toml;
 #[macro_use]
 extern crate serde_json;
 extern crate ignore;
 extern crate rpassword;
-extern crate rustyline;
-extern crate tempfile;
-extern crate uuid;
 
 mod cli;
 mod config_files;
@@ -42,7 +37,7 @@ enum Cli {
     #[structopt(
         name = "package",
         alias = "p",
-        about = "Builds the current Holochain app into a .hcpkg file"
+        about = "Builds DNA source files into a single .dna.json DNA file"
     )]
     Package {
         #[structopt(
@@ -105,6 +100,8 @@ enum Cli {
             help = "Automatically package project before running"
         )]
         package: bool,
+        #[structopt(long, help = "Produce logging output")]
+        logging: bool,
         #[structopt(long, help = "Save generated data to file system")]
         persist: bool,
         #[structopt(long, help = "Use real networking")]
@@ -143,12 +140,33 @@ enum Cli {
     #[structopt(
         name = "keygen",
         alias = "k",
-        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to ~/.config/holochain/keys"
+        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\\Users\\Alice\\AppData\\Roaming\\holochain\\holochain\\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)"
     )]
-    KeyGen,
+    KeyGen {
+        #[structopt(long, short, help = "Specify path of file")]
+        path: Option<PathBuf>,
+        #[structopt(
+            long,
+            short,
+            help = "Only print machine-readable output; intended for use by programs and scripts"
+        )]
+        quiet: bool,
+        #[structopt(long, short, help = "Don't ask for passphrase")]
+        nullpass: bool,
+    },
+    #[structopt(name = "chain", about = "View the contents of a source chain")]
+    ChainLog {
+        #[structopt(name = "INSTANCE", help = "Instance ID to view")]
+        instance_id: Option<String>,
+        #[structopt(long, short, help = "Location of chain storage")]
+        path: Option<PathBuf>,
+        #[structopt(long, short, help = "List available instances")]
+        list: bool,
+    },
 }
 
 fn main() {
+    holochain_sodium::check_init();
     run().unwrap_or_else(|err| {
         eprintln!("{}", err);
 
@@ -159,23 +177,50 @@ fn main() {
 fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
+    let project_path =
+        std::env::current_dir().map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
     match args {
         Cli::Package { strip_meta, output } => {
+            let output = if output.is_some() {
+                output.unwrap()
+            } else {
+                util::std_package_path(&project_path).map_err(HolochainError::Default)?
+            };
             cli::package(strip_meta, output).map_err(HolochainError::Default)?
         }
+
         Cli::Unpack { path, to } => cli::unpack(&path, &to).map_err(HolochainError::Default)?,
+
         Cli::Init { path } => cli::init(&path).map_err(HolochainError::Default)?,
+
         Cli::Generate { zome, language } => {
             cli::generate(&zome, &language).map_err(HolochainError::Default)?
         }
+
         Cli::Run {
             package,
             port,
             persist,
             networked,
             interface,
-        } => cli::run(package, port, persist, networked, interface)
-            .map_err(HolochainError::Default)?,
+            logging,
+        } => {
+            let dna_path =
+                util::std_package_path(&project_path).map_err(HolochainError::Default)?;
+            let interface_type = cli::get_interface_type_string(interface);
+            let conductor_config = cli::hc_run_configuration(
+                &dna_path,
+                port,
+                persist,
+                networked,
+                &interface_type,
+                logging,
+            )
+            .map_err(HolochainError::Default)?;
+            cli::run(dna_path, package, port, interface_type, conductor_config)
+                .map_err(HolochainError::Default)?
+        }
+
         Cli::Test {
             dir,
             testfile,
@@ -186,9 +231,36 @@ fn run() -> HolochainResult<()> {
             cli::test(&current_path, &dir, &testfile, skip_build)
         }
         .map_err(HolochainError::Default)?,
-        Cli::KeyGen => {
-            cli::keygen(None, None).map_err(|e| HolochainError::Default(format_err!("{}", e)))?
+
+        Cli::KeyGen {
+            path,
+            quiet,
+            nullpass,
+        } => {
+            let passphrase = if nullpass {
+                Some(String::from(holochain_common::DEFAULT_PASSPHRASE))
+            } else {
+                None
+            };
+            cli::keygen(path, passphrase, quiet)
+                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
+
+        Cli::ChainLog {
+            instance_id,
+            list,
+            path,
+        } => match (list, instance_id) {
+            (true, _) => cli::chain_list(path),
+            (false, None) => {
+                Cli::clap().print_help().expect("Couldn't print help!");
+                println!("\n\nTry `hc help chain` for more info");
+            }
+            (false, Some(instance_id)) => {
+                cli::chain_log(path, instance_id)
+                    .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
+            }
+        },
     }
 
     Ok(())

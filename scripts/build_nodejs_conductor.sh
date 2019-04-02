@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 cd nodejs_conductor
 yarn install --ignore-scripts
-node ./publish.js
+RUST_SODIUM_DISABLE_PIE=1 node ./publish.js

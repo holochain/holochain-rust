@@ -64,7 +64,7 @@ pub enum Entry {
     #[serde(deserialize_with = "deserialize_app_entry")]
     App(AppEntryType, AppEntryValue),
 
-    Dna(Dna),
+    Dna(Box<Dna>),
     AgentId(AgentId),
     Deletion(DeletionEntry),
     LinkAdd(LinkData),
@@ -134,7 +134,13 @@ impl AddressableContent for Entry {
 pub struct EntryWithMeta {
     pub entry: Entry,
     pub crud_status: CrudStatus,
-    pub maybe_crud_link: Option<Address>,
+    pub maybe_link_update_delete: Option<Address>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct EntryWithMetaAndHeader {
+    pub entry_with_meta: EntryWithMeta,
+    pub headers: Vec<ChainHeader>,
 }
 
 /// dummy entry value
@@ -172,6 +178,10 @@ pub fn test_sys_entry_value() -> AgentId {
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry() -> Entry {
     Entry::App(test_app_entry_type(), test_entry_value())
+}
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_entry_with_value(value: &'static str) -> Entry {
+    Entry::App(test_app_entry_type(), JsonString::from(value))
 }
 
 pub fn expected_serialized_entry_content() -> JsonString {
@@ -221,7 +231,7 @@ pub fn test_sys_entry_address() -> Address {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_unpublishable_entry() -> Entry {
-    Entry::Dna(Dna::new())
+    Entry::Dna(Box::new(Dna::new()))
 }
 
 #[cfg(test)]
@@ -292,7 +302,7 @@ pub mod tests {
 
         let sys_entry = test_sys_entry();
         let expected = JsonString::from(format!(
-            "{{\"AgentId\":{{\"nick\":\"{}\",\"key\":\"{}\"}}}}",
+            "{{\"AgentId\":{{\"nick\":\"{}\",\"pub_sign_key\":\"{}\"}}}}",
             "bob",
             crate::agent::GOOD_ID,
         ));

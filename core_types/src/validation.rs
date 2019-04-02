@@ -2,12 +2,21 @@
 //! of data that is used for validation of chain modifying
 //! agent actions between Holochain and Zomes.
 
-extern crate serde_json;
 use crate::{
-    cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
+    cas::content::Address,
+    chain_header::ChainHeader,
+    entry::{
+        entry_type::{AppEntryType, EntryType},
+        Entry,
+    },
+    error::HolochainError,
     json::JsonString,
+    link::link_data::LinkData,
 };
+
 use chain_header::test_chain_header;
+
+use std::convert::TryFrom;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub struct ValidationPackage {
@@ -42,6 +51,65 @@ pub enum ValidationPackageDefinition {
     Custom(String),
 }
 
+///This struct carries information needed for Validating Entry Data,
+/// It is passed between callbacks and allows the user to validate
+/// using each supplied variant.
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub enum EntryValidationData<T> {
+    /// The create variant contains an entry T and the validation package.
+    Create {
+        entry: T,
+        validation_data: ValidationData,
+    },
+    /// The Modify variant contains the new entry T, old entry of the same type, the entry header of the old entry and a validation package
+    Modify {
+        new_entry: T,
+        old_entry: T,
+        old_entry_header: ChainHeader,
+        validation_data: ValidationData,
+    },
+    /// The delete contains an old entry which is the entry being deleted and the old entry header of type ChainHeader and a validation package
+    Delete {
+        old_entry: T,
+        old_entry_header: ChainHeader,
+        validation_data: ValidationData,
+    },
+}
+
+///This struct carries information needed for Validating Link Data,
+/// It is passed between callbacks and allows the user to validate
+/// using each supplied variant.
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub enum LinkValidationData {
+    /// The LinkAdd variant contains a linkData and a validation package
+    LinkAdd {
+        link: LinkData,
+        validation_data: ValidationData,
+    },
+    /// The LinkRemove variant contains a linkData and a validation package
+    LinkRemove {
+        link: LinkData,
+        validation_data: ValidationData,
+    },
+}
+
+impl TryFrom<EntryValidationData<Entry>> for EntryType {
+    type Error = HolochainError;
+    fn try_from(entry_validation: EntryValidationData<Entry>) -> Result<Self, Self::Error> {
+        match entry_validation {
+            EntryValidationData::Create { entry, .. } => {
+                Ok(EntryType::App(AppEntryType::try_from(entry.entry_type())?))
+            }
+            EntryValidationData::Delete { old_entry, .. } => Ok(EntryType::App(
+                AppEntryType::try_from(old_entry.entry_type())?,
+            )),
+            EntryValidationData::Modify { new_entry, .. } => Ok(EntryType::App(
+                AppEntryType::try_from(new_entry.entry_type())?,
+            )),
+        }
+    }
+}
+
 /// This structs carries information contextual for the process
 /// of validating an entry of link and is passed in to the according
 /// callbacks.
@@ -58,8 +126,6 @@ pub struct ValidationData {
     /// In which lifecycle of the entry creation are we running
     /// this validation callback?
     pub lifecycle: EntryLifecycle,
-    /// Does the entry get committed, modified or deleted?
-    pub action: EntryAction,
 }
 
 impl Default for ValidationData {
@@ -72,7 +138,6 @@ impl Default for ValidationData {
                 custom: None,
             },
             lifecycle: EntryLifecycle::default(),
-            action: EntryAction::default(),
         }
     }
 }
@@ -84,7 +149,7 @@ impl ValidationData {
             .chain_header
             .provenances()
             .iter()
-            .map(|(addr, _)| addr.clone())
+            .map(|provenance| provenance.source())
             .collect()
     }
 }

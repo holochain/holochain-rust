@@ -8,17 +8,16 @@
 //! out into their separate crate as well since those are generic and not
 //! necessarily bound to Holochain.
 #![feature(try_from)]
+#![feature(try_trait)]
 #![feature(never_type)]
+#![warn(unused_extern_crates)]
 
-#[macro_use]
-extern crate arrayref;
 extern crate base64;
 extern crate chrono;
 extern crate futures;
 #[macro_use]
 extern crate lazy_static;
 extern crate multihash;
-extern crate reed_solomon;
 extern crate rust_base58;
 extern crate serde;
 #[macro_use]
@@ -32,7 +31,7 @@ extern crate regex;
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
-
+extern crate hcid;
 extern crate uuid;
 
 pub mod cas;
@@ -53,3 +52,25 @@ pub mod link;
 pub mod signature;
 pub mod time;
 pub mod validation;
+
+pub const GIT_HASH: &str = env!(
+    "GIT_HASH",
+    "failed to obtain git hash from build environment. Check build.rs"
+);
+
+// not docker build friendly
+// https://circleci.com/gh/holochain/holochain-rust/10757
+#[cfg(feature = "broken-tests")]
+#[cfg(test)]
+mod test_hash {
+    use super::*;
+
+    #[test]
+    fn test_hash() {
+        assert_eq!(GIT_HASH.chars().count(), 40);
+        assert!(
+            GIT_HASH.is_ascii(),
+            "GIT HASH contains non-ascii characters"
+        );
+    }
+}

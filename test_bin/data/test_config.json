@@ -15,7 +15,8 @@
     "tags": {
       "p2pnode": "d",
       "metastore": "d",
-      "memory_server": "d"
+      "memory_server": "d",
+      "IpcNetWorker": "d"
     },
     "listeners": [
     "console"

@@ -104,24 +104,21 @@ impl GetEntryResultItem {
 
 /// Structure that holds a whole crud status history if the status request
 /// in the GetEntryOptions was set to StatusRequestKind::All
-#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, Default)]
 pub struct EntryHistory {
     pub items: Vec<GetEntryResultItem>,
     pub crud_links: HashMap<Address, Address>,
 }
 impl EntryHistory {
     pub fn new() -> Self {
-        EntryHistory {
-            items: Vec::new(),
-            crud_links: HashMap::new(),
-        }
+        Default::default()
     }
 
     pub fn push(&mut self, entry_with_meta: &EntryWithMeta, headers: Vec<ChainHeader>) {
         let address = entry_with_meta.entry.address();
         let item = GetEntryResultItem::new(Some((entry_with_meta, headers)));
         self.items.push(item);
-        if let Some(new_address) = entry_with_meta.maybe_crud_link.clone() {
+        if let Some(new_address) = entry_with_meta.maybe_link_update_delete.clone() {
             self.crud_links.insert(address, new_address);
         }
     }
@@ -229,7 +226,7 @@ mod tests {
             &EntryWithMeta {
                 entry: test_entry(),
                 crud_status: CrudStatus::Live,
-                maybe_crud_link: None,
+                maybe_link_update_delete: None,
             },
             vec![test_chain_header()],
         );
@@ -245,7 +242,7 @@ mod tests {
             &EntryWithMeta {
                 entry: test_entry_a(),
                 crud_status: CrudStatus::Modified,
-                maybe_crud_link: None,
+                maybe_link_update_delete: None,
             },
             vec![test_chain_header()],
         );
@@ -253,7 +250,7 @@ mod tests {
             &EntryWithMeta {
                 entry: test_entry_b(),
                 crud_status: CrudStatus::Live,
-                maybe_crud_link: None,
+                maybe_link_update_delete: None,
             },
             vec![test_chain_header()],
         );
@@ -268,7 +265,7 @@ mod tests {
             &EntryWithMeta {
                 entry: test_entry(),
                 crud_status: CrudStatus::Live,
-                maybe_crud_link: None,
+                maybe_link_update_delete: None,
             },
             vec![test_chain_header()],
         );
@@ -281,7 +278,7 @@ mod tests {
             &EntryWithMeta {
                 entry: test_entry(),
                 crud_status: CrudStatus::Live,
-                maybe_crud_link: None,
+                maybe_link_update_delete: None,
             },
             vec![test_chain_header()],
         );

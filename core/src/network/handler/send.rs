@@ -11,7 +11,7 @@ use crate::{
 use holochain_core_types::cas::content::Address;
 use std::{sync::Arc, thread};
 
-use holochain_net_connection::json_protocol::MessageData;
+use holochain_net::connection::json_protocol::MessageData;
 
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called

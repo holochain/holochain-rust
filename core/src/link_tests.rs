@@ -3,7 +3,6 @@
 //-------------------------------------------------------------------------------------------------
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
     use crate::{
         action::{Action, ActionWrapper},
         instance::{tests::test_context, Instance, Observer},

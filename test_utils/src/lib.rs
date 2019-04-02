@@ -1,11 +1,10 @@
-extern crate holochain_cas_implementations;
-extern crate holochain_conductor_api;
-extern crate holochain_core;
-extern crate holochain_core_types;
-extern crate holochain_net;
+#![warn(unused_extern_crates)]
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate serde_json;
-extern crate tempfile;
-extern crate wabt;
+
+pub mod mock_signing;
 
 use holochain_conductor_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
@@ -13,15 +12,14 @@ use holochain_core::{
     context::Context,
     logger::{test_logger, TestLogger},
     signal::Signal,
-};
+    nucleus::actions::call_zome_function::make_cap_request_for_call,
+    };
 use holochain_core_types::{
-    agent::AgentId,
-    cas::content::Address,
+    cas::content::AddressableContent,
     dna::{
-        capabilities::CapabilityCall,
+        traits::ReservedTraitNames,
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
-        traits::ReservedTraitNames,
         wasm::DnaWasm,
         zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,
@@ -52,7 +50,7 @@ pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
 }
 
 /// Create DNA from WAT
-pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&str>) -> Dna {
+pub fn create_test_dna_with_wat(zome_name: &str, wat: Option<&str>) -> Dna {
     // Default WASM code returns 1337 as integer
     let default_wat = r#"
             (module
@@ -68,8 +66,6 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
         "#;
     let wat_str = wat.unwrap_or_else(|| &default_wat);
 
-
-
     // Test WASM code that returns 1337 as integer
     let wasm_binary = Wat2Wasm::new()
         .canonicalize_lebs(false)
@@ -77,16 +73,16 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
         .convert(wat_str)
         .unwrap();
 
-    create_test_dna_with_wasm(zome_name, cap_name, wasm_binary.as_ref().to_vec())
+    create_test_dna_with_wasm(zome_name, wasm_binary.as_ref().to_vec())
 }
 
 /// Prepare valid DNA struct with that WASM in a zome's capability
-pub fn create_test_dna_with_wasm(zome_name: &str, _cap_name: &str, wasm: Vec<u8>) -> Dna {
+pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
     let defs = create_test_defs_with_fn_name("public_test_fn");
 
-//    let mut capabilities = BTreeMap::new();
-//    capabilities.insert(cap_name.to_string(), capability);
+    //    let mut capabilities = BTreeMap::new();
+    //    capabilities.insert(cap_name.to_string(), capability);
 
     let mut test_entry_def = EntryTypeDef::new();
     test_entry_def.links_to.push(LinksTo {
@@ -121,7 +117,8 @@ pub fn create_test_dna_with_wasm(zome_name: &str, _cap_name: &str, wasm: Vec<u8>
 
     let mut trait_fns = TraitFns::new();
     trait_fns.functions.push("public_test_fn".to_string());
-    zome.traits.insert(ReservedTraitNames::Public.as_str().to_string(), trait_fns);
+    zome.traits
+        .insert(ReservedTraitNames::Public.as_str().to_string(), trait_fns);
     dna.zomes.insert(zome_name.to_string(), zome);
     dna.name = "TestApp".into();
     dna.uuid = "8ed84a02-a0e6-4c8c-a752-34828e302986".into();
@@ -144,7 +141,7 @@ pub fn create_test_defs_with_fn_name(fn_name: &str) -> (ZomeFnDeclarations, Zome
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_defs(
     zome_name: &str,
-    defs: (ZomeFnDeclarations,ZomeTraits),
+    defs: (ZomeFnDeclarations, ZomeTraits),
     wasm: &[u8],
 ) -> Dna {
     let mut dna = Dna::new();
@@ -173,15 +170,16 @@ pub fn test_context_and_logger_with_network_name(
     agent_name: &str,
     network_name: Option<&str>,
 ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let agent = AgentId::generate_fake(agent_name);
+    let agent = mock_signing::registered_test_agent(agent_name);
     let logger = test_logger();
     (
         Arc::new({
             let mut builder = ContextBuilder::new()
-                .with_agent(agent)
+                .with_agent(agent.clone())
                 .with_logger(logger.clone())
                 .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
-                .expect("Tempdir must be accessible");
+                .expect("Tempdir must be accessible")
+                .with_conductor_api(mock_signing::mock_conductor_api(agent));
             if let Some(network_name) = network_name {
                 let config = P2pConfig::new_with_memory_backend(network_name);
                 builder = builder.with_p2p_config(config);
@@ -213,37 +211,47 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
-pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(wasm_path: &str, fn_name: &str, params: J) -> HolochainResult<JsonString> {
+pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
+    wasm_path: &str,
+    fn_name: &str,
+    params: J,
+) -> HolochainResult<JsonString> {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(wasm_path);
     let defs = create_test_defs_with_fn_name(fn_name);
     let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
     let context = create_test_context("alex");
-    let mut hc = Holochain::new(dna.clone(), context).unwrap();
+    let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
+
+    let params_string = String::from(params.into());
+    let cap_request =  make_cap_request_for_call(
+        context.clone(),
+        context.clone().agent_id.address(),
+        fn_name,
+        params_string.clone(),
+    );
 
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
     return hc.call(
         "test_zome",
-        Some(CapabilityCall::new(
-            Address::from("test_token"),
-            None,
-        )),
+        cap_request,
         fn_name,
-        &String::from(params.into()),
+        &params_string,
     );
 }
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn create_test_context(agent_name: &str) -> Arc<Context> {
-    let agent = AgentId::generate_fake(agent_name);
+    let agent = mock_signing::registered_test_agent(agent_name);
     Arc::new(
         ContextBuilder::new()
-            .with_agent(agent)
+            .with_agent(agent.clone())
             .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
             .expect("Tempdir must be accessible")
+            .with_conductor_api(mock_signing::mock_conductor_api(agent))
             .spawn(),
     )
 }

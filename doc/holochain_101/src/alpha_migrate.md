@@ -1,4 +1,4 @@
-# Updating to Alpha 2
+# Updating from holochain-proto to holochain-rust
 
 If you wrote an application for [holochain-proto](https://github.com/holochain/holochain-proto), you are likely wondering what it may take to port your app to the new [holochain-rust](https://github.com/holochain/holochain-proto) version of Holochain.
 
@@ -21,7 +21,7 @@ At the level of the code, in more detail, the changes are as follows (note that 
 - `update` is now named `update_entry`
 - `remove` is now named `remove_entry`
 - Links are no longer created using `commit`, but instead have their own method, named `link_entries`
-- Instead of being implicitly imported, the Zome API functions are explicitly imported into Zomes, e.g. 
+- Instead of being implicitly imported, the Zome API functions are explicitly imported into Zomes, e.g.
 `extern crate hdk;`
 - The code of each Zome must now utilize a Rust "macro" called "define_zome!", and its various subproperties, which did not previously exist.
 - Many aspects of validation have changed, see the section below on validation
@@ -65,7 +65,7 @@ entry!(
 
 The callback `validation`, replaces `validateCommit` and all the rest from holochain-proto. However, validation still happens at various times in the lifecycle of an entry, so if the validation is to operate differently between initial `commit` to the chain, `update`, or `remove`, then that logic must be written into this single validation function. To determine which context validation is being called within, you can check in a property of the second parameter of the callback, which in the example above is called `validation_data`.
 
-For this, you can use the Rust `match` operator, and check against the `validation_data.action`. It will be one of an enum that can be seen in detail [in the API reference](/api/0.0.3/hdk/enum.EntryAction.html).
+For this, you can use the Rust `match` operator, and check against the `validation_data.action`. It will be one of an enum that can be seen in detail [in the API reference](/api/0.0.7-alpha/hdk/enum.EntryAction.html).
 
 
 

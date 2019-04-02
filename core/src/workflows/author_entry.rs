@@ -2,8 +2,8 @@ use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
     network::actions::publish::publish,
-    nucleus::actions::{
-        build_validation_package::build_validation_package, validate::validate_entry,
+    nucleus::{
+        actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
 };
 
@@ -11,13 +11,13 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 
 pub async fn author_entry<'a>(
     entry: &'a Entry,
-    maybe_crud_link: Option<Address>,
+    maybe_link_update_delete: Option<Address>,
     context: &'a Arc<Context>,
 ) -> Result<Address, HolochainError> {
     let address = entry.address();
@@ -25,12 +25,12 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry: {} with content: {:?}",
         address, entry
     ));
+
     // 1. Build the context needed for validation of the entry
-    let validation_package = await!(build_validation_package(&entry, &context))?;
+    let validation_package = await!(build_validation_package(&entry, context.clone()))?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
-        action: EntryAction::Create,
     };
 
     // 2. Validate the entry
@@ -38,7 +38,12 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: validating...",
         address
     ));
-    await!(validate_entry(entry.clone(), validation_data, &context))?;
+    await!(validate_entry(
+        entry.clone(),
+        maybe_link_update_delete.clone(),
+        validation_data,
+        &context
+    ))?;
     context.log(format!("Authoring entry {}: is valid!", address));
 
     // 3. Commit the entry
@@ -46,7 +51,11 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: committing...",
         address
     ));
-    let addr = await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
+    let addr = await!(commit_entry(
+        entry.clone(),
+        maybe_link_update_delete,
+        &context
+    ))?;
     context.log(format!(
         "debug/workflow/authoring_entry/{}: committed",
         address
@@ -78,11 +87,10 @@ pub async fn author_entry<'a>(
 pub mod tests {
     use super::author_entry;
     use crate::nucleus::actions::tests::*;
-    use holochain_core_types::{entry::test_entry, json::JsonString};
+    use holochain_core_types::{entry::test_entry_with_value, json::JsonString};
     use std::{thread, time};
 
     #[test]
-    #[cfg(not(windows))]
     /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
         let mut dna = test_dna();
@@ -92,7 +100,11 @@ pub mod tests {
         let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
         let entry_address = context1
-            .block_on(author_entry(&test_entry(), None, &context1))
+            .block_on(author_entry(
+                &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
+                None,
+                &context1,
+            ))
             .unwrap();
         thread::sleep(time::Duration::from_millis(500));
 
@@ -119,7 +131,8 @@ pub mod tests {
         let x: String = json.unwrap().to_string();
         assert_eq!(
             x,
-            "{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}".to_string(),
+            "{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"test entry value\\\"}\"]}"
+                .to_string(),
         );
     }
 }

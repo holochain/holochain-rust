@@ -4,7 +4,7 @@ use crate::{
     network::state::NetworkState,
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
-use holochain_net_connection::json_protocol::FetchMetaResultData;
+use holochain_net::connection::json_protocol::FetchMetaResultData;
 use std::sync::Arc;
 
 fn reduce_handle_get_links_result_inner(
@@ -15,17 +15,16 @@ fn reduce_handle_get_links_result_inner(
     // expecting dht_meta_data.content_list to be a jsonified array of EntryWithHeader or Address
     // TODO: do a loop on content once links properly implemented
     assert_eq!(dht_meta_data.content_list.len(), 1);
-    let res = serde_json::from_str(
+    serde_json::from_str(
         &serde_json::to_string(&dht_meta_data.content_list[0])
             .expect("Failed to deserialize dht_meta_data"),
-    );
-    if let Err(_) = res {
-        return Err(HolochainError::ErrorGeneric(
+    )
+    .map_err(|_| {
+        HolochainError::ErrorGeneric(
             "Failed to deserialize Vec<Address> from HandleGetLinkResult DhtMetaData content"
                 .to_string(),
-        ));
-    }
-    Ok(res.unwrap())
+        )
+    })
 }
 
 pub fn reduce_handle_get_links_result(

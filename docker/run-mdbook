@@ -1,2 +1,2 @@
-#!/bin/bash
+#!/usr/bin/env bash
 docker run --name holochain-mdbook --rm -v `pwd`:/holochain -p 3000:3000 -p 3001:3001 -it holochain/mdbook:latest mdbook serve -i 0.0.0.0 -p 3000 -w 3001

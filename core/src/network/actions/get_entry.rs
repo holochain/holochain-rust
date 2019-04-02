@@ -1,4 +1,3 @@
-extern crate futures;
 use crate::{
     action::{Action, ActionWrapper, GetEntryKey},
     context::Context,
@@ -9,7 +8,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-    cas::content::Address, entry::EntryWithMeta, error::HcResult, time::Timeout,
+    cas::content::Address, entry::EntryWithMetaAndHeader, error::HcResult, time::Timeout,
 };
 use std::{pin::Pin, sync::Arc, thread};
 
@@ -22,7 +21,7 @@ pub async fn get_entry(
     context: Arc<Context>,
     address: Address,
     timeout: Timeout,
-) -> HcResult<Option<EntryWithMeta>> {
+) -> HcResult<Option<EntryWithMetaAndHeader>> {
     let key = GetEntryKey {
         address: address,
         id: snowflake::ProcessUniqueId::new().to_string(),
@@ -53,11 +52,16 @@ pub struct GetEntryFuture {
 }
 
 impl Future for GetEntryFuture {
-    type Output = HcResult<Option<EntryWithMeta>>;
+    type Output = HcResult<Option<EntryWithMetaAndHeader>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
-        let state = self.context.state().unwrap().network();
-        if let Err(error) = state.initialized() {
+        if let Err(error) = self
+            .context
+            .state()
+            .expect("Could not get state  in future")
+            .network()
+            .initialized()
+        {
             return Poll::Ready(Err(error));
         }
         //
@@ -65,7 +69,14 @@ impl Future for GetEntryFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        match state.get_entry_with_meta_results.get(&self.key) {
+        match self
+            .context
+            .state()
+            .expect("Could not get state in future")
+            .network()
+            .get_entry_with_meta_results
+            .get(&self.key)
+        {
             Some(Some(result)) => Poll::Ready(result.clone()),
             _ => Poll::Pending,
         }

@@ -1,5 +1,3 @@
-extern crate futures;
-extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,

@@ -4,8 +4,6 @@ target
 **/*.sock
 package-lock.json
 **/*.rs.bk
-**/Cargo.lock
-Cargo.lock
 net_ipc/tests/node-p2p-ipc
 build_docs_key
 *.orig
@@ -27,9 +25,11 @@ cobertura.xml
 \#*\#
 
 # Things being generated on the FS that should not be
-conductor/example-config/tmp-storage/*
+conductor/example-config/tmp-storage*/*
 conductor/tmp-storage/*
 conductor_api/tmp-storage/*
 conductor_api/tmp-test/*
 tmp-test-conductor-config.toml
 tmp-*-conductor-config.toml
+
+Cargo.lock

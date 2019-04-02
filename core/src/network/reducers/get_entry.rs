@@ -4,7 +4,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::error::HolochainError;
-use holochain_net_connection::json_protocol::{FetchEntryData, JsonProtocol};
+use holochain_net::connection::json_protocol::{FetchEntryData, JsonProtocol};
 use std::sync::Arc;
 
 fn reduce_fetch_entry_inner(
@@ -165,7 +165,7 @@ mod tests {
         let entry = test_entry();
         let key = GetEntryKey {
             address: entry.address(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: "req_alice_1".to_string(),
         };
         let action_wrapper = ActionWrapper::new(Action::FetchEntry(key.clone()));
 
@@ -203,11 +203,11 @@ mod tests {
         let entry_with_meta = EntryWithMeta {
             entry: entry.clone(),
             crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
+            maybe_link_update_delete: None,
         };
         let new_key = GetEntryKey {
             address: entry.address(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: "req_alice_2".to_string(),
         };
         let dht_data = DhtData {
             msg_id: new_key.id.clone(),
@@ -234,7 +234,6 @@ mod tests {
         assert!(maybe_entry_with_meta_result.is_some());
         let maybe_entry_with_meta = maybe_entry_with_meta_result.unwrap().unwrap();
         let result = maybe_entry_with_meta.unwrap();
-        println!("{:?}", result);
         let entry_with_meta = result.unwrap();
         assert_eq!(entry_with_meta.entry, entry.clone());
 

@@ -84,10 +84,6 @@ impl ContentAddressableStorage for FilesystemStorage {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate serde_test;
-    extern crate tempfile;
-
-    use self::tempfile::{tempdir, TempDir};
     use crate::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::{
@@ -96,6 +92,7 @@ pub mod tests {
         },
         json::RawString,
     };
+    use tempfile::{tempdir, TempDir};
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
         let dir = tempdir().expect("Could not create a tempdir for CAS testing");

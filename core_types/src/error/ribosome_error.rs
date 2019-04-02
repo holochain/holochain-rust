@@ -105,7 +105,7 @@ impl FromStr for RibosomeEncodedValue {
     type Err = HolochainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.as_ref() {
+        Ok(match s {
             "Success" => RibosomeEncodedValue::Success,
             _ => RibosomeEncodedValue::Failure(s.parse()?),
         })
@@ -153,6 +153,8 @@ pub enum RibosomeErrorCode {
     NotAnAllocation                 = 8 << 32,
     ZeroSizedAllocation             = 9 << 32,
     UnknownEntryType                = 10 << 32,
+    MismatchWasmCallDataType        = 11 << 32,
+    EntryNotFound                   = 12 << 32
 }
 
 #[rustfmt::skip]
@@ -169,6 +171,8 @@ impl RibosomeErrorCode {
             NotAnAllocation                 => "Not an allocation",
             ZeroSizedAllocation             => "Zero-sized allocation",
             UnknownEntryType                => "Unknown entry type",
+            MismatchWasmCallDataType        => "Mismatched WasmCallData type",
+            EntryNotFound                   => "Entry Could Not Be Found"
         }
     }
 }
@@ -189,10 +193,13 @@ impl From<HolochainError> for RibosomeErrorCode {
             HolochainError::InvalidOperationOnSysEntry => RibosomeErrorCode::UnknownEntryType,
             HolochainError::CapabilityCheckFailed => RibosomeErrorCode::Unspecified,
             HolochainError::ValidationFailed(_) => RibosomeErrorCode::CallbackFailed,
+            HolochainError::ValidationPending => RibosomeErrorCode::Unspecified,
             HolochainError::Ribosome(e) => e,
             HolochainError::RibosomeFailed(_) => RibosomeErrorCode::CallbackFailed,
             HolochainError::ConfigError(_) => RibosomeErrorCode::Unspecified,
             HolochainError::Timeout => RibosomeErrorCode::Unspecified,
+            HolochainError::InitializationFailed(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::DnaHashMismatch(_, _) => RibosomeErrorCode::Unspecified,
         }
     }
 }
@@ -222,6 +229,7 @@ impl RibosomeErrorCode {
             8 => NotAnAllocation,
             9 => ZeroSizedAllocation,
             10 => UnknownEntryType,
+            12 => EntryNotFound,
             1 | _ => Unspecified,
         }
     }
@@ -275,6 +283,7 @@ impl FromStr for RibosomeErrorCode {
             "Not an allocation" => Ok(RibosomeErrorCode::NotAnAllocation),
             "Zero-sized allocation" => Ok(RibosomeErrorCode::ZeroSizedAllocation),
             "Unknown entry type" => Ok(RibosomeErrorCode::UnknownEntryType),
+            "Entry Could Not Be Found" => Ok(EntryNotFound),
             _ => Err(HolochainError::ErrorGeneric(String::from(
                 "Unknown RibosomeErrorCode",
             ))),

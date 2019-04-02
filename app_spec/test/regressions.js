@@ -2,7 +2,7 @@ const path = require('path')
 const { Config, Conductor, Scenario } = require('../../nodejs_conductor')
 Scenario.setTape(require('tape'))
 
-const dnaPath = path.join(__dirname, "../dist/app_spec.hcpkg")
+const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
 const dna = Config.dna(dnaPath, 'app-spec')
 const agentAlice = Config.agent("alice")
 const agentTash = Config.agent("tash")
@@ -10,7 +10,7 @@ const agentTash = Config.agent("tash")
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceTash = Config.instance(agentTash, dna)
 
-const scenario = new Scenario([instanceAlice, instanceTash])
+const scenario = new Scenario([instanceAlice, instanceTash], { debugLog: true })
 
 scenario.runTape('calling get_links before link_entries makes no difference', async (t, {alice}) => {
 

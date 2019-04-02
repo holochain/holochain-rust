@@ -4,7 +4,6 @@
 pub mod genesis;
 pub mod links_utils;
 pub mod receive;
-pub mod validate_entry;
 pub mod validation_package;
 
 use crate::{
@@ -16,12 +15,11 @@ use crate::{
             runtime::WasmCallData,
             Defn,
         },
-        ZomeFnCall,
+        CallbackFnCall,
     },
 };
 use holochain_core_types::{
-    cas::content::Address,
-    dna::{capabilities::CapabilityCall, wasm::DnaWasm},
+    dna::wasm::DnaWasm,
     entry::Entry,
     error::{HolochainError, RibosomeEncodedValue},
     json::{default_to_json, JsonString},
@@ -169,14 +167,14 @@ impl From<RibosomeEncodedValue> for CallbackResult {
 
 pub(crate) fn run_callback(
     context: Arc<Context>,
-    fc: ZomeFnCall,
+    call: CallbackFnCall,
     wasm: &DnaWasm,
     dna_name: String,
 ) -> CallbackResult {
     match ribosome::run_dna(
         wasm.code.clone(),
-        Some(fc.clone().parameters.into_bytes()),
-        WasmCallData::new_zome_call(context, dna_name, fc),
+        Some(call.clone().parameters.to_bytes()),
+        WasmCallData::new_callback_call(context, dna_name, call),
     ) {
         Ok(call_result) => {
             if call_result.is_null() {
@@ -195,17 +193,7 @@ pub fn call(
     function: &Callback,
     params: &CallbackParams,
 ) -> CallbackResult {
-    let zome_call = ZomeFnCall::new(
-        zome,
-        Some(CapabilityCall::new(
-            Address::from(""), //FIXME!!
-            None,
-        )),
-        //&function.capability().as_str().to_string(),
-        //"", //TODO: token?
-        &function.as_str().to_string(),
-        params,
-    );
+    let call = CallbackFnCall::new(zome, &function.as_str().to_string(), params.clone());
 
     let dna = context.get_dna().expect("Callback called without DNA set!");
 
@@ -215,7 +203,7 @@ pub fn call(
             if wasm.code.is_empty() {
                 CallbackResult::NotImplemented("call/2".into())
             } else {
-                run_callback(context.clone(), zome_call, wasm, dna.name.clone())
+                run_callback(context.clone(), call, wasm, dna.name.clone())
             }
         }
     }
@@ -223,14 +211,14 @@ pub fn call(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-    extern crate wabt;
     use self::wabt::Wat2Wasm;
     use crate::{
         instance::{tests::test_instance, Instance},
         nucleus::ribosome::{callback::Callback, Defn},
     };
     use std::str::FromStr;
+    use test_utils;
+    use wabt;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument
@@ -313,12 +301,8 @@ pub mod tests {
         result: u64,
         network_name: Option<&str>,
     ) -> Result<Instance, String> {
-        let dna = test_utils::create_test_dna_with_wasm(
-            zome,
-            "test_cap",
-            test_callback_wasm(canonical_name, result),
-        );
-
+        let dna =
+            test_utils::create_test_dna_with_wasm(zome, test_callback_wasm(canonical_name, result));
         test_instance(dna, network_name)
     }
 

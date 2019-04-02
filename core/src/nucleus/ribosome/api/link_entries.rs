@@ -15,14 +15,14 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: LinkEntriesArgs
 pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match LinkEntriesArgs::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            zome_call_data.context.log(format!(
+            context.log(format!(
                 "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
             ));
@@ -33,11 +33,9 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let link = input.to_link();
     let link_add = LinkData::from_link(&link, LinkActionKind::ADD);
     let entry = Entry::LinkAdd(link_add);
-
     // Wait for future to be resolved
-    let result: Result<(), HolochainError> = zome_call_data
-        .context
-        .block_on(author_entry(&entry, None, &zome_call_data.context))
+    let result: Result<(), HolochainError> = context
+        .block_on(author_entry(&entry, None, &context))
         .map(|_| ());
 
     runtime.store_result(result)
@@ -45,22 +43,15 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-    extern crate wabt;
+    use test_utils;
 
     use crate::{
         agent::actions::commit::commit_entry,
         context::Context,
-        instance::{
-            tests::{test_context_and_logger, test_instance},
-            Instance,
-        },
-        nucleus::{
-            ribosome::{
-                api::{tests::*, ZomeApiFunction},
-                Defn,
-            },
-            tests::*,
+        instance::{tests::test_instance_and_context, Instance},
+        nucleus::ribosome::{
+            api::{tests::*, ZomeApiFunction},
+            Defn,
         },
     };
     use holochain_core_types::{
@@ -107,23 +98,21 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        JsonString::from(test_entry()).into_bytes()
+        JsonString::from(test_entry()).to_bytes()
     }
 
+    fn create_test_instance_with_name(netname: Option<&str>) -> (Instance, Arc<Context>) {
+        let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
+
+        test_instance_and_context(dna, netname).expect("Could not create test instance")
+    }
     fn create_test_instance() -> (Instance, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
-        let dna = test_utils::create_test_dna_with_wasm(
-            &test_zome_name(),
-            &test_capability_name(),
-            wasm.clone(),
-        );
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
         let netname = Some("create_test_instance");
-        let instance = test_instance(dna, netname).expect("Could not create test instance");
-
-        let (context, _) = test_context_and_logger("joan", netname);
-        let initialized_context = instance.initialize_context(context);
-        (instance, initialized_context)
+        test_instance_and_context(dna, netname).expect("Could not create test instance")
     }
 
     #[test]
@@ -144,7 +133,8 @@ pub mod tests {
 
     #[test]
     fn returns_ok_if_base_is_present() {
-        let (instance, context) = create_test_instance();
+        let (instance, context) =
+            create_test_instance_with_name(Some("returns_ok_if_base_present"));
 
         context
             .block_on(commit_entry(test_entry(), None, &context))

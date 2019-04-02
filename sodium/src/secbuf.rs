@@ -7,13 +7,13 @@ use super::check_init;
 use crate::error::SodiumError;
 
 /// a trait for structures that can be used as a backing store for SecBuf
-pub trait Bufferable {
+pub trait Bufferable: Send {
     fn new(s: usize) -> Box<Bufferable>
     where
-        Self: Sized;
+        Self: Sized + Send;
     fn from_string(s: String) -> Box<Bufferable>
     where
-        Self: Sized;
+        Self: Sized + Send;
     fn len(&self) -> usize;
     fn readable(&self);
     fn writable(&mut self);
@@ -63,6 +63,8 @@ struct SodiumBuf {
     z: *mut c_void,
     s: usize,
 }
+
+unsafe impl Send for SodiumBuf {}
 
 impl Bufferable for SodiumBuf {
     /// warning: funky sizes may result in mis-alignment
@@ -260,14 +262,12 @@ impl SecBuf {
     /// helper for writing data to our internal buffer
     pub fn write(&mut self, offset: usize, data: &[u8]) -> Result<(), SodiumError> {
         if offset + data.len() > self.len() {
-            return Err(SodiumError::new("bad write offset / length"));
+            return Err(SodiumError::new("SecBuf write overflow"));
         }
-
         unsafe {
             let mut b = self.write_lock();
             std::ptr::copy(data.as_ptr(), (**b).as_mut_ptr().add(offset), data.len());
         }
-
         Ok(())
     }
 }

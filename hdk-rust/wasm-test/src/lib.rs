@@ -10,12 +10,7 @@ extern crate boolinator;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-pub mod handle_crud;
-
 use boolinator::Boolinator;
-use handle_crud::{
-    handle_remove_entry_ok, handle_remove_modified_entry_ok, handle_update_entry_ok,
-};
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
 };
@@ -36,10 +31,10 @@ use holochain_wasm_utils::{
             HolochainError,
             RibosomeErrorCode,
         },
-        json::{JsonString, RawString},
+        json::{JsonString,RawString},
     },
 };
-use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodingBits;
+use holochain_wasm_utils::holochain_core_types::{validation::{LinkValidationData,EntryValidationData},error::RibosomeEncodingBits};
 use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
@@ -47,9 +42,9 @@ use hdk::global_fns::init_global_memory;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedValue;
 use std::convert::TryFrom;
 use std::time::Duration;
-use hdk::globals::G_MEM_STACK;
+use hdk::api::G_MEM_STACK;
 
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 struct TestEntryType {
     stuff: String,
 }
@@ -372,7 +367,7 @@ fn handle_check_call() -> ZomeApiResult<JsonString> {
     let maybe_hash = hdk::call(
         hdk::THIS_INSTANCE,
         "test_zome",
-        "test_token",
+        Address::from(hdk::PUBLIC_TOKEN.to_string()),
         "check_app_entry_address",
         empty_dumpty,
     );
@@ -390,7 +385,7 @@ fn handle_check_call_with_args() -> ZomeApiResult<JsonString> {
     hdk::call(
         hdk::THIS_INSTANCE,
         "test_zome",
-        "test_token",
+        Address::from(hdk::PUBLIC_TOKEN.to_string()),
         "check_commit_entry_macro",
         JsonString::from(CommitEntryInput {
             entry: hdk_test_entry(),
@@ -457,15 +452,23 @@ define_zome! {
             name: "testEntryType",
             description: "asdfda",
             sharing: Sharing::Public,
-            native_type: TestEntryType,
 
             validation_package: || {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |entry: TestEntryType, _validation_data: hdk::ValidationData| {
-                (entry.stuff != "FAIL")
-                    .ok_or_else(|| "FAIL content is not allowed".to_string())
+            validation: |valida: hdk::EntryValidationData<TestEntryType>| {
+                match valida
+                {
+                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
+                    {
+                        (test_entry.stuff != "FAIL").ok_or_else(|| "FAIL content is not allowed".to_string())
+
+                    },
+                    _=> Ok(()),
+
+                }
+
             },
 
             links: [
@@ -475,7 +478,7 @@ define_zome! {
                     validation_package: || {
                         hdk::ValidationPackageDefinition::ChainFull
                     },
-                    validation: |source: Address, target: Address, validation_data: hdk::ValidationData | {
+                    validation: |validation_data: hdk::LinkValidationData | {
                         Ok(())
                     }
                 )
@@ -486,14 +489,21 @@ define_zome! {
             name: "validation_package_tester",
             description: "asdfda",
             sharing: Sharing::Public,
-            native_type: TestEntryType,
-
             validation_package: || {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |_entry: TestEntryType, validation_data: hdk::ValidationData| {
-                Err(serde_json::to_string(&validation_data).unwrap())
+            validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
+                match validation_data
+                {
+                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
+                    {
+
+                        Err(serde_json::to_string(&test_entry).unwrap())
+
+                    },
+                _ => Ok(())
+                }
             }
         ),
 
@@ -501,13 +511,12 @@ define_zome! {
             name: "link_validator",
             description: "asdfda",
             sharing: Sharing::Public,
-            native_type: TestEntryType,
 
             validation_package: || {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |_entry: TestEntryType, validation_data: hdk::ValidationData| {
+            validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
                 Ok(())
             },
 
@@ -518,7 +527,14 @@ define_zome! {
                     validation_package: || {
                         hdk::ValidationPackageDefinition::Entry
                     },
-                    validation: |base: Address, target: Address, validation_data: hdk::ValidationData | {
+                    validation: |validation_data: hdk::LinkValidationData | {
+                        let link = match validation_data
+                        {
+                            LinkValidationData::LinkAdd{link,validation_data:_} => link.clone(),
+                            LinkValidationData::LinkRemove{link,validation_data:_} => link.clone()
+                        };
+                        let base = link.link().base();
+                        let target = link.link().target();
                         let base = match hdk::get_entry(&base)? {
                             Some(entry) => match entry {
                                 Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
@@ -534,7 +550,6 @@ define_zome! {
                             }
                             None => Err("Target not found")?,
                         };
-
                         (target.stuff.len() > base.stuff.len())
                             .ok_or("Target stuff is not longer".to_string())
                     }
@@ -659,23 +674,6 @@ define_zome! {
         //     handler: handle_check_sys_entry_address
         // }
 
-        update_entry_ok: {
-            inputs: | |,
-            outputs: |result: JsonString|,
-            handler: handle_update_entry_ok
-        }
-
-        remove_entry_ok: {
-            inputs: | |,
-            outputs: |result: JsonString|,
-            handler: handle_remove_entry_ok
-        }
-
-        remove_modified_entry_ok: {
-            inputs: | |,
-            outputs: |result: JsonString|,
-            handler: handle_remove_modified_entry_ok
-        }
 
         send_tweet: {
             inputs: |author: String, content: String|,

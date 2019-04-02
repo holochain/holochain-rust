@@ -1,91 +1,101 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
-use holochain_dpki::{
-    bundle::KeyBundle,
-    keypair::{Keypair, SEEDSIZE},
-    util::PwHashConfig,
+use holochain_conductor_api::{
+    key_loaders::mock_passphrase_manager,
+    keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_sodium::{pwhash, random::random_secbuf, secbuf::SecBuf};
+use holochain_dpki::SEED_SIZE;
 use rpassword;
 use std::{
-    fs::{create_dir_all, File},
-    io::prelude::*,
+    fs::create_dir_all,
+    io::{self, Write},
     path::PathBuf,
 };
 
-pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
-    let passphrase = passphrase
-        .unwrap_or_else(|| rpassword::read_password_from_tty(Some("Passphrase: ")).unwrap());
+pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>, quiet: bool) -> DefaultResult<()> {
+    let passphrase = passphrase.unwrap_or_else(|| {
+        if !quiet {
+            println!(
+                "
+This will create a new agent keystore and populate it with an agent keybundle
+containing a public and a private key, for signing and encryption by the agent.
+This keybundle will be stored encrypted by passphrase within the keystore file.
+The passphrase is securing the keys and will be needed, together with the file,
+in order to use the key.
+Please enter a secret passphrase below. You will have to enter it again
+when unlocking the keybundle to use within a Holochain conductor."
+            );
+            print!("Passphrase: ");
+            io::stdout().flush().expect("Could not flush stdout");
+        }
+        let passphrase1 = rpassword::read_password().unwrap();
+        if !quiet {
+            print!("Re-enter passphrase: ");
+            io::stdout().flush().expect("Could not flush stdout");
+        }
+        let passphrase2 = rpassword::read_password().unwrap();
+        if passphrase1 != passphrase2 {
+            println!("Passphrases do not match. Please retry...");
+            ::std::process::exit(1);
+        }
+        passphrase1
+    });
 
-    let mut seed = SecBuf::with_secure(SEEDSIZE);
-    random_secbuf(&mut seed);
-    let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
-    let passphrase_bytes = passphrase.as_bytes();
-    let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
-    passphrase_buf
-        .write(0, passphrase_bytes)
-        .expect("SecBuf must be writeable");
+    if !quiet {
+        println!("Generating keystore (this will take a few moments)...");
+    }
 
-    let bundle: KeyBundle = keypair
-        .get_bundle(
-            &mut passphrase_buf,
-            "hint".to_string(),
-            Some(PwHashConfig(
-                pwhash::OPSLIMIT_INTERACTIVE,
-                pwhash::MEMLIMIT_INTERACTIVE,
-                pwhash::ALG_ARGON2ID13,
-            )),
-        )
-        .unwrap();
+    let mut keystore = Keystore::new(mock_passphrase_manager(passphrase), None)?;
+    keystore.add_random_seed("root_seed", SEED_SIZE)?;
+
+    let (pub_key, _) = keystore.add_keybundle_from_seed("root_seed", PRIMARY_KEYBUNDLE_ID)?;
 
     let path = if None == path {
         let p = keys_directory();
         create_dir_all(p.clone())?;
-        p.join(keypair.pub_keys.clone())
+        p.join(pub_key.clone())
     } else {
         path.unwrap()
     };
 
-    let mut file = File::create(path.clone())?;
-    file.write_all(serde_json::to_string(&bundle).unwrap().as_bytes())?;
-    println!("Agent keys with public address: {}", keypair.pub_keys);
-    println!("written to: {}.", path.to_str().unwrap());
+    keystore.save(path.clone())?;
+    let path_str = path.to_str().unwrap();
+
+    if quiet {
+        println!("{}", pub_key);
+        println!("{}", path_str);
+    } else {
+        println!("");
+        println!("Succesfully created new agent keystore.");
+        println!("");
+        println!("Public address: {}", pub_key);
+        println!("Keystore written to: {}", path_str);
+        println!("");
+        println!("You can set this file in a conductor config as keystore_file for an agent.");
+    }
     Ok(())
 }
 
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use holochain_dpki::bundle::KeyBundle;
-    use std::{
-        fs::{remove_file, File},
-        path::PathBuf,
-    };
+    use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
+    use std::{fs::remove_file, path::PathBuf};
 
     #[test]
     fn keygen_roundtrip() {
         let path = PathBuf::new().join("test.key");
         let passphrase = String::from("secret");
 
-        keygen(Some(path.clone()), Some(passphrase.clone())).expect("Keygen should work");
+        keygen(Some(path.clone()), Some(passphrase.clone()), true).expect("Keygen should work");
 
-        let mut file = File::open(path.clone()).unwrap();
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
+        let mut keystore =
+            Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase), None)
+                .unwrap();
 
-        let bundle: KeyBundle = serde_json::from_str(&contents).unwrap();
-        let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        let keypair = Keypair::from_bundle(
-            &bundle,
-            &mut passphrase,
-            Some(PwHashConfig(
-                pwhash::OPSLIMIT_INTERACTIVE,
-                pwhash::MEMLIMIT_INTERACTIVE,
-                pwhash::ALG_ARGON2ID13,
-            )),
-        );
+        let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
 
-        assert!(keypair.is_ok());
+        assert!(keybundle.is_ok());
 
         let _ = remove_file(path);
     }

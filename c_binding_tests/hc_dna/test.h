@@ -10,8 +10,7 @@ private slots:
   void canGetName();
   void canSetName();
   void canGetZomeNames();
-  void canGetCapabilityNames();
+  void canGetTraitNames();
   void canGetFunctionNames();
   void canGetFunctionParameters();
 };
-

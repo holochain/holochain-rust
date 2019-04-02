@@ -41,25 +41,25 @@ ___
 
 **Type** `string`
 
-**Description** The path to a `bundle.json` file containing a valid DNA configuration
+**Description** The path to a `.dna.json` file containing a valid DNA configuration
 ___
 **Name** dnaName *Optional*
 
 **Type** `string`
 
-**Description** The path to a `bundle.json` file containing a valid DNA configuration
+**Description** The path to a `.dna.json` file containing a valid DNA configuration
 
 **Default** The same as the given `dnaPath`
 ___
 
 #### Example
 ```javascript
-const dnaConfig = Config.dna('path/to/bundle.json')
+const dnaConfig = Config.dna('path/to/your.dna.json')
 console.log(dnaConfig)
 /*
 {
-    path: 'path/to/bundle.json',
-    name: 'path/to/bundle.json'
+    path: 'path/to/your.dna.json',
+    name: 'path/to/your.dna.json'
 }
 */
 ```
@@ -95,7 +95,7 @@ ___
 #### Example
 ```javascript
 const agentConfig = Config.agent('alice')
-const dnaConfig = Config.dna('path/to/bundle.json')
+const dnaConfig = Config.dna('path/to/your.dna.json')
 const instanceConfig = Config.instance(agentConfig, dnaConfig)
 console.log(dnaConfig)
 /*
@@ -104,8 +104,8 @@ console.log(dnaConfig)
         name: 'alice'
     },
     dna: {
-        path: 'path/to/bundle.json',
-        name: 'path/to/bundle.json'
+        path: 'path/to/your.dna.json',
+        name: 'path/to/your.dna.json'
     },
     name: 'alice'
 }
@@ -118,8 +118,7 @@ console.log(dnaConfig)
 
 Consumes an array of configured instances and produces an object which is a fully valid Conductor configuration. It can be passed into the Conductor constructor, which is covered in the next articles.
 
-> The return value of this function comes from the Rust <> Nodejs bindings, and contains all the right values,
-but those values are not visible when using `console.log` on the result.
+> This function is mostly useful in conjunction with [manually instantiating a Conductor](./managing_the_conductor.md#instantiating-a-conductor).
 
 ___
 **Name** instancesArray
@@ -133,17 +132,15 @@ ___
 
 **Type** `object`
 
-**Description** *conductorOptions.debugLog* `boolean` Which logger type to use. There are two options:
-- debugLog = true: Use the "debug" logger. This one has nicer, colorful output.
-- debugLog = false: Use the "simple" logger. This one has less interesting output, but can be silenced with the env variable `HC_SIMPLE_LOGGER_MUTE=1`
+**Description** *conductorOptions.debugLog* `boolean` Enables debug logging. The logger produces nice, colorful output of the internal workings of Holochain.
 
-**Default** `{ debugLog: true }`
+**Default** `{ debugLog: false }`
 ___
 
 #### Example
 ```javascript
 const agentConfig = Config.agent('alice')
-const dnaConfig = Config.dna('path/to/bundle.json')
+const dnaConfig = Config.dna('path/to/your.dna.json')
 const instanceConfig = Config.instance(agentConfig, dnaConfig)
 const conductorConfig = Config.conductor([instanceConfig])
 ```
@@ -151,13 +148,13 @@ const conductorConfig = Config.conductor([instanceConfig])
 #### Example With conductorOptions
 ```javascript
 const agentConfig = Config.agent('alice')
-const dnaConfig = Config.dna('path/to/bundle.json')
+const dnaConfig = Config.dna('path/to/your.dna.json')
 const instanceConfig = Config.instance(agentConfig, dnaConfig)
-const conductorConfig = Config.conductor([instanceConfig], { debugLog: false })
+const conductorConfig = Config.conductor([instanceConfig], { debugLog: true })
 ```
 
 
-## Full Multi Instance Example
+## Multiple Instances Example
 
 ```javascript
 const { Config } = require('@holochain/holochain-nodejs')
@@ -168,11 +165,11 @@ const bobName = "bob"
 const agentAlice = Config.agent(aliceName)
 const agentBob = Config.agent(bobName)
 // ...and one DNA...
-const dnaPath = "path/to/happ.hcpkg"
+const dnaPath = "path/to/happ.dna.json"
 const dna = Config.dna(dnaPath)
 // ...then make instances out of them...
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
-// ...and finally throw them all together 
+// ...and finally throw them all together
 const config = Config.conductor([instanceAlice, instanceBob])
 ```

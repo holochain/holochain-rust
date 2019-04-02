@@ -2,19 +2,19 @@
 
 use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net::{
+    connection::{
+        json_protocol::{
+            DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
+            FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
+            MessageData, MetaKey, MetaListData, MetaTuple,
+        },
+        net_connection::NetSend,
+        protocol::Protocol,
+        NetResult,
+    },
     p2p_config::*,
     p2p_network::P2pNetwork,
     tweetlog::{TweetProxy, *},
-};
-use holochain_net_connection::{
-    json_protocol::{
-        DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
-        FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-        MessageData, MetaKey, MetaListData, MetaTuple,
-    },
-    net_connection::NetSend,
-    protocol::Protocol,
-    NetResult,
 };
 use multihash::Hash;
 use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
@@ -127,11 +127,24 @@ pub struct P2pNode {
     pub authored_meta_store: MetaStore,
 
     pub logger: TweetProxy,
+
+    is_network_ready: bool,
 }
 
-// Search logs
-// return the ith message that fullfills the predicate
+/// Query logs
 impl P2pNode {
+    /// Return number of JsonProtocol message this node has received
+    pub fn count_recv_json_messages(&self) -> usize {
+        let mut count = 0;
+        for msg in self.recv_msg_log.clone() {
+            if JsonProtocol::try_from(&msg).is_ok() {
+                count += 1;
+            };
+        }
+        count
+    }
+
+    /// Return the ith JSON message that this node has received and fullfills predicate
     pub fn find_recv_msg(
         &self,
         ith: usize,
@@ -533,7 +546,13 @@ impl P2pNode {
             authored_entry_store: HashMap::new(),
             authored_meta_store: MetaStore::new(),
             logger: TweetProxy::new("p2pnode"),
+            is_network_ready: false,
         }
+    }
+
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn is_network_ready(&self) -> bool {
+        self.is_network_ready
     }
 
     /// Constructor for an in-memory P2P Network
@@ -578,6 +597,9 @@ impl P2pNode {
     #[cfg_attr(tarpaulin, skip)]
     pub fn try_recv(&mut self) -> NetResult<JsonProtocol> {
         let data = self.receiver.try_recv()?;
+
+        self.recv_msg_log.push(data.clone());
+
         // logging depending on received type
         match data {
             Protocol::NamedBinary(_) => {
@@ -588,13 +610,17 @@ impl P2pNode {
                 let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
                 self.logger.d(&dbg_msg);
             }
+            Protocol::P2pReady => {
+                let dbg_msg = format!("<< ({}) recv ** P2pReady **", self.agent_id);
+                self.logger.d(&dbg_msg);
+                self.is_network_ready = true;
+                bail!("received P2pReady");
+            }
             _ => {
                 let dbg_msg = format!("<< ({}) recv <other>", self.agent_id);
                 self.logger.t(&dbg_msg);
             }
         };
-
-        self.recv_msg_log.push(data.clone());
 
         match JsonProtocol::try_from(&data) {
             Ok(r) => {
@@ -748,6 +774,9 @@ impl P2pNode {
             }
             JsonProtocol::TrackDna(_) => {
                 panic!("Core should not receive TrackDna message");
+            }
+            JsonProtocol::UntrackDna(_) => {
+                panic!("Core should not receive UntrackDna message");
             }
             JsonProtocol::Connect(_) => {
                 panic!("Core should not receive Connect message");
@@ -922,6 +951,7 @@ fn create_ipc_config(
                         "N3H_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_MODE"],
                         "N3H_WORK_DIR": dir.clone(),
                         "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
+                        "N3H_LOG_LEVEL": p2p_config.backend_config["spawn"]["env"]["N3H_LOG_LEVEL"],
                     }
                 },
             }})).expect("Failled making valid P2pConfig with filepath")
@@ -932,7 +962,7 @@ fn create_ipc_config(
             "backend_kind": "IPC",
             "backend_config":
             {
-                "socketType": "zmq",
+                "socketType": "ws",
                 "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {
@@ -945,6 +975,7 @@ fn create_ipc_config(
                         "N3H_MODE": "HACK",
                         "N3H_WORK_DIR": dir.clone(),
                         "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
+                        "N3H_LOG_LEVEL": "t"
                 }
             },
             }}))

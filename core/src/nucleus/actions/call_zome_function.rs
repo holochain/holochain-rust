@@ -1,23 +1,31 @@
-extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::{
-        ribosome::{self, WasmCallData},
+        actions::get_entry::get_entry_from_agent_chain,
+        ribosome::{self, capabilities::CapabilityRequest, WasmCallData},
         ZomeFnCall, ZomeFnResult,
     },
 };
+use holochain_core_types::{
+    cas::content::{Address, AddressableContent},
+    dna::wasm::DnaWasm,
+    entry::{
+        cap_entries::{CapTokenGrant, CapabilityType},
+        Entry,
+    },
+    error::HolochainError,
+    json::JsonString,
+    signature::{Provenance, Signature},
+};
+use holochain_dpki::utils::Verify;
+
+use base64;
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::error::HolochainError;
-use std::{pin::Pin, sync::Arc};
-
-use holochain_core_types::{
-    dna::capabilities::CapabilityCall, entry::cap_entries::CapTokenGrant, json::JsonString,
-};
-use std::{convert::TryFrom, thread};
+use std::{pin::Pin, sync::Arc, thread};
 
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub struct ExecuteZomeFnResponse {
@@ -58,49 +66,18 @@ pub async fn call_zome_function(
     zome_call: ZomeFnCall,
     context: &Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
-    // Get DNA name and WASM code from state.
-    // This happens in a code block to scope the read-lock that we acquire from the state
-    // so that it drops the lock and frees the state for mutation.
-    // If we would leak (and move) the lock into the Ribosome thread below, it would lead to a
-    // dead-lock since the existence of this read-lock prevents the redux loop from writing to
-    // the state..
-    let (dna_name, code) = {
-        let state = context.state().ok_or(HolochainError::ErrorGeneric(
-            "Context not initialized".to_string(),
-        ))?;
-        let nucleus_state = state.nucleus();
-        let dna = nucleus_state
-            .dna
-            .as_ref()
-            .ok_or(HolochainError::DnaMissing)?;
+    context.log(format!(
+        "debug/actions/call_zome_fn: Validating call: {:?}",
+        zome_call
+    ));
 
-        // Validate the call
-        // 1. make sure the zome and function exists
-        let _ = dna
-            .get_function_with_zome_name(&zome_call.zome_name, &zome_call.fn_name)
-            .map_err(HolochainError::Dna)?;
+    // 1. Validate the call (a number of things could go wrong)
+    let (dna_name, wasm) = validate_call(context.clone(), &zome_call)?;
 
-        let zome = dna
-            .get_zome(&zome_call.zome_name)
-            .map_err(HolochainError::Dna)?;
-
-        // 2. make sure caller is allowed to call the function
-        let public = zome.is_fn_public(&zome_call.fn_name);
-
-        if !public && !check_capability(context.clone(), &zome_call.clone()) {
-            return Err(HolochainError::CapabilityCheckFailed);
-        }
-
-        // 3. read data needed to execute the zome function
-        let dna_name = dna.name.clone();
-        let code = dna
-            .get_wasm_from_zome_name(zome_call.zome_name.clone())
-            .expect("zome not found, Should have failed before when getting capability.")
-            .code
-            .clone();
-
-        (dna_name, code)
-    };
+    context.log(format!(
+        "debug/actions/call_zome_fn: executing call: {:?}",
+        zome_call
+    ));
 
     // Clone context and call data for the Ribosome thread
     let context_clone = context.clone();
@@ -117,8 +94,8 @@ pub async fn call_zome_function(
     let _ = thread::spawn(move || {
         // Have Ribosome spin up DNA and call the zome function
         let call_result = ribosome::run_dna(
-            code,
-            Some(zome_call_clone.clone().parameters.into_bytes()),
+            wasm.code,
+            Some(zome_call_clone.clone().parameters.to_bytes()),
             WasmCallData::new_zome_call(
                 context_clone.clone(),
                 dna_name.clone(),
@@ -142,32 +119,158 @@ pub async fn call_zome_function(
     })
 }
 
-// TODO: check the signature too
-fn is_token_the_agent(context: Arc<Context>, cap: &Option<CapabilityCall>) -> bool {
-    match cap {
-        None => false,
-        Some(call) => context.agent_id.key == call.cap_token.to_string(),
+/// validates that a given zome function call specifies a correct zome function and capability grant
+pub fn validate_call(
+    context: Arc<Context>,
+    fn_call: &ZomeFnCall,
+) -> Result<(String, DnaWasm), HolochainError> {
+    // make sure the dna, zome and function exists and return pretty errors if they don't
+    let (dna_name, code) = {
+        let state = context.state().ok_or(HolochainError::ErrorGeneric(
+            "Context not initialized".to_string(),
+        ))?;
+
+        let nucleus_state = state.nucleus();
+        let dna = nucleus_state
+            .dna()
+            .ok_or_else(|| HolochainError::DnaMissing)?;
+        let zome = dna
+            .get_zome(&fn_call.zome_name)
+            .map_err(|e| HolochainError::Dna(e))?;
+        let _ = dna
+            .get_function_with_zome_name(&fn_call.zome_name, &fn_call.fn_name)
+            .map_err(|e| HolochainError::Dna(e))?;
+        (dna.name.clone(), zome.code.clone())
+    };
+
+    if check_capability(context.clone(), fn_call)
+        || (is_token_the_agent(context.clone(), &fn_call.cap)
+            && verify_call_sig(
+                &fn_call.cap.provenance,
+                &fn_call.fn_name,
+                fn_call.parameters.clone(),
+            ))
+    {
+        Ok((dna_name, code))
+    } else {
+        Err(HolochainError::CapabilityCheckFailed)
+    }
+}
+
+fn is_token_the_agent(context: Arc<Context>, request: &CapabilityRequest) -> bool {
+    context.agent_id.pub_sign_key == request.cap_token.to_string()
+}
+
+fn get_grant(context: &Arc<Context>, address: &Address) -> Option<CapTokenGrant> {
+    match get_entry_from_agent_chain(context, address).ok()?? {
+        Entry::CapTokenGrant(grant) => Some(grant),
+        _ => None,
     }
 }
 
 /// checks to see if a given function call is allowable according to the capabilities
-/// that have been registered to callers in the chain.
-fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
-    // the agent can always do everything
-    if is_token_the_agent(context.clone(), &fn_call.cap) {
-        return true;
+/// that have been registered to callers by looking for grants in the chain.
+pub fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
+    let maybe_grant = get_grant(&context.clone(), &fn_call.cap_token());
+    match maybe_grant {
+        None => false,
+        Some(grant) => verify_grant(context.clone(), &grant, fn_call),
+    }
+}
+
+pub fn encode_call_data_for_signing<J: Into<JsonString>>(function: &str, parameters: J) -> String {
+    base64::encode(&format!("{}:{}", function, parameters.into()))
+}
+
+// temporary function to create a mock signature of for a zome call cap request
+fn make_call_sig<J: Into<JsonString>>(
+    context: Arc<Context>,
+    function: &str,
+    parameters: J,
+) -> Signature {
+    Signature::from(
+        context
+            .sign(encode_call_data_for_signing(function, parameters))
+            .expect("signing should work"),
+    )
+}
+
+// temporary function to verify a mock signature of for a zome call cap request
+pub fn verify_call_sig<J: Into<JsonString>>(
+    provenance: &Provenance,
+    function: &str,
+    parameters: J,
+) -> bool {
+    let what_was_signed = encode_call_data_for_signing(function, parameters);
+    provenance.verify(what_was_signed).unwrap()
+}
+
+/// creates a capability request for a zome call by signing the function name and parameters
+pub fn make_cap_request_for_call<J: Into<JsonString>>(
+    callers_context: Arc<Context>,
+    cap_token: Address,
+    function: &str,
+    parameters: J,
+) -> CapabilityRequest {
+    CapabilityRequest::new(
+        cap_token,
+        callers_context.agent_id.address(),
+        make_call_sig(callers_context, function, parameters),
+    )
+}
+
+/// verifies that this grant is valid for a given requester and token value
+pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &ZomeFnCall) -> bool {
+    let cap_functions = grant.functions();
+    let maybe_zome_grants = cap_functions.get(&fn_call.zome_name);
+    if maybe_zome_grants.is_none() {
+        context.log(format!(
+            "debug/actions/verify_grant: no grant for zome {:?} in grant {:?}",
+            fn_call.zome_name, cap_functions
+        ));
+        return false;
+    }
+    if !maybe_zome_grants.unwrap().contains(&fn_call.fn_name) {
+        context.log(format!(
+            "debug/actions/verify_grant: no grant for function {:?} in grant {:?}",
+            fn_call.fn_name, maybe_zome_grants
+        ));
+        return false;
     }
 
-    match fn_call.cap.clone() {
-        None => false,
-        Some(call) => {
-            let chain = &context.chain_storage;
-            let maybe_json = chain.read().unwrap().fetch(&call.cap_token).unwrap();
-            let grant = match maybe_json {
-                Some(content) => CapTokenGrant::try_from(content).unwrap(),
-                None => return false,
-            };
-            grant.verify(call.cap_token.clone(), call.caller, &call.signature)
+    if grant.token() != fn_call.cap_token() {
+        context.log(format!(
+            "debug/actions/verify_grant: grant token doesn't match: expecting {:?} got {:?}",
+            grant.token(),
+            fn_call.cap_token()
+        ));
+        return false;
+    }
+
+    if !verify_call_sig(
+        &fn_call.cap.provenance,
+        &fn_call.fn_name,
+        fn_call.parameters.clone(),
+    ) {
+        context.log("debug/actions/verify_grant: call signature did not match");
+        return false;
+    }
+
+    match grant.cap_type() {
+        CapabilityType::Public => true,
+        CapabilityType::Transferable => true,
+        CapabilityType::Assigned => {
+            // unwraps are safe because type comes from the shape of
+            // the assignee, and the from must some by the check above.
+            if !grant
+                .assignees()
+                .unwrap()
+                .contains(&fn_call.cap.provenance.source())
+            {
+                context.log("debug/actions/verify_grant: caller not one of the assignees");
+                return false;
+            }
+            true
         }
     }
 }
@@ -195,26 +298,222 @@ impl Future for CallResultFuture {
                 None => Poll::Pending,
             }
         } else {
-            Poll::Pending
+            Poll::Ready(Err(HolochainError::ErrorGeneric(
+                "State not initialized".to_string(),
+            )))
         }
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use super::is_token_the_agent;
-    use crate::instance::tests::test_instance_and_context;
-    use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
+    use super::*;
+    use crate::{
+        context::Context,
+        instance::tests::*,
+        nucleus::{actions::tests::test_dna, ribosome::capabilities::CapabilityRequest, tests::*},
+        workflows::author_entry::author_entry,
+    };
+    use holochain_core_types::{
+        cas::content::{Address, AddressableContent},
+        entry::{
+            cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
+            Entry,
+        },
+        signature::Signature,
+    };
 
     #[test]
     fn test_agent_as_token() {
-        let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
+        let context = test_context("alice", None);
+        let agent_token = context.agent_id.address();
+        let cap_request =
+            make_cap_request_for_call(context.clone(), agent_token.clone(), "test", "{}");
+        assert!(is_token_the_agent(context.clone(), &cap_request));
+
+        // bogus token should fail
+        let cap_request = CapabilityRequest::new(
+            Address::from("fake_token"),
+            Address::from("someone"),
+            Signature::fake(),
+        );
+        assert!(!is_token_the_agent(context, &cap_request));
+    }
+
+    #[test]
+    fn test_call_signatures() {
+        let context1 = test_context("alice", None);
+        let context2 = test_context("bob", None);
+
+        // only exact same call signed by the same person should verify
+        let call_sig1 = make_call_sig(context1.clone(), "func", "{}");
+        let provenance1 = Provenance::new(context1.agent_id.address(), call_sig1.clone());
+        assert!(verify_call_sig(&provenance1, "func", "{}"));
+        assert!(!verify_call_sig(&provenance1, "func1", "{}"));
+        assert!(!verify_call_sig(&provenance1, "func", "{\"x\":1}"));
+
+        let bad_provenance = Provenance::new(context2.agent_id.address(), call_sig1);
+
+        assert!(!verify_call_sig(&bad_provenance, "func", "{}"));
+    }
+
+    #[test]
+    fn test_make_cap_request_for_call() {
+        let context = test_context("alice", None);
+        let cap_request =
+            make_cap_request_for_call(context.clone(), dummy_capability_token(), "some_fn", "{}");
+        assert_eq!(cap_request.cap_token, dummy_capability_token());
+        assert_eq!(
+            cap_request.provenance.source().to_string(),
+            context.agent_id.pub_sign_key
+        );
+        assert_eq!(
+            cap_request.provenance.signature(),
+            make_call_sig(context, "some_fn", "{}")
+        );
+    }
+
+    #[test]
+    fn test_get_grant() {
+        let dna = test_dna();
         let (_, context) =
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
-        let agent_token = Address::from(context.agent_id.key.clone());
-        let cap_call = CapabilityCall::new(agent_token, None);
-        assert!(is_token_the_agent(context.clone(), &Some(cap_call)));
-        let cap_call = CapabilityCall::new(Address::from(""), None);
-        assert!(!is_token_the_agent(context, &Some(cap_call)));
+
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
+        let grant =
+            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+        let grant_entry = Entry::CapTokenGrant(grant.clone());
+        let grant_addr = context
+            .block_on(author_entry(&grant_entry, None, &context))
+            .unwrap();
+        let maybe_grant = get_grant(&context, &grant_addr);
+        assert_eq!(maybe_grant, Some(grant));
+    }
+
+    #[test]
+    fn test_verify_grant() {
+        let context = test_context("alice", None);
+        let context2 = test_context("bob", None);
+        let test_address1 = context.agent_id.address();
+
+        fn zome_call_valid(context: Arc<Context>, token: &Address) -> ZomeFnCall {
+            ZomeFnCall::new(
+                "test_zome",
+                make_cap_request_for_call(context.clone(), token.clone(), "test", "{}"),
+                "test",
+                "{}",
+            )
+        }
+
+        let zome_call_from_addr1_bad_token = &ZomeFnCall::new(
+            "test_zome",
+            make_cap_request_for_call(context.clone(), Address::from("bad token"), "test", "{}"),
+            "test",
+            "{}",
+        );
+
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
+
+        let grant = CapTokenGrant::create(CapabilityType::Public, None, cap_functions).unwrap();
+        let token = grant.token();
+        assert!(verify_grant(
+            context.clone(),
+            &grant,
+            &zome_call_valid(context.clone(), &token)
+        ));
+        assert!(!verify_grant(
+            context.clone(),
+            &grant,
+            &zome_call_from_addr1_bad_token
+        ));
+
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("other_fn")]);
+        let grant_for_other_fn =
+            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+        assert!(!verify_grant(
+            context.clone(),
+            &grant_for_other_fn,
+            &zome_call_valid(context.clone(), &grant_for_other_fn.token())
+        ));
+
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
+        let grant =
+            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+
+        let token = grant.token();
+        assert!(!verify_grant(
+            context.clone(),
+            &grant,
+            &zome_call_from_addr1_bad_token
+        ));
+
+        // call with cap_request for a different function than the zome call
+        let zome_call_from_addr1_bad_cap_request = &ZomeFnCall::new(
+            "test_zome",
+            make_cap_request_for_call(context.clone(), token.clone(), "foo-fn", "{}"),
+            "test",
+            "{}",
+        );
+        assert!(!verify_grant(
+            context.clone(),
+            &grant,
+            &zome_call_from_addr1_bad_cap_request
+        ));
+
+        assert!(verify_grant(
+            context.clone(),
+            &grant,
+            &zome_call_valid(context.clone(), &token)
+        ));
+        // should work with same token from a different adddress
+        assert!(verify_grant(
+            context.clone(),
+            &grant,
+            &zome_call_valid(context2.clone(), &token)
+        ));
+
+        let mut cap_functions = CapFunctions::new();
+        cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
+        let grant = CapTokenGrant::create(
+            CapabilityType::Assigned,
+            Some(vec![test_address1.clone()]),
+            cap_functions,
+        )
+        .unwrap();
+        let token = grant.token();
+        assert!(!verify_grant(
+            context.clone(),
+            &grant,
+            &zome_call_from_addr1_bad_token
+        ));
+
+        // call with cap_request for a different function than the zome call
+        let zome_call_from_addr1_bad_cap_request = &ZomeFnCall::new(
+            "test_zome",
+            make_cap_request_for_call(context.clone(), token.clone(), "foo-fn", "{}"),
+            "test",
+            "{}",
+        );
+        assert!(!verify_grant(
+            context.clone(),
+            &grant,
+            &zome_call_from_addr1_bad_cap_request
+        ));
+
+        assert!(verify_grant(
+            context.clone(),
+            &grant,
+            &zome_call_valid(context.clone(), &token)
+        ));
+        // should NOT work with same token from a different adddress
+        assert!(!verify_grant(
+            context.clone(),
+            &grant,
+            &zome_call_valid(context2.clone(), &token)
+        ));
     }
 }

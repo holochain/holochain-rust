@@ -71,26 +71,27 @@ pub fn sign(
 /// @param {Buffer} message
 ///
 /// @param {Buffer} publicKey
-pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut SecBuf) -> i32 {
+pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut SecBuf) -> bool {
     check_init();
     let signature = signature.read_lock();
     let message = message.read_lock();
     let public_key = public_key.read_lock();
     let mess_len = message.len() as libc::c_ulonglong;
-    unsafe {
-        return rust_sodium_sys::crypto_sign_verify_detached(
+    let res = unsafe {
+        rust_sodium_sys::crypto_sign_verify_detached(
             raw_ptr_char_immut!(signature),
             raw_ptr_char_immut!(message),
             mess_len,
             raw_ptr_char_immut!(public_key),
-        );
-    }
+        )
+    };
+    res == 0
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::random::random_secbuf;
+
     #[test]
     fn it_should_get_true_on_good_verify() {
         let mut seed = SecBuf::with_secure(32);
@@ -98,17 +99,17 @@ mod tests {
         let mut secret_key = SecBuf::with_secure(64);
         let mut signature = SecBuf::with_secure(64);
 
-        random_secbuf(&mut seed);
+        seed.randomize();
 
         seed_keypair(&mut public_key, &mut secret_key, &mut seed).unwrap();
 
         let mut message = SecBuf::with_insecure(32);
-        random_secbuf(&mut message);
+        message.randomize();
 
         sign(&mut message, &mut secret_key, &mut signature).unwrap();
         {
-            let ver = verify(&mut signature, &mut message, &mut public_key);
-            assert_eq!(0, ver);
+            let succeeded = verify(&mut signature, &mut message, &mut public_key);
+            assert!(succeeded);
         }
     }
 
@@ -119,21 +120,21 @@ mod tests {
         let mut secret_key = SecBuf::with_secure(64);
         let mut signature = SecBuf::with_secure(64);
 
-        random_secbuf(&mut seed);
+        seed.randomize();
 
         seed_keypair(&mut public_key, &mut secret_key, &mut seed).unwrap();
 
         let mut message = SecBuf::with_insecure(32);
-        random_secbuf(&mut message);
+        message.randomize();
 
         let mut fake_message = SecBuf::with_insecure(32);
-        random_secbuf(&mut fake_message);
+        fake_message.randomize();
 
         sign(&mut message, &mut secret_key, &mut signature).unwrap();
 
         {
-            let ver = verify(&mut signature, &mut fake_message, &mut public_key);
-            assert_eq!(-1, ver);
+            let succeeded = verify(&mut signature, &mut fake_message, &mut public_key);
+            assert!(!succeeded);
         }
     }
 }

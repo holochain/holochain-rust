@@ -1,18 +1,18 @@
-extern crate directories;
-extern crate holochain_cas_implementations;
+#![warn(unused_extern_crates)]
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_net;
 
 use holochain_conductor_api::{context_builder::ContextBuilder, Holochain};
-use holochain_core::context::Context;
-use holochain_core_types::{cas::content::Address, dna::Dna, error::HolochainError};
+use holochain_core::{
+    context::Context, logger::Logger, nucleus::ribosome::capabilities::CapabilityRequest,
+};
+use holochain_core_types::{
+    agent::AgentId, cas::content::Address, dna::Dna, error::HolochainError, signature::Signature,
+};
 
 use std::sync::Arc;
 
-use holochain_core::logger::Logger;
-use holochain_core_types::{agent::AgentId, dna::capabilities::CapabilityCall};
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
@@ -48,7 +48,7 @@ pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain
     let context = get_context(&path);
 
     match context {
-        Ok(con) => match Holochain::load(path, Arc::new(con)) {
+        Ok(con) => match Holochain::load(Arc::new(con)) {
             Ok(hc) => Box::into_raw(Box::new(hc)),
             Err(_) => std::ptr::null_mut(),
         },
@@ -110,7 +110,11 @@ pub unsafe extern "C" fn holochain_call(
 
     match holochain.call(
         zome.as_str(),
-        Some(CapabilityCall::new(Address::from(token.as_str()), None)),
+        CapabilityRequest::new(
+            Address::from(token.as_str()),
+            Address::from("fake_caller"),
+            Signature::fake(),
+        ), // FIXME: caller
         function.as_str(),
         parameters.as_str(),
     ) {

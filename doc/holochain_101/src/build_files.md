@@ -1,12 +1,12 @@
-# .build Files
+# .hcbuild Files
 
 In the process of building a `.dna.json` file during packaging, here is what Holochain does:
 - It iterates Zome by Zome adding them to the JSON
-- For each Zome, it looks for any folders containing a `.build` file
-- For any folder with a `.build` file, it __executes one or more commands from the `.build` file to create a WASM file__
+- For each Zome, it looks for any folders containing a `.hcbuild` file
+- For any folder with a `.hcbuild` file, it __executes one or more commands from the `.hcbuild` file to create a WASM file__
 - It takes that built WASM file and Base64 encodes it, then stores a key/value pair for the Zome with the key as the folder name and the encoded WASM as the value
 
-When using [`hc generate` to scaffold a Zome](./zome/adding_a_zome.md), you will have a `.build` file automatically. If you create your Zome manually however, you will need to create the file yourself. Here's the structure of a `.build` file, using a Rust Zome which builds using Cargo as an example:
+When using [`hc generate` to scaffold a Zome](./zome/adding_a_zome.md), you will have a `.hcbuild` file automatically. If you create your Zome manually however, you will need to create the file yourself. Here's the structure of a `.hcbuild` file, using a Rust Zome which builds using Cargo as an example:
 ```json
 {
   "steps": {

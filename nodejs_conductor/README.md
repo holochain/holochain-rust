@@ -10,7 +10,18 @@ To build from source clone the repo and run
 ```
 node ./publish.js
 ```
-from the project root.
+from the node folder.
+
+You can use this built version by linking it
+```
+  npm link
+```
+
+Then in the project you want to use it from run
+```
+  npm link @holochain/holochain-nodejs
+```
+> Make sure you have removed it from the package.json file a a dependency before you npm install the rest of your dependencies.
 
 ## Usage
 
@@ -58,7 +69,7 @@ Holochain is an open source project.  We welcome all sorts of participation and 
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-Copyright (C) 2019, Holochain Trust
+Copyright (C) 2019, Holochain Foundation
 
 This program is free software: you can redistribute it and/or modify it under the terms of the license p
 rovided in the LICENSE file (GPLv3).  This program is distributed in the hope that it will be useful, bu

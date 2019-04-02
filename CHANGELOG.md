@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance optimization: don't recalculate DNA hash during handling of every network message but instead cache the DNA hash. [PR#1163](https://github.com/holochain/holochain-rust/pull/1163)
 - One-time-signing now takes a vector of payloads, and returns a vector of signatures.
 
-- Pins nixpkgs to 19.03 channel in shell and CI [#1162](https://github.com/holochain/holochain-rust/pull/1162)
+- Pins nixpkgs to Holo-Host channel in shell and CI [#1162](https://github.com/holochain/holochain-rust/pull/1162)
 
 ### Deprecated
 

@@ -92,7 +92,7 @@ mod tests {
     /// show that content of different types can round trip through the same storage
     /// this is copied straight from the example with a file CAS
     fn pickle_content_round_trip_test() {
-        let (cas, _dir) = test_file_cas();
+        let (cas, _dir) = test_pickle_cas();
         let test_suite = StorageTestSuite::new(cas);
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
             RawString::from("foo").into(),

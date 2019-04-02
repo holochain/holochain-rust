@@ -24,3 +24,4 @@ holochain_core_types = { path = "../../core_types" }
 holochain_node_test_waiter = { path = "../../nodejs_waiter" }
 neon-serde = "=0.1.1"
 rust_sodium-sys = "=0.10.3"
+tempfile="=3.0.7"

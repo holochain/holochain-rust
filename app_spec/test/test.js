@@ -21,13 +21,11 @@ scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
 
     const SignResult = bob.call("converse", "sign_message", { key_id:"", message: message });
-    sleep.msleep(15000);
     t.deepEqual(SignResult, { Ok: 'YVystBCmNEJGW/91bg43cUUybbtiElex0B+QWYy+PlB+nE3W8TThYGE4QzuUexvzkGqSutV04dSN8oyZxTJiBg==' });
 
     const provenance = [bob.agentId, SignResult.Ok];
 
     const VerificationResult = alice.call("converse", "verify_message", { message, provenance });
-    sleep.msleep(15000);
     t.deepEqual(VerificationResult, { Ok: true });
 })
 

@@ -60,7 +60,7 @@ impl EntityAttributeValueStorage for EavPickleStorage {
         };
         inner
         .set(&*index_str, &new_eav)
-        .map_err(|e|{ println!("eav error {:?}",e.to_string().clone()); HolochainError::ErrorGeneric(e.to_string())})?;
+        .map_err(|e|HolochainError::ErrorGeneric(e.to_string()))?;
         Ok(Some(new_eav.clone()))
     
     }
@@ -78,7 +78,8 @@ impl EntityAttributeValueStorage for EavPickleStorage {
             .filter(|filter| filter.is_some())
             .map(|y| y.unwrap())
             .collect::<BTreeSet<EntityAttributeValueIndex>>();
-
+        
+        println!("signing {:?}",entries.clone());
         let entries_iter = entries.iter().cloned();
         Ok(query.run(entries_iter))
     }

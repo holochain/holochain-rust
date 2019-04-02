@@ -622,7 +622,7 @@ impl ConductorApiBuilder {
 
             let holo_remote_key = params_map
                 .get("holo_remote_key")
-                .map(|k| k.as_bool())
+                .map(|k| k.as_str())
                 .unwrap_or_default();
 
             conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;

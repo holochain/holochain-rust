@@ -25,6 +25,7 @@ pub mod tests {
         cas::content::{Address, AddressableContent},
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
+        json::JsonString,
         link::link_data::LinkData,
     };
     use test_utils::*;
@@ -228,7 +229,10 @@ pub mod tests {
 
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
+            let entry = Entry::App(
+                test_app_entry_type(),
+                JsonString::from_json(&format!("entry{} value", i)),
+            );
             let address = context1
                 .block_on(commit_entry(entry.clone(), None, &context1))
                 .expect("Could not commit entry for testing");

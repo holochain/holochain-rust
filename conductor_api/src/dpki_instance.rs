@@ -4,6 +4,7 @@ use crate::holochain::Holochain;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     error::HolochainError,
+    json::JsonString,
 };
 
 use holochain_core::{
@@ -38,7 +39,7 @@ fn dpki_cap_request(
         context.clone(),
         token,
         function,
-        parameters.to_string(),
+        JsonString::from_json(parameters),
     ))
 }
 

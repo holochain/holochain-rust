@@ -22,9 +22,14 @@ impl ZomeFnCall {
             context.clone(),
             args.cap_token,
             &args.fn_name,
-            args.fn_args.clone(),
+            JsonString::from_json(&args.fn_args.clone()),
         );
-        ZomeFnCall::new(&args.zome_name, cap_call, &args.fn_name, args.fn_args)
+        ZomeFnCall::new(
+            &args.zome_name,
+            cap_call,
+            &args.fn_name,
+            JsonString::from_json(&args.fn_args),
+        )
     }
 }
 
@@ -107,9 +112,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     let response = JsonRpc::parse(&response)?;
 
     match response {
-        JsonRpc::Success(_) => Ok(JsonString::from(
-            serde_json::to_string(&response.get_result().unwrap()).unwrap(),
-        )),
+        JsonRpc::Success(_) => Ok(JsonString::from(response.get_result().unwrap().to_owned())),
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
             serde_json::to_string(&response.get_error().unwrap()).unwrap(),
         )),
@@ -193,7 +196,7 @@ pub mod tests {
             zome_name: test_zome_name(),
             cap_token: Address::from("test_token"),
             fn_name: test_function_name(),
-            fn_args: test_parameters(),
+            fn_args: test_parameters().to_string(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")

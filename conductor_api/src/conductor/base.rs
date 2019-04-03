@@ -656,7 +656,7 @@ impl Conductor {
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from(contents))
+        Dna::try_from(JsonString::from_json(&contents))
     }
 
     /// Default KeyLoader that actually reads files from the filesystem
@@ -873,7 +873,7 @@ pub mod tests {
             Ok(match path.to_str().unwrap().as_ref() {
                 "bridge/callee.dna" => callee_dna(),
                 "bridge/caller.dna" => caller_dna(),
-                _ => Dna::try_from(JsonString::from(example_dna_string())).unwrap(),
+                _ => Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap(),
             })
         })
             as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
@@ -1326,7 +1326,7 @@ pub mod tests {
                 context.clone(),
                 Address::from(context.clone().agent_id.address()),
                 "call_bridge",
-                "{}".to_string(),
+                JsonString::empty_object(),
             )
         };
         let result = instance

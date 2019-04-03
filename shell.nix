@@ -1,8 +1,20 @@
 let
+
+  # https://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/
+  inherit (import <nixpkgs> {}) fetchgit;
+  # nixos holo-host channel @ 2019-04-02
+  channel-holo-host = fetchgit {
+    url = "https://github.com/Holo-Host/nixpkgs-channels.git";
+    rev = "680f9d7ea90dd0b48b51f29899c3110196b0e913";
+    sha256 = "07glx6r08l8hwzh8xzj8i0hj6ak42iswqfb9hbhs75rqq56zq43a";
+  };
+
   moz_overlay = import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz);
-  pkgs = import <nixpkgs> {
+
+  pkgs = import channel-holo-host {
     overlays = [ moz_overlay ];
   };
+
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
@@ -250,6 +262,7 @@ let
    echo "bumping node conductor version from ${node-conductor-previous-version} to ${node-conductor-version}"
    sed -i 's/^\s*version\s*=\s*"${node-conductor-previous-version}"\s*$/version = "${node-conductor-version}"/g' ./nodejs_conductor/native/Cargo.toml
    sed -i 's/"version": "${node-conductor-previous-version}"/"version": "${node-conductor-version}"/g' ./nodejs_conductor/package.json
+   sed -i 's/"@holochain\/holochain-nodejs": "${node-conductor-previous-version}"/"@holochain\/holochain-nodejs": "${node-conductor-version}"/g' ./cli/src/cli/js-tests-scaffold/package.json
   '';
 
   # a few things should already be done by this point so precheck them :)
@@ -581,6 +594,77 @@ All binaries are for 64-bit operating systems.
   done
   '';
 
+  hc-do-release = pkgs.writeShellScriptBin "hc-do-release"
+  ''
+   git checkout master
+   git pull
+   git tag -a v${core-version} -m 'Version ${core-version}'
+   git tag -a holochain-nodejs-v${node-conductor-version} -m 'holochain-nodejs-v${node-conductor-version}'
+   git push ${upstream} v${core-version}
+   git push ${upstream} holochain-nodejs-v${node-conductor-version}
+  '';
+
+  hc-npm-deploy = pkgs.writeShellScriptBin "hc-npm-deploy"
+  ''
+   git checkout holochain-nodejs-v${node-conductor-version}
+   npm login
+   cd nodejs_conductor
+   yarn install --ignore-scripts
+   RUST_SODIUM_DISABLE_PIE=1 node ./publish.js --publish
+  '';
+  hc-npm-check-version = pkgs.writeShellScriptBin "hc-npm-check-version"
+  ''
+  echo
+  echo "Checking deployed nodejs_conductor version."
+  deployed=$( npm v @holochain/holochain-nodejs dist-tags.latest )
+  if [ $deployed == ${node-conductor-version} ]
+   then echo "Version ${node-conductor-version} deployed ✔"
+   else echo "Not deployed. $deployed found instead. ⨯"
+  fi
+  echo
+  '';
+
+  hc-release-cleanup = pkgs.writeShellScriptBin "hc-release-cleanup"
+  ''
+   export GITHUB_USER='holochain'
+   export GITHUB_REPO='holochain-rust'
+   export GITHUB_TOKEN=$( git config --get hub.oauthtoken )
+
+   echo
+   echo 'Injecting medium summary/highlights into github release notes'
+   echo
+   github-release -v edit --tag v${core-version} --name v${core-version} --description "$( hc-generate-release-notes )" --pre-release
+
+   echo
+   echo 'Deleting releases on test-* tags'
+   echo
+   github-release info \
+    | grep -Po "(?<=name: ')(test-\S*)(?=',)" \
+    | xargs -I {} github-release -v delete --tag {}
+
+   echo
+   echo 'Deleting releases on holochain-nodejs-test-* tags'
+   echo
+   github-release info \
+    | grep -Po "(?<=name: ')(holochain-nodejs-test-\S*)(?=',)" \
+    | xargs -I {} github-release -v delete --tag {}
+
+   echo
+   echo 'ensure github PR against develop'
+   echo
+   git config --local hub.upstream ${repo}
+   git config --local hub.forkrepo ${repo}
+   git config --local hub.forkremote ${upstream}
+   if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release-branch}" ]
+    then
+     git add . && git commit -am 'Release ${core-version}'
+     git push && git hub pull new -b 'develop' -m 'Merge release ${core-version} back to develop' --no-triangular ${release-branch}
+    else
+     echo "current branch is not ${release-branch}!"
+     exit 1
+   fi
+  '';
+
 in
 with pkgs;
 stdenv.mkDerivation rec {
@@ -640,6 +724,7 @@ stdenv.mkDerivation rec {
 
     # release tooling
     gitAndTools.git-hub
+    github-release
     hc-prepare-pulse-tag
     hc-prepare-release-branch
     hc-prepare-release-pr
@@ -650,6 +735,13 @@ stdenv.mkDerivation rec {
     hc-test-release
     hc-lint-release-docs
     hc-generate-release-notes
+
+    hc-do-release
+
+    hc-npm-deploy
+    hc-npm-check-version
+
+    hc-release-cleanup
 
   ] ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ];
 

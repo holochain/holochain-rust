@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance optimization: don't recalculate DNA hash during handling of every network message but instead cache the DNA hash. [PR#1163](https://github.com/holochain/holochain-rust/pull/1163)
 - `add_agent()` admin function now creates keystore file instead of just recording file in config [#1182](https://github.com/holochain/holochain-rust/pull/1182)
 - One-time-signing now takes a vector of payloads, and returns a vector of signatures.
+- Removes JsonString::From<String> and replaces it with JsonString::from_json(&str). This makes conversions more explicit and allows for validating that the string is actually valid json [#1184](https://github.com/holochain/holochain-rust/pull/1184)
 
 ### Deprecated
 

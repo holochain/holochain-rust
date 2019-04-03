@@ -108,7 +108,7 @@ mod tests {
 
         assert_eq!(
             JsonString::from(result),
-            JsonString::from("{\"Err\":\"FunctionNotImplemented\"}"),
+            JsonString::from_json("{\"Err\":\"FunctionNotImplemented\"}"),
         );
     }
 }

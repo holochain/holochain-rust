@@ -229,7 +229,7 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
         context.clone(),
         context.clone().agent_id.address(),
         fn_name,
-        params_string.clone(),
+        JsonString::from_json(&params_string.clone()),
     );
 
     // Run the holochain instance

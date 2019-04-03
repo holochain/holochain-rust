@@ -4,7 +4,7 @@ use crate::{
 };
 use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceMock};
 use holochain_core_types::error::HolochainError;
-use holochain_dpki::SEED_SIZE;
+use holochain_dpki::{password_encryption::PwHashConfig, SEED_SIZE};
 use holochain_sodium::{hash::sha256, secbuf::SecBuf};
 use keystore::test_hash_config;
 use std::{
@@ -16,11 +16,17 @@ use std::{
 /// This replaces filesystem access for getting keys mentioned in the config.
 /// Uses `test_keybundle` to create a deterministic key dependent on the (virtual) file name.
 pub fn test_keystore_loader() -> KeyLoader {
-    let loader = Box::new(|path: &PathBuf, _pm: Arc<PassphraseManager>| {
-        Ok(test_keystore(&path.to_str().unwrap().to_string()))
-    })
+    let loader = Box::new(
+        |path: &PathBuf, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
+            Ok(test_keystore(&path.to_str().unwrap().to_string()))
+        },
+    )
         as Box<
-            FnMut(&PathBuf, Arc<PassphraseManager>) -> Result<Keystore, HolochainError>
+            FnMut(
+                    &PathBuf,
+                    Arc<PassphraseManager>,
+                    Option<PwHashConfig>,
+                ) -> Result<Keystore, HolochainError>
                 + Send
                 + Sync,
         >;

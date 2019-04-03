@@ -2,8 +2,8 @@ use glob::glob;
 use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
-        increment_key_till_no_collision, Attribute, EavFilter, EaviQuery, Entity,
-        EntityAttributeValueIndex, EntityAttributeValueStorage, IndexFilter, Value,
+        Attribute, EavFilter, EaviQuery, Entity, EntityAttributeValueIndex,
+        EntityAttributeValueStorage, Value,
     },
     error::{HcResult, HolochainError},
     json::JsonString,
@@ -11,7 +11,7 @@ use holochain_core_types::{
 use std::{
     collections::BTreeSet,
     convert::{TryFrom, TryInto},
-    fs::{create_dir_all, File, OpenOptions},
+    fs::{self, create_dir_all, File},
     io::prelude::*,
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
@@ -26,7 +26,6 @@ const VALUE_DIR: &str = "v";
 pub struct EavFileStorage {
     dir_path: PathBuf,
     id: Uuid,
-
     lock: Arc<RwLock<()>>,
 }
 
@@ -46,34 +45,19 @@ pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<String>> {
 
     // let path_result = paths.last().ok_or(HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
     let (eav, error): (BTreeSet<_>, BTreeSet<_>) = paths
+        .filter_map(Result::ok)
         .map(|path| {
-            let path_buf: PathBuf = path.unwrap_or_default();
-            OpenOptions::new()
-                .read(true)
-                .open(path_buf.clone())
-                .map(|mut file| {
-                    let mut content = String::new();
-                    file.read_to_string(&mut content)
-                        .map(|_| Ok(content))
-                        .unwrap_or_else(|_| {
-                            Err(HolochainError::ErrorGeneric(
-                                "Could not read from string".to_string(),
-                            ))
-                        })
-                })
-                .unwrap_or_else(|_| {
-                    Err(HolochainError::ErrorGeneric(
-                        "Could not read from string".to_string(),
-                    ))
-                })
+            fs::read_to_string(&path)
+                .map_err(|_| HolochainError::ErrorGeneric("Could not read from string".to_string()))
         })
         .partition(Result::is_ok);
+
     if !error.is_empty() {
         Err(HolochainError::ErrorGeneric(
             "Could not read from string".to_string(),
         ))
     } else {
-        Ok(eav.iter().cloned().map(|s| s.unwrap_or_default()).collect())
+        Ok(eav.iter().cloned().filter_map(Result::ok).collect())
     }
 }
 
@@ -170,19 +154,28 @@ impl EntityAttributeValueStorage for EavFileStorage {
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
-        let fetched = self.fetch_eavi(&EaviQuery::new(
-            Some(eav.entity()).into(),
-            Some(eav.attribute()).into(),
-            Some(eav.value()).into(),
-            IndexFilter::LatestByAttribute,
-        ))?;
         let _guard = self.lock.write()?;
-        create_dir_all(self.dir_path.clone())?;
-        let new_eav = increment_key_till_no_collision(eav.clone(), fetched.clone())?;
-        self.write_to_file(ENTITY_DIR.to_string(), &new_eav)
-            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &new_eav))
-            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &new_eav))?;
-        Ok(Some(new_eav.clone()))
+        let wild_card = Path::new("*");
+        //create glob path to query file system parentdir/*/*/*/{address}.txt
+        let text_file_path = Path::new(&eav.address().to_string()).with_extension("txt");
+        let path = self
+            .dir_path
+            .join(wild_card)
+            .join(ENTITY_DIR)
+            .join(&*eav.index().to_string())
+            .join(&text_file_path);
+
+        //if next exists create a new eav with a different index
+        let eav = if path.exists() {
+            EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?
+        } else {
+            eav.clone()
+        };
+
+        self.write_to_file(ENTITY_DIR.to_string(), &eav)
+            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &eav))
+            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &eav))
+            .map(|_| Some(eav.clone()))
     }
 
     fn fetch_eavi(
@@ -205,15 +198,16 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .intersection(&entity_set)
             .cloned()
             .collect();
-        let total = entity_attribute_value_inter.len();
-        let eavis: BTreeSet<_> = entity_attribute_value_inter
+
+        //still a O(n) structure because they are slipt in different places.
+        let (eavis, errors): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
             .clone()
             .into_iter()
-            .filter_map(|content| {
-                EntityAttributeValueIndex::try_from_content(&JsonString::from(content)).ok()
+            .map(|content| {
+                EntityAttributeValueIndex::try_from_content(&JsonString::from_json(&content))
             })
-            .collect();
-        if eavis.len() < total {
+            .partition(Result::is_ok);
+        if !errors.is_empty() {
             // not all EAVs were converted
             Err(HolochainError::ErrorGeneric(
                 "Error Converting EAVs".to_string(),
@@ -227,7 +221,10 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 Default::default(),
                 query.index().clone(),
             );
-            let it = eavis.iter().cloned();
+            let it = eavis.iter().map(|e| {
+                e.clone()
+                    .expect("no problem here since we have filtered out all bad conversions")
+            });
             let results = index_query.run(it);
             Ok(results)
         }
@@ -236,18 +233,16 @@ impl EntityAttributeValueStorage for EavFileStorage {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-    use self::tempfile::tempdir;
-    use eav::file::EavFileStorage;
-    #[cfg(any(not(windows), feature = "broken-tests"))]
-    use holochain_core_types::eav::Attribute;
+    use crate::eav::file::EavFileStorage;
     use holochain_core_types::{
         cas::{
             content::{AddressableContent, ExampleAddressableContent},
             storage::EavTestSuite,
         },
+        eav::Attribute,
         json::RawString,
     };
+    use tempfile::tempdir;
 
     #[test]
     fn file_eav_round_trip() {
@@ -269,28 +264,22 @@ pub mod tests {
     }
 
     #[test]
-    // breaks on av https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23356009
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn file_eav_one_to_many() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
-        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage)
+        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage);
     }
 
     #[test]
-    // breaks on av https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23356009
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn file_eav_many_to_one() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
-        EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavFileStorage>(eav_storage)
+        EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavFileStorage>(eav_storage);
     }
 
     #[test]
-    // breaks on av https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23356009
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn file_eav_range() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
@@ -299,8 +288,6 @@ pub mod tests {
     }
 
     #[test]
-    // breaks on av https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23356009
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn file_eav_prefixes() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));

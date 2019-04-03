@@ -195,8 +195,8 @@ pub mod tests {
     }
 
     /// dummy parameters compatible with ZomeFnCall
-    pub fn test_parameters() -> String {
-        "".to_string()
+    pub fn test_parameters() -> JsonString {
+        JsonString::empty_object()
     }
 
     /// dummy function call

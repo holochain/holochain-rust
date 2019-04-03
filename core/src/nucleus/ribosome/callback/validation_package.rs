@@ -40,7 +40,7 @@ pub fn get_validation_package_definition(
             let call = CallbackFnCall::new(
                 &zome_name,
                 "__hdk_get_validation_package_for_entry_type",
-                app_entry_type.to_string(),
+                app_entry_type.clone(),
             );
             ribosome::run_dna(
                 wasm.code.clone(),

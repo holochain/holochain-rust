@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 
 # Check if the script is run by the root user
-if [ "$EUID" -ne 0 ]
+if [ "$EUID" -eq 0 ]
 then
 	# Script is run by root, so we do not need `sudo`
 	as_root=""
 else
 	# Check if `sudo` is installed
-	# allow pipefail for circleci compatibility
-	# https://circleci.com/docs/2.0/configuration-reference/#default-shell-options
-	(set +o pipefail && which sudo > /dev/null)
+	which sudo > /dev/null
 	if [ $? -eq 0 ]
 	then
 		# `sudo` is installed; use it

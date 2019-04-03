@@ -8,7 +8,9 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::AddressableContent, entry::Entry, validation::ValidationData,
+    cas::content::AddressableContent,
+    entry::Entry,
+    validation::{LinkValidationData, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::validation::LinkValidationArgs;
 use std::sync::Arc;
@@ -19,8 +21,8 @@ pub async fn validate_link_entry(
     context: &Arc<Context>,
 ) -> ValidationResult {
     let address = entry.address().clone();
-    let link = match entry {
-        Entry::LinkAdd(link_add) => link_add,
+    let link = match entry.clone() {
+        Entry::LinkAdd(link_add) => link_add.clone(),
         Entry::LinkRemove(link_remove) => link_remove,
         _ => {
             return Err(ValidationError::Error(
@@ -42,6 +44,18 @@ pub async fn validate_link_entry(
         context,
     )
     .map_err(|_| ValidationError::NotImplemented)?;
+
+    let validation_data = match entry.clone() {
+        Entry::LinkAdd(link) => Ok(LinkValidationData::LinkAdd {
+            link,
+            validation_data,
+        }),
+        Entry::LinkRemove(link) => Ok(LinkValidationData::LinkRemove {
+            link,
+            validation_data,
+        }),
+        _ => Err(ValidationError::Fail("Entry is not link".to_string())),
+    }?;
 
     let params = LinkValidationArgs {
         entry_type: link_definition_path.entry_type_name,

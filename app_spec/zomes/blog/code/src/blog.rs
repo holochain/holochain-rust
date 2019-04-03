@@ -54,7 +54,7 @@ pub fn handle_get_sources(address: Address) -> ZomeApiResult<Vec<Address>> {
         Ok(result
             .headers
             .into_iter()
-            .map(|header| header.provenances().first().unwrap().clone().0)
+            .map(|header| header.provenances().first().unwrap().clone().source())
             .collect())
     } else {
         unimplemented!()
@@ -78,8 +78,9 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
     )
 }
 
-pub fn handle_check_send(to_agent: Address, message: String) -> ZomeApiResult<String> {
-    hdk::send(to_agent, message, 10000.into())
+pub fn handle_check_send(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
+    let received_str = hdk::send(to_agent, message, 10000.into())?;
+    Ok(JsonString::from_json(&received_str))
 }
 
 fn post_entry(content: String) -> Entry {
@@ -191,7 +192,7 @@ pub fn handle_get_history_post(post_address : Address) -> ZomeApiResult<EntryHis
 
 pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<Address> {
     let old_entry = hdk::get_entry(&post_address)?;
-
+   
     if let Some(Entry::App(_, json_string)) = old_entry {
         let post = Post::try_from(json_string)?;
         let updated_post_entry = Entry::App(

@@ -20,6 +20,10 @@ pub trait KeyPair {
     where
         Self: Sized;
 
+    fn new_from_self(&mut self) -> HcResult<Self>
+    where
+        Self: Sized;
+
     fn codec<'a>() -> &'a HcidEncoding;
 
     // -- Common methods -- //
@@ -80,6 +84,14 @@ impl KeyPair for SigningKeyPair {
         let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, Self::codec())?;
         // Done
         Ok(SigningKeyPair::new(pub_key_b32, priv_sec_buf))
+    }
+
+    fn new_from_self(&mut self) -> HcResult<Self> {
+        let mut buf = SecBuf::with_secure(self.private.len());
+        let pub_key = self.public();
+        let lock = self.private().read_lock();
+        buf.write(0, &**lock)?;
+        Ok(SigningKeyPair::new(pub_key, buf))
     }
 }
 
@@ -148,6 +160,14 @@ impl KeyPair for EncryptingKeyPair {
         // Done
         Ok(EncryptingKeyPair::new(pub_key_b32, priv_sec_buf))
     }
+
+    fn new_from_self(&mut self) -> HcResult<Self> {
+        let mut buf = SecBuf::with_secure(self.private.len());
+        let pub_key = self.public();
+        let lock = self.private().read_lock();
+        buf.write(0, &**lock)?;
+        Ok(EncryptingKeyPair::new(pub_key, buf))
+    }
 }
 
 impl EncryptingKeyPair {
@@ -164,6 +184,16 @@ impl EncryptingKeyPair {
     // TODO: Encrypt and decrypt functions
 }
 
+pub fn generate_random_sign_keypair() -> HcResult<SigningKeyPair> {
+    let mut seed = utils::generate_random_seed_buf();
+    SigningKeyPair::new_from_seed(&mut seed)
+}
+
+pub fn generate_random_enc_keypair() -> HcResult<EncryptingKeyPair> {
+    let mut seed = utils::generate_random_seed_buf();
+    EncryptingKeyPair::new_from_seed(&mut seed)
+}
+
 //--------------------------------------------------------------------------------------------------
 // Test
 //--------------------------------------------------------------------------------------------------
@@ -171,45 +201,42 @@ impl EncryptingKeyPair {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::SEED_SIZE;
 
-    fn test_generate_random_seed() -> SecBuf {
-        let mut seed = SecBuf::with_insecure(SEED_SIZE);
-        seed.randomize();
-        seed
+    pub fn test_generate_random_sign_keypair() -> SigningKeyPair {
+        generate_random_sign_keypair().unwrap()
     }
 
-    fn test_generate_random_sign_keypair() -> SigningKeyPair {
-        let mut seed = test_generate_random_seed();
-        SigningKeyPair::new_from_seed(&mut seed).unwrap()
-    }
-
-    fn test_generate_random_enc_keypair() -> EncryptingKeyPair {
-        let mut seed = test_generate_random_seed();
-        EncryptingKeyPair::new_from_seed(&mut seed).unwrap()
+    pub fn test_generate_random_enc_keypair() -> EncryptingKeyPair {
+        generate_random_enc_keypair().unwrap()
     }
 
     #[test]
-    fn keypair_should_construct_sign() {
-        let mut sign_keys = test_generate_random_sign_keypair();
+    fn keypair_should_construct_and_clone_sign() {
+        let mut keys = test_generate_random_sign_keypair();
         // Test public key
-        println!("sign_keys.public = {:?}", sign_keys.public);
-        assert_eq!(63, sign_keys.public.len());
-        let prefix: String = sign_keys.public.chars().skip(0).take(3).collect();
+        println!("sign_keys.public = {:?}", keys.public);
+        assert_eq!(63, keys.public.len());
+        let prefix: String = keys.public.chars().skip(0).take(3).collect();
         assert_eq!("HcS", prefix);
         // Test private key
-        assert_eq!(64, sign_keys.private.len());
+        assert_eq!(64, keys.private.len());
+        // Test clone
+        assert!(keys.new_from_self().unwrap().is_same(&mut keys));
     }
 
     #[test]
-    fn keypair_should_construct_enc() {
-        let mut sign_keys = test_generate_random_enc_keypair();
+    fn keypair_should_construct_and_clone_enc() {
+        let mut keys = test_generate_random_enc_keypair();
         // Test public key
-        println!("sign_keys.public = {:?}", sign_keys.public);
-        assert_eq!(63, sign_keys.public.len());
-        let prefix: String = sign_keys.public.chars().skip(0).take(3).collect();
+        println!("enc_keys.public = {:?}", keys.public);
+        assert_eq!(63, keys.public.len());
+        let prefix: String = keys.public.chars().skip(0).take(3).collect();
         assert_eq!("HcK", prefix);
         // Test private key
-        assert_eq!(32, sign_keys.private.len());
+        assert_eq!(32, keys.private.len());
+        // Test clone
+        assert!(keys.new_from_self().unwrap().is_same(&mut keys));
     }
 
     #[test]

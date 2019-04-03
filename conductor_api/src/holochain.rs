@@ -44,7 +44,7 @@
 //! let mut seed = SecBuf::with_insecure(SEED_SIZE);
 //! seed.randomize();
 //!
-//! let keybundle = KeyBundle::new_from_seed_buf(&mut seed, SeedType::Mock).unwrap();
+//! let keybundle = KeyBundle::new_from_seed_buf(&mut seed).unwrap();
 //!
 //! // The keybundle's public part is the agent's address
 //! let agent = AgentId::new("bob", keybundle.get_id());
@@ -155,7 +155,11 @@ impl Holochain {
 
     pub fn load(context: Arc<Context>) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.dht_storage.clone());
-        let loaded_state = persister.load(context.clone())??;
+        let loaded_state = persister
+            .load(context.clone())?
+            .ok_or(HolochainError::ErrorGeneric(
+                "State could not be loaded due to NoneError".to_string(),
+            ))?;
         let mut instance = Instance::from_state(loaded_state.clone());
         let new_context = instance.initialize(None, context.clone())?;
         Ok(Holochain {
@@ -195,7 +199,7 @@ impl Holochain {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
 
-        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
+        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
         let context = self.context();
         Ok(context.block_on(call_zome_function(zome_call, context))?)
     }
@@ -231,7 +235,11 @@ mod tests {
         },
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{cas::content::Address, dna::Dna, json::RawString};
+    use holochain_core_types::{
+        cas::content::{Address, AddressableContent},
+        dna::Dna,
+        json::RawString,
+    };
     use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
     use test_utils::{
@@ -275,10 +283,9 @@ mod tests {
     fn cap_call(context: Arc<Context>, fn_name: &str, params: &str) -> CapabilityRequest {
         make_cap_request_for_call(
             context.clone(),
-            Address::from(context.clone().agent_id.pub_sign_key.clone()),
-            Address::from(context.clone().agent_id.pub_sign_key.clone()),
+            Address::from(context.clone().agent_id.address()),
             fn_name,
-            params.to_string(),
+            JsonString::from_json(params),
         )
     }
 
@@ -453,7 +460,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from("{\"holo\":\"world\"}")
+            JsonString::from_json("{\"holo\":\"world\"}")
         );
     }
 
@@ -489,7 +496,9 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from(r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#),
+            JsonString::from_json(
+                r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#
+            ),
         );
     }
 
@@ -528,7 +537,7 @@ mod tests {
         // @TODO fragile test!
         assert_ne!(
             result.clone().ok().unwrap(),
-            JsonString::from("{\"Err\":\"Argument deserialization failed\"}")
+            JsonString::from_json("{\"Err\":\"Argument deserialization failed\"}")
         );
 
         expect_action(&signal_rx, |action| {
@@ -567,7 +576,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from("{\"Err\":\"Argument deserialization failed\"}"),
+            JsonString::from_json("{\"Err\":\"Argument deserialization failed\"}"),
         );
 
         expect_action(&signal_rx, |action| {
@@ -668,7 +677,7 @@ mod tests {
             RawString::from(""),
         );
         assert_eq!(
-            JsonString::from("{\"value\":\"fish\"}"),
+            JsonString::from_json("{\"value\":\"fish\"}"),
             call_result.unwrap()
         );
     }

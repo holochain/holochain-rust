@@ -22,13 +22,18 @@ impl PartialEq for MemoryStorage {
         self.id == other.id
     }
 }
-
-impl MemoryStorage {
-    pub fn new() -> MemoryStorage {
+impl Default for MemoryStorage {
+    fn default() -> MemoryStorage {
         MemoryStorage {
             storage: Arc::new(RwLock::new(HashMap::new())),
             id: Uuid::new_v4(),
         }
+    }
+}
+
+impl MemoryStorage {
+    pub fn new() -> MemoryStorage {
+        Default::default()
     }
 }
 
@@ -56,7 +61,7 @@ impl ContentAddressableStorage for MemoryStorage {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::memory::MemoryStorage;
+    use crate::cas::memory::MemoryStorage;
     use holochain_core_types::{
         cas::{
             content::{ExampleAddressableContent, OtherExampleAddressableContent},

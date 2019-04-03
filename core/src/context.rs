@@ -22,7 +22,6 @@ use holochain_core_types::{
     entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
-
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_lite::JsonRpc;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -104,7 +103,7 @@ impl Context {
             persister,
             state: None,
             action_channel: None,
-            signal_tx: signal_tx,
+            signal_tx,
             observer_channel: None,
             chain_storage,
             dht_storage,
@@ -156,10 +155,7 @@ impl Context {
     }
 
     pub fn state(&self) -> Option<RwLockReadGuard<State>> {
-        match self.state {
-            None => None,
-            Some(ref s) => Some(s.read().unwrap()),
-        }
+        self.state.as_ref().map(|s| s.read().unwrap())
     }
 
     pub fn get_dna(&self) -> Option<Dna> {
@@ -272,9 +268,7 @@ impl Context {
             JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
                 serde_json::to_string(&response.get_error().unwrap()).unwrap(),
             )),
-            _ => Err(HolochainError::ErrorGeneric(
-                "Bridge call failed".to_string(),
-            )),
+            _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
         }
     }
 
@@ -288,7 +282,7 @@ impl Context {
                 .agent()
                 .chain_store()
                 .iter_type(&Some(top), &EntryType::CapTokenGrant)
-                .nth(0)?
+                .next()?
                 .entry_address()
                 .to_owned();
 

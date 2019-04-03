@@ -19,6 +19,7 @@ pub(crate) fn get_entry_from_cas(
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
     let json = (*storage.read().unwrap()).fetch(&address)?;
+
     let entry: Option<Entry> = json
         .and_then(|js| js.try_into().ok())
         .map(|s: Entry| s.into());
@@ -66,15 +67,17 @@ pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let cas = context.state().unwrap().dht().content_storage();
-    get_entry_from_cas(&cas.clone(), address)
+    let cas = context.state().unwrap().dht().content_storage().clone();
+    get_entry_from_cas(&cas, address)
 }
 
 pub(crate) fn get_entry_crud_meta_from_dht(
     context: &Arc<Context>,
-    address: Address,
+    address: &Address,
 ) -> Result<Option<(CrudStatus, Option<Address>)>, HolochainError> {
-    let dht = context.state().unwrap().dht().meta_storage();
+    let state_dht = context.state().unwrap().dht().clone();
+    let dht = state_dht.meta_storage().clone();
+
     let storage = &dht.clone();
     // Get crud-status
     let status_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
@@ -116,7 +119,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     // Get crud-link
     let mut maybe_link_update_delete = None;
     let link_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
-        Some(address).into(),
+        Some(address.clone()).into(),
         Some(Attribute::CrudLink).into(),
         None.into(),
         IndexFilter::LatestByAttribute,
@@ -141,15 +144,22 @@ pub fn get_entry_with_meta<'a>(
     address: Address,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. try to get the entry
-
     let entry = match get_entry_from_dht(context, &address) {
         Err(err) => return Err(err),
         Ok(None) => return Ok(None),
         Ok(Some(entry)) => entry,
     };
+
     // 2. try to get the entry's metadata
-    let (crud_status, maybe_link_update_delete) = get_entry_crud_meta_from_dht(context, address)?
-        .expect("Entry should have crud-status metadata");
+    let (crud_status, maybe_link_update_delete) =
+        match get_entry_crud_meta_from_dht(context, &address)? {
+            Some(crud_info) => crud_info,
+            None => return Ok(None), //If we cannot get the CRUD status for above entry it is not an
+                                     //entry that is held by this DHT. It might be in the DHT CAS
+                                     //because DHT and chain share the same CAS or it maybe just got
+                                     //added by a concurrent process but the CRUD status is still about
+                                     //to get set. Either way, we should treat it as not existent (yet).
+        };
     let item = EntryWithMeta {
         entry,
         crud_status,

@@ -175,11 +175,12 @@ impl Runtime {
         let bin_arg = self.memory_manager.read(allocation);
 
         // convert complex argument
-        String::from_utf8(bin_arg)
-            // @TODO don't panic in WASM
-            // @see https://github.com/holochain/holochain-rust/issues/159
-            .unwrap()
-            .into()
+        JsonString::from_json(
+            &String::from_utf8(bin_arg)
+                // @TODO don't panic in WASM
+                // @see https://github.com/holochain/holochain-rust/issues/159
+                .unwrap(),
+        )
     }
 
     /// Store anything that implements Into<JsonString> in wasm memory.
@@ -189,7 +190,7 @@ impl Runtime {
     pub fn store_as_json_string<J: Into<JsonString>>(&mut self, jsonable: J) -> ZomeApiResult {
         let j: JsonString = jsonable.into();
         // write str to runtime memory
-        let mut s_bytes: Vec<_> = j.into_bytes();
+        let mut s_bytes: Vec<_> = j.to_bytes();
         s_bytes.push(0); // Add string terminate character (important)
 
         match self.memory_manager.write(&s_bytes) {

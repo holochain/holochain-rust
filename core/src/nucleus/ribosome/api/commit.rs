@@ -50,7 +50,7 @@ pub mod tests {
         let entry = test_entry();
 
         let serialized_entry = Entry::from(entry);
-        JsonString::from(serialized_entry).into_bytes()
+        JsonString::from(serialized_entry).to_bytes()
     }
 
     #[test]
@@ -63,10 +63,10 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(
+            JsonString::from_json(
+                &(String::from(JsonString::from(ZomeApiInternalResult::success(
                     Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq")
-                ))) + "\u{0}"
+                ))) + "\u{0}")
             ),
         );
     }

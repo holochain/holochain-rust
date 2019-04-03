@@ -2,17 +2,19 @@
 //! P2pNetwork instances take a json configuration string
 //! and at load-time instantiate the configured "backend"
 
-use crate::connection::{
-    net_connection::{NetHandler, NetSend, NetWorker, NetWorkerFactory},
-    net_connection_thread::NetConnectionThread,
-    protocol::Protocol,
-    NetResult,
-};
-use std::{thread::sleep, time::Duration};
-
 use crate::{
-    in_memory::memory_worker::InMemoryWorker, ipc_net_worker::IpcNetWorker, p2p_config::*,
+    connection::{
+        net_connection::{NetHandler, NetSend, NetWorker, NetWorkerFactory},
+        net_connection_thread::NetConnectionThread,
+        protocol::Protocol,
+        NetResult,
+    },
+    in_memory::memory_worker::InMemoryWorker,
+    ipc_net_worker::IpcNetWorker,
+    p2p_config::*,
 };
+use holochain_core_types::json::JsonString;
+use std::{thread::sleep, time::Duration};
 
 /// Facade handling a p2p module responsable for the network connection
 /// Holds a NetConnectionThread and implements itself the NetSend Trait
@@ -28,7 +30,7 @@ impl P2pNetwork {
     /// `handler` is the closure for handling Protocol messages received from the network.
     pub fn new(handler: NetHandler, p2p_config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
-        let backend_config = p2p_config.backend_config.to_string().into();
+        let backend_config = JsonString::from_json(&p2p_config.backend_config.to_string());
         // Provide worker factory depending on backend kind
         let worker_factory: NetWorkerFactory = match p2p_config.backend_kind {
             // Create an IpcNetWorker with the passed backend config
@@ -53,6 +55,8 @@ impl P2pNetwork {
         // Create NetConnectionThread with appropriate worker factory
         let connection = NetConnectionThread::new(handler, worker_factory, None)?;
         if let P2pBackendKind::IPC = p2p_config.backend_kind {
+            // TODO: this is a hack until Core takes in account the 'P2pReady' message sent by the network module
+            // see: https://realtimeboard.com/app/board/o9J_kyiXmFs=/?moveToWidget=3074457346457995629
             sleep(Duration::from_millis(1000));
         }
         // Done

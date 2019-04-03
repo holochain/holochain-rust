@@ -49,6 +49,12 @@ impl From<HolochainError> for HolochainInstanceError {
     }
 }
 
+impl From<HolochainInstanceError> for HolochainError {
+    fn from(error: HolochainInstanceError) -> Self {
+        HolochainError::new(&error.to_string())
+    }
+}
+
 impl From<NoneError> for HolochainInstanceError {
     fn from(_: NoneError) -> Self {
         HolochainInstanceError::NoSuchInstance

@@ -6,11 +6,12 @@ extern crate tempfile;
 
 use self::tempfile::tempdir;
 use bencher::Bencher;
-use holochain_cas_implementations::eav::{file::EavFileStorage, pickle::EavPickleStorage, memory::EavMemoryStorage};
+use holochain_cas_implementations::eav::{
+    file::EavFileStorage, memory::EavMemoryStorage, pickle::EavPickleStorage,
+};
 use holochain_core_types::cas::{content::ExampleAddressableContent, storage::EavTestSuite};
 
-fn bench_memory_eav_one_to_many(b: &mut Bencher)
-{
+fn bench_memory_eav_one_to_many(b: &mut Bencher) {
     b.iter(|| {
         let eav_storage = EavMemoryStorage::new();
         EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavMemoryStorage>(
@@ -19,8 +20,7 @@ fn bench_memory_eav_one_to_many(b: &mut Bencher)
     })
 }
 
-fn bench_memory_eav_many_to_one(b: &mut Bencher)
-{
+fn bench_memory_eav_many_to_one(b: &mut Bencher) {
     b.iter(|| {
         let eav_storage = EavMemoryStorage::new();
         EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavMemoryStorage>(

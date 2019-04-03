@@ -250,6 +250,7 @@ let
    echo "bumping node conductor version from ${node-conductor-previous-version} to ${node-conductor-version}"
    sed -i 's/^\s*version\s*=\s*"${node-conductor-previous-version}"\s*$/version = "${node-conductor-version}"/g' ./nodejs_conductor/native/Cargo.toml
    sed -i 's/"version": "${node-conductor-previous-version}"/"version": "${node-conductor-version}"/g' ./nodejs_conductor/package.json
+   sed -i 's/"@holochain\/holochain-nodejs": "${node-conductor-previous-version}"/"@holochain\/holochain-nodejs": "${node-conductor-version}"/g' ./cli/src/cli/js-tests-scaffold/package.json
   '';
 
   # a few things should already be done by this point so precheck them :)

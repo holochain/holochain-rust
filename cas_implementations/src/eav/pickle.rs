@@ -22,10 +22,11 @@ pub struct EavPickleStorage {
 
 impl EavPickleStorage {
     pub fn new<P: AsRef<Path> + Clone>(db_path: P) -> EavPickleStorage {
+        let eav_db = db_path.as_ref().join("eav").with_extension("db");
         EavPickleStorage {
             id: Uuid::new_v4(),
-            db: Arc::new(RwLock::new(PickleDb::load(db_path.clone(), PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),SerializationMethod::Cbor).unwrap_or_else(|_|PickleDb::new(
-                db_path,
+            db: Arc::new(RwLock::new(PickleDb::load(eav_db.clone(), PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),SerializationMethod::Cbor).unwrap_or_else(|_|PickleDb::new(
+                eav_db,
                 PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),
                 SerializationMethod::Cbor,
             ))))

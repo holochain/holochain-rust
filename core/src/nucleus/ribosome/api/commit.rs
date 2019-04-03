@@ -63,10 +63,10 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(
+            JsonString::from_json(
+                &(String::from(JsonString::from(ZomeApiInternalResult::success(
                     Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq")
-                ))) + "\u{0}"
+                ))) + "\u{0}")
             ),
         );
     }

@@ -73,6 +73,10 @@ pub struct Configuration {
     /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures
     /// over this websocket.
     pub signing_service_uri: Option<String>,
+
+    /// Optional DPKI configuration if conductor is using a DPKI app to initalize and manage
+    /// keys for new instances
+    pub dpki: Option<DpkiConfiguration>,
 }
 
 pub fn default_persistence_dir() -> PathBuf {
@@ -199,6 +203,17 @@ impl Configuration {
                         )
                     })?;
             }
+        }
+
+        if let Some(ref dpki_config) = self.dpki {
+            self.instance_by_id(&dpki_config.instance_id)
+                .is_some()
+                .ok_or_else(|| {
+                    format!(
+                        "Instance configuration \"{}\" not found, mentioned in dpki",
+                        dpki_config.instance_id
+                    )
+                })?;
         }
 
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
@@ -351,8 +366,7 @@ pub struct AgentConfiguration {
 
 impl From<AgentConfiguration> for AgentId {
     fn from(config: AgentConfiguration) -> Self {
-        AgentId::try_from(JsonString::try_from(config.id).expect("bad agent json"))
-            .expect("bad agent json")
+        AgentId::try_from(JsonString::from_json(&config.id)).expect("bad agent json")
     }
 }
 
@@ -373,7 +387,7 @@ impl TryFrom<DnaConfiguration> for Dna {
         let mut f = File::open(dna_config.file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from(contents))
+        Dna::try_from(JsonString::from_json(&contents))
     }
 }
 
@@ -399,6 +413,7 @@ pub struct InstanceConfiguration {
 pub enum StorageConfiguration {
     Memory,
     File { path: String },
+    Pickle { path: String },
 }
 
 /// Here, interfaces are user facing and make available zome functions to
@@ -551,6 +566,14 @@ pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
             e.to_string()
         ))
     })
+}
+
+/// Configure which app instance id to treat as the DPKI application handler
+/// as well as what parameters to pass it on its initialization
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub struct DpkiConfiguration {
+    pub instance_id: String,
+    pub init_params: String,
 }
 
 #[cfg(test)]
@@ -1140,6 +1163,44 @@ pub mod tests {
         assert_eq!(
             config.check_consistency(),
             Err("DNA Interface configuration \"<not existant>\" not found, mentioned in UI interface \"ui-interface-1\"".to_string())
+        );
+    }
+
+    #[test]
+    fn test_inconsistent_dpki() {
+        let toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    keystore_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "deepkey"
+    file = "deepkey.dna.json"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "deepkey"
+    dna = "deepkey"
+    agent = "test agent"
+    [instances.storage]
+    type = "file"
+    path = "deepkey_storage"
+
+    [dpki]
+    instance_id = "bogus instance"
+    init_params = "{}"
+
+    "#;
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(
+            config.check_consistency(),
+            Err(
+                "Instance configuration \"bogus instance\" not found, mentioned in dpki"
+                    .to_string()
+            )
         );
     }
 }

@@ -78,8 +78,9 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
     )
 }
 
-pub fn handle_check_send(to_agent: Address, message: String) -> ZomeApiResult<String> {
-    hdk::send(to_agent, message, 10000.into())
+pub fn handle_check_send(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
+    let received_str = hdk::send(to_agent, message, 10000.into())?;
+    Ok(JsonString::from_json(&received_str))
 }
 
 fn post_entry(content: String) -> Entry {

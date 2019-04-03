@@ -5,7 +5,9 @@ use holochain_core::nucleus::{
     ribosome::capabilities::CapabilityRequest,
 };
 
-use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance};
+use holochain_core_types::{
+    agent::AgentId, cas::content::Address, json::JsonString, signature::Provenance,
+};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
@@ -156,7 +158,7 @@ impl ConductorApiBuilder {
                         context.clone(),
                         token,
                         &func_name,
-                        params_string.clone(),
+                        JsonString::from_json(&params_string.clone()),
                     ),
                     Some(json_provenance) => {
                         let provenance: Provenance =
@@ -619,21 +621,17 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             let name = Self::get_as_string("name", &params_map)?;
-            let public_address = Self::get_as_string("public_address", &params_map)?;
-            let keystore_file = Self::get_as_string("keystore_file", &params_map)?;
+
             let holo_remote_key = params_map
                 .get("holo_remote_key")
-                .map(|k| k.as_bool())
-                .unwrap_or_default();
+                .map(|k| {
+                    k.as_str()
+                        .ok_or("holo_remote_key must be a string")
+                        .map_err(|e| jsonrpc_core::Error::invalid_params(e))
+                }) // Option<Result<_, _>>
+                .transpose()?; // Result<Option<_>, _>
 
-            let agent = AgentConfiguration {
-                id,
-                name,
-                public_address,
-                keystore_file,
-                holo_remote_key,
-            };
-            conductor_call!(|c| c.add_agent(agent))?;
+            conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;
             Ok(json!({"success": true}))
         });
 

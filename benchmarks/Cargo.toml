@@ -1,6 +1,6 @@
 [package]
 name = "benchmarks"
-version = "0.0.8-alpha"
+version = "0.0.9-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]

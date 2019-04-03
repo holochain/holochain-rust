@@ -48,7 +48,7 @@ impl JsonString {
         let cleaned = s
             // remove whitespace from both ends
             .trim()
-            // remove null characters from both endsi
+            // remove null characters from both ends
             .trim_matches(char::from(0));
         JsonString(cleaned.to_owned())
     }

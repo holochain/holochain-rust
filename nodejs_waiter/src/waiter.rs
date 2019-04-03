@@ -417,7 +417,7 @@ mod tests {
     }
 
     fn zf_response(call: ZomeFnCall) -> ExecuteZomeFnResponse {
-        ExecuteZomeFnResponse::new(call, Ok(JsonString::from_json("{}")))
+        ExecuteZomeFnResponse::new(call, Ok(JsonString::empty_object()))
     }
 
     fn num_conditions(waiter: &Waiter, call: &ZomeFnCall) -> usize {

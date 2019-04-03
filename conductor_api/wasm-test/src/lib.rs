@@ -109,7 +109,7 @@ pub extern "C" fn debug_stacked_hello(
     let fish = mem_stack.write_json(TestStruct {
         value: "fish".to_string(),
     });
-    hdk_debug(&mut mem_stack, &JsonString::from(RawString::from(RawString::from("disruptive debug log"))));
+    hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("disruptive debug log")));
     return_code_for_allocation_result(fish).into()
 }
 

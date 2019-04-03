@@ -29,7 +29,7 @@ scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     t.deepEqual(VerificationResult, { Ok: true });
 })
 
-/*scenario2.runTape('secrets', async (t, { alice }) => {
+scenario2.runTape('secrets', async (t, { alice }) => {
     const ListResult = alice.call("converse", "list_secrets", { });
     // it should start out with the genesis made seed
     t.deepEqual(ListResult, { Ok: [ 'app_root_seed', 'primary_keybundle:enc_key', 'primary_keybundle:sign_key', 'root_seed' ]  });
@@ -490,4 +490,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})*/
+})

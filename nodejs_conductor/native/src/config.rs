@@ -9,8 +9,6 @@ use holochain_conductor_api::{
 };
 use neon::prelude::*;
 use std::{collections::HashMap, path::PathBuf};
-extern crate tempfile;
-use self::tempfile::tempdir;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AgentData {
@@ -85,13 +83,11 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
 
         let agent_id = agent_config.id.clone();
         let dna_id = dna_config.id.clone();
-        let temp = tempdir().expect("test was supposed to create temp dir");
-        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let instance = InstanceConfiguration {
             id: instance.name,
             agent: agent_id,
             dna: dna_id,
-            storage: StorageConfiguration::Pickle{path :temp_path}
+            storage: StorageConfiguration::Memory
         };
         instance_configs.push(instance);
     }

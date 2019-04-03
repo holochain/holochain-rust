@@ -78,7 +78,7 @@ impl EntityAttributeValueStorage for EavPickleStorage {
             .filter(|filter| filter.is_some())
             .map(|y| y.unwrap())
             .collect::<BTreeSet<EntityAttributeValueIndex>>();
-        
+        println!("entries {:?}",entries.clone());
         let entries_iter = entries.iter().cloned();
         Ok(query.run(entries_iter))
     }

@@ -17,7 +17,7 @@ const scenario1 = new Scenario([instanceAlice], { debugLog: true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
-scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
+/*scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
 
     const SignResult = bob.call("converse", "sign_message", { key_id:"", message: message });
@@ -73,7 +73,7 @@ scenario1.runTape('show_env', async (t, { alice }) => {
   t.equal(result.Ok.dna_name, "HDK-spec-rust")
   t.equal(result.Ok.agent_address, alice.agentId)
   t.equal(result.Ok.agent_id, '{"nick":"alice","pub_sign_key":"' + alice.agentId + '"}')
-})
+})*/
 
 scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {
   const params = { content: 'whatever', in_reply_to: null }
@@ -94,7 +94,7 @@ scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {
   t.deepEqual(sources3, expected)
 })
 
-scenario1.runTape('cross zome call', async (t, { alice }) => {
+/*scenario1.runTape('cross zome call', async (t, { alice }) => {
 
   const num1 = 2
   const num2 = 2
@@ -490,4 +490,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})
+})*/

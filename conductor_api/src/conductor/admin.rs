@@ -189,7 +189,7 @@ impl ConductorAdmin for Conductor {
             id: id.to_string(),
             dna: dna_id.to_string(),
             agent: agent_id.to_string(),
-            storage: StorageConfiguration::File {
+            storage: StorageConfiguration::Pickle {
                 path: storage_path
                     .to_str()
                     .ok_or(HolochainError::ConfigError(

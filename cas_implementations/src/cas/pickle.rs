@@ -35,12 +35,20 @@ impl PickleStorage {
         let cas_db = db_path.as_ref().join("cas").with_extension("db");
         PickleStorage {
             id: Uuid::new_v4(),
-            db: Arc::new(RwLock::new(PickleDb::load(cas_db.clone(), PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),SerializationMethod::Cbor).unwrap_or_else(|_|PickleDb::new(
-                cas_db,
-                PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),
-                SerializationMethod::Cbor,
-            ))))
-                
+            db: Arc::new(RwLock::new(
+                PickleDb::load(
+                    cas_db.clone(),
+                    PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),
+                    SerializationMethod::Cbor,
+                )
+                .unwrap_or_else(|_| {
+                    PickleDb::new(
+                        cas_db,
+                        PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),
+                        SerializationMethod::Cbor,
+                    )
+                }),
+            )),
         }
     }
 }

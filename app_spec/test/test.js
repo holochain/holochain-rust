@@ -1,5 +1,4 @@
 const path = require('path')
-const sleep = require('sleep');
 const { Config, Conductor, Scenario } = require('../../nodejs_conductor')
 Scenario.setTape(require('tape'))
 

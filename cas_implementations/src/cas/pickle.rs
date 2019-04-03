@@ -45,7 +45,7 @@ impl PickleStorage {
 
 impl ContentAddressableStorage for PickleStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-        let mut inner = self.db.write()?;
+        let mut inner = self.db.write().unwrap();
 
         inner
             .set(&content.address().to_string(), &content.content())
@@ -55,13 +55,13 @@ impl ContentAddressableStorage for PickleStorage {
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
-        let inner = self.db.read()?;
+        let inner = self.db.read().unwrap();
 
         Ok(inner.exists(&address.to_string()))
     }
 
     fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
-        let inner = self.db.read()?;
+        let inner = self.db.read().unwrap();
 
         Ok(inner.get(&address.to_string()))
     }

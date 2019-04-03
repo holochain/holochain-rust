@@ -72,13 +72,12 @@ impl EntityAttributeValueStorage for EavPickleStorage {
         let inner = self.db.read()?;
 
         //this not too bad because it is lazy evaluated
-        let mut entries = inner
+        let entries = inner
             .iter()
             .map(|item| item.get_value())
             .filter(|filter| filter.is_some())
             .map(|y| y.unwrap())
-            .collect::<Vec<EntityAttributeValueIndex>>();
-        entries.sort();
+            .collect::<BTreeSet<EntityAttributeValueIndex>>();
         let entries_iter = entries.iter().cloned();
         Ok(query.run(entries_iter))
     }

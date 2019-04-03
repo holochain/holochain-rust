@@ -4,6 +4,7 @@ use crate::{
         StorageConfiguration,
     },
     context_builder::ContextBuilder,
+    dpki_instance::DpkiInstance,
     error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     logger::DebugLogger,
@@ -18,7 +19,7 @@ use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::key_bundle::KeyBundle;
+use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     clone::Clone,
@@ -89,7 +90,8 @@ pub struct Conductor {
     logger: DebugLogger,
     p2p_config: Option<P2pConfig>,
     network_spawn: Option<SpawnResult>,
-    passphrase_manager: Arc<PassphraseManager>,
+    pub passphrase_manager: Arc<PassphraseManager>,
+    pub hash_config: Option<PwHashConfig>, // currently this has to be pub for testing.  would like to remove
 }
 
 impl Drop for Conductor {
@@ -104,7 +106,15 @@ impl Drop for Conductor {
 
 type SignalSender = SyncSender<Signal>;
 pub type KeyLoader = Arc<
-    Box<FnMut(&PathBuf, Arc<PassphraseManager>) -> Result<Keystore, HolochainError> + Send + Sync>,
+    Box<
+        FnMut(
+                &PathBuf,
+                Arc<PassphraseManager>,
+                Option<PwHashConfig>,
+            ) -> Result<Keystore, HolochainError>
+            + Send
+            + Sync,
+    >,
 >;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
@@ -135,12 +145,18 @@ impl Conductor {
             passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
                 PassphraseServiceCmd {},
             )))),
+            hash_config: None,
         }
+    }
+
+    pub fn add_agent_keystore(&mut self, agent_id: String, keystore: Keystore) {
+        self.agent_keys
+            .insert(agent_id, Arc::new(Mutex::new(keystore)));
     }
 
     pub fn with_signal_channel(mut self, signal_tx: SyncSender<Signal>) -> Self {
         if !self.instances.is_empty() {
-            panic!("Cannot set a signal channel after having run load_config()");
+            panic!("Cannot set a signal channel after having run from_config()");
         }
         self.signal_tx = Some(signal_tx);
         self
@@ -332,10 +348,7 @@ impl Conductor {
     /// @TODO: clean up the conductor creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config_with_signal(
-        &mut self,
-        signal_tx: Option<SignalSender>,
-    ) -> Result<(), String> {
+    pub fn boot_from_config(&mut self, signal_tx: Option<SignalSender>) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
 
         if self.p2p_config.is_none() {
@@ -383,11 +396,9 @@ impl Conductor {
             );
         }
 
-        Ok(())
-    }
+        self.dpki_bootstrap()?;
 
-    pub fn load_config(&mut self) -> Result<(), String> {
-        self.load_config_with_signal(None)
+        Ok(())
     }
 
     /// Creates one specific Holochain instance from a given Configuration,
@@ -440,6 +451,14 @@ impl Conductor {
                     StorageConfiguration::Memory => {
                         context_builder = context_builder.with_memory_storage()
                     }
+                    StorageConfiguration::Pickle { path } => {
+                        context_builder =
+                            context_builder
+                                .with_pickle_storage(path)
+                                .map_err(|hc_err| {
+                                    format!("Error creating context: {}", hc_err.to_string())
+                                })?
+                    }
                 }
 
                 if config.logger.logger_type == "debug" {
@@ -466,12 +485,12 @@ impl Conductor {
                     api_builder = api_builder.with_agent_signature_callback(
                         self.get_keybundle_for_agent(&instance_config.agent)?,
                     );
-                }
 
-                let keystore = self
-                    .get_keystore_for_agent(&instance_config.agent)
-                    .map_err(|err| format!("{}", err))?;
-                api_builder = api_builder.with_agent_keystore_functions(keystore);
+                    let keystore = self
+                        .get_keystore_for_agent(&instance_config.agent)
+                        .map_err(|err| format!("{}", err))?;
+                    api_builder = api_builder.with_agent_keystore_functions(keystore);
+                }
 
                 // Bridges:
                 let id = instance_config.id.clone();
@@ -560,7 +579,7 @@ impl Conductor {
     /// Get reference to keystore for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
-    fn get_keystore_for_agent(
+    pub fn get_keystore_for_agent(
         &mut self,
         agent_id: &String,
     ) -> Result<Arc<Mutex<Keystore>>, String> {
@@ -569,10 +588,14 @@ impl Conductor {
                 .config
                 .agent_by_id(agent_id)
                 .ok_or(format!("Agent '{}' not found", agent_id))?;
+            if let Some(true) = agent_config.holo_remote_key {
+                return Err("agent is holo_remote, no keystore".to_string());
+            }
             let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
             let mut keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
                 &keystore_file_path,
                 self.passphrase_manager.clone(),
+                self.hash_config.clone(),
             )
             .map_err(|_| {
                 HolochainError::ConfigError(format!(
@@ -603,7 +626,7 @@ impl Conductor {
     /// Get reference to the keybundle stored in the keystore for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
-    fn get_keybundle_for_agent(
+    pub fn get_keybundle_for_agent(
         &mut self,
         agent_id: &String,
     ) -> Result<Arc<Mutex<KeyBundle>>, String> {
@@ -640,10 +663,11 @@ impl Conductor {
     fn load_key(
         file: &PathBuf,
         passphrase_manager: Arc<PassphraseManager>,
+        hash_config: Option<PwHashConfig>,
     ) -> Result<Keystore, HolochainError> {
         notify(format!("Reading keystore from {}", file.display()));
 
-        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager, None)?;
+        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager, hash_config)?;
         Ok(keystore)
     }
 
@@ -765,6 +789,42 @@ impl Conductor {
         serde_json::to_writer_pretty(&file, dna.into())?;
         Ok(path)
     }
+
+    /// check for determining if the conductor is using dpki to manage instance keys
+    pub fn using_dpki(&self) -> bool {
+        self.config.dpki.is_some()
+    }
+
+    /// returns the instance_id of the dpki app if it is configured
+    pub fn dpki_instance_id(&self) -> Option<String> {
+        match self.config.dpki {
+            Some(ref dpki) => Some(dpki.instance_id.clone()),
+            None => None,
+        }
+    }
+
+    /// returns the init_params for the dpki app if it is configured
+    pub fn dpki_init_params(&self) -> Option<String> {
+        match self.config.dpki {
+            Some(ref dpki) => Some(dpki.init_params.clone()),
+            None => None,
+        }
+    }
+
+    /// bootstraps the dpki app if configured
+    pub fn dpki_bootstrap(&mut self) -> Result<(), HolochainError> {
+        if self.using_dpki() {
+            let dpki_instance_id = self.dpki_instance_id().unwrap();
+            let instance = self.instances.get(&dpki_instance_id)?;
+            let hc_lock = instance.clone();
+            let hc_lock_inner = hc_lock.clone();
+            let mut hc = hc_lock_inner.write().unwrap();
+            if !hc.dpki_is_initialized()? {
+                hc.dpki_init(self.dpki_init_params().unwrap())?;
+            }
+        }
+        Ok(())
+    }
 }
 
 /// This can eventually be dependency injected for third party Interface definitions
@@ -797,7 +857,7 @@ pub mod tests {
         signal::signal_channel,
     };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
-    use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
+    use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
     use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
@@ -821,19 +881,25 @@ pub mod tests {
     }
 
     pub fn test_key_loader() -> KeyLoader {
-        let loader = Box::new(|path: &PathBuf, _pm: Arc<PassphraseManager>| {
-            match path.to_str().unwrap().as_ref() {
-                "holo_tester1.key" => Ok(test_keystore(1)),
-                "holo_tester2.key" => Ok(test_keystore(2)),
-                "holo_tester3.key" => Ok(test_keystore(3)),
-                unknown => Err(HolochainError::ErrorGeneric(format!(
-                    "No test keystore for {}",
-                    unknown
-                ))),
-            }
-        })
+        let loader = Box::new(
+            |path: &PathBuf, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
+                match path.to_str().unwrap().as_ref() {
+                    "holo_tester1.key" => Ok(test_keystore(1)),
+                    "holo_tester2.key" => Ok(test_keystore(2)),
+                    "holo_tester3.key" => Ok(test_keystore(3)),
+                    unknown => Err(HolochainError::ErrorGeneric(format!(
+                        "No test keystore for {}",
+                        unknown
+                    ))),
+                }
+            },
+        )
             as Box<
-                FnMut(&PathBuf, Arc<PassphraseManager>) -> Result<Keystore, HolochainError>
+                FnMut(
+                        &PathBuf,
+                        Arc<PassphraseManager>,
+                        Option<PwHashConfig>,
+                    ) -> Result<Keystore, HolochainError>
                     + Send
                     + Sync,
             >;
@@ -972,7 +1038,7 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config().unwrap();
+        conductor.boot_from_config(None).unwrap();
         conductor
     }
 
@@ -981,7 +1047,7 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config().unwrap();
+        conductor.boot_from_config(None).unwrap();
         conductor
     }
 
@@ -1049,7 +1115,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_conductor_load_config() {
+    fn test_conductor_boot_from_config() {
         let mut conductor = test_conductor();
         assert_eq!(conductor.instances.len(), 3);
 
@@ -1245,7 +1311,9 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config().expect("Test config must be sane");
+        conductor
+            .boot_from_config(None)
+            .expect("Test config must be sane");
         conductor
             .start_all_instances()
             .expect("Instances must be spawnable");
@@ -1297,7 +1365,7 @@ pub mod tests {
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         assert_eq!(
-            conductor.load_config(),
+            conductor.boot_from_config(None),
             Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
                 .to_string()),
         );

@@ -6,8 +6,28 @@ extern crate tempfile;
 
 use self::tempfile::tempdir;
 use bencher::Bencher;
-use holochain_cas_implementations::eav::{file::EavFileStorage, pickle::EavPickleStorage};
+use holochain_cas_implementations::eav::{file::EavFileStorage, pickle::EavPickleStorage, memory::EavMemoryStorage};
 use holochain_core_types::cas::{content::ExampleAddressableContent, storage::EavTestSuite};
+
+fn bench_memory_eav_one_to_many(b: &mut Bencher)
+{
+    b.iter(|| {
+        let eav_storage = EavMemoryStorage::new();
+        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavMemoryStorage>(
+            eav_storage.clone(),
+        )
+    })
+}
+
+fn bench_memory_eav_many_to_one(b: &mut Bencher)
+{
+    b.iter(|| {
+        let eav_storage = EavMemoryStorage::new();
+        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavMemoryStorage>(
+            eav_storage.clone(),
+        )
+    })
+}
 fn bench_file_eav_one_to_many(b: &mut Bencher) {
     b.iter(|| {
         let temp = tempdir().expect("test was supposed to create temp dir");
@@ -54,6 +74,8 @@ fn bench_pickle_eav_many_to_one(b: &mut Bencher) {
 
 benchmark_group!(
     benches,
+    bench_memory_eav_many_to_one,
+    bench_memory_eav_one_to_many,
     bench_file_eav_one_to_many,
     bench_file_eav_many_to_one,
     bench_pickle_eav_many_to_one,

@@ -325,14 +325,14 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            JsonString::from(format!(
+            JsonString::from_json(&format!(
                 "{{\"Commit\":{{\"Ok\":\"{}\"}}}}",
                 expected_entry_address()
             )),
             JsonString::from(ActionResponse::Commit(Ok(expected_entry_address()))),
         );
         assert_eq!(
-            JsonString::from("{\"Commit\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
+            JsonString::from_json("{\"Commit\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
             JsonString::from(ActionResponse::Commit(Err(HolochainError::new(
                 "some error"
             ))))
@@ -342,7 +342,7 @@ pub mod tests {
     #[test]
     fn test_get_response_to_json() {
         assert_eq!(
-            JsonString::from(
+            JsonString::from_json(
                 "{\"FetchEntry\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}"
             ),
             JsonString::from(ActionResponse::FetchEntry(Some(Entry::from(
@@ -350,7 +350,7 @@ pub mod tests {
             ))))
         );
         assert_eq!(
-            JsonString::from("{\"FetchEntry\":null}"),
+            JsonString::from_json("{\"FetchEntry\":null}"),
             JsonString::from(ActionResponse::FetchEntry(None)),
         )
     }
@@ -358,14 +358,14 @@ pub mod tests {
     #[test]
     fn test_get_links_response_to_json() {
         assert_eq!(
-            JsonString::from(format!(
+            JsonString::from_json(&format!(
                 "{{\"GetLinks\":{{\"Ok\":[\"{}\"]}}}}",
                 expected_entry_address()
             )),
             JsonString::from(ActionResponse::GetLinks(Ok(vec![test_entry().address()]))),
         );
         assert_eq!(
-            JsonString::from("{\"GetLinks\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
+            JsonString::from_json("{\"GetLinks\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
             JsonString::from(ActionResponse::GetLinks(Err(HolochainError::new(
                 "some error"
             )))),
@@ -384,13 +384,13 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            JsonString::from("{\"LinkEntries\":{\"Ok\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}}"),
+            JsonString::from_json("{\"LinkEntries\":{\"Ok\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}}"),
             JsonString::from(ActionResponse::LinkEntries(Ok(Entry::from(
                 test_entry(),
             )))),
         );
         assert_eq!(
-            JsonString::from("{\"LinkEntries\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
+            JsonString::from_json("{\"LinkEntries\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
             JsonString::from(ActionResponse::LinkEntries(Err(HolochainError::new(
                 "some error"
             )))),

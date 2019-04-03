@@ -22,10 +22,11 @@ fn conductor_callback<S: Into<String>>(
 
     let handler = conductor_api.write().unwrap();
 
+    let method = method.into();
     let id = ProcessUniqueId::new();
     let request = format!(
         r#"{{"jsonrpc": "2.0", "method": "{}", "params": {}, "id": "{}"}}"#,
-        method.into(),
+        method,
         params.into(),
         id
     );
@@ -43,9 +44,10 @@ fn conductor_callback<S: Into<String>>(
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
             serde_json::to_string(&response.get_error().unwrap()).unwrap(),
         )),
-        _ => Err(HolochainError::ErrorGeneric(
-            "sign_one_time call failed".to_string(),
-        )),
+        _ => Err(HolochainError::ErrorGeneric(format!(
+            "{} call failed",
+            method
+        ))),
     }
 }
 

@@ -7,7 +7,9 @@ then
 	as_root=""
 else
 	# Check if `sudo` is installed
-	which sudo > /dev/null
+	# allow pipefail for circleci compatibility
+	# https://circleci.com/docs/2.0/configuration-reference/#default-shell-options
+	(set +o pipefail && which sudo > /dev/null)
 	if [ $? -eq 0 ]
 	then
 		# `sudo` is installed; use it
@@ -53,4 +55,3 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | $as_root tee /etc/apt/so
 curl -sL https://deb.nodesource.com/setup_11.x | $as_root bash
 $as_root apt-get update && $as_root apt-get install -y nodejs yarn
 $as_root npm install -g neon-cli
-

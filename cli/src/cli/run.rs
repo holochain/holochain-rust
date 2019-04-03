@@ -30,7 +30,7 @@ pub fn run(
     conductor.key_loader = test_keystore_loader();
 
     conductor
-        .load_config()
+        .boot_from_config(None)
         .map_err(|err| format_err!("{}", err))?;
 
     conductor.start_all_interfaces();
@@ -135,7 +135,7 @@ fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
     if persist {
         fs::create_dir_all(LOCAL_STORAGE_PATH)?;
 
-        Ok(StorageConfiguration::File {
+        Ok(StorageConfiguration::Pickle {
             path: LOCAL_STORAGE_PATH.into(),
         })
     } else {
@@ -312,7 +312,7 @@ mod tests {
         let persist_store = super::storage_configuration(true).unwrap();
         assert_eq!(
             persist_store,
-            StorageConfiguration::File {
+            StorageConfiguration::Pickle {
                 path: ".hc".to_string()
             }
         );

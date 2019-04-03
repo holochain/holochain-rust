@@ -78,7 +78,7 @@
 ///         .check_consistency()
 ///         .map_err(|string| HolochainError::ConfigError(string))?;
 ///     let mut conductor = Conductor::from_config(config);
-///     conductor.load_config()?;
+///     conductor.boot_from_config(None)?;
 ///     Ok(conductor)
 /// }
 ///
@@ -129,17 +129,19 @@ extern crate tokio;
 #[macro_use]
 extern crate pretty_assertions;
 extern crate base64;
-extern crate rpassword;
+extern crate crossbeam_channel;
 
 pub mod conductor;
 pub mod config;
 pub mod context_builder;
+pub mod dpki_instance;
 pub mod error;
 pub mod holo_signing_service;
 pub mod holochain;
 pub mod interface;
 pub mod interface_impls;
 pub mod key_loaders;
+pub mod keystore;
 pub mod logger;
 pub mod static_file_server;
 

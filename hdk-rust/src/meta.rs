@@ -3,7 +3,7 @@
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
-use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
+use crate::{api::G_MEM_STACK, entry_definition::ValidatingEntryType};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
@@ -23,7 +23,7 @@ use holochain_wasm_utils::{
         ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
     },
 };
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, convert::TryFrom};
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -112,22 +112,26 @@ pub extern "C" fn __hdk_validate_app_entry(
         Err(e) => return RibosomeEncodedValue::from(e).into(),
     };
 
+    let entry_type = match EntryType::try_from(input.validation_data.clone()) {
+        Ok(v) => v,
+        Err(e) => return RibosomeEncodedValue::from(e).into(),
+    };
+
     match zd
         .entry_types
         .into_iter()
-        .find(|ref validating_entry_type| validating_entry_type.name == input.entry_type)
+        .find(|ref validating_entry_type| validating_entry_type.name == entry_type)
     {
         None => RibosomeErrorCode::CallbackFailed as RibosomeEncodingBits,
         Some(mut entry_type_definition) => {
-            let validation_result =
-                (*entry_type_definition.validator)(input.entry, input.validation_data);
+            let validation_result = (*entry_type_definition.validator)(input.validation_data);
 
             match validation_result {
                 Ok(()) => RibosomeEncodedValue::Success.into(),
-                Err(fail_string) => {
-                    return_code_for_allocation_result(crate::global_fns::write_json(fail_string))
-                        .into()
-                }
+                Err(fail_string) => return_code_for_allocation_result(
+                    crate::global_fns::write_json(JsonString::from_json(&fail_string)),
+                )
+                .into(),
             }
         }
     }
@@ -209,16 +213,12 @@ pub extern "C" fn __hdk_validate_link(
                     })
             })
             .and_then(|mut link_definition| {
-                let validation_result = (*link_definition.validator)(
-                    input.link.base().clone(),
-                    input.link.target().clone(),
-                    input.validation_data,
-                );
+                let validation_result = (*link_definition.validator)(input.validation_data);
                 Some(match validation_result {
                     Ok(()) => RibosomeEncodedValue::Success,
-                    Err(fail_string) => {
-                        return_code_for_allocation_result(::global_fns::write_json(fail_string))
-                    }
+                    Err(fail_string) => return_code_for_allocation_result(
+                        ::global_fns::write_json(JsonString::from_json(&fail_string)),
+                    ),
                 })
             })
             .unwrap_or(RibosomeEncodedValue::Failure(
@@ -324,7 +324,7 @@ pub mod tests {
 
     #[test]
     fn partial_zome_json() {
-        #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+        #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
         pub struct Post {
             content: String,
             date_created: String,
@@ -336,13 +336,13 @@ pub mod tests {
             name: "post",
             description: "blog entry post",
             sharing: Sharing::Public,
-            native_type: Post,
+
 
             validation_package: || {
                 ValidationPackageDefinition::Entry
             },
 
-            validation: |_post: Post, _validation_data: hdk::ValidationData| {
+            validation: |_validation_data: hdk::EntryValidationData<Post>| {
                 Ok(())
             }
 
@@ -359,7 +359,7 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(partial_zome),
-            JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
+            JsonString::from_json("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
         );
     }
 }

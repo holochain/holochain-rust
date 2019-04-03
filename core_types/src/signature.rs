@@ -2,20 +2,20 @@
 //! a way of providing cryptographically verifiable proof of a given agent
 //! as having been the author of a given data entry.
 
-use crate::{cas::content::Address, error::error::HolochainError, json::JsonString};
+use crate::{cas::content::Address, error::HolochainError, json::JsonString};
 
 /// Provenance is a tuple of initiating agent public key and signature of some item being signed
 /// this type is used in headers and in capability requests where the item being signed
 /// is implicitly known by context
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Hash, Eq, DefaultJson)]
-pub struct Provenance(Address, Signature);
+pub struct Provenance(pub Address, pub Signature);
 
 impl Provenance {
     pub fn new(source: Address, signature: Signature) -> Self {
         Provenance(source, signature)
     }
     pub fn source(&self) -> Address {
-        Address::from(self.0.clone())
+        self.0.clone()
     }
     pub fn signature(&self) -> Signature {
         self.1.clone()
@@ -24,7 +24,7 @@ impl Provenance {
 /// Signature is a wrapper structure for a cryptographic signature
 /// it is stored as a string and can be validated as having been signed
 /// by the private key associated with a given public key.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Hash, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Hash, Eq, DefaultJson)]
 pub struct Signature(String);
 
 impl Signature {
@@ -41,7 +41,7 @@ impl From<&'static str> for Signature {
 
 impl From<String> for Signature {
     fn from(s: String) -> Signature {
-        Signature(s.to_owned())
+        Signature(s)
     }
 }
 

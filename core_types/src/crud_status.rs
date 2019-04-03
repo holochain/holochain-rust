@@ -6,7 +6,7 @@
 use crate::{
     cas::content::{Address, AddressableContent, Content},
     eav::EntityAttributeValueIndex,
-    error::error::{HcResult, HolochainError},
+    error::{HcResult, HolochainError},
     hash::HashString,
     json::JsonString,
 };

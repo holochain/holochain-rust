@@ -40,7 +40,7 @@ pub fn get_validation_package_definition(
             let call = CallbackFnCall::new(
                 &zome_name,
                 "__hdk_get_validation_package_for_entry_type",
-                app_entry_type.to_string(),
+                app_entry_type.clone(),
             );
             ribosome::run_dna(
                 wasm.code.clone(),
@@ -84,7 +84,7 @@ pub fn get_validation_package_definition(
 
             ribosome::run_dna(
                 wasm.code.clone(),
-                Some(call.parameters.into_bytes()),
+                Some(call.parameters.to_bytes()),
                 WasmCallData::new_callback_call(context.clone(), dna.name, call),
             )?
         }
@@ -124,7 +124,7 @@ pub fn get_validation_package_definition(
 
             ribosome::run_dna(
                 wasm.code.clone(),
-                Some(call.parameters.into_bytes()),
+                Some(call.parameters.to_bytes()),
                 WasmCallData::new_callback_call(context.clone(), dna.name.clone(), call),
             )?
         }

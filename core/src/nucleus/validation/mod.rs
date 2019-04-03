@@ -1,16 +1,20 @@
-use crate::context::Context;
+use crate::{context::Context, workflows::get_entry_result::get_entry_with_meta_workflow};
 use holochain_core_types::{
     cas::content::Address,
-    entry::{entry_type::EntryType, Entry},
+    chain_header::ChainHeader,
+    entry::{entry_type::EntryType, Entry, EntryWithMeta},
     error::HolochainError,
-    validation::ValidationData,
+    time::Timeout,
+    validation::{EntryValidationData, ValidationData},
 };
+
 use std::sync::Arc;
 
 mod app_entry;
 mod header_address;
 mod link_entry;
 mod provenances;
+mod remove_entry;
 
 #[derive(Clone, Debug, PartialEq)]
 /// A failed validation.
@@ -68,6 +72,7 @@ impl From<ValidationError> for HolochainError {
 /// main validation entry point and, like a workflow, stays high-level.
 pub async fn validate_entry(
     entry: Entry,
+    link: Option<Address>,
     validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> ValidationResult {
@@ -83,8 +88,9 @@ pub async fn validate_entry(
         EntryType::App(app_entry_type) => await!(app_entry::validate_app_entry(
             entry.clone(),
             app_entry_type.clone(),
-            validation_data,
             context,
+            link,
+            validation_data
         )),
 
         EntryType::LinkAdd => await!(link_entry::validate_link_entry(
@@ -101,7 +107,11 @@ pub async fn validate_entry(
 
         // Deletion entries are not validated currently and always valid
         // TODO: Specify how Deletion can be commited to chain.
-        EntryType::Deletion => Ok(()),
+        EntryType::Deletion => await!(remove_entry::validate_remove_entry(
+            entry.clone(),
+            validation_data,
+            context
+        )),
 
         // a grant should always be private, so it should always pass
         EntryType::CapTokenGrant => Ok(()),
@@ -116,4 +126,75 @@ pub async fn validate_entry(
 
         _ => Err(ValidationError::NotImplemented),
     }
+}
+
+pub fn entry_to_validation_data(
+    context: Arc<Context>,
+    entry: &Entry,
+    maybe_link_update_delete: Option<Address>,
+    validation_data: ValidationData,
+) -> Result<EntryValidationData<Entry>, HolochainError> {
+    match entry {
+        Entry::App(_, _) => maybe_link_update_delete
+            .map(|link_update| {
+                get_entry_with_header(context.clone(), &link_update)
+                    .map(|entry_with_header| {
+                        Ok(EntryValidationData::Modify {
+                            old_entry: entry_with_header.0.entry.clone(),
+                            new_entry: entry.clone(),
+                            old_entry_header: entry_with_header.1.clone(),
+                            validation_data: validation_data.clone(),
+                        })
+                    })
+                    .unwrap_or(Err(HolochainError::ErrorGeneric(
+                        "Could not find Entry".to_string(),
+                    )))
+            })
+            .unwrap_or(Ok(EntryValidationData::Create {
+                entry: entry.clone(),
+                validation_data: validation_data.clone(),
+            })),
+        Entry::Deletion(deletion_entry) => {
+            let deletion_address = deletion_entry.clone().deleted_entry_address();
+            get_entry_with_header(context.clone(), &deletion_address)
+                .map(|entry_with_header| {
+                    Ok(EntryValidationData::Delete {
+                        old_entry: entry_with_header.0.entry.clone(),
+                        old_entry_header: entry_with_header.1.clone(),
+                        validation_data: validation_data.clone(),
+                    })
+                })
+                .unwrap_or(Err(HolochainError::ErrorGeneric(
+                    "Could not find Entry".to_string(),
+                )))
+        }
+        Entry::CapTokenGrant(_) => Ok(EntryValidationData::Create {
+            entry: entry.clone(),
+            validation_data,
+        }),
+        _ => Err(HolochainError::NotImplemented(
+            "Not implemented".to_string(),
+        )),
+    }
+}
+
+fn get_entry_with_header(
+    context: Arc<Context>,
+    address: &Address,
+) -> Result<(EntryWithMeta, ChainHeader), HolochainError> {
+    let pair = context.block_on(get_entry_with_meta_workflow(
+        &context,
+        address,
+        &Timeout::default(),
+    ))?;
+    let entry_with_meta = pair.ok_or(HolochainError::ErrorGeneric(
+        "Could not get chain".to_string(),
+    ))?;
+    let latest_header = entry_with_meta
+        .headers
+        .last()
+        .ok_or(HolochainError::ErrorGeneric(
+            "Could not get last entry from chain".to_string(),
+        ))?;
+    Ok((entry_with_meta.entry_with_meta, latest_header.clone()))
 }

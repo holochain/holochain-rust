@@ -1,0 +1,16 @@
+[package]
+name = "benchmarks"
+version = "0.0.9-alpha"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[dependencies]
+holochain_core_types = { path = "../core_types" }
+holochain_cas_implementations  = { path = "../cas_implementations" }
+bencher = "=0.1.5"
+tempfile = "=3.0.7"
+
+
+
+[[bench]]
+name = "my_benchmark"
+harness = false

@@ -161,6 +161,19 @@ pub fn run_dna(wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -
                 "Zome function failure: {}",
                 err_code.as_str()
             )));
+            let log_message = format!(
+                "err/nucleus/run_dna: Zome function failure: {}",
+                err_code.as_str()
+            );
+            match &runtime.data {
+                WasmCallData::ZomeCall(d) => d
+                    .context
+                    .log(format!("{}, when calling: {:?}", log_message, d.call)),
+                WasmCallData::CallbackCall(d) => d
+                    .context
+                    .log(format!("{}, when calling: {:?}", log_message, d.call)),
+                _ => {}
+            };
         }
 
         RibosomeEncodedValue::Allocation(ribosome_allocation) => {
@@ -170,7 +183,7 @@ pub fn run_dna(wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -
                     match String::from_utf8(result) {
                         Ok(json_string) => {
                             return_log_msg = json_string.clone();
-                            return_result = Ok(JsonString::from(json_string));
+                            return_result = Ok(JsonString::from_json(&json_string));
                         }
                         Err(err) => {
                             return_log_msg = err.to_string();

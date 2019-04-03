@@ -24,7 +24,7 @@ impl EavPickleStorage {
     pub fn new<P: AsRef<Path> + Clone>(db_path: P) -> EavPickleStorage {
         EavPickleStorage {
             id: Uuid::new_v4(),
-            db: Arc::new(RwLock::new(PickleDb::load(db_path.clone(), PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),SerializationMethod::Cbor).unwrap_or(PickleDb::new(
+            db: Arc::new(RwLock::new(PickleDb::load(db_path.clone(), PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),SerializationMethod::Cbor).unwrap_or_else(|_|PickleDb::new(
                 db_path,
                 PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),
                 SerializationMethod::Cbor,

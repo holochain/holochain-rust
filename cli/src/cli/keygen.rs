@@ -1,10 +1,6 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
-use holochain_conductor_api::{
-    key_loaders::mock_passphrase_manager,
-    keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
-};
-use holochain_dpki::SEED_SIZE;
+use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
 use rpassword;
 use std::{
     fs::create_dir_all,
@@ -44,11 +40,7 @@ when unlocking the keybundle to use within a Holochain conductor."
     if !quiet {
         println!("Generating keystore (this will take a few moments)...");
     }
-
-    let mut keystore = Keystore::new(mock_passphrase_manager(passphrase), None)?;
-    keystore.add_random_seed("root_seed", SEED_SIZE)?;
-
-    let (pub_key, _) = keystore.add_keybundle_from_seed("root_seed", PRIMARY_KEYBUNDLE_ID)?;
+    let (keystore, pub_key) = Keystore::new_standalone(mock_passphrase_manager(passphrase), None)?;
 
     let path = if None == path {
         let p = keys_directory();
@@ -79,7 +71,10 @@ when unlocking the keybundle to use within a Holochain conductor."
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
+    use holochain_conductor_api::{
+        key_loaders::mock_passphrase_manager,
+        keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
+    };
     use std::{fs::remove_file, path::PathBuf};
 
     #[test]

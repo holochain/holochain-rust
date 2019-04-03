@@ -1038,7 +1038,7 @@ id = 'new-instance'"#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = '{}'\ntype = 'file'",
+                "[instances.storage]\npath = '{}'\ntype = 'pickle'",
                 storage_path_string
             ),
         );
@@ -1344,7 +1344,7 @@ id = 'new-instance-2'"#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = '{}'\ntype = 'file'",
+                "[instances.storage]\npath = '{}'\ntype = 'pickle'",
                 storage_path_string
             ),
         );

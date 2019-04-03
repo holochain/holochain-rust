@@ -718,7 +718,6 @@ stdenv.mkDerivation rec {
 
     # curl needed to push to codecov
     curl
-    circleci-cli
     hc-codecov
     ci
 

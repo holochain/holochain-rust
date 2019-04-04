@@ -271,7 +271,6 @@ fn download(dest: &std::ffi::OsStr, url: &str, sha256: &str) -> NetResult<()> {
 }
 
 #[cfg(test)]
-#[cfg(feature = "broken-tests")]
 mod tests {
     use super::*;
 
@@ -293,12 +292,14 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn it_downloads() {
         let dir = tempfile::tempdir().unwrap();
         download(dir.path().join("n3h").as_os_str(), "https://github.com/holochain/node-static-build/releases/download/deps-2019-03-12/node-v8.15.1-linux-aarch64-alpha6.sha256", "b3f5a2f88ddbdcb642caa272afed7bbfbb283189cfa719a401ac8685b890e553").unwrap();
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn it_downloads_bad_hash() {
         let dir = tempfile::tempdir().unwrap();
         download(dir.path().join("n3h").as_os_str(), "https://github.com/holochain/node-static-build/releases/download/deps-2019-03-12/node-v8.15.1-linux-aarch64-alpha6.sha256", "baaaad").unwrap_err();
@@ -306,18 +307,21 @@ mod tests {
 
     #[test]
     #[cfg(windows)]
+    #[cfg(feature = "broken-tests")]
     fn it_checks_path_true() {
         exec_output("cmd", vec!["/C", "echo"], ".", false).unwrap();
     }
 
     #[test]
     #[cfg(not(windows))]
+    #[cfg(feature = "broken-tests")]
     fn it_checks_path_true() {
         exec_output("sh", vec!["-c", "exit"], ".", false).unwrap();
     }
 
     #[test]
     #[cfg(windows)]
+    #[cfg(feature = "broken-tests")]
     fn it_checks_path_false() {
         let args: Vec<&str> = Vec::new();
         exec_output("badcommand", args, ".", false).unwrap_err();
@@ -325,6 +329,7 @@ mod tests {
 
     #[test]
     #[cfg(not(windows))]
+    #[cfg(feature = "broken-tests")]
     fn it_checks_path_false() {
         let args: Vec<&str> = Vec::new();
         exec_output("badcommand", args, ".", false).unwrap_err();

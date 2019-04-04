@@ -166,19 +166,19 @@ let
    && hc-test-app-spec
   '';
 
-  release-process-url = "https://hackmd.io/6HH-O1KuQ7uYzKrsI6ooIw";
+  release-process-url = "https://hackmd.io/pt72afqYTWat7cuNqpAFjw";
   repo = "holochain/holochain-rust";
   upstream = "origin";
   # the unique hash at the end of the medium post url
   # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
   # would be 4867d777de94
-  pulse-url-hash = "4867d777de94";
-  pulse-version = "22";
-  pulse-commit = "0a524d3be580249d54cf5073591fa9fe1f30a174";
-  core-previous-version = "0.0.8-alpha";
-  core-version = "0.0.9-alpha";
-  node-conductor-previous-version = "0.4.7-alpha";
-  node-conductor-version = "0.4.8-alpha";
+  pulse-url-hash = "358f0d57d125";
+  pulse-version = "23";
+  pulse-commit = "e3383e69a2d901aee1760c090e6afb46a2c3c02f";
+  core-previous-version = "0.0.9-alpha";
+  core-version = "0.0.10-alpha1";
+  node-conductor-previous-version = "0.4.8-alpha";
+  node-conductor-version = "0.4.9-alpha1";
 
   pulse-tag = "dev-pulse-${pulse-version}";
   hc-prepare-pulse-tag = pkgs.writeShellScriptBin "hc-prepare-pulse-tag"
@@ -274,7 +274,8 @@ current release process: ${release-process-url}
 
 ## Preparation
 
-This should all be handled by `nix-shell --run hc-prepare-release`
+First checkout `develop` and `git pull` to ensure you are up to date locally.
+Then run `nix-shell --run hc-prepare-release`
 
 - [x] develop is green
 - [x] dev pulse commit for release candidate
@@ -295,7 +296,7 @@ The linter will do some things for you and provide helpful debug info.
 - [ ] reviewed and updated README files
     - [ ] correct rust nightly version
 
-Generate the github release notes with `nix-shell --run hc-generate-release-notes`
+Review the generated release notes with `nix-shell --run hc-generate-release-notes`
 
 - [ ] review generated github release notes
     - [ ] correct medium post link for dev pulse
@@ -306,31 +307,20 @@ Generate the github release notes with `nix-shell --run hc-generate-release-note
     - [ ] correct installation instructions
     - [ ] correct version number in binary file names
 
- ## Test builds
-
- Kick these off with `nix-shell --run hc-test-release`
-
- Every run of `hc-test-release` will cut new tags incrementally and trigger new builds on CI.
-
- Move on to "release docs" below while waiting for CI.
-
- - [ ] green core release test tag + linux/mac/windows artifacts on github
-     - [ ] build: {{build URL}}
-     - [ ] artifacts: {{artifacts URL}}
- - [ ] green node release test tag + linux/mac/windows artifacts on github
-     - [ ] build: {{build URL}}
-     - [ ] artifacts: {{artifacts URL}}
-
 ## Deploy artifacts
 
 - [ ] release PR merged into `master`
 - [ ] core release tag + linux/mac/windows artifacts on github
+  - travis build: {{ build url }}
+  - artifacts: {{ artifacts url }}
 - [ ] node release tag + linux/mac/windows artifacts on github
-- [ ] npm deploy
-- [ ] release branch merged into `develop`
-- [ ] test build artifacts deleted from github
-- [ ] release notes copied into github
+  - travis build: {{ build url }}
+  - artifacts: {{ artifacts url }}
+- [ ] npmjs deploy with `hc-npm-deploy` then `hc-npm-check-version`
+- [ ] dev pulse is live
+- [ ] cleanup tasks + develop PR with `hc-release-cleanup`
 - [ ] `unknown` release assets renamed to `ubuntu`
+- [ ] develop PR changelog cleaned up
 
 ## Finalise
 

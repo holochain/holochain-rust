@@ -2,8 +2,9 @@ use crate::nucleus::{
     ribosome::{
         memory::WasmPageManager,
         runtime::{Runtime, WasmCallData},
-        wasmi_factory::wasmi_factory,
+        wasmi_factory::{wasm_instance_from_module, wasmi_factory},
     },
+    state::ModuleMutex,
     ZomeFnResult,
 };
 use holochain_core_types::{
@@ -13,19 +14,17 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
-use std::convert::TryFrom;
-use wasmi::{RuntimeValue, Module};
-use crate::nucleus::state::ModuleMutex;
-use std::sync::MutexGuard;
-use std::thread::sleep;
-use std::time::Duration;
-use crate::nucleus::ribosome::wasmi_factory::wasm_instance_from_module;
+use std::{convert::TryFrom, sync::MutexGuard, thread::sleep, time::Duration};
+use wasmi::{Module, RuntimeValue};
 
-fn with_ribosome<F: FnOnce(MutexGuard<Module>) -> ZomeFnResult>(data: WasmCallData, f: F) -> ZomeFnResult {
+fn with_ribosome<F: FnOnce(MutexGuard<Module>) -> ZomeFnResult>(
+    data: WasmCallData,
+    f: F,
+) -> ZomeFnResult {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
         let transient_module = ModuleMutex::new(wasmi_factory(*wasm.clone())?);
         let lock = transient_module.lock()?;
-        return f(lock)
+        return f(lock);
     } else {
         match data {
             WasmCallData::ZomeCall(d) => (d.context.clone(), d.call.zome_name.clone()),
@@ -34,13 +33,21 @@ fn with_ribosome<F: FnOnce(MutexGuard<Module>) -> ZomeFnResult>(data: WasmCallDa
         }
     };
 
-
-    let pool = context.state().unwrap().nucleus().ribosomes.get(&zome_name).cloned()
-        .ok_or(HolochainError::new(&format!("No Ribosome found for Zome '{}'", zome_name)))?;
+    let pool = context
+        .state()
+        .unwrap()
+        .nucleus()
+        .ribosomes
+        .get(&zome_name)
+        .cloned()
+        .ok_or(HolochainError::new(&format!(
+            "No Ribosome found for Zome '{}'",
+            zome_name
+        )))?;
     loop {
         for ribosome in pool.clone() {
             if let Ok(lock) = ribosome.try_lock() {
-                return f(lock)
+                return f(lock);
             }
         }
         sleep(Duration::from_millis(1));
@@ -100,7 +107,8 @@ pub fn run_dna(_wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) 
                 .invoke_export(
                     &fn_name,
                     &[RuntimeValue::I64(
-                        RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits,
+                        RibosomeEncodingBits::from(encoded_allocation_of_input)
+                            as RibosomeRuntimeBits,
                     )],
                     mut_runtime,
                 )
@@ -109,7 +117,9 @@ pub fn run_dna(_wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) 
                 })?
                 .unwrap()
                 .try_into() // Option<_>
-                .ok_or_else(|| HolochainError::RibosomeFailed("WASM return value missing".to_owned()))?
+                .ok_or_else(|| {
+                    HolochainError::RibosomeFailed("WASM return value missing".to_owned())
+                })?
         };
 
         // Handle result returned by called zome function
@@ -184,6 +194,4 @@ pub fn run_dna(_wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) 
         let _ = return_log_msg;
         return return_result;
     })
-
-
 }

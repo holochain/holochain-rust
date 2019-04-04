@@ -1,13 +1,13 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    nucleus::state::{NucleusState, NucleusStatus},
+    nucleus::{
+        ribosome::wasmi_factory::wasmi_factory,
+        state::{ModuleMutex, NucleusState, NucleusStatus},
+    },
 };
+use holochain_core_types::{dna::zome::Zome, error::HolochainError};
 use std::sync::Arc;
-use crate::nucleus::ribosome::wasmi_factory::wasmi_factory;
-use holochain_core_types::error::HolochainError;
-use holochain_core_types::dna::zome::Zome;
-use crate::nucleus::state::ModuleMutex;
 
 /// Reduce InitializeChain Action
 /// Switch status to failed if an initialization is tried for an
@@ -40,9 +40,12 @@ pub fn reduce_initialize_chain(
                 match create_ribosomes_for_zome(zome) {
                     Ok(pool) => {
                         state.ribosomes.insert(zome_name.clone(), pool);
-                    },
+                    }
                     Err(err) => {
-                        context.log(format!("err/nucleus/initialize: Could not create ribosome: {:?}", err));
+                        context.log(format!(
+                            "err/nucleus/initialize: Could not create ribosome: {:?}",
+                            err
+                        ));
                     }
                 };
             }
@@ -56,7 +59,7 @@ fn create_ribosomes_for_zome(zome: &Zome) -> Result<Vec<ModuleMutex>, HolochainE
     for _i in 1..8 {
         let ribosome = wasmi_factory(zome.code.code.clone())?;
         pool.push(ModuleMutex::new(ribosome));
-    };
+    }
     Ok(pool)
 }
 

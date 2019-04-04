@@ -155,7 +155,10 @@ impl Packager {
                     let json_string = run_dna(
                         wasm_binary.clone(),
                         Some("{}".as_bytes().to_vec()),
-                        WasmCallData::DirectCall("__hdk_get_json_definition".to_string(), Box::new(wasm_binary)),
+                        WasmCallData::DirectCall(
+                            "__hdk_get_json_definition".to_string(),
+                            Box::new(wasm_binary),
+                        ),
                     )?;
 
                     let json_from_wasm: Map<String, Value> =

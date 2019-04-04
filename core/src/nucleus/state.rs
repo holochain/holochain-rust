@@ -11,10 +11,14 @@ use holochain_core_types::{
     validation::ValidationPackage,
 };
 use snowflake;
-use std::{collections::HashMap, convert::TryFrom, sync::{Arc, Mutex}};
-use std::ops::Deref;
+use std::{
+    collections::HashMap,
+    convert::TryFrom,
+    fmt::{self, Debug, Formatter},
+    ops::Deref,
+    sync::{Arc, Mutex},
+};
 use wasmi::Module;
-use std::fmt::{self, Debug, Formatter};
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -77,7 +81,6 @@ pub struct NucleusState {
     // Transient fields:
     pub dna: Option<Dna>, //DNA is transient here because it is stored in the chain and gets
     //read from there when loading an instance/chain.
-
     /// Ribosomes == WASMi instances that run the WASM part of the DNA
     /// Since WASMi instances are initialized with the WASM they run,
     /// we need distinct ribosomes for each zome.

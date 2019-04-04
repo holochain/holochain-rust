@@ -20,6 +20,21 @@ let
 
   date = "2019-01-24";
   wasmTarget = "wasm32-unknown-unknown";
+  release-process-url = "https://hackmd.io/pt72afqYTWat7cuNqpAFjw";
+  repo = "holochain/holochain-rust";
+  upstream = "origin";
+  # the unique hash at the end of the medium post url
+  # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
+  # would be 4867d777de94
+  pulse-url-hash = "358f0d57d125";
+  pulse-version = "23";
+  pulse-commit = "e3383e69a2d901aee1760c090e6afb46a2c3c02f";
+  core-previous-version = "0.0.9-alpha";
+  core-version = "0.0.10-alpha1";
+  core-tag = "v${core-version}";
+  node-conductor-previous-version = "0.4.8-alpha";
+  node-conductor-version = "0.4.9-alpha1";
+  node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
 
   rust-build = (pkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
 
@@ -170,20 +185,6 @@ let
    && hc-install-node-conductor \
    && hc-test-app-spec
   '';
-
-  release-process-url = "https://hackmd.io/pt72afqYTWat7cuNqpAFjw";
-  repo = "holochain/holochain-rust";
-  upstream = "origin";
-  # the unique hash at the end of the medium post url
-  # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
-  # would be 4867d777de94
-  pulse-url-hash = "358f0d57d125";
-  pulse-version = "23";
-  pulse-commit = "e3383e69a2d901aee1760c090e6afb46a2c3c02f";
-  core-previous-version = "0.0.9-alpha";
-  core-version = "0.0.10-alpha1";
-  node-conductor-previous-version = "0.4.8-alpha";
-  node-conductor-version = "0.4.9-alpha1";
 
   pulse-tag = "dev-pulse-${pulse-version}";
   hc-prepare-pulse-tag = pkgs.writeShellScriptBin "hc-prepare-pulse-tag"
@@ -385,30 +386,26 @@ Review the generated release notes with `nix-shell --run hc-generate-release-not
   git checkout master
   git pull
 
-  core_tag="v${core-version}"
-
   echo
-  echo "releasing core $core_tag"
+  echo "releasing core ${core-tag}"
   echo
 
-  echo "tagging $core_tag"
-  git tag -a "$core_tag" -m "Version $core_tag"
-  git push ${upstream} "$core_tag"
-
-  conductor_tag="holochain-nodejs-v${node-conductor-version}"
+  echo "tagging ${core-tag}"
+  git tag -a ${core-tag} -m "Version ${core-tag}"
+  git push ${upstream} ${core-tag}
 
   echo
-  echo "releasing node conductor $conductor_tag"
+  echo "releasing node conductor ${node-conductor-tag}"
   echo
 
-  echo "tagging $conductor_tag"
-  git tag -a "$conductor_tag" -m "Node conductor version $conductor_tag"
-  git push ${upstream} "$conductor_tag"
+  echo "tagging ${node-conductor-tag}"
+  git tag -a ${node-conductor-tag} -m "Node conductor version ${node-conductor-tag}"
+  git push ${upstream} ${node-conductor-tag}
 
   echo "release tags pushed"
   echo "travis builds: https://travis-ci.com/holochain/holochain-rust/branches"
-  echo "core artifacts: https://github.com/holochain/holochain-rust/releases/tag/$core_tag"
-  echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/$conductor_tag"
+  echo "core artifacts: https://github.com/holochain/holochain-rust/releases/tag/${core-tag}"
+  echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/${node-conductor-tag}"
   '';
 
   changelog-template =
@@ -456,8 +453,8 @@ See the [Dev Pulse](${pulse-url}) & [change log](https://github.com/holochain/ho
 
 This release consists of binary builds of:
 
-- the [`hc` development command-line tool](https://github.com/holochain/holochain-rust/blob/v${core-version}/cli/README.md)
-- [`holochain` deployment conductor](https://github.com/holochain/holochain-rust/blob/v${core-version}/conductor/README.md) for different platforms.
+- the [`hc` development command-line tool](https://github.com/holochain/holochain-rust/blob/${core-tag}/cli/README.md)
+- [`holochain` deployment conductor](https://github.com/holochain/holochain-rust/blob/${core-tag}/conductor/README.md) for different platforms.
 
 To install, simply download and extract the binary for your platform.
 See our [installation quick-start instructions](https://developer.holochain.org/start.html) for details.
@@ -480,11 +477,11 @@ Rust and NodeJS are both required for `hc` to build and test DNA:
 
 Download only the binaries for your operating system.
 
-- MacOS: `cli-v${core-version}-x86_64-apple-darwin.tar.gz`
-- Linux: `cli-v${core-version}-x86_64-ubuntu-linux-gnu.tar.gz`
+- MacOS: `cli-${core-tag}-x86_64-apple-darwin.tar.gz`
+- Linux: `cli-${core-tag}-x86_64-ubuntu-linux-gnu.tar.gz`
 - Windows:
-  - mingw build system: `cli-v${core-version}-x86_64-pc-windows-gnu.tar.gz`
-  - Visual Studio build system: `cli-v${core-version}-x86_64-pc-windows-msvc.tar.gz`
+  - mingw build system: `cli-${core-tag}-x86_64-pc-windows-gnu.tar.gz`
+  - Visual Studio build system: `cli-${core-tag}-x86_64-pc-windows-msvc.tar.gz`
 
 All binaries are for 64-bit operating systems.
 32-bit systems are NOT supported.
@@ -513,10 +510,8 @@ All binaries are for 64-bit operating systems.
   echo "Checking core artifacts"
   echo
 
-  core_tag="v${core-version}"
-
   echo
-  echo "checking $core_tag"
+  echo "checking ${core-tag}"
   echo
 
   core_binaries=( "cli" "conductor" )
@@ -526,8 +521,8 @@ All binaries are for 64-bit operating systems.
   do
    for platform in "''${core_platforms[@]}"
    do
-    file="$binary-$core_tag-x86_64-$platform.tar.gz"
-    url="https://github.com/holochain/holochain-rust/releases/download/$core_tag/$file"
+    file="$binary-${core-tag}-x86_64-$platform.tar.gz"
+    url="https://github.com/holochain/holochain-rust/releases/download/${core-tag}/$file"
     echo
     echo "pinging $file for release $release..."
     if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
@@ -542,10 +537,8 @@ All binaries are for 64-bit operating systems.
   echo "Checking node conductor artifacts"
   echo
 
-  conductor_tag="holochain-nodejs-v${node-conductor-version}"
-
   echo
-  echo "checking $conductor_tag"
+  echo "checking ${node-conductor-tag}"
   echo
 
   node_versions=( "57" "64" "67" )
@@ -556,7 +549,7 @@ All binaries are for 64-bit operating systems.
    for platform in "''${conductor_platforms[@]}"
    do
     file="index-v${node-conductor-version}-node-v''${node_version}-''${platform}-x64.tar.gz"
-    url="https://github.com/holochain/holochain-rust/releases/download/$conductor_tag/$file"
+    url="https://github.com/holochain/holochain-rust/releases/download/${node-conductor-tag}/$file"
     echo
     echo "pinging $file for release $release..."
     if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
@@ -597,7 +590,7 @@ All binaries are for 64-bit operating systems.
    echo
    echo 'Injecting medium summary/highlights into github release notes'
    echo
-   github-release -v edit --tag v${core-version} --name v${core-version} --description "$( hc-generate-release-notes )" --pre-release
+   github-release -v edit --tag ${core-tag} --name ${core-tag} --description "$( hc-generate-release-notes )" --pre-release
 
    echo
    echo 'ensure github PR against develop'

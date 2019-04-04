@@ -118,7 +118,7 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  # https://github.com/NixOS/nix/issues/1559
@@ -142,7 +142,7 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  # https://github.com/NixOS/nix/issues/1559
@@ -166,7 +166,7 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  # https://github.com/NixOS/nix/issues/1559
@@ -189,7 +189,7 @@ jobs:
    xcode: "10.2.0"
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  cold.mac.10.nix:

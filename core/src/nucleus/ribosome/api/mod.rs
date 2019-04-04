@@ -308,8 +308,8 @@ pub mod tests {
     }
 
     /// dummy parameters for a zome API function call
-    pub fn test_parameters() -> String {
-        String::new()
+    pub fn test_parameters() -> JsonString {
+        JsonString::empty_object()
     }
 
     /// calls the zome API function with passed bytes argument using the instance runtime

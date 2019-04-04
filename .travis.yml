@@ -4,9 +4,7 @@ branches:
   only:
     - master
     - develop
-    - /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
-    - /^release-(test-)*v\d+\.\d+\.\d+-alpha/
-    - /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
+    - /^(holochain-nodejs-|release-)?v\d+\.\d+\.\d+-alpha\d+$/
 
 _trusty_nodejs: &_trusty_nodejs
   dist: trusty
@@ -78,7 +76,7 @@ _macosx_nodejs_template: &_macosx_nodejs_template
     - . ./scripts/install/auto.sh
 
 _to_deploy_template: &_to_deploy_template
-  if: tag =~ /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
+  if: tag =~ /^holochain-nodejs-v\d+\.\d+\.\d+-alpha\d+/
 
 _env_node_8_deploy_template: &_env_node_8_deploy_template
   env:
@@ -136,7 +134,7 @@ _cli_deploy_template: &_cli_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
-  if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
+  if: tag =~ /^v\d+\.\d+\.\d+-alpha\d+/
   before_script:
     - . ./scripts/install/auto.sh
   script:
@@ -160,7 +158,7 @@ _conductor_deploy_template: &_conductor_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
-  if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
+  if: tag =~ /^v\d+\.\d+\.\d+-alpha\d+/
   before_script:
     - . ./scripts/install/auto.sh
   script:

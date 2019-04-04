@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removes JsonString::From<String> and replaces it with JsonString::from_json(&str). This makes conversions more explicit and allows for validating that the string is actually valid json [#1184](https://github.com/holochain/holochain-rust/pull/1184)
 
 ### Fixed
+
 -This pull request fixes the various issues with the pickledb implementation. Better guards and directory fixes [#1202]
 (https://github.com/holochain/holochain-rust/pull/1202)
 

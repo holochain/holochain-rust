@@ -302,6 +302,7 @@ Then run `nix-shell --run hc-prepare-release`
 - [ ] node release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
   - artifacts: {{ artifacts url }}
+- [ ] all release artifacts found by `hc-check-release-artifacts`
 - [ ] npmjs deploy with `hc-npm-deploy` then `hc-npm-check-version`
 - [ ] `unknown` release assets renamed to `ubuntu`
 
@@ -309,6 +310,7 @@ Then run `nix-shell --run hc-prepare-release`
 
 - [ ] `hc-release-merge-back`
 - [ ] `develop` PR changelog cleaned up
+  - [ ] no new items from `develop` under recently released changelog header
 - [ ] merge `develop` PR
 
 ## Finalise

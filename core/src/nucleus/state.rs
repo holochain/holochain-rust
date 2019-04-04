@@ -11,7 +11,9 @@ use holochain_core_types::{
     validation::ValidationPackage,
 };
 use snowflake;
-use std::{collections::HashMap, convert::TryFrom};
+use std::{collections::HashMap, convert::TryFrom, sync::{Arc, Mutex}};
+use std::ops::Deref;
+use wasmi::ModuleRef;
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -35,6 +37,28 @@ impl PendingValidationKey {
     }
 }
 
+/// Wrapper around wasmi::ModuleRef since it does not implement Clone, Debug, PartialEq, Eq,
+/// which are all needed to add it to the state below.
+#[derive(Clone, Debug)]
+pub struct ModuleRefMutex(Arc<Mutex<ModuleRef>>);
+impl ModuleRefMutex {
+    pub fn new(instance: ModuleRef) -> Self {
+        ModuleRefMutex(Arc::new(Mutex::new(instance)))
+    }
+}
+impl PartialEq for ModuleRefMutex {
+    fn eq(&self, other: &ModuleRefMutex) -> bool {
+        format!("{:?}", *self.lock().unwrap()) == format!("{:?}", *other.lock().unwrap())
+    }
+}
+impl Eq for ModuleRefMutex {}
+impl Deref for ModuleRefMutex {
+    type Target = Arc<Mutex<ModuleRef>>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// The state-slice for the Nucleus.
 /// Holds the dynamic parts of the DNA, i.e. zome calls and validation requests.
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -46,6 +70,12 @@ pub struct NucleusState {
     // Transient fields:
     pub dna: Option<Dna>, //DNA is transient here because it is stored in the chain and gets
     //read from there when loading an instance/chain.
+
+    /// Ribosomes == WASMi instances that run the WASM part of the DNA
+    /// Since WASMi instances are initialized with the WASM they run,
+    /// we need distinct ribosomes for each zome.
+    /// This is a mapping from zome name to a pool (=vector) of according ribosomes.
+    pub ribosomes: HashMap<String, Vec<ModuleRefMutex>>,
 
     // @TODO eventually drop stale calls
     // @see https://github.com/holochain/holochain-rust/issues/166
@@ -61,6 +91,7 @@ impl NucleusState {
     pub fn new() -> Self {
         NucleusState {
             dna: None,
+            ribosomes: HashMap::new(),
             status: NucleusStatus::New,
             zome_calls: HashMap::new(),
             validation_results: HashMap::new(),
@@ -127,6 +158,7 @@ impl From<NucleusStateSnapshot> for NucleusState {
     fn from(snapshot: NucleusStateSnapshot) -> Self {
         NucleusState {
             dna: None,
+            ribosomes: HashMap::new(),
             status: snapshot.status,
             zome_calls: HashMap::new(),
             validation_results: HashMap::new(),

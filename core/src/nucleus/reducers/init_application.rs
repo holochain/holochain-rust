@@ -4,6 +4,10 @@ use crate::{
     nucleus::state::{NucleusState, NucleusStatus},
 };
 use std::sync::Arc;
+use crate::nucleus::ribosome::wasmi_factory::wasmi_factory;
+use holochain_core_types::error::HolochainError;
+use holochain_core_types::dna::zome::Zome;
+use crate::nucleus::state::ModuleRefMutex;
 
 /// Reduce InitializeChain Action
 /// Switch status to failed if an initialization is tried for an
@@ -31,8 +35,30 @@ pub fn reduce_initialize_chain(
             state.status = NucleusStatus::Initializing;
             // Set DNA
             state.dna = Some(dna.clone());
+            // Create Ribosomes
+            for (zome_name, zome) in state.dna.as_ref().unwrap().zomes.iter() {
+                match create_ribosomes_for_zome(zome) {
+                    Ok(pool) =>  state.ribosomes.insert(zome_name.clone(), pool),
+                    Err(err) => {
+                        state.status = NucleusStatus::InitializationFailed(format!(
+                            "Could not create ribosome: {:?}", err
+                        ));
+                        return;
+                    }
+                };
+            }
         }
     }
+}
+
+/// Creates a pool of 8 WASM module instances all with the same code from the given zome
+fn create_ribosomes_for_zome(zome: &Zome) -> Result<Vec<ModuleRefMutex>, HolochainError> {
+    let mut pool = Vec::new();
+    for _i in 1..8 {
+        let ribosome = wasmi_factory(zome.code.code.clone())?;
+        pool.push(ModuleRefMutex::new(ribosome));
+    };
+    Ok(pool)
 }
 
 #[cfg(test)]

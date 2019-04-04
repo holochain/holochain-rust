@@ -297,7 +297,7 @@ macro_rules! define_zome {
 
                 $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
                     $crate::global_fns::write_json(
-                        execute(input)
+                        JsonString::from_json(&execute(input))
                     )
                 ).into()
             }

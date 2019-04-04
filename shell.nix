@@ -20,6 +20,21 @@ let
 
   date = "2019-01-24";
   wasmTarget = "wasm32-unknown-unknown";
+  release-process-url = "https://hackmd.io/pt72afqYTWat7cuNqpAFjw";
+  repo = "holochain/holochain-rust";
+  upstream = "origin";
+  # the unique hash at the end of the medium post url
+  # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
+  # would be 4867d777de94
+  pulse-url-hash = "358f0d57d125";
+  pulse-version = "23";
+  pulse-commit = "e3383e69a2d901aee1760c090e6afb46a2c3c02f";
+  core-previous-version = "0.0.9-alpha";
+  core-version = "0.0.10-alpha1";
+  core-tag = "v${core-version}";
+  node-conductor-previous-version = "0.4.8-alpha";
+  node-conductor-version = "0.4.9-alpha1";
+  node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
 
   rust-build = (pkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
 
@@ -82,6 +97,11 @@ let
    # node dist can mess with the process
    hc-node-flush
    find . -name "Cargo.toml" | xargs -I {} cargo upgrade "$1" --all --manifest-path {}
+  '';
+
+  hc-changelog-grep-pr-references = pkgs.writeShellScriptBin "hc-changelog-grep-pr-references"
+  ''
+  cat CHANGELOG.md | grep -E '^-\s' | grep -Ev '[0-9]\]' | cat
   '';
   hc-cargo-toml-grep-unpinned = pkgs.writeShellScriptBin "hc-cargo-toml-grep-unpinned"
   ''
@@ -165,20 +185,6 @@ let
    && hc-install-node-conductor \
    && hc-test-app-spec
   '';
-
-  release-process-url = "https://hackmd.io/6HH-O1KuQ7uYzKrsI6ooIw";
-  repo = "holochain/holochain-rust";
-  upstream = "origin";
-  # the unique hash at the end of the medium post url
-  # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
-  # would be 4867d777de94
-  pulse-url-hash = "4867d777de94";
-  pulse-version = "22";
-  pulse-commit = "0a524d3be580249d54cf5073591fa9fe1f30a174";
-  core-previous-version = "0.0.8-alpha";
-  core-version = "0.0.9-alpha";
-  node-conductor-previous-version = "0.4.7-alpha";
-  node-conductor-version = "0.4.8-alpha";
 
   pulse-tag = "dev-pulse-${pulse-version}";
   hc-prepare-pulse-tag = pkgs.writeShellScriptBin "hc-prepare-pulse-tag"
@@ -274,68 +280,45 @@ current release process: ${release-process-url}
 
 ## Preparation
 
-This should all be handled by `nix-shell --run hc-prepare-release`
+First checkout `develop` and `git pull` to ensure you are up to date locally.
+Then run `nix-shell --run hc-prepare-release`
 
 - [x] develop is green
-- [x] dev pulse commit for release candidate
-- [x] core/hdk version updated in CLI scaffold
-- [x] reviewed and updated the version numbers in Cargo.toml
-- [x] holochain nodejs minor version bumped in CLI scaffold `package.json`
+- [x] correct dev pulse commit + version + url hash
+- [x] correct core version
+- [x] correct node conductor
+- [x] correct release process url
 
-## Release docs
-
-Run the basic linter with `nix-shell --run hc-lint-release-docs`
-
-The linter will do some things for you and provide helpful debug info.
+## PR into master
 
 - [ ] reviewed and updated CHANGELOG
-    - [ ] correct version + date
-    - [ ] inserted template for next release
-    - [ ] all root items have a PR link
-- [ ] reviewed and updated README files
-    - [ ] correct rust nightly version
-
-Generate the github release notes with `nix-shell --run hc-generate-release-notes`
-
-- [ ] review generated github release notes
-    - [ ] correct medium post link for dev pulse
-    - [ ] correct CHANGELOG link
-    - [ ] hackmd link: {{URL}}
-    - [ ] correct tags in blob links
-    - [ ] correct rust nightly version
-    - [ ] correct installation instructions
-    - [ ] correct version number in binary file names
-
- ## Test builds
-
- Kick these off with `nix-shell --run hc-test-release`
-
- Every run of `hc-test-release` will cut new tags incrementally and trigger new builds on CI.
-
- Move on to "release docs" below while waiting for CI.
-
- - [ ] green core release test tag + linux/mac/windows artifacts on github
-     - [ ] build: {{build URL}}
-     - [ ] artifacts: {{artifacts URL}}
- - [ ] green node release test tag + linux/mac/windows artifacts on github
-     - [ ] build: {{build URL}}
-     - [ ] artifacts: {{artifacts URL}}
-
-## Deploy artifacts
-
 - [ ] release PR merged into `master`
+
+## Build and deploy release artifacts
+
+- [ ] release cut from `master` with `hc-do-release`
 - [ ] core release tag + linux/mac/windows artifacts on github
+  - travis build: {{ build url }}
+  - artifacts: {{ artifacts url }}
 - [ ] node release tag + linux/mac/windows artifacts on github
-- [ ] npm deploy
-- [ ] release branch merged into `develop`
-- [ ] test build artifacts deleted from github
-- [ ] release notes copied into github
+  - travis build: {{ build url }}
+  - artifacts: {{ artifacts url }}
+- [ ] all release artifacts found by `hc-check-release-artifacts`
+- [ ] npmjs deploy with `hc-npm-deploy` then `hc-npm-check-version`
 - [ ] `unknown` release assets renamed to `ubuntu`
+
+## PR into develop
+
+- [ ] `hc-release-merge-back`
+- [ ] `develop` PR changelog cleaned up
+  - [ ] no new items from `develop` under recently released changelog header
+- [ ] merge `develop` PR
 
 ## Finalise
 
-- [ ] developer docs updated
-- [ ] social medias
+- [ ] dev pulse is live on medium
+- [ ] `hc-release-pulse-sync`
+
   '';
   hc-prepare-release-pr = pkgs.writeShellScriptBin "hc-prepare-release-pr"
   ''
@@ -380,6 +363,7 @@ Generate the github release notes with `nix-shell --run hc-generate-release-note
      hc-prepare-pulse-tag \
      && hc-prepare-release-branch \
      && hc-prepare-crate-versions \
+     && hc-ensure-changelog-version \
      && hc-prepare-release-pr \
      ;;
     *)
@@ -388,36 +372,35 @@ Generate the github release notes with `nix-shell --run hc-generate-release-note
    esac
   '';
 
-  hc-test-release = pkgs.writeShellScriptBin "hc-test-release"
+  hc-do-release = pkgs.writeShellScriptBin "hc-do-release"
   ''
   echo
-  echo "kicking off new test release build"
+  echo "kicking off release"
   echo
 
-  git push || exit 1
+  git checkout master
+  git pull
 
-  i="0"
-  while [ $(git tag -l "test-$i-v${core-version}") ]
-  do
-   i=$[$i+1]
-  done
-  echo "tagging test-$i-v${core-version}"
-  git tag -a "test-$i-v${core-version}" -m "Version ${core-version} release test $i"
-  git push ${upstream} "test-$i-v${core-version}"
+  echo
+  echo "releasing core ${core-tag}"
+  echo
 
-  n="0"
-  while [ $(git tag -l "holochain-nodejs-test-$n-v${node-conductor-version}") ]
-  do
-   n=$[$n+1]
-  done
-  echo "tagging holochain-nodejs-test-$n-v${node-conductor-version}"
-  git tag -a "holochain-nodejs-test-$n-v${node-conductor-version}" -m "Node conductor version ${node-conductor-version} release test $n"
-  git push ${upstream} "holochain-nodejs-test-$n-v${node-conductor-version}"
+  echo "tagging ${core-tag}"
+  git tag -a ${core-tag} -m "Version ${core-tag}"
+  git push ${upstream} ${core-tag}
 
-  echo "testing tags pushed"
+  echo
+  echo "releasing node conductor ${node-conductor-tag}"
+  echo
+
+  echo "tagging ${node-conductor-tag}"
+  git tag -a ${node-conductor-tag} -m "Node conductor version ${node-conductor-tag}"
+  git push ${upstream} ${node-conductor-tag}
+
+  echo "release tags pushed"
   echo "travis builds: https://travis-ci.com/holochain/holochain-rust/branches"
-  echo "core artifacts: https://github.com/holochain/holochain-rust/releases/tag/test-$i-v${core-version}"
-  echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/holochain-nodejs-test-$n-v${node-conductor-version}"
+  echo "core artifacts: https://github.com/holochain/holochain-rust/releases/tag/${core-tag}"
+  echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/${node-conductor-tag}"
   '';
 
   changelog-template =
@@ -430,7 +413,7 @@ Generate the github release notes with `nix-shell --run hc-generate-release-note
 \#\#\# Fixed\n\n\
 \#\#\# Security\n\n\
   '';
-  hc-lint-release-docs = pkgs.writeShellScriptBin "hc-lint-release-docs"
+  hc-ensure-changelog-version = pkgs.writeShellScriptBin "hc-ensure-changelog-version"
   ''
   echo
   echo "locking off changelog version"
@@ -441,22 +424,17 @@ Generate the github release notes with `nix-shell --run hc-generate-release-note
     echo "timestamping and retemplating changelog"
     sed -i "s/\[Unreleased\]/${changelog-template}\#\# \[${core-version}\] - $(date --iso --u)/" ./CHANGELOG.md
   fi
+  '';
 
-  echo
-  echo "the following LOC in the CHANGELOG.md are missing a PR reference:"
-  echo
-  cat CHANGELOG.md | grep -E '^-\s' | grep -Ev '[0-9]\]'
-
-  echo
-  echo "the following LOC in README files reference the WRONG rust nightly date (should be ${date}):"
-  echo
+  hc-readme-grep-nightly = pkgs.writeShellScriptBin "hc-readme-grep-nightly"
+  ''
   find . \
    -iname "readme.*" \
    | xargs cat \
    | grep -E 'nightly-' \
-   | grep -v '${date}'
+   | grep -v '${date}' \
+   | cat
   '';
-
 
   pulse-url = "https://medium.com/@holochain/${pulse-url-hash}";
   release-notes-template = ''
@@ -470,8 +448,8 @@ See the [Dev Pulse](${pulse-url}) & [change log](https://github.com/holochain/ho
 
 This release consists of binary builds of:
 
-- the [`hc` development command-line tool](https://github.com/holochain/holochain-rust/blob/v${core-version}/cli/README.md)
-- [`holochain` deployment conductor](https://github.com/holochain/holochain-rust/blob/v${core-version}/conductor/README.md) for different platforms.
+- the [`hc` development command-line tool](https://github.com/holochain/holochain-rust/blob/${core-tag}/cli/README.md)
+- [`holochain` deployment conductor](https://github.com/holochain/holochain-rust/blob/${core-tag}/conductor/README.md) for different platforms.
 
 To install, simply download and extract the binary for your platform.
 See our [installation quick-start instructions](https://developer.holochain.org/start.html) for details.
@@ -494,11 +472,11 @@ Rust and NodeJS are both required for `hc` to build and test DNA:
 
 Download only the binaries for your operating system.
 
-- MacOS: `cli-v${core-version}-x86_64-apple-darwin.tar.gz`
-- Linux: `cli-v${core-version}-x86_64-ubuntu-linux-gnu.tar.gz`
+- MacOS: `cli-${core-tag}-x86_64-apple-darwin.tar.gz`
+- Linux: `cli-${core-tag}-x86_64-ubuntu-linux-gnu.tar.gz`
 - Windows:
-  - mingw build system: `cli-v${core-version}-x86_64-pc-windows-gnu.tar.gz`
-  - Visual Studio build system: `cli-v${core-version}-x86_64-pc-windows-msvc.tar.gz`
+  - mingw build system: `cli-${core-tag}-x86_64-pc-windows-gnu.tar.gz`
+  - Visual Studio build system: `cli-${core-tag}-x86_64-pc-windows-msvc.tar.gz`
 
 All binaries are for 64-bit operating systems.
 32-bit systems are NOT supported.
@@ -527,34 +505,26 @@ All binaries are for 64-bit operating systems.
   echo "Checking core artifacts"
   echo
 
-  i="0"
-  while [ $(git tag -l "test-$i-v${core-version}") ]
-  do
-   i=$[$i+1]
-  done
-  i=$[$i-1]
+  echo
+  echo "checking ${core-tag}"
+  echo
 
   core_binaries=( "cli" "conductor" )
   core_platforms=( "apple-darwin" "pc-windows-gnu" "pc-windows-msvc" "unknown-linux-gnu" )
-  deployments=( "test-$i-" "" )
 
-  for deployment in "''${deployments[@]}"
+  for binary in "''${core_binaries[@]}"
   do
-   for binary in "''${core_binaries[@]}"
+   for platform in "''${core_platforms[@]}"
    do
-    for platform in "''${core_platforms[@]}"
-    do
-     file="$binary-''${deployment}v${core-version}-x86_64-$platform.tar.gz"
-     release="''${deployment}v${core-version}"
-     url="https://github.com/holochain/holochain-rust/releases/download/$release/$file"
-     echo
-     echo "pinging $file for release $release..."
-     if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
-      then echo "FOUND ✔"
-      else echo "NOT FOUND ⨯"
-     fi
-     echo
-    done
+    file="$binary-${core-tag}-x86_64-$platform.tar.gz"
+    url="https://github.com/holochain/holochain-rust/releases/download/${core-tag}/$file"
+    echo
+    echo "pinging $file for release $release..."
+    if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
+     then echo "FOUND ✔"
+     else echo "NOT FOUND ⨯"
+    fi
+    echo
    done
   done
 
@@ -562,46 +532,28 @@ All binaries are for 64-bit operating systems.
   echo "Checking node conductor artifacts"
   echo
 
-  n="0"
-  while [ $(git tag -l "holochain-nodejs-test-$n-v${node-conductor-version}") ]
-  do
-   n=$[$n+1]
-  done
-  n=$[$n-1]
+  echo
+  echo "checking ${node-conductor-tag}"
+  echo
 
   node_versions=( "57" "64" "67" )
   conductor_platforms=( "darwin" "linux" "win32" )
-  deployments=( "test-$n-" "" )
 
-  for deployment in "''${deployments[@]}"
+  for node_version in "''${node_versions[@]}"
   do
-   for node_version in "''${node_versions[@]}"
+   for platform in "''${conductor_platforms[@]}"
    do
-    for platform in "''${conductor_platforms[@]}"
-    do
-     file="index-v${node-conductor-version}-node-v''${node_version}-''${platform}-x64.tar.gz"
-     release="holochain-nodejs-''${deployment}v${node-conductor-version}"
-     url="https://github.com/holochain/holochain-rust/releases/download/$release/$file"
-     echo
-     echo "pinging $file for release $release..."
-     if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
-      then echo "FOUND ✔"
-      else echo "NOT FOUND ⨯"
-     fi
-     echo
-    done
+    file="index-v${node-conductor-version}-node-v''${node_version}-''${platform}-x64.tar.gz"
+    url="https://github.com/holochain/holochain-rust/releases/download/${node-conductor-tag}/$file"
+    echo
+    echo "pinging $file for release $release..."
+    if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
+     then echo "FOUND ✔"
+     else echo "NOT FOUND ⨯"
+    fi
+    echo
    done
   done
-  '';
-
-  hc-do-release = pkgs.writeShellScriptBin "hc-do-release"
-  ''
-   git checkout master
-   git pull
-   git tag -a v${core-version} -m 'Version ${core-version}'
-   git tag -a holochain-nodejs-v${node-conductor-version} -m 'holochain-nodejs-v${node-conductor-version}'
-   git push ${upstream} v${core-version}
-   git push ${upstream} holochain-nodejs-v${node-conductor-version}
   '';
 
   hc-npm-deploy = pkgs.writeShellScriptBin "hc-npm-deploy"
@@ -624,31 +576,8 @@ All binaries are for 64-bit operating systems.
   echo
   '';
 
-  hc-release-cleanup = pkgs.writeShellScriptBin "hc-release-cleanup"
+  hc-release-merge-back = pkgs.writeShellScriptBin "hc-release-merge-back"
   ''
-   export GITHUB_USER='holochain'
-   export GITHUB_REPO='holochain-rust'
-   export GITHUB_TOKEN=$( git config --get hub.oauthtoken )
-
-   echo
-   echo 'Injecting medium summary/highlights into github release notes'
-   echo
-   github-release -v edit --tag v${core-version} --name v${core-version} --description "$( hc-generate-release-notes )" --pre-release
-
-   echo
-   echo 'Deleting releases on test-* tags'
-   echo
-   github-release info \
-    | grep -Po "(?<=name: ')(test-\S*)(?=',)" \
-    | xargs -I {} github-release -v delete --tag {}
-
-   echo
-   echo 'Deleting releases on holochain-nodejs-test-* tags'
-   echo
-   github-release info \
-    | grep -Po "(?<=name: ')(holochain-nodejs-test-\S*)(?=',)" \
-    | xargs -I {} github-release -v delete --tag {}
-
    echo
    echo 'ensure github PR against develop'
    echo
@@ -663,6 +592,27 @@ All binaries are for 64-bit operating systems.
      echo "current branch is not ${release-branch}!"
      exit 1
    fi
+
+   export GITHUB_USER='holochain'
+   export GITHUB_REPO='holochain-rust'
+   export GITHUB_TOKEN=$( git config --get hub.oauthtoken )
+
+   echo
+   echo 'Setting release to pre-release state'
+   echo
+   github-release -v edit --tag ${core-tag} --pre-release
+  '';
+
+  hc-release-pulse-sync = pkgs.writeShellScriptBin "hc-release-pulse-sync"
+  ''
+   export GITHUB_USER='holochain'
+   export GITHUB_REPO='holochain-rust'
+   export GITHUB_TOKEN=$( git config --get hub.oauthtoken )
+
+   echo
+   echo 'Injecting medium summary/highlights into github release notes'
+   echo
+   github-release -v edit --tag ${core-tag} --name ${core-tag} --description "$( hc-generate-release-notes )" --pre-release
   '';
 
 in
@@ -718,7 +668,6 @@ stdenv.mkDerivation rec {
 
     # curl needed to push to codecov
     curl
-    circleci-cli
     hc-codecov
     ci
 
@@ -732,16 +681,18 @@ stdenv.mkDerivation rec {
     hc-check-release-artifacts
 
     hc-prepare-release
-    hc-test-release
-    hc-lint-release-docs
+    hc-changelog-grep-pr-references
+    hc-ensure-changelog-version
     hc-generate-release-notes
+    hc-readme-grep-nightly
 
     hc-do-release
 
     hc-npm-deploy
     hc-npm-check-version
 
-    hc-release-cleanup
+    hc-release-merge-back
+    hc-release-pulse-sync
 
   ] ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ];
 

@@ -2,9 +2,11 @@ use crate::{config_files::Build, error::DefaultResult, util};
 use base64;
 use colored::*;
 use holochain_core::nucleus::ribosome::{run_dna, WasmCallData};
+use holochain_core_types::{cas::content::AddressableContent, dna::Dna, json::JsonString};
 use ignore::WalkBuilder;
 use serde_json::{self, Map, Value};
 use std::{
+    convert::TryFrom,
     fs::{self, File},
     io::{Read, Write},
     path::PathBuf,
@@ -60,18 +62,22 @@ impl Packager {
     }
 
     fn run(&self, output: &PathBuf) -> DefaultResult<()> {
-        let dir_obj_bundle = self.bundle_recurse(&std::env::current_dir()?)?;
+        let dir_obj_bundle = Value::from(self.bundle_recurse(&std::env::current_dir()?)?);
+
+        let dna_json = JsonString::from_json(&dir_obj_bundle.to_string());
+        let dna = Dna::try_from(dna_json)?;
 
         let out_file = File::create(&output)?;
 
-        serde_json::to_writer_pretty(&out_file, &Value::from(dir_obj_bundle))?;
+        serde_json::to_writer_pretty(&out_file, &(dir_obj_bundle))?;
 
         // CLI feedback
         println!(
-            "{} dna package file at {:?}",
+            "{} DNA package file at {:?}",
             "Created".green().bold(),
             output
         );
+        println!("DNA hash: {}", dna.address());
 
         Ok(())
     }

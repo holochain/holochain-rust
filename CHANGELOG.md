@@ -6,16 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.10-alpha1] - 2019-04-04
+
+### Added
+
 - Adds conductor handling of agent key creation in the context of DPKI [#1182](https://github.com/holochain/holochain-rust/pull/1182)
 - Adds a `--path` option to `hc keygen` to specify the location of the generated keybundle. [#1194](https://github.com/holochain/holochain-rust/pull/1194)
 - Adds pickle db for cas and eav [#1178](https://github.com/holochain/holochain-rust/pull/1178)
 - Adds a `--quiet` option to `hc keygen` for machine-readable output, intended for use in scripts. [#1197](https://github.com/holochain/holochain-rust/pull/1197)
 - Adds logging output for every failed WASM execution showing the call that caused this error. [#1200](https://github.com/holochain/holochain-rust/pull/1200) This helps with debugging "Arguement Deserialization failed" errors.
+- Adds DNA hash to `hc package` output [#1212](https://github.com/holochain/holochain-rust/pull/1212)
 
 ### Changed
 
 - `add_agent()` admin function now creates keystore file instead of just recording file in config [#1182](https://github.com/holochain/holochain-rust/pull/1182)
-- One-time-signing now takes a vector of payloads, and returns a vector of signatures.
+- One-time-signing now takes a vector of payloads, and returns a vector of signatures. [#1193](https://github.com/holochain/holochain-rust/pull/1193)
 - Pins nixpkgs to Holo-Host channel in shell and CI [#1162](https://github.com/holochain/holochain-rust/pull/1162)
 
 ### Deprecated
@@ -23,8 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Removes deprecated zome calling route [#1147](https://github.com/holochain/holochain-rust/pull/1147). This is a breaking change for users of hc-web-client prior to version 0.1.3.  Please upgrade to 0.1.3 or later and use the callZome syntax.
+- Removes JsonString::From<String> and replaces it with JsonString::from_json(&str). This makes conversions more explicit and allows for validating that the string is actually valid json [#1184](https://github.com/holochain/holochain-rust/pull/1184)
 
 ### Fixed
+
+-This pull request fixes the various issues with the pickledb implementation. Better guards and directory fixes [#1202]
+(https://github.com/holochain/holochain-rust/pull/1202)
 
 ### Security
 

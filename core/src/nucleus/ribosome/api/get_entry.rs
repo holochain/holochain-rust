@@ -221,10 +221,10 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(
+            JsonString::from_json(
+                &(String::from(JsonString::from(ZomeApiInternalResult::success(
                     test_entry().address()
-                ))) + "\u{0}"
+                ))) + "\u{0}")
             ),
         );
 
@@ -251,9 +251,7 @@ pub mod tests {
         let entry_result =
             GetEntryResult::new(StatusRequestKind::Latest, Some((&entry_with_meta, vec![])));
         assert_eq!(
-            JsonString::from(String::from(JsonString::from(
-                ZomeApiInternalResult::success(entry_result)
-            ))),
+            JsonString::from(ZomeApiInternalResult::success(entry_result)),
             call_result,
         );
     }

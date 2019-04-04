@@ -87,7 +87,7 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
             id: instance.name,
             agent: agent_id,
             dna: dna_id,
-            storage: StorageConfiguration::Memory,
+            storage: StorageConfiguration::Memory
         };
         instance_configs.push(instance);
     }

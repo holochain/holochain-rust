@@ -367,8 +367,7 @@ pub struct AgentConfiguration {
 
 impl From<AgentConfiguration> for AgentId {
     fn from(config: AgentConfiguration) -> Self {
-        AgentId::try_from(JsonString::try_from(config.id).expect("bad agent json"))
-            .expect("bad agent json")
+        AgentId::try_from(JsonString::from_json(&config.id)).expect("bad agent json")
     }
 }
 
@@ -389,7 +388,7 @@ impl TryFrom<DnaConfiguration> for Dna {
         let mut f = File::open(dna_config.file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from(contents))
+        Dna::try_from(JsonString::from_json(&contents))
     }
 }
 

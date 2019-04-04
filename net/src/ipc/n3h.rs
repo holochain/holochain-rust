@@ -271,6 +271,7 @@ fn download(dest: &std::ffi::OsStr, url: &str, sha256: &str) -> NetResult<()> {
 }
 
 #[cfg(test)]
+#[cfg(feature = "broken-tests")]
 mod tests {
     use super::*;
 

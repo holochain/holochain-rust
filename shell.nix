@@ -296,6 +296,7 @@ Then run `nix-shell --run hc-prepare-release`
 
 ## Build and deploy release artifacts
 
+- [ ] release cut from `master` with `hc-do-release`
 - [ ] core release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
   - artifacts: {{ artifacts url }}

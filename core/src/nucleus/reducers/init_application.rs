@@ -39,7 +39,7 @@ pub fn reduce_initialize_chain(
             for (zome_name, zome) in dna.zomes.iter() {
                 match create_ribosomes_for_zome(zome) {
                     Ok(pool) => {
-                        state.ribosomes.insert(zome_name.clone(), pool);
+                        state.wasm_modules.insert(zome_name.clone(), pool);
                     }
                     Err(err) => {
                         context.log(format!(

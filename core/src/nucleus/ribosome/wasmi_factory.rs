@@ -6,7 +6,7 @@ use wasmi::{
     ModuleImportResolver, ModuleInstance, ModuleRef, NopExternals, Signature, ValueType,
 };
 
-/// Creates WASMi module from gibven WASM binary
+/// Creates WASMi module from given WASM binary
 pub fn wasmi_factory(wasm: Vec<u8>) -> Result<Module, HolochainError> {
     wasmi::Module::from_buffer(wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))
 }

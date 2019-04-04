@@ -17,7 +17,7 @@ use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
 use std::{convert::TryFrom, sync::MutexGuard, thread::sleep, time::Duration};
 use wasmi::{Module, RuntimeValue};
 
-fn with_ribosome<F: FnOnce(MutexGuard<Module>) -> ZomeFnResult>(
+fn with_module<F: FnOnce(MutexGuard<Module>) -> ZomeFnResult>(
     data: WasmCallData,
     f: F,
 ) -> ZomeFnResult {
@@ -37,7 +37,7 @@ fn with_ribosome<F: FnOnce(MutexGuard<Module>) -> ZomeFnResult>(
         .state()
         .unwrap()
         .nucleus()
-        .ribosomes
+        .wasm_modules
         .get(&zome_name)
         .cloned()
         .ok_or(HolochainError::new(&format!(
@@ -58,7 +58,7 @@ fn with_ribosome<F: FnOnce(MutexGuard<Module>) -> ZomeFnResult>(
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
 pub fn run_dna(_wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
-    with_ribosome(data.clone(), move |wasm_module| {
+    with_module(data.clone(), move |wasm_module| {
         let wasm_instance = wasm_instance_from_module(&wasm_module)?;
         // write input arguments for module call in memory Buffer
         let input_parameters: Vec<_> = parameters.unwrap_or_default();

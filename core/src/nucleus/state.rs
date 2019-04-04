@@ -81,11 +81,11 @@ pub struct NucleusState {
     // Transient fields:
     pub dna: Option<Dna>, //DNA is transient here because it is stored in the chain and gets
     //read from there when loading an instance/chain.
-    /// Ribosomes == WASMi instances that run the WASM part of the DNA
-    /// Since WASMi instances are initialized with the WASM they run,
-    /// we need distinct ribosomes for each zome.
-    /// This is a mapping from zome name to a pool (=vector) of according ribosomes.
-    pub ribosomes: HashMap<String, Vec<ModuleMutex>>,
+
+    /// WASM modules read from the DNA.
+    /// Each Zome brings its own WASM binary that gets read and parsed into a module.
+    /// This is a mapping from zome name to a pool (=vector) of according modules.
+    pub wasm_modules: HashMap<String, Vec<ModuleMutex>>,
 
     // @TODO eventually drop stale calls
     // @see https://github.com/holochain/holochain-rust/issues/166
@@ -101,7 +101,7 @@ impl NucleusState {
     pub fn new() -> Self {
         NucleusState {
             dna: None,
-            ribosomes: HashMap::new(),
+            wasm_modules: HashMap::new(),
             status: NucleusStatus::New,
             zome_calls: HashMap::new(),
             validation_results: HashMap::new(),
@@ -168,7 +168,7 @@ impl From<NucleusStateSnapshot> for NucleusState {
     fn from(snapshot: NucleusStateSnapshot) -> Self {
         NucleusState {
             dna: None,
-            ribosomes: HashMap::new(),
+            wasm_modules: HashMap::new(),
             status: snapshot.status,
             zome_calls: HashMap::new(),
             validation_results: HashMap::new(),

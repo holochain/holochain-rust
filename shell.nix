@@ -71,7 +71,7 @@ let
   hc-install-node-conductor = pkgs.writeShellScriptBin "hc-install-node-conductor"
   ''
   hc-node-flush;
-   . ./scripts/build_nodejs_conductor.sh;
+   ./scripts/build_nodejs_conductor.sh;
   '';
 
   hc-install-tarpaulin = pkgs.writeShellScriptBin "hc-install-tarpaulin"

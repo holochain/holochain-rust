@@ -30,7 +30,7 @@ From the `serde_json` github repository README:
 
 ### Holochain aims to support all WASM languages not just Rust/JS
 
-The official Holochain HDKs are Rust and AssemblyScript. The Rust HDK will
+The official Holochain HDK is Rust. The Rust HDK will
 always be the most tightly integrated HDK with core simply because Holochain
 itself is Rust based.
 
@@ -133,7 +133,7 @@ Notes:
 AND on the way out:
 
 ```rust
-let foo: Foo = serde_json::from_str(&hopefully_foo_json).unwrap();
+let foo: Foo = Foo::try_from(&hopefully_foo_json)?;
 ```
 
 Notes:
@@ -339,15 +339,17 @@ important edge cases that we need to cover with additional techniques/tooling.
 
 #### String handling
 
-`JsonString::from` assumes any `String` or `&str` passed to it is already a
-serialized JSON value.
+`JsonString::from_json(&str)` the `&str` passed to it is already a
+serialized JSON value. We may add the option to validate this for debug builds at runtime in the future.
+
+Previously `JsonString` implemented the `From<String>` trait but this was removed. Strings are a special case as they may either contain serialized json or be used as a JSON string primitive. `JsonString::from_json` makes it explicit that you mean the former. 
 
 We can use `serde_json::to_string` and `json!` to create JSON data that we can
 then wrap in `JsonString`.
 
 ```rust
 // same end result for both of these...
-let foo_json = JsonString::from(serde_json::to_string(&foo));
+let foo_json = JsonString::from_json(&serde_json::to_string(&foo));
 let foo_json = JsonString::from(foo);
 ```
 
@@ -356,7 +358,7 @@ More commonly useful, we can move back and forward between `String` and
 
 ```rust
 // this does a round trip through types without triggering any serde
-JsonString::from(String::from(JsonString::from(foo)));
+JsonString::from_json(&String::from(JsonString::from(foo)));
 ```
 
 This is helpful when a function signature requires a `String` or `JsonString`
@@ -366,20 +368,25 @@ JSON data by _wrapping_ already serialized data e.g. with `format!`.
 An example taken from core:
 
 ```rust
+fn result_to_json_string<T: Into<JsonString>, E: Into<JsonString>>(
+    result: Result<T, E>,
+) -> JsonString {
+    let is_ok = result.is_ok();
+    let inner_json: JsonString = match result {
+        Ok(inner) => inner.into(),
+        Err(inner) => inner.into(),
+    };
+    let inner_string = String::from(inner_json);
+    JsonString::from_json(&format!(
+        "{{\"{}\":{}}}",
+        if is_ok { "Ok" } else { "Err" },
+        inner_string
+    ))
+}
+
 impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
-        let is_ok = result.is_ok();
-        let inner_json: JsonString = match result {
-            Ok(inner) => inner.into(),
-            Err(inner) => inner.into(),
-        };
-        let inner_string = String::from(inner_json);
-        format!(
-            "{{\"{}\":{}}}",
-            if is_ok { "Ok" } else { "Err" },
-            inner_string
-        )
-        .into()
+        result_to_json_string(result)
     }
 }
 ```
@@ -408,7 +415,7 @@ do what we need because it always wraps strings, we need to _nest_ the `String`
 serialization.
 
 ```rust
-let foo = String::from(JsonString::from("foo")); // "foo" = not what we want
+let foo = String::from(JsonString::from_json("foo")); // "foo" = not what we want
 let foo = ???; // "\"foo\"" = what we want
 ```
 

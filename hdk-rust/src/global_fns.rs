@@ -1,7 +1,7 @@
 //! This file contains small helper functions relating to WASM memory management
 //! and serialization used throughout the HDK.
 
-use crate::globals::G_MEM_STACK;
+use crate::api::G_MEM_STACK;
 use holochain_core_types::{error::RibosomeEncodingBits, json::JsonString};
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::memory::{

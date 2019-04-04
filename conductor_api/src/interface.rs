@@ -1,20 +1,18 @@
 use crate::holo_signing_service::request_signing_service;
 use base64;
-use holochain_core::{
-    nucleus::{
-        actions::call_zome_function::make_cap_request_for_call,
-        ribosome::capabilities::CapabilityRequest,
-    },
-    state::State,
+use holochain_core::nucleus::{
+    actions::call_zome_function::make_cap_request_for_call,
+    ribosome::capabilities::CapabilityRequest,
 };
 
-use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance};
+use holochain_core_types::{
+    agent::AgentId, cas::content::Address, json::JsonString, signature::Provenance,
+};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
-use serde_json;
 use std::{
     collections::HashMap,
     convert::TryFrom,
@@ -27,7 +25,9 @@ use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
-use serde_json::map::Map;
+use holochain_dpki::utils::SeedContext;
+use keystore::{KeyType, Keystore};
+use serde_json::{self, map::Map};
 
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
@@ -161,7 +161,7 @@ impl ConductorApiBuilder {
                         context.clone(),
                         token,
                         &func_name,
-                        params_string.clone(),
+                        JsonString::from_json(&params_string.clone()),
                     ),
                     Some(json_provenance) => {
                         let provenance: Provenance =
@@ -240,49 +240,6 @@ impl ConductorApiBuilder {
         instance_name: String,
         instance: Arc<RwLock<Holochain>>,
     ) -> Self {
-        let hc_lock = instance.clone();
-        let hc = hc_lock.read().unwrap();
-        let state: State = hc.state().unwrap();
-        let nucleus = state.nucleus();
-        let dna = nucleus.dna();
-        match dna {
-            Some(dna) => {
-                for (zome_name, zome) in dna.zomes {
-                    for fn_decl in zome.fn_declarations {
-                        let func_name = String::from(fn_decl.name);
-                        let zome_name = zome_name.clone();
-                        let method_name = format!("{}/{}/{}", instance_name, zome_name, func_name);
-                        let hc_lock_inner = hc_lock.clone();
-                        self.io.add_method(&method_name, move |params| {
-                            let mut hc = hc_lock_inner.write().unwrap();
-                            let params_string = serde_json::to_string(&params)
-                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                            println!("ZOME CALLING USING instance/zome/function ROUTE HAS BEEN DEPRECATED.  USE call INSTEAD");
-                            let cap_request = {
-                                // TODO: get the token from the parameters.  If not there assume public token.
-                                // currently we are always getting the public token and signing it ourself
-                                let context = hc.context();
-                                let token = context.get_public_token().map_err(|err|
-                                    jsonrpc_core::Error::invalid_params(format!("public token not found... {}", err.to_string())),
-                                )?;
-                                make_cap_request_for_call(
-                                    context.clone(),
-                                    token,
-                                    &func_name,
-                                    params_string.clone(),
-                                )
-                            };
-
-                            let response = hc
-                                .call(&zome_name, cap_request, &func_name, &params_string)
-                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                            Ok(Value::String(response.to_string()))
-                        })
-                    }
-                }
-            }
-            None => unreachable!(),
-        };
         self.instances
             .insert(instance_name.clone(), instance.clone());
         self.instance_ids_map.insert(
@@ -447,7 +404,7 @@ impl ConductorApiBuilder {
     ///     * `name`: Nickname of this agent configuration
     ///     * `public_address`: Public part of this agents key. Has to match the private key in the
     ///         given key file.
-    ///     * `key_file`: Local path to the file that holds this agent configuration's private key
+    ///     * `keystore_file`: Local path to the file that holds this agent configuration's private key
     ///
     ///  * `admin/agent/remove`
     ///     Remove an agent from the conductor config.
@@ -667,21 +624,17 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             let name = Self::get_as_string("name", &params_map)?;
-            let public_address = Self::get_as_string("public_address", &params_map)?;
-            let key_file = Self::get_as_string("key_file", &params_map)?;
+
             let holo_remote_key = params_map
                 .get("holo_remote_key")
-                .map(|k| k.as_bool())
-                .unwrap_or_default();
+                .map(|k| {
+                    k.as_str()
+                        .ok_or("holo_remote_key must be a string")
+                        .map_err(|e| jsonrpc_core::Error::invalid_params(e))
+                }) // Option<Result<_, _>>
+                .transpose()?; // Result<Option<_>, _>
 
-            let agent = AgentConfiguration {
-                id,
-                name,
-                public_address,
-                key_file,
-                holo_remote_key,
-            };
-            conductor_call!(|c| c.add_agent(agent))?;
+            conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;
             Ok(json!({"success": true}))
         });
 
@@ -886,7 +839,7 @@ impl ConductorApiBuilder {
             // Return as base64 encoded string
             let signature = base64::encode(&**message_signature);
 
-            Ok(json!({"payload": payload, "signature": signature}))
+            Ok(json!({ "signature": signature }))
         });
         self
     }
@@ -909,8 +862,107 @@ impl ConductorApiBuilder {
                     jsonrpc_core::Error::internal_error()
                 })?;
 
-            Ok(json!({"payload": payload, "signature": signature}))
+            Ok(json!({ "signature": signature }))
         });
+        self
+    }
+
+    pub fn with_agent_keystore_functions(mut self, keystore: Arc<Mutex<Keystore>>) -> Self {
+        let k = keystore.clone();
+        self.io.add_method("agent/keystore/list", move |_params| {
+            Ok(serde_json::Value::Array(
+                k.lock()
+                    .unwrap()
+                    .list()
+                    .iter()
+                    .map(|secret_name| json!(secret_name))
+                    .collect(),
+            ))
+        });
+
+        let k = keystore.clone();
+        self.io
+            .add_method("agent/keystore/add_random_seed", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("dst_id", &params_map)?;
+                let size = Self::get_as_int("size", &params_map)? as usize;
+                k.lock()
+                    .unwrap()
+                    .add_random_seed(&id, size)
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?;
+
+                Ok(json!({"success": true}))
+            });
+
+        let k = keystore.clone();
+        self.io
+            .add_method("agent/keystore/add_seed_from_seed", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let src_id = Self::get_as_string("src_id", &params_map)?;
+                let dst_id = Self::get_as_string("dst_id", &params_map)?;
+                let context = Self::get_as_string("context", &params_map)?;
+                let index = Self::get_as_int("index", &params_map)? as u64;
+
+                let context_bytes = context.as_bytes();
+                if context_bytes.len() != 8 {
+                    return Err(jsonrpc_core::Error::invalid_params(String::from(
+                        "`context` has to be 8 bytes",
+                    )));
+                }
+
+                let mut context_bytes_array: [u8; 8] = Default::default();
+                context_bytes_array.copy_from_slice(context_bytes);
+
+                let seed_context = SeedContext::new(context_bytes_array);
+
+                k.lock()
+                    .unwrap()
+                    .add_seed_from_seed(&src_id, &dst_id, &seed_context, index)
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?;
+
+                Ok(json!({"success": true}))
+            });
+
+        let k = keystore.clone();
+        self.io
+            .add_method("agent/keystore/add_key_from_seed", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let src_id = Self::get_as_string("src_id", &params_map)?;
+                let dst_id = Self::get_as_string("dst_id", &params_map)?;
+                let key_type_string = Self::get_as_string("key_type", &params_map)?;
+                let key_type = match key_type_string.to_lowercase().as_str() {
+                    "signing" => KeyType::Signing,
+                    "encrypting" => KeyType::Encrypting,
+                    _ => {
+                        return Err(jsonrpc_core::Error::invalid_params(format!(
+                            "`key_type` has to be one of 'signing' or 'encrypting'. params were: {:?}",params_map
+                        )));
+                    }
+                };
+
+                let pub_key = k.lock()
+                    .unwrap()
+                    .add_key_from_seed(&src_id, &dst_id, key_type)
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?;
+
+                Ok(json!({"pub_key": pub_key}))
+            });
+
+        let k = keystore.clone();
+        self.io.add_method("agent/keystore/sign", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let src_id = Self::get_as_string("src_id", &params_map)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+
+            let signature = k
+                .lock()
+                .unwrap()
+                .sign(&src_id, payload.clone())
+                .map_err(|_| jsonrpc_core::Error::internal_error())?;
+
+            Ok(json!({ "signature": String::from(signature) }))
+        });
+
         self
     }
 }
@@ -958,7 +1010,6 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""test-instance-1/greeter/hello""#));
         assert!(!result.contains(r#""test-instance-2//test""#));
     }
 
@@ -978,7 +1029,6 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""happ-store/greeter/hello""#));
         assert!(!result.contains(r#""test-instance-1//test""#));
     }
 

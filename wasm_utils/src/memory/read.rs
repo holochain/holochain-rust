@@ -10,7 +10,7 @@ impl WasmAllocation {
 
     /// Retrieve a stored string from an allocation.
     /// Return error code if encoded_allocation is invalid.
-    pub fn read_to_string(&self) -> String {
+    pub fn read_to_string(self) -> String {
         WasmAllocation::read_str_raw(MemoryInt::from(self.offset()) as *mut c_char).to_string()
     }
 }

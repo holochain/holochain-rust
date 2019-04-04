@@ -1,5 +1,5 @@
 use eav::{eavi::EntityAttributeValueIndex, query::EaviQuery};
-use error::error::{HcResult, HolochainError};
+use error::{HcResult, HolochainError};
 use objekt;
 use std::{
     collections::BTreeSet,
@@ -36,15 +36,14 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
 
 clone_trait_object!(EntityAttributeValueStorage);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ExampleEntityAttributeValueStorage {
     storage: Arc<RwLock<BTreeSet<EntityAttributeValueIndex>>>,
 }
+
 impl ExampleEntityAttributeValueStorage {
     pub fn new() -> ExampleEntityAttributeValueStorage {
-        ExampleEntityAttributeValueStorage {
-            storage: Arc::new(RwLock::new(BTreeSet::new())),
-        }
+        Default::default()
     }
 }
 

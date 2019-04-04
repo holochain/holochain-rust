@@ -11,7 +11,7 @@ use std::{
 
 use holochain_conductor_api::{
     conductor::Conductor as RustConductor,
-    key_loaders::test_keybundle_loader,
+    key_loaders::test_keystore_loader,
     config::{load_configuration, Configuration},
 };
 use holochain_core::{
@@ -22,6 +22,7 @@ use holochain_core::{
 use holochain_core_types::{
     cas::content::AddressableContent,
     entry::Entry,
+    json::JsonString,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
@@ -75,7 +76,7 @@ declare_types! {
                 panic!("Invalid type specified for config, must be object or string");
             };
             let mut conductor = RustConductor::from_config(config);
-            conductor.key_loader = test_keybundle_loader();
+            conductor.key_loader = test_keystore_loader();
             let is_running = Arc::new(Mutex::new(false));
 
             Ok(TestConductor { conductor, sender_tx: None, is_running, is_started: false })
@@ -100,7 +101,7 @@ declare_types! {
                     let mut is_running = tc.is_running.lock().unwrap();
                     *is_running = true;
                 }
-                tc.conductor.load_config_with_signal(Some(signal_tx)).and_then(|_| {
+                tc.conductor.boot_from_config(Some(signal_tx)).and_then(|_| {
                     tc.conductor.start_all_instances().map_err(|e| e.to_string()).map(|_| {
                         await_held_agent_ids(tc.conductor.config(), &signal_rx);
                         let num_instances = tc.conductor.instances().len();
@@ -168,7 +169,7 @@ declare_types! {
                         context.clone(),
                         token,
                         &fn_name,
-                        params.clone(),
+                        JsonString::from_json(&params),
                     )
                 };
                 instance.call(&zome, cap, &fn_name, &params)

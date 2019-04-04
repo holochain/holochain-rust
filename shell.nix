@@ -592,6 +592,15 @@ All binaries are for 64-bit operating systems.
      echo "current branch is not ${release-branch}!"
      exit 1
    fi
+
+   export GITHUB_USER='holochain'
+   export GITHUB_REPO='holochain-rust'
+   export GITHUB_TOKEN=$( git config --get hub.oauthtoken )
+
+   echo
+   echo 'Setting release to pre-release state'
+   echo
+   github-release -v edit --tag ${core-tag} --pre-release
   '';
 
   hc-release-pulse-sync = pkgs.writeShellScriptBin "hc-release-pulse-sync"

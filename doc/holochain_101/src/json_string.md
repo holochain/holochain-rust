@@ -339,7 +339,7 @@ important edge cases that we need to cover with additional techniques/tooling.
 
 #### String handling
 
-`JsonString::from_json(&str)` the `&str` passed to it is already a
+`JsonString::from_json(&str)` requires the `&str` passed to it is already a
 serialized JSON value. We may add the option to validate this for debug builds at runtime in the future.
 
 Previously `JsonString` implemented the `From<String>` trait but this was removed. Strings are a special case as they may either contain serialized json or be used as a JSON string primitive. `JsonString::from_json` makes it explicit that you mean the former. 

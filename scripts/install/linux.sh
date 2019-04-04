@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Check if the script is run by the root user
-if [ "$EUID" -ne 0 ]
+if [ "$EUID" -eq 0 ]
 then
 	# Script is run by root, so we do not need `sudo`
 	as_root=""
@@ -19,6 +19,7 @@ else
 fi
 
 # basics
+apt-get update
 $as_root apt-get install -y curl git
 
 # needed for rust_sodium-sys + neon

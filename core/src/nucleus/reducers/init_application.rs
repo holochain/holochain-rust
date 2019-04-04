@@ -7,7 +7,7 @@ use std::sync::Arc;
 use crate::nucleus::ribosome::wasmi_factory::wasmi_factory;
 use holochain_core_types::error::HolochainError;
 use holochain_core_types::dna::zome::Zome;
-use crate::nucleus::state::ModuleRefMutex;
+use crate::nucleus::state::ModuleMutex;
 
 /// Reduce InitializeChain Action
 /// Switch status to failed if an initialization is tried for an
@@ -51,11 +51,11 @@ pub fn reduce_initialize_chain(
 }
 
 /// Creates a pool of 8 WASM module instances all with the same code from the given zome
-fn create_ribosomes_for_zome(zome: &Zome) -> Result<Vec<ModuleRefMutex>, HolochainError> {
+fn create_ribosomes_for_zome(zome: &Zome) -> Result<Vec<ModuleMutex>, HolochainError> {
     let mut pool = Vec::new();
     for _i in 1..8 {
         let ribosome = wasmi_factory(zome.code.code.clone())?;
-        pool.push(ModuleRefMutex::new(ribosome));
+        pool.push(ModuleMutex::new(ribosome));
     };
     Ok(pool)
 }

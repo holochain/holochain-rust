@@ -1,16 +1,14 @@
 use crate::nucleus::ribosome::api::ZomeApiFunction;
 use holochain_core_types::error::HolochainError;
 use std::str::FromStr;
-use wasmi::{
-    self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver,
-    ModuleInstance, ModuleRef, NopExternals, Signature, ValueType,
-};
+use wasmi::{self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver, ModuleInstance, ModuleRef, NopExternals, Signature, ValueType, Module};
 
 /// Creates WASMi module from gibven WASM binary
-pub fn wasmi_factory(wasm: Vec<u8>) -> Result<ModuleRef, HolochainError> {
-    let module =
-        wasmi::Module::from_buffer(wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))?;
+pub fn wasmi_factory(wasm: Vec<u8>) -> Result<Module, HolochainError> {
+    wasmi::Module::from_buffer(wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))
+}
 
+pub fn wasm_instance_from_module(module: &Module) -> Result<ModuleRef, HolochainError> {
     // invoke_index and resolve_func work together to enable callable host functions
     // within WASM modules, which is how the core API functions
     // read about the Externals trait for more detail

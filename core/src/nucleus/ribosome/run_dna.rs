@@ -14,15 +14,16 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
 use std::convert::TryFrom;
-use wasmi::{RuntimeValue, ModuleRef};
-use crate::nucleus::state::ModuleRefMutex;
+use wasmi::{RuntimeValue, Module};
+use crate::nucleus::state::ModuleMutex;
 use std::sync::MutexGuard;
 use std::thread::sleep;
 use std::time::Duration;
+use crate::nucleus::ribosome::wasmi_factory::wasm_instance_from_module;
 
-fn with_ribosome<F: FnOnce(MutexGuard<ModuleRef>) -> ZomeFnResult>(data: WasmCallData, f: F) -> ZomeFnResult {
+fn with_ribosome<F: FnOnce(MutexGuard<Module>) -> ZomeFnResult>(data: WasmCallData, f: F) -> ZomeFnResult {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
-        let transient_module = ModuleRefMutex::new(wasmi_factory(*wasm.clone())?);
+        let transient_module = ModuleMutex::new(wasmi_factory(*wasm.clone())?);
         let lock = transient_module.lock()?;
         return f(lock)
     } else {
@@ -50,7 +51,8 @@ fn with_ribosome<F: FnOnce(MutexGuard<ModuleRef>) -> ZomeFnResult>(data: WasmCal
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
 pub fn run_dna(_wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
-    with_ribosome(data.clone(), move |wasm_instance| {
+    with_ribosome(data.clone(), move |wasm_module| {
+        let wasm_instance = wasm_instance_from_module(&wasm_module)?;
         // write input arguments for module call in memory Buffer
         let input_parameters: Vec<_> = parameters.unwrap_or_default();
 

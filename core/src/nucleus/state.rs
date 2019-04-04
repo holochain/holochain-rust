@@ -13,7 +13,8 @@ use holochain_core_types::{
 use snowflake;
 use std::{collections::HashMap, convert::TryFrom, sync::{Arc, Mutex}};
 use std::ops::Deref;
-use wasmi::ModuleRef;
+use wasmi::Module;
+use std::fmt::{self, Debug, Formatter};
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -37,25 +38,31 @@ impl PendingValidationKey {
     }
 }
 
-/// Wrapper around wasmi::ModuleRef since it does not implement Clone, Debug, PartialEq, Eq,
+/// Wrapper around wasmi::Module since it does not implement Clone, Debug, PartialEq, Eq,
 /// which are all needed to add it to the state below.
-#[derive(Clone, Debug)]
-pub struct ModuleRefMutex(Arc<Mutex<ModuleRef>>);
-impl ModuleRefMutex {
-    pub fn new(instance: ModuleRef) -> Self {
-        ModuleRefMutex(Arc::new(Mutex::new(instance)))
+#[derive(Clone)]
+pub struct ModuleMutex(Arc<Mutex<Module>>);
+impl ModuleMutex {
+    pub fn new(module: Module) -> Self {
+        ModuleMutex(Arc::new(Mutex::new(module)))
     }
 }
-impl PartialEq for ModuleRefMutex {
-    fn eq(&self, other: &ModuleRefMutex) -> bool {
-        format!("{:?}", *self.lock().unwrap()) == format!("{:?}", *other.lock().unwrap())
+impl PartialEq for ModuleMutex {
+    fn eq(&self, _other: &ModuleMutex) -> bool {
+        //*self == *other
+        false
     }
 }
-impl Eq for ModuleRefMutex {}
-impl Deref for ModuleRefMutex {
-    type Target = Arc<Mutex<ModuleRef>>;
+impl Eq for ModuleMutex {}
+impl Deref for ModuleMutex {
+    type Target = Arc<Mutex<Module>>;
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+impl Debug for ModuleMutex {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "ModuleMutex")
     }
 }
 
@@ -75,7 +82,7 @@ pub struct NucleusState {
     /// Since WASMi instances are initialized with the WASM they run,
     /// we need distinct ribosomes for each zome.
     /// This is a mapping from zome name to a pool (=vector) of according ribosomes.
-    pub ribosomes: HashMap<String, Vec<ModuleRefMutex>>,
+    pub ribosomes: HashMap<String, Vec<ModuleMutex>>,
 
     // @TODO eventually drop stale calls
     // @see https://github.com/holochain/holochain-rust/issues/166

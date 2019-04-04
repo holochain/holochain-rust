@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds pickle db for cas and eav [#1178](https://github.com/holochain/holochain-rust/pull/1178)
 - Adds a `--quiet` option to `hc keygen` for machine-readable output, intended for use in scripts. [#1197](https://github.com/holochain/holochain-rust/pull/1197)
 - Adds logging output for every failed WASM execution showing the call that caused this error. [#1200](https://github.com/holochain/holochain-rust/pull/1200) This helps with debugging "Arguement Deserialization failed" errors.
+- Adds DNA hash to `hc package` output [#1212](https://github.com/holochain/holochain-rust/pull/1212)
 
 ### Changed
 

@@ -21,14 +21,24 @@ pub struct EavPickleStorage {
 }
 
 impl EavPickleStorage {
-    pub fn new<P: AsRef<Path>>(db_path: P) -> EavPickleStorage {
+    pub fn new<P: AsRef<Path> + Clone>(db_path: P) -> EavPickleStorage {
+        let eav_db = db_path.as_ref().join("eav").with_extension("db");
         EavPickleStorage {
             id: Uuid::new_v4(),
-            db: Arc::new(RwLock::new(PickleDb::new(
-                db_path,
-                PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),
-                SerializationMethod::Cbor,
-            ))),
+            db: Arc::new(RwLock::new(
+                PickleDb::load(
+                    eav_db.clone(),
+                    PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),
+                    SerializationMethod::Cbor,
+                )
+                .unwrap_or_else(|_| {
+                    PickleDb::new(
+                        eav_db,
+                        PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),
+                        SerializationMethod::Cbor,
+                    )
+                }),
+            )),
         }
     }
 }
@@ -46,19 +56,22 @@ impl EntityAttributeValueStorage for EavPickleStorage {
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
-        let index_str = eav.index().to_string();
-        let value = self.db.read()?.get::<EntityAttributeValueIndex>(&index_str);
-        if let Some(_) = value {
-            let new_eav =
+        let mut inner = self.db.write().unwrap();
+
+        //hate to introduce mutability but it is saved by the immutable clones at the end
+        let mut index_str = eav.index().to_string();
+        let mut value = inner.get::<EntityAttributeValueIndex>(&index_str);
+        let mut new_eav = eav.clone();
+        while value.is_some() {
+            new_eav =
                 EntityAttributeValueIndex::new(&eav.entity(), &eav.attribute(), &eav.value())?;
-            self.add_eavi(&new_eav)
-        } else {
-            self.db
-                .write()?
-                .set(&*index_str, &eav)
-                .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
-            Ok(Some(eav.clone()))
+            index_str = new_eav.index().to_string();
+            value = inner.get::<EntityAttributeValueIndex>(&index_str);
         }
+        inner
+            .set(&*index_str, &new_eav)
+            .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
+        Ok(Some(new_eav.clone()))
     }
 
     fn fetch_eavi(
@@ -74,7 +87,6 @@ impl EntityAttributeValueStorage for EavPickleStorage {
             .filter(|filter| filter.is_some())
             .map(|y| y.unwrap())
             .collect::<BTreeSet<EntityAttributeValueIndex>>();
-
         let entries_iter = entries.iter().cloned();
         Ok(query.run(entries_iter))
     }

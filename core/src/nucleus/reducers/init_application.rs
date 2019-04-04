@@ -15,7 +15,7 @@ use crate::nucleus::state::ModuleRefMutex;
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 pub fn reduce_initialize_chain(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -36,14 +36,13 @@ pub fn reduce_initialize_chain(
             // Set DNA
             state.dna = Some(dna.clone());
             // Create Ribosomes
-            for (zome_name, zome) in state.dna.as_ref().unwrap().zomes.iter() {
+            for (zome_name, zome) in dna.zomes.iter() {
                 match create_ribosomes_for_zome(zome) {
-                    Ok(pool) =>  state.ribosomes.insert(zome_name.clone(), pool),
+                    Ok(pool) => {
+                        state.ribosomes.insert(zome_name.clone(), pool);
+                    },
                     Err(err) => {
-                        state.status = NucleusStatus::InitializationFailed(format!(
-                            "Could not create ribosome: {:?}", err
-                        ));
-                        return;
+                        context.log(format!("err/nucleus/initialize: Could not create ribosome: {:?}", err));
                     }
                 };
             }

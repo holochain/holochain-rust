@@ -244,7 +244,7 @@ Yes, `serde` supports many serialization options but:
 - Serde is already quite heavy in compilation/WASM files so we don't want to
   bloat that more with edge-case serialization needs
   - every new format is a new crate
-- We don't (yet) have any use-cases showing that JSON is a problem/bottlenec<k
+- We don't (yet) have any use-cases showing that JSON is a problem/bottleneck
 - Adding more serialization options would exacerbate non-idiomatic conductor
   and HDK data structure mapping issues (see above)
 

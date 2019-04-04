@@ -30,7 +30,7 @@ pub fn run(
     conductor.key_loader = test_keystore_loader();
 
     conductor
-        .load_config()
+        .boot_from_config(None)
         .map_err(|err| format_err!("{}", err))?;
 
     conductor.start_all_interfaces();
@@ -74,6 +74,7 @@ pub fn hc_run_configuration(
     persist: bool,
     networked: bool,
     interface_type: &String,
+    logging: bool,
 ) -> DefaultResult<Configuration> {
     Ok(Configuration {
         agents: vec![agent_configuration()],
@@ -81,7 +82,7 @@ pub fn hc_run_configuration(
         instances: vec![instance_configuration(storage_configuration(persist)?)],
         interfaces: vec![interface_configuration(&interface_type, port)?],
         network: networking_configuration(networked),
-        logger: logger_configuration(),
+        logger: logger_configuration(logging),
         ..Default::default()
     })
 }
@@ -134,7 +135,7 @@ fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
     if persist {
         fs::create_dir_all(LOCAL_STORAGE_PATH)?;
 
-        Ok(StorageConfiguration::File {
+        Ok(StorageConfiguration::Pickle {
             path: LOCAL_STORAGE_PATH.into(),
         })
     } else {
@@ -180,11 +181,15 @@ fn interface_configuration(
 }
 
 // LOGGER
-fn logger_configuration() -> LoggerConfiguration {
+fn logger_configuration(logging: bool) -> LoggerConfiguration {
     // temporary log rules, should come from a configuration
     LoggerConfiguration {
         logger_type: "debug".to_string(),
-        rules: LogRules::new(),
+        rules: if logging {
+            LogRules::default()
+        } else {
+            LogRules::new()
+        },
     }
 }
 
@@ -307,7 +312,7 @@ mod tests {
         let persist_store = super::storage_configuration(true).unwrap();
         assert_eq!(
             persist_store,
-            StorageConfiguration::File {
+            StorageConfiguration::Pickle {
                 path: ".hc".to_string()
             }
         );

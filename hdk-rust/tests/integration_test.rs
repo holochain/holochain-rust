@@ -13,14 +13,15 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-use hdk::error::{ZomeApiError, ZomeApiResult};
+#[cfg(not(windows))]
+use hdk::error::ZomeApiError;
+use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    crud_status::CrudStatus,
     dna::{
         entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
@@ -28,12 +29,14 @@ use holochain_core_types::{
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
-        Entry, EntryWithMeta,
+        Entry,
     },
-    error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
+    error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     hash::HashString,
     json::JsonString,
 };
+#[cfg(not(windows))]
+use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error::CoreError};
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
@@ -113,6 +116,11 @@ pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 }
 
 #[no_mangle]
+pub fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
 pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
@@ -159,6 +167,31 @@ pub fn __list_functions(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
 #[no_mangle]
 pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_keystore_list(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_keystore_new_random(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_keystore_derive_seed(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
@@ -295,7 +328,12 @@ fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainR
     let cap_call = {
         let context = hc.context();
         let token = context.get_public_token().unwrap();
-        make_cap_request_for_call(context.clone(), token, fn_name, params.to_string())
+        make_cap_request_for_call(
+            context.clone(),
+            token,
+            fn_name,
+            JsonString::from_json(params),
+        )
     };
     hc.call("test_zome", cap_call, fn_name, params)
 }
@@ -359,7 +397,7 @@ fn can_round_trip() {
     );
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"first\":\"bob\",\"second\":\"had a boring day\"}"),
+        JsonString::from_json("{\"first\":\"bob\",\"second\":\"had a boring day\"}"),
     );
 
     let test_logger = test_logger.lock().unwrap();
@@ -407,6 +445,7 @@ fn can_get_entry_ok() {
 fn can_get_entry_bad() {
     let (mut hc, _) = start_holochain_instance("can_get_entry_bad", "alice");
     // Call the exposed wasm function that calls the Commit API function
+
     let result = make_test_call(
         &mut hc,
         "check_commit_entry_macro",
@@ -504,7 +543,7 @@ fn has_populated_validation_data() {
     //
     /*
     assert_eq!(
-        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"package\\\":{\\\"chain_header\\\":{\\\"entry_type\\\":{\\\"App\\\":\\\"validation_package_tester\\\"},\\\"entry_address\\\":\\\"QmYQPp1fExXdKfmcmYTbkw88HnCr3DzMSFUZ4ncEd9iGBY\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmSQqKHPpYZbafF7PXPKx31UwAbNAmPVuSHHxcBoDcYsci\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},\\\"source_chain_entries\\\":[{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"alex\\\",\\\"entry_type\\\":\\\"%agent_id\\\"}],\\\"source_chain_headers\\\":[{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmRHUwiUuFJiMyRmKaA1U49fXEnT8qbZMoj2V9maa4Q3JE\\\",\\\"link_same_type\\\":\\\"QmRHUwiUuFJiMyRmKaA1U49fXEnT8qbZMoj2V9maa4Q3JE\\\",\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmRYerwRRXYxmYoxq1LTZMVVRfjNMAeqmdELTNDxURtHEZ\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":\\\"AgentId\\\",\\\"entry_address\\\":\\\"QmQw3V41bAWkQA9kwpNfU3ZDNzr9YW4p9RV4QHhFD3BkqA\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmQJxUSfJe2QoxTyEwKQX9ypbkcNv3cw1vasGTx1CUpJFm\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"}],\\\"custom\\\":null},\\\"sources\\\":[\\\"<insert your agent key here>\\\"],\\\"lifecycle\\\":\\\"Chain\\\",\\\"action\\\":\\\"Commit\\\"}\"}}"),
+        JsonString::from_json("{\"Err\":{\"Internal\":\"{\\\"package\\\":{\\\"chain_header\\\":{\\\"entry_type\\\":{\\\"App\\\":\\\"validation_package_tester\\\"},\\\"entry_address\\\":\\\"QmYQPp1fExXdKfmcmYTbkw88HnCr3DzMSFUZ4ncEd9iGBY\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmSQqKHPpYZbafF7PXPKx31UwAbNAmPVuSHHxcBoDcYsci\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},\\\"source_chain_entries\\\":[{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"alex\\\",\\\"entry_type\\\":\\\"%agent_id\\\"}],\\\"source_chain_headers\\\":[{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmRHUwiUuFJiMyRmKaA1U49fXEnT8qbZMoj2V9maa4Q3JE\\\",\\\"link_same_type\\\":\\\"QmRHUwiUuFJiMyRmKaA1U49fXEnT8qbZMoj2V9maa4Q3JE\\\",\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmRYerwRRXYxmYoxq1LTZMVVRfjNMAeqmdELTNDxURtHEZ\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":\\\"AgentId\\\",\\\"entry_address\\\":\\\"QmQw3V41bAWkQA9kwpNfU3ZDNzr9YW4p9RV4QHhFD3BkqA\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmQJxUSfJe2QoxTyEwKQX9ypbkcNv3cw1vasGTx1CUpJFm\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"}],\\\"custom\\\":null},\\\"sources\\\":[\\\"<insert your agent key here>\\\"],\\\"lifecycle\\\":\\\"Chain\\\",\\\"action\\\":\\\"Commit\\\"}\"}}"),
         result.unwrap(),
     );
     */
@@ -516,7 +555,7 @@ fn can_link_entries() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
+    assert_eq!(result.unwrap(), JsonString::from_json(r#"{"Ok":null}"#));
 }
 
 #[test]
@@ -525,7 +564,7 @@ fn can_remove_link() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
+    assert_eq!(result.unwrap(), JsonString::from_json(r#"{"Ok":null}"#));
 }
 
 #[test]
@@ -578,7 +617,7 @@ fn can_roundtrip_links() {
     // (i.e. longer on a slow CI and when multiple tests are run simultaneausly).
     let mut both_links_present = false;
     let mut tries = 0;
-    let mut result_of_get = JsonString::from("");
+    let mut result_of_get = JsonString::from_json("{}");
     while !both_links_present && tries < 10 {
         tries = tries + 1;
         // Now get_links on the base and expect both to be there

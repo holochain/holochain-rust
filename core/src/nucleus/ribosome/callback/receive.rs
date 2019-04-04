@@ -30,7 +30,7 @@ pub fn receive(
     let call = CallbackFnCall::new(
         zome,
         &Callback::Receive.as_str().to_string(),
-        params.clone(),
+        JsonString::from_json(&params),
     );
 
     let dna = context.get_dna().expect("Callback called without DNA set!");
@@ -46,7 +46,7 @@ pub fn receive(
 
     match ribosome::run_dna(
         wasm.code.clone(),
-        Some(call.clone().parameters.into_bytes()),
+        Some(call.clone().parameters.to_bytes()),
         WasmCallData::new_callback_call(context, dna.name, call),
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),

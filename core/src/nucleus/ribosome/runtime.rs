@@ -44,7 +44,7 @@ pub struct CallbackCallData {
 pub enum WasmCallData {
     ZomeCall(ZomeCallData),
     CallbackCall(CallbackCallData),
-    DirectCall(String),
+    DirectCall(String, Box<Vec<u8>>),
 }
 
 #[derive(Debug)]
@@ -82,7 +82,7 @@ impl WasmCallData {
         match self {
             WasmCallData::ZomeCall(data) => data.call.fn_name.clone(),
             WasmCallData::CallbackCall(data) => data.call.fn_name.clone(),
-            WasmCallData::DirectCall(name) => name.to_string(),
+            WasmCallData::DirectCall(name, _) => name.to_string(),
         }
     }
 }

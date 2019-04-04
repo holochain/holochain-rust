@@ -19,7 +19,7 @@ else
 fi
 
 # basics
-apt-get update
+$as_root apt-get update
 $as_root apt-get install -y curl git
 
 # needed for rust_sodium-sys + neon

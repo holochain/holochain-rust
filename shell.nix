@@ -436,17 +436,17 @@ Review the generated release notes with `nix-shell --run hc-generate-release-not
     echo "timestamping and retemplating changelog"
     sed -i "s/\[Unreleased\]/${changelog-template}\#\# \[${core-version}\] - $(date --iso --u)/" ./CHANGELOG.md
   fi
+  '';
 
-  echo
-  echo "the following LOC in README files reference the WRONG rust nightly date (should be ${date}):"
-  echo
+  hc-readme-grep-nightly = pkgs.writeShellScriptBin "hc-readme-grep-nightly"
+  ''
   find . \
    -iname "readme.*" \
    | xargs cat \
    | grep -E 'nightly-' \
-   | grep -v '${date}'
+   | grep -v '${date}' \
+   | cat
   '';
-
 
   pulse-url = "https://medium.com/@holochain/${pulse-url-hash}";
   release-notes-template = ''
@@ -725,6 +725,7 @@ stdenv.mkDerivation rec {
     hc-changelog-grep-pr-references
     hc-lint-release-docs
     hc-generate-release-notes
+    hc-readme-grep-nightly
 
     hc-do-release
 

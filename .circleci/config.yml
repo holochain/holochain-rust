@@ -31,6 +31,20 @@ jobs:
          echo "$UNPINNED"
          exit 1
         fi
+   # don't allow changelog root items with no PR reference
+   - run:
+      name: no changelogs without PR references
+      command: |
+        # temporary avoid build fails due to greps
+        set +eo pipefail
+        export UNREFERENCED=`nix-shell --run hc-changelog-grep-pr-references`
+        set -eo pipefail
+        if [[ $UNREFERENCED ]]
+        then
+          echo "all root level changelog items need a PR reference:"
+          echo "$UNREFERENCED"
+          exit 1
+        fi
 
  app-spec-tests:
   docker:

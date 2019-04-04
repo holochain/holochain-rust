@@ -83,6 +83,11 @@ let
    hc-node-flush
    find . -name "Cargo.toml" | xargs -I {} cargo upgrade "$1" --all --manifest-path {}
   '';
+
+  hc-changelog-grep-pr-references = pkgs.writeShellScriptBin "hc-changelog-grep-pr-references"
+  ''
+  cat CHANGELOG.md | grep -E '^-\s' | grep -Ev '[0-9]\]' | cat
+  '';
   hc-cargo-toml-grep-unpinned = pkgs.writeShellScriptBin "hc-cargo-toml-grep-unpinned"
   ''
    find . -type f \( -name "Cargo.toml" -or -name "Cargo.template.toml" \) \
@@ -433,11 +438,6 @@ Review the generated release notes with `nix-shell --run hc-generate-release-not
   fi
 
   echo
-  echo "the following LOC in the CHANGELOG.md are missing a PR reference:"
-  echo
-  cat CHANGELOG.md | grep -E '^-\s' | grep -Ev '[0-9]\]'
-
-  echo
   echo "the following LOC in README files reference the WRONG rust nightly date (should be ${date}):"
   echo
   find . \
@@ -722,6 +722,7 @@ stdenv.mkDerivation rec {
 
     hc-prepare-release
     hc-test-release
+    hc-changelog-grep-pr-references
     hc-lint-release-docs
     hc-generate-release-notes
 

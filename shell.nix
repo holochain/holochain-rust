@@ -290,16 +290,8 @@ Then run `nix-shell --run hc-prepare-release`
 
 ## Release docs
 
-Run the basic linter with `nix-shell --run hc-lint-release-docs`
-
-The linter will do some things for you and provide helpful debug info.
-
 - [ ] reviewed and updated CHANGELOG
-    - [ ] correct version + date
-    - [ ] inserted template for next release
-    - [ ] all root items have a PR link
 - [ ] reviewed and updated README files
-    - [ ] correct rust nightly version
 
 Review the generated release notes with `nix-shell --run hc-generate-release-notes`
 
@@ -375,6 +367,7 @@ Review the generated release notes with `nix-shell --run hc-generate-release-not
      hc-prepare-pulse-tag \
      && hc-prepare-release-branch \
      && hc-prepare-crate-versions \
+     && hc-ensure-changelog-version \
      && hc-prepare-release-pr \
      ;;
     *)
@@ -383,36 +376,39 @@ Review the generated release notes with `nix-shell --run hc-generate-release-not
    esac
   '';
 
-  hc-test-release = pkgs.writeShellScriptBin "hc-test-release"
+  hc-do-release = pkgs.writeShellScriptBin "hc-do-release"
   ''
   echo
-  echo "kicking off new test release build"
+  echo "kicking off release"
   echo
 
-  git push || exit 1
+  git checkout master
+  git pull
 
-  i="0"
-  while [ $(git tag -l "test-$i-v${core-version}") ]
-  do
-   i=$[$i+1]
-  done
-  echo "tagging test-$i-v${core-version}"
-  git tag -a "test-$i-v${core-version}" -m "Version ${core-version} release test $i"
-  git push ${upstream} "test-$i-v${core-version}"
+  core_tag="v${core-version}"
 
-  n="0"
-  while [ $(git tag -l "holochain-nodejs-test-$n-v${node-conductor-version}") ]
-  do
-   n=$[$n+1]
-  done
-  echo "tagging holochain-nodejs-test-$n-v${node-conductor-version}"
-  git tag -a "holochain-nodejs-test-$n-v${node-conductor-version}" -m "Node conductor version ${node-conductor-version} release test $n"
-  git push ${upstream} "holochain-nodejs-test-$n-v${node-conductor-version}"
+  echo
+  echo "releasing core $core_tag"
+  echo
 
-  echo "testing tags pushed"
+  echo "tagging $core_tag"
+  git tag -a "$core_tag" -m "Version $core_tag"
+  git push ${upstream} "$core_tag"
+
+  conductor_tag="holochain-nodejs-v${node-conductor-version}"
+
+  echo
+  echo "releasing node conductor $conductor_tag"
+  echo
+
+  echo "tagging $conductor_tag"
+  git tag -a "$conductor_tag" -m "Node conductor version $conductor_tag"
+  git push ${upstream} "$conductor_tag"
+
+  echo "release tags pushed"
   echo "travis builds: https://travis-ci.com/holochain/holochain-rust/branches"
-  echo "core artifacts: https://github.com/holochain/holochain-rust/releases/tag/test-$i-v${core-version}"
-  echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/holochain-nodejs-test-$n-v${node-conductor-version}"
+  echo "core artifacts: https://github.com/holochain/holochain-rust/releases/tag/$core_tag"
+  echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/$conductor_tag"
   '';
 
   changelog-template =
@@ -425,7 +421,7 @@ Review the generated release notes with `nix-shell --run hc-generate-release-not
 \#\#\# Fixed\n\n\
 \#\#\# Security\n\n\
   '';
-  hc-lint-release-docs = pkgs.writeShellScriptBin "hc-lint-release-docs"
+  hc-ensure-changelog-version = pkgs.writeShellScriptBin "hc-ensure-changelog-version"
   ''
   echo
   echo "locking off changelog version"
@@ -517,34 +513,28 @@ All binaries are for 64-bit operating systems.
   echo "Checking core artifacts"
   echo
 
-  i="0"
-  while [ $(git tag -l "test-$i-v${core-version}") ]
-  do
-   i=$[$i+1]
-  done
-  i=$[$i-1]
+  core_tag="v${core-version}"
+
+  echo
+  echo "checking $core_tag"
+  echo
 
   core_binaries=( "cli" "conductor" )
   core_platforms=( "apple-darwin" "pc-windows-gnu" "pc-windows-msvc" "unknown-linux-gnu" )
-  deployments=( "test-$i-" "" )
 
-  for deployment in "''${deployments[@]}"
+  for binary in "''${core_binaries[@]}"
   do
-   for binary in "''${core_binaries[@]}"
+   for platform in "''${core_platforms[@]}"
    do
-    for platform in "''${core_platforms[@]}"
-    do
-     file="$binary-''${deployment}v${core-version}-x86_64-$platform.tar.gz"
-     release="''${deployment}v${core-version}"
-     url="https://github.com/holochain/holochain-rust/releases/download/$release/$file"
-     echo
-     echo "pinging $file for release $release..."
-     if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
-      then echo "FOUND ✔"
-      else echo "NOT FOUND ⨯"
-     fi
-     echo
-    done
+    file="$binary-$core_tag-x86_64-$platform.tar.gz"
+    url="https://github.com/holochain/holochain-rust/releases/download/$core_tag/$file"
+    echo
+    echo "pinging $file for release $release..."
+    if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
+     then echo "FOUND ✔"
+     else echo "NOT FOUND ⨯"
+    fi
+    echo
    done
   done
 
@@ -552,46 +542,30 @@ All binaries are for 64-bit operating systems.
   echo "Checking node conductor artifacts"
   echo
 
-  n="0"
-  while [ $(git tag -l "holochain-nodejs-test-$n-v${node-conductor-version}") ]
-  do
-   n=$[$n+1]
-  done
-  n=$[$n-1]
+  conductor_tag="holochain-nodejs-v${node-conductor-version}"
+
+  echo
+  echo "checking $conductor_tag"
+  echo
 
   node_versions=( "57" "64" "67" )
   conductor_platforms=( "darwin" "linux" "win32" )
-  deployments=( "test-$n-" "" )
 
-  for deployment in "''${deployments[@]}"
+  for node_version in "''${node_versions[@]}"
   do
-   for node_version in "''${node_versions[@]}"
+   for platform in "''${conductor_platforms[@]}"
    do
-    for platform in "''${conductor_platforms[@]}"
-    do
-     file="index-v${node-conductor-version}-node-v''${node_version}-''${platform}-x64.tar.gz"
-     release="holochain-nodejs-''${deployment}v${node-conductor-version}"
-     url="https://github.com/holochain/holochain-rust/releases/download/$release/$file"
-     echo
-     echo "pinging $file for release $release..."
-     if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
-      then echo "FOUND ✔"
-      else echo "NOT FOUND ⨯"
-     fi
-     echo
-    done
+    file="index-v${node-conductor-version}-node-v''${node_version}-''${platform}-x64.tar.gz"
+    url="https://github.com/holochain/holochain-rust/releases/download/$conductor_tag/$file"
+    echo
+    echo "pinging $file for release $release..."
+    if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
+     then echo "FOUND ✔"
+     else echo "NOT FOUND ⨯"
+    fi
+    echo
    done
   done
-  '';
-
-  hc-do-release = pkgs.writeShellScriptBin "hc-do-release"
-  ''
-   git checkout master
-   git pull
-   git tag -a v${core-version} -m 'Version ${core-version}'
-   git tag -a holochain-nodejs-v${node-conductor-version} -m 'holochain-nodejs-v${node-conductor-version}'
-   git push ${upstream} v${core-version}
-   git push ${upstream} holochain-nodejs-v${node-conductor-version}
   '';
 
   hc-npm-deploy = pkgs.writeShellScriptBin "hc-npm-deploy"
@@ -624,20 +598,6 @@ All binaries are for 64-bit operating systems.
    echo 'Injecting medium summary/highlights into github release notes'
    echo
    github-release -v edit --tag v${core-version} --name v${core-version} --description "$( hc-generate-release-notes )" --pre-release
-
-   echo
-   echo 'Deleting releases on test-* tags'
-   echo
-   github-release info \
-    | grep -Po "(?<=name: ')(test-\S*)(?=',)" \
-    | xargs -I {} github-release -v delete --tag {}
-
-   echo
-   echo 'Deleting releases on holochain-nodejs-test-* tags'
-   echo
-   github-release info \
-    | grep -Po "(?<=name: ')(holochain-nodejs-test-\S*)(?=',)" \
-    | xargs -I {} github-release -v delete --tag {}
 
    echo
    echo 'ensure github PR against develop'
@@ -721,9 +681,8 @@ stdenv.mkDerivation rec {
     hc-check-release-artifacts
 
     hc-prepare-release
-    hc-test-release
     hc-changelog-grep-pr-references
-    hc-lint-release-docs
+    hc-ensure-changelog-version
     hc-generate-release-notes
     hc-readme-grep-nightly
 

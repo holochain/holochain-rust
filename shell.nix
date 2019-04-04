@@ -284,30 +284,18 @@ First checkout `develop` and `git pull` to ensure you are up to date locally.
 Then run `nix-shell --run hc-prepare-release`
 
 - [x] develop is green
-- [x] dev pulse commit for release candidate
-- [x] core/hdk version updated in CLI scaffold
-- [x] reviewed and updated the version numbers in Cargo.toml
-- [x] holochain nodejs minor version bumped in CLI scaffold `package.json`
+- [x] correct dev pulse commit + version + url hash
+- [x] correct core version
+- [x] correct node conductor
+- [x] correct release process url
 
-## Release docs
+## PR into master
 
 - [ ] reviewed and updated CHANGELOG
-- [ ] reviewed and updated README files
-
-Review the generated release notes with `nix-shell --run hc-generate-release-notes`
-
-- [ ] review generated github release notes
-    - [ ] correct medium post link for dev pulse
-    - [ ] correct CHANGELOG link
-    - [ ] hackmd link: {{URL}}
-    - [ ] correct tags in blob links
-    - [ ] correct rust nightly version
-    - [ ] correct installation instructions
-    - [ ] correct version number in binary file names
-
-## Deploy artifacts
-
 - [ ] release PR merged into `master`
+
+## Build and deploy release artifacts
+
 - [ ] core release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
   - artifacts: {{ artifacts url }}
@@ -315,15 +303,19 @@ Review the generated release notes with `nix-shell --run hc-generate-release-not
   - travis build: {{ build url }}
   - artifacts: {{ artifacts url }}
 - [ ] npmjs deploy with `hc-npm-deploy` then `hc-npm-check-version`
-- [ ] dev pulse is live
-- [ ] cleanup tasks + develop PR with `hc-release-cleanup`
 - [ ] `unknown` release assets renamed to `ubuntu`
-- [ ] develop PR changelog cleaned up
+
+## PR into develop
+
+- [ ] `hc-release-merge-back`
+- [ ] `develop` PR changelog cleaned up
+- [ ] merge `develop` PR
 
 ## Finalise
 
-- [ ] developer docs updated
-- [ ] social medias
+- [ ] dev pulse is live on medium
+- [ ] `hc-release-pulse-sync`
+
   '';
   hc-prepare-release-pr = pkgs.writeShellScriptBin "hc-prepare-release-pr"
   ''
@@ -581,17 +573,8 @@ All binaries are for 64-bit operating systems.
   echo
   '';
 
-  hc-release-cleanup = pkgs.writeShellScriptBin "hc-release-cleanup"
+  hc-release-merge-back = pkgs.writeShellScriptBin "hc-release-merge-back"
   ''
-   export GITHUB_USER='holochain'
-   export GITHUB_REPO='holochain-rust'
-   export GITHUB_TOKEN=$( git config --get hub.oauthtoken )
-
-   echo
-   echo 'Injecting medium summary/highlights into github release notes'
-   echo
-   github-release -v edit --tag ${core-tag} --name ${core-tag} --description "$( hc-generate-release-notes )" --pre-release
-
    echo
    echo 'ensure github PR against develop'
    echo
@@ -606,6 +589,18 @@ All binaries are for 64-bit operating systems.
      echo "current branch is not ${release-branch}!"
      exit 1
    fi
+  '';
+
+  hc-release-pulse-sync = pkgs.writeShellScriptBin "hc-release-pulse-sync"
+  ''
+   export GITHUB_USER='holochain'
+   export GITHUB_REPO='holochain-rust'
+   export GITHUB_TOKEN=$( git config --get hub.oauthtoken )
+
+   echo
+   echo 'Injecting medium summary/highlights into github release notes'
+   echo
+   github-release -v edit --tag ${core-tag} --name ${core-tag} --description "$( hc-generate-release-notes )" --pre-release
   '';
 
 in
@@ -684,7 +679,8 @@ stdenv.mkDerivation rec {
     hc-npm-deploy
     hc-npm-check-version
 
-    hc-release-cleanup
+    hc-release-merge-back
+    hc-release-pulse-sync
 
   ] ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ];
 

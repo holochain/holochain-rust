@@ -2,8 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::{
-        ribosome::wasmi_factory::wasm_module_factory,
-        state::{ModuleArc, NucleusState, NucleusStatus},
+        state::{NucleusState, NucleusStatus},
     },
 };
 use std::sync::Arc;
@@ -14,7 +13,7 @@ use std::sync::Arc;
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 pub fn reduce_initialize_chain(
-    context: Arc<Context>,
+    _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -34,20 +33,6 @@ pub fn reduce_initialize_chain(
             state.status = NucleusStatus::Initializing;
             // Set DNA
             state.dna = Some(dna.clone());
-            // Create Ribosomes
-            for (zome_name, zome) in dna.zomes.iter() {
-                match wasm_module_factory(zome.code.code.clone()) {
-                    Ok(module) => {
-                        state.wasm_modules.insert(zome_name.clone(), ModuleArc::new(module));
-                    }
-                    Err(err) => {
-                        context.log(format!(
-                            "err/nucleus/initialize: Could not create ribosome: {:?}",
-                            err
-                        ));
-                    }
-                };
-            }
         }
     }
 }

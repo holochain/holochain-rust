@@ -4,10 +4,10 @@ use crate::nucleus::{
         runtime::{Runtime, WasmCallData},
         wasmi_factory::{wasm_instance_from_module, wasm_module_factory},
     },
-    state::ModuleArc,
     ZomeFnResult,
 };
 use holochain_core_types::{
+    dna::wasm::ModuleArc,
     error::{
         HcResult, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
     },
@@ -34,13 +34,17 @@ fn get_module(
     let state_lock = context.state()?;
     let module = state_lock
         .nucleus()
-        .wasm_modules
+        .dna
+        .as_ref()
+        .unwrap()
+        .zomes
         .get(&zome_name)
-        .cloned()
         .ok_or(HolochainError::new(&format!(
             "No Ribosome found for Zome '{}'",
             zome_name
-        )))?;
+        )))?
+        .code
+        .get_wasm_module()?;
 
     Ok(module)
 }

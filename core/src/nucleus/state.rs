@@ -14,11 +14,7 @@ use snowflake;
 use std::{
     collections::HashMap,
     convert::TryFrom,
-    fmt::{self, Debug, Formatter},
-    ops::Deref,
-    sync::Arc,
 };
-use wasmi::Module;
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -42,33 +38,6 @@ impl PendingValidationKey {
     }
 }
 
-/// Wrapper around wasmi::Module since it does not implement Clone, Debug, PartialEq, Eq,
-/// which are all needed to add it to the state below.
-#[derive(Clone)]
-pub struct ModuleArc(Arc<Module>);
-impl ModuleArc {
-    pub fn new(module: Module) -> Self {
-        ModuleArc(Arc::new(module))
-    }
-}
-impl PartialEq for ModuleArc {
-    fn eq(&self, _other: &ModuleArc) -> bool {
-        //*self == *other
-        false
-    }
-}
-impl Eq for ModuleArc {}
-impl Deref for ModuleArc {
-    type Target = Arc<Module>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl Debug for ModuleArc {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "ModuleMutex")
-    }
-}
 
 /// The state-slice for the Nucleus.
 /// Holds the dynamic parts of the DNA, i.e. zome calls and validation requests.
@@ -81,11 +50,6 @@ pub struct NucleusState {
     // Transient fields:
     pub dna: Option<Dna>, //DNA is transient here because it is stored in the chain and gets
     //read from there when loading an instance/chain.
-
-    /// WASM modules read from the DNA.
-    /// Each Zome brings its own WASM binary that gets read and parsed into a module.
-    /// This is a mapping from zome name to a pool (=vector) of according modules.
-    pub wasm_modules: HashMap<String, ModuleArc>,
 
     // @TODO eventually drop stale calls
     // @see https://github.com/holochain/holochain-rust/issues/166
@@ -101,7 +65,6 @@ impl NucleusState {
     pub fn new() -> Self {
         NucleusState {
             dna: None,
-            wasm_modules: HashMap::new(),
             status: NucleusStatus::New,
             zome_calls: HashMap::new(),
             validation_results: HashMap::new(),
@@ -168,7 +131,6 @@ impl From<NucleusStateSnapshot> for NucleusState {
     fn from(snapshot: NucleusStateSnapshot) -> Self {
         NucleusState {
             dna: None,
-            wasm_modules: HashMap::new(),
             status: snapshot.status,
             zome_calls: HashMap::new(),
             validation_results: HashMap::new(),

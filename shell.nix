@@ -23,17 +23,21 @@ let
   release-process-url = "https://hackmd.io/pt72afqYTWat7cuNqpAFjw";
   repo = "holochain/holochain-rust";
   upstream = "origin";
+
   # the unique hash at the end of the medium post url
   # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
   # would be 4867d777de94
   pulse-url-hash = "358f0d57d125";
   pulse-version = "23";
-  pulse-commit = "e3383e69a2d901aee1760c090e6afb46a2c3c02f";
-  core-previous-version = "0.0.9-alpha";
-  core-version = "0.0.10-alpha1";
+  pulse-commit = "bae3db97373cd2f89cd473cb1987090d0e6b5616";
+
+  core-previous-version = "0.0.10-alpha1";
+  core-version = "0.0.10-alpha2";
+
+  node-conductor-previous-version = "0.4.9-alpha1";
+  node-conductor-version = "0.4.9-alpha2";
+
   core-tag = "v${core-version}";
-  node-conductor-previous-version = "0.4.8-alpha";
-  node-conductor-version = "0.4.9-alpha1";
   node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
 
   rust-build = (pkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);

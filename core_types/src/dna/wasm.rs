@@ -18,7 +18,7 @@ use std::{
 use wasmi::Module;
 
 /// Wrapper around wasmi::Module since it does not implement Clone, Debug, PartialEq, Eq,
-/// which are all needed to add it to the state below.
+/// which are all needed to add it to the DnaWasm below, and hence to the state.
 #[derive(Clone)]
 pub struct ModuleArc(Arc<Module>);
 impl ModuleArc {

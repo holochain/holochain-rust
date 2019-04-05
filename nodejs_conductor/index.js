@@ -183,10 +183,11 @@ class Scenario {
         }
         Scenario._tape(description, t => {
             this.run((stop, instances) => {
-                return fn(t, instances).then(() => stop())
-            })
-                .catch(e => t.fail(e))
-                .then(t.end)
+                return fn(t, instances).then(stop).catch(e => {
+                    t.fail(e)
+                    stop()
+                })
+            }).then(t.end)
         })
     }
 }

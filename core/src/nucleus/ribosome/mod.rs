@@ -6,7 +6,7 @@ pub mod capabilities;
 pub mod memory;
 mod run_dna;
 pub mod runtime;
-pub mod wasmi_factory;
+pub mod factories;
 
 pub use self::{run_dna::*, runtime::*};
 

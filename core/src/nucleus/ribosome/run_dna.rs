@@ -2,7 +2,7 @@ use crate::nucleus::{
     ribosome::{
         memory::WasmPageManager,
         runtime::{Runtime, WasmCallData},
-        wasmi_factory::{wasm_instance_from_module, wasm_module_factory},
+        factories::{wasm_instance_factory, wasm_module_factory},
     },
     ZomeFnResult,
 };
@@ -59,7 +59,7 @@ fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
 /// panics if wasm binary isn't valid.
 pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
     let wasm_module = get_module(data.clone())?;
-    let wasm_instance = wasm_instance_from_module(&wasm_module)?;
+    let wasm_instance = wasm_instance_factory(&wasm_module)?;
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
 

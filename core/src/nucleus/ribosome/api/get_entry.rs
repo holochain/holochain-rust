@@ -213,7 +213,6 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            wasm.clone(),
             Some(test_commit_args_bytes()),
             WasmCallData::new_zome_call(Arc::clone(&context), dna.name.clone(), commit_call),
         )
@@ -235,7 +234,6 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            wasm.clone(),
             Some(test_get_args_bytes()),
             WasmCallData::new_zome_call(Arc::clone(&context), dna.name, get_call),
         )

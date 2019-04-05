@@ -154,13 +154,10 @@ impl Packager {
                     meta_tree.insert(file_name.clone(), META_DIR_ID.into());
 
                     let build = Build::from_file(dir_with_code.join(BUILD_CONFIG_FILE_NAME))?;
-
                     let wasm = build.run(&dir_with_code)?;
-
                     let wasm_binary = Arc::new(base64::decode(&wasm)?);
 
                     let json_string = run_dna(
-                        wasm_binary.clone(),
                         Some("{}".as_bytes().to_vec()),
                         WasmCallData::DirectCall(
                             "__hdk_get_json_definition".to_string(),

@@ -14,7 +14,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
-use std::{convert::TryFrom, sync::Arc};
+use std::convert::TryFrom;
 use wasmi::RuntimeValue;
 
 fn get_module(
@@ -52,7 +52,7 @@ fn get_module(
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
-pub fn run_dna(_wasm: Arc<Vec<u8>>, parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
+pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
     let wasm_module = get_module(data.clone())?;
     let wasm_instance = wasm_instance_from_module(&wasm_module)?;
     // write input arguments for module call in memory Buffer

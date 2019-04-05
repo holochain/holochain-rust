@@ -114,7 +114,6 @@ impl Holochain {
 
         for zome in dna.zomes.values() {
             let maybe_json_string = run_dna(
-                zome.code.code.clone(),
                 Some("{}".as_bytes().to_vec()),
                 WasmCallData::DirectCall(
                     "__hdk_git_hash".to_string(),

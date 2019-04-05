@@ -168,15 +168,9 @@ pub(crate) fn run_callback(
     context: Arc<Context>,
     call: CallbackFnCall,
 ) -> CallbackResult {
-    let dna_name = context
-        .get_dna()
-        .expect("Callback called without DNA set!")
-        .name
-        .clone();
-
     match ribosome::run_dna(
         Some(call.clone().parameters.to_bytes()),
-        WasmCallData::new_callback_call(context, dna_name, call),
+        WasmCallData::new_callback_call(context, call),
     ) {
         Ok(call_result) => {
             if call_result.is_null() {

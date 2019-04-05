@@ -32,12 +32,10 @@ pub fn receive(
         &Callback::Receive.as_str().to_string(),
         JsonString::from_json(&params),
     );
-
-    let dna = context.get_dna().expect("Callback called without DNA set!");
-
+    
     match ribosome::run_dna(
         Some(call.clone().parameters.to_bytes()),
-        WasmCallData::new_callback_call(context, dna.name, call),
+        WasmCallData::new_callback_call(context, call),
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),
         Err(_) => CallbackResult::NotImplemented("receive/4".into()),

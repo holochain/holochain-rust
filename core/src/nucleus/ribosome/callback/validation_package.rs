@@ -39,7 +39,7 @@ pub fn get_validation_package_definition(
             );
             ribosome::run_dna(
                 Some(app_entry_type.to_string().into_bytes()),
-                WasmCallData::new_callback_call(context, dna.name, call),
+                WasmCallData::new_callback_call(context, call),
             )?
         }
         EntryType::LinkAdd => {
@@ -74,7 +74,7 @@ pub fn get_validation_package_definition(
 
             ribosome::run_dna(
                 Some(call.parameters.to_bytes()),
-                WasmCallData::new_callback_call(context.clone(), dna.name, call),
+                WasmCallData::new_callback_call(context.clone(), call),
             )?
         }
         EntryType::LinkRemove => {
@@ -109,7 +109,7 @@ pub fn get_validation_package_definition(
 
             ribosome::run_dna(
                 Some(call.parameters.to_bytes()),
-                WasmCallData::new_callback_call(context.clone(), dna.name.clone(), call),
+                WasmCallData::new_callback_call(context.clone(), call),
             )?
         }
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),

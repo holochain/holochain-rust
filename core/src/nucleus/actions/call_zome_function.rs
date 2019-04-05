@@ -72,7 +72,7 @@ pub async fn call_zome_function(
     ));
 
     // 1. Validate the call (a number of things could go wrong)
-    let (dna_name, wasm) = validate_call(context.clone(), &zome_call)?;
+    validate_call(context.clone(), &zome_call)?;
 
     context.log(format!(
         "debug/actions/call_zome_fn: executing call: {:?}",
@@ -97,7 +97,6 @@ pub async fn call_zome_function(
             Some(zome_call_clone.clone().parameters.to_bytes()),
             WasmCallData::new_zome_call(
                 context_clone.clone(),
-                dna_name.clone(),
                 zome_call_clone.clone(),
             ),
         );

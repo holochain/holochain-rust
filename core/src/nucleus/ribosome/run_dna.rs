@@ -1,8 +1,8 @@
 use crate::nucleus::{
     ribosome::{
+        factories::{wasm_instance_factory, wasm_module_factory},
         memory::WasmPageManager,
         runtime::{Runtime, WasmCallData},
-        factories::{wasm_instance_factory, wasm_module_factory},
     },
     ZomeFnResult,
 };

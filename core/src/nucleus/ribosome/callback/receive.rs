@@ -32,7 +32,7 @@ pub fn receive(
         &Callback::Receive.as_str().to_string(),
         JsonString::from_json(&params),
     );
-    
+
     match ribosome::run_dna(
         Some(call.clone().parameters.to_bytes()),
         WasmCallData::new_callback_call(context, call),

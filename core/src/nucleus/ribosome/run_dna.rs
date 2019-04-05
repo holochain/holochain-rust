@@ -17,9 +17,7 @@ use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
 use std::convert::TryFrom;
 use wasmi::RuntimeValue;
 
-fn get_module(
-    data: WasmCallData,
-) -> Result<ModuleArc, HolochainError> {
+fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
         let transient_module = ModuleArc::new(wasm_module_factory(wasm.clone())?);
         return Ok(transient_module);
@@ -102,8 +100,7 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
             .invoke_export(
                 &fn_name,
                 &[RuntimeValue::I64(
-                    RibosomeEncodingBits::from(encoded_allocation_of_input)
-                        as RibosomeRuntimeBits,
+                    RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits,
                 )],
                 mut_runtime,
             )
@@ -112,9 +109,7 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
             })?
             .unwrap()
             .try_into() // Option<_>
-            .ok_or_else(|| {
-                HolochainError::RibosomeFailed("WASM return value missing".to_owned())
-            })?
+            .ok_or_else(|| HolochainError::RibosomeFailed("WASM return value missing".to_owned()))?
     };
 
     // Handle result returned by called zome function

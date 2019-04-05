@@ -17,9 +17,7 @@ use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
 use std::{convert::TryFrom, sync::Arc};
 use wasmi::RuntimeValue;
 
-fn get_module(
-    data: WasmCallData,
-) -> Result<ModuleArc, HolochainError> {
+fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
         let transient_module = ModuleArc::new(wasm_module_factory(wasm.clone())?);
         return Ok(transient_module);
@@ -52,7 +50,11 @@ fn get_module(
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
-pub fn run_dna(_wasm: Arc<Vec<u8>>, parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
+pub fn run_dna(
+    _wasm: Arc<Vec<u8>>,
+    parameters: Option<Vec<u8>>,
+    data: WasmCallData,
+) -> ZomeFnResult {
     let wasm_module = get_module(data.clone())?;
     let wasm_instance = wasm_instance_from_module(&wasm_module)?;
     // write input arguments for module call in memory Buffer
@@ -102,8 +104,7 @@ pub fn run_dna(_wasm: Arc<Vec<u8>>, parameters: Option<Vec<u8>>, data: WasmCallD
             .invoke_export(
                 &fn_name,
                 &[RuntimeValue::I64(
-                    RibosomeEncodingBits::from(encoded_allocation_of_input)
-                        as RibosomeRuntimeBits,
+                    RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits,
                 )],
                 mut_runtime,
             )
@@ -112,9 +113,7 @@ pub fn run_dna(_wasm: Arc<Vec<u8>>, parameters: Option<Vec<u8>>, data: WasmCallD
             })?
             .unwrap()
             .try_into() // Option<_>
-            .ok_or_else(|| {
-                HolochainError::RibosomeFailed("WASM return value missing".to_owned())
-            })?
+            .ok_or_else(|| HolochainError::RibosomeFailed("WASM return value missing".to_owned()))?
     };
 
     // Handle result returned by called zome function

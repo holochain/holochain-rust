@@ -11,10 +11,7 @@ use holochain_core_types::{
     validation::ValidationPackage,
 };
 use snowflake;
-use std::{
-    collections::HashMap,
-    convert::TryFrom,
-};
+use std::{collections::HashMap, convert::TryFrom};
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -37,7 +34,6 @@ impl PendingValidationKey {
         PendingValidationKey(format!("{}:{}", workflow, address))
     }
 }
-
 
 /// The state-slice for the Nucleus.
 /// Holds the dynamic parts of the DNA, i.e. zome calls and validation requests.

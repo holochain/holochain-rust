@@ -2,14 +2,19 @@
 //!  - within the in-memory dna struct
 //!  - and serialized to json
 
-use base64;
 use crate::error::HolochainError;
+use base64;
 use serde::{
     self,
     de::{Deserializer, Visitor},
     ser::Serializer,
 };
-use std::{fmt, hash::{Hash, Hasher}, ops::Deref, sync::{Arc, RwLock}};
+use std::{
+    fmt,
+    hash::{Hash, Hasher},
+    ops::Deref,
+    sync::{Arc, RwLock},
+};
 use wasmi::Module;
 
 /// Wrapper around wasmi::Module since it does not implement Clone, Debug, PartialEq, Eq,
@@ -39,7 +44,6 @@ impl fmt::Debug for ModuleArc {
         write!(f, "ModuleMutex")
     }
 }
-
 
 /// Private helper for converting binary WebAssembly into base64 serialized string.
 fn _vec_u8_to_b64_str<S>(data: &Arc<Vec<u8>>, s: S) -> Result<S::Ok, S::Error>
@@ -104,7 +108,7 @@ impl Default for DnaWasm {
     }
 }
 
-fn empty_module() ->  Arc<RwLock<Option<ModuleArc>>> {
+fn empty_module() -> Arc<RwLock<Option<ModuleArc>>> {
     Arc::new(RwLock::new(None))
 }
 

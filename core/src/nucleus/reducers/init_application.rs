@@ -1,9 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    nucleus::{
-        state::{NucleusState, NucleusStatus},
-    },
+    nucleus::state::{NucleusState, NucleusStatus},
 };
 use std::sync::Arc;
 

@@ -37,9 +37,9 @@ pub fn reduce_initialize_chain(
             state.dna = Some(dna.clone());
             // Create Ribosomes
             for (zome_name, zome) in dna.zomes.iter() {
-                match create_ribosomes_for_zome(zome) {
-                    Ok(pool) => {
-                        state.wasm_modules.insert(zome_name.clone(), pool);
+                match wasm_module_factory(zome.code.code.clone()) {
+                    Ok(module) => {
+                        state.wasm_modules.insert(zome_name.clone(), ModuleMutex::new(module));
                     }
                     Err(err) => {
                         context.log(format!(
@@ -51,16 +51,6 @@ pub fn reduce_initialize_chain(
             }
         }
     }
-}
-
-/// Creates a pool of 8 WASM module instances all with the same code from the given zome
-fn create_ribosomes_for_zome(zome: &Zome) -> Result<Vec<ModuleMutex>, HolochainError> {
-    let mut pool = Vec::new();
-    for _i in 1..8 {
-        let ribosome = wasm_module_factory(zome.code.code.clone())?;
-        pool.push(ModuleMutex::new(ribosome));
-    }
-    Ok(pool)
 }
 
 #[cfg(test)]

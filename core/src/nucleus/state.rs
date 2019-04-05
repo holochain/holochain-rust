@@ -16,7 +16,7 @@ use std::{
     convert::TryFrom,
     fmt::{self, Debug, Formatter},
     ops::Deref,
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 use wasmi::Module;
 
@@ -45,10 +45,10 @@ impl PendingValidationKey {
 /// Wrapper around wasmi::Module since it does not implement Clone, Debug, PartialEq, Eq,
 /// which are all needed to add it to the state below.
 #[derive(Clone)]
-pub struct ModuleMutex(Arc<Mutex<Module>>);
+pub struct ModuleMutex(Arc<Module>);
 impl ModuleMutex {
     pub fn new(module: Module) -> Self {
-        ModuleMutex(Arc::new(Mutex::new(module)))
+        ModuleMutex(Arc::new(module))
     }
 }
 impl PartialEq for ModuleMutex {
@@ -59,7 +59,7 @@ impl PartialEq for ModuleMutex {
 }
 impl Eq for ModuleMutex {}
 impl Deref for ModuleMutex {
-    type Target = Arc<Mutex<Module>>;
+    type Target = Arc<Module>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -85,7 +85,7 @@ pub struct NucleusState {
     /// WASM modules read from the DNA.
     /// Each Zome brings its own WASM binary that gets read and parsed into a module.
     /// This is a mapping from zome name to a pool (=vector) of according modules.
-    pub wasm_modules: HashMap<String, Vec<ModuleMutex>>,
+    pub wasm_modules: HashMap<String, ModuleMutex>,
 
     // @TODO eventually drop stale calls
     // @see https://github.com/holochain/holochain-rust/issues/166

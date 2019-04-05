@@ -25,6 +25,8 @@ pub mod agent;
 pub mod context;
 pub mod dht;
 pub mod instance;
+pub mod entry;
+
 #[cfg(test)]
 pub mod link_tests;
 pub mod logger;

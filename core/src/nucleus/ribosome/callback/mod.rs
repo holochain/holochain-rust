@@ -19,7 +19,6 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    dna::wasm::DnaWasm,
     entry::Entry,
     error::{HolochainError, RibosomeEncodedValue},
     json::{default_to_json, JsonString},
@@ -168,9 +167,13 @@ impl From<RibosomeEncodedValue> for CallbackResult {
 pub(crate) fn run_callback(
     context: Arc<Context>,
     call: CallbackFnCall,
-    wasm: &DnaWasm,
-    dna_name: String,
 ) -> CallbackResult {
+    let dna_name = context
+        .get_dna()
+        .expect("Callback called without DNA set!")
+        .name
+        .clone();
+
     match ribosome::run_dna(
         Some(call.clone().parameters.to_bytes()),
         WasmCallData::new_callback_call(context, dna_name, call),
@@ -193,16 +196,14 @@ pub fn call(
     params: &CallbackParams,
 ) -> CallbackResult {
     let call = CallbackFnCall::new(zome, &function.as_str().to_string(), params.clone());
-
     let dna = context.get_dna().expect("Callback called without DNA set!");
-
     match dna.get_wasm_from_zome_name(zome) {
         None => CallbackResult::NotImplemented("call/1".into()),
         Some(wasm) => {
             if wasm.code.is_empty() {
                 CallbackResult::NotImplemented("call/2".into())
             } else {
-                run_callback(context.clone(), call, wasm, dna.name.clone())
+                run_callback(context.clone(), call)
             }
         }
     }

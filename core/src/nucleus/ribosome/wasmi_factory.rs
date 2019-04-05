@@ -6,11 +6,13 @@ use wasmi::{
     ModuleImportResolver, ModuleInstance, ModuleRef, NopExternals, Signature, ValueType,
 };
 
-/// Creates WASMi module from given WASM binary
+/// Creates a WASM module, that is the executable program, from a given WASM binary byte array.
 pub fn wasm_module_factory(wasm: Arc<Vec<u8>>) -> Result<Module, HolochainError> {
     wasmi::Module::from_buffer(&*wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))
 }
 
+/// Creates a runnable WASM module instance from a module reference.
+/// Adds the Holochain specific API functions as imports.
 pub fn wasm_instance_from_module(module: &Module) -> Result<ModuleRef, HolochainError> {
     // invoke_index and resolve_func work together to enable callable host functions
     // within WASM modules, which is how the core API functions

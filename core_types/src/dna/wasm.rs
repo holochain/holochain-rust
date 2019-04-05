@@ -94,6 +94,10 @@ pub struct DnaWasm {
         deserialize_with = "_b64_str_to_vec_u8"
     )]
     pub code: Arc<Vec<u8>>,
+
+    /// This is a transient parsed representation of the binary code.
+    /// This gets only create once from the code and then cached inside this RwLock
+    /// because creation of these WASMi modules from bytes is expensive.
     #[serde(skip, default = "empty_module")]
     module: Arc<RwLock<Option<ModuleArc>>>,
 }
@@ -136,6 +140,7 @@ impl DnaWasm {
         Default::default()
     }
 
+    /// Creates a new instance from given WASM binary
     pub fn from_bytes(wasm: Vec<u8>) -> Self {
         DnaWasm {
             code: Arc::new(wasm),
@@ -143,6 +148,9 @@ impl DnaWasm {
         }
     }
 
+    /// This returns a parsed WASMi representation of the code, ready to be
+    /// run in a WASMi ModuleInstance.
+    /// The first call will create the module from the binary.
     pub fn get_wasm_module(&self) -> Result<ModuleArc, HolochainError> {
         if self.module.read().unwrap().is_none() {
             self.create_module()?;

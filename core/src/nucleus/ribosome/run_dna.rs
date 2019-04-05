@@ -17,6 +17,13 @@ use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
 use std::convert::TryFrom;
 use wasmi::RuntimeValue;
 
+/// Returns the WASM module, i.e. the WASM binary program code to run
+/// for the given WasmCallData.
+///
+/// In case of a direct call, the module gets created from the WASM binary
+/// inside the DirectCall specialisation for WasmCallData.
+///
+/// For ZomeCalls and CallbackCalls it gets the according module from the DNA.
 fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
         let transient_module = ModuleArc::new(wasm_module_factory(wasm.clone())?);

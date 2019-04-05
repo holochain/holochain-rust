@@ -91,16 +91,6 @@ impl EntryType {
     pub fn is_sys(&self) -> bool {
         !self.is_app()
     }
-
-    pub fn can_publish(&self) -> bool {
-
-       match self {
-            EntryType::Dna => false,
-            EntryType::CapTokenGrant => false,
-            _ => true,
-        }
-    }
-
     /// Checks entry_type_name is valid
     pub fn has_valid_app_name(entry_type_name: &str) -> bool {
         // TODO #445 - do a real regex test instead

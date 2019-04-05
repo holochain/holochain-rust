@@ -5,6 +5,7 @@ use crate::{
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
+    entry::CanPublish,
 };
 use futures::{
     future::Future,
@@ -156,7 +157,7 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
         .iter(&top_header)
-        .filter(|ref chain_header| chain_header.entry_type().can_publish())
+        .filter(|ref chain_header| chain_header.entry_type().can_publish(context))
         .map(|chain_header| {
             let storage = chain.content_storage().clone();
             let json = (*storage.read().unwrap())

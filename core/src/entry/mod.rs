@@ -1,32 +1,29 @@
-//! This module contains all the necessary definitions for Entry, which broadly speaking
-//! refers to any data which will be written into the ContentAddressableStorage, or the EntityAttributeValueStorage.
-//! It defines serialization behaviour for entries. Here you can find the complete list of
-//! entry_types, and special entries, like deletion_entry and cap_entry.
+//! This module extends Entry and EntryType with the CanPublish trait.
 
-use holochain_core_types::entry::Entry;
+use holochain_core_types::entry::entry_type::EntryType;
 use crate::context::Context;
 
-trait CanPublish {
+pub trait CanPublish {
     fn can_publish(&self, context:&Context) -> bool;
 }
 
-impl CanPublish for Entry {
+impl CanPublish for EntryType {
 
     fn can_publish(&self, context:&Context) -> bool {
 
-        let entry_type = self.entry_type().clone();
-
-        if !entry_type.can_publish() {
-            return false;
+       match self {
+            EntryType::Dna => return false,
+            EntryType::CapTokenGrant => return false,
+            _ => ()
         }
 
         let dna = context
             .get_dna()
             .expect("context must hold DNA in order to publish an entry.");
-        let maybe_def = dna.get_entry_type_def(entry_type.to_string().as_str());
+        let maybe_def = dna.get_entry_type_def(self.to_string().as_str());
 
         if maybe_def.is_none() {
-            // TODO #439 - Log the error. Once we have better logging.
+            context.log("context must hold an entry type definition to publish an entry.");
             return false;
         }
         let entry_type_def = maybe_def.unwrap();

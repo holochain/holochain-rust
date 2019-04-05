@@ -4,7 +4,7 @@ use crate::nucleus::{
         runtime::{Runtime, WasmCallData},
         wasmi_factory::{wasm_instance_from_module, wasm_module_factory},
     },
-    state::ModuleMutex,
+    state::ModuleArc,
     ZomeFnResult,
 };
 use holochain_core_types::{
@@ -19,9 +19,9 @@ use wasmi::RuntimeValue;
 
 fn get_module(
     data: WasmCallData,
-) -> Result<ModuleMutex, HolochainError> {
+) -> Result<ModuleArc, HolochainError> {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
-        let transient_module = ModuleMutex::new(wasm_module_factory(*wasm.clone())?);
+        let transient_module = ModuleArc::new(wasm_module_factory(*wasm.clone())?);
         return Ok(transient_module);
     } else {
         match data {

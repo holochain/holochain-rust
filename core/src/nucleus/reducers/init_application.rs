@@ -3,10 +3,9 @@ use crate::{
     context::Context,
     nucleus::{
         ribosome::wasmi_factory::wasm_module_factory,
-        state::{ModuleMutex, NucleusState, NucleusStatus},
+        state::{ModuleArc, NucleusState, NucleusStatus},
     },
 };
-use holochain_core_types::{dna::zome::Zome, error::HolochainError};
 use std::sync::Arc;
 
 /// Reduce InitializeChain Action
@@ -39,7 +38,7 @@ pub fn reduce_initialize_chain(
             for (zome_name, zome) in dna.zomes.iter() {
                 match wasm_module_factory(zome.code.code.clone()) {
                     Ok(module) => {
-                        state.wasm_modules.insert(zome_name.clone(), ModuleMutex::new(module));
+                        state.wasm_modules.insert(zome_name.clone(), ModuleArc::new(module));
                     }
                     Err(err) => {
                         context.log(format!(

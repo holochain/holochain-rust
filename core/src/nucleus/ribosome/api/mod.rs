@@ -134,7 +134,7 @@ pub mod tests {
     use self::wabt::Wat2Wasm;
     use crate::{
         context::Context,
-        instance::{tests::test_instance_and_context, Instance},
+        instance::tests::test_instance_and_context,
         nucleus::{
             ribosome::{self, runtime::WasmCallData},
             tests::test_capability_request,
@@ -315,10 +315,7 @@ pub mod tests {
     /// calls the zome API function with passed bytes argument using the instance runtime
     /// returns the runtime after the call completes
     pub fn test_zome_api_function_call(
-        dna_name: &str,
         context: Arc<Context>,
-        _instance: &Instance,
-        wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
     ) -> JsonString {
         let zome_call = ZomeFnCall::new(
@@ -346,12 +343,11 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
-        let dna_name = &dna.name.to_string().clone();
-        let (instance, context) =
+        let (_, context) =
             test_instance_and_context(dna, None).expect("Could not create test instance");
 
         let call_result =
-            test_zome_api_function_call(&dna_name, context.clone(), &instance, &wasm, args_bytes);
+            test_zome_api_function_call(context.clone(), args_bytes);
         (call_result, context)
     }
 }

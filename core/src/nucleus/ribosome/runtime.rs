@@ -55,20 +55,11 @@ impl HostError for BadCallError {}
 
 impl WasmCallData {
     pub fn new_zome_call(context: Arc<Context>, call: ZomeFnCall) -> Self {
-        WasmCallData::ZomeCall(ZomeCallData {
-            context,
-            call,
-        })
+        WasmCallData::ZomeCall(ZomeCallData { context, call })
     }
 
-    pub fn new_callback_call(
-        context: Arc<Context>,
-        call: CallbackFnCall,
-    ) -> Self {
-        WasmCallData::CallbackCall(CallbackCallData {
-            context,
-            call,
-        })
+    pub fn new_callback_call(context: Arc<Context>, call: CallbackFnCall) -> Self {
+        WasmCallData::CallbackCall(CallbackCallData { context, call })
     }
 
     pub fn fn_name(&self) -> String {

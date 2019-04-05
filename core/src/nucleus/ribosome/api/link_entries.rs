@@ -133,8 +133,7 @@ pub mod tests {
 
     #[test]
     fn returns_ok_if_base_is_present() {
-        let (_, context) =
-            create_test_instance_with_name(Some("returns_ok_if_base_present"));
+        let (_, context) = create_test_instance_with_name(Some("returns_ok_if_base_present"));
 
         context
             .block_on(commit_entry(test_entry(), None, &context))

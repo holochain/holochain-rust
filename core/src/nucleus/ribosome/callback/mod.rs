@@ -164,10 +164,7 @@ impl From<RibosomeEncodedValue> for CallbackResult {
     }
 }
 
-pub(crate) fn run_callback(
-    context: Arc<Context>,
-    call: CallbackFnCall,
-) -> CallbackResult {
+pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> CallbackResult {
     match ribosome::run_dna(
         Some(call.clone().parameters.to_bytes()),
         WasmCallData::new_callback_call(context, call),

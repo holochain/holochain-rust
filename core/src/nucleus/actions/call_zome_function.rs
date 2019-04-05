@@ -95,10 +95,7 @@ pub async fn call_zome_function(
         // Have Ribosome spin up DNA and call the zome function
         let call_result = ribosome::run_dna(
             Some(zome_call_clone.clone().parameters.to_bytes()),
-            WasmCallData::new_zome_call(
-                context_clone.clone(),
-                zome_call_clone.clone(),
-            ),
+            WasmCallData::new_zome_call(context_clone.clone(), zome_call_clone.clone()),
         );
         // Construct response
         let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);

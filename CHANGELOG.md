@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Fixed
+- Fixes tests hanging when function passed to `runTape` threw an exception. [#1225](https://github.com/holochain/holochain-rust/pull/1225)
 
 ### Security
 

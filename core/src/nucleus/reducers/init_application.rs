@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::{
-        ribosome::wasmi_factory::wasmi_factory,
+        ribosome::wasmi_factory::wasm_module_factory,
         state::{ModuleMutex, NucleusState, NucleusStatus},
     },
 };
@@ -57,7 +57,7 @@ pub fn reduce_initialize_chain(
 fn create_ribosomes_for_zome(zome: &Zome) -> Result<Vec<ModuleMutex>, HolochainError> {
     let mut pool = Vec::new();
     for _i in 1..8 {
-        let ribosome = wasmi_factory(zome.code.code.clone())?;
+        let ribosome = wasm_module_factory(zome.code.code.clone())?;
         pool.push(ModuleMutex::new(ribosome));
     }
     Ok(pool)

@@ -7,7 +7,7 @@ use wasmi::{
 };
 
 /// Creates WASMi module from given WASM binary
-pub fn wasmi_factory(wasm: Vec<u8>) -> Result<Module, HolochainError> {
+pub fn wasm_module_factory(wasm: Vec<u8>) -> Result<Module, HolochainError> {
     wasmi::Module::from_buffer(wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))
 }
 

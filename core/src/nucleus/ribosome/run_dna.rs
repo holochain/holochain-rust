@@ -2,7 +2,7 @@ use crate::nucleus::{
     ribosome::{
         memory::WasmPageManager,
         runtime::{Runtime, WasmCallData},
-        wasmi_factory::{wasm_instance_from_module, wasmi_factory},
+        wasmi_factory::{wasm_instance_from_module, wasm_module_factory},
     },
     state::ModuleMutex,
     ZomeFnResult,
@@ -22,7 +22,7 @@ fn with_module<F: FnOnce(MutexGuard<Module>) -> ZomeFnResult>(
     f: F,
 ) -> ZomeFnResult {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
-        let transient_module = ModuleMutex::new(wasmi_factory(*wasm.clone())?);
+        let transient_module = ModuleMutex::new(wasm_module_factory(*wasm.clone())?);
         let lock = transient_module.lock()?;
         return f(lock);
     } else {

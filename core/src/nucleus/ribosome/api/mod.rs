@@ -328,7 +328,7 @@ pub mod tests {
             test_parameters(),
         );
         ribosome::run_dna(
-            wasm.clone(),
+            Arc::new(wasm.clone()),
             Some(args_bytes),
             WasmCallData::new_zome_call(context, dna_name.to_string(), zome_call),
         )

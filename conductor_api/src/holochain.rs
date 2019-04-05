@@ -118,7 +118,7 @@ impl Holochain {
                 Some("{}".as_bytes().to_vec()),
                 WasmCallData::DirectCall(
                     "__hdk_git_hash".to_string(),
-                    Box::new(zome.code.code.clone()),
+                    zome.code.code.clone(),
                 ),
             );
 

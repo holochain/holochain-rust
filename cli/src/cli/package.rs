@@ -10,6 +10,7 @@ use std::{
     fs::{self, File},
     io::{Read, Write},
     path::PathBuf,
+    sync::Arc,
 };
 
 pub const CODE_DIR_NAME: &str = "code";
@@ -156,14 +157,14 @@ impl Packager {
 
                     let wasm = build.run(&dir_with_code)?;
 
-                    let wasm_binary = base64::decode(&wasm)?;
+                    let wasm_binary = Arc::new(base64::decode(&wasm)?);
 
                     let json_string = run_dna(
                         wasm_binary.clone(),
                         Some("{}".as_bytes().to_vec()),
                         WasmCallData::DirectCall(
                             "__hdk_get_json_definition".to_string(),
-                            Box::new(wasm_binary),
+                            wasm_binary.clone(),
                         ),
                     )?;
 

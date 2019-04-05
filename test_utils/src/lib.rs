@@ -112,7 +112,7 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
         &entry_types,
         &defs.0,
         &defs.1,
-        &DnaWasm { code: wasm },
+        &DnaWasm { code: Arc::new(wasm) },
     );
 
     let mut trait_fns = TraitFns::new();
@@ -155,7 +155,7 @@ pub fn create_test_dna_with_defs(
         &defs.0,
         &defs.1,
         &DnaWasm {
-            code: wasm.to_owned(),
+            code: Arc::new(wasm.to_owned()),
         },
     );
 

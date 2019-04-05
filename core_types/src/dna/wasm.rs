@@ -8,19 +8,19 @@ use serde::{
     de::{Deserializer, Visitor},
     ser::Serializer,
 };
-use std::fmt;
+use std::{fmt, sync::Arc};
 
 /// Private helper for converting binary WebAssembly into base64 serialized string.
-fn _vec_u8_to_b64_str<S>(data: &[u8], s: S) -> Result<S::Ok, S::Error>
+fn _vec_u8_to_b64_str<S>(data: &Arc<Vec<u8>>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    let b64 = base64::encode(data);
+    let b64 = base64::encode(data.as_ref());
     s.serialize_str(&b64)
 }
 
 /// Private helper for converting base64 string into binary WebAssembly.
-fn _b64_str_to_vec_u8<'de, D>(d: D) -> Result<Vec<u8>, D::Error>
+fn _b64_str_to_vec_u8<'de, D>(d: D) -> Result<Arc<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -47,7 +47,7 @@ where
         }
     }
 
-    d.deserialize_any(Z)
+    Ok(Arc::new(d.deserialize_any(Z)?))
 }
 
 /// Represents web assembly code.
@@ -58,7 +58,7 @@ pub struct DnaWasm {
         serialize_with = "_vec_u8_to_b64_str",
         deserialize_with = "_b64_str_to_vec_u8"
     )]
-    pub code: Vec<u8>,
+    pub code: Arc<Vec<u8>>,
     // using a struct gives us the flexibility to extend it later
     // should we need additional properties, like:
     //pub filename: String,
@@ -67,7 +67,7 @@ pub struct DnaWasm {
 impl Default for DnaWasm {
     /// Provide defaults for wasm entries in dna structs.
     fn default() -> Self {
-        DnaWasm { code: vec![] }
+        DnaWasm { code: Arc::new(vec![]) }
     }
 }
 

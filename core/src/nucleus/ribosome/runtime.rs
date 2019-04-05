@@ -44,7 +44,7 @@ pub struct CallbackCallData {
 pub enum WasmCallData {
     ZomeCall(ZomeCallData),
     CallbackCall(CallbackCallData),
-    DirectCall(String, Box<Vec<u8>>),
+    DirectCall(String, Arc<Vec<u8>>),
 }
 
 #[derive(Debug)]

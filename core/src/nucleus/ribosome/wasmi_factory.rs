@@ -1,14 +1,14 @@
 use crate::nucleus::ribosome::api::ZomeApiFunction;
 use holochain_core_types::error::HolochainError;
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 use wasmi::{
     self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, Module,
     ModuleImportResolver, ModuleInstance, ModuleRef, NopExternals, Signature, ValueType,
 };
 
 /// Creates WASMi module from given WASM binary
-pub fn wasm_module_factory(wasm: Vec<u8>) -> Result<Module, HolochainError> {
-    wasmi::Module::from_buffer(wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))
+pub fn wasm_module_factory(wasm: Arc<Vec<u8>>) -> Result<Module, HolochainError> {
+    wasmi::Module::from_buffer(&*wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))
 }
 
 pub fn wasm_instance_from_module(module: &Module) -> Result<ModuleRef, HolochainError> {

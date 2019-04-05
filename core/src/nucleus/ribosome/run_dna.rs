@@ -14,14 +14,14 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
-use std::convert::TryFrom;
+use std::{convert::TryFrom, sync::Arc};
 use wasmi::RuntimeValue;
 
 fn get_module(
     data: WasmCallData,
 ) -> Result<ModuleArc, HolochainError> {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
-        let transient_module = ModuleArc::new(wasm_module_factory(*wasm.clone())?);
+        let transient_module = ModuleArc::new(wasm_module_factory(wasm.clone())?);
         return Ok(transient_module);
     } else {
         match data {
@@ -48,7 +48,7 @@ fn get_module(
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
-pub fn run_dna(_wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
+pub fn run_dna(_wasm: Arc<Vec<u8>>, parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
     let wasm_module = get_module(data.clone())?;
     let wasm_instance = wasm_instance_from_module(&wasm_module)?;
     // write input arguments for module call in memory Buffer

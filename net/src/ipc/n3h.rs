@@ -122,6 +122,7 @@ fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<bool> {
         }
         return Ok(true);
     }
+    println!("response: {:?}", res);
     bail!(format!("n3h not found in path: {:?}", &path));
 }
 

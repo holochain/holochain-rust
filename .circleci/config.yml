@@ -16,7 +16,7 @@ jobs:
    - image: holochain/holochain-rust:latest
   steps:
    - checkout
-   - run: nix-shell --run 'cargo test -p holochain_net --run can_dl_n3h'
+   - run: nix-shell --run 'cargo test -p holochain_net can_dl_n3h'
 
  fmt:
   docker:

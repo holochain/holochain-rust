@@ -246,6 +246,7 @@ workflows:
  tests:
   jobs:
    - build
+   - n3h_debug
    - fmt
    - app-spec-tests
    - cli-tests

@@ -175,11 +175,12 @@ impl Runtime {
         let bin_arg = self.memory_manager.read(allocation);
 
         // convert complex argument
-        String::from_utf8(bin_arg)
-            // @TODO don't panic in WASM
-            // @see https://github.com/holochain/holochain-rust/issues/159
-            .unwrap()
-            .into()
+        JsonString::from_json(
+            &String::from_utf8(bin_arg)
+                // @TODO don't panic in WASM
+                // @see https://github.com/holochain/holochain-rust/issues/159
+                .unwrap(),
+        )
     }
 
     /// Store anything that implements Into<JsonString> in wasm memory.

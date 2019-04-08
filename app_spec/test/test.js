@@ -120,12 +120,31 @@ scenario1.runTape('hash_post', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+scenario1.runTape('hash_memo', async (t, { alice }) => {
+
+  const content = { content: "Reminder: Buy some HOT." }
+  const result = alice.call("blog", "memo_address", params)
+
+  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+})
+
 scenario1.runTape('create_post', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = null
   const params = { content, in_reply_to }
   const result = alice.call("blog", "create_post", params)
+
+  t.ok(result.Ok)
+  t.notOk(result.Err)
+  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+})
+
+scenario1.runTape('create_memo', async (t, { alice }) => {
+
+  const content = "Reminder: Buy some HOT."
+  const params = { content }
+  const result = alice.call("blog", "create_memo", params)
 
   t.ok(result.Ok)
   t.notOk(result.Err)

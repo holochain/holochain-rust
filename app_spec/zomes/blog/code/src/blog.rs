@@ -99,7 +99,6 @@ pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&post_entry(content))
 }
 
-
 pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&memo_entry(content))
 }

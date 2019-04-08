@@ -72,6 +72,12 @@ define_zome! {
             handler: blog::handle_post_address
         }
 
+        memo_address: {
+            inputs: |content: String|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_memo_address
+        }
+
         create_post: {
             inputs: |content: String, in_reply_to: Option<Address>|,
             outputs: |result: ZomeApiResult<Address>|,
@@ -177,6 +183,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, create_memo, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_memos, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post,get_history_post,get_post_with_options,get_post_with_options_latest]
+        hc_public [show_env, check_sum, check_send, get_sources, post_address, memo_address, create_post, create_memo, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_memos, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post,get_history_post,get_post_with_options,get_post_with_options_latest]
     }
 }

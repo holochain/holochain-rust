@@ -54,3 +54,14 @@ test('scenario throws if conductor cannot start (with async function)', t => {
         t.end()
     })
 })
+
+test('Scenario.run exits gracefully on failure', t => {
+    const scenario = new Scenario([instanceValid])
+    scenario.run(async (stop, {ingrid}) => {
+        throw new Error("thrown error")
+        t.fail('should have thrown exception')
+    }).catch(err => {
+        t.ok(String(err).indexOf('thrown error') >= 0)
+        t.end()
+    })
+})

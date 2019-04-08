@@ -8,7 +8,6 @@ use std::{
     fmt::{Debug, Error, Formatter},
     path::Path,
     sync::{Arc, RwLock},
-    time::Duration,
 };
 use uuid::Uuid;
 

@@ -253,14 +253,4 @@ pub mod tests {
         }
     }
 
-    #[test]
-    fn can_publish_test() {
-        for t in test_types() {
-            match t {
-                EntryType::Dna => assert!(!t.can_publish()),
-                EntryType::CapTokenGrant => assert!(!t.can_publish()),
-                _ => assert!(t.can_publish()),
-            }
-        }
-    }
 }

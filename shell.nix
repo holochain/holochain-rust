@@ -629,6 +629,8 @@ stdenv.mkDerivation rec {
     # https://github.com/NixOS/pkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils
 
+    perl
+
     cmake
     python
     pkgconfig

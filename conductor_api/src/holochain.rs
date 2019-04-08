@@ -14,6 +14,7 @@
 //! extern crate holochain_dpki;
 //! extern crate holochain_sodium;
 //! extern crate tempfile;
+//! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
 //! use holochain_core::nucleus::ribosome::capabilities::CapabilityRequest;
 //! use holochain_core_types::{
@@ -25,6 +26,7 @@
 //! };
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
 //! use holochain_sodium::secbuf::SecBuf;
+//! use test_utils;
 //!
 //! use std::sync::{Arc, Mutex};
 //! use tempfile::tempdir;
@@ -35,7 +37,7 @@
 //! // let dna = holochain_core_types::dna::from_package_file("mydna.dna.json");
 //!
 //! // But for now:
-//! let dna = Dna::new();
+//! let dna = test_utils::create_arbitrary_test_dna();
 //! let dir = tempdir().unwrap();
 //! let storage_directory_path = dir.path().to_str().unwrap();
 //!

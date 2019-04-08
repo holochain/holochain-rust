@@ -9,21 +9,21 @@ jobs:
   resource_class: large
   steps:
    - checkout
-   - run: nix-shell --run hc-test
+   - run: nix-shell --pure --run hc-test
 
  fmt:
   docker:
    - image: holochain/holochain-rust:latest
   steps:
    - checkout
-   - run: nix-shell --run hc-fmt-check
+   - run: nix-shell --pure --run hc-fmt-check
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
       command: |
         # temporary avoid build fails due to greps
         set +eo pipefail
-        export UNPINNED=`nix-shell --run hc-cargo-toml-grep-unpinned`
+        export UNPINNED=`nix-shell --pure --run hc-cargo-toml-grep-unpinned`
         set -eo pipefail
         if [[ $UNPINNED ]]
         then
@@ -37,7 +37,7 @@ jobs:
       command: |
         # temporary avoid build fails due to greps
         set +eo pipefail
-        export UNREFERENCED=`nix-shell --run hc-changelog-grep-pr-references`
+        export UNREFERENCED=`nix-shell --pure --run hc-changelog-grep-pr-references`
         set -eo pipefail
         if [[ $UNREFERENCED ]]
         then
@@ -53,7 +53,7 @@ jobs:
       command: |
         # temporary avoid build fails due to greps
         set +eo pipefail
-        export BAD_NIGHTLY=`nix-shell --run hc-readme-grep-nightly`
+        export BAD_NIGHTLY=`nix-shell --pure --run hc-readme-grep-nightly`
         set -eo pipefail
         if [[ $BAD_NIGHTLY ]]
         then
@@ -71,19 +71,19 @@ jobs:
 
    - run:
        name: install cli
-       command: nix-shell --run hc-install-cli
+       command: nix-shell --pure --run hc-install-cli
 
    - run:
        name: install node conductor
-       command: nix-shell --run hc-install-node-conductor
+       command: nix-shell --pure --run hc-install-node-conductor
 
    - run:
        name: app spec tests
-       command: nix-shell --run hc-test-app-spec
+       command: nix-shell --pure --run hc-test-app-spec
 
    - run:
        name: nodejs conductor tests
-       command: nix-shell --run hc-test-node-conductor
+       command: nix-shell --pure --run hc-test-node-conductor
 
  cli-tests:
   docker:
@@ -93,11 +93,11 @@ jobs:
 
    - run:
        name: install cli
-       command: nix-shell --run hc-install-cli
+       command: nix-shell --pure --run hc-install-cli
 
    - run:
       name: test cli
-      command: nix-shell --run hc-test-cli
+      command: nix-shell --pure --run hc-test-cli
 
  # https://circleci.com/docs/2.0/building-docker-images/
  docker.start:
@@ -232,7 +232,7 @@ jobs:
       command: |
        curl https://nixos.org/nix/install | sh
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
-       nix-shell --run hc-test-all
+       nix-shell --pure --run hc-test-all
 
 workflows:
  version: 2

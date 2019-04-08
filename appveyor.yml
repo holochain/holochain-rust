@@ -14,21 +14,21 @@ environment:
   - test_p: holochain_dna_c_binding
     test_path: dna_c_binding\
 
-  - test_p: holochain_core_types
-    test_path: core_types\
+  # - test_p: holochain_core_types
+  #   test_path: core_types\
 
-  - test_p: holochain_wasm_utils
-    test_path: wasm_utils\
-    wasm_path: wasm-test\integration-test\
+  # - test_p: holochain_wasm_utils
+  #   test_path: wasm_utils\
+  #   wasm_path: wasm-test\integration-test\
 
-  - test_p: hdk
-    test_path: hdk-rust\
-    wasm_path: wasm-test\
+  # - test_p: hdk
+  #   test_path: hdk-rust\
+  #   wasm_path: wasm-test\
 
-  - test_p: holochain_conductor_api
-    test_path: conductor_api\
-    wasm_path: wasm-test\
-    wasm_path_2: test-bridge-caller\
+  # - test_p: holochain_conductor_api
+  #   test_path: conductor_api\
+  #   wasm_path: wasm-test\
+  #   wasm_path_2: test-bridge-caller\
 
   # - test_p: holochain_cas_implementations
   #   test_path: cas_implementations\

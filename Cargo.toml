@@ -21,3 +21,6 @@ exclude = [
   "app_spec",
   "nodejs_conductor/native",
 ]
+
+[replace]
+"openssl-sys:0.9.43" = { features = ["vendored"] }

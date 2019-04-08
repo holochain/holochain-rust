@@ -14,7 +14,6 @@ use std::{
 };
 use uuid::Uuid;
 
-
 #[derive(Clone)]
 pub struct PickleStorage {
     id: Uuid,

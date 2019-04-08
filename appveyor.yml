@@ -11,6 +11,7 @@ max_jobs: 20
 environment:
  global:
   APPVEYOR_BUILD_WORKER_CLOUD: master
+  OPENSSL_STATIC: 1
   hc_target_prefix: C:\build\
 
  matrix:

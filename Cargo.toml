@@ -22,5 +22,5 @@ exclude = [
   "nodejs_conductor/native",
 ]
 
-[replace]
-"openssl-sys:0.9.43" = { features = ["vendored"] }
+[patch.crates-io]
+openssl-sys = { git = "https://github.com/thedavidmeister/rust-openssl.git", rev = "a6b6648a62a67ef983143055f19cd3fad9daba1a", features = ["vendored"] }

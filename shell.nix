@@ -630,7 +630,7 @@ stdenv.mkDerivation rec {
     binutils
     gcc
     gnumake
-    # openssl 
+    openssl 
     pkgconfig
     coreutils
 

@@ -720,6 +720,7 @@ stdenv.mkDerivation rec {
   DARWIN_NIX_LDFLAGS = if stdenv.isDarwin then "-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation " else "";
 
   OPENSSL_STATIC = "1";
+  RUST_BACKTRACE=1;
 
   shellHook = ''
    # cargo installs things to the user's home so we need it on the path

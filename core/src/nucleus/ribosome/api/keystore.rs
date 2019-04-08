@@ -22,10 +22,11 @@ fn conductor_callback<S: Into<String>>(
 
     let handler = conductor_api.write().unwrap();
 
+    let method = method.into();
     let id = ProcessUniqueId::new();
     let request = format!(
         r#"{{"jsonrpc": "2.0", "method": "{}", "params": {}, "id": "{}"}}"#,
-        method.into(),
+        method,
         params.into(),
         id
     );
@@ -37,15 +38,14 @@ fn conductor_callback<S: Into<String>>(
     let response = JsonRpc::parse(&response)?;
 
     match response {
-        JsonRpc::Success(_) => Ok(JsonString::from(
-            serde_json::to_string(&response.get_result().unwrap()).unwrap(),
-        )),
+        JsonRpc::Success(_) => Ok(JsonString::from(response.get_result().unwrap().to_owned())),
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
             serde_json::to_string(&response.get_error().unwrap()).unwrap(),
         )),
-        _ => Err(HolochainError::ErrorGeneric(
-            "sign_one_time call failed".to_string(),
-        )),
+        _ => Err(HolochainError::ErrorGeneric(format!(
+            "{} call failed",
+            method
+        ))),
     }
 }
 
@@ -146,7 +146,7 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
         "debug/zome: pubkey derive of args:{:?} is:{:?}",
         args_str, string
     ));
-    runtime.store_result(Ok(string))
+    runtime.store_result(Ok(JsonString::from_json(&string)))
 }
 
 pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
@@ -183,5 +183,5 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
         args_str, string
     ));
 
-    runtime.store_result(Ok(string))
+    runtime.store_result(Ok(JsonString::from_json(&string)))
 }

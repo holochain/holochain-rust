@@ -24,5 +24,5 @@ exclude = [
 
 [patch.crates-io]
 openssl-sys = { git = "https://github.com/thedavidmeister/rust-openssl.git", rev = "e7a54f68d86684c82d2a796ed8f71884b88f5796" }
-openssl-src = { git = "https://github.com/thedavidmeister/openssl-src-rs.git", rev = "66190ad94b6bbdb9a3d001d85b4c072cf9e4f705" }
+openssl-src = { git = "https://github.com/thedavidmeister/openssl-src-rs.git", rev = "20dccc3f202db12853479d16c580cb9985a16082" }
 # openssl-sys = { git = "https://github.com/thedavidmeister/rust-openssl.git", branch = "v0.9.43-vendored" }

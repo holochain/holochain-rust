@@ -1,5 +1,3 @@
-# https://www.appveyor.com/docs/enterprise/running-builds-on-aws/
-
 build_cloud: azure
 image: hc-azure
 

@@ -38,11 +38,11 @@ Then on the caller DNA you have to initiate the bridge call using `hdk::call` li
 ```rust
     let response = match hdk::call(
         "sample-bridge",
-        "<zome_name>",
+        "sample_zome",
         Address::from(PUBLIC_TOKEN.to_string()), // nevermind this for now
-        "<sample_function>",
+        "sample_function",
         json!({
-            "<some_param>": "<some_val>",
+            "some_param": "some_val",
         }).into()
     ) {
         Ok(json) => serde_json::from_str(&json.to_string()).unwrap(), // converts the return to JSON
@@ -50,7 +50,7 @@ Then on the caller DNA you have to initiate the bridge call using `hdk::call` li
     };
 ```
 
-And the corresponding target / callee DNA in the other end should have some function as follows:
+And the corresponding target / callee DNA in the other end should have a Zome called "sample_zome", with a function as follows:
 ```rust
 pub fn handle_sample_function(some_param: String) -> ZomeApiResult<Address> {
     // do something here

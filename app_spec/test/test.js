@@ -151,6 +151,49 @@ scenario1.runTape('create_memo', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+scenario1.runTape('get_memo', async (t, { alice }) => {
+
+  const content = "Reminder: Buy some HOT."
+  const params = { content }
+  const create_memo_result = alice.call("blog", "create_memo", params)
+
+  t.ok(create_memo_result.Ok)
+  t.notOk(create_memo_result.Err)
+  t.equal(create_memo_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+
+  const my_memos_result = alice.call("blog", "my_memos")
+
+  t.ok(my_memos_result.Ok)
+  t.notOk(my_memos_result.Err)
+  t.equal(my_memos_result.Ok, ["QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk"])
+})
+
+scenario1.runTape('get_memo_is_private', async (t, { alice }) => {
+
+  const content = "Reminder: Buy some HOT."
+  const params = { content }
+  const create_memo_result = alice.call("blog", "create_memo", params)
+
+  t.ok(create_memo_result.Ok)
+  t.notOk(create_memo_result.Err)
+  t.equal(creat_memo_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+
+  const alice_memos_result = alice.call("blog", "my_memos")
+
+  t.ok(alice_memos_result.Ok)
+  t.notOk(alice_memos_result.Err)
+  t.equal(alice_memos_result.Ok,
+    ["QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk"])
+
+  const bob_memos_result = bob.call("blob", "my_memos")
+
+  t.ok(bob_memos_result.Ok)
+  t.notOk(bob_memos_result.Err)
+  t.equal(bob_memos_result.Ok, [])
+
+})
+
+
 scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   //create post

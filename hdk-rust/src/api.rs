@@ -24,7 +24,7 @@ use holochain_wasm_utils::{
         },
         link_entries::LinkEntriesArgs,
         send::{SendArgs, SendOptions},
-        sign::{SignArgs, SignOneTimeResult},
+        sign::{OneTimeSignArgs, SignArgs, SignOneTimeResult},
         verify_signature::VerifySignatureArgs,
         QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeApiGlobals,
         ZomeFnCallArgs,
@@ -58,10 +58,10 @@ macro_rules! def_api_fns {
             pub fn without_input<O: TryFrom<JsonString> + Into<JsonString>>(
                 &self,
             ) -> ZomeApiResult<O> {
-                self.with_input("{}")
+                self.with_input(JsonString::empty_object())
             }
 
-            pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(
+            pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString>>(
                 &self,
                 input: I,
             ) -> ZomeApiResult<O> {
@@ -90,7 +90,7 @@ macro_rules! def_api_fns {
 
                 // Done
                 if result.ok {
-                    JsonString::from(result.value)
+                    JsonString::from_json(&result.value)
                         .try_into()
                         .map_err(|_| ZomeApiError::from(String::from("Failed to deserialize return value")))
                 } else {
@@ -563,8 +563,8 @@ pub fn call<S: Into<String>>(
 ///
 /// # }
 /// ```
-pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
-    let _: ZomeApiResult<()> = Dispatch::Debug.with_input(msg);
+pub fn debug<J: Into<String>>(msg: J) -> ZomeApiResult<()> {
+    let _: ZomeApiResult<()> = Dispatch::Debug.with_input(JsonString::from_json(&msg.into()));
     // internally returns RibosomeEncodedValue::Success which is a zero length allocation
     // return Ok(()) unconditionally instead of the "error" from success
     Ok(())
@@ -833,10 +833,14 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     })
 }
 
-/// sign_one_time ( priv_id_str, base64payload ) -> ( base64signature )
-pub fn sign_one_time<S: Into<String>>(payload: S) -> ZomeApiResult<SignOneTimeResult> {
-    Dispatch::SignOneTime.with_input(SignArgs {
-        payload: payload.into(),
+/// sign_one_time ( priv_id_str, base64payloads ) -> ( base64signature )
+pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOneTimeResult> {
+    let mut converted_payloads = Vec::new();
+    for p in payloads {
+        converted_payloads.push(p.into());
+    }
+    Dispatch::SignOneTime.with_input(OneTimeSignArgs {
+        payloads: converted_payloads,
     })
 }
 

@@ -24,8 +24,6 @@ use wasmi::{Externals, HostError, RuntimeArgs, RuntimeValue, Trap, TrapKind};
 pub struct ZomeCallData {
     /// Context of Holochain. Required for operating.
     pub context: Arc<Context>,
-    /// Name of the DNA that is being hosted.
-    pub dna_name: String,
     /// The zome function call that initiated the Ribosome.
     pub call: ZomeFnCall,
 }
@@ -34,8 +32,6 @@ pub struct ZomeCallData {
 pub struct CallbackCallData {
     /// Context of Holochain. Required for operating.
     pub context: Arc<Context>,
-    /// Name of the DNA that is being hosted.
-    pub dna_name: String,
     /// The callback function call that initiated the Ribosome.
     pub call: CallbackFnCall,
 }
@@ -44,7 +40,7 @@ pub struct CallbackCallData {
 pub enum WasmCallData {
     ZomeCall(ZomeCallData),
     CallbackCall(CallbackCallData),
-    DirectCall(String),
+    DirectCall(String, Arc<Vec<u8>>),
 }
 
 #[derive(Debug)]
@@ -58,31 +54,19 @@ impl fmt::Display for BadCallError {
 impl HostError for BadCallError {}
 
 impl WasmCallData {
-    pub fn new_zome_call(context: Arc<Context>, dna_name: String, call: ZomeFnCall) -> Self {
-        WasmCallData::ZomeCall(ZomeCallData {
-            context,
-            dna_name,
-            call,
-        })
+    pub fn new_zome_call(context: Arc<Context>, call: ZomeFnCall) -> Self {
+        WasmCallData::ZomeCall(ZomeCallData { context, call })
     }
 
-    pub fn new_callback_call(
-        context: Arc<Context>,
-        dna_name: String,
-        call: CallbackFnCall,
-    ) -> Self {
-        WasmCallData::CallbackCall(CallbackCallData {
-            context,
-            dna_name,
-            call,
-        })
+    pub fn new_callback_call(context: Arc<Context>, call: CallbackFnCall) -> Self {
+        WasmCallData::CallbackCall(CallbackCallData { context, call })
     }
 
     pub fn fn_name(&self) -> String {
         match self {
             WasmCallData::ZomeCall(data) => data.call.fn_name.clone(),
             WasmCallData::CallbackCall(data) => data.call.fn_name.clone(),
-            WasmCallData::DirectCall(name) => name.to_string(),
+            WasmCallData::DirectCall(name, _) => name.to_string(),
         }
     }
 }
@@ -91,7 +75,6 @@ impl WasmCallData {
 #[derive(Clone)]
 pub struct CallData {
     pub context: Arc<Context>,
-    pub dna_name: String,
     pub zome_name: String,
     pub fn_name: String,
     pub parameters: JsonString,
@@ -126,14 +109,12 @@ impl Runtime {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(CallData {
                 context: data.context.clone(),
-                dna_name: data.dna_name.clone(),
                 zome_name: data.call.zome_name.clone(),
                 fn_name: data.call.fn_name.clone(),
                 parameters: data.call.parameters.clone(),
             }),
             WasmCallData::CallbackCall(ref data) => Ok(CallData {
                 context: data.context.clone(),
-                dna_name: data.dna_name.clone(),
                 zome_name: data.call.zome_name.clone(),
                 fn_name: data.call.fn_name.clone(),
                 parameters: data.call.parameters.clone(),
@@ -175,11 +156,12 @@ impl Runtime {
         let bin_arg = self.memory_manager.read(allocation);
 
         // convert complex argument
-        String::from_utf8(bin_arg)
-            // @TODO don't panic in WASM
-            // @see https://github.com/holochain/holochain-rust/issues/159
-            .unwrap()
-            .into()
+        JsonString::from_json(
+            &String::from_utf8(bin_arg)
+                // @TODO don't panic in WASM
+                // @see https://github.com/holochain/holochain-rust/issues/159
+                .unwrap(),
+        )
     }
 
     /// Store anything that implements Into<JsonString> in wasm memory.

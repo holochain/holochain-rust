@@ -112,7 +112,7 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
         &entry_types,
         &defs.0,
         &defs.1,
-        &DnaWasm { code: wasm },
+        &DnaWasm::from_bytes(wasm),
     );
 
     let mut trait_fns = TraitFns::new();
@@ -154,9 +154,7 @@ pub fn create_test_dna_with_defs(
         &entry_types,
         &defs.0,
         &defs.1,
-        &DnaWasm {
-            code: wasm.to_owned(),
-        },
+        &DnaWasm::from_bytes(wasm.to_owned()),
     );
 
     dna.zomes.insert(zome_name.to_string(), zome);
@@ -229,7 +227,7 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
         context.clone(),
         context.clone().agent_id.address(),
         fn_name,
-        params_string.clone(),
+        JsonString::from_json(&params_string.clone()),
     );
 
     // Run the holochain instance

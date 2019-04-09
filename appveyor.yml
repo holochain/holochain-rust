@@ -43,6 +43,8 @@ environment:
 
 test_script:
  - choco install strawberryperl
+ - refreshenv
+ - perl --help
  - scripts\windows\do-ci-test.bat
 
  # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23358358

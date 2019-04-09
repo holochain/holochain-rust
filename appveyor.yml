@@ -42,6 +42,7 @@ environment:
     test_path: net\
 
 test_script:
+ - echo %MAX_PATH%
  - rmdir C:\Users\Administrator\.cargo\git\checkouts /S /Q
  - scripts\windows\do-ci-test.bat
 

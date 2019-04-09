@@ -19,7 +19,7 @@ pub fn zome(_metadata: TokenStream, input: TokenStream) -> TokenStream {
     	#[no_mangle]
         #[allow(unused_variables)]
         pub extern "C" fn zome_setup(zd: &mut hdk::meta::ZomeDefinition) {
-            
+
         }
 
         #[no_mangle]
@@ -49,7 +49,6 @@ pub fn zome(_metadata: TokenStream, input: TokenStream) -> TokenStream {
                 ).into(),
             }
         }
-
 
         #[no_mangle]
         #[allow(unused_imports)]

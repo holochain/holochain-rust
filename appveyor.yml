@@ -42,7 +42,7 @@ environment:
     test_path: net\
 
 test_script:
-
+ - rmdir C:\Users\Administrator\.cargo /S /Q
  - scripts\windows\do-ci-test.bat
 
  # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23358358

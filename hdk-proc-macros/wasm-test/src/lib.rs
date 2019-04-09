@@ -7,7 +7,7 @@ pub mod someZome {
 	
 	#[genesis]
 	fn glerp() {
-
+		Ok(())
 	}
 
 }

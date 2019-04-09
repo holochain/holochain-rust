@@ -20,12 +20,12 @@ static GENESIS_ATTRIBUTE: &str = "genesis";
 // };
 
 
-// type GenesisCallback = syn::Block;
+type GenesisCallback = syn::Block;
 // type ReceiveCallbacks = Vec<syn::Block>;
 
 struct ZomeCodeDef {
     // zome: Zome,
-    // genesis: GenesisCallback,
+    genesis: GenesisCallback,
     // receive: ReceiveCallbacks,
 }
 
@@ -54,7 +54,7 @@ impl TryFrom<TokenStream> for ZomeCodeDef {
         });
         // only a single function can be tagged in a valid some so error if there is more than one
         // if there is None then use the sensible default of Ok(())
-        let _genesis = match geneses.len() {
+        let genesis = match geneses.len() {
             0 => {
                 module.ident.span().unstable()
                 .error("No genesis function defined! A zome definition requires a callback tagged with #[genesis]")
@@ -72,7 +72,9 @@ impl TryFrom<TokenStream> for ZomeCodeDef {
 
 
         Ok(
-            ZomeCodeDef{}
+            ZomeCodeDef{
+                genesis: *genesis.clone()
+            }
         )
     }
 }
@@ -81,6 +83,9 @@ impl TryFrom<TokenStream> for ZomeCodeDef {
 impl ZomeCodeDef {
 
     fn to_wasm_friendly(&self) -> TokenStream {
+
+        let genesis = &self.genesis;
+
         let gen = quote!{
 
             #[no_mangle]
@@ -104,7 +109,7 @@ impl ZomeCodeDef {
                 }
 
                 fn execute() -> Result<(), String> {
-                    Ok(())
+                    #genesis
                 }
 
                 match execute() {

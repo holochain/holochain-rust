@@ -2,7 +2,7 @@
 
 As you saw in [Building Apps](./building_apps.md) each **DNA** has a unique Hash, that spawns a brand new **DHT network** and creates isolated **source chains** for each agent. Even when you change the DNA, releasing a new version of the App, it will spawn a brand new DHT network and source chains.
 
-Then you understand that every App lives in an entirely separated world. So how to make apps living in different worlds talk to each other? This is where **bridging** comes into play.
+So if every App lives in an entirely separated world how can they talk to each other? This is where **bridging** comes into play.
 
 A **bridge** is a connector between two apps (or two versions of the same app, for that matter) that allows a synchronous bidirectional transfer of information between the two Apps.
 

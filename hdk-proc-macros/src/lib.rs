@@ -11,27 +11,88 @@ use quote::quote;
 use syn;
 
 static GENESIS_ATTRIBUTE: &str = "genesis";
+static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
 
-// use hdk::holochain_core_types::{
-//     dna::{
-//         zome::Zome,
-//         fn_declarations::{FnDeclaration, FnParameter, TraitFns},
-//     }
-// };
+
+use hdk::holochain_core_types::{
+    dna::{
+        fn_declarations::{FnDeclaration},
+    }
+};
 
 
 type GenesisCallback = syn::Block;
+type ZomeFunctionCode = syn::Block;
+type ZomeFunctions = Vec<(FnDeclaration, ZomeFunctionCode)>;
+
 // type ReceiveCallbacks = Vec<syn::Block>;
 
 struct ZomeCodeDef {
     // zome: Zome,
     genesis: GenesisCallback,
+    zome_fns: ZomeFunctions
     // receive: ReceiveCallbacks,
 }
 
-fn is_tagged_genesis(attrs: Vec<syn::Attribute>) -> bool {
+fn is_tagged_with(attrs: &Vec<syn::Attribute>, tag: &str) -> bool {
     attrs.iter().any(|attr| {
-        attr.path.is_ident(GENESIS_ATTRIBUTE)
+        attr.path.is_ident(tag)
+    })
+}
+
+fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
+    // let inputs = func.decl.inputs;
+
+    FnDeclaration {
+        name: func.ident.clone().to_string(),
+        inputs: Vec::new(),
+        outputs: Vec::new(),
+    }
+}
+
+fn extract_genesis(module: &syn::ItemMod) -> GenesisCallback {
+    // find all the functions tagged as the genesis callback
+    let geneses: Vec<Box<syn::Block>> = module.clone().content.unwrap().1.into_iter()
+    .fold(Vec::new(), |mut acc, item| {
+        if let syn::Item::Fn(func) = item {
+            if is_tagged_with(&func.attrs, GENESIS_ATTRIBUTE) {
+                acc.push(func.block)
+            }
+        } 
+        acc
+    });
+    // only a single function can be tagged in a valid some so error if there is more than one
+    // if there is None then use the sensible default of Ok(())
+    match geneses.len() {
+        0 => {
+            module.ident.span().unstable()
+            .error("No genesis function defined! A zome definition requires a callback tagged with #[genesis]")
+            .emit();
+            panic!()
+        },
+        1 => *geneses[0].clone(),
+        _ => {
+            module.ident.span().unstable()
+            .error("Multiple functions tagged as genesis callback! Only one is permitted per zome definition.")
+            .emit();
+            panic!()
+        }
+    }
+}
+
+fn extract_zome_fns(module: &syn::ItemMod) -> ZomeFunctions {
+    // find all the functions tagged as the zome_fn
+    module.clone().content.unwrap().1.into_iter()
+    .fold(Vec::new(), |mut acc, item| {
+        if let syn::Item::Fn(func) = item {
+            if is_tagged_with(&func.attrs, ZOME_FN_ATTRIBUTE) {
+
+                let fn_def = zome_fn_dec_from_syn(&func);
+
+                acc.push((fn_def, *func.block))
+            }
+        } 
+        acc
     })
 }
 
@@ -42,38 +103,10 @@ impl TryFrom<TokenStream> for ZomeCodeDef {
     fn try_from(input: TokenStream) -> Result<Self, Self::Error> {
         let module: syn::ItemMod = syn::parse(input)?;
 
-        // find all the functions tagged as the genesis callback
-        let geneses: Vec<Box<syn::Block>> = module.content.unwrap().1.into_iter()
-        .fold(Vec::new(), |mut acc, item| {
-            if let syn::Item::Fn(func) = item {
-                if is_tagged_genesis(func.attrs) {
-                    acc.push(func.block)
-                }
-            } 
-            acc
-        });
-        // only a single function can be tagged in a valid some so error if there is more than one
-        // if there is None then use the sensible default of Ok(())
-        let genesis = match geneses.len() {
-            0 => {
-                module.ident.span().unstable()
-                .error("No genesis function defined! A zome definition requires a callback tagged with #[genesis]")
-                .emit();
-                panic!()
-            },
-            1 => &geneses[0],
-            _ => {
-                module.ident.span().unstable()
-                .error("Multiple functions tagged as genesis callback! Only one is permitted per zome definition.")
-                .emit();
-                panic!()
-            }
-        };
-
-
         Ok(
-            ZomeCodeDef{
-                genesis: *genesis.clone()
+            ZomeCodeDef {
+                genesis: extract_genesis(&module),
+                zome_fns: extract_zome_fns(&module)
             }
         )
     }
@@ -85,6 +118,7 @@ impl ZomeCodeDef {
     fn to_wasm_friendly(&self) -> TokenStream {
 
         let genesis = &self.genesis;
+        let (_zome_fn_defs, _zome_fn_code): (Vec<FnDeclaration>, Vec<ZomeFunctionCode>) = self.zome_fns.clone().into_iter().unzip();
 
         let gen = quote!{
 
@@ -134,7 +168,6 @@ impl ZomeCodeDef {
             pub fn __list_functions() -> hdk::holochain_core_types::dna::zome::ZomeFnDeclarations {
                 Vec::new()
             }
-
 
             #[no_mangle]
             pub extern "C" fn __install_panic_handler() -> () {

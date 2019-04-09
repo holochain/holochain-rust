@@ -2,25 +2,60 @@
 //!  - within the in-memory dna struct
 //!  - and serialized to json
 
+use crate::error::HolochainError;
 use base64;
 use serde::{
     self,
     de::{Deserializer, Visitor},
     ser::Serializer,
 };
-use std::fmt;
+use std::{
+    fmt,
+    hash::{Hash, Hasher},
+    ops::Deref,
+    sync::{Arc, RwLock},
+};
+use wasmi::Module;
+
+/// Wrapper around wasmi::Module since it does not implement Clone, Debug, PartialEq, Eq,
+/// which are all needed to add it to the DnaWasm below, and hence to the state.
+#[derive(Clone)]
+pub struct ModuleArc(Arc<Module>);
+impl ModuleArc {
+    pub fn new(module: Module) -> Self {
+        ModuleArc(Arc::new(module))
+    }
+}
+impl PartialEq for ModuleArc {
+    fn eq(&self, _other: &ModuleArc) -> bool {
+        //*self == *other
+        false
+    }
+}
+impl Eq for ModuleArc {}
+impl Deref for ModuleArc {
+    type Target = Arc<Module>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl fmt::Debug for ModuleArc {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ModuleMutex")
+    }
+}
 
 /// Private helper for converting binary WebAssembly into base64 serialized string.
-fn _vec_u8_to_b64_str<S>(data: &[u8], s: S) -> Result<S::Ok, S::Error>
+fn _vec_u8_to_b64_str<S>(data: &Arc<Vec<u8>>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    let b64 = base64::encode(data);
+    let b64 = base64::encode(data.as_ref());
     s.serialize_str(&b64)
 }
 
 /// Private helper for converting base64 string into binary WebAssembly.
-fn _b64_str_to_vec_u8<'de, D>(d: D) -> Result<Vec<u8>, D::Error>
+fn _b64_str_to_vec_u8<'de, D>(d: D) -> Result<Arc<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -47,28 +82,38 @@ where
         }
     }
 
-    d.deserialize_any(Z)
+    Ok(Arc::new(d.deserialize_any(Z)?))
 }
 
 /// Represents web assembly code.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DnaWasm {
     /// The actual binary WebAssembly bytecode goes here.
     #[serde(
         serialize_with = "_vec_u8_to_b64_str",
         deserialize_with = "_b64_str_to_vec_u8"
     )]
-    pub code: Vec<u8>,
-    // using a struct gives us the flexibility to extend it later
-    // should we need additional properties, like:
-    //pub filename: String,
+    pub code: Arc<Vec<u8>>,
+
+    /// This is a transient parsed representation of the binary code.
+    /// This gets only create once from the code and then cached inside this RwLock
+    /// because creation of these WASMi modules from bytes is expensive.
+    #[serde(skip, default = "empty_module")]
+    module: Arc<RwLock<Option<ModuleArc>>>,
 }
 
 impl Default for DnaWasm {
     /// Provide defaults for wasm entries in dna structs.
     fn default() -> Self {
-        DnaWasm { code: vec![] }
+        DnaWasm {
+            code: Arc::new(vec![]),
+            module: empty_module(),
+        }
     }
+}
+
+fn empty_module() -> Arc<RwLock<Option<ModuleArc>>> {
+    Arc::new(RwLock::new(None))
 }
 
 impl fmt::Debug for DnaWasm {
@@ -77,9 +122,49 @@ impl fmt::Debug for DnaWasm {
     }
 }
 
+impl PartialEq for DnaWasm {
+    fn eq(&self, other: &DnaWasm) -> bool {
+        self.code == other.code
+    }
+}
+
+impl Hash for DnaWasm {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.code.hash(state);
+    }
+}
+
 impl DnaWasm {
     /// Allow sane defaults for `DnaWasm::new()`.
     pub fn new() -> Self {
         Default::default()
+    }
+
+    /// Creates a new instance from given WASM binary
+    pub fn from_bytes(wasm: Vec<u8>) -> Self {
+        DnaWasm {
+            code: Arc::new(wasm),
+            module: empty_module(),
+        }
+    }
+
+    /// This returns a parsed WASMi representation of the code, ready to be
+    /// run in a WASMi ModuleInstance.
+    /// The first call will create the module from the binary.
+    pub fn get_wasm_module(&self) -> Result<ModuleArc, HolochainError> {
+        if self.module.read().unwrap().is_none() {
+            self.create_module()?;
+        }
+
+        Ok(self.module.read().unwrap().as_ref().unwrap().clone())
+    }
+
+    fn create_module(&self) -> Result<(), HolochainError> {
+        let module = wasmi::Module::from_buffer(&*self.code)
+            .map_err(|e| HolochainError::ErrorGeneric(e.into()))?;
+        let module_arc = ModuleArc::new(module);
+        let mut lock = self.module.write().unwrap();
+        *lock = Some(module_arc);
+        Ok(())
     }
 }

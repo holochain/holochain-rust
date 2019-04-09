@@ -90,7 +90,6 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
-        let dna_name = &dna.name.to_string().clone();
         let netname = Some("returns_list_of_links");
         let instance = test_instance(dna, netname).expect("Could not create test instance");
 
@@ -120,10 +119,7 @@ pub mod tests {
             .is_ok());
 
         let call_result = test_zome_api_function_call(
-            &dna_name,
             initialized_context.clone(),
-            &instance,
-            &wasm,
             test_get_links_args_bytes(&entry_addresses[0], "test-tag"),
         );
 
@@ -150,10 +146,7 @@ pub mod tests {
         );
 
         let call_result = test_zome_api_function_call(
-            &dna_name,
             initialized_context.clone(),
-            &instance,
-            &wasm,
             test_get_links_args_bytes(&entry_addresses[0], "other-tag"),
         );
 

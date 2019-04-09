@@ -189,8 +189,8 @@ pub mod tests {
     /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
         let netname = Some("test_get_round_trip");
-        let wasm = test_get_round_trip_wat();
-        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
+        let wasm = Arc::new(test_get_round_trip_wat());
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), (*wasm).clone());
         let (instance, context) = test_instance_and_context(dna.clone(), netname)
             .expect("Could not initialize test instance");
         let context = instance.initialize_context(context);
@@ -213,9 +213,8 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            wasm.clone(),
             Some(test_commit_args_bytes()),
-            WasmCallData::new_zome_call(Arc::clone(&context), dna.name.clone(), commit_call),
+            WasmCallData::new_zome_call(Arc::clone(&context), commit_call),
         )
         .expect("test should be callable");
 
@@ -235,9 +234,8 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            wasm.clone(),
             Some(test_get_args_bytes()),
-            WasmCallData::new_zome_call(Arc::clone(&context), dna.name, get_call),
+            WasmCallData::new_zome_call(Arc::clone(&context), get_call),
         )
         .expect("test should be callable");
 

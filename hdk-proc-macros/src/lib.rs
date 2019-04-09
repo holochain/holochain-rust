@@ -1,13 +1,16 @@
 #![recursion_limit="256"]
-#![feature(try_from)]
+#![feature(try_from, proc_macro_diagnostic)]
+
 
 extern crate proc_macro;
 extern crate hdk;
 
-use std::convert::{TryFrom, TryInto};
+use std::convert::{TryFrom};
 use crate::proc_macro::TokenStream;
 use quote::quote;
 use syn;
+
+static GENESIS_ATTRIBUTE: &str = "genesis";
 
 // use hdk::holochain_core_types::{
 //     dna::{
@@ -17,8 +20,8 @@ use syn;
 // };
 
 
-// type GenesisCallback = syn::ItemFn;
-// type ReceiveCallbacks = Vec<syn::ItemFn>;
+// type GenesisCallback = syn::Block;
+// type ReceiveCallbacks = Vec<syn::Block>;
 
 struct ZomeCodeDef {
     // zome: Zome,
@@ -26,12 +29,48 @@ struct ZomeCodeDef {
     // receive: ReceiveCallbacks,
 }
 
+fn is_tagged_genesis(attrs: Vec<syn::Attribute>) -> bool {
+    attrs.iter().any(|attr| {
+        attr.path.is_ident(GENESIS_ATTRIBUTE)
+    })
+}
+
 // use this to convert from the tagged #[zome] module into a definition struct
 impl TryFrom<TokenStream> for ZomeCodeDef {
     type Error = syn::Error;
 
     fn try_from(input: TokenStream) -> Result<Self, Self::Error> {
-        let _ast: syn::ItemMod = syn::parse(input)?;
+        let module: syn::ItemMod = syn::parse(input)?;
+
+        // find all the functions tagged as the genesis callback
+        let geneses: Vec<Box<syn::Block>> = module.content.unwrap().1.into_iter()
+        .fold(Vec::new(), |mut acc, item| {
+            if let syn::Item::Fn(func) = item {
+                if is_tagged_genesis(func.attrs) {
+                    acc.push(func.block)
+                }
+            } 
+            acc
+        });
+        // only a single function can be tagged in a valid some so error if there is more than one
+        // if there is None then use the sensible default of Ok(())
+        let _genesis = match geneses.len() {
+            0 => {
+                module.ident.span().unstable()
+                .error("No genesis function defined! A zome definition requires a callback tagged with #[genesis]")
+                .emit();
+                panic!()
+            },
+            1 => &geneses[0],
+            _ => {
+                module.ident.span().unstable()
+                .error("Multiple functions tagged as genesis callback! Only one is permitted per zome definition.")
+                .emit();
+                panic!()
+            }
+        };
+
+
         Ok(
             ZomeCodeDef{}
         )
@@ -39,10 +78,9 @@ impl TryFrom<TokenStream> for ZomeCodeDef {
 }
 
 // use this to convert back to a token stream usable by the compiler
-impl TryFrom<ZomeCodeDef> for TokenStream {
-    type Error = String;
+impl ZomeCodeDef {
 
-    fn try_from(_zome: ZomeCodeDef) -> Result<Self, Self::Error> {
+    fn to_wasm_friendly(&self) -> TokenStream {
         let gen = quote!{
 
             #[no_mangle]
@@ -117,7 +155,7 @@ impl TryFrom<ZomeCodeDef> for TokenStream {
             }
         };
 
-        Ok(gen.into())
+        gen.into()
     }   
 }
 
@@ -128,6 +166,5 @@ impl TryFrom<ZomeCodeDef> for TokenStream {
 pub fn zome(_metadata: TokenStream, input: TokenStream) -> TokenStream {
     ZomeCodeDef::try_from(input)
         .unwrap()
-        .try_into()
-        .unwrap()
+        .to_wasm_friendly()
 }

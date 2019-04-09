@@ -66,7 +66,9 @@ fn main() {
                     .start_all_static_servers()
                     .expect("Could not start UI servers!");
             }
-            loop { sleep(Duration::from_secs(1)) }
+            loop {
+                sleep(Duration::from_secs(1))
+            }
         }
         Err(error) => println!("Error while trying to boot from config: {:?}", error),
     };

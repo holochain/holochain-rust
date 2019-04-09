@@ -42,8 +42,7 @@ environment:
     test_path: net\
 
 test_script:
- - echo %MAX_PATH%
- - rmdir C:\Users\Administrator\.cargo\git\checkouts /S /Q
+ - choco install strawberryperl
  - scripts\windows\do-ci-test.bat
 
  # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23358358

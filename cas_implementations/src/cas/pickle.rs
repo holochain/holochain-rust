@@ -10,8 +10,11 @@ use std::{
     fmt::{Debug, Error, Formatter},
     path::Path,
     sync::{Arc, RwLock},
+    time::Duration,
 };
 use uuid::Uuid;
+
+const PERSISTENCE_INTERVAL: Duration = Duration::from_millis(5000);
 
 #[derive(Clone)]
 pub struct PickleStorage {
@@ -35,13 +38,13 @@ impl PickleStorage {
             db: Arc::new(RwLock::new(
                 PickleDb::load(
                     cas_db.clone(),
-                    PickleDbDumpPolicy::AutoDump,
+                    PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),
                     SerializationMethod::Cbor,
                 )
                 .unwrap_or_else(|_| {
                     PickleDb::new(
                         cas_db,
-                        PickleDbDumpPolicy::AutoDump,
+                        PickleDbDumpPolicy::PeriodicDump(PERSISTENCE_INTERVAL),
                         SerializationMethod::Cbor,
                     )
                 }),

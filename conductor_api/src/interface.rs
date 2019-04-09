@@ -146,8 +146,11 @@ impl ConductorApiBuilder {
                 // Get the token from the parameters.  If not there assume public token.
                 let maybe_token = Self::get_as_string("token", &params_map);
                 let token = match maybe_token {
-                    Err(_err) => context.get_public_token().ok_or_else(|| {
-                        jsonrpc_core::Error::invalid_params("public token not found")
+                    Err(_err) => context.get_public_token().map_err(|err| {
+                        jsonrpc_core::Error::invalid_params(format!(
+                            "Public token not found: {}",
+                            err.to_string()
+                        ))
                     })?,
                     Ok(token) => Address::from(token),
                 };

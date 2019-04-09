@@ -31,6 +31,36 @@ jobs:
          echo "$UNPINNED"
          exit 1
         fi
+   # don't allow changelog root items with no PR reference
+   - run:
+      name: no changelogs without PR references
+      command: |
+        # temporary avoid build fails due to greps
+        set +eo pipefail
+        export UNREFERENCED=`nix-shell --run hc-changelog-grep-pr-references`
+        set -eo pipefail
+        if [[ $UNREFERENCED ]]
+        then
+          echo "all root level changelog items need a PR reference:"
+          echo "$UNREFERENCED"
+          exit 1
+        fi
+
+   # flag any references to a nightly version in a readme other than the
+   # ${date} in nix-shell
+   - run:
+      name: no readmes with bad rust nightly versions
+      command: |
+        # temporary avoid build fails due to greps
+        set +eo pipefail
+        export BAD_NIGHTLY=`nix-shell --run hc-readme-grep-nightly`
+        set -eo pipefail
+        if [[ $BAD_NIGHTLY ]]
+        then
+          echo "there is an incorrect nightly version in a readme file:"
+          echo $BAD_NIGHTLY
+          exit 1
+        fi
 
  app-spec-tests:
   docker:
@@ -118,7 +148,7 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  # https://github.com/NixOS/nix/issues/1559
@@ -142,7 +172,7 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  # https://github.com/NixOS/nix/issues/1559
@@ -166,7 +196,7 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  # https://github.com/NixOS/nix/issues/1559
@@ -189,7 +219,7 @@ jobs:
    xcode: "10.2.0"
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  cold.mac.10.nix:

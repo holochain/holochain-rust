@@ -122,10 +122,10 @@ scenario1.runTape('hash_post', async (t, { alice }) => {
 
 scenario1.runTape('hash_memo', async (t, { alice }) => {
 
-  const content = { content: "Reminder: Buy some HOT." }
+  const params = { content: "Reminder: Buy some HOT." }
   const result = alice.call("blog", "memo_address", params)
 
-  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+  t.equal(result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
 })
 
 scenario1.runTape('create_post', async (t, { alice }) => {
@@ -148,7 +148,7 @@ scenario1.runTape('create_memo', async (t, { alice }) => {
 
   t.ok(result.Ok)
   t.notOk(result.Err)
-  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+  t.equal(result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
 })
 
 scenario1.runTape('get_memo', async (t, { alice }) => {
@@ -159,13 +159,13 @@ scenario1.runTape('get_memo', async (t, { alice }) => {
 
   t.ok(create_memo_result.Ok)
   t.notOk(create_memo_result.Err)
-  t.equal(create_memo_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+  t.equal(create_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
 
   const my_memos_result = alice.call("blog", "my_memos")
 
   t.ok(my_memos_result.Ok)
   t.notOk(my_memos_result.Err)
-  t.equal(my_memos_result.Ok, ["QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk"])
+  t.equal(my_memos_result.Ok, ["QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i"])
 })
 
 scenario1.runTape('get_memo_is_private', async (t, { alice }) => {
@@ -176,14 +176,14 @@ scenario1.runTape('get_memo_is_private', async (t, { alice }) => {
 
   t.ok(create_memo_result.Ok)
   t.notOk(create_memo_result.Err)
-  t.equal(creat_memo_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+  t.equal(creat_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
 
   const alice_memos_result = alice.call("blog", "my_memos")
 
   t.ok(alice_memos_result.Ok)
   t.notOk(alice_memos_result.Err)
   t.equal(alice_memos_result.Ok,
-    ["QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk"])
+    ["QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i"])
 
   const bob_memos_result = bob.call("blob", "my_memos")
 

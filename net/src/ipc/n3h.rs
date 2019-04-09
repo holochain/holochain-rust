@@ -64,15 +64,13 @@ chmod a+x n3h-nix-runner.bash
 /// if these aren't correct, download the pinned executable for our os/arch
 /// verify the hash and version
 /// return a pathbuf containing a runnable n3h executable path
-pub fn get_verify_n3h() -> NetResult<std::path::PathBuf> {
+pub fn get_verify_n3h() -> NetResult<(std::path::PathBuf, Vec<String>)> {
     let mut path = std::path::PathBuf::new();
     path.push("n3h");
 
     let res = check_n3h_version(&path);
     if res.is_ok() {
-        return Ok(path);
-    } else {
-        tlog_e!("{:?}", res);
+        return Ok((path, res?));
     }
 
     let mut path = std::path::PathBuf::new();
@@ -103,13 +101,29 @@ pub fn get_verify_n3h() -> NetResult<std::path::PathBuf> {
         path
     };
 
-    check_n3h_version(&path)?;
-
-    Ok(path)
+    let res = check_n3h_version(&path)?;
+    Ok((path, res))
 }
 
-fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<bool> {
-    let res = exec_output(path, vec!["--version"], ".", false);
+
+fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<Vec<String>> {
+    let res = sub_check_n3h_version(&path, &["--version"]);
+    if res.is_ok() {
+        return Ok(vec![]);
+    } else {
+        tlog_e!("{:?}", res);
+        let res = sub_check_n3h_version(&path, &["--version", "--appimage-extract-and-run"]);
+        if res.is_ok() {
+            return Ok(vec!["--appimage-extract-and-run".to_string()]);
+        } else {
+            tlog_e!("{:?}", res);
+            bail!("{:?}", res);
+        }
+    }
+}
+
+fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetResult<bool> {
+    let res = exec_output(path, out_args, ".", false);
     if res.is_ok() {
         let res = res.unwrap();
         let res = res.rsplit('|').next().unwrap_or("");

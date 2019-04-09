@@ -30,13 +30,14 @@ pub fn ipc_spawn(
     timeout_ms: usize,
     can_wait_for_p2p: bool,
 ) -> NetResult<SpawnResult> {
-    let n3h = get_verify_n3h()?;
+    let (n3h, n3h_args) = get_verify_n3h()?;
 
     let mut child = std::process::Command::new(n3h);
 
     child
         .stdout(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped())
+        .args(&n3h_args)
         .envs(&env)
         .current_dir(work_dir);
 

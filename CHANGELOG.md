@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixes problem where Scenario tests hang when throwing an error during `runTape` [#1232](https://github.com/holochain/holochain-rust/pull/1232)
+
 ### Security
 
 ## [0.0.10-alpha2] - 2019-04-04

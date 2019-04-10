@@ -6,7 +6,7 @@ So if every app lives in an entirely separated world how can they talk to each o
 
 A **bridge** is a connector between two apps (or two versions of the same app, for that matter) that allows a synchronous bidirectional transfer of information between them.
 
-To use a bridge, right now you need to configure a [production Holochain conductor](./production_conductor.md), at least two instances configured, along the lines of the following example setup (in a **container.toml** file):
+To use a bridge, right now you need to configure a [production Holochain conductor](./production_conductor.md), at least two instances configured, along the lines of the following example setup (in a **conductor-config.toml** file):
 
 ```
 [[instances]]

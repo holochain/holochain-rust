@@ -1,4 +1,4 @@
-use crate::{context::Context, network, nucleus};
+use crate::{context::Context, network, nucleus, entry::CanPublish};
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
 use holochain_core_types::{
@@ -21,11 +21,29 @@ pub async fn get_entry_with_meta_workflow<'a>(
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
     // 2. No result, so try on the network
     if let None = maybe_entry_with_meta {
-        await!(network::actions::get_entry::get_entry(
+        context.log
+            (format!("entry {} not found in local shard, trying the network.", address));
+        let entry_result = await!(network::actions::get_entry::get_entry(
             context.clone(),
             address.clone(),
             timeout.clone(),
-        ))
+        ));
+
+        match entry_result.clone() {
+            Ok(Some(entry_with_meta_and_header)) =>
+            {
+                let entry_with_meta = entry_with_meta_and_header.entry_with_meta;
+                let _headers = entry_with_meta_and_header.headers;
+                let entry = entry_with_meta.entry;
+                let entry_type = entry.entry_type();
+                if entry_type.can_publish(context) {
+                    entry_result
+                } else {
+                    Ok(None)
+                }
+            },
+            _ => entry_result
+        }
     } else {
         // 3. If we've found the entry locally we also need to get the header from the local state:
         let entry = maybe_entry_with_meta.ok_or(HolochainError::ErrorGeneric(

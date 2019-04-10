@@ -179,12 +179,20 @@ scenario2.runTape('get_memo_returns_none', async (t, { alice, bob}) => {
   t.notOk(create_memo_result.Err)
   t.equal(create_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
 
-  const my_memos_result = bob.call("blog", "get_memo",
+  const alice_get_memo_result = alice.call("blog", "get_memo",
     { memo_address:create_memo_result.Ok })
 
-  t.ok(my_memos_result.Ok)
-  t.notOk(my_memos_result.Err)
-  t.deepEqual(my_memos_result.Ok, 'None')
+  t.ok(alice_get_memo_result.Ok)
+  t.notOk(alice_get_memo_result.Err)
+  t.deepEqual(alice_get_memo_result.Ok,
+    { App: [ 'memo', '{"content":"Reminder: Buy some HOT.","date_created":"now"}' ] })
+
+  const bob_get_memo_result = bob.call("blog", "get_memo",
+    { memo_address:create_memo_result.Ok })
+
+  t.equal(bob_get_memo_result.Ok, null)
+  t.notOk(bob_get_memo_result.Err)
+
 })
 
 scenario2.runTape('my_memos_are_private', async (t, { alice, bob }) => {

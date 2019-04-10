@@ -50,7 +50,7 @@ Then on the caller DNA you have to initiate the bridge call using `hdk::call` li
     };
 ```
 
-And the corresponding target / callee DNA in the other end should have a Zome called "sample_zome", with a function as follows:
+And the corresponding target / callee DNA on the other end should have a zome called "sample_zome", with a function as follows:
 ```rust
 pub fn handle_sample_function(some_param: String) -> ZomeApiResult<Address> {
     // do something here

@@ -22,8 +22,8 @@ exclude = [
   "nodejs_conductor/native",
 ]
 
-[patch.crates-io]
-openssl-sys = { git = "https://github.com/thedavidmeister/rust-openssl.git", rev = "e7a54f68d86684c82d2a796ed8f71884b88f5796" }
-openssl-src = { git = "https://github.com/thedavidmeister/openssl-src-rs.git", rev = "1783f7dc64ed98110ac107ea825549c4cbc8ed16" }
-native-tls = { git = "https://github.com/thedavidmeister/rust-native-tls", rev = "79af685aa92b346d31a530d3a45428f981795e0b" }
+# [patch.crates-io]
+# openssl-sys = { git = "https://github.com/thedavidmeister/rust-openssl.git", rev = "e7a54f68d86684c82d2a796ed8f71884b88f5796" }
+# openssl-src = { git = "https://github.com/thedavidmeister/openssl-src-rs.git", rev = "1783f7dc64ed98110ac107ea825549c4cbc8ed16" }
+# native-tls = { git = "https://github.com/thedavidmeister/rust-native-tls", rev = "79af685aa92b346d31a530d3a45428f981795e0b" }
 # openssl-sys = { git = "https://github.com/thedavidmeister/rust-openssl.git", branch = "v0.9.43-vendored" }

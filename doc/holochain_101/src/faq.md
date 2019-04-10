@@ -65,7 +65,7 @@ DHTs enable key/value pair storage and retrieval across many machines. The only 
 
 In fact, since many DHTs are used for illegal file sharing (Napster, Bittorrent, Sharezaa, etc.), they are designed to protect anonymity of uploaders so they won't get in trouble. File sharing DHTs frequently serve virus infected files, planted by uploaders trying to infect digital pirates. There's no accountability for actions or reliable way to ensure bad data doesn't spread.
 
-By embedding validation rules as a condition for the propagation of data, our DHT keeps its data bound to signed source chains. This can provide similar consistency and rule enforcement as blockchain ledgers asynchronously so bottlenecks of immediate consensus become of the thing of the past.
+By embedding validation rules as a condition for the propagation of data, our DHT keeps its data bound to signed source chains. This can provide similar consistency and rule enforcement as blockchain ledgers asynchronously so bottlenecks of immediate consensus become a thing of the past.
 
 The DHT leverages the signed source chains to ensure tamper-proof immutability of data, as well as cryptographic signatures to verify its origins and provenance.
 

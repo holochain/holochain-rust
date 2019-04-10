@@ -52,7 +52,7 @@ where
     let serialized_app_entry = SerializedAppEntry::deserialize(deserializer)?;
     Ok((
         AppEntryType::from(serialized_app_entry.0),
-        AppEntryValue::from(serialized_app_entry.1),
+        AppEntryValue::from_json(&serialized_app_entry.1),
     ))
 }
 
@@ -64,7 +64,7 @@ pub enum Entry {
     #[serde(deserialize_with = "deserialize_app_entry")]
     App(AppEntryType, AppEntryValue),
 
-    Dna(Dna),
+    Dna(Box<Dna>),
     AgentId(AgentId),
     Deletion(DeletionEntry),
     LinkAdd(LinkData),
@@ -134,7 +134,13 @@ impl AddressableContent for Entry {
 pub struct EntryWithMeta {
     pub entry: Entry,
     pub crud_status: CrudStatus,
-    pub maybe_crud_link: Option<Address>,
+    pub maybe_link_update_delete: Option<Address>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct EntryWithMetaAndHeader {
+    pub entry_with_meta: EntryWithMeta,
+    pub headers: Vec<ChainHeader>,
 }
 
 /// dummy entry value
@@ -173,9 +179,13 @@ pub fn test_sys_entry_value() -> AgentId {
 pub fn test_entry() -> Entry {
     Entry::App(test_app_entry_type(), test_entry_value())
 }
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_entry_with_value(value: &'static str) -> Entry {
+    Entry::App(test_app_entry_type(), JsonString::from_json(&value))
+}
 
 pub fn expected_serialized_entry_content() -> JsonString {
-    JsonString::from("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
+    JsonString::from_json("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
 }
 
 /// the correct address for test_entry()
@@ -221,7 +231,7 @@ pub fn test_sys_entry_address() -> Address {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_unpublishable_entry() -> Entry {
-    Entry::Dna(Dna::new())
+    Entry::Dna(Box::new(Dna::new()))
 }
 
 #[cfg(test)]
@@ -291,7 +301,7 @@ pub mod tests {
         assert_eq!(entry, Entry::from(entry.clone()));
 
         let sys_entry = test_sys_entry();
-        let expected = JsonString::from(format!(
+        let expected = JsonString::from_json(&format!(
             "{{\"AgentId\":{{\"nick\":\"{}\",\"pub_sign_key\":\"{}\"}}}}",
             "bob",
             crate::agent::GOOD_ID,

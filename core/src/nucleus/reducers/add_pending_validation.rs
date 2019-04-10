@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    nucleus::state::NucleusState,
+    nucleus::state::{NucleusState, PendingValidationKey},
 };
 use holochain_core_types::cas::content::AddressableContent;
 use std::sync::Arc;
@@ -19,16 +19,21 @@ pub fn reduce_add_pending_validation(
     let action = action_wrapper.action();
     let pending = unwrap_to!(action => Action::AddPendingValidation);
     let address = pending.entry_with_header.entry.address();
-    state.pending_validations.insert(address, pending.clone());
+    let workflow = pending.workflow.clone();
+    state.pending_validations.insert(
+        PendingValidationKey::new(address, workflow),
+        pending.clone(),
+    );
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::{
-        instance::tests::test_context, network::entry_with_header::EntryWithHeader,
-        nucleus::state::tests::test_nucleus_state,
-        scheduled_jobs::pending_validations::PendingValidationStruct,
+        instance::tests::test_context,
+        network::entry_with_header::EntryWithHeader,
+        nucleus::state::{tests::test_nucleus_state, PendingValidationKey},
+        scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
     };
     use holochain_core_types::{chain_header::test_chain_header, entry::Entry, json::RawString};
 
@@ -47,11 +52,17 @@ pub mod tests {
             PendingValidationStruct {
                 entry_with_header,
                 dependencies: Vec::new(),
+                workflow: ValidatingWorkflow::HoldEntry,
             },
         )));
 
         reduce_add_pending_validation(context, &mut state, &action_wrapper);
 
-        assert!(state.pending_validations.contains_key(&entry.address()));
+        assert!(state
+            .pending_validations
+            .contains_key(&PendingValidationKey::new(
+                entry.address(),
+                ValidatingWorkflow::HoldEntry
+            )));
     }
 }

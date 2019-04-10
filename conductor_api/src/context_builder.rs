@@ -1,7 +1,6 @@
 use holochain_cas_implementations::{
-    cas::{file::FilesystemStorage, memory::MemoryStorage},
-    eav::{file::EavFileStorage, memory::EavMemoryStorage},
-    path::create_path_if_not_exists,
+    cas::{file::FilesystemStorage, memory::MemoryStorage, pickle::PickleStorage},
+    eav::{file::EavFileStorage, memory::EavMemoryStorage, pickle::EavPickleStorage},
 };
 
 use holochain_core::{
@@ -17,6 +16,7 @@ use holochain_core_types::{
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::IoHandler;
 use std::{
+    fs,
     path::{Path, PathBuf},
     sync::{Arc, Mutex, RwLock},
 };
@@ -81,11 +81,29 @@ impl ContextBuilder {
         let base_path: PathBuf = path.as_ref().into();
         let cas_path = base_path.join("cas");
         let eav_path = base_path.join("eav");
-        create_path_if_not_exists(&cas_path)?;
-        create_path_if_not_exists(&eav_path)?;
+        fs::create_dir_all(&cas_path)?;
+        fs::create_dir_all(&eav_path)?;
 
         let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
         let eav_storage = Arc::new(RwLock::new(EavFileStorage::new(eav_path)?));
+        self.chain_storage = Some(file_storage.clone());
+        self.dht_storage = Some(file_storage);
+        self.eav_storage = Some(eav_storage);
+        Ok(self)
+    }
+
+    /// Sets all three storages, chain, DHT and EAV storage, to persistent pikcle based implementations.
+    /// Chain and DHT storages get set to the same pikcle CAS.
+    /// Returns an error if no pickle storage could be spawned on the given path.
+    pub fn with_pickle_storage<P: AsRef<Path>>(mut self, path: P) -> Result<Self, HolochainError> {
+        let base_path: PathBuf = path.as_ref().into();
+        let cas_path = base_path.join("cas");
+        let eav_path = base_path.join("eav");
+        fs::create_dir_all(&cas_path)?;
+        fs::create_dir_all(&eav_path)?;
+
+        let file_storage = Arc::new(RwLock::new(PickleStorage::new(&cas_path)));
+        let eav_storage = Arc::new(RwLock::new(EavPickleStorage::new(eav_path)));
         self.chain_storage = Some(file_storage.clone());
         self.dht_storage = Some(file_storage);
         self.eav_storage = Some(eav_storage);

@@ -1,6 +1,7 @@
 #![feature(fnbox)]
 #![feature(try_from)]
 #![feature(vec_remove_item)]
+#![allow(clippy::all)] // As per the request of the networking subteam
 
 //! holochain_net is a library that defines an abstract networking layer for
 //! different network transports, providing a configurable interface
@@ -25,6 +26,8 @@ extern crate native_tls;
 extern crate tungstenite;
 extern crate url;
 
+#[macro_use]
+pub mod tweetlog;
 pub mod connection;
 pub mod error;
 pub mod in_memory;
@@ -32,4 +35,3 @@ pub mod ipc;
 pub mod ipc_net_worker;
 pub mod p2p_config;
 pub mod p2p_network;
-pub mod tweetlog;

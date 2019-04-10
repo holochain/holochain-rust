@@ -22,7 +22,6 @@ use holochain_core_types::{
     entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
-
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};
 use jsonrpc_lite::JsonRpc;
@@ -59,9 +58,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn default_channel_buffer_size() -> usize {
-        100
-    }
+    pub const DEFAULT_CHANNEL_BUF_SIZE: usize = 100;
 
     // test_check_conductor_api() is used to inject a conductor_api with a working
     // mock of agent/sign to be used in tests.
@@ -158,10 +155,7 @@ impl Context {
     }
 
     pub fn state(&self) -> Option<RwLockReadGuard<State>> {
-        match self.state {
-            None => None,
-            Some(ref s) => Some(s.read().unwrap()),
-        }
+        self.state.as_ref().map(|s| s.read().unwrap())
     }
 
     pub fn get_dna(&self) -> Option<Dna> {
@@ -272,41 +266,46 @@ impl Context {
             JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
                 serde_json::to_string(&response.get_error().unwrap()).unwrap(),
             )),
-            _ => Err(HolochainError::ErrorGeneric(
-                "Bridge call failed".to_string(),
-            )),
+            _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
         }
     }
 
     /// returns the public capability token (if any)
-    pub fn get_public_token(&self) -> Option<Address> {
-        self.state().and_then(|state| {
-            let top = state.agent().top_chain_header()?;
+    pub fn get_public_token(&self) -> Result<Address, HolochainError> {
+        let state = self.state().ok_or("State uninitialized!")?;
+        let top = state
+            .agent()
+            .top_chain_header()
+            .ok_or::<HolochainError>("No top chain header".into())?;
 
-            // Get address of first Token Grant entry (return early if none)
-            let addr = state
-                .agent()
-                .chain_store()
-                .iter_type(&Some(top), &EntryType::CapTokenGrant)
-                .nth(0)?
-                .entry_address()
-                .to_owned();
+        // Get address of first Token Grant entry (return early if none)
+        let addr = state
+            .agent()
+            .chain_store()
+            .iter_type(&Some(top), &EntryType::CapTokenGrant)
+            .next()
+            .ok_or::<HolochainError>("No CapTokenGrant entry type in chain".into())?
+            .entry_address()
+            .to_owned();
 
-            // Get CAS
-            let cas = state.agent().chain_store().content_storage();
+        // Get CAS
+        let cas = state.agent().chain_store().content_storage();
 
-            // Get according Token Grant entry from CAS
-            let entry = get_entry_from_cas(&cas, &addr).ok()??;
+        // Get according Token Grant entry from CAS
+        let entry = get_entry_from_cas(&cas, &addr)?
+            .ok_or::<HolochainError>("Can't get CapTokenGrant entry from CAS".into())?;
 
-            // Make sure entry is a public grant and return it
-            if let Entry::CapTokenGrant(grant) = entry {
-                if grant.cap_type() == CapabilityType::Public {
-                    return Some(addr);
-                }
+        // Make sure entry is a public grant and return it
+        if let Entry::CapTokenGrant(grant) = entry {
+            match grant.cap_type() {
+                CapabilityType::Public => Ok(addr),
+                _ => Err(HolochainError::ErrorGeneric(
+                    "Got CapTokenGrant, but it was not public!".to_string(),
+                )),
             }
-
-            None
-        })
+        } else {
+            unreachable!()
+        }
     }
 }
 
@@ -351,7 +350,7 @@ pub mod tests {
 
     #[test]
     fn default_buffer_size_test() {
-        assert_eq!(Context::default_channel_buffer_size(), 100);
+        assert_eq!(Context::DEFAULT_CHANNEL_BUF_SIZE, 100);
     }
 
     #[test]

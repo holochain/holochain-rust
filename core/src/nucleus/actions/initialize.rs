@@ -83,7 +83,7 @@ pub async fn initialize_chain(
     }
 
     // Commit DNA to chain
-    let dna_entry = Entry::Dna(dna.clone());
+    let dna_entry = Entry::Dna(Box::new(dna.clone()));
     let dna_commit = await!(commit_entry(dna_entry, None, &context_clone));
     if dna_commit.is_err() {
         dispatch_error_result(&context_clone, dna_commit.err().unwrap());
@@ -108,8 +108,14 @@ pub async fn initialize_chain(
     }
 
     let mut cap_functions = CapFunctions::new();
+    let zomes = dna.clone().zomes;
+    if zomes.is_empty() {
+        return Err(HolochainError::ErrorGeneric(
+            "Attempting to initialize DNA with zero zomes!".into(),
+        ));
+    }
     // Commit Public Capability Grants to chain
-    for (zome_name, zome) in dna.clone().zomes {
+    for (zome_name, zome) in zomes {
         let maybe_public = zome
             .traits
             .iter()

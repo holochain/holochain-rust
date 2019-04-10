@@ -1,19 +1,11 @@
 use crate::{
-    agent::actions::commit::commit_entry,
-    dht::actions::remove_entry::remove_entry,
-    nucleus::{
-        actions::build_validation_package::build_validation_package,
-        ribosome::{api::ZomeApiResult, Runtime},
-        validation::validate_entry,
-    },
-    workflows::get_entry_result::get_entry_result_workflow,
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
-use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::get_entry::*;
 use std::convert::TryFrom;
@@ -25,6 +17,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Stores/returns a RibosomeEncodedValue
 pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
+
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let try_address = Address::try_from(args_str.clone());
@@ -47,6 +40,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let maybe_entry_result = context
         .clone()
         .block_on(get_entry_result_workflow(&context, &get_args));
+
     if let Err(_err) = maybe_entry_result {
         return ribosome_error_code!(Unspecified);
     }
@@ -59,40 +53,13 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
 
-    // Resolve future
-    let result: Result<(), HolochainError> = context.clone().block_on(
-        // 1. Build the context needed for validation of the entry
-        build_validation_package(&deletion_entry, context.clone())
-            .and_then(|validation_package| {
-                future::ready(Ok(ValidationData {
-                    package: validation_package,
-                    lifecycle: EntryLifecycle::Chain,
-                    action: EntryAction::Delete,
-                }))
-            })
-            // 2. Validate the entry
-            .and_then(|validation_data| {
-                validate_entry(deletion_entry.clone(), validation_data, &context)
-                    .map_err(|validation_error| HolochainError::from(validation_error))
-            })
-            // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| {
-                commit_entry(
-                    deletion_entry.clone(),
-                    Some(deleted_entry_address.clone()),
-                    &context,
-                )
-            })
-            // 4. Remove the entry in DHT metadata
-            .and_then(|_| {
-                remove_entry(
-                    &context,
-                    context.action_channel(),
-                    deleted_entry_address.clone(),
-                    deletion_entry.address().clone(),
-                )
-            }),
-    );
+    let res: Result<(), HolochainError> = context
+        .block_on(author_entry(
+            &deletion_entry.clone(),
+            Some(deleted_entry_address.clone()),
+            &context.clone(),
+        ))
+        .map(|_| ());
 
-    runtime.store_result(result)
+    runtime.store_result(res)
 }

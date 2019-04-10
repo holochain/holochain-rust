@@ -14,6 +14,7 @@
 //! extern crate holochain_dpki;
 //! extern crate holochain_sodium;
 //! extern crate tempfile;
+//! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
 //! use holochain_core::nucleus::ribosome::capabilities::CapabilityRequest;
 //! use holochain_core_types::{
@@ -25,6 +26,7 @@
 //! };
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
 //! use holochain_sodium::secbuf::SecBuf;
+//! use test_utils;
 //!
 //! use std::sync::{Arc, Mutex};
 //! use tempfile::tempdir;
@@ -35,7 +37,7 @@
 //! // let dna = holochain_core_types::dna::from_package_file("mydna.dna.json");
 //!
 //! // But for now:
-//! let dna = Dna::new();
+//! let dna = test_utils::create_arbitrary_test_dna();
 //! let dir = tempdir().unwrap();
 //! let storage_directory_path = dir.path().to_str().unwrap();
 //!
@@ -44,7 +46,7 @@
 //! let mut seed = SecBuf::with_insecure(SEED_SIZE);
 //! seed.randomize();
 //!
-//! let keybundle = KeyBundle::new_from_seed_buf(&mut seed, SeedType::Mock).unwrap();
+//! let keybundle = KeyBundle::new_from_seed_buf(&mut seed).unwrap();
 //!
 //! // The keybundle's public part is the agent's address
 //! let agent = AgentId::new("bob", keybundle.get_id());
@@ -114,9 +116,8 @@ impl Holochain {
 
         for zome in dna.zomes.values() {
             let maybe_json_string = run_dna(
-                zome.code.code.clone(),
                 Some("{}".as_bytes().to_vec()),
-                WasmCallData::DirectCall("__hdk_git_hash".to_string()),
+                WasmCallData::DirectCall("__hdk_git_hash".to_string(), zome.code.code.clone()),
             );
 
             if let Ok(json_string) = maybe_json_string {
@@ -155,7 +156,11 @@ impl Holochain {
 
     pub fn load(context: Arc<Context>) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.dht_storage.clone());
-        let loaded_state = persister.load(context.clone())??;
+        let loaded_state = persister
+            .load(context.clone())?
+            .ok_or(HolochainError::ErrorGeneric(
+                "State could not be loaded due to NoneError".to_string(),
+            ))?;
         let mut instance = Instance::from_state(loaded_state.clone());
         let new_context = instance.initialize(None, context.clone())?;
         Ok(Holochain {
@@ -195,7 +200,7 @@ impl Holochain {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
 
-        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
+        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
         let context = self.context();
         Ok(context.block_on(call_zome_function(zome_call, context))?)
     }
@@ -231,12 +236,15 @@ mod tests {
         },
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{cas::content::Address, dna::Dna, json::RawString};
+    use holochain_core_types::{
+        cas::content::{Address, AddressableContent},
+        json::RawString,
+    };
     use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
     use test_utils::{
-        create_test_defs_with_fn_name, create_test_dna_with_defs, create_test_dna_with_wat,
-        create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
+        create_arbitrary_test_dna, create_test_defs_with_fn_name, create_test_dna_with_defs,
+        create_test_dna_with_wat, create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
         mock_signing::{mock_conductor_api, registered_test_agent},
     };
 
@@ -275,16 +283,15 @@ mod tests {
     fn cap_call(context: Arc<Context>, fn_name: &str, params: &str) -> CapabilityRequest {
         make_cap_request_for_call(
             context.clone(),
-            Address::from(context.clone().agent_id.pub_sign_key.clone()),
-            Address::from(context.clone().agent_id.pub_sign_key.clone()),
+            Address::from(context.clone().agent_id.address()),
             fn_name,
-            params.to_string(),
+            JsonString::from_json(params),
         )
     }
 
     #[test]
     fn can_instantiate() {
-        let mut dna = Dna::new();
+        let mut dna = create_arbitrary_test_dna();;
         dna.name = "TestApp".to_string();
         let (context, test_logger, _) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
@@ -389,7 +396,7 @@ mod tests {
 
     #[test]
     fn can_start_and_stop() {
-        let dna = Dna::new();
+        let dna = create_arbitrary_test_dna();
         let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
         assert!(!hc.active());
@@ -453,13 +460,13 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from("{\"holo\":\"world\"}")
+            JsonString::from_json("{\"holo\":\"world\"}")
         );
     }
 
     #[test]
     fn can_get_state() {
-        let dna = Dna::new();
+        let dna = create_arbitrary_test_dna();
         let (context, _, _) = test_context("bob");
         let hc = Holochain::new(dna.clone(), context).unwrap();
 
@@ -489,7 +496,9 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from(r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#),
+            JsonString::from_json(
+                r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#
+            ),
         );
     }
 
@@ -528,7 +537,7 @@ mod tests {
         // @TODO fragile test!
         assert_ne!(
             result.clone().ok().unwrap(),
-            JsonString::from("{\"Err\":\"Argument deserialization failed\"}")
+            JsonString::from_json("{\"Err\":\"Argument deserialization failed\"}")
         );
 
         expect_action(&signal_rx, |action| {
@@ -567,7 +576,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from("{\"Err\":\"Argument deserialization failed\"}"),
+            JsonString::from_json("{\"Err\":\"Argument deserialization failed\"}"),
         );
 
         expect_action(&signal_rx, |action| {
@@ -668,7 +677,7 @@ mod tests {
             RawString::from(""),
         );
         assert_eq!(
-            JsonString::from("{\"value\":\"fish\"}"),
+            JsonString::from_json("{\"value\":\"fish\"}"),
             call_result.unwrap()
         );
     }

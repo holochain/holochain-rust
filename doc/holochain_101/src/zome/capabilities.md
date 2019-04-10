@@ -14,7 +14,7 @@ Each capability grant gets recorded as a private entry on the grantor’s chain,
 
 ## Using Capabilities
 
-As of version 0.0.4-alpha capabilities are not fully implemented. In this version, however you must declare all functions as public using the special `hc_public` marker trait in your `define_zome!` call.  Functions in that trait will be added to the public capability grant which gets auto-committed during genesis, and thus, because other capability grants aren't yet available in 0.0.4, all zome functions must be made public.
+As of version 0.0.7-alpha capabilities are not fully implemented. In this version, however you must declare all functions as public using the special `hc_public` marker trait in your `define_zome!` call.  Functions in that trait will be added to the public capability grant which gets auto-committed during genesis, and thus, because other capability grants aren't yet available in 0.0.7-alpha, all Zome functions must be made public.
 
 ```
 define_zome! {

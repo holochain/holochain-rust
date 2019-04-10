@@ -98,7 +98,7 @@ impl State {
                 "No DNA entry found in storage while creating state from agent".to_string(),
             ))??;
         match entry {
-            Entry::Dna(dna) => Ok(dna),
+            Entry::Dna(dna) => Ok(*dna),
             _ => Err(HolochainError::SerializationError(
                 "Tried to get Dna from non-Dna Entry".into(),
             )),
@@ -157,7 +157,7 @@ impl State {
     ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(context.dht_storage.clone()),
-            agent_snapshot.top_chain_header().clone(),
+            agent_snapshot.top_chain_header().map(|h| h.to_owned()),
         );
         let nucleus_state = NucleusState::from(nucleus_snapshot);
         Ok(State::new_with_agent_and_nucleus(

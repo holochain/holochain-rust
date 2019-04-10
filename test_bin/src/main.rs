@@ -1,6 +1,8 @@
 #![feature(try_from)]
 #![warn(unused_extern_crates)]
 
+#[macro_use]
+extern crate failure;
 extern crate holochain_core_types;
 #[macro_use]
 extern crate holochain_net;
@@ -41,6 +43,7 @@ type MultiNodesTestFn = fn(nodes: &mut Vec<P2pNode>, can_test_connect: bool) -> 
 lazy_static! {
     // List of tests
     pub static ref TWO_NODES_BASIC_TEST_FNS: Vec<TwoNodesTestFn> = vec![
+        basic_workflows::setup_one_node,
         basic_workflows::no_setup_test,
         basic_workflows::setup_two_nodes,
         basic_workflows::send_test,

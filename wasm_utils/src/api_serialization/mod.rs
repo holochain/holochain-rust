@@ -11,11 +11,14 @@ mod call;
 /// importing this module.
 pub mod get_entry;
 pub mod get_links;
+pub mod keystore;
 pub mod link_entries;
 pub mod query;
 pub mod send;
+pub mod sign;
 mod update_entry;
 pub mod validation;
+pub mod verify_signature;
 mod zome_api_globals;
 
 pub use self::{call::*, query::*, update_entry::*, zome_api_globals::*};

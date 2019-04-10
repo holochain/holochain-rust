@@ -33,6 +33,7 @@ extern crate regex;
 extern crate maplit;
 extern crate hcid;
 extern crate uuid;
+extern crate wasmi;
 
 pub mod cas;
 pub mod chain_header;
@@ -58,6 +59,9 @@ pub const GIT_HASH: &str = env!(
     "failed to obtain git hash from build environment. Check build.rs"
 );
 
+// not docker build friendly
+// https://circleci.com/gh/holochain/holochain-rust/10757
+#[cfg(feature = "broken-tests")]
 #[cfg(test)]
 mod test_hash {
     use super::*;

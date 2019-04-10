@@ -5,7 +5,8 @@ use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
     config::*,
-    key_loaders::{test_keybundle, test_keybundle_loader},
+    key_loaders::{test_keystore, test_keystore_loader},
+    keystore::PRIMARY_KEYBUNDLE_ID,
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
@@ -26,10 +27,10 @@ pub fn run(
     mount_conductor_from_config(conductor_config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
-    conductor.key_loader = test_keybundle_loader();
+    conductor.key_loader = test_keystore_loader();
 
     conductor
-        .load_config()
+        .boot_from_config(None)
         .map_err(|err| format_err!("{}", err))?;
 
     conductor.start_all_interfaces();
@@ -73,6 +74,7 @@ pub fn hc_run_configuration(
     persist: bool,
     networked: bool,
     interface_type: &String,
+    logging: bool,
 ) -> DefaultResult<Configuration> {
     Ok(Configuration {
         agents: vec![agent_configuration()],
@@ -80,7 +82,7 @@ pub fn hc_run_configuration(
         instances: vec![instance_configuration(storage_configuration(persist)?)],
         interfaces: vec![interface_configuration(&interface_type, port)?],
         network: networking_configuration(networked),
-        logger: logger_configuration(),
+        logger: logger_configuration(logging),
         ..Default::default()
     })
 }
@@ -97,13 +99,17 @@ fn agent_configuration() -> AgentConfiguration {
         .value()
         .ok()
         .unwrap_or_else(|| String::from(AGENT_NAME_DEFAULT));
-    let keybundle = test_keybundle(&agent_name);
-    let agent_id = AgentId::new(&agent_name, keybundle.get_id());
+    let mut keystore = test_keystore(&agent_name);
+    let pub_key = keystore
+        .get_keybundle(PRIMARY_KEYBUNDLE_ID)
+        .expect("should be able to get keybundle")
+        .get_id();
+    let agent_id = AgentId::new(&agent_name, pub_key);
     AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
         name: agent_id.nick,
         public_address: agent_id.pub_sign_key,
-        key_file: agent_name,
+        keystore_file: agent_name,
         holo_remote_key: None,
     }
 }
@@ -129,7 +135,7 @@ fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
     if persist {
         fs::create_dir_all(LOCAL_STORAGE_PATH)?;
 
-        Ok(StorageConfiguration::File {
+        Ok(StorageConfiguration::Pickle {
             path: LOCAL_STORAGE_PATH.into(),
         })
     } else {
@@ -175,11 +181,15 @@ fn interface_configuration(
 }
 
 // LOGGER
-fn logger_configuration() -> LoggerConfiguration {
+fn logger_configuration(logging: bool) -> LoggerConfiguration {
     // temporary log rules, should come from a configuration
     LoggerConfiguration {
         logger_type: "debug".to_string(),
-        rules: LogRules::new(),
+        rules: if logging {
+            LogRules::default()
+        } else {
+            LogRules::new()
+        },
     }
 }
 
@@ -188,41 +198,41 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
     // if this logic changes
-    let n3h_path = EnvVar::N3hPath.value().ok();
+    let maybe_n3h_path = EnvVar::N3hPath.value().ok();
 
     // create an n3h network config if the --networked flag is set
     // or if a value where to find n3h has been put into the
     // HC_N3H_PATH environment variable
-    if networked || n3h_path.is_some() {
-        // note that this behaviour is documented within
-        // holochain_common::env_vars module and should be updated
-        // if this logic changes
-        let n3h_mode = EnvVar::N3hMode.value().ok();
-        let n3h_persistence_path = EnvVar::N3hWorkDir.value().ok();
-        let n3h_bootstrap_node = EnvVar::N3hBootstrapNode.value().ok();
-        let mut n3h_bootstrap = Vec::new();
-
-        if n3h_bootstrap_node.is_some() {
-            n3h_bootstrap.push(n3h_bootstrap_node.unwrap())
-        }
-
-        // Load end_user config file
-        // note that this behaviour is documented within
-        // holochain_common::env_vars module and should be updated
-        // if this logic changes
-        let networking_config_filepath = EnvVar::NetworkingConfigFile.value().ok();
-
-        Some(NetworkConfig {
-            bootstrap_nodes: n3h_bootstrap,
-            n3h_path: n3h_path.unwrap_or_else(default_n3h_path),
-            n3h_mode: n3h_mode.unwrap_or_else(default_n3h_mode),
-            n3h_persistence_path: n3h_persistence_path.unwrap_or_else(default_n3h_persistence_path),
-            n3h_ipc_uri: Default::default(),
-            networking_config_file: networking_config_filepath,
-        })
-    } else {
-        None
+    if maybe_n3h_path.is_none() && !networked {
+        return None;
     }
+
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
+    let mut bootstrap_nodes = Vec::new();
+    if let Ok(node) = EnvVar::N3hBootstrapNode.value() {
+        bootstrap_nodes.push(node);
+    };
+
+    Some(NetworkConfig {
+        bootstrap_nodes,
+        n3h_log_level: EnvVar::N3hLogLevel
+            .value()
+            .ok()
+            .unwrap_or_else(default_n3h_log_level),
+        n3h_path: maybe_n3h_path.unwrap_or_else(default_n3h_path),
+        n3h_mode: EnvVar::N3hMode
+            .value()
+            .ok()
+            .unwrap_or_else(default_n3h_mode),
+        n3h_persistence_path: EnvVar::N3hWorkDir
+            .value()
+            .ok()
+            .unwrap_or_else(default_n3h_persistence_path),
+        n3h_ipc_uri: Default::default(),
+        networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
+    })
 }
 
 #[cfg(test)]
@@ -274,7 +284,7 @@ mod tests {
                 name: "testAgent".to_string(),
                 public_address: "HcScjN8wBwrn3tuyg89aab3a69xsIgdzmX5P9537BqQZ5A7TEZu7qCY4Xzzjhma"
                     .to_string(),
-                key_file: "testAgent".to_string(),
+                keystore_file: "testAgent".to_string(),
                 holo_remote_key: None,
             },
         );
@@ -302,7 +312,7 @@ mod tests {
         let persist_store = super::storage_configuration(true).unwrap();
         assert_eq!(
             persist_store,
-            StorageConfiguration::File {
+            StorageConfiguration::Pickle {
                 path: ".hc".to_string()
             }
         );
@@ -363,6 +373,7 @@ mod tests {
             networking,
             Some(NetworkConfig {
                 bootstrap_nodes: Vec::new(),
+                n3h_log_level: default_n3h_log_level(),
                 n3h_path: default_n3h_path(),
                 n3h_mode: default_n3h_mode(),
                 n3h_persistence_path: default_n3h_persistence_path(),

@@ -46,7 +46,7 @@ pub mod tests {
         assert_eq!(JsonString::null(), call_result,);
         let expected_in_log =
        "\"debug/dna: \\\'foo\\\'\", \"debug/zome: Zome Function \\\'test\\\' returned: Success\"";
-        let log_contents = format!("{}", (*context.logger.lock().unwrap()).dump());
+        let log_contents = (*context.logger.lock().unwrap()).dump().to_string();
         assert!(log_contents.contains(expected_in_log));
     }
 }

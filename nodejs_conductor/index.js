@@ -26,7 +26,7 @@ const Config = {
     agent: name => ({ name }),
     dna: (path, name = `${path}`) => ({ path, name }),
     instance: (agent, dna, name = `${agent.name}`) => ({ agent, dna, name }),
-    conductor: (instances, opts=defaultOpts) => makeConfig(instances, opts)
+    conductor: (instances, opts = defaultOpts) => makeConfig(instances, opts)
 }
 
 /////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ Conductor.prototype.stop = function () {
 }
 
 /**
- * Run a new Conductor, specified by a closure:
+ * Run a new Conductor, specified by a closure which returns a Promise:
  * (stop, conductor) => { (code to run) }
  * where `stop` is a function that shuts down the Conductor and must be called in the closure body
  *
@@ -69,11 +69,12 @@ Conductor.prototype.stop = function () {
  */
 Conductor.run = function (config, fn) {
     const conductor = new Conductor(config)
-    return new Promise((fulfill, reject) => {
+    return new Promise(async (fulfill, reject) => {
         try {
             conductor._start(callbackFromPromise(fulfill, reject))
-            fn(() => conductor._stop(), conductor)
+            await fn(() => conductor._stop(), conductor)
         } catch (e) {
+            conductor._stop()
             reject(e)
         }
     })
@@ -132,7 +133,7 @@ class DnaInstance {
 /////////////////////////////////////////////////////////////
 
 class Scenario {
-    constructor(instanceConfigs, opts=defaultOpts) {
+    constructor(instanceConfigs, opts = defaultOpts) {
         this.instanceConfigs = instanceConfigs
         this.opts = opts
     }
@@ -173,17 +174,21 @@ class Scenario {
 
     runTape(description, fn) {
         if (!Scenario._tape) {
-            throw new Error("must call `scenario.setTape(require('tape'))` before running tape-based tests!")
+            throw new Error("must call `Scenario.setTape(require('tape'))` before running tape-based tests!")
         }
-        Scenario._tape(description, t => {
-            this.run(async (stop, instances) => {
-                await fn(t, instances)
-                stop()
+        return new Promise(resolve => {
+            Scenario._tape(description, async t => {
+                try {
+                    await this.run((stop, instances) => (
+                        fn(t, instances).then(() => stop())
+                    ))
+                } catch (e) {
+                    t.fail(e)
+                } finally {
+                    t.end()
+                    resolve()
+                }
             })
-            .catch(e => {
-                t.fail(e)
-            })
-            .then(t.end)
         })
     }
 }

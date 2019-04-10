@@ -24,12 +24,18 @@ impl PartialEq for EavMemoryStorage {
     }
 }
 
-impl EavMemoryStorage {
-    pub fn new() -> EavMemoryStorage {
+impl Default for EavMemoryStorage {
+    fn default() -> EavMemoryStorage {
         EavMemoryStorage {
             storage: Arc::new(RwLock::new(BTreeSet::new())),
             id: Uuid::new_v4(),
         }
+    }
+}
+
+impl EavMemoryStorage {
+    pub fn new() -> EavMemoryStorage {
+        Default::default()
     }
 }
 

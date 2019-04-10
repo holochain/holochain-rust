@@ -12,15 +12,12 @@ members = [
   "net",
   "nodejs_waiter",
   "sodium",
-  "hc_dpki",
+  "dpki",
   "test_bin",
+  "benchmarks"
 ]
 exclude = [
   "test_utils",
   "app_spec",
   "nodejs_conductor/native",
-  "rust_sodium-sys",
 ]
-
-[patch.crates-io]
-rust_sodium-sys = { path = "./rust_sodium-sys" }

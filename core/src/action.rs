@@ -10,13 +10,14 @@ use crate::{
         validation::ValidationResult,
         ZomeFnCall,
     },
-    scheduled_jobs::pending_validations::PendingValidation,
+    scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
 };
 use holochain_core_types::{
     cas::content::Address,
     chain_header::ChainHeader,
+    crud_status::CrudStatus,
     dna::Dna,
-    entry::{Entry, EntryWithMeta},
+    entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
     link::Link,
     validation::ValidationPackage,
@@ -105,6 +106,9 @@ pub enum Action {
     /// Does not validate, assumes link is valid.
     AddLink(Link),
 
+    //action for updating crudstatus
+    CrudStatus((EntryWithHeader, CrudStatus)),
+
     //Removes a link for the local DHT
     RemoveLink(Link),
 
@@ -126,7 +130,7 @@ pub enum Action {
     /// Lets the network module respond to a FETCH request.
     /// Triggered from the corresponding workflow after retrieving the
     /// requested entry from our local DHT shard.
-    RespondFetch((FetchEntryData, Option<EntryWithMeta>)),
+    RespondFetch((FetchEntryData, Option<EntryWithMetaAndHeader>)),
 
     /// We got a response for our FETCH request which needs to be added to the state.
     /// Triggered from the network handler.
@@ -212,7 +216,7 @@ pub enum Action {
     AddPendingValidation(PendingValidation),
 
     /// Clear an entry from the pending validation list
-    RemovePendingValidation(Address),
+    RemovePendingValidation((Address, ValidatingWorkflow)),
 }
 
 /// function signature for action handler functions

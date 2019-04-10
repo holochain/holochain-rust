@@ -4,6 +4,12 @@
 #[derive(Debug, PartialEq, Clone)]
 pub struct TransportError(pub String);
 
+impl TransportError {
+    pub fn new(msg: String) -> Self {
+        TransportError(msg)
+    }
+}
+
 impl std::fmt::Display for TransportError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)

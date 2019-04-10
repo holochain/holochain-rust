@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::entry_with_header::EntryWithHeader,
-    scheduled_jobs::pending_validations::PendingValidationStruct,
+    scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
 };
 use holochain_core_types::cas::content::Address;
 use std::sync::Arc;
@@ -11,6 +11,7 @@ use std::sync::Arc;
 pub fn add_pending_validation(
     entry_with_header: EntryWithHeader,
     dependencies: Vec<Address>,
+    workflow: ValidatingWorkflow,
     context: &Arc<Context>,
 ) {
     dispatch_action(
@@ -19,6 +20,7 @@ pub fn add_pending_validation(
             PendingValidationStruct {
                 entry_with_header,
                 dependencies,
+                workflow,
             },
         ))),
     );

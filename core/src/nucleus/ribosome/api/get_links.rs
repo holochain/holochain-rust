@@ -67,7 +67,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         entry::{entry_type::test_app_entry_type, Entry},
-        json::JsonString,
+        json::{JsonString, RawString},
         link::Link,
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
@@ -90,7 +90,6 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
-        let dna_name = &dna.name.to_string().clone();
         let netname = Some("returns_list_of_links");
         let instance = test_instance(dna, netname).expect("Could not create test instance");
 
@@ -99,7 +98,10 @@ pub mod tests {
 
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
+            let entry = Entry::App(
+                test_app_entry_type(),
+                JsonString::from(RawString::from(format!("entry{} value", i))),
+            );
             let address = initialized_context
                 .block_on(commit_entry(entry, None, &initialized_context))
                 .expect("Could not commit entry for testing");
@@ -117,25 +119,22 @@ pub mod tests {
             .is_ok());
 
         let call_result = test_zome_api_function_call(
-            &dna_name,
             initialized_context.clone(),
-            &instance,
-            &wasm,
             test_get_links_args_bytes(&entry_addresses[0], "test-tag"),
         );
 
-        let expected_1 = JsonString::from(
-            format!(
+        let expected_1 = JsonString::from_json(
+            &(format!(
                 r#"{{"ok":true,"value":"{{\"addresses\":[\"{}\",\"{}\"]}}","error":"null"}}"#,
                 entry_addresses[1], entry_addresses[2]
-            ) + "\u{0}",
+            ) + "\u{0}"),
         );
 
-        let expected_2 = JsonString::from(
-            format!(
+        let expected_2 = JsonString::from_json(
+            &(format!(
                 r#"{{"ok":true,"value":"{{\"addresses\":[\"{}\",\"{}\"]}}","error":"null"}}"#,
                 entry_addresses[2], entry_addresses[1]
-            ) + "\u{0}",
+            ) + "\u{0}"),
         );
 
         assert!(
@@ -147,18 +146,15 @@ pub mod tests {
         );
 
         let call_result = test_zome_api_function_call(
-            &dna_name,
             initialized_context.clone(),
-            &instance,
-            &wasm,
             test_get_links_args_bytes(&entry_addresses[0], "other-tag"),
         );
 
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(r#"{"ok":true,"value":"{\"addresses\":[]}","error":"null"}"#)
-                    + "\u{0}"
+            JsonString::from_json(
+                &(String::from(r#"{"ok":true,"value":"{\"addresses\":[]}","error":"null"}"#)
+                    + "\u{0}")
             ),
         );
     }

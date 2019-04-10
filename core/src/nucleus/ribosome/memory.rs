@@ -31,8 +31,6 @@ pub struct WasmPageManager {
 /// Return code of 0 means success, while any other value means a failure and gives the error code.
 /// In the future, to handle bigger memory needs, we could do same with an i64 instead
 /// and handle multiple memory Pages.
-#[allow(unknown_lints)]
-#[allow(cast_lossless)]
 impl WasmPageManager {
     pub fn new(wasm_instance: &ModuleRef) -> Self {
         // get wasm memory reference from module

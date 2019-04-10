@@ -3,7 +3,7 @@
 //! This module allows holochain to connect to a running P2P client node
 //! over WebSocket-based socket connection.
 
-mod transport;
+pub(crate) mod transport;
 mod transport_wss;
 
 pub use transport::{DidWork, Transport, TransportError, TransportEvent, TransportResult};
@@ -12,6 +12,5 @@ pub use transport_wss::{TransportWss, DEFAULT_HEARTBEAT_MS, DEFAULT_HEARTBEAT_WA
 
 #[macro_use]
 pub mod errors;
-pub mod util;
-
 pub mod spawn;
+pub mod util;

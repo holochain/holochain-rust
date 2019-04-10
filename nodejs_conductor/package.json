@@ -26,13 +26,14 @@
     "test": "faucet test/*"
   },
   "dependencies": {
-    "faucet": "^0.0.1",
     "neon-cli": "^0.2.0",
     "node-pre-gyp": "^0.11.0"
   },
   "devDependencies": {
+    "faucet": "^0.0.1",
     "neon-cli": "^0.2.0",
     "shelljs": "^0.8.2",
+    "sinon": "^7.3.1",
     "tape": "^4.9.2"
   },
   "binary": {

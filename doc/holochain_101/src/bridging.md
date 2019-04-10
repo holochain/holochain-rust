@@ -76,6 +76,6 @@ define_zome! {
     }
 ```
 
-Remember that the **call** will block the execution of the caller DNA until the callee (target) finishes executing the call, so it's best to mind performance issues when working with bridges, try to make contextual or incremental calls, rather than all emcompassing ones.
+Remember that the **call** will block the execution of the caller DNA until the callee (target) finishes executing the call, so it's best to mind performance issues when working with bridges. Try to make contextual or incremental calls rather than all-encompassing ones.
 
 

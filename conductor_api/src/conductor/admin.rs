@@ -200,7 +200,7 @@ impl ConductorAdmin for Conductor {
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency()?;
-        let instance = self.instantiate_from_config(id, &new_config, None)?;
+        let instance = self.instantiate_from_config(id, &new_config)?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;

@@ -15,7 +15,6 @@ use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
 use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
-use serde_json;
 use std::{
     collections::HashMap,
     convert::TryFrom,

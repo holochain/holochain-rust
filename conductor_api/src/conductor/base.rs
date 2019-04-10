@@ -158,7 +158,7 @@ impl Conductor {
             .insert(agent_id, Arc::new(Mutex::new(keystore)));
     }
 
-    pub fn with_signal_channel(mut self, signal_tx: SyncSender<Signal>) -> Self {
+    pub fn with_signal_channel(mut self, signal_tx: Sender<Signal>) -> Self {
         if !self.instances.is_empty() {
             panic!("Cannot set a signal channel after having run from_config()");
         }
@@ -403,7 +403,7 @@ impl Conductor {
     /// @TODO: clean up the conductor creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn boot_from_config(&mut self, signal_tx: Option<SignalSender>) -> Result<(), String> {
+    pub fn boot_from_config(&mut self, _signal_tx: Option<SignalSender>) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
 
         if self.p2p_config.is_none() {

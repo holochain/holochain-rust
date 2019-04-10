@@ -39,7 +39,7 @@ Then on the caller DNA you have to initiate the bridge call using `hdk::call` li
     let response = match hdk::call(
         "sample-bridge",
         "sample_zome",
-        Address::from(PUBLIC_TOKEN.to_string()), // nevermind this for now
+        Address::from(PUBLIC_TOKEN.to_string()), // never mind this for now
         "sample_function",
         json!({
             "some_param": "some_val",

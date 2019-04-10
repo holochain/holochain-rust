@@ -147,7 +147,7 @@ fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetRes
     let res = exec_output(path, out_args, ".", false);
     if res.is_ok() {
         let res = res.unwrap();
-        let res = res.rsplit('|').next().unwrap_or("");
+        let res = res.rsplit('\n').next().unwrap_or("");
         if res != &N3H_INFO.version {
             bail!(
                 "n3h version mismatch, expected: {}, got: {}",

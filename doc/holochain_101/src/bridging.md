@@ -1,6 +1,6 @@
 # Building Holochain Apps: Bridging
 
-As you saw in [Building Apps](./building_apps.md) each **DNA** has a unique Hash that spawns a brand new **DHT network** and creates isolated **source chains** for each agent. Even when you change the DNA, releasing a new version of the App, it will spawn a brand new DHT network and source chains.
+As you saw in [Building Apps](./building_apps.md) each **DNA** has a unique hash that spawns a brand new **DHT network** and creates isolated **source chains** for each agent. Even when you change the DNA, releasing a new version of the app, it will spawn a brand new DHT network and source chains.
 
 So if every App lives in an entirely separated world how can they talk to each other? This is where **bridging** comes into play.
 

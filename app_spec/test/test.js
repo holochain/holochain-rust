@@ -169,7 +169,7 @@ scenario1.runTape('my_memos', async (t, { alice }) => {
 })
 
 
-scenario1.runTape('get_memo_returns_none', async (t, { alice }) => {
+scenario2.runTape('get_memo_returns_none', async (t, { alice, bob}) => {
 
   const content = "Reminder: Buy some HOT."
   const params = { content }
@@ -179,7 +179,7 @@ scenario1.runTape('get_memo_returns_none', async (t, { alice }) => {
   t.notOk(create_memo_result.Err)
   t.equal(create_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
 
-  const my_memos_result = alice.call("blog", "get_memo",
+  const my_memos_result = bob.call("blog", "get_memo",
     { memo_address:create_memo_result.Ok })
 
   t.ok(my_memos_result.Ok)

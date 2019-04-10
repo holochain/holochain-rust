@@ -16,14 +16,18 @@ impl CanPublish for EntryType {
        match self {
             EntryType::Dna => return false,
             EntryType::CapTokenGrant => return false,
-            _ => ()
+            _ =>
+                if self.is_sys() {
+                    return true
+                }
         }
 
-        let dna = context
-            .get_dna()
-            .expect("context must hold DNA in order to publish an entry.");
-        let maybe_def = dna.get_entry_type_def(self.to_string().as_str());
+        let dna = context.get_dna().expect
+            ("DNA must be present to test if entry is publishable.");
 
+        let entry_type_name = self.to_string();
+        context.log(format!("got entry type name of {}", entry_type_name));
+        let maybe_def = dna.get_entry_type_def(entry_type_name.as_str());
         if maybe_def.is_none() {
             context.log("context must hold an entry type definition to publish an entry.");
             return false;
@@ -32,9 +36,10 @@ impl CanPublish for EntryType {
 
         // app entry type must be publishable
         if !entry_type_def.sharing.clone().can_publish() {
+            context.log
+                (format!("entry {} is not publishable", entry_type_name));
             return false;
         }
-
         true
     }
 }

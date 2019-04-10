@@ -151,7 +151,7 @@ scenario1.runTape('create_memo', async (t, { alice }) => {
   t.equal(result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
 })
 
-scenario1.runTape('get_memo', async (t, { alice }) => {
+scenario1.runTape('my_memos', async (t, { alice }) => {
 
   const content = "Reminder: Buy some HOT."
   const params = { content }
@@ -161,14 +161,15 @@ scenario1.runTape('get_memo', async (t, { alice }) => {
   t.notOk(create_memo_result.Err)
   t.equal(create_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
 
-  const my_memos_result = alice.call("blog", "my_memos")
+  const my_memos_result = alice.call("blog", "my_memos", {})
 
   t.ok(my_memos_result.Ok)
   t.notOk(my_memos_result.Err)
-  t.equal(my_memos_result.Ok, ["QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i"])
+  t.deepEqual(my_memos_result.Ok, ["QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i"])
 })
 
-scenario1.runTape('get_memo_is_private', async (t, { alice }) => {
+
+scenario1.runTape('get_memo_returns_none', async (t, { alice }) => {
 
   const content = "Reminder: Buy some HOT."
   const params = { content }
@@ -176,20 +177,38 @@ scenario1.runTape('get_memo_is_private', async (t, { alice }) => {
 
   t.ok(create_memo_result.Ok)
   t.notOk(create_memo_result.Err)
-  t.equal(creat_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
+  t.equal(create_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
 
-  const alice_memos_result = alice.call("blog", "my_memos")
+  const my_memos_result = alice.call("blog", "get_memo",
+    { memo_address:create_memo_result.Ok })
+
+  t.ok(my_memos_result.Ok)
+  t.notOk(my_memos_result.Err)
+  t.deepEqual(my_memos_result.Ok, 'None')
+})
+
+scenario2.runTape('my_memos_are_private', async (t, { alice, bob }) => {
+
+  const content = "Reminder: Buy some HOT."
+  const params = { content }
+  const create_memo_result = alice.call("blog", "create_memo", params)
+
+  t.ok(create_memo_result.Ok)
+  t.notOk(create_memo_result.Err)
+  t.equal(create_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
+
+  const alice_memos_result = alice.call("blog", "my_memos", {})
 
   t.ok(alice_memos_result.Ok)
   t.notOk(alice_memos_result.Err)
-  t.equal(alice_memos_result.Ok,
+  t.deepEqual(alice_memos_result.Ok,
     ["QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i"])
 
-  const bob_memos_result = bob.call("blob", "my_memos")
+  const bob_memos_result = bob.call("blog", "my_memos", {})
 
   t.ok(bob_memos_result.Ok)
   t.notOk(bob_memos_result.Err)
-  t.equal(bob_memos_result.Ok, [])
+  t.deepEqual(bob_memos_result.Ok, [])
 
 })
 

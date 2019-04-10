@@ -144,6 +144,11 @@ pub fn handle_my_memos() -> ZomeApiResult<Vec<Address>> {
     hdk::query("memo".into(), 0, 0)
 }
 
+// As memos are private we expect this will never return anything but None.
+pub fn handle_get_memo(address:Address) -> ZomeApiResult<Option<Entry>> {
+    hdk::get_entry(&address)
+}
+
 pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links_with_options(
         &AGENT_ADDRESS,

@@ -2,6 +2,7 @@
 
 use crate::{connection::NetResult, tweetlog::TWEETLOG};
 use sha2::Digest;
+use std::io::Write;
 
 macro_rules! tlog_d {
     ($($arg:tt)+) => {
@@ -28,9 +29,17 @@ struct Artifact {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct Type {
+    pub appimage: Option<Artifact>,
+    pub tar: Option<Artifact>,
+    pub dmg: Option<Artifact>,
+    pub exe: Option<Artifact>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct Arch {
-    pub aarch64: Option<Artifact>,
-    pub x64: Option<Artifact>,
+    pub aarch64: Option<Type>,
+    pub x64: Option<Type>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -53,11 +62,10 @@ lazy_static! {
         { serde_json::from_str(N3H_PIN).expect("bundled json should parse correctly") };
 }
 
-static NIX_MKRUNNER: &'static str = r#"cat > n3h-nix-runner.bash <<EOF
-#! $(which bash)
-exec $(which appimage-run) $(ls $(pwd)/n3h*.AppImage) "\$@"
-EOF
-chmod a+x n3h-nix-runner.bash
+static NIX_EXTRACT: &'static [u8] = br#"
+#! /usr/bin/env nix-shell
+#! nix-shell -i sh -p coreutils
+exec tar xf "$@"
 "#;
 
 /// check for n3h in the path. if so, check its version
@@ -75,8 +83,8 @@ pub fn get_verify_n3h() -> NetResult<(std::path::PathBuf, Vec<String>)> {
 
     let mut path = std::path::PathBuf::new();
 
-    let (os, arch) = get_os_arch()?;
-    let artifact = get_artifact_info(os, arch)?;
+    let (os, arch, pkg_type) = get_os_arch()?;
+    let artifact = get_artifact_info(os, arch, pkg_type)?;
 
     path.push(crate::holochain_common::paths::n3h_binaries_directory());
     path.push(&N3H_INFO.version);
@@ -92,10 +100,23 @@ pub fn get_verify_n3h() -> NetResult<(std::path::PathBuf, Vec<String>)> {
         // we need to extract the dmg into n3h.app
         extract_dmg(path.as_os_str(), &bin_dir)?
     } else if os == "linux" && std::env::var("NIX_STORE").is_ok() {
-        // on nix, we need some extra appimage-run magic
-        exec_output("bash", vec!["-c", NIX_MKRUNNER], &bin_dir, false)?;
+        // on nix, we need some extra magic to make prebuilt binaries work
+
+        let mut extract_path = bin_dir.clone();
+        extract_path.push("n3h-nix-extract.bash");
+
+        {
+            let mut open_opts = std::fs::OpenOptions::new();
+            open_opts.create(true).write(true);
+            set_executable(&mut open_opts);
+            let mut file = open_opts.open(&extract_path)?;
+            file.write_all(NIX_EXTRACT)?;
+        }
+
+        exec_output("nix-shell", vec![extract_path.as_os_str(), path.as_os_str()], &bin_dir, false)?;
         let mut path = bin_dir.clone();
-        path.push("n3h-nix-runner.bash");
+        path.push(&artifact.file[0..artifact.file.len() - 7]);
+        path.push("n3h-nix.bash");
         path
     } else {
         path
@@ -141,7 +162,7 @@ fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetRes
 }
 
 /// check our pinned n3h version urls / hashes for the current os/arch
-fn get_artifact_info(os: &str, arch: &str) -> NetResult<&'static Artifact> {
+fn get_artifact_info(os: &str, arch: &str, pkg_type: &str) -> NetResult<&'static Artifact> {
     let os = match os {
         "linux" => &N3H_INFO.artifacts.linux,
         "mac" => &N3H_INFO.artifacts.mac,
@@ -159,7 +180,14 @@ fn get_artifact_info(os: &str, arch: &str) -> NetResult<&'static Artifact> {
     if arch.is_none() {
         bail!("arch not available");
     }
-    Ok(&arch.as_ref().unwrap())
+    let pkg_type = match pkg_type {
+        "appimage" => &arch.as_ref().unwrap().appimage,
+        "tar" => &arch.as_ref().unwrap().tar,
+        "dmg" => &arch.as_ref().unwrap().dmg,
+        "exe" => &arch.as_ref().unwrap().exe,
+        _ => bail!("pkg_type {} not available", pkg_type),
+    };
+    Ok(&pkg_type.as_ref().unwrap())
 }
 
 /// run a command / capture the output
@@ -185,15 +213,20 @@ where
 }
 
 /// get the current os / arch
-fn get_os_arch() -> NetResult<(&'static str, &'static str)> {
+fn get_os_arch() -> NetResult<(&'static str, &'static str, &'static str)> {
+    let linux_pkg_type = if std::env::var("NIX_STORE").is_ok() {
+        "tar"
+    } else {
+        "appimage"
+    };
     if cfg!(target_os = "linux") && cfg!(target_arch = "x86_64") {
-        Ok(("linux", "x64"))
+        Ok(("linux", "x64", linux_pkg_type))
     } else if cfg!(target_os = "linux") && cfg!(target_arch = "aarch64") {
-        Ok(("linux", "aarch64"))
+        Ok(("linux", "aarch64", linux_pkg_type))
     } else if cfg!(windows) && cfg!(target_arch = "x86_64") {
-        Ok(("win", "x64"))
+        Ok(("win", "x64", "exe"))
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
-        Ok(("mac", "x64"))
+        Ok(("mac", "x64", "dmg"))
     } else {
         bail!("no prebuilt n3h for current os/arch - TODO check for node/npm - dl release zip");
     }

@@ -625,9 +625,6 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
-    # needed for appimage running
-    appimage-run which bash
-
     # https://github.com/NixOS/pkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils
 

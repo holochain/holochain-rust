@@ -20,7 +20,9 @@ const TAG = process.argv[2]
 
 const OS_ARCH = [
   'linux-aarch64.AppImage',
+  'linux-aarch64.tar.gz',
   'linux-x64.AppImage',
+  'linux-x64.tar.gz',
   'mac-x64.dmg',
   'win-x64.exe'
 ]
@@ -74,10 +76,16 @@ async function main () {
     const m = sum.match(/([^\s]+)\s+([^\s]+)/)
     const os = osArch.split('.')[0].split('-')[0]
     const arch = osArch.split('.')[0].split('-')[1]
+    const type = osArch.split('.')[1].toLowerCase()
     if (!(os in out.artifacts)) {
       out.artifacts[os] = {}
     }
-    out.artifacts[os][arch] = {
+    let ref = out.artifacts[os]
+    if (!(arch in ref)) {
+      ref[arch] = {}
+    }
+    ref = ref[arch]
+    ref[type] = {
       url: `https://github.com/holochain/n3h/releases/download/${TAG}/n3h-${version}-${osArch}`,
       file: m[2],
       hash: m[1]

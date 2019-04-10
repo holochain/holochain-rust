@@ -626,7 +626,7 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     # https://github.com/NixOS/pkgs/blob/master/doc/languages-frameworks/rust.section.md
-    binutils gcc gnumake openssl pkgconfig coreutils
+    binutils gcc gnumake openssl pkgconfig coreutils which
 
     cmake
     python

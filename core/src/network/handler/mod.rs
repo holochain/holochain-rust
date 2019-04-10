@@ -4,11 +4,11 @@ pub mod store;
 
 use crate::{
     context::Context,
+    entry::CanPublish,
     network::{
         actions::publish::publish,
         handler::{get::*, send::*, store::*},
     },
-    entry::CanPublish,
 };
 use holochain_core_types::hash::HashString;
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};

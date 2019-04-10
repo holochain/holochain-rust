@@ -2,10 +2,10 @@ use crate::{
     action::{Action, ActionWrapper},
     agent::{self, find_chain_header},
     context::Context,
+    entry::CanPublish,
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
-    entry::CanPublish,
 };
 use futures::{
     future::Future,

@@ -18,17 +18,23 @@ environment:
  matrix:
   - test_p: holochain_dna_c_binding
     test_path: dna_c_binding\
+    wasm_path:
+    wasm_path_2:
 
   - test_p: holochain_core_types
     test_path: core_types\
+    wasm_path:
+    wasm_path_2:
 
   - test_p: holochain_wasm_utils
     test_path: wasm_utils\
     wasm_path: wasm-test\integration-test\
+    wasm_path_2:
 
   - test_p: hdk
     test_path: hdk-rust\
     wasm_path: wasm-test\
+    wasm_path_2:
 
   - test_p: holochain_conductor_api
     test_path: conductor_api\
@@ -40,10 +46,12 @@ environment:
 
   - test_p: holochain_net
     test_path: net\
+    wasm_path:
+    wasm_path_2:
 
 test_script:
- - choco install strawberryperl
- - refreshenv
+ # - choco install strawberryperl
+ # - refreshenv
  - scripts\windows\do-ci-test.bat
 
  # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23358358

@@ -63,8 +63,6 @@ pub async fn author_entry<'a>(
     ));
 
     // 4. Publish the valid entry to DHT. This will call Hold to itself
-    //TODO: missing a general public/private sharing check here, for now just
-    // using the entry_type can_publish() function which isn't enough
     if entry.entry_type().can_publish(context) {
         context.log(format!(
             "debug/workflow/authoring_entry/{}: publishing...",

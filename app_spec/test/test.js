@@ -408,7 +408,7 @@ scenario1.runTape('posts_by_agent', async (t, { alice }) => {
 
   const result = alice.call("blog", "posts_by_agent", params)
 
-  t.deepEqual(result.Ok, { "addresses": [] })
+  t.deepEqual(result.Ok, { "addresses": [], headers:[] })
 })
 
 scenario1.runTape('my_posts', async (t, { alice }) => {
@@ -438,6 +438,29 @@ scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
   t.ok(result.Err)
   console.log(result)
   t.equal(JSON.parse(result.Err.Internal).kind, "Timeout")
+})
+
+scenario2.runTape('get_soruces_from_link', async (t, { alice, bob }) => {
+
+  const alice_address = await alice.callSync("blog", "create_post",
+    { "content": "Holo world", "in_reply_to": null }
+  );
+
+  const bob_address = await bob.callSync("blog", "create_post",
+  { "content": "Another one", "in_reply_to": null }
+);
+  const alice_posts = bob.call("blog","authored_posts_with_sources",
+  {
+    "agent" : alice_address.Ok
+  });
+
+  const bob_posts = alice.call("blog","authored_posts_with_sources",
+  {
+    "agent" : bob_address.Ok
+  });
+  t.equal(bob.agentId,bob_posts.Ok.headers[0].provenances[0][0]);
+  t.equal(alice.agentId,alice_posts.Ok.headers[0].provenances[0][0]);
+
 })
 
 scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {

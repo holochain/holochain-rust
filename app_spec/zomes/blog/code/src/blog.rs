@@ -133,6 +133,14 @@ pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
     )
 }
 
+pub fn handle_my_posts_get_my_sources(agent:Address) -> ZomeApiResult<GetLinksResult>
+{
+    hdk::get_links_with_options(&agent,"authored_posts",GetLinksOptions{
+        headers : true,
+        ..Default::default()
+    })
+}
+
 
 pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
     // In the current implementation of hdk::query the second parameter

@@ -22,14 +22,14 @@ impl Default for LinksStatusRequestKind {
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Hash, Eq)]
 pub struct GetLinksOptions {
     pub status_request: LinksStatusRequestKind,
-    pub sources: bool,
+    pub headers: bool,
     pub timeout: Timeout,
 }
 impl Default for GetLinksOptions {
     fn default() -> Self {
         GetLinksOptions {
             status_request: LinksStatusRequestKind::default(),
-            sources: false,
+            headers: false,
             timeout: Default::default(),
         }
     }

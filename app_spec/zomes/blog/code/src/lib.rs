@@ -60,7 +60,7 @@ define_zome! {
 
         check_send: {
             inputs: |to_agent: Address, message: String|,
-            outputs: |response: ZomeApiResult<String>|,
+            outputs: |response: ZomeApiResult<JsonString>|,
             handler: blog::handle_check_send
         }
 

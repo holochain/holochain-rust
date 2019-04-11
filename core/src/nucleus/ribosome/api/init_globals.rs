@@ -14,9 +14,10 @@ use wasmi::RuntimeArgs;
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
     let call_data = runtime.call_data()?;
+    let dna_name = runtime.context()?.get_dna().unwrap().name.clone();
     // Create the ZomeApiGlobals struct with some default values
     let mut globals = ZomeApiGlobals {
-        dna_name: call_data.dna_name.to_string(),
+        dna_name,
         dna_address: Address::from(""),
         agent_id_str: JsonString::from(call_data.context.agent_id.clone()).to_string(),
         agent_address: Address::from(call_data.context.agent_id.address()),
@@ -52,7 +53,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
 
     // Update public_token
     let maybe_token = call_data.context.get_public_token();
-    if maybe_token.is_some() {
+    if maybe_token.is_ok() {
         globals.public_token = maybe_token.unwrap();
     }
 
@@ -81,7 +82,8 @@ pub mod tests {
 
         let zome_api_internal_result = ZomeApiInternalResult::try_from(call_result).unwrap();
         let globals =
-            ZomeApiGlobals::try_from(JsonString::from(zome_api_internal_result.value)).unwrap();
+            ZomeApiGlobals::try_from(JsonString::from_json(&zome_api_internal_result.value))
+                .unwrap();
 
         assert_eq!(globals.dna_name, "TestApp");
         let expected_agent = registered_test_agent("jane");

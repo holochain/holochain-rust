@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Performance optimization: Don't clone and parse WASM binaries for each distinct WASM execution such as Zome function calls and validation callbacks. Instead hold only one parsed module instance per zome on the heap and use that to initialize WASM instances. [#1211](https://github.com/holochain/holochain-rust/pull/1211)
+- OpenSSL is vendored (statically linked) on nixos and other linux [#1245](https://github.com/holochain/holochain-rust/pull/1245)
 
 ### Deprecated
 

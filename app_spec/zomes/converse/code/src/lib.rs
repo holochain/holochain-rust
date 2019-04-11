@@ -9,7 +9,7 @@ use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
         error::HolochainError,
-        json::JsonString,
+        json::{JsonString},
         signature::{Provenance, Signature},
     },
     holochain_wasm_utils::api_serialization::keystore::KeyType,
@@ -27,8 +27,9 @@ pub fn handle_verify_message(message: String, provenance: Provenance) -> ZomeApi
     hdk::verify_signature(provenance, message)
 }
 
-pub fn handle_add_key(src_id: String, dst_id: String) -> ZomeApiResult<String> {
-    hdk::keystore_derive_key(src_id, dst_id, KeyType::Signing)
+pub fn handle_add_key(src_id: String, dst_id: String) -> ZomeApiResult<JsonString> {
+    let key_str = hdk::keystore_derive_key(src_id, dst_id, KeyType::Signing)?;
+    Ok(JsonString::from_json(&key_str))
 }
 
 pub fn handle_add_seed(src_id: String, dst_id: String, index: u64) -> ZomeApiResult<()> {
@@ -72,7 +73,7 @@ define_zome! {
 
         add_key: {
             inputs: |src_id: String, dst_id: String|,
-            outputs: |result: ZomeApiResult<String>|,
+            outputs: |result: ZomeApiResult<JsonString>|,
             handler: handle_add_key
         }
 

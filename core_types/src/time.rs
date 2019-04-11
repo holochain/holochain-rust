@@ -817,7 +817,7 @@ pub mod tests {
                     let deserialized: Iso8601 = serde_json::from_str(&serialized.to_string())?;
                     assert_eq!(deserialized.to_string(), "2018-10-11T03:23:38+00:00");
 
-                    // JSON serialization via JsonSring
+                    // JSON serialization via JsonString
                     let iso_8601_ser = JsonString::from(&iso);
                     assert_eq!(iso_8601_ser.to_string(), "\"2018-10-11T03:23:38+00:00\"");
                     let iso_8601_des = Iso8601::try_from(iso_8601_ser);

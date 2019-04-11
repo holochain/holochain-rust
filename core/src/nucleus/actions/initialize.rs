@@ -108,8 +108,14 @@ pub async fn initialize_chain(
     }
 
     let mut cap_functions = CapFunctions::new();
+    let zomes = dna.clone().zomes;
+    if zomes.is_empty() {
+        return Err(HolochainError::ErrorGeneric(
+            "Attempting to initialize DNA with zero zomes!".into(),
+        ));
+    }
     // Commit Public Capability Grants to chain
-    for (zome_name, zome) in dna.clone().zomes {
+    for (zome_name, zome) in zomes {
         let maybe_public = zome
             .traits
             .iter()

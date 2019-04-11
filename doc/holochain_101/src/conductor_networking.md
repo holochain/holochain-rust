@@ -13,9 +13,6 @@ List of URIs that point to other nodes to bootstrap p2p connections.
 Set the logging level used globally by N3H. Must be one of the following: 't', 'd', 'i', 'w', 'e'
 Each value corresponding to the industry standard log level: Trace, Debug, Info, Warning, Error.
 
-#### `n3h_path`: `string`
-Absolute path to the local installation/repository of n3h. Default is to a subdirectory of the $HOME directory on the device: `$HOME/.hc/net/n3h`
-
 #### `n3h_persistence_path`: `string` Optional
 Absolute path to the directory that n3h uses to store persisted data. The default is that a temporary self-removing directory for this transient data will be used.
 
@@ -26,7 +23,6 @@ Conductor. If this is set the Conductor does not spawn n3h itself and ignores th
 ### Example
 ```toml
 [network]
-n3h_path = "/home/eric/holochain/n3h"
 n3h_persistence_path = "/tmp"
 bootstrap_nodes = []
 ```

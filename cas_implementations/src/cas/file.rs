@@ -4,6 +4,7 @@ use holochain_core_types::{
         storage::ContentAddressableStorage,
     },
     error::HolochainError,
+    json::JsonString,
 };
 use std::{
     fs::{create_dir_all, read_to_string, write},
@@ -71,7 +72,9 @@ impl ContentAddressableStorage for FilesystemStorage {
     fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
         let _guard = self.lock.read()?;
         if self.contains(&address)? {
-            Ok(Some(read_to_string(self.address_to_path(address))?.into()))
+            Ok(Some(JsonString::from_json(&read_to_string(
+                self.address_to_path(address),
+            )?)))
         } else {
             Ok(None)
         }
@@ -84,9 +87,6 @@ impl ContentAddressableStorage for FilesystemStorage {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-
-    use self::tempfile::{tempdir, TempDir};
     use crate::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::{
@@ -95,6 +95,7 @@ pub mod tests {
         },
         json::RawString,
     };
+    use tempfile::{tempdir, TempDir};
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
         let dir = tempdir().expect("Could not create a tempdir for CAS testing");

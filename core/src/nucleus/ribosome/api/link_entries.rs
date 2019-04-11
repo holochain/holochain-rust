@@ -133,42 +133,35 @@ pub mod tests {
 
     #[test]
     fn returns_ok_if_base_is_present() {
-        let (instance, context) =
-            create_test_instance_with_name(Some("returns_ok_if_base_present"));
+        let (_, context) = create_test_instance_with_name(Some("returns_ok_if_base_present"));
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
             .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
-            &context.get_dna().unwrap().name.to_string(),
             context.clone(),
-            &instance,
-            &context.get_wasm(&test_zome_name()).unwrap().code,
             test_link_args_bytes(String::from("test-tag")),
         );
 
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
+            JsonString::from_json(
+                &(String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}")
             ),
         );
     }
 
     #[test]
     fn errors_with_wrong_tag() {
-        let (instance, context) = create_test_instance();
+        let (_, context) = create_test_instance();
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
             .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
-            &context.get_dna().unwrap().name.to_string(),
             context.clone(),
-            &instance,
-            &context.get_wasm(&test_zome_name()).unwrap().code,
             test_link_args_bytes(String::from("wrong-tag")),
         );
 
@@ -181,7 +174,7 @@ pub mod tests {
 
     #[test]
     fn works_with_linked_from_defined_link() {
-        let (instance, context) = create_test_instance();
+        let (_, context) = create_test_instance();
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
@@ -192,17 +185,14 @@ pub mod tests {
             .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
-            &context.get_dna().unwrap().name.to_string(),
             context.clone(),
-            &instance,
-            &context.get_wasm(&test_zome_name()).unwrap().code,
             test_link_2_args_bytes(String::from("test-tag")),
         );
 
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
+            JsonString::from_json(
+                &(String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}")
             ),
         );
     }

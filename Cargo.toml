@@ -14,6 +14,7 @@ members = [
   "sodium",
   "dpki",
   "test_bin",
+  "benchmarks"
 ]
 exclude = [
   "test_utils",

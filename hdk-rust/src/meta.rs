@@ -128,10 +128,10 @@ pub extern "C" fn __hdk_validate_app_entry(
 
             match validation_result {
                 Ok(()) => RibosomeEncodedValue::Success.into(),
-                Err(fail_string) => {
-                    return_code_for_allocation_result(crate::global_fns::write_json(fail_string))
-                        .into()
-                }
+                Err(fail_string) => return_code_for_allocation_result(
+                    crate::global_fns::write_json(JsonString::from_json(&fail_string)),
+                )
+                .into(),
             }
         }
     }
@@ -216,9 +216,9 @@ pub extern "C" fn __hdk_validate_link(
                 let validation_result = (*link_definition.validator)(input.validation_data);
                 Some(match validation_result {
                     Ok(()) => RibosomeEncodedValue::Success,
-                    Err(fail_string) => {
-                        return_code_for_allocation_result(::global_fns::write_json(fail_string))
-                    }
+                    Err(fail_string) => return_code_for_allocation_result(
+                        ::global_fns::write_json(JsonString::from_json(&fail_string)),
+                    ),
                 })
             })
             .unwrap_or(RibosomeEncodedValue::Failure(
@@ -359,7 +359,7 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(partial_zome),
-            JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
+            JsonString::from_json("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
         );
     }
 }

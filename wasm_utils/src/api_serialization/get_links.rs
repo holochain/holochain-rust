@@ -37,7 +37,7 @@ impl Default for GetLinksOptions {
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]
 pub struct GetLinksResult {
-    addresses: Vec<Address>,
+    addresses: Vec<Address>
 }
 
 impl GetLinksResult {

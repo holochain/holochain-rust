@@ -8,3 +8,4 @@ pub mod hold_entry_update;
 pub mod hold_link;
 pub mod remove_link;
 pub mod respond_validation_package_request;
+pub mod get_link_result;

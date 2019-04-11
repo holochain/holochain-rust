@@ -440,7 +440,7 @@ scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
   t.equal(JSON.parse(result.Err.Internal).kind, "Timeout")
 })
 
-scenario2.runTape('get_soruces_from_link', async (t, { alice, bob }) => {
+scenario2.runTape('get_sources_from_link', async (t, { alice, bob }) => {
 
   const alice_address = await alice.callSync("blog", "create_post",
     { "content": "Holo world", "in_reply_to": null }

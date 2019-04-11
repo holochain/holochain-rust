@@ -213,12 +213,6 @@ jobs:
   # this allows us to keep walltimes down
   include:
 
-    - name: "windows hc"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=hc
-       - TEST_PATH=cli/
-
     - name: "windows core"
       <<: *_windows_template_lite
       env:

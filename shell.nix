@@ -177,7 +177,7 @@ let
   hc-test = pkgs.writeShellScriptBin "hc-test"
   ''
    hc-build-wasm
-   HC_SIMPLE_LOGGER_MUTE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
+   HC_SIMPLE_LOGGER_MUTE=1 RUST_BACKTRACE=1 cargo test --all --target-dir "$HC_TARGET_PREFIX"target "$1" -- --nocapture;
   '';
 
   hc-test-all = pkgs.writeShellScriptBin "hc-test-all"
@@ -625,9 +625,8 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
-
     # https://github.com/NixOS/pkgs/blob/master/doc/languages-frameworks/rust.section.md
-    binutils gcc gnumake openssl pkgconfig coreutils
+    binutils gcc gnumake openssl pkgconfig coreutils which
 
     cmake
     python

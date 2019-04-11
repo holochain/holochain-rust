@@ -11,6 +11,13 @@ jobs:
    - checkout
    - run: nix-shell --run hc-test
 
+ n3h_debug:
+  docker:
+   - image: holochain/holochain-rust:latest
+  steps:
+   - checkout
+   - run: nix-shell --run 'cargo test -p holochain_net can_dl_n3h'
+
  fmt:
   docker:
    - image: holochain/holochain-rust:latest
@@ -239,6 +246,7 @@ workflows:
  tests:
   jobs:
    - build
+   - n3h_debug
    - fmt
    - app-spec-tests
    - cli-tests

@@ -598,14 +598,14 @@ fn can_roundtrip_links() {
     let expected_links: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
         entry_address_2.clone(),
         entry_address_3.clone(),
-    ]));
+    ],Vec::new()));
     let expected_links = JsonString::from(expected_links);
 
     let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
         Ok(vec![Ok(entry_2.clone()), Ok(entry_3.clone())]);
 
     let expected_links_reversed: Result<GetLinksResult, HolochainError> =
-        Ok(GetLinksResult::new(vec![entry_address_3, entry_address_2]));
+        Ok(GetLinksResult::new(vec![entry_address_3, entry_address_2],Vec::new()));
     let expected_links_reversed = JsonString::from(expected_links_reversed);
 
     let expected_entries_reversed: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =

@@ -85,6 +85,7 @@ pub struct Conductor {
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::conductor) interface_broadcasters: Arc<RwLock<HashMap<String, Broadcaster>>>,
+    signal_multiplexer_kill_switch: Option<Sender<()>>,
     pub key_loader: KeyLoader,
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
@@ -138,6 +139,7 @@ impl Conductor {
             interface_threads: HashMap::new(),
             static_servers: HashMap::new(),
             interface_broadcasters: Arc::new(RwLock::new(HashMap::new())),
+            signal_multiplexer_kill_switch: None,
             config,
             key_loader: Arc::new(Box::new(Self::load_key)),
             dna_loader: Arc::new(Box::new(Self::load_dna)),
@@ -181,12 +183,13 @@ impl Conductor {
 
     /// Starts a new thread which monitors each instance's signal channel and pushes signals out
     /// all interfaces the according instance is part of.
-    /// TODO: add kill-switch to this thread to close it on shutdown / also make sure to recreate if interfaces get changed..
     pub fn start_signal_multiplexer(&mut self) -> thread::JoinHandle<()> {
         let broadcasters = self.interface_broadcasters.clone();
         let instance_signal_receivers = self.instance_signal_receivers.clone();
         let signal_tx = self.signal_tx.clone();
         let config = self.config.clone();
+        let (kill_switch_tx, kill_switch_rx) = unbounded();
+        self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
 
         self.log("starting signal loop".into());
         thread::spawn(move || loop {
@@ -220,6 +223,9 @@ impl Conductor {
                         }
                     }
                 }
+            }
+            if kill_switch_rx.try_recv().is_ok() {
+                break;
             }
             thread::sleep(Duration::from_millis(1));
         })
@@ -317,6 +323,9 @@ impl Conductor {
             .stop_all_instances()
             .map_err(|error| notify(format!("Error during shutdown: {}", error)));
         self.stop_all_interfaces();
+        self.signal_multiplexer_kill_switch
+            .as_ref()
+            .map(|sender| sender.send(()));
         self.instances = HashMap::new();
     }
 

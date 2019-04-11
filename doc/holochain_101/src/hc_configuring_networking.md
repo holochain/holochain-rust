@@ -1,15 +1,13 @@
 # Configuring Networking for `hc run`
 
-`hc run` uses mock networking by default and therefore doesn't talk to any other nodes.  If you wish to test multiple nodes you will need to install the [n3h](https://github.com/holochain/n3h) networking component (following the instructions on the README).  
+`hc run` uses mock networking by default and therefore doesn't talk to any other nodes.
 
-If you set the HC_N3H_PATH environment variable to the path where you installed it, `hc run` will automatically default to using real networking.
-
-Set the HC_N3H_PATH environment variable, and start the server by running (make sure to change the path to where you actually installed n3h):
+Start the server by running:
 ```shell
-HC_N3H_PATH=/home/eric/holochain/n3h hc run
+hc run
 ```
 
-Assuming n3h was installed properly you should see something like this:
+You should see something like this:
 ```shell
 Network spawned with bindings:
 	 - ipc: wss://127.0.0.1:64518/
@@ -32,7 +30,7 @@ Specify a different port than the first node to run on. Since the port for the f
 
 Running the command could look like this:
 ``` shell
-HC_AGENT=testAgent2 HC_N3H_BOOTSTRAP_NODE=wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM HC_N3H_PATH=/home/eric/holochain/n3h hc run --port 8889
+HC_AGENT=testAgent2 HC_N3H_BOOTSTRAP_NODE=wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM hc run --port 8889
 ```
 
 In the terminal logs that follow, you should see:

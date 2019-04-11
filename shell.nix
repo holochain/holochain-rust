@@ -629,6 +629,9 @@ stdenv.mkDerivation rec {
     # https://github.com/NixOS/pkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils
 
+    # for openssl static installation
+    perl
+
     cmake
     python
     pkgconfig
@@ -718,6 +721,8 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   DARWIN_NIX_LDFLAGS = if stdenv.isDarwin then "-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation " else "";
+
+  OPENSSL_STATIC = "1";
 
   shellHook = ''
    # cargo installs things to the user's home so we need it on the path

@@ -1,3 +1,5 @@
+echo "( Join-Path %test_path% %wasm_path% Cargo.toml )"
+
 IF NOT "%wasm_path%" == "" (
  cargo build --manifest-path "( Join-Path %test_path% %wasm_path% Cargo.toml )" --release --target wasm32-unknown-unknown --target-dir "( Join-Path %hc_target_prefix% %test_path% %wasm_path% target )"
 )

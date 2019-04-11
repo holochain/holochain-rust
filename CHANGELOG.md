@@ -5,6 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Allows the user to get headers using GetLinkOptions. [#1250](https://github.com/holochain/holochain-rust/pull/1250)
 
 ### Changed
 

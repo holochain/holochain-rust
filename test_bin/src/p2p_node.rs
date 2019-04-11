@@ -578,13 +578,11 @@ impl P2pNode {
     pub fn new_with_spawn_ipc_network(
         agent_id: String,
         dna_address: Address,
-        n3h_path: &str,
         maybe_config_filepath: Option<&str>,
         maybe_end_user_config_filepath: Option<String>,
         bootstrap_nodes: Vec<String>,
     ) -> Self {
         let (p2p_config, temp_dir) = create_ipc_config(
-            n3h_path,
             maybe_config_filepath,
             maybe_end_user_config_filepath,
             bootstrap_nodes,
@@ -915,7 +913,6 @@ impl NetSend for P2pNode {
 /// Create an P2pConfig for an IPC node that uses n3h and a temp folder
 #[cfg_attr(tarpaulin, skip)]
 fn create_ipc_config(
-    n3h_path: &str,
     maybe_config_filepath: Option<&str>,
     maybe_end_user_config_filepath: Option<String>,
     bootstrap_nodes: Vec<String>,
@@ -942,10 +939,6 @@ fn create_ipc_config(
                 "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {
-                    "cmd": p2p_config.backend_config["spawn"]["cmd"],
-                    "args": [
-                        format!("{}/packages/n3h/bin/n3h", n3h_path)
-                    ],
                     "workDir": dir.clone(),
                     "env": {
                         "N3H_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_MODE"],
@@ -966,10 +959,6 @@ fn create_ipc_config(
                 "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {
-                    "cmd": "node",
-                    "args": [
-                        format!("{}/packages/n3h/bin/n3h", n3h_path)
-                    ],
                     "workDir": dir.clone(),
                     "env": {
                         "N3H_MODE": "HACK",

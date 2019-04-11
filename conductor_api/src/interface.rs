@@ -1,14 +1,13 @@
 use crate::holo_signing_service::request_signing_service;
 use base64;
-use holochain_core::{
-    nucleus::{
-        actions::call_zome_function::make_cap_request_for_call,
-        ribosome::capabilities::CapabilityRequest,
-    },
-    state::State,
+use holochain_core::nucleus::{
+    actions::call_zome_function::make_cap_request_for_call,
+    ribosome::capabilities::CapabilityRequest,
 };
 
-use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance};
+use holochain_core_types::{
+    agent::AgentId, cas::content::Address, json::JsonString, signature::Provenance,
+};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
@@ -147,8 +146,11 @@ impl ConductorApiBuilder {
                 // Get the token from the parameters.  If not there assume public token.
                 let maybe_token = Self::get_as_string("token", &params_map);
                 let token = match maybe_token {
-                    Err(_err) => context.get_public_token().ok_or_else(|| {
-                        jsonrpc_core::Error::invalid_params("public token not found")
+                    Err(_err) => context.get_public_token().map_err(|err| {
+                        jsonrpc_core::Error::invalid_params(format!(
+                            "Public token not found: {}",
+                            err.to_string()
+                        ))
                     })?,
                     Ok(token) => Address::from(token),
                 };
@@ -159,7 +161,7 @@ impl ConductorApiBuilder {
                         context.clone(),
                         token,
                         &func_name,
-                        params_string.clone(),
+                        JsonString::from_json(&params_string.clone()),
                     ),
                     Some(json_provenance) => {
                         let provenance: Provenance =
@@ -238,49 +240,6 @@ impl ConductorApiBuilder {
         instance_name: String,
         instance: Arc<RwLock<Holochain>>,
     ) -> Self {
-        let hc_lock = instance.clone();
-        let hc = hc_lock.read().unwrap();
-        let state: State = hc.state().unwrap();
-        let nucleus = state.nucleus();
-        let dna = nucleus.dna();
-        match dna {
-            Some(dna) => {
-                for (zome_name, zome) in dna.zomes {
-                    for fn_decl in zome.fn_declarations {
-                        let func_name = String::from(fn_decl.name);
-                        let zome_name = zome_name.clone();
-                        let method_name = format!("{}/{}/{}", instance_name, zome_name, func_name);
-                        let hc_lock_inner = hc_lock.clone();
-                        self.io.add_method(&method_name, move |params| {
-                            let mut hc = hc_lock_inner.write().unwrap();
-                            let params_string = serde_json::to_string(&params)
-                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                            println!("ZOME CALLING USING instance/zome/function ROUTE HAS BEEN DEPRECATED.  USE call INSTEAD");
-                            let cap_request = {
-                                // TODO: get the token from the parameters.  If not there assume public token.
-                                // currently we are always getting the public token and signing it ourself
-                                let context = hc.context();
-                                let token = context.get_public_token().ok_or(
-                                    jsonrpc_core::Error::invalid_params("public token not found"),
-                                )?;
-                                make_cap_request_for_call(
-                                    context.clone(),
-                                    token,
-                                    &func_name,
-                                    params_string.clone(),
-                                )
-                            };
-
-                            let response = hc
-                                .call(&zome_name, cap_request, &func_name, &params_string)
-                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                            Ok(Value::String(response.to_string()))
-                        })
-                    }
-                }
-            }
-            None => unreachable!(),
-        };
         self.instances
             .insert(instance_name.clone(), instance.clone());
         self.instance_ids_map.insert(
@@ -665,21 +624,17 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             let name = Self::get_as_string("name", &params_map)?;
-            let public_address = Self::get_as_string("public_address", &params_map)?;
-            let keystore_file = Self::get_as_string("keystore_file", &params_map)?;
+
             let holo_remote_key = params_map
                 .get("holo_remote_key")
-                .map(|k| k.as_bool())
-                .unwrap_or_default();
+                .map(|k| {
+                    k.as_str()
+                        .ok_or("holo_remote_key must be a string")
+                        .map_err(|e| jsonrpc_core::Error::invalid_params(e))
+                }) // Option<Result<_, _>>
+                .transpose()?; // Result<Option<_>, _>
 
-            let agent = AgentConfiguration {
-                id,
-                name,
-                public_address,
-                keystore_file,
-                holo_remote_key,
-            };
-            conductor_call!(|c| c.add_agent(agent))?;
+            conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;
             Ok(json!({"success": true}))
         });
 
@@ -1055,7 +1010,6 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""test-instance-1/greeter/hello""#));
         assert!(!result.contains(r#""test-instance-2//test""#));
     }
 
@@ -1075,7 +1029,6 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""happ-store/greeter/hello""#));
         assert!(!result.contains(r#""test-instance-1//test""#));
     }
 

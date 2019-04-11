@@ -32,20 +32,14 @@ pub fn get_validation_package_definition(
                 ));
             }
 
-            let zome_name = zome_name.unwrap();
-            let wasm = context
-                .get_wasm(&zome_name)
-                .ok_or(HolochainError::ErrorGeneric(String::from("no wasm found")))?;
-
             let call = CallbackFnCall::new(
-                &zome_name,
+                zome_name.as_ref().unwrap(),
                 "__hdk_get_validation_package_for_entry_type",
-                app_entry_type.to_string(),
+                app_entry_type.clone(),
             );
             ribosome::run_dna(
-                wasm.code.clone(),
                 Some(app_entry_type.to_string().into_bytes()),
-                WasmCallData::new_callback_call(context, dna.name, call),
+                WasmCallData::new_callback_call(context, call),
             )?
         }
         EntryType::LinkAdd => {
@@ -66,10 +60,6 @@ pub fn get_validation_package_definition(
                 &context,
             )?;
 
-            let wasm = context
-                .get_wasm(&link_definition_path.zome_name)
-                .expect("Couldn't get WASM for zome");
-
             let params = LinkValidationPackageArgs {
                 entry_type: link_definition_path.entry_type_name,
                 tag: link_definition_path.tag,
@@ -83,9 +73,8 @@ pub fn get_validation_package_definition(
             );
 
             ribosome::run_dna(
-                wasm.code.clone(),
                 Some(call.parameters.to_bytes()),
-                WasmCallData::new_callback_call(context.clone(), dna.name, call),
+                WasmCallData::new_callback_call(context.clone(), call),
             )?
         }
         EntryType::LinkRemove => {
@@ -106,10 +95,6 @@ pub fn get_validation_package_definition(
                 &context,
             )?;
 
-            let wasm = context
-                .get_wasm(&link_definition_path.zome_name)
-                .expect("Couldn't get WASM for zome");
-
             let params = LinkValidationPackageArgs {
                 entry_type: link_definition_path.entry_type_name,
                 tag: link_definition_path.tag,
@@ -123,9 +108,8 @@ pub fn get_validation_package_definition(
             );
 
             ribosome::run_dna(
-                wasm.code.clone(),
                 Some(call.parameters.to_bytes()),
-                WasmCallData::new_callback_call(context.clone(), dna.name.clone(), call),
+                WasmCallData::new_callback_call(context.clone(), call),
             )?
         }
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),

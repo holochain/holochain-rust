@@ -69,7 +69,12 @@ impl State {
         let cas = context.dht_storage.clone();
         let eav = context.eav_storage.clone();
 
-        nucleus_state.dna = Self::get_dna(&agent_state, cas.clone()).ok();
+        match nucleus_state.dna {
+            None =>
+                nucleus_state.dna =
+                    Self::get_dna(&agent_state, cas.clone()).ok(),
+            Some(_) => ()
+        }
 
         State {
             nucleus: Arc::new(nucleus_state),

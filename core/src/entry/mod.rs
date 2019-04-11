@@ -27,7 +27,7 @@ impl CanPublish for EntryType {
         context.log(format!("got entry type name of {}", entry_type_name));
         let maybe_def = dna.get_entry_type_def(entry_type_name.as_str());
         if maybe_def.is_none() {
-            context.log("context must hold an entry type definition to publish an entry.");
+            context.log("err/dht/context must hold an entry type definition to publish an entry.");
             return false;
         }
         let entry_type_def = maybe_def.unwrap();

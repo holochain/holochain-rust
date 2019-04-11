@@ -50,8 +50,6 @@ environment:
     wasm_path_2:
 
 test_script:
- # - choco install strawberryperl
- # - refreshenv
  - scripts\windows\do-ci-test.bat
 
  # @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23358358

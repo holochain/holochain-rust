@@ -858,6 +858,7 @@ pub mod tests {
     use std::{
         fs::{File, OpenOptions},
         io::Write,
+        path::PathBuf,
     };
 
     use self::tempfile::tempdir;
@@ -1290,10 +1291,22 @@ pub mod tests {
     }
 
     fn caller_dna() -> Dna {
-        let wasm = create_wasm_from_file(&format!(
-            "{}/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
-            wasm_target_dir("conductor_api/", "test-bridge-caller/"),
+        let mut path = PathBuf::new();
+
+        path.push(wasm_target_dir(
+            &String::from("conductor_api").into(),
+            &String::from("test-bridge-caller").into(),
         ));
+        let wasm_path_component: PathBuf = [
+            String::from("wasm32-unknown-unknown"),
+            String::from("release"),
+            String::from("test_bridge_caller.wasm"),
+        ]
+        .iter()
+        .collect();
+        path.push(wasm_path_component);
+
+        let wasm = create_wasm_from_file(&path);
         let defs = create_test_defs_with_fn_name("call_bridge");
         let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         dna.uuid = String::from("basic_bridge_call");

@@ -10,7 +10,7 @@ use holochain_wasm_utils::wasm_target_dir;
 use std::{
     fs::{self, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 use toml::{self, value::Value};
 
@@ -66,12 +66,17 @@ fn interpolate_cargo_template(
 }
 
 impl RustScaffold {
-    pub fn new(package_name: String) -> RustScaffold {
-        let target_dir = wasm_target_dir(&package_name, "");
-        let artifact_name = format!(
-            "{}/wasm32-unknown-unknown/release/{}.wasm",
-            &target_dir, &package_name,
-        );
+    pub fn new(package_name: &str) -> RustScaffold {
+        let target_dir = wasm_target_dir(&package_name.into(), &String::new().into());
+        let mut artifact_name = target_dir.clone();
+        let artifact_path_component: PathBuf = [String::from("wasm32-unknown-unknown"), String::from("release"), format!("{}.wasm", &package_name)].iter().collect();
+        artifact_name.push(artifact_path_component);
+
+        let target_dir_flag = &match target_dir.to_str() {
+            Some(dir) => format!("--target-dir={}", dir),
+            None => String::new(),
+        };
+
         RustScaffold {
             build_template: Build::with_artifact(artifact_name).cmd(
                 "cargo",
@@ -79,10 +84,10 @@ impl RustScaffold {
                     "build",
                     "--release",
                     "--target=wasm32-unknown-unknown",
-                    &format!("--target-dir={}", target_dir),
+                    target_dir_flag,
                 ],
             ),
-            package_name: package_name,
+            package_name: package_name.to_string(),
         }
     }
 

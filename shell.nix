@@ -303,10 +303,10 @@ Then run `nix-shell --run hc-prepare-release`
 - [ ] release cut from `master` with `hc-do-release`
 - [ ] core release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
-  - artifacts: {{ artifacts url }}
+  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${core-tag}
 - [ ] node release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
-  - artifacts: {{ artifacts url }}
+  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${node-conductor-tag}
 - [ ] all release artifacts found by `hc-check-release-artifacts`
 - [ ] npmjs deploy with `hc-npm-deploy` then `hc-npm-check-version`
 - [ ] `unknown` release assets renamed to `ubuntu`

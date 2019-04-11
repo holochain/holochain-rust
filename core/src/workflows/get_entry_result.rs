@@ -22,7 +22,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
     // 2. No result, so try on the network
     if let None = maybe_entry_with_meta {
         context.log(format!(
-            "entry {} not found in local shard, trying the network.",
+            "debug/dht/entry {} not found in local shard, trying the network.",
             address
         ));
         let entry_result = await!(network::actions::get_entry::get_entry(

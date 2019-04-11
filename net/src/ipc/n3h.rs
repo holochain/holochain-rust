@@ -103,7 +103,7 @@ pub fn get_verify_n3h() -> NetResult<(std::path::PathBuf, Vec<String>)> {
         // on nix, we need some extra magic to make prebuilt binaries work
 
         let mut extract_path = bin_dir.clone();
-        extract_path.push("n3h-nix-extract.bash");
+        extract_path.push("n3h-nix-extract.sh");
 
         {
             let mut open_opts = std::fs::OpenOptions::new();
@@ -113,7 +113,12 @@ pub fn get_verify_n3h() -> NetResult<(std::path::PathBuf, Vec<String>)> {
             file.write_all(NIX_EXTRACT)?;
         }
 
-        exec_output("nix-shell", vec![extract_path.as_os_str(), path.as_os_str()], &bin_dir, false)?;
+        exec_output(
+            "nix-shell",
+            vec![extract_path.as_os_str(), path.as_os_str()],
+            &bin_dir,
+            false,
+        )?;
         let mut path = bin_dir.clone();
         path.push(&artifact.file[0..artifact.file.len() - 7]);
         path.push("n3h-nix.bash");
@@ -125,7 +130,6 @@ pub fn get_verify_n3h() -> NetResult<(std::path::PathBuf, Vec<String>)> {
     let res = check_n3h_version(&path)?;
     Ok((path, res))
 }
-
 
 fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<Vec<String>> {
     let res = sub_check_n3h_version(&path, &["--version"]);

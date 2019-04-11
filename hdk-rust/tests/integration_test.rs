@@ -46,10 +46,10 @@ use holochain_wasm_utils::{
 };
 use std::{
     collections::BTreeMap,
+    path::PathBuf,
     sync::{Arc, Mutex},
     thread,
     time::Duration,
-    path::PathBuf,
 };
 use test_utils::*;
 
@@ -256,9 +256,18 @@ fn start_holochain_instance<T: Into<String>>(
     // Setup the holochain instance
 
     let mut wasm_path = PathBuf::new();
-    let wasm_dir_component: PathBuf = wasm_target_dir(&String::from("hdk-rust").into(), &String::from("wasm-test").into());
+    let wasm_dir_component: PathBuf = wasm_target_dir(
+        &String::from("hdk-rust").into(),
+        &String::from("wasm-test").into(),
+    );
     wasm_path.push(wasm_dir_component);
-    let wasm_path_component: PathBuf = [String::from("wasm32-unknown-unknown"), String::from("release"), String::from("test_globals.wasm")].iter().collect();
+    let wasm_path_component: PathBuf = [
+        String::from("wasm32-unknown-unknown"),
+        String::from("release"),
+        String::from("test_globals.wasm"),
+    ]
+    .iter()
+    .collect();
     wasm_path.push(wasm_path_component);
 
     let wasm = create_wasm_from_file(&wasm_path);

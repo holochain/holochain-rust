@@ -1293,8 +1293,17 @@ pub mod tests {
     fn caller_dna() -> Dna {
         let mut path = PathBuf::new();
 
-        path.push(wasm_target_dir(&String::from("conductor_api").into(), &String::from("test-bridge-caller").into()));
-        let wasm_path_component: PathBuf = [String::from("wasm32-unknown-unknown"), String::from("release"), String::from("test_bridge_caller.wasm")].iter().collect();
+        path.push(wasm_target_dir(
+            &String::from("conductor_api").into(),
+            &String::from("test-bridge-caller").into(),
+        ));
+        let wasm_path_component: PathBuf = [
+            String::from("wasm32-unknown-unknown"),
+            String::from("release"),
+            String::from("test_bridge_caller.wasm"),
+        ]
+        .iter()
+        .collect();
         path.push(wasm_path_component);
 
         let wasm = create_wasm_from_file(&path);

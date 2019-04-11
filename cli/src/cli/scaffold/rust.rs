@@ -69,7 +69,13 @@ impl RustScaffold {
     pub fn new(package_name: &str) -> RustScaffold {
         let target_dir = wasm_target_dir(&package_name.into(), &String::new().into());
         let mut artifact_name = target_dir.clone();
-        let artifact_path_component: PathBuf = [String::from("wasm32-unknown-unknown"), String::from("release"), format!("{}.wasm", &package_name)].iter().collect();
+        let artifact_path_component: PathBuf = [
+            String::from("wasm32-unknown-unknown"),
+            String::from("release"),
+            format!("{}.wasm", &package_name),
+        ]
+        .iter()
+        .collect();
         artifact_name.push(artifact_path_component);
 
         let target_dir_flag = &match target_dir.to_str() {

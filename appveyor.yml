@@ -41,6 +41,8 @@ environment:
 
   - test_p: holochain_cas_implementations
     test_path: cas_implementations\
+    wasm_path:
+    wasm_path_2:
 
   - test_p: holochain_net
     test_path: net\

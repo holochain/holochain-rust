@@ -166,7 +166,9 @@ impl ZomeCodeDef {
             #[no_mangle]
             #[allow(unused_imports)]
             pub fn __list_functions() -> hdk::holochain_core_types::dna::zome::ZomeFnDeclarations {
-                Vec::new()
+                use hdk::holochain_core_types::dna::fn_declarations::{FnParameter, FnDeclaration};
+
+                vec![#(#_zome_fn_defs,)*]
             }
 
             #[no_mangle]
@@ -178,103 +180,7 @@ impl ZomeCodeDef {
                         info.payload().downcast_ref::<String>().unwrap().clone(),
                     ));
 
-                    FnDeclaration {
-                name: stringify!($zome_function_name).into(),
-                inputs: vec![
-                    $(
-                        FnParameter::new(stringify!($input_param_name), stringify!($input_param_type))
-                    ),*
-                ],
-                outputs: vec![
-                    $(
-                        FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
-                    ),*
-                ]
-            }FnDeclaration {
-                name: stringify!($zome_function_name).into(),
-                inputs: vec![
-                    $(
-                        FnParameter::new(stringify!($input_param_name), stringify!($input_param_type))
-                    ),*
-                ],
-                outputs: vec![
-                    $(
-                        FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
-                    ),*
-                ]
-            }FnDeclaration {
-                name: stringify!($zome_function_name).into(),
-                inputs: vec![
-                    $(
-                        FnParameter::new(stringify!($input_param_name), stringify!($input_param_type))
-                    ),*
-                ],
-                outputs: vec![
-                    $(
-                        FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
-                    ),*
-                ]
-            }FnDeclaration {
-                name: stringify!($zome_function_name).into(),
-                inputs: vec![
-                    $(
-                        FnParameter::new(stringify!($input_param_name), stringify!($input_param_type))
-                    ),*
-                ],
-                outputs: vec![
-                    $(
-                        FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
-                    ),*
-                ]
-            }FnDeclaration {
-                name: stringify!($zome_function_name).into(),
-                inputs: vec![
-                    $(
-                        FnParameter::new(stringify!($input_param_name), stringify!($input_param_type))
-                    ),*
-                ],
-                outputs: vec![
-                    $(
-                        FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
-                    ),*
-                ]
-            }FnDeclaration {
-                name: stringify!($zome_function_name).into(),
-                inputs: vec![
-                    $(
-                        FnParameter::new(stringify!($input_param_name), stringify!($input_param_type))
-                    ),*
-                ],
-                outputs: vec![
-                    $(
-                        FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
-                    ),*
-                ]
-            }FnDeclaration {
-                name: stringify!($zome_function_name).into(),
-                inputs: vec![
-                    $(
-                        FnParameter::new(stringify!($input_param_name), stringify!($input_param_type))
-                    ),*
-                ],
-                outputs: vec![
-                    $(
-                        FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
-                    ),*
-                ]
-            }FnDeclaration {
-                name: stringify!($zome_function_name).into(),
-                inputs: vec![
-                    $(
-                        FnParameter::new(stringify!($input_param_name), stringify!($input_param_type))
-                    ),*
-                ],
-                outputs: vec![
-                    $(
-                        FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
-                    ),*
-                ]
-            }let _ = if let Some(location) = info.location() {
+                    let _ = if let Some(location) = info.location() {
                         debug(RawString::from(format!(
                             "panic occurred in file '{}' at line {}",
                             location.file(),
@@ -285,7 +191,7 @@ impl ZomeCodeDef {
                             "panic occurred but can't get location information..."
                         )))
                     };
-                }));        
+                }));
             }
         };
 

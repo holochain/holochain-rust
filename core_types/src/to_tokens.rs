@@ -32,9 +32,9 @@ impl ToTokens for FnDeclaration {
 
 		tokens.extend(quote!{
 			FnDeclaration {
-                name: #zome_function_name,
-                inputs: vec![#(#input_param_names,)*]
-                outputs: vec![#(#output_param_names,)*]
+                name: #zome_function_name.to_string(),
+                inputs: vec![#(#input_param_names,)*],
+                outputs: vec![#(#output_param_names,)*],
             }
 		})
 	}
@@ -66,7 +66,7 @@ mod tests {
 
         assert_eq!(
         	func_dec.into_token_stream().to_string(),
-        	r#"FnDeclaration { name : "test_func" , inputs : vec ! [ FnParameter :: new ( "input" , "String" ) , ] outputs : vec ! [ FnParameter :: new ( "output" , "String" ) , ] }""#
+        	r#"FnDeclaration { name : "test_func" , inputs : vec ! [ FnParameter :: new ( "input" , "String" ) , ], outputs : vec ! [ FnParameter :: new ( "output" , "String" ) , ] }""#
         )
     }    
 }

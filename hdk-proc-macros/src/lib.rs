@@ -167,7 +167,6 @@ impl ZomeCodeDef {
             #[allow(unused_imports)]
             pub fn __list_functions() -> hdk::holochain_core_types::dna::zome::ZomeFnDeclarations {
                 use hdk::holochain_core_types::dna::fn_declarations::{FnParameter, FnDeclaration};
-
                 vec![#(#_zome_fn_defs,)*]
             }
 

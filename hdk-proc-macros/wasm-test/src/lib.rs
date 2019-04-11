@@ -11,8 +11,8 @@ pub mod someZome {
 	}
 
 	#[zome_fn]
-	fn test_zome_fn() {
+	fn test_zome_fn(input: String) -> String {
 
 	}
-	
+
 }

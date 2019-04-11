@@ -18,7 +18,7 @@ serde_derive = "=1.0.89"
 serde_regex = "=0.3.1"
 toml = "=0.5.0"
 boolinator = "=2.4.0"
-tiny_http = "0.6.0"
+tiny_http = "=0.6.2"
 jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 jsonrpc-http-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }

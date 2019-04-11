@@ -1,6 +1,7 @@
 use crate::{
     network::actions::get_links::get_links,
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::get_link_result::get_link_result_workflow
 };
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksStatusRequestKind,
@@ -27,28 +28,9 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
 
-    if input.options.status_request != LinksStatusRequestKind::Live {
-        context.log("get links status request other than Live not implemented!");
-        return ribosome_error_code!(Unspecified);
-    }
+    let result = context.block_on(get_link_result_workflow(&context,&input));
 
-    if input.options.sources {
-        context.log("get links retrieve sources not implemented!");
-        return ribosome_error_code!(Unspecified);
-    }
-
-    // Get links from DHT
-    let maybe_links = context.block_on(get_links(
-        context.clone(),
-        input.entry_address,
-        input.tag,
-        input.options.timeout,
-    ));
-
-    runtime.store_result(match maybe_links {
-        Ok(links) => Ok(GetLinksResult::new(links)),
-        Err(hc_err) => Err(hc_err),
-    })
+    runtime.store_result(result)
 }
 
 #[cfg(test)]

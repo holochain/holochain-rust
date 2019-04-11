@@ -1,4 +1,4 @@
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::*, time::Timeout};
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::*, time::Timeout,chain_header::ChainHeader};
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
 pub struct GetLinksArgs {
@@ -37,12 +37,13 @@ impl Default for GetLinksOptions {
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]
 pub struct GetLinksResult {
-    addresses: Vec<Address>
+    addresses: Vec<Address>,
+    headers : Vec<ChainHeader>
 }
 
 impl GetLinksResult {
-    pub fn new(addresses: Vec<Address>) -> GetLinksResult {
-        GetLinksResult { addresses }
+    pub fn new(addresses: Vec<Address>,headers : Vec<ChainHeader>) -> GetLinksResult {
+        GetLinksResult { addresses,headers }
     }
 
     pub fn addresses(&self) -> &Vec<Address> {

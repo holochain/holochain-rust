@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 
 
-pub async fn get_entry_result_workflow<'a>(
+pub async fn get_link_result_workflow<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResult, HolochainError> 
@@ -32,13 +32,13 @@ pub async fn get_entry_result_workflow<'a>(
 
     if link_args.options.status_request != LinksStatusRequestKind::Live
     {
-        Ok(())
+        Err(HolochainError::ErrorGeneric("Status rather than live not implemented".to_string()))
     }
     else
     {
-        Err(HolochainError::ErrorGeneric("Status rather than live not implemented".to_string()))
+        Ok(())
     }?;
  
     let links = await!(get_links(context.clone(),link_args.entry_address.clone(),link_args.tag.clone(),default_timeout))?;
-    Ok(GetLinksResult::new(links))
+    Ok(GetLinksResult::new(links,headers))
 }

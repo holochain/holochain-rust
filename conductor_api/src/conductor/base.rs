@@ -420,7 +420,7 @@ impl Conductor {
         }
 
         for ui_interface_config in config.ui_interfaces.clone() {
-            notify(format!("addNing ui interface {}", &ui_interface_config.id));
+            notify(format!("adding ui interface {}", &ui_interface_config.id));
             let bundle_config =
                 config
                     .ui_bundle_by_id(&ui_interface_config.bundle)

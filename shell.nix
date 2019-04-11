@@ -27,15 +27,15 @@ let
   # the unique hash at the end of the medium post url
   # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
   # would be 4867d777de94
-  pulse-url-hash = "358f0d57d125";
-  pulse-version = "23";
-  pulse-commit = "bae3db97373cd2f89cd473cb1987090d0e6b5616";
+  pulse-url-hash = "d387ffcfac72";
+  pulse-version = "24";
+  pulse-commit = "494c21b9dc7927b7b171533cc20c4d39bd92b45c";
 
-  core-previous-version = "0.0.10-alpha1";
-  core-version = "0.0.10-alpha2";
+  core-previous-version = "0.0.10-alpha2";
+  core-version = "0.0.11-alpha1";
 
-  node-conductor-previous-version = "0.4.9-alpha1";
-  node-conductor-version = "0.4.9-alpha2";
+  node-conductor-previous-version = "0.4.9-alpha2";
+  node-conductor-version = "0.4.10-alpha1";
 
   core-tag = "v${core-version}";
   node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
@@ -303,10 +303,10 @@ Then run `nix-shell --run hc-prepare-release`
 - [ ] release cut from `master` with `hc-do-release`
 - [ ] core release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
-  - artifacts: {{ artifacts url }}
+  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${core-tag}
 - [ ] node release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
-  - artifacts: {{ artifacts url }}
+  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${node-conductor-tag}
 - [ ] all release artifacts found by `hc-check-release-artifacts`
 - [ ] npmjs deploy with `hc-npm-deploy` then `hc-npm-check-version`
 - [ ] `unknown` release assets renamed to `ubuntu`

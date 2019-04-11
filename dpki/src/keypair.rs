@@ -87,11 +87,7 @@ impl KeyPair for SigningKeyPair {
     }
 
     fn new_from_self(&mut self) -> HcResult<Self> {
-        let mut buf = SecBuf::with_secure(self.private.len());
-        let pub_key = self.public();
-        let lock = self.private().read_lock();
-        buf.write(0, &**lock)?;
-        Ok(SigningKeyPair::new(pub_key, buf))
+        Ok(SigningKeyPair::new(self.public(), self.private.clone()))
     }
 }
 
@@ -162,11 +158,7 @@ impl KeyPair for EncryptingKeyPair {
     }
 
     fn new_from_self(&mut self) -> HcResult<Self> {
-        let mut buf = SecBuf::with_secure(self.private.len());
-        let pub_key = self.public();
-        let lock = self.private().read_lock();
-        buf.write(0, &**lock)?;
-        Ok(EncryptingKeyPair::new(pub_key, buf))
+        Ok(EncryptingKeyPair::new(self.public(), self.private.clone()))
     }
 }
 

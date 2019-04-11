@@ -33,21 +33,9 @@ pub fn receive(
         JsonString::from_json(&params),
     );
 
-    let dna = context.get_dna().expect("Callback called without DNA set!");
-
-    let maybe_wasm = dna.get_wasm_from_zome_name(zome);
-    if maybe_wasm.is_none() {
-        return CallbackResult::NotImplemented("receive/2".into());
-    }
-    let wasm = maybe_wasm.unwrap();
-    if wasm.code.is_empty() {
-        return CallbackResult::NotImplemented("receive/3".into());
-    }
-
     match ribosome::run_dna(
-        wasm.code.clone(),
         Some(call.clone().parameters.to_bytes()),
-        WasmCallData::new_callback_call(context, dna.name, call),
+        WasmCallData::new_callback_call(context, call),
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),
         Err(_) => CallbackResult::NotImplemented("receive/4".into()),

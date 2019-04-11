@@ -30,7 +30,7 @@ pub fn run(
     conductor.key_loader = test_keystore_loader();
 
     conductor
-        .boot_from_config(None)
+        .boot_from_config()
         .map_err(|err| format_err!("{}", err))?;
 
     conductor.start_all_interfaces();

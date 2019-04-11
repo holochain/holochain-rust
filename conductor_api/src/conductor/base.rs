@@ -159,6 +159,9 @@ impl Conductor {
     }
 
     pub fn with_signal_channel(mut self, signal_tx: Sender<Signal>) -> Self {
+        // TODO: clean up the conductor creation process to prevent loading config before proper setup,
+        // especially regarding the signal handler.
+        // (see https://github.com/holochain/holochain-rust/issues/739)
         if !self.instances.is_empty() {
             panic!("Cannot set a signal channel after having run from_config()");
         }
@@ -174,10 +177,6 @@ impl Conductor {
 
     pub fn config(&self) -> Configuration {
         self.config.clone()
-    }
-
-    pub fn set_signal_sender(&mut self, signal_tx: SignalSender) {
-        self.signal_tx = Some(signal_tx);
     }
 
     /// Starts a new thread which monitors each instance's signal channel and pushes signals out
@@ -399,11 +398,7 @@ impl Conductor {
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
     /// The first time we call this, we also initialize the conductor-wide config
     /// for use with all instances
-    ///
-    /// @TODO: clean up the conductor creation process to prevent loading config before proper setup,
-    ///        especially regarding the signal handler.
-    ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn boot_from_config(&mut self, _signal_tx: Option<SignalSender>) -> Result<(), String> {
+    pub fn boot_from_config(&mut self) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
 
         if self.p2p_config.is_none() {
@@ -430,7 +425,7 @@ impl Conductor {
         }
 
         for ui_interface_config in config.ui_interfaces.clone() {
-            notify(format!("adding ui interface {}", &ui_interface_config.id));
+            notify(format!("addNing ui interface {}", &ui_interface_config.id));
             let bundle_config =
                 config
                     .ui_bundle_by_id(&ui_interface_config.bundle)
@@ -1111,17 +1106,16 @@ pub mod tests {
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.boot_from_config(None).unwrap();
+        conductor.boot_from_config().unwrap();
         conductor
     }
 
     fn test_conductor_with_signals(signal_tx: SignalSender) -> Conductor {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-        let mut conductor = Conductor::from_config(config.clone());
-        conductor.set_signal_sender(signal_tx);
+        let mut conductor = Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.boot_from_config(None).unwrap();
+        conductor.boot_from_config().unwrap();
         conductor
     }
 
@@ -1386,7 +1380,7 @@ pub mod tests {
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         conductor
-            .boot_from_config(None)
+            .boot_from_config()
             .expect("Test config must be sane");
         conductor
             .start_all_instances()
@@ -1439,7 +1433,7 @@ pub mod tests {
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         assert_eq!(
-            conductor.boot_from_config(None),
+            conductor.boot_from_config(),
             Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
                 .to_string()),
         );

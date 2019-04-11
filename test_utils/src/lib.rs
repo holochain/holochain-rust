@@ -33,6 +33,7 @@ use holochain_net::p2p_config::P2pConfig;
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
     fs::File,
+    path::PathBuf,
     hash::{Hash, Hasher},
     io::prelude::*,
     sync::{Arc, Mutex},
@@ -42,9 +43,9 @@ use tempfile::tempdir;
 use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem
-pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
-    let mut file = File::open(fname)
-        .unwrap_or_else(|err| panic!("Couldn't create WASM from file: {}; {}", fname, err));
+pub fn create_wasm_from_file(path: &PathBuf) -> Vec<u8> {
+    let mut file = File::open(path)
+        .unwrap_or_else(|err| panic!("Couldn't create WASM from file: {:?}; {}", path, err));
     let mut buf = Vec::new();
     file.read_to_end(&mut buf).unwrap();
     buf
@@ -228,7 +229,7 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
 pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
-    wasm_path: &str,
+    wasm_path: &PathBuf,
     fn_name: &str,
     params: J,
 ) -> HolochainResult<JsonString> {

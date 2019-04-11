@@ -1,10 +1,9 @@
-use crate::{context::Context, network::actions::get_links::get_links, nucleus,
+use crate::{context::Context, network::actions::get_links::get_links,
 workflows::get_entry_result::get_entry_with_meta_workflow};
-use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
 use holochain_core_types::{
-    cas::content::Address, crud_status::CrudStatus, entry::EntryWithMetaAndHeader,
     error::HolochainError,
+     time::Timeout
 };
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,GetLinksArgs,LinksStatusRequestKind};
 use std::sync::Arc;
@@ -17,6 +16,8 @@ pub async fn get_link_result_workflow<'a>(
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResult, HolochainError> 
 {
+
+    
     let default_timeout = Timeout::default();
     let entry_with_workflow = await!(get_entry_with_meta_workflow(&context,&link_args.entry_address,&default_timeout))?;
     let headers = if link_args.options.sources

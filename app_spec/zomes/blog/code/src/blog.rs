@@ -133,6 +133,7 @@ pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
     )
 }
 
+
 pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
     // In the current implementation of hdk::query the second parameter
     // specifies the starting index and the third parameter the maximum

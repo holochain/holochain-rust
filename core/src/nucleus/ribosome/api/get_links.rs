@@ -1,10 +1,9 @@
 use crate::{
-    network::actions::get_links::get_links,
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::get_link_result::get_link_result_workflow
 };
 use holochain_wasm_utils::api_serialization::get_links::{
-    GetLinksArgs, GetLinksResult, LinksStatusRequestKind,
+    GetLinksArgs
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};

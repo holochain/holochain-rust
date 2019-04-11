@@ -14,6 +14,7 @@
 //! extern crate holochain_dpki;
 //! extern crate holochain_sodium;
 //! extern crate tempfile;
+//! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
 //! use holochain_core::nucleus::ribosome::capabilities::CapabilityRequest;
 //! use holochain_core_types::{
@@ -25,6 +26,7 @@
 //! };
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
 //! use holochain_sodium::secbuf::SecBuf;
+//! use test_utils;
 //!
 //! use std::sync::{Arc, Mutex};
 //! use tempfile::tempdir;
@@ -35,7 +37,7 @@
 //! // let dna = holochain_core_types::dna::from_package_file("mydna.dna.json");
 //!
 //! // But for now:
-//! let dna = Dna::new();
+//! let dna = test_utils::create_arbitrary_test_dna();
 //! let dir = tempdir().unwrap();
 //! let storage_directory_path = dir.path().to_str().unwrap();
 //!
@@ -236,14 +238,13 @@ mod tests {
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        dna::Dna,
         json::RawString,
     };
     use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
     use test_utils::{
-        create_test_defs_with_fn_name, create_test_dna_with_defs, create_test_dna_with_wat,
-        create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
+        create_arbitrary_test_dna, create_test_defs_with_fn_name, create_test_dna_with_defs,
+        create_test_dna_with_wat, create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
         mock_signing::{mock_conductor_api, registered_test_agent},
     };
 
@@ -290,7 +291,7 @@ mod tests {
 
     #[test]
     fn can_instantiate() {
-        let mut dna = Dna::new();
+        let mut dna = create_arbitrary_test_dna();;
         dna.name = "TestApp".to_string();
         let (context, test_logger, _) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
@@ -395,7 +396,7 @@ mod tests {
 
     #[test]
     fn can_start_and_stop() {
-        let dna = Dna::new();
+        let dna = create_arbitrary_test_dna();
         let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
         assert!(!hc.active());
@@ -465,7 +466,7 @@ mod tests {
 
     #[test]
     fn can_get_state() {
-        let dna = Dna::new();
+        let dna = create_arbitrary_test_dna();
         let (context, _, _) = test_context("bob");
         let hc = Holochain::new(dna.clone(), context).unwrap();
 

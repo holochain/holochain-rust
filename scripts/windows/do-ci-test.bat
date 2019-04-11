@@ -1,5 +1,8 @@
-echo %test_path
-echo %wasm_path
+@echo off
+setlocal enabledelayedexpansion
+
+echo %test_path%
+echo %wasm_path%
 
 IF NOT "%wasm_path%" == "" (
  set manifest-path=%test_path%%wasm_path%Cargo.toml

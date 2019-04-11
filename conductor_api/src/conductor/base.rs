@@ -104,6 +104,7 @@ impl Drop for Conductor {
                 kill();
             }
         }
+        self.shutdown();
     }
 }
 

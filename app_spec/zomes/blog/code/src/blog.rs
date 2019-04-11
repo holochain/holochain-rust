@@ -105,6 +105,20 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
     Ok(address)
 }
 
+pub fn handle_create_post_with_agent(agent_id:Address,content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
+    let address = hdk::commit_entry(&post_entry(content))?;
+
+    hdk::link_entries(&agent_id, &address, "authored_posts")?;
+
+    if let Some(in_reply_to_address) = in_reply_to {
+        // return with Err if in_reply_to_address points to missing entry
+        hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+    }
+
+    Ok(address)
+}
+
 
 
 pub fn handle_delete_post(content:String) -> ZomeApiResult<Address>

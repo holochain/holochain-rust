@@ -12,7 +12,7 @@ const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 const instanceCarol = Config.instance(agentCarol, dna)
 
-const scenario1 = new Scenario([instanceAlice], { debugLog: true })
+const scenario1 = new Scenario([instanceAlice], { debugLog:true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
@@ -440,7 +440,7 @@ scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
   t.equal(JSON.parse(result.Err.Internal).kind, "Timeout")
 })
 
-scenario2.runTape('get_soruces_from_link', async (t, { alice, bob }) => {
+scenario2.runTape('get_sources_from_link', async (t, { alice, bob }) => {
 
   const alice_address = await alice.callSync("blog", "create_post",
     { "content": "Holo world", "in_reply_to": null }
@@ -460,6 +460,36 @@ scenario2.runTape('get_soruces_from_link', async (t, { alice, bob }) => {
   });
   t.equal(bob.agentId,bob_posts.Ok.headers[0].provenances[0][0]);
   t.equal(alice.agentId,alice_posts.Ok.headers[0].provenances[0][0]);
+
+})
+
+scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
+
+  let alice_address = await bob.callSync("blog", "create_post",
+    { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
+  );
+
+  await alice.callSync("blog", "create_post",
+  { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
+);
+  
+  const alice_posts = bob.call("blog","authored_posts_with_sources",
+  {
+    "agent" : alice_address.Ok
+  });
+
+  const bob_posts = bob.call("blog","authored_posts_with_sources",
+  {
+    "agent" : alice_address.Ok
+  });
+
+ console.log("provananced for alice" + JSON.stringify(alice_posts.Ok));
+ console.log("provananced for alice" + JSON.stringify(bob_posts.Ok));
+
+  t.equal(bob.agentId,alice_posts.Ok.headers[0].provenances[0][0]);
+  t.equal(alice.agentId,alice_posts.Ok.headers[1].provenances[0][0]);
+  t.equal(bob.agentId,bob_posts.Ok.headers[0].provenances[0][0]);
+  t.equal(alice.agentId,bob_posts.Ok.headers[1].provenances[0][0]);
 
 })
 

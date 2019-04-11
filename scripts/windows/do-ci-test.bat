@@ -2,10 +2,10 @@ echo %test_path
 echo %wasm_path
 
 IF NOT "%wasm_path%" == "" (
- set manifest-path="%test_path%\\%wasm_path%\\Cargo.toml"
- set target-dir="%test_path%\\%wasm_path%\\target"
+ set manifest-path=%test_path%%wasm_path%Cargo.toml
+ set target-dir=%test_path%%wasm_path%target
  IF NOT "%hc_target_prefix%" == "" (
-  set target-dir="%hc_target_prefix%\\%target-dir%"
+  set target-dir=%hc_target_prefix%%target-dir%
  )
  echo "x: %manifest-path%"
  echo "y: %target-dir%"

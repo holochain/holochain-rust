@@ -1378,7 +1378,7 @@ type = 'websocket'"#,
     #[test]
     fn test_remove_instance_from_interface() {
         let test_name = "test_remove_instance_from_interface";
-        let mut conductor = create_test_conductor(test_name, 3008);
+        let mut conductor = create_test_conductor(test_name, 3308);
 
         conductor.start_all_interfaces();
         assert!(conductor
@@ -1417,7 +1417,7 @@ id = 'websocket interface'
 id = 'test-instance-2'
 
 [interfaces.driver]
-port = 3008
+port = 3308
 type = 'websocket'"#,
             ),
         );

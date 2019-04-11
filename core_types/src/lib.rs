@@ -34,6 +34,8 @@ extern crate maplit;
 extern crate hcid;
 extern crate uuid;
 extern crate wasmi;
+#[macro_use]
+extern crate quote;
 
 pub mod cas;
 pub mod chain_header;
@@ -53,6 +55,7 @@ pub mod link;
 pub mod signature;
 pub mod time;
 pub mod validation;
+pub mod to_tokens;
 
 pub const GIT_HASH: &str = env!(
     "GIT_HASH",

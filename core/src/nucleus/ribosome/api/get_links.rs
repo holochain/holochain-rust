@@ -1,10 +1,8 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::get_link_result::get_link_result_workflow
+    workflows::get_link_result::get_link_result_workflow,
 };
-use holochain_wasm_utils::api_serialization::get_links::{
-    GetLinksArgs
-};
+use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -27,7 +25,7 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
 
-    let result = context.block_on(get_link_result_workflow(&context,&input));
+    let result = context.block_on(get_link_result_workflow(&context, &input));
 
     runtime.store_result(result)
 }
@@ -134,8 +132,9 @@ pub mod tests {
         assert_eq!(
             call_result,
             JsonString::from_json(
-                &(String::from(r#"{"ok":true,"value":"{\"addresses\":[],\"headers\":[]}","error":"null"}"#)
-                    + "\u{0}")
+                &(String::from(
+                    r#"{"ok":true,"value":"{\"addresses\":[],\"headers\":[]}","error":"null"}"#
+                ) + "\u{0}")
             ),
         );
     }

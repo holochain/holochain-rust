@@ -121,8 +121,6 @@ fn main() {
 
     // Load config
     let config = load_config_file(&config_path);
-    let n3h_path = config["N3H_PATH"].as_str().unwrap();
-    log_i!("n3h_path = {}", n3h_path);
 
     // Configure logger
     {
@@ -163,7 +161,6 @@ fn main() {
         }
         if config["modes"]["IPC_MOCK"].as_bool().unwrap() {
             launch_two_nodes_test_with_ipc_mock(
-                &n3h_path,
                 "test_bin/data/mock_ipc_network_config.json",
                 None,
                 test_fn,
@@ -171,13 +168,7 @@ fn main() {
             .unwrap();
         }
         if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-            launch_two_nodes_test(
-                &n3h_path,
-                "test_bin/data/network_config.json",
-                None,
-                test_fn,
-            )
-            .unwrap();
+            launch_two_nodes_test("test_bin/data/network_config.json", None, test_fn).unwrap();
         }
     }
 
@@ -189,7 +180,6 @@ fn main() {
             }
             if config["modes"]["IPC_MOCK"].as_bool().unwrap() {
                 launch_three_nodes_test_with_ipc_mock(
-                    &n3h_path,
                     "test_bin/data/mock_ipc_network_config.json",
                     None,
                     test_fn,
@@ -197,13 +187,8 @@ fn main() {
                 .unwrap();
             }
             if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-                launch_three_nodes_test(
-                    &n3h_path,
-                    "test_bin/data/network_config.json",
-                    None,
-                    test_fn,
-                )
-                .unwrap();
+                launch_three_nodes_test("test_bin/data/network_config.json", None, test_fn)
+                    .unwrap();
             }
         }
     }
@@ -247,7 +232,6 @@ fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResu
 // do general test with hackmode
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test_with_ipc_mock(
-    n3h_path: &str,
     config_filepath: &str,
     maybe_end_user_config_filepath: Option<String>,
     test_fn: TwoNodesTestFn,
@@ -256,7 +240,6 @@ fn launch_two_nodes_test_with_ipc_mock(
     let mut alex = P2pNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
         DNA_ADDRESS.clone(),
-        n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -283,7 +266,6 @@ fn launch_two_nodes_test_with_ipc_mock(
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test(
-    n3h_path: &str,
     config_filepath: &str,
     maybe_end_user_config_filepath: Option<String>,
     test_fn: TwoNodesTestFn,
@@ -292,7 +274,6 @@ fn launch_two_nodes_test(
     let mut alex = P2pNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
         DNA_ADDRESS.clone(),
-        n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -300,7 +281,6 @@ fn launch_two_nodes_test(
     let mut billy = P2pNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
         DNA_ADDRESS.clone(),
-        n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -362,7 +342,6 @@ fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> Net
 // do general test with hackmode
 #[cfg_attr(tarpaulin, skip)]
 fn launch_three_nodes_test_with_ipc_mock(
-    n3h_path: &str,
     config_filepath: &str,
     maybe_end_user_config_filepath: Option<String>,
     test_fn: ThreeNodesTestFn,
@@ -371,7 +350,6 @@ fn launch_three_nodes_test_with_ipc_mock(
     let mut alex = P2pNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
         DNA_ADDRESS.clone(),
-        n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -404,7 +382,6 @@ fn launch_three_nodes_test_with_ipc_mock(
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_three_nodes_test(
-    n3h_path: &str,
     config_filepath: &str,
     maybe_end_user_config_filepath: Option<String>,
     test_fn: ThreeNodesTestFn,
@@ -413,7 +390,6 @@ fn launch_three_nodes_test(
     let mut alex = P2pNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
         DNA_ADDRESS.clone(),
-        n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -421,7 +397,6 @@ fn launch_three_nodes_test(
     let mut billy = P2pNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
         DNA_ADDRESS.clone(),
-        n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -429,7 +404,6 @@ fn launch_three_nodes_test(
     let mut camille = P2pNode::new_with_spawn_ipc_network(
         CAMILLE_AGENT_ID.to_string(),
         DNA_ADDRESS.clone(),
-        n3h_path,
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],

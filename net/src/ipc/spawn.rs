@@ -26,11 +26,13 @@ pub struct SpawnResult {
 pub fn ipc_spawn(
     work_dir: String,
     end_user_config: String,
-    env: HashMap<String, String>,
+    mut env: HashMap<String, String>,
     timeout_ms: usize,
     can_wait_for_p2p: bool,
 ) -> NetResult<SpawnResult> {
     let (n3h, n3h_args) = get_verify_n3h()?;
+
+    env.insert("NO_CLEANUP".to_string(), "1".to_string());
 
     let mut child = std::process::Command::new(n3h);
 

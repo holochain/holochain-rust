@@ -952,6 +952,8 @@ pub mod tests {
 
     use self::tempfile::tempdir;
     use test_utils::*;
+    extern crate ws;
+    use self::ws::{connect, Message};
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|path: &PathBuf| {
@@ -1466,5 +1468,60 @@ pub mod tests {
             Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
                 .to_string()),
         );
+    }
+
+
+    #[test]
+    fn test_signals_through_admin_websocket() {
+        let mut conductor = test_conductor();
+        let _ = conductor.start_all_instances();
+        conductor.start_all_interfaces();
+        thread::sleep(Duration::from_secs(1));
+        let signals: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+        let signals_clone = signals.clone();
+        thread::spawn(|| {
+            connect("ws://127.0.0.1:8888", move |_| {
+                let s = signals_clone.clone();
+                move |msg: Message| {
+                    s.lock().unwrap().push(msg.to_string());
+                    Ok(())
+                }
+            }).unwrap();
+        });
+
+        let lock = conductor.instances.get("bridge-caller").unwrap();
+        let mut bridge_caller = lock.write().unwrap();
+        let cap_call = {
+            let context = bridge_caller.context();
+            make_cap_request_for_call(
+                context.clone(),
+                Address::from(context.clone().agent_id.address()),
+                "call_bridge",
+                JsonString::empty_object(),
+            )
+        };
+        let result = bridge_caller.call( "test_zome", cap_call, "call_bridge", &JsonString::empty_object().to_string());
+
+        assert!(result.is_ok());
+        let received_signals = signals
+            .lock()
+            .unwrap()
+            .clone();
+
+        assert_eq!(3, received_signals.len());
+        assert_eq!(
+            "{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall { id: ProcessUniqueId { prefix: 0, offset: 31 }, zome_name: \\\"test_zome\\\", cap: CapabilityRequest { cap_token: HashString(\\\"HcSCjkIIg5J3O5ohdf7whj9RK8XBI9gagq9sZXhr8mhde3dkDU3RHk57sTttqjz\\\"), provenance: Provenance(HashString(\\\"HcSCjkIIg5J3O5ohdf7whj9RK8XBI9gagq9sZXhr8mhde3dkDU3RHk57sTttqjz\\\"), Signature(\\\"bRQ3Y68yoAdm7b0MmQcJGdDRu+6qddwoOipOskzH9Cj0sA5Q//2QAiZJ8Vk0qoZo8N5DVcVQKBJ1cjl8M3pGDw==\\\")) }, fn_name: \\\"call_bridge\\\", parameters: JsonString(\\\"{}\\\") })\"},\"instance_id\":\"bridge-caller\"}",
+            received_signals[0]
+        );
+        assert_eq!(
+            "{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall { id: ProcessUniqueId { prefix: 16, offset: 2 }, zome_name: \\\"greeter\\\", cap: CapabilityRequest { cap_token: HashString(\\\"QmUjdN74k2uwFmx7Sw4HEZCXRmd3ocPco6n9igBYFNgipR\\\"), provenance: Provenance(HashString(\\\"HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\\\"), Signature(\\\"/RCIMbu1PjJIGN044S6P8qpJMHfpPD8SuQ7YCgHicGmKr2iA3+RO0149BnQKMnEwfXiRLxBb/1H8nCKy5UyICg==\\\")) }, fn_name: \\\"hello\\\", parameters: JsonString(\\\"{}\\\") })\"},\"instance_id\":\"test-instance-1\"}",
+            received_signals[1]
+        );
+        assert_eq!(
+            "{\"signal\":{\"Internal\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse { call: ZomeFnCall { id: ProcessUniqueId { prefix: 16, offset: 2 }, zome_name: \\\"greeter\\\", cap: CapabilityRequest { cap_token: HashString(\\\"QmUjdN74k2uwFmx7Sw4HEZCXRmd3ocPco6n9igBYFNgipR\\\"), provenance: Provenance(HashString(\\\"HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\\\"), Signature(\\\"/RCIMbu1PjJIGN044S6P8qpJMHfpPD8SuQ7YCgHicGmKr2iA3+RO0149BnQKMnEwfXiRLxBb/1H8nCKy5UyICg==\\\")) }, fn_name: \\\"hello\\\", parameters: JsonString(\\\"{}\\\") }, result: Ok(JsonString(\\\"Holo World\\\")) })\"},\"instance_id\":\"test-instance-1\"}",
+            received_signals[2]
+        );
+
+
     }
 }

@@ -7,7 +7,8 @@ extern crate hdk;
 
 use std::convert::{TryFrom};
 use crate::proc_macro::TokenStream;
-use quote::quote;
+use quote::__rt::TokenStream as TokenStreamQ;
+use quote::{quote, ToTokens};
 use syn;
 
 static GENESIS_ATTRIBUTE: &str = "genesis";
@@ -23,7 +24,11 @@ use hdk::holochain_core_types::{
 
 type GenesisCallback = syn::Block;
 type ZomeFunctionCode = syn::Block;
-type ZomeFunctions = Vec<(FnDeclaration, ZomeFunctionCode)>;
+struct ZomeFunction {
+    decleration: FnDeclaration,
+    code: ZomeFunctionCode
+}
+type ZomeFunctions = Vec<ZomeFunction>;
 
 // type ReceiveCallbacks = Vec<syn::Block>;
 
@@ -32,6 +37,49 @@ struct ZomeCodeDef {
     genesis: GenesisCallback,
     zome_fns: ZomeFunctions
     // receive: ReceiveCallbacks,
+}
+
+impl ToTokens for ZomeFunction {
+    fn to_tokens(&self, tokens: &mut TokenStreamQ) {
+        let zome_function_name = self.decleration.name;
+
+        tokens.extend(quote!{
+            #[no_mangle]
+            pub extern "C" fn #zome_function_name(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
+                let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
+                let allocation = match maybe_allocation {
+                    Ok(allocation) => allocation,
+                    Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
+                };
+                let init = hdk::global_fns::init_global_memory(allocation);
+                if init.is_err() {
+                    return hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                        init
+                    ).into();
+                }
+
+                // Macro'd InputStruct
+                #[derive(Deserialize, Serialize, Debug, hdk::holochain_core_types_derive::DefaultJson)]
+                struct InputStruct {
+                    $($input_param_name : $input_param_type),*
+                }
+
+                // Deserialize input
+                let input: InputStruct = load_json!(encoded_allocation_of_input);
+
+                // Macro'd function body
+                fn execute (params: InputStruct) -> $( $output_param_type )* {
+                    let InputStruct { $($input_param_name),* } = params;
+
+                    $handler_path($($input_param_name),*)
+                }
+
+                hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                    hdk::global_fns::write_json(execute(input))
+                ).into()
+            }
+        })
+    }
 }
 
 fn is_tagged_with(attrs: &Vec<syn::Attribute>, tag: &str) -> bool {

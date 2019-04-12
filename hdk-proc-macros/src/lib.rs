@@ -105,11 +105,32 @@ fn is_tagged_with(attrs: &Vec<syn::Attribute>, tag: &str) -> bool {
 }
 
 fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
-    // let inputs = func.decl.inputs;
+    let inputs = func.decl.inputs.iter().map(|e| {
+        if let syn::FnArg::Captured(arg) = e {
+            let name: String = match &arg.pat {
+                syn::Pat::Ident(name_ident) => name_ident.ident.to_string(),
+                _ => "".into()
+
+            };
+            let parameter_type: String = match &arg.ty {
+                syn::Type::Path(type_path) => {
+                    type_path.path.segments.iter().next().unwrap().ident.to_string()
+                },
+                _ => "".into()
+            };
+            FnParameter {
+                name,
+                parameter_type,
+            }
+        } else {
+            panic!("could not parse function args")
+        }
+    }).collect();
+
 
     FnDeclaration {
         name: func.ident.clone().to_string(),
-        inputs: vec![FnParameter::new("input", "String")],
+        inputs: inputs,
         outputs: vec![FnParameter::new("output", "JsonString")],
     }
 }

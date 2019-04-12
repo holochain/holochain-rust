@@ -16,7 +16,7 @@ pub mod someZome {
 	}
 
 	#[zome_fn]
-	fn test_zome_fn(input: String) -> JsonString {
+	fn test_zome_fn(input: i32) -> JsonString {
 		JsonString::from_json("hi")
 	}
 

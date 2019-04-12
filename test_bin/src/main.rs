@@ -168,10 +168,13 @@ fn main() {
             )
             .unwrap();
         }
-        if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-            // launch_two_nodes_test("test_bin/data/network_config.json", None, test_fn).unwrap();
-            connection_workflows::two_nodes_disconnect_test("test_bin/data/network_config.json", None, test_fn).unwrap();
+        if config["suites"]["CONNECTION_WORKFLOWS"].as_bool().unwrap() && config["modes"]["HACK_MODE"].as_bool().unwrap() {
+            launch_two_nodes_test("test_bin/data/network_config.json", None, test_fn).unwrap();
         }
+    }
+
+    if config["modes"]["HACK_MODE"].as_bool().unwrap() {
+        connection_workflows::two_nodes_disconnect_test("test_bin/data/network_config.json", None, basic_workflows::dht_test).unwrap();
     }
 
     // Launch THREE_WORKFLOWS tests on each setup

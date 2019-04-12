@@ -1,11 +1,9 @@
 /// This file holds everything that represents the "memo" entry type.
 /// a Memo is essentially a private post that should never be publically
 /// published on the dht.
-use boolinator::Boolinator;
 use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_core_types::{
      error::HolochainError, json::JsonString,
-    validation::{EntryValidationData},
     dna::entry_types::Sharing
 };
 
@@ -56,27 +54,8 @@ pub fn definition() -> ValidatingEntryType {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation: |validation_data: hdk::EntryValidationData<Memo>| {
-            match validation_data
-            {
-                EntryValidationData::Create{entry:memo,validation_data:_} =>
-                {
-                    (memo.content.len() < 280)
-                   .ok_or_else(|| String::from("Content too long"))
-                },
-                EntryValidationData::Modify{new_entry:new_memo,old_entry:old_memo,old_entry_header:_,validation_data:_} =>
-                {
-                   (new_memo.content != old_memo.content)
-                   .ok_or_else(|| String::from("Trying to modify with same data"))
-                },
-                EntryValidationData::Delete{old_entry:old_memo,old_entry_header:_,validation_data:_} =>
-                {
-                   (old_memo.content!="SYS")
-                   .ok_or_else(|| String::from("Trying to delete native type with content SYS"))
-                }
-
-            }
-
+        validation: |_validation_data: hdk::EntryValidationData<Memo>| {
+            Ok(())
         },
 
         links: [

@@ -36,6 +36,9 @@ extern crate uuid;
 extern crate wasmi;
 #[macro_use]
 extern crate quote;
+#[macro_use]
+extern crate syn;
+extern crate proc_macro2;
 
 pub mod cas;
 pub mod chain_header;

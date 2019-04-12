@@ -7,7 +7,8 @@ use quote::{
 	ToTokens,
 	__rt::TokenStream
 };
-
+use syn;
+use proc_macro2::{Ident, Span};
 use crate::dna::fn_declarations::{
 	FnParameter,
 	FnDeclaration,
@@ -20,6 +21,21 @@ impl ToTokens for FnParameter {
 		tokens.extend(quote!{
 			FnParameter::new(#input_param_name, #input_param_type)
 		})
+	}
+}
+
+#[allow(dead_code)]
+impl From<FnParameter> for syn::Field {
+	fn from(param: FnParameter) -> Self {
+		let ident = Ident::new(&param.name, Span::call_site());
+		let ty: syn::Type = syn::parse_str(&param.parameter_type).unwrap();
+		syn::Field {
+			attrs: Vec::new(),
+			ident: Some(ident),
+			ty,
+			vis: syn::Visibility::Public(syn::VisPublic{pub_token: Token![pub](Span::call_site())}),
+			colon_token: Some(Token![:](proc_macro2::Span::call_site()))
+		}
 	}
 }
 
@@ -49,7 +65,18 @@ mod tests {
         let params = FnParameter::new("input", "String");
         assert_eq!(
         	params.into_token_stream().to_string(),
-        	r#"FnParameter :: new("input", "String" )"#
+        	r#""FnParameter :: new ( "input" , "String" )"#
+        )
+    }
+
+
+    #[test]
+    fn test_to_struct_tokens() {
+        let params = FnParameter::new("input", "String");
+        let field: syn::Field = params.into();
+        assert_eq!(
+        	quote!{#field}.to_string(),
+        	r#"pub input : String"#
         )
     }
 
@@ -66,7 +93,7 @@ mod tests {
 
         assert_eq!(
         	func_dec.into_token_stream().to_string(),
-        	r#"FnDeclaration { name : "test_func" , inputs : vec ! [ FnParameter :: new ( "input" , "String" ) , ], outputs : vec ! [ FnParameter :: new ( "output" , "String" ) , ] }""#
+        	r#"FnDeclaration { name : "test_func" . to_string ( ) , inputs : vec ! [ FnParameter :: new ( "input" , "String" ) , ] , outputs : vec ! [ FnParameter :: new ( "output" , "String" ) , ] , }"#
         )
     }    
 }

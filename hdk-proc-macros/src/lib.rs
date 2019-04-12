@@ -24,8 +24,9 @@ use hdk::holochain_core_types::{
 
 type GenesisCallback = syn::Block;
 type ZomeFunctionCode = syn::Block;
+#[derive(Clone)]
 struct ZomeFunction {
-    decleration: FnDeclaration,
+    declaration: FnDeclaration,
     code: ZomeFunctionCode
 }
 type ZomeFunctions = Vec<ZomeFunction>;
@@ -41,7 +42,7 @@ struct ZomeCodeDef {
 
 impl ToTokens for ZomeFunction {
     fn to_tokens(&self, tokens: &mut TokenStreamQ) {
-        let zome_function_name = self.decleration.name;
+        let zome_function_name = &self.declaration.name;
 
         tokens.extend(quote!{
             #[no_mangle]
@@ -137,7 +138,7 @@ fn extract_zome_fns(module: &syn::ItemMod) -> ZomeFunctions {
 
                 let fn_def = zome_fn_dec_from_syn(&func);
 
-                acc.push((fn_def, *func.block))
+                acc.push(ZomeFunction{declaration: fn_def, code: *func.block})
             }
         } 
         acc
@@ -166,7 +167,10 @@ impl ZomeCodeDef {
     fn to_wasm_friendly(&self) -> TokenStream {
 
         let genesis = &self.genesis;
-        let (_zome_fn_defs, _zome_fn_code): (Vec<FnDeclaration>, Vec<ZomeFunctionCode>) = self.zome_fns.clone().into_iter().unzip();
+        let (_zome_fn_defs, _zome_fn_code): (Vec<FnDeclaration>, Vec<ZomeFunctionCode>) = self.zome_fns.clone()
+        .into_iter().map(|e| {
+            (e.declaration, e.code)
+        }).unzip();
 
         let gen = quote!{
 

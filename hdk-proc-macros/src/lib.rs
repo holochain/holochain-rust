@@ -127,11 +127,22 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
         }
     }).collect();
 
+    let output_type: String = match &func.decl.output {
+        syn::ReturnType::Default => "()".to_string(),
+        syn::ReturnType::Type(_, ty) => {
+            match *(*ty).clone() {
+                syn::Type::Path(type_path) => {
+                    type_path.path.segments.iter().next().unwrap().ident.to_string()
+                },
+                _ => "".into()
+            }
+        }
+    };
 
     FnDeclaration {
         name: func.ident.clone().to_string(),
         inputs: inputs,
-        outputs: vec![FnParameter::new("output", "JsonString")],
+        outputs: vec![FnParameter::new("result", &output_type)],
     }
 }
 

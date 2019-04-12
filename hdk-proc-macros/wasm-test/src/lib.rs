@@ -1,6 +1,11 @@
+#![feature(try_from)]
 #![feature(proc_macro_hygiene)]
 extern crate hdk_proc_macros;
 use hdk_proc_macros::zome;
+extern crate serde;
+extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 
 #[zome]
 pub mod someZome {
@@ -11,8 +16,8 @@ pub mod someZome {
 	}
 
 	#[zome_fn]
-	fn test_zome_fn(input: String) -> String {
-
+	fn test_zome_fn(input: String) -> JsonString {
+		JsonString::from_json("hi")
 	}
 
 }

@@ -7,7 +7,7 @@ extern crate hdk;
 
 use std::convert::{TryFrom};
 use crate::proc_macro::TokenStream;
-use quote::__rt::TokenStream as TokenStreamQ;
+use quote::__rt::{TokenStream as TokenStreamQ, Span, Ident};
 use quote::{quote, ToTokens};
 use syn;
 
@@ -17,7 +17,7 @@ static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
 
 use hdk::holochain_core_types::{
     dna::{
-        fn_declarations::{FnDeclaration},
+        fn_declarations::{FnDeclaration, FnParameter},
     }
 };
 
@@ -42,11 +42,27 @@ struct ZomeCodeDef {
 
 impl ToTokens for ZomeFunction {
     fn to_tokens(&self, tokens: &mut TokenStreamQ) {
-        let zome_function_name = &self.declaration.name;
+        let zome_function_name = Ident::new(&self.declaration.name, Span::call_site());
+        let input_params = self.declaration.inputs.clone().into_iter().map(|param| {
+            syn::Field::from(param)
+        });
+        let input_param_names = self.declaration.inputs.clone().into_iter().map(|param| {
+            Ident::new(&param.name, Span::call_site())
+        });
+        let output_param_type: syn::Type = syn::parse_str(&self.declaration.outputs[0].parameter_type).unwrap();
+        let function_body = &self.code;
 
         tokens.extend(quote!{
             #[no_mangle]
             pub extern "C" fn #zome_function_name(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
+                
+                use hdk::{
+                    holochain_core_types::{
+                        json::JsonString,
+                        error::HolochainError
+                    },
+                };
+
                 let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
                 let allocation = match maybe_allocation {
                     Ok(allocation) => allocation,
@@ -62,17 +78,16 @@ impl ToTokens for ZomeFunction {
                 // Macro'd InputStruct
                 #[derive(Deserialize, Serialize, Debug, hdk::holochain_core_types_derive::DefaultJson)]
                 struct InputStruct {
-                    $($input_param_name : $input_param_type),*
+                    #(#input_params),*
                 }
 
                 // Deserialize input
-                let input: InputStruct = load_json!(encoded_allocation_of_input);
+                let input: InputStruct = hdk::load_json!(encoded_allocation_of_input);
 
                 // Macro'd function body
-                fn execute (params: InputStruct) -> $( $output_param_type )* {
-                    let InputStruct { $($input_param_name),* } = params;
-
-                    $handler_path($($input_param_name),*)
+                fn execute (params: InputStruct) -> #output_param_type {
+                    let InputStruct { #(#input_param_names),* } = params;
+                    #function_body
                 }
 
                 hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
@@ -94,8 +109,8 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
 
     FnDeclaration {
         name: func.ident.clone().to_string(),
-        inputs: Vec::new(),
-        outputs: Vec::new(),
+        inputs: vec![FnParameter::new("input", "String")],
+        outputs: vec![FnParameter::new("output", "JsonString")],
     }
 }
 
@@ -167,10 +182,11 @@ impl ZomeCodeDef {
     fn to_wasm_friendly(&self) -> TokenStream {
 
         let genesis = &self.genesis;
-        let (_zome_fn_defs, _zome_fn_code): (Vec<FnDeclaration>, Vec<ZomeFunctionCode>) = self.zome_fns.clone()
+        let (_zome_fn_defs, _): (Vec<FnDeclaration>, Vec<ZomeFunctionCode>) = self.zome_fns.clone()
         .into_iter().map(|e| {
             (e.declaration, e.code)
         }).unzip();
+        let zome_fns = self.zome_fns.clone();
 
         let gen = quote!{
 
@@ -244,6 +260,9 @@ impl ZomeCodeDef {
                     };
                 }));
             }
+
+            #(#zome_fns )*
+
         };
 
         gen.into()

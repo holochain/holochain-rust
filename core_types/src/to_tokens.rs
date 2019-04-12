@@ -65,7 +65,7 @@ mod tests {
         let params = FnParameter::new("input", "String");
         assert_eq!(
         	params.into_token_stream().to_string(),
-        	r#""FnParameter :: new ( "input" , "String" )"#
+        	r#"FnParameter :: new ( "input" , "String" )"#
         )
     }
 

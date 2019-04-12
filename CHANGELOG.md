@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Makefile updated with Nix/Native build targets [PR#1255](https://github.com/holochain/holochain-rust/pull/1255)
+
 ### Changed
 
 ### Deprecated

@@ -1380,11 +1380,11 @@ type = 'websocket'"#,
         let test_name = "test_remove_instance_from_interface";
         let mut conductor = create_test_conductor(test_name, 3308);
 
-        conductor.start_all_interfaces();
-        assert!(conductor
-            .interface_threads
-            .get("websocket interface")
-            .is_some());
+        //conductor.start_all_interfaces();
+        //assert!(conductor
+        //    .interface_threads
+        //    .get("websocket interface")
+        //    .is_some());
 
         assert_eq!(
             conductor.remove_instance_from_interface(

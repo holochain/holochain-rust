@@ -226,10 +226,12 @@ impl Conductor {
 
                         for interface in interfaces_with_instance {
                             broadcasters.get(&interface.id).map(|broadcaster| {
-                                broadcaster.send(SignalWrapper {
+                                if let Err(error) = broadcaster.send(SignalWrapper {
                                     signal: signal.clone(),
                                     instance_id: instance_id.clone(),
-                                }).expect("TODO: result");
+                                }) {
+                                    notify(error.to_string());
+                                }
                             });
                         }
                     }

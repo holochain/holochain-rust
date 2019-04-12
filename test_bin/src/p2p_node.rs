@@ -507,7 +507,7 @@ impl P2pNode {
         agent_id_arg: String,
         dna_address: Address,
         config: &P2pConfig,
-        _maybe_temp_dir: Option<tempfile::TempDir>,
+        maybe_temp_dir: Option<tempfile::TempDir>,
     ) -> Self {
         log_dd!(
             "p2pnode",
@@ -531,7 +531,7 @@ impl P2pNode {
         .expect("Failed to create P2pNetwork");
 
         P2pNode {
-            _maybe_temp_dir,
+            maybe_temp_dir,
             p2p_connection,
             receiver,
             config: config.clone(),

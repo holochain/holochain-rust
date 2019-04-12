@@ -43,6 +43,7 @@ use holochain_net::{
 };
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
 use static_file_server::StaticServer;
+use signal_wrapper::SignalWrapper;
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.
@@ -225,7 +226,10 @@ impl Conductor {
 
                         for interface in interfaces_with_instance {
                             broadcasters.get(&interface.id).map(|broadcaster| {
-                                broadcaster.send(signal.clone()).expect("TODO: result");
+                                broadcaster.send(SignalWrapper {
+                                    signal: signal.clone(),
+                                    instance_id: instance_id.clone(),
+                                }).expect("TODO: result");
                             });
                         }
                     }

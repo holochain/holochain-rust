@@ -93,6 +93,8 @@ extern crate holochain_cas_implementations;
 extern crate holochain_common;
 extern crate holochain_core;
 extern crate holochain_core_types;
+#[macro_use]
+extern crate holochain_core_types_derive;
 extern crate holochain_dpki;
 extern crate holochain_net;
 extern crate holochain_sodium;
@@ -143,6 +145,7 @@ pub mod interface_impls;
 pub mod key_loaders;
 pub mod keystore;
 pub mod logger;
+pub mod signal_wrapper;
 pub mod static_file_server;
 
 pub use crate::holochain::Holochain;

@@ -177,7 +177,7 @@ let
   hc-test = pkgs.writeShellScriptBin "hc-test"
   ''
    hc-build-wasm
-   HC_SIMPLE_LOGGER_MUTE=1 RUST_BACKTRACE=1 cargo test --all --target-dir "$HC_TARGET_PREFIX"target "$1" -- --nocapture;
+   HC_SIMPLE_LOGGER_MUTE=1 RUST_BACKTRACE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target "$1";
   '';
 
   hc-test-all = pkgs.writeShellScriptBin "hc-test-all"

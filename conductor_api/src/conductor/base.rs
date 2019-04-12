@@ -198,13 +198,19 @@ impl Conductor {
                 for (instance_id, receiver) in instance_signal_receivers.read().unwrap().iter() {
                     if let Ok(signal) = receiver.try_recv() {
                         signal_tx.clone().map(|s| s.send(signal.clone()));
-                        match signal {
-                            // Ignore internal signals for now
-                            Signal::Internal(_) => (),
-                            // Only pass through user-defined and the temporary Holo signals
-                            Signal::User(_) | Signal::Holo(_) => {
-                                let broadcasters = broadcasters.read().unwrap();
-                                let interfaces_with_instance: Vec<&InterfaceConfiguration> = config
+                        let broadcasters = broadcasters.read().unwrap();
+                        let interfaces_with_instance: Vec<&InterfaceConfiguration> = match signal {
+
+                            // Send internal signals only to admin interfaces:
+                            Signal::Internal(_) => config
+                                .interfaces
+                                .iter()
+                                .filter(|interface_config| interface_config.admin)
+                                .collect(),
+
+                            // Pass through user-defined and the temporary Holo signals to the
+                            // according interfaces in which the source instance is exposed:
+                            Signal::User(_) | Signal::Holo(_) => config
                                     .interfaces
                                     .iter()
                                     .filter(|interface_config| {
@@ -214,13 +220,13 @@ impl Conductor {
                                             .find(|instance| instance.id == *instance_id)
                                             .is_some()
                                     })
-                                    .collect();
-                                for interface in interfaces_with_instance {
-                                    broadcasters.get(&interface.id).map(|broadcaster| {
-                                        broadcaster.send(signal.clone()).expect("TODO: result");
-                                    });
-                                }
-                            }
+                                    .collect()
+                        };
+
+                        for interface in interfaces_with_instance {
+                            broadcasters.get(&interface.id).map(|broadcaster| {
+                                broadcaster.send(signal.clone()).expect("TODO: result");
+                            });
                         }
                     }
                 }

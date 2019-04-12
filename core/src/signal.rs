@@ -19,11 +19,11 @@ impl Serialize for Signal {
         S: Serializer,
     {
         match self {
-            Signal::Internal(_) => serializer.serialize_newtype_variant(
+            Signal::Internal(action_wrapper) => serializer.serialize_newtype_variant(
                 "Signal",
                 0,
                 "Internal",
-                "(Internal signal serialization not yet implemented)",
+                &format!("{:?}", action_wrapper.action()),
             ),
             Signal::User(msg) => {
                 serializer.serialize_newtype_variant("Signal", 1, "User", &msg.to_string())

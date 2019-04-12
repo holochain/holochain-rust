@@ -1470,7 +1470,6 @@ pub mod tests {
         );
     }
 
-
     #[test]
     fn test_signals_through_admin_websocket() {
         let mut conductor = test_conductor();
@@ -1486,7 +1485,8 @@ pub mod tests {
                     s.lock().unwrap().push(msg.to_string());
                     Ok(())
                 }
-            }).unwrap();
+            })
+            .unwrap();
         });
 
         let lock = conductor.instances.get("bridge-caller").unwrap();
@@ -1500,13 +1500,15 @@ pub mod tests {
                 JsonString::empty_object(),
             )
         };
-        let result = bridge_caller.call( "test_zome", cap_call, "call_bridge", &JsonString::empty_object().to_string());
+        let result = bridge_caller.call(
+            "test_zome",
+            cap_call,
+            "call_bridge",
+            &JsonString::empty_object().to_string(),
+        );
 
         assert!(result.is_ok());
-        let received_signals = signals
-            .lock()
-            .unwrap()
-            .clone();
+        let received_signals = signals.lock().unwrap().clone();
 
         assert_eq!(3, received_signals.len());
         assert_eq!(
@@ -1521,7 +1523,5 @@ pub mod tests {
             "{\"signal\":{\"Internal\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse { call: ZomeFnCall { id: ProcessUniqueId { prefix: 16, offset: 2 }, zome_name: \\\"greeter\\\", cap: CapabilityRequest { cap_token: HashString(\\\"QmUjdN74k2uwFmx7Sw4HEZCXRmd3ocPco6n9igBYFNgipR\\\"), provenance: Provenance(HashString(\\\"HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\\\"), Signature(\\\"/RCIMbu1PjJIGN044S6P8qpJMHfpPD8SuQ7YCgHicGmKr2iA3+RO0149BnQKMnEwfXiRLxBb/1H8nCKy5UyICg==\\\")) }, fn_name: \\\"hello\\\", parameters: JsonString(\\\"{}\\\") }, result: Ok(JsonString(\\\"Holo World\\\")) })\"},\"instance_id\":\"test-instance-1\"}",
             received_signals[2]
         );
-
-
     }
 }

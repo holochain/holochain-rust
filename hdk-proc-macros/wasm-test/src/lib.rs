@@ -20,4 +20,10 @@ pub mod someZome {
 		JsonString::from_json("hi")
 	}
 
+
+	#[zome_fn]
+	fn test_zome_fn2(input: i32, next: bool, another: JsonString) -> JsonString {
+		JsonString::from_json("hi")
+	}
+	
 }

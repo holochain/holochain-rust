@@ -1,33 +1,28 @@
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 #![feature(try_from, proc_macro_diagnostic)]
 
-
-extern crate proc_macro;
 extern crate hdk;
+extern crate proc_macro;
 
-use std::convert::{TryFrom};
 use crate::proc_macro::TokenStream;
-use quote::__rt::{TokenStream as TokenStreamQ, Span, Ident};
-use quote::{quote, ToTokens};
+use quote::{
+    __rt::{Ident, Span, TokenStream as TokenStreamQ},
+    quote, ToTokens,
+};
+use std::convert::TryFrom;
 use syn;
 
 static GENESIS_ATTRIBUTE: &str = "genesis";
 static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
 
-
-use hdk::holochain_core_types::{
-    dna::{
-        fn_declarations::{FnDeclaration, FnParameter},
-    }
-};
-
+use hdk::holochain_core_types::dna::fn_declarations::{FnDeclaration, FnParameter};
 
 type GenesisCallback = syn::Block;
 type ZomeFunctionCode = syn::Block;
 #[derive(Clone)]
 struct ZomeFunction {
     declaration: FnDeclaration,
-    code: ZomeFunctionCode
+    code: ZomeFunctionCode,
 }
 type ZomeFunctions = Vec<ZomeFunction>;
 
@@ -36,26 +31,31 @@ type ZomeFunctions = Vec<ZomeFunction>;
 struct ZomeCodeDef {
     // zome: Zome,
     genesis: GenesisCallback,
-    zome_fns: ZomeFunctions
-    // receive: ReceiveCallbacks,
+    zome_fns: ZomeFunctions, // receive: ReceiveCallbacks
 }
 
 impl ToTokens for ZomeFunction {
     fn to_tokens(&self, tokens: &mut TokenStreamQ) {
         let zome_function_name = Ident::new(&self.declaration.name, Span::call_site());
-        let input_params = self.declaration.inputs.clone().into_iter().map(|param| {
-            syn::Field::from(param)
-        });
-        let input_param_names = self.declaration.inputs.clone().into_iter().map(|param| {
-            Ident::new(&param.name, Span::call_site())
-        });
-        let output_param_type: syn::Type = syn::parse_str(&self.declaration.outputs[0].parameter_type).unwrap();
+        let input_params = self
+            .declaration
+            .inputs
+            .clone()
+            .into_iter()
+            .map(|param| syn::Field::from(param));
+        let input_param_names = self
+            .declaration
+            .inputs
+            .clone()
+            .into_iter()
+            .map(|param| Ident::new(&param.name, Span::call_site()));
+        let output_param_type: syn::Type =
+            syn::parse_str(&self.declaration.outputs[0].parameter_type).unwrap();
         let function_body = &self.code;
 
         tokens.extend(quote!{
             #[no_mangle]
             pub extern "C" fn #zome_function_name(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
-                
                 use hdk::{
                     holochain_core_types::{
                         json::JsonString,
@@ -99,44 +99,54 @@ impl ToTokens for ZomeFunction {
 }
 
 fn is_tagged_with(attrs: &Vec<syn::Attribute>, tag: &str) -> bool {
-    attrs.iter().any(|attr| {
-        attr.path.is_ident(tag)
-    })
+    attrs.iter().any(|attr| attr.path.is_ident(tag))
 }
 
 fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
-    let inputs = func.decl.inputs.iter().map(|e| {
-        if let syn::FnArg::Captured(arg) = e {
-            let name: String = match &arg.pat {
-                syn::Pat::Ident(name_ident) => name_ident.ident.to_string(),
-                _ => "".into()
-
-            };
-            let parameter_type: String = match &arg.ty {
-                syn::Type::Path(type_path) => {
-                    type_path.path.segments.iter().next().unwrap().ident.to_string()
-                },
-                _ => "".into()
-            };
-            FnParameter {
-                name,
-                parameter_type,
+    let inputs = func
+        .decl
+        .inputs
+        .iter()
+        .map(|e| {
+            if let syn::FnArg::Captured(arg) = e {
+                let name: String = match &arg.pat {
+                    syn::Pat::Ident(name_ident) => name_ident.ident.to_string(),
+                    _ => "".into(),
+                };
+                let parameter_type: String = match &arg.ty {
+                    syn::Type::Path(type_path) => type_path
+                        .path
+                        .segments
+                        .iter()
+                        .next()
+                        .unwrap()
+                        .ident
+                        .to_string(),
+                    _ => "".into(),
+                };
+                FnParameter {
+                    name,
+                    parameter_type,
+                }
+            } else {
+                panic!("could not parse function args")
             }
-        } else {
-            panic!("could not parse function args")
-        }
-    }).collect();
+        })
+        .collect();
 
     let output_type: String = match &func.decl.output {
         syn::ReturnType::Default => "()".to_string(),
-        syn::ReturnType::Type(_, ty) => {
-            match *(*ty).clone() {
-                syn::Type::Path(type_path) => {
-                    type_path.path.segments.iter().next().unwrap().ident.to_string()
-                },
-                _ => "".into()
-            }
-        }
+        syn::ReturnType::Type(_, ty) => match *(*ty).clone() {
+            syn::Type::Path(type_path) => type_path
+                .path
+                .segments
+                .iter()
+                .next()
+                .unwrap()
+                .ident
+                .to_string(),
+            _ => "".into(),
+        },
     };
 
     FnDeclaration {
@@ -148,15 +158,21 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
 
 fn extract_genesis(module: &syn::ItemMod) -> GenesisCallback {
     // find all the functions tagged as the genesis callback
-    let geneses: Vec<Box<syn::Block>> = module.clone().content.unwrap().1.into_iter()
-    .fold(Vec::new(), |mut acc, item| {
-        if let syn::Item::Fn(func) = item {
-            if is_tagged_with(&func.attrs, GENESIS_ATTRIBUTE) {
-                acc.push(func.block)
-            }
-        } 
-        acc
-    });
+    let geneses: Vec<Box<syn::Block>> =
+        module
+            .clone()
+            .content
+            .unwrap()
+            .1
+            .into_iter()
+            .fold(Vec::new(), |mut acc, item| {
+                if let syn::Item::Fn(func) = item {
+                    if is_tagged_with(&func.attrs, GENESIS_ATTRIBUTE) {
+                        acc.push(func.block)
+                    }
+                }
+                acc
+            });
     // only a single function can be tagged in a valid some so error if there is more than one
     // if there is None then use the sensible default of Ok(())
     match geneses.len() {
@@ -165,7 +181,7 @@ fn extract_genesis(module: &syn::ItemMod) -> GenesisCallback {
             .error("No genesis function defined! A zome definition requires a callback tagged with #[genesis]")
             .emit();
             panic!()
-        },
+        }
         1 => *geneses[0].clone(),
         _ => {
             module.ident.span().unstable()
@@ -178,18 +194,25 @@ fn extract_genesis(module: &syn::ItemMod) -> GenesisCallback {
 
 fn extract_zome_fns(module: &syn::ItemMod) -> ZomeFunctions {
     // find all the functions tagged as the zome_fn
-    module.clone().content.unwrap().1.into_iter()
-    .fold(Vec::new(), |mut acc, item| {
-        if let syn::Item::Fn(func) = item {
-            if is_tagged_with(&func.attrs, ZOME_FN_ATTRIBUTE) {
+    module
+        .clone()
+        .content
+        .unwrap()
+        .1
+        .into_iter()
+        .fold(Vec::new(), |mut acc, item| {
+            if let syn::Item::Fn(func) = item {
+                if is_tagged_with(&func.attrs, ZOME_FN_ATTRIBUTE) {
+                    let fn_def = zome_fn_dec_from_syn(&func);
 
-                let fn_def = zome_fn_dec_from_syn(&func);
-
-                acc.push(ZomeFunction{declaration: fn_def, code: *func.block})
+                    acc.push(ZomeFunction {
+                        declaration: fn_def,
+                        code: *func.block,
+                    })
+                }
             }
-        } 
-        acc
-    })
+            acc
+        })
 }
 
 // use this to convert from the tagged #[zome] module into a definition struct
@@ -199,28 +222,26 @@ impl TryFrom<TokenStream> for ZomeCodeDef {
     fn try_from(input: TokenStream) -> Result<Self, Self::Error> {
         let module: syn::ItemMod = syn::parse(input)?;
 
-        Ok(
-            ZomeCodeDef {
-                genesis: extract_genesis(&module),
-                zome_fns: extract_zome_fns(&module)
-            }
-        )
+        Ok(ZomeCodeDef {
+            genesis: extract_genesis(&module),
+            zome_fns: extract_zome_fns(&module),
+        })
     }
 }
 
 // use this to convert back to a token stream usable by the compiler
 impl ZomeCodeDef {
-
     fn to_wasm_friendly(&self) -> TokenStream {
-
         let genesis = &self.genesis;
-        let (_zome_fn_defs, _): (Vec<FnDeclaration>, Vec<ZomeFunctionCode>) = self.zome_fns.clone()
-        .into_iter().map(|e| {
-            (e.declaration, e.code)
-        }).unzip();
+        let (_zome_fn_defs, _): (Vec<FnDeclaration>, Vec<ZomeFunctionCode>) = self
+            .zome_fns
+            .clone()
+            .into_iter()
+            .map(|e| (e.declaration, e.code))
+            .unzip();
         let zome_fns = self.zome_fns.clone();
 
-        let gen = quote!{
+        let gen = quote! {
 
             #[no_mangle]
             #[allow(unused_variables)]
@@ -298,7 +319,7 @@ impl ZomeCodeDef {
         };
 
         gen.into()
-    }   
+    }
 }
 
 /**
@@ -306,7 +327,5 @@ impl ZomeCodeDef {
  */
 #[proc_macro_attribute]
 pub fn zome(_metadata: TokenStream, input: TokenStream) -> TokenStream {
-    ZomeCodeDef::try_from(input)
-        .unwrap()
-        .to_wasm_friendly()
+    ZomeCodeDef::try_from(input).unwrap().to_wasm_friendly()
 }

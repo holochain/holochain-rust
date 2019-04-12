@@ -1,8 +1,5 @@
 use holochain_core::signal::Signal;
-use holochain_core_types::{
-    error::HolochainError,
-    json::JsonString
-};
+use holochain_core_types::{error::HolochainError, json::JsonString};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 pub struct SignalWrapper {

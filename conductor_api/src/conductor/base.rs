@@ -42,8 +42,8 @@ use holochain_net::{
     p2p_config::P2pConfig,
 };
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
-use static_file_server::StaticServer;
 use signal_wrapper::SignalWrapper;
+use static_file_server::StaticServer;
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.
@@ -201,7 +201,6 @@ impl Conductor {
                         signal_tx.clone().map(|s| s.send(signal.clone()));
                         let broadcasters = broadcasters.read().unwrap();
                         let interfaces_with_instance: Vec<&InterfaceConfiguration> = match signal {
-
                             // Send internal signals only to admin interfaces:
                             Signal::Internal(_) => config
                                 .interfaces
@@ -212,16 +211,16 @@ impl Conductor {
                             // Pass through user-defined and the temporary Holo signals to the
                             // according interfaces in which the source instance is exposed:
                             Signal::User(_) | Signal::Holo(_) => config
-                                    .interfaces
-                                    .iter()
-                                    .filter(|interface_config| {
-                                        interface_config
-                                            .instances
-                                            .iter()
-                                            .find(|instance| instance.id == *instance_id)
-                                            .is_some()
-                                    })
-                                    .collect()
+                                .interfaces
+                                .iter()
+                                .filter(|interface_config| {
+                                    interface_config
+                                        .instances
+                                        .iter()
+                                        .find(|instance| instance.id == *instance_id)
+                                        .is_some()
+                                })
+                                .collect(),
                         };
 
                         for interface in interfaces_with_instance {

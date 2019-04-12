@@ -352,6 +352,9 @@ pub mod tests {
 
     use test_utils::mock_signing::registered_test_agent;
 
+    use holochain_cas_implementations::{
+        cas::memory::MemoryStorage, eav::memory::EavMemoryStorage,
+    };
     use holochain_core_types::entry::Entry;
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
@@ -361,23 +364,17 @@ pub mod tests {
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = registered_test_agent(agent_name);
-        let content_file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-        let meta_file_storage = Arc::new(RwLock::new(
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
-        ));
+        let content_storage = Arc::new(RwLock::new(MemoryStorage::new()));
+        let meta_storage = Arc::new(RwLock::new(EavMemoryStorage::new()));
         let logger = test_logger();
         (
             Arc::new(Context::new(
                 agent,
                 logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new(
-                    content_file_storage.clone(),
-                ))),
-                content_file_storage.clone(),
-                content_file_storage.clone(),
-                meta_file_storage,
+                Arc::new(Mutex::new(SimplePersister::new(content_storage.clone()))),
+                content_storage.clone(),
+                content_storage.clone(),
+                meta_storage,
                 test_memory_network_config(network_name),
                 None,
                 None,

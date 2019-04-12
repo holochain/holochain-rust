@@ -249,7 +249,7 @@ wasm_build: ensure_wasm_target
 	  hdk-rust/wasm-test \
 	  wasm_utils/wasm-test/integration-test; do \
 	    echo -e "\033[0;93m## Building $${target}... ##\033[0m"; \
-	    ( cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown ); \
+	    ( cd $${target} && $(CARGO) build --release --target wasm32-unknown-unknown ); \
 	done
 
 .PHONY: build_holochain libsodium_version

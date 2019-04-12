@@ -43,15 +43,15 @@ type MultiNodesTestFn = fn(nodes: &mut Vec<P2pNode>, can_test_connect: bool) -> 
 lazy_static! {
     // List of tests
     pub static ref TWO_NODES_BASIC_TEST_FNS: Vec<TwoNodesTestFn> = vec![
-        basic_workflows::setup_one_node,
-        basic_workflows::no_setup_test,
-        basic_workflows::setup_two_nodes,
-        basic_workflows::send_test,
-        basic_workflows::untrack_alex_test,
-        basic_workflows::untrack_billy_test,
-        basic_workflows::retrack_test,
+//        basic_workflows::setup_one_node,
+//        basic_workflows::no_setup_test,
+//        basic_workflows::setup_two_nodes,
+//        basic_workflows::send_test,
+//        basic_workflows::untrack_alex_test,
+//        basic_workflows::untrack_billy_test,
+//        basic_workflows::retrack_test,
         basic_workflows::dht_test,
-        basic_workflows::meta_test,
+//        basic_workflows::meta_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,
@@ -168,7 +168,8 @@ fn main() {
             .unwrap();
         }
         if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-            launch_two_nodes_test("test_bin/data/network_config.json", None, test_fn).unwrap();
+            // launch_two_nodes_test("test_bin/data/network_config.json", None, test_fn).unwrap();
+            two_nodes_disconnect_test("test_bin/data/network_config.json", None, test_fn).unwrap();
         }
     }
 
@@ -243,6 +244,7 @@ fn launch_two_nodes_test_with_ipc_mock(
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
     let mut billy = P2pNode::new_with_uri_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -277,6 +279,7 @@ fn launch_two_nodes_test(
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
     let mut billy = P2pNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -284,6 +287,7 @@ fn launch_two_nodes_test(
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
 
     log_i!("");
@@ -292,6 +296,75 @@ fn launch_two_nodes_test(
     test_fn(&mut alex, &mut billy, true)?;
     log_i!("============");
     print_two_nodes_test_name("N3H TEST END: ", test_fn);
+    // Kill nodes
+    alex.stop();
+    billy.stop();
+
+    Ok(())
+}
+
+// Do general test with config
+#[cfg_attr(tarpaulin, skip)]
+fn two_nodes_disconnect_test(
+    config_filepath: &str,
+    maybe_end_user_config_filepath: Option<String>,
+    test_fn: TwoNodesTestFn,
+) -> NetResult<()> {
+    // Create alex temp dir
+    let alex_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
+    let alex_dir_path = alex_dir.path().to_string_lossy().to_string();
+    // Create two nodes
+    let mut alex = P2pNode::new_with_spawn_ipc_network(
+        ALEX_AGENT_ID.to_string(),
+        DNA_ADDRESS.clone(),
+        Some(config_filepath),
+        maybe_end_user_config_filepath.clone(),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        Some(alex_dir_path.clone()),
+    );
+    let mut billy = P2pNode::new_with_spawn_ipc_network(
+        BILLY_AGENT_ID.to_string(),
+        DNA_ADDRESS.clone(),
+        Some(config_filepath),
+        maybe_end_user_config_filepath.clone(),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
+    );
+
+    log_i!("");
+    print_two_nodes_test_name("N3H two_nodes_disconnect_test: ", test_fn);
+    log_i!("=================");
+    test_fn(&mut alex, &mut billy, true)?;
+
+    // kill alex
+    let alex_endpoint = alex.endpoint();
+    log_i!("#### alex_endpoint: {}", alex_endpoint);
+    alex.stop();
+    // check if billy is still alive or screaming
+    let count = billy.listen(2000);
+    log_i!("#### billy got: {}\n\n\n\n", count);
+
+    // re-enable alex
+    alex = P2pNode::new_with_spawn_ipc_network(
+        ALEX_AGENT_ID.to_string(),
+        DNA_ADDRESS.clone(),
+        Some(config_filepath),
+        maybe_end_user_config_filepath.clone(),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        Some(alex_dir_path),
+    );
+    basic_workflows::setup_one_node(&mut alex, &mut billy, true)?;
+
+    let alex_endpoint_2 = alex.endpoint();
+    log_i!("#### alex_endpoint_2: {}", alex_endpoint_2);
+
+    // see what alex is receiving
+    let count = alex.listen(2000);
+    log_i!("#### alex got: {}", count);
+
+
+    log_i!("============");
+    print_two_nodes_test_name("N3H two_nodes_disconnect_test END: ", test_fn);
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -353,6 +426,7 @@ fn launch_three_nodes_test_with_ipc_mock(
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
     let mut billy = P2pNode::new_with_uri_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -393,6 +467,7 @@ fn launch_three_nodes_test(
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
     let mut billy = P2pNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -400,6 +475,7 @@ fn launch_three_nodes_test(
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
     let mut camille = P2pNode::new_with_spawn_ipc_network(
         CAMILLE_AGENT_ID.to_string(),
@@ -407,6 +483,7 @@ fn launch_three_nodes_test(
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
 
     log_i!("");

@@ -102,7 +102,7 @@ impl MetaStore {
 /// Core Mock
 pub struct P2pNode {
     // Need to hold the tempdir to keep it alive, otherwise we will get a dir error.
-    _maybe_temp_dir: Option<tempfile::TempDir>,
+    maybe_temp_dir: Option<tempfile::TempDir>,
     p2p_connection: P2pNetwork,
     receiver: mpsc::Receiver<Protocol>,
     pub config: P2pConfig,
@@ -581,13 +581,15 @@ impl P2pNode {
         maybe_config_filepath: Option<&str>,
         maybe_end_user_config_filepath: Option<String>,
         bootstrap_nodes: Vec<String>,
+        maybe_dir_path: Option<String>,
     ) -> Self {
-        let (p2p_config, temp_dir) = create_ipc_config(
+        let (p2p_config, maybe_temp_dir) = create_ipc_config(
             maybe_config_filepath,
             maybe_end_user_config_filepath,
             bootstrap_nodes,
+            maybe_dir_path,
         );
-        return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, Some(temp_dir));
+        return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, maybe_temp_dir);
     }
 
     /// See if there is a message to receive, and log it
@@ -746,6 +748,23 @@ impl P2pNode {
         self.wait_with_timeout(predicate, TIMEOUT_MS)
     }
 
+//    // Start node
+//    #[cfg_attr(tarpaulin, skip)]
+//    pub fn start(config: &P2pConfig, agent_id: String) -> (P2pNetwork, mpsc::Receiver<Protocol>) {
+//        // use a mpsc channel for messaging between p2p connection and main thread
+//        let (sender, receiver) = mpsc::channel::<Protocol>();
+//        // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
+//        let p2p_connection = P2pNetwork::new(
+//            Box::new(move |r| {
+//                log_tt!("p2pnode", "<<< ({}) handler: {:?}", agent_id, r);
+//                sender.send(r?)?;
+//                Ok(())
+//            }),
+//            config,
+//        ).expect("Failed to create P2pNetwork");
+//        return (p2p_connection, receiver);
+//    }
+
     // Stop node
     #[cfg_attr(tarpaulin, skip)]
     pub fn stop(self) {
@@ -753,6 +772,15 @@ impl P2pNode {
             .stop()
             .expect("Failed to stop p2p connection properly");
     }
+
+//    // Restart node
+//    #[cfg_attr(tarpaulin, skip)]
+//    pub fn restart(&mut self) {
+//        assert!(!self.is_network_ready);
+//        let (p2p_connection, receiver) = P2pNode::start(&self.config, self.agent_id.clone());
+//        self.p2p_connection = p2p_connection;
+//        self.receiver = receiver;
+//    }
 
     /// Getter of the endpoint of its connection
     #[cfg_attr(tarpaulin, skip)]
@@ -916,10 +944,19 @@ fn create_ipc_config(
     maybe_config_filepath: Option<&str>,
     maybe_end_user_config_filepath: Option<String>,
     bootstrap_nodes: Vec<String>,
-) -> (P2pConfig, tempfile::TempDir) {
+    maybe_dir_path: Option<String>,
+) -> (P2pConfig, Option<tempfile::TempDir>) {
     // Create temp directory
-    let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
-    let dir = dir_ref.path().to_string_lossy().to_string();
+    let mut maybe_dir_ref = None;
+    let dir = if let Some(dir_path) = maybe_dir_path {
+            dir_path
+    } else {
+        let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
+        let dir_path = dir_ref.path().clone().to_string_lossy().to_string();
+        maybe_dir_ref = Some(dir_ref);
+        dir_path
+    };
+    //let dir = "C:\\Users\\damien\\AppData\\Local\\Temp\\n3h\\".to_string();
 
     log_i!("create_ipc_config() dir = {}", dir);
 
@@ -945,6 +982,7 @@ fn create_ipc_config(
                         "N3H_WORK_DIR": dir.clone(),
                         "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
                         "N3H_LOG_LEVEL": p2p_config.backend_config["spawn"]["env"]["N3H_LOG_LEVEL"],
+                        // "N3H_BIND": "wss://0.0.0.0:4242/",
                     }
                 },
             }})).expect("Failled making valid P2pConfig with filepath")
@@ -974,5 +1012,5 @@ fn create_ipc_config(
     config.maybe_end_user_config = Some(P2pConfig::load_end_user_config(
         maybe_end_user_config_filepath,
     ));
-    return (config, dir_ref);
+    return (config, maybe_dir_ref);
 }

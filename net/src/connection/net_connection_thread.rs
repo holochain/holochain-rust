@@ -30,6 +30,11 @@ impl NetSend for NetConnectionThread {
 }
 
 impl NetConnectionThread {
+
+    pub fn can_keep_running(self) -> bool {
+        return self.can_keep_running.load(Ordering::Relaxed);
+    }
+
     /// NetSendThread Constructor.
     /// Spawns a thread that will create and run a NetWorker with the given factory, handler and
     /// shutdown closure.

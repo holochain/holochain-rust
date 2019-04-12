@@ -112,6 +112,54 @@ console.log(dnaConfig)
 */
 ```
 
+## Bridges
+
+### `Config.bridge(handle, callerInstanceConfig, calleeInstanceConfig)` => `object`
+
+Takes three arguments: the bridge handle, the caller, and the callee (both instances)
+
+___
+
+**Name** handle
+
+**Type** `string`
+
+**Description** The desired bridge handle, as required by your DNA. See the [bridging section of the docs](./bridging.md) for more detail
+
+___
+
+**Name** callerInstanceConfig
+
+**Type** `object`
+
+**Description** A config object with a `name` property, as produced by `Config.instance`
+
+___
+
+**Name** calleeInstanceConfig
+
+**Type** `object`
+
+**Description** A config object with a `name` property, as produced by `Config.instance`
+
+___
+
+#### Example
+```javascript
+const agentConfig1 = Config.agent('alice')
+const agentConfig2 = Config.agent('bob')
+const dnaConfig = Config.dna('path/to/your.dna.json')
+const instanceConfig1 = Config.instance(agentConfig1, dnaConfig)
+const instanceConfig2 = Config.instance(agentConfig2, dnaConfig)
+const bridgeConfig = Config.bridge('bridge-handle', instanceConfig1, instanceConfig2)
+console.log(bridgeConfig)
+/*
+{ handle: 'bridge-handle',
+  caller_id: 'alice',
+  callee_id: 'bob' }
+*/
+```
+
 ## Full Conductor Configuration
 
 ### `Config.conductor(conductorOptions)` => `object`

@@ -129,6 +129,7 @@ pub struct P2pNode {
     pub logger: TweetProxy,
 
     is_network_ready: bool,
+    pub p2p_binding: String,
 }
 
 /// Query logs
@@ -547,6 +548,7 @@ impl P2pNode {
             authored_meta_store: MetaStore::new(),
             logger: TweetProxy::new("p2pnode"),
             is_network_ready: false,
+            p2p_binding: String::new(),
         }
     }
 
@@ -748,23 +750,6 @@ impl P2pNode {
         self.wait_with_timeout(predicate, TIMEOUT_MS)
     }
 
-//    // Start node
-//    #[cfg_attr(tarpaulin, skip)]
-//    pub fn start(config: &P2pConfig, agent_id: String) -> (P2pNetwork, mpsc::Receiver<Protocol>) {
-//        // use a mpsc channel for messaging between p2p connection and main thread
-//        let (sender, receiver) = mpsc::channel::<Protocol>();
-//        // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
-//        let p2p_connection = P2pNetwork::new(
-//            Box::new(move |r| {
-//                log_tt!("p2pnode", "<<< ({}) handler: {:?}", agent_id, r);
-//                sender.send(r?)?;
-//                Ok(())
-//            }),
-//            config,
-//        ).expect("Failed to create P2pNetwork");
-//        return (p2p_connection, receiver);
-//    }
-
     // Stop node
     #[cfg_attr(tarpaulin, skip)]
     pub fn stop(self) {
@@ -772,15 +757,6 @@ impl P2pNode {
             .stop()
             .expect("Failed to stop p2p connection properly");
     }
-
-//    // Restart node
-//    #[cfg_attr(tarpaulin, skip)]
-//    pub fn restart(&mut self) {
-//        assert!(!self.is_network_ready);
-//        let (p2p_connection, receiver) = P2pNode::start(&self.config, self.agent_id.clone());
-//        self.p2p_connection = p2p_connection;
-//        self.receiver = receiver;
-//    }
 
     /// Getter of the endpoint of its connection
     #[cfg_attr(tarpaulin, skip)]
@@ -803,6 +779,11 @@ impl P2pNode {
             }
             JsonProtocol::UntrackDna(_) => {
                 panic!("Core should not receive UntrackDna message");
+            }
+            JsonProtocol::GetStateResult(state) => {
+                if !state.bindings.is_empty() {
+                    self.p2p_binding = state.bindings[0].clone();
+                }
             }
             JsonProtocol::Connect(_) => {
                 panic!("Core should not receive Connect message");

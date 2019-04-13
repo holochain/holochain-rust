@@ -174,6 +174,7 @@ let
   ''
    ${pkgs.lib.concatMapStrings (path: build-wasm path) wasm-paths}
   '';
+
   # simplified version of the c bindings test command in makefile
   # hardcodes hc_dna to test rather than looping/scanning like make does
   # might want to make this more sophisticated if we end up with many tests
@@ -183,6 +184,7 @@ let
   ( cd c_binding_tests/hc_dna && qmake -o $@Makefile $@qmake.pro && make )
   ./target/debug/c_binding_tests/hc_dna/test_executable
   '';
+
   hc-test = pkgs.writeShellScriptBin "hc-test"
   ''
    hc-build-wasm

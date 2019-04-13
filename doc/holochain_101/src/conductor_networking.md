@@ -1,6 +1,6 @@
 # Networking
 
-`network` is a table for the configuration of how networking should behave in the Conductor. The Conductor currently uses mock networking by default. To network with other nodes you have to install the [n3h networking component](https://github.com/holochain/n3h) and add a configuration block into the config file to tell the Conductor where it can find n3h.
+`network` is a table for the configuration of how networking should behave in the Conductor. The Conductor currently uses mock networking by default. To network with other nodes Holochain will automatically setup the [n3h networking component](https://github.com/holochain/n3h). How `n3h` behaves can be configured with the following properties in a Conductor configuration file.
 
 **Optional**
 

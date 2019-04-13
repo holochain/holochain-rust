@@ -242,6 +242,7 @@ workflows:
    - fmt
    - app-spec-tests
    - cli-tests
+   - c-binding-tests
 
  cold.ubuntu:
   jobs:

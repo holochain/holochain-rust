@@ -646,6 +646,8 @@ stdenv.mkDerivation rec {
     pkgconfig
     rust-build
 
+    qt5.qmake
+
     nodejs-8_x
     yarn
 

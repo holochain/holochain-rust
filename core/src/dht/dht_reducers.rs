@@ -490,7 +490,10 @@ pub mod tests {
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), *link.target());
-        assert_eq!(eav.attribute(), Attribute::LinkTag(link.tag().to_string()));
+        assert_eq!(
+            eav.attribute(),
+            Attribute::RemovedLink(link.tag().to_string())
+        );
     }
 
     #[test]

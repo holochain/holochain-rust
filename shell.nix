@@ -177,7 +177,7 @@ let
   hc-test = pkgs.writeShellScriptBin "hc-test"
   ''
    hc-build-wasm
-   HC_SIMPLE_LOGGER_MUTE=1 RUST_BACKTRACE=1 cargo test --all --target-dir "$HC_TARGET_PREFIX"target "$1" -- --nocapture;
+   HC_SIMPLE_LOGGER_MUTE=1 RUST_BACKTRACE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target "$1";
   '';
 
   hc-test-all = pkgs.writeShellScriptBin "hc-test-all"
@@ -498,7 +498,7 @@ All binaries are for 64-bit operating systems.
    # gets a markdown version of pulse
    # greps for everything from summary to details (not including details heading)
    # deletes null characters that throw warnings in bash
-   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${pulse-url} | grep -Pzo "(?s)(###.*Summary.*)(?=###.*Details)" | tr -d '\0' )
+   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${pulse-url} | grep -Pzo "(?s)(###.*Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
    WITH_NOTES=''${WITH_DATE/$PULSE_PLACEHOLDER/$PULSE_NOTES}
    echo "$WITH_NOTES"
   '';
@@ -628,6 +628,9 @@ stdenv.mkDerivation rec {
     # https://github.com/NixOS/pkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils which
 
+    # for openssl static installation
+    perl
+
     cmake
     python
     pkgconfig
@@ -717,6 +720,8 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   DARWIN_NIX_LDFLAGS = if stdenv.isDarwin then "-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation " else "";
+
+  OPENSSL_STATIC = "1";
 
   shellHook = ''
    # cargo installs things to the user's home so we need it on the path

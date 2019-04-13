@@ -492,7 +492,7 @@ pub mod tests {
         assert_eq!(eav.value(), *link.target());
         assert_eq!(
             eav.attribute(),
-            Attribute::RemovedLink(link.tag().to_string())
+            Attribute::LinkTag(link.tag().to_string())
         );
     }
 

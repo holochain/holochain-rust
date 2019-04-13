@@ -352,7 +352,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
+        eav::{Attribute, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
         link::Link,
     };

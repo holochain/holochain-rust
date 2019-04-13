@@ -179,7 +179,7 @@ let
   # might want to make this more sophisticated if we end up with many tests
   hc-test-c-bindings = pkgs.writeShellScriptBin "hc-test-c-bindings"
   ''
-  cargo build -p holochain_dna_c_binding --release
+  cargo build -p holochain_dna_c_binding
   ( cd c_binding_tests/hc_dna && qmake -o $@Makefile $@qmake.pro && make )
   ./target/debug/c_binding_tests/hc_dna/test_executable
   '';

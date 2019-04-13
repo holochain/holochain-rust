@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Don't publish private zome entries [#1233](https://github.com/holochain/holochain-rust/pull/1233)
+
 ### Security
 
 ## [0.0.11-alpha1] - 2019-04-11

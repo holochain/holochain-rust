@@ -29,13 +29,13 @@ let
   # would be 4867d777de94
   pulse-url-hash = "d387ffcfac72";
   pulse-version = "24";
-  pulse-commit = "494c21b9dc7927b7b171533cc20c4d39bd92b45c";
+  pulse-commit = "47d090ee6c0baf6f132d77d45ac1d4b8c833c81a";
 
-  core-previous-version = "0.0.10-alpha2";
-  core-version = "0.0.11-alpha1";
+  core-previous-version = "0.0.11-alpha1";
+  core-version = "0.0.11-alpha2";
 
-  node-conductor-previous-version = "0.4.9-alpha2";
-  node-conductor-version = "0.4.10-alpha1";
+  node-conductor-previous-version = "0.4.10-alpha1";
+  node-conductor-version = "0.4.10-alpha2";
 
   core-tag = "v${core-version}";
   node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";

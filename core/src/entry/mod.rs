@@ -1,6 +1,6 @@
 //! This module extends Entry and EntryType with the CanPublish trait.
 
-use holochain_core_types::entry::entry_type::{EntryType};
+use holochain_core_types::entry::entry_type::EntryType;
 
 use crate::context::Context;
 pub trait CanPublish {
@@ -33,7 +33,10 @@ impl CanPublish for EntryType {
 
         // app entry type must be publishable
         if !entry_type_def.sharing.clone().can_publish() {
-            context.log(format!("debug/dht/entry {} is not publishable", entry_type_name));
+            context.log(format!(
+                "debug/dht/entry {} is not publishable",
+                entry_type_name
+            ));
             return false;
         }
         true
@@ -45,17 +48,15 @@ pub mod tests {
     use super::*;
 
     use holochain_core_types::{
-        cas::content::{AddressableContent, Address},
-        entry::{
-            entry_type::{EntryType, AppEntryType}
-        },
+        cas::content::{Address, AddressableContent},
+        entry::entry_type::{AppEntryType, EntryType},
     };
 
-   use test_utils::create_arbitrary_test_dna;
+    use test_utils::create_arbitrary_test_dna;
 
-   use crate::network::test_utils::test_instance_with_spoofed_dna;
+    use crate::network::test_utils::test_instance_with_spoofed_dna;
 
-   pub fn test_types() -> Vec<EntryType> {
+    pub fn test_types() -> Vec<EntryType> {
         vec![
             EntryType::App(AppEntryType::from("testEntryType")),
             EntryType::App(AppEntryType::from("testEntryTypeC")),
@@ -75,7 +76,7 @@ pub mod tests {
     #[test]
     fn can_publish_test() {
         let dna = create_arbitrary_test_dna();
-        let spoofed_dna_address : Address = dna.address();
+        let spoofed_dna_address: Address = dna.address();
         let name = "test";
         let (_instance, context) =
             test_instance_with_spoofed_dna(dna, spoofed_dna_address, name).unwrap();
@@ -83,19 +84,19 @@ pub mod tests {
             match t.clone() {
                 EntryType::Dna => assert!(!t.can_publish(&context)),
                 EntryType::CapTokenGrant => assert!(!t.can_publish(&context)),
-                EntryType::App(entry_type_name) =>
-                    match entry_type_name.to_string().as_str() {
-                        "testEntryType" => assert!(t.can_publish(&context)),
-                        "testEntryTypeC" =>
-                        {
-                            assert!(context.get_dna().unwrap().
-                                    get_entry_type_def("testEntryTypeC").is_some());
-                            assert!(!t.can_publish(&context))
-                        }
-                        _ => assert!(false, "impossible entry type name")
-                    },
-                _sys_entry_type =>
-                {
+                EntryType::App(entry_type_name) => match entry_type_name.to_string().as_str() {
+                    "testEntryType" => assert!(t.can_publish(&context)),
+                    "testEntryTypeC" => {
+                        assert!(context
+                            .get_dna()
+                            .unwrap()
+                            .get_entry_type_def("testEntryTypeC")
+                            .is_some());
+                        assert!(!t.can_publish(&context))
+                    }
+                    _ => assert!(false, "impossible entry type name"),
+                },
+                _sys_entry_type => {
                     assert!(t.is_sys());
                     assert!(t.can_publish(&context));
                 }

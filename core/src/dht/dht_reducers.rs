@@ -443,6 +443,9 @@ pub mod tests {
     #[test]
     // this test is flaky
     // @see https://github.com/holochain/holochain-rust/pull/1264
+    // @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23822983/job/ysgijndv8j1tsh6q
+    // @see https://ci.appveyor.com/project/thedavidmeister/holochain-rust/builds/23824006/job/4ga22cm4p3iwihjh
+    #[cfg(feature = "broken-tests")]
     fn can_remove_links() {
         let context = test_context("bob", None);
         let store = test_store(context.clone());

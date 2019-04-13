@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- N3H is vendored in a custom build script as an appimage [#1137](https://github.com/holochain/holochain-rust/pull/1137)
+
 ### Changed
 
 - OpenSSL is vendored (statically linked) on nixos and other linux [#1245](https://github.com/holochain/holochain-rust/pull/1245)

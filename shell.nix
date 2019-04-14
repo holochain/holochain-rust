@@ -634,9 +634,22 @@ All binaries are for 64-bit operating systems.
    ( cd dist && tar czf $artifact_name.tar.gz $artifact_name && rm -rf $artifact_name )
   '';
   build-release-paths = [ "cli" "conductor" ];
+  build-node-conductor-artifact = node-version:
+  ''
+   hc-node-flush
+   echo
+   echo "building conductor for node ${node-version}..."
+   echo
+
+   node -v
+   ./scripts/build_nodejs_conductor.sh
+   cp nodejs_conductor/bin-package/index-v${node-conductor-version}-node-v57-linux-x64.tar.gz dist
+  '';
+  build-node-conductor-versions = [ "nodejs-8_x" ];
   hc-build-release-artifacts = pkgs.writeShellScriptBin "hc-build-release-artifacts"
   ''
    ${pkgs.lib.concatMapStrings (path: build-release-artifact path) build-release-paths}
+   ${pkgs.lib.concatMapStrings (node-version: build-node-conductor-artifact node-version) build-node-conductor-versions}
   '';
 
 in

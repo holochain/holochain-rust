@@ -19,7 +19,8 @@ let
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
   date = "2019-01-24";
-  wasmTarget = "wasm32-unknown-unknown";
+  wasm-target = "wasm32-unknown-unknown";
+  linux-release-target = "x86_64-unknown-linux-gnu";
   release-process-url = "https://hackmd.io/pt72afqYTWat7cuNqpAFjw";
   repo = "holochain/holochain-rust";
   upstream = "origin";
@@ -40,7 +41,7 @@ let
   core-tag = "v${core-version}";
   node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
 
-  rust-build = (pkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
+  rust-build = (pkgs.rustChannelOfTargets "nightly" date [ wasm-target linux-release-target ]);
 
   hc-node-flush = pkgs.writeShellScriptBin "hc-node-flush"
   ''
@@ -56,6 +57,7 @@ let
    echo "flushing cargo"
    rm -rf ~/.cargo/registry;
    rm -rf ~/.cargo/git;
+   rm -rf ./dist;
    find . -wholename "**/.cargo" | xargs -I {} rm -rf {};
    find . -wholename "**/target" | xargs -I {} rm -rf {};
   '';
@@ -619,6 +621,15 @@ All binaries are for 64-bit operating systems.
    github-release -v edit --tag ${core-tag} --name ${core-tag} --description "$( hc-generate-release-notes )" --pre-release
   '';
 
+  hc-build-release-artifacts = pkgs.writeShellScriptBin "hc-build-release-artifacts"
+  ''
+   CARGO_INCREMENTAL=0 cargo rustc --manifest-path cli/Cargo.toml --target ${linux-release-target} --release -- -C lto
+   export artifact_name=`sed "s/unknown/generic/g" <<< "cli-${core-version}-${linux-release-target}"`
+   mkdir -p dist/$artifact_name
+   cp target/${linux-release-target}/release/hc cli/LICENSE cli/README.md dist/$artifact_name
+   ( cd dist && tar czf $artifact_name.tar.gz $artifact_name && rm -rf $artifact_name )
+  '';
+
 in
 with pkgs;
 stdenv.mkDerivation rec {
@@ -689,6 +700,7 @@ stdenv.mkDerivation rec {
     hc-ensure-changelog-version
     hc-generate-release-notes
     hc-readme-grep-nightly
+    hc-build-release-artifacts
 
     hc-do-release
 
@@ -718,6 +730,8 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   DARWIN_NIX_LDFLAGS = if stdenv.isDarwin then "-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation " else "";
+
+  OPENSSL_STATIC = "1";
 
   shellHook = ''
    # cargo installs things to the user's home so we need it on the path

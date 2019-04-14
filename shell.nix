@@ -621,13 +621,22 @@ All binaries are for 64-bit operating systems.
    github-release -v edit --tag ${core-tag} --name ${core-tag} --description "$( hc-generate-release-notes )" --pre-release
   '';
 
+  build-release-artifact = path:
+  ''
+   export artifact_name=`sed "s/unknown/generic/g" <<< "${path}-${core-version}-${linux-release-target}"`
+   echo
+   echo "building $artifact_name..."
+   echo
+
+   CARGO_INCREMENTAL=0 cargo rustc --manifest-path ${path}/Cargo.toml --target ${linux-release-target} --release -- -C lto
+   mkdir -p dist/$artifact_name
+   cp target/${linux-release-target}/release/hc ${path}/LICENSE ${path}/README.md dist/$artifact_name
+   ( cd dist && tar czf $artifact_name.tar.gz $artifact_name && rm -rf $artifact_name )
+  '';
+  build-release-paths = [ "cli" "conductor" ];
   hc-build-release-artifacts = pkgs.writeShellScriptBin "hc-build-release-artifacts"
   ''
-   CARGO_INCREMENTAL=0 cargo rustc --manifest-path cli/Cargo.toml --target ${linux-release-target} --release -- -C lto
-   export artifact_name=`sed "s/unknown/generic/g" <<< "cli-${core-version}-${linux-release-target}"`
-   mkdir -p dist/$artifact_name
-   cp target/${linux-release-target}/release/hc cli/LICENSE cli/README.md dist/$artifact_name
-   ( cd dist && tar czf $artifact_name.tar.gz $artifact_name && rm -rf $artifact_name )
+   ${pkgs.lib.concatMapStrings (path: build-release-artifact path) build-release-paths}
   '';
 
 in

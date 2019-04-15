@@ -80,8 +80,15 @@ So in general, the process that Holochain follows while trying to write an Entry
 
 ### Updating Entries
 
+1. Get Current entry's latest version
+2. Create a new entry, marking THAT ^ entry as updated, not necessarily whatever was given
+3. Do some metadata magic?
+
 
 ### Removing Entries
+
+1. Get Current entry's latest version
+2. Create a special "DeletionEntry", which marks THAT^ entry as deleted, not necessarily whatever was given
 
 
 ## Reading Data

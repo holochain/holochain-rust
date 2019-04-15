@@ -265,7 +265,7 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
 
   //delete should fail
   const failedDelete = await bob.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
-  t.deepEqual(failedDelete.Err, { Internal: 'Unspecified' });
+  t.deepEqual(failedDelete.Err, { Internal: 'Entry Could Not Be Found' });
 
   //get initial entry
   const GetInitialParamsResult = bob.call("blog", "get_initial_post", { post_address: createResult.Ok })
@@ -439,7 +439,7 @@ scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
 
   //failed delete
   const failedDelete = await alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
-  t.deepEqual(failedDelete.Err, { Internal: 'Unspecified' });
+  t.deepEqual(failedDelete.Err, { Internal: 'Entry Could Not Be Found' });
 })
 
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {

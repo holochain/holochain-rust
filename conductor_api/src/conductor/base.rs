@@ -1519,17 +1519,17 @@ pub mod tests {
         let received_signals = signals.lock().clone();
 
         assert_eq!(3, received_signals.len());
-        assert_eq!(
-            "{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall { id: ProcessUniqueId { prefix: 0, offset: 31 }, zome_name: \\\"test_zome\\\", cap: CapabilityRequest { cap_token: HashString(\\\"HcSCjkIIg5J3O5ohdf7whj9RK8XBI9gagq9sZXhr8mhde3dkDU3RHk57sTttqjz\\\"), provenance: Provenance(HashString(\\\"HcSCjkIIg5J3O5ohdf7whj9RK8XBI9gagq9sZXhr8mhde3dkDU3RHk57sTttqjz\\\"), Signature(\\\"bRQ3Y68yoAdm7b0MmQcJGdDRu+6qddwoOipOskzH9Cj0sA5Q//2QAiZJ8Vk0qoZo8N5DVcVQKBJ1cjl8M3pGDw==\\\")) }, fn_name: \\\"call_bridge\\\", parameters: JsonString(\\\"{}\\\") })\"},\"instance_id\":\"bridge-caller\"}",
+        assert!(
             received_signals[0]
+                .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {")
         );
-        assert_eq!(
-            "{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall { id: ProcessUniqueId { prefix: 16, offset: 2 }, zome_name: \\\"greeter\\\", cap: CapabilityRequest { cap_token: HashString(\\\"QmUjdN74k2uwFmx7Sw4HEZCXRmd3ocPco6n9igBYFNgipR\\\"), provenance: Provenance(HashString(\\\"HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\\\"), Signature(\\\"/RCIMbu1PjJIGN044S6P8qpJMHfpPD8SuQ7YCgHicGmKr2iA3+RO0149BnQKMnEwfXiRLxBb/1H8nCKy5UyICg==\\\")) }, fn_name: \\\"hello\\\", parameters: JsonString(\\\"{}\\\") })\"},\"instance_id\":\"test-instance-1\"}",
+        assert!(
             received_signals[1]
+                .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {")
         );
-        assert_eq!(
-            "{\"signal\":{\"Internal\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse { call: ZomeFnCall { id: ProcessUniqueId { prefix: 16, offset: 2 }, zome_name: \\\"greeter\\\", cap: CapabilityRequest { cap_token: HashString(\\\"QmUjdN74k2uwFmx7Sw4HEZCXRmd3ocPco6n9igBYFNgipR\\\"), provenance: Provenance(HashString(\\\"HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\\\"), Signature(\\\"/RCIMbu1PjJIGN044S6P8qpJMHfpPD8SuQ7YCgHicGmKr2iA3+RO0149BnQKMnEwfXiRLxBb/1H8nCKy5UyICg==\\\")) }, fn_name: \\\"hello\\\", parameters: JsonString(\\\"{}\\\") }, result: Ok(JsonString(\\\"Holo World\\\")) })\"},\"instance_id\":\"test-instance-1\"}",
+        assert!(
             received_signals[2]
+                .starts_with("{\"signal\":{\"Internal\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {")
         );
     }
 }

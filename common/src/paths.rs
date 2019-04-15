@@ -5,7 +5,6 @@ pub const ORGANIZATION: &str = "holochain";
 pub const APPLICATION: &str = "holochain";
 pub const KEYS_DIRECTORY: &str = "keys";
 pub const N3H_BINARIES_DIRECTORY: &str = "n3h-binaries";
-pub const N3H_PERSISTENCY_DIRECTORY: &str = "n3h";
 pub const DNA_EXTENSION: &str = "dna.json";
 
 /// Returns the project root builder for holochain directories.
@@ -43,8 +42,4 @@ pub fn keys_directory() -> PathBuf {
 /// Something like "~/.local/share/holochain/n3h-binaries"
 pub fn n3h_binaries_directory() -> PathBuf {
     data_root().join(N3H_BINARIES_DIRECTORY)
-}
-
-pub fn n3h_persistency_directory() -> PathBuf {
-    data_root().join(N3H_PERSISTENCY_DIRECTORY)
 }

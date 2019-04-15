@@ -102,7 +102,7 @@ impl MetaStore {
 /// Core Mock
 pub struct P2pNode {
     // Need to hold the tempdir to keep it alive, otherwise we will get a dir error.
-    maybe_temp_dir: Option<tempfile::TempDir>,
+    _maybe_temp_dir: Option<tempfile::TempDir>,
     p2p_connection: P2pNetwork,
     receiver: mpsc::Receiver<Protocol>,
     pub config: P2pConfig,
@@ -508,7 +508,7 @@ impl P2pNode {
         agent_id_arg: String,
         dna_address: Address,
         config: &P2pConfig,
-        maybe_temp_dir: Option<tempfile::TempDir>,
+        _maybe_temp_dir: Option<tempfile::TempDir>,
     ) -> Self {
         log_dd!(
             "p2pnode",
@@ -532,7 +532,7 @@ impl P2pNode {
         .expect("Failed to create P2pNetwork");
 
         P2pNode {
-            maybe_temp_dir,
+            _maybe_temp_dir,
             p2p_connection,
             receiver,
             config: config.clone(),
@@ -585,13 +585,13 @@ impl P2pNode {
         bootstrap_nodes: Vec<String>,
         maybe_dir_path: Option<String>,
     ) -> Self {
-        let (p2p_config, maybe_temp_dir) = create_ipc_config(
+        let (p2p_config, _maybe_temp_dir) = create_ipc_config(
             maybe_config_filepath,
             maybe_end_user_config_filepath,
             bootstrap_nodes,
             maybe_dir_path,
         );
-        return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, maybe_temp_dir);
+        return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, _maybe_temp_dir);
     }
 
     /// See if there is a message to receive, and log it
@@ -919,7 +919,8 @@ impl NetSend for P2pNode {
 // create_ipc_config
 //--------------------------------------------------------------------------------------------------
 
-/// Create an P2pConfig for an IPC node that uses n3h and a temp folder
+/// Create a P2pConfig for an IPC node that uses n3h and possibily a specific folder.
+/// Return the generated P2pConfig and the created tempdir if no dir was provided.
 #[cfg_attr(tarpaulin, skip)]
 fn create_ipc_config(
     maybe_config_filepath: Option<&str>,
@@ -927,7 +928,7 @@ fn create_ipc_config(
     bootstrap_nodes: Vec<String>,
     maybe_dir_path: Option<String>,
 ) -> (P2pConfig, Option<tempfile::TempDir>) {
-    // Create temp directory
+    // Create temp directory if no dir was provided
     let mut maybe_dir_ref = None;
     let dir = if let Some(dir_path) = maybe_dir_path {
             dir_path
@@ -937,7 +938,6 @@ fn create_ipc_config(
         maybe_dir_ref = Some(dir_ref);
         dir_path
     };
-    //let dir = "C:\\Users\\damien\\AppData\\Local\\Temp\\n3h\\".to_string();
 
     log_i!("create_ipc_config() dir = {}", dir);
 
@@ -963,7 +963,6 @@ fn create_ipc_config(
                         "N3H_WORK_DIR": dir.clone(),
                         "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
                         "N3H_LOG_LEVEL": p2p_config.backend_config["spawn"]["env"]["N3H_LOG_LEVEL"],
-                        // "N3H_BIND": "wss://0.0.0.0:4242/",
                     }
                 },
             }})).expect("Failled making valid P2pConfig with filepath")

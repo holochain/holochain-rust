@@ -73,9 +73,6 @@ impl IpcNetWorker {
             .iter()
             .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string()))
             .collect();
-
-        println!("\n\nENV: {:?}", env);
-
         // create a new IpcNetWorker witch spawns the n3h process
         return IpcNetWorker::priv_new_with_spawn(
             handler,

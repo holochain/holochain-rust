@@ -1482,7 +1482,8 @@ pub mod tests {
         // threads panic. Here it helps getting the causing assertion panic to be printed
         // instead of masking that with a panic of the thread below which makes it hard to see
         // why this test fails, if it fails.
-        let signals: Arc<parking_lot::Mutex<Vec<String>>> = Arc::new(parking_lot::Mutex::new(Vec::new()));
+        let signals: Arc<parking_lot::Mutex<Vec<String>>> =
+            Arc::new(parking_lot::Mutex::new(Vec::new()));
         let signals_clone = signals.clone();
         thread::spawn(|| {
             connect("ws://127.0.0.1:8888", move |_| {

@@ -984,7 +984,7 @@ pub mod tests {
     use crate::{conductor::tests::test_conductor, config::Configuration};
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
-        let conductor = test_conductor();
+        let conductor = test_conductor(8888);
         let holochain = conductor
             .instances()
             .get("test-instance-1")

@@ -1022,7 +1022,7 @@ pub mod tests {
         keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID).unwrap()
     }
 
-    pub fn test_toml() -> String {
+    pub fn test_toml(interface_port: u16) -> String {
         format!(
             r#"
     [[agents]]
@@ -1084,7 +1084,7 @@ pub mod tests {
     admin = true
     [interfaces.driver]
     type = "websocket"
-    port = 8888
+    port = {}
     [[interfaces.instances]]
     id = "test-instance-1"
     [[interfaces.instances]]
@@ -1117,12 +1117,13 @@ pub mod tests {
     "#,
             test_keybundle(1).get_id(),
             test_keybundle(2).get_id(),
-            test_keybundle(3).get_id()
+            test_keybundle(3).get_id(),
+            interface_port
         )
     }
 
-    pub fn test_conductor() -> Conductor {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+    pub fn test_conductor(interface_port: u16) -> Conductor {
+        let config = load_configuration::<Configuration>(&test_toml(interface_port)).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -1131,7 +1132,7 @@ pub mod tests {
     }
 
     fn test_conductor_with_signals(signal_tx: SignalSender) -> Conductor {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml(8888)).unwrap();
         let mut conductor = Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -1204,7 +1205,7 @@ pub mod tests {
 
     #[test]
     fn test_conductor_boot_from_config() {
-        let mut conductor = test_conductor();
+        let mut conductor = test_conductor(8888);
         assert_eq!(conductor.instances.len(), 3);
 
         conductor.start_all_instances().unwrap();
@@ -1215,7 +1216,7 @@ pub mod tests {
     //#[test]
     // Default config path ~/.holochain/conductor/conductor-config.toml won't work in CI
     fn _test_conductor_save_and_load_config_default_location() {
-        let conductor = test_conductor();
+        let conductor = test_conductor(8888);
         assert_eq!(conductor.save_config(), Ok(()));
 
         let mut toml = String::new();
@@ -1407,7 +1408,7 @@ pub mod tests {
 
     #[test]
     fn basic_bridge_call_roundtrip() {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml(8888)).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -1473,7 +1474,7 @@ pub mod tests {
 
     #[test]
     fn test_signals_through_admin_websocket() {
-        let mut conductor = test_conductor();
+        let mut conductor = test_conductor(9999);
         let _ = conductor.start_all_instances();
         conductor.start_all_interfaces();
         thread::sleep(Duration::from_secs(1));

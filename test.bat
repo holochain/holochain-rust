@@ -1,3 +1,4 @@
+# For easier testing
 set test_p= holochain_dna_c_binding
 set test_path= dna_c_binding
 set wasm_path=

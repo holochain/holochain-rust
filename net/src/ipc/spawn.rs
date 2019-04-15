@@ -26,21 +26,22 @@ pub struct SpawnResult {
 pub fn ipc_spawn(
     work_dir: String,
     end_user_config: String,
-    env: HashMap<String, String>,
+    mut env: HashMap<String, String>,
     timeout_ms: usize,
     can_wait_for_p2p: bool,
 ) -> NetResult<SpawnResult> {
     let (n3h, n3h_args) = get_verify_n3h()?;
 
-    println!("n3h: {:?} | in: {}", n3h, work_dir);
-    let mut child = std::process::Command::new("n3h.bat");
+    env.insert("NO_CLEANUP".to_string(), "1".to_string());
+
+    let mut child = std::process::Command::new(n3h);
 
     child
         .stdout(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped())
         .args(&n3h_args)
         .envs(&env)
-        .current_dir("C:\\github\\n3h\\bin"); // FIXME use work_dir
+        .current_dir(work_dir);
 
     let mut child = child.spawn()?;
 
@@ -120,8 +121,6 @@ pub fn ipc_spawn(
 
     // close the pipe since we can never read from it again...
     child.stdout = None;
-
-    std::thread::sleep(std::time::Duration::from_millis(1000));
 
     log_i!("READY! {} {:?}", out.ipc_binding, out.p2p_bindings);
 

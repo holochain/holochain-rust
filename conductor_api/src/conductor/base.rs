@@ -1022,7 +1022,7 @@ pub mod tests {
         keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID).unwrap()
     }
 
-    pub fn test_toml(interface_port: u16) -> String {
+    pub fn test_toml(websocket_port: u16, http_port: u16) -> String {
         format!(
             r#"
     [[agents]]
@@ -1094,7 +1094,7 @@ pub mod tests {
     id = "test-interface-2"
     [interfaces.driver]
     type = "http"
-    port = 4000
+    port = {}
     [[interfaces.instances]]
     id = "test-instance-1"
     [[interfaces.instances]]
@@ -1118,12 +1118,13 @@ pub mod tests {
             test_keybundle(1).get_id(),
             test_keybundle(2).get_id(),
             test_keybundle(3).get_id(),
-            interface_port
+            websocket_port,
+            http_port,
         )
     }
 
-    pub fn test_conductor(interface_port: u16) -> Conductor {
-        let config = load_configuration::<Configuration>(&test_toml(interface_port)).unwrap();
+    pub fn test_conductor(websocket_port: u16, http_port: u16) -> Conductor {
+        let config = load_configuration::<Configuration>(&test_toml(websocket_port, http_port)).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -1132,7 +1133,7 @@ pub mod tests {
     }
 
     fn test_conductor_with_signals(signal_tx: SignalSender) -> Conductor {
-        let config = load_configuration::<Configuration>(&test_toml(8888)).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml(8888, 8889)).unwrap();
         let mut conductor = Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -1205,7 +1206,7 @@ pub mod tests {
 
     #[test]
     fn test_conductor_boot_from_config() {
-        let mut conductor = test_conductor(8888);
+        let mut conductor = test_conductor(10001, 10002);
         assert_eq!(conductor.instances.len(), 3);
 
         conductor.start_all_instances().unwrap();
@@ -1216,7 +1217,7 @@ pub mod tests {
     //#[test]
     // Default config path ~/.holochain/conductor/conductor-config.toml won't work in CI
     fn _test_conductor_save_and_load_config_default_location() {
-        let conductor = test_conductor(8888);
+        let conductor = test_conductor(10011, 10012);
         assert_eq!(conductor.save_config(), Ok(()));
 
         let mut toml = String::new();
@@ -1408,7 +1409,7 @@ pub mod tests {
 
     #[test]
     fn basic_bridge_call_roundtrip() {
-        let config = load_configuration::<Configuration>(&test_toml(8888)).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml(10021, 10022)).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -1474,7 +1475,7 @@ pub mod tests {
 
     #[test]
     fn test_signals_through_admin_websocket() {
-        let mut conductor = test_conductor(9999);
+        let mut conductor = test_conductor(10031, 10032);
         let _ = conductor.start_all_instances();
         conductor.start_all_interfaces();
         thread::sleep(Duration::from_secs(1));
@@ -1486,7 +1487,7 @@ pub mod tests {
             Arc::new(parking_lot::Mutex::new(Vec::new()));
         let signals_clone = signals.clone();
         thread::spawn(|| {
-            connect("ws://127.0.0.1:8888", move |_| {
+            connect("ws://127.0.0.1:10031", move |_| {
                 let s = signals_clone.clone();
                 move |msg: Message| {
                     s.lock().push(msg.to_string());

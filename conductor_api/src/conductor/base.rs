@@ -318,7 +318,14 @@ impl Conductor {
             .iter_mut()
             .map(|(id, hc)| {
                 notify(format!("Stopping instance \"{}\"...", id));
-                hc.write().unwrap().stop()
+                hc.write()
+                    .map(|mut lock| {
+                        let _ = lock.stop();
+                    })
+                    .map_err(|_| {
+                        notify(format!("Error stopping instance \"{}\": could not get a lock. Will ignore and proceed shutting down other instances...", id));
+                        HolochainInstanceError::InternalFailure(HolochainError::new("Could not get lock on shutdown"))
+                    })
             })
             .collect::<Result<Vec<()>, _>>()
             .map(|_| ())

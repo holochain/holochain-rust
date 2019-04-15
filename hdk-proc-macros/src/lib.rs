@@ -14,6 +14,8 @@ use syn;
 
 static GENESIS_ATTRIBUTE: &str = "genesis";
 static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
+static ENTRY_DEF_ATTRIBUTE: &str = "entry_def";
+
 
 use hdk::holochain_core_types::dna::fn_declarations::{FnDeclaration, FnParameter};
 
@@ -29,9 +31,9 @@ type ZomeFunctions = Vec<ZomeFunction>;
 // type ReceiveCallbacks = Vec<syn::Block>;
 
 struct ZomeCodeDef {
-    // zome: Zome,
     genesis: GenesisCallback,
     zome_fns: ZomeFunctions, // receive: ReceiveCallbacks
+    entry_def_fns: Vec<syn::ItemFn>,
 }
 
 impl ToTokens for ZomeFunction {
@@ -215,6 +217,26 @@ fn extract_zome_fns(module: &syn::ItemMod) -> ZomeFunctions {
         })
 }
 
+fn extract_entry_defs(module: &syn::ItemMod) -> Vec<syn::ItemFn> {
+    module
+        .clone()
+        .content
+        .unwrap()
+        .1
+        .into_iter()
+        .fold(Vec::new(), |mut acc, item| {
+            if let syn::Item::Fn(mut func) = item {
+                if is_tagged_with(&func.attrs, ENTRY_DEF_ATTRIBUTE) {
+                    // drop all attributes on the fn. This may cause problems
+                    // and really should only drop the ENTRY_DEF_ATTRIBUTE
+                    func.attrs = Vec::new();
+                    acc.push(func)
+                }
+            }
+            acc
+        })
+}
+
 // use this to convert from the tagged #[zome] module into a definition struct
 impl TryFrom<TokenStream> for ZomeCodeDef {
     type Error = syn::Error;
@@ -223,6 +245,7 @@ impl TryFrom<TokenStream> for ZomeCodeDef {
         let module: syn::ItemMod = syn::parse(input)?;
 
         Ok(ZomeCodeDef {
+            entry_def_fns: extract_entry_defs(&module),
             genesis: extract_genesis(&module),
             zome_fns: extract_zome_fns(&module),
         })
@@ -241,12 +264,21 @@ impl ZomeCodeDef {
             .unzip();
         let zome_fns = self.zome_fns.clone();
 
+        let entry_def_fns = self.entry_def_fns.clone();
+        let entry_fn_idents = self.entry_def_fns.iter().map(|func| {
+            func.ident.clone()
+        }).clone();
+
         let gen = quote! {
+
+            #(#entry_def_fns )*
 
             #[no_mangle]
             #[allow(unused_variables)]
             pub extern "C" fn zome_setup(zd: &mut hdk::meta::ZomeDefinition) {
-
+                #(
+                    zd.define(#entry_fn_idents ());
+                )*
             }
 
             #[no_mangle]

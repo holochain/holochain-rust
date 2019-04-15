@@ -138,6 +138,7 @@ let
 
   hc-test-cli = pkgs.writeShellScriptBin "hc-test-cli" "cd cli && cargo test";
   hc-test-app-spec = pkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
+  hc-test-app-spec-proc = pkgs.writeShellScriptBin "hc-test-app-spec-proc" "cd app_spec_proc_macro && . build_and_test.sh";
   hc-test-node-conductor = pkgs.writeShellScriptBin "hc-test-node-conductor" "cd nodejs_conductor && npm test";
 
   hc-fmt = pkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
@@ -165,6 +166,7 @@ let
   '';
   wasm-paths = [
    "hdk-rust/wasm-test"
+   "hdk-proc-macros/wasm-test"
    "wasm_utils/wasm-test/integration-test"
    "conductor_api/wasm-test"
    "conductor_api/test-bridge-caller"
@@ -187,7 +189,8 @@ let
    && hc-install-cli \
    && hc-install-conductor \
    && hc-install-node-conductor \
-   && hc-test-app-spec
+   && hc-test-app-spec \
+   && hc-test-app-spec-proc
   '';
 
   pulse-tag = "dev-pulse-${pulse-version}";
@@ -660,6 +663,7 @@ stdenv.mkDerivation rec {
 
     hc-test-cli
     hc-test-app-spec
+    hc-test-app-spec-proc
     hc-test-node-conductor
 
     hc-fmt

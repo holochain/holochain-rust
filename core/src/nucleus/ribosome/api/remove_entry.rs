@@ -42,10 +42,14 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         .block_on(get_entry_result_workflow(&context, &get_args));
 
     if let Err(_err) = maybe_entry_result {
+        // TODO: don't just return "Unspecified"
+        // pass a relevant error for the error occurring
         return ribosome_error_code!(Unspecified);
     }
     let entry_result = maybe_entry_result.unwrap();
     if !entry_result.found() {
+        // TODO: don't just return "Unspecified"
+        // pass a relevant error for the error occurring
         return ribosome_error_code!(Unspecified);
     }
     let deleted_entry_address = entry_result.latest().unwrap().address();

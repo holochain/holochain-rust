@@ -124,7 +124,7 @@ ___
 
 **Type** `string`
 
-**Description** The desired bridge handle, as required by your DNA. See the [bridging section of the docs](./bridging.md) for more detail
+**Description** The desired bridge handle, which is used by the "caller" DNA to refer to the "callee" DNA. See the [bridging section of the docs](./bridging.md) for more detail.
 
 ___
 
@@ -132,7 +132,7 @@ ___
 
 **Type** `object`
 
-**Description** A config object with a `name` property, as produced by `Config.instance`
+**Description** A config object as produced by `Config.instance`, which specifies the instance which will be making calls over the bridge
 
 ___
 
@@ -140,7 +140,7 @@ ___
 
 **Type** `object`
 
-**Description** A config object with a `name` property, as produced by `Config.instance`
+**Description** A config object as produced by `Config.instance`, which specifies the instance which will be receiving calls over the bridge
 
 ___
 

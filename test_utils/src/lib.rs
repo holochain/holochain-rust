@@ -6,6 +6,7 @@ extern crate serde_json;
 
 pub mod mock_signing;
 
+use crossbeam_channel::Receiver;
 use holochain_conductor_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
     action::Action,
@@ -13,11 +14,12 @@ use holochain_core::{
     logger::{test_logger, TestLogger},
     nucleus::actions::call_zome_function::make_cap_request_for_call,
     signal::Signal,
-};
+}
+;
 use holochain_core_types::{
     cas::content::AddressableContent,
     dna::{
-        entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
+        entry_types::{EntryTypeDef, LinkedFrom, LinksTo, Sharing},
         fn_declarations::{FnDeclaration, TraitFns},
         traits::ReservedTraitNames,
         wasm::DnaWasm,
@@ -35,7 +37,7 @@ use std::{
     path::PathBuf,
     hash::{Hash, Hasher},
     io::prelude::*,
-    sync::{mpsc::Receiver, Arc, Mutex},
+    sync::{Arc, Mutex},
     time::Duration,
 };
 use tempfile::tempdir;
@@ -97,7 +99,11 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
         tag: String::from("test-tag"),
     });
 
+    let mut test_entry_c_def = EntryTypeDef::new();
+    test_entry_c_def.sharing = Sharing::Private;
+
     let mut entry_types = BTreeMap::new();
+
     entry_types.insert(
         EntryType::App(AppEntryType::from("testEntryType")),
         test_entry_def,
@@ -106,6 +112,11 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
         EntryType::App(AppEntryType::from("testEntryTypeB")),
         test_entry_b_def,
     );
+    entry_types.insert(
+        EntryType::App(AppEntryType::from("testEntryTypeC")),
+        test_entry_c_def,
+    );
+
 
     let mut zome = Zome::new(
         "some zome description",

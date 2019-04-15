@@ -14,7 +14,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_net::p2p_config::P2pConfig;
-use jsonrpc_ws_server::jsonrpc_core::IoHandler;
+use jsonrpc_core::IoHandler;
 use std::{
     fs,
     path::{Path, PathBuf},

@@ -33,10 +33,10 @@ callee_id = "target-instance"
 handle = "sample-bridge"
 ```
 
-Then on the caller DNA you have to initiate the bridge call using `hdk::call` like this:
+Then on the caller DNA you have to initiate the bridge call using `hdk::api::call` like this:
 
 ```rust
-    let response = match hdk::call(
+    let response = match hdk::api::call(
         "sample-bridge",
         "sample_zome",
         Address::from(PUBLIC_TOKEN.to_string()), // never mind this for now

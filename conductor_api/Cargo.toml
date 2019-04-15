@@ -47,3 +47,4 @@ holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "=0.2.15"
 pretty_assertions = "=0.6.1"
 ws = "=0.8.0"
+parking_lot = "=0.7.1"

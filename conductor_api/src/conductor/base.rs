@@ -954,6 +954,7 @@ pub mod tests {
     use test_utils::*;
     extern crate ws;
     use self::ws::{connect, Message};
+    extern crate parking_lot;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|path: &PathBuf| {
@@ -1476,13 +1477,17 @@ pub mod tests {
         let _ = conductor.start_all_instances();
         conductor.start_all_interfaces();
         thread::sleep(Duration::from_secs(1));
-        let signals: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+        // parking_lot::Mutex is an alternative Mutex that does not get poisoned if one of the
+        // threads panic. Here it helps getting the causing assertion panic to be printed
+        // instead of masking that with a panic of the thread below which makes it hard to see
+        // why this test fails, if it fails.
+        let signals: Arc<parking_lot::Mutex<Vec<String>>> = Arc::new(parking_lot::Mutex::new(Vec::new()));
         let signals_clone = signals.clone();
         thread::spawn(|| {
             connect("ws://127.0.0.1:8888", move |_| {
                 let s = signals_clone.clone();
                 move |msg: Message| {
-                    s.lock().unwrap().push(msg.to_string());
+                    s.lock().push(msg.to_string());
                     Ok(())
                 }
             })
@@ -1508,7 +1513,7 @@ pub mod tests {
         );
 
         assert!(result.is_ok());
-        let received_signals = signals.lock().unwrap().clone();
+        let received_signals = signals.lock().clone();
 
         assert_eq!(3, received_signals.len());
         assert_eq!(

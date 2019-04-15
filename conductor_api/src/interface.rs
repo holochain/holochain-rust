@@ -970,6 +970,9 @@ impl ConductorApiBuilder {
     }
 }
 
+/// A Broadcaster is something that knows how to send a Signal back to a client.
+/// Each Interface implementation's `run` method must return a Broadcaster, even if it's just the No-op.
+/// Then, if the Conductor is set up for it, it will start a new thread which continually consumes the signal channel and sends each signal over every interface via its Broadcaster.
 pub trait Interface {
     fn run(
         &self,

@@ -18,11 +18,11 @@ extern crate multihash;
 #[macro_use]
 pub mod predicate;
 pub mod basic_workflows;
+pub mod connection_workflows;
 pub mod constants;
 pub mod p2p_node;
 pub mod publish_hold_workflows;
 pub mod three_workflows;
-pub mod connection_workflows;
 
 use constants::*;
 use holochain_net::{connection::NetResult, tweetlog::*};
@@ -44,15 +44,15 @@ type MultiNodesTestFn = fn(nodes: &mut Vec<P2pNode>, can_test_connect: bool) -> 
 lazy_static! {
     // List of tests
     pub static ref TWO_NODES_BASIC_TEST_FNS: Vec<TwoNodesTestFn> = vec![
-//        basic_workflows::setup_one_node,
-//        basic_workflows::no_setup_test,
-//        basic_workflows::setup_two_nodes,
-//        basic_workflows::send_test,
-//        basic_workflows::untrack_alex_test,
-//        basic_workflows::untrack_billy_test,
-//        basic_workflows::retrack_test,
+        basic_workflows::setup_one_node,
+        basic_workflows::no_setup_test,
+        basic_workflows::setup_two_nodes,
+        basic_workflows::send_test,
+        basic_workflows::untrack_alex_test,
+        basic_workflows::untrack_billy_test,
+        basic_workflows::retrack_test,
         basic_workflows::dht_test,
-//        basic_workflows::meta_test,
+        basic_workflows::meta_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,
@@ -173,8 +173,15 @@ fn main() {
         }
     }
 
-    if config["suites"]["CONNECTION_WORKFLOWS"].as_bool().unwrap() && config["modes"]["HACK_MODE"].as_bool().unwrap() {
-        connection_workflows::two_nodes_disconnect_test("test_bin/data/network_config.json", None, basic_workflows::dht_test).unwrap();
+    if config["suites"]["CONNECTION_WORKFLOWS"].as_bool().unwrap()
+        && config["modes"]["HACK_MODE"].as_bool().unwrap()
+    {
+        connection_workflows::two_nodes_disconnect_test(
+            "test_bin/data/network_config.json",
+            None,
+            basic_workflows::dht_test,
+        )
+        .unwrap();
     }
 
     // Launch THREE_WORKFLOWS tests on each setup

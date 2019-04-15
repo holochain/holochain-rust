@@ -931,7 +931,7 @@ fn create_ipc_config(
     // Create temp directory if no dir was provided
     let mut maybe_dir_ref = None;
     let dir = if let Some(dir_path) = maybe_dir_path {
-            dir_path
+        dir_path
     } else {
         let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
         let dir_path = dir_ref.path().clone().to_string_lossy().to_string();

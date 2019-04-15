@@ -1,3 +1,4 @@
+use crate::{basic_workflows, print_two_nodes_test_name, TwoNodesTestFn};
 use constants::*;
 use holochain_net::{
     connection::{
@@ -8,11 +9,6 @@ use holochain_net::{
     tweetlog::*,
 };
 use p2p_node::P2pNode;
-use crate::{
-    basic_workflows,
-    TwoNodesTestFn,
-    print_two_nodes_test_name,
-};
 
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
@@ -71,14 +67,13 @@ pub(crate) fn two_nodes_disconnect_test(
     let alex_binding_2 = alex.p2p_binding.clone();
     log_i!("#### alex_binding_2: {}", alex_binding_2);
 
-
     // Connect nodes between them
     log_i!("connect: billy.p2p_binding = {}", billy.p2p_binding);
     alex.send(
         JsonProtocol::Connect(ConnectData {
             peer_address: billy.p2p_binding.clone().into(),
         })
-            .into(),
+        .into(),
     )?;
     // Make sure Peers are connected
     let result_a = alex
@@ -86,22 +81,19 @@ pub(crate) fn two_nodes_disconnect_test(
         .unwrap();
     log_i!("got connect result A: {:?}", result_a);
     one_let!(JsonProtocol::PeerConnected(d) = result_a {
-            assert_eq!(d.agent_id, BILLY_AGENT_ID);
-        });
+        assert_eq!(d.agent_id, BILLY_AGENT_ID);
+    });
     let result_b = billy
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("got connect result B: {:?}", result_b);
     one_let!(JsonProtocol::PeerConnected(d) = result_b {
-            assert_eq!(d.agent_id, ALEX_AGENT_ID);
-        });
-
-
+        assert_eq!(d.agent_id, ALEX_AGENT_ID);
+    });
 
     // see what alex is receiving
     let count = alex.listen(2000);
     log_i!("#### alex got: {}", count);
-
 
     log_i!("============");
     print_two_nodes_test_name("N3H two_nodes_disconnect_test END: ", test_fn);

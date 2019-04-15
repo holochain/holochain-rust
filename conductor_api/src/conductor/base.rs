@@ -208,9 +208,9 @@ impl Conductor {
                                 .filter(|interface_config| interface_config.admin)
                                 .collect(),
 
-                            // Pass through user-defined and the temporary Holo signals to the
-                            // according interfaces in which the source instance is exposed:
-                            Signal::User(_) | Signal::Holo(_) => config
+                            // Pass through user-defined  signals to the according interfaces
+                            // in which the source instance is exposed:
+                            Signal::User(_) => config
                                 .interfaces
                                 .iter()
                                 .filter(|interface_config| {

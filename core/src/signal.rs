@@ -8,9 +8,6 @@ use std::thread;
 pub enum Signal {
     Internal(ActionWrapper),
     User(JsonString),
-    // NB: this is part of a temporary hack that will be removed
-    // as soon as a browser light client is implemented!
-    Holo(JsonString),
 }
 
 impl Serialize for Signal {
@@ -27,9 +24,6 @@ impl Serialize for Signal {
             ),
             Signal::User(msg) => {
                 serializer.serialize_newtype_variant("Signal", 1, "User", &msg.to_string())
-            }
-            Signal::Holo(msg) => {
-                serializer.serialize_newtype_variant("Signal", 2, "Holo", &msg.to_string())
             }
         }
     }

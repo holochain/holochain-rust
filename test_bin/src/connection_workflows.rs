@@ -2,7 +2,7 @@ use crate::{basic_workflows, print_two_nodes_test_name, TwoNodesTestFn};
 use constants::*;
 use holochain_net::{
     connection::{
-        json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
+        json_protocol::{ConnectData, JsonProtocol},
         net_connection::NetSend,
         NetResult,
     },

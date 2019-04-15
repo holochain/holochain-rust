@@ -1479,7 +1479,7 @@ pub mod tests {
         let mut conductor = test_conductor(10031, 10032);
         let _ = conductor.start_all_instances();
         conductor.start_all_interfaces();
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_secs(2));
         // parking_lot::Mutex is an alternative Mutex that does not get poisoned if one of the
         // threads panic. Here it helps getting the causing assertion panic to be printed
         // instead of masking that with a panic of the thread below which makes it hard to see
@@ -1517,6 +1517,7 @@ pub mod tests {
         );
 
         assert!(result.is_ok());
+        thread::sleep(Duration::from_secs(2));
         let received_signals = signals.lock().clone();
 
         assert_eq!(3, received_signals.len());

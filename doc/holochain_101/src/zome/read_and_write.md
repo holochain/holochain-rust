@@ -80,9 +80,14 @@ So in general, the process that Holochain follows while trying to write an Entry
 
 ### Updating Entries
 
-1. Get Current entry's latest version
+The act of updating an Entry is technically speaking just the same "committing an Entry", plus storing a bit of metadata indicating that this new entry is an "update" to the entry at an old address which is also given. This has the effect that when an attempt to retrieve an Entry by its address, it will forward the request along to the latest version in a potential series of updates, and return that instead. There is always the option to return the results for an Entry according to whether its the "initial" version, the "latest", or getting the entire history too.
+
+So to update an Entry, use the address of that entry, and provide the new Entry to replace it. You can use the address of the Entry at any point in its update history as the address to update (as long as it hasn't been marked deleted), and it will still work, technically updating the very latest version of that Entry instead of whatever you pass in.
+
+So in general, the process that Holochain follows while trying to update an Entry during an "update_entry" call is this:
+
+1. Retrieve the very latest version of the given entry
 2. Create a new entry, marking THAT ^ entry as updated, not necessarily whatever was given
-3. Do some metadata magic?
 
 
 ### Removing Entries

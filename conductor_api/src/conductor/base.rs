@@ -1124,7 +1124,8 @@ pub mod tests {
     }
 
     pub fn test_conductor(websocket_port: u16, http_port: u16) -> Conductor {
-        let config = load_configuration::<Configuration>(&test_toml(websocket_port, http_port)).unwrap();
+        let config =
+            load_configuration::<Configuration>(&test_toml(websocket_port, http_port)).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -1519,17 +1520,12 @@ pub mod tests {
         let received_signals = signals.lock().clone();
 
         assert_eq!(3, received_signals.len());
-        assert!(
-            received_signals[0]
-                .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {")
-        );
-        assert!(
-            received_signals[1]
-                .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {")
-        );
-        assert!(
-            received_signals[2]
-                .starts_with("{\"signal\":{\"Internal\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {")
-        );
+        assert!(received_signals[0]
+            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+        assert!(received_signals[1]
+            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+        assert!(received_signals[2].starts_with(
+            "{\"signal\":{\"Internal\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
+        ));
     }
 }

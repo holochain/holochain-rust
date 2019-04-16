@@ -13,10 +13,11 @@ extern crate hdk;
 extern crate holochain_core_types_derive;
 
 use hdk::{
+    error::ZomeApiResult,
     holochain_core_types::{
         dna::entry_types::Sharing,
         json::JsonString,
-        error::HolochainError,
+        error::{HolochainError},
     },
 };
 
@@ -39,8 +40,8 @@ pub mod someZome {
     }
 
     #[zome_fn("trait3")]
-    fn test_zome_fn2(input: i32, next: bool, another: TestEntryType) -> JsonString {
-        JsonString::from_json("hi")
+    fn test_zome_fn2(input: i32, next: bool, another: TestEntryType) -> ZomeApiResult<JsonString> {
+        Ok(JsonString::from_json("hi"))
     }
 
     #[entry_def]

@@ -99,10 +99,10 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
                         .path
                         .segments
                         .iter()
-                        .next()
-                        .unwrap()
-                        .ident
-                        .to_string(),
+                        .map(|segment| {
+                            segment.ident.to_string()
+                        })
+                        .collect(),
                     _ => "".into(),
                 };
                 FnParameter {
@@ -400,6 +400,35 @@ mod tests {
     			],
     		}
     	}
+    }
+
+    #[test]
+    fn test_extract_function_with_generic_return() {
+        let module: syn::ItemMod = parse_quote!{
+            mod zome {              
+                #[genesis]
+                fn genisis() {
+                    Ok(())
+                }
+
+                #[zome_fn("hc_public")]
+                fn a_fn() -> ZomeApiResult<String> {
+                    Ok("test".into())
+                }
+            }
+        };
+        let zome_def = module.extract_zome();
+
+        assert_eq!{
+            zome_def.zome_fns.first().unwrap().declaration,
+            FnDeclaration{
+                name: "a_fn".to_string(),
+                inputs: vec![],
+                outputs: vec![
+                    FnParameter::new("result", "ZomeApiResult<String>"),
+                ],
+            }
+        }
     }
 
     #[test]

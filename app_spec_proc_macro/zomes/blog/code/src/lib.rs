@@ -33,7 +33,7 @@ pub mod someZome {
         Ok(())
     }
 
-    #[zome_fn]
+    #[zome_fn("hc_public", "trait2")]
     fn test_zome_fn(input: i32, next: bool, another: JsonString) -> JsonString {
         JsonString::from_json("hi")
     }

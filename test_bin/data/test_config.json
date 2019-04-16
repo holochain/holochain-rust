@@ -1,5 +1,4 @@
 {
-  "N3H_PATH": "C:\\github\\n3h",
   "modes": {
     "IN_MEMORY": true,
     "IPC_MOCK": true,
@@ -8,7 +7,8 @@
   "suites": {
     "BASIC_WORKFLOWS": true,
     "LIST_WORKFLOWS": true,
-    "THREE_WORKFLOWS": true
+    "THREE_WORKFLOWS": true,
+    "CONNECTION_WORKFLOWS": false
   },
   "log": {
     "default": "d",

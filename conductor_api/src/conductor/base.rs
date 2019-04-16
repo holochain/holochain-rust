@@ -1481,6 +1481,7 @@ pub mod tests {
         );
     }
 
+    #[cfg(not(windows))]
     #[test]
     fn test_signals_through_admin_websocket() {
         let mut conductor = test_conductor(10031, 10032);

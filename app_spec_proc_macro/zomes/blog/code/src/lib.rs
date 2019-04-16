@@ -9,6 +9,9 @@ extern crate serde_derive;
 
 #[macro_use]
 extern crate hdk;
+#[macro_use]
+extern crate holochain_core_types_derive;
+
 use hdk::{
     holochain_core_types::{
         dna::entry_types::Sharing,
@@ -16,17 +19,28 @@ use hdk::{
         error::HolochainError,
     },
 };
-#[macro_use]
-extern crate holochain_core_types_derive;
-
-
-#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
-struct TestEntryType {
-    stuff: String,
-}
 
 #[zome]
 pub mod someZome {
+
+    use hdk::{
+        holochain_core_types::{
+            dna::entry_types::Sharing,
+            json::JsonString,
+            error::HolochainError,
+        },
+    };
+
+    const SOME_CONST: u32 = 123;
+
+    fn non_zome_func() {
+        ()
+    }
+
+    #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+    struct TestEntryType {
+        stuff: String,
+    }
     
     #[genesis]
     fn genisis() {
@@ -39,7 +53,7 @@ pub mod someZome {
     }
 
     #[zome_fn]
-    fn test_zome_fn2(input: i32, next: bool, another: JsonString) -> JsonString {
+    fn test_zome_fn2(input: i32, next: bool, another: TestEntryType) -> JsonString {
         JsonString::from_json("hi")
     }
 

@@ -28,6 +28,7 @@ pub struct ZomeCodeDef {
     pub zome_fns: ZomeFunctions, // receive: ReceiveCallbacks
     pub entry_def_fns: Vec<syn::ItemFn>,
     pub traits: ZomeTraits,
+    pub extra: Vec<syn::Item>, // extra stuff to be added as is to the zome code
 }
 
 pub trait IntoZome {
@@ -35,6 +36,7 @@ pub trait IntoZome {
 	fn extract_entry_defs(&self) -> EntryDefCallbacks;
 	fn extract_genesis(&self) -> GenesisCallback;
 	fn extract_traits(&self) -> ZomeTraits;
+	fn extract_extra(&self) -> Vec<syn::Item>;
 
 	fn extract_zome(&self) -> ZomeCodeDef {
 		ZomeCodeDef {
@@ -42,6 +44,7 @@ pub trait IntoZome {
             entry_def_fns: self.extract_entry_defs(),
             genesis: self.extract_genesis(),
             zome_fns: self.extract_zome_fns(),
+            extra: self.extract_extra(),
         }
 	}
 }
@@ -208,6 +211,29 @@ impl IntoZome for syn::ItemMod {
 	        acc
 	    })
 	}
+
+	// For this implementation the `extra` is all the content of the module that is not tagged as special
+	// Without this the author can't write custom structs in the module
+	fn extract_extra(&self) -> Vec<syn::Item> {
+		match self.content.clone() {
+			Some((_, items)) => {
+				items
+				.into_iter()
+				.filter(|item| {
+					if let syn::Item::Fn(func) = item {
+						// any functions not tagged with a hdk attribute
+						!is_tagged_with(ZOME_FN_ATTRIBUTE)(func) &&
+						!is_tagged_with(GENESIS_ATTRIBUTE)(func) &&
+						!is_tagged_with(ENTRY_DEF_ATTRIBUTE)(func)
+					} else {
+						true // and anything that is not a function
+					}
+				})
+				.collect()
+			},
+			None => Vec::new(),
+		}
+	}
 }
 
 #[cfg(test)]
@@ -346,6 +372,35 @@ mod tests {
     	assert_eq!{
     		zome_def.entry_def_fns.len(),
     		1
+    	}
+    }
+
+
+    #[test]
+    fn test_extra_code_in_module() {
+    	let module: syn::ItemMod = parse_quote!{
+    		mod zome {    			
+    			#[genesis]
+			    fn genisis() {
+			        Ok(())
+			    }
+
+ 				const SOME_CONST: u32 = 123;
+
+			    fn non_zome_func() {
+			        Ok(())
+			    }
+
+			    struct SomeOtherStruct {
+			    	field: String
+			    }
+    		}
+    	};
+    	let zome_def = module.extract_zome();
+    	
+    	assert_eq!{
+    		zome_def.extra.len(),
+    		3
     	}
     }
 }

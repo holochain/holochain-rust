@@ -2,6 +2,7 @@
 #![feature(try_from, proc_macro_diagnostic)]
 
 extern crate hdk;
+extern crate proc_macro;
 extern crate proc_macro2;
 
 use quote::ToTokens;
@@ -95,7 +96,6 @@ impl TryFrom<TokenStream> for ZomeCodeDef {
 
     fn try_from(input: TokenStream) -> Result<Self, Self::Error> {
         let module: syn::ItemMod = syn::parse(input.into())?;
-
         Ok(module.extract_zome())
     }
 }
@@ -116,8 +116,13 @@ impl ZomeCodeDef {
         let entry_fn_idents = self.entry_def_fns.iter().map(|func| {
             func.ident.clone()
         }).clone();
+        let extra = &self.extra;
 
         let gen = quote! {
+
+            pub mod someMod {
+                #(#extra)*
+            }
 
             #(#entry_def_fns )*
 
@@ -206,6 +211,7 @@ impl ZomeCodeDef {
  * @brief      Macro to be used on a Rust module. The contents of the module is processed and exported as a zome
  */
 #[proc_macro_attribute]
-pub fn zome(_metadata: TokenStream, input: TokenStream) -> TokenStream {
-    ZomeCodeDef::try_from(input).unwrap().to_wasm_friendly()
+pub fn zome(_metadata: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input_stream: TokenStream = input.into();
+    ZomeCodeDef::try_from(input_stream).unwrap().to_wasm_friendly().into()
 }

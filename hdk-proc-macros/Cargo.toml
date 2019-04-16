@@ -10,5 +10,5 @@ proc-macro = true
 [dependencies]
 syn = { version = "0.15.29", features = ["full"]}
 quote = "0.6.3"
-
+proc-macro2 = "0.4"
 hdk = { path = "../hdk-rust" }

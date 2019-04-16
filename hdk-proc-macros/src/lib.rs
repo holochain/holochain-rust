@@ -2,14 +2,12 @@
 #![feature(try_from, proc_macro_diagnostic)]
 
 extern crate hdk;
-extern crate proc_macro;
+extern crate proc_macro2;
 
-use crate::proc_macro::TokenStream;
+use quote::ToTokens;
+use proc_macro2::{Ident, Span, TokenStream};
 use crate::into_zome::IntoZome;
-use quote::{
-    __rt::{Ident, Span, TokenStream as TokenStreamQ},
-    quote, ToTokens,
-};
+use quote::quote;
 use std::convert::TryFrom;
 use syn;
 
@@ -27,7 +25,7 @@ use crate::into_zome::{
 };
 
 impl ToTokens for ZomeFunction {
-    fn to_tokens(&self, tokens: &mut TokenStreamQ) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         let zome_function_name = Ident::new(&self.declaration.name, Span::call_site());
         let input_params = self
             .declaration
@@ -96,7 +94,7 @@ impl TryFrom<TokenStream> for ZomeCodeDef {
     type Error = syn::Error;
 
     fn try_from(input: TokenStream) -> Result<Self, Self::Error> {
-        let module: syn::ItemMod = syn::parse(input)?;
+        let module: syn::ItemMod = syn::parse(input.into())?;
 
         Ok(module.extract_zome())
     }

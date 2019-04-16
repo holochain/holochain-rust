@@ -1,10 +1,10 @@
-use std::collections::BTreeMap;
+extern crate proc_macro2;
 
+use std::collections::BTreeMap;
 use hdk::holochain_core_types::dna::{
     zome::{ZomeTraits},
     fn_declarations::{FnDeclaration, FnParameter, TraitFns},
 };
-use quote::ToTokens;
 
 pub type GenesisCallback = syn::Block;
 pub type ZomeFunctionCode = syn::Block;
@@ -210,12 +210,12 @@ impl IntoZome for syn::ItemMod {
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
+    use super::*;
     use syn::parse_quote;
 
     #[test]
     fn test_extract_genesis_smoke_test() {
-    	let _module: syn::ItemMod = parse_quote!{
+    	let module: syn::ItemMod = parse_quote!{
     		mod zome {
     			#[genesis]
 			    fn genisis() {
@@ -223,5 +223,62 @@ mod tests {
 			    }
     		}
     	};
+    	let _ = module.extract_zome();
+    }
+
+    #[test]
+    fn test_extract_single_trait() {
+    	let module: syn::ItemMod = parse_quote!{
+    		mod zome {    			
+    			#[genesis]
+			    fn genisis() {
+			        Ok(())
+			    }
+
+    			#[zome_fn("trait_name")]
+			    fn a_fn() {
+			        Ok(())
+			    }
+    		}
+    	};
+    	let zome_def = module.extract_zome();
+    	let mut expected_traits: ZomeTraits = BTreeMap::new();
+    	expected_traits.insert("trait_name".to_string(), TraitFns{functions: vec!["a_fn".to_string()]});
+    	assert_eq!{
+    		zome_def.traits,
+    		expected_traits
+    	}
+    }
+
+    #[test]
+    fn test_multi_function_multi_traits() {
+    	let module: syn::ItemMod = parse_quote!{
+    		mod zome {    			
+    			#[genesis]
+			    fn genisis() {
+			        Ok(())
+			    }
+
+    			#[zome_fn("trait1", "trait2")]
+			    fn a_fn() {
+			        Ok(())
+			    }
+
+    			#[zome_fn("trait2", "trait3")]
+			    fn b_fn() {
+			        Ok(())
+			    }
+    		}
+    	};
+    	let zome_def = module.extract_zome();
+    	let mut expected_traits: ZomeTraits = BTreeMap::new();
+    	expected_traits.insert("trait1".to_string(), TraitFns{functions: vec!["a_fn".to_string()]});
+    	expected_traits.insert("trait2".to_string(), TraitFns{functions: vec!["a_fn".to_string(), "b_fn".to_string()]});
+    	expected_traits.insert("trait3".to_string(), TraitFns{functions: vec!["b_fn".to_string()]});
+    	
+    	assert_eq!{
+    		zome_def.traits,
+    		expected_traits
+    	}
     }
 }

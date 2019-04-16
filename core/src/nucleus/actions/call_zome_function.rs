@@ -377,7 +377,7 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         let grant =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+            CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant.clone());
         let grant_addr = context
             .block_on(author_entry(&grant_entry, None, &context))
@@ -411,7 +411,7 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
 
-        let grant = CapTokenGrant::create(CapabilityType::Public, None, cap_functions).unwrap();
+        let grant = CapTokenGrant::create("foo", CapabilityType::Public, None, cap_functions).unwrap();
         let token = grant.token();
         assert!(verify_grant(
             context.clone(),
@@ -427,7 +427,7 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("other_fn")]);
         let grant_for_other_fn =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+            CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions).unwrap();
         assert!(!verify_grant(
             context.clone(),
             &grant_for_other_fn,
@@ -437,7 +437,7 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         let grant =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+            CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions).unwrap();
 
         let token = grant.token();
         assert!(!verify_grant(
@@ -474,6 +474,7 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         let grant = CapTokenGrant::create(
+            "foo",
             CapabilityType::Assigned,
             Some(vec![test_address1.clone()]),
             cap_functions,

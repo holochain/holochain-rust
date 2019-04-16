@@ -118,6 +118,15 @@ So in general, the process that Holochain follows while trying to remove an Entr
 
 ## Reading Data
 
+Reading data is a lot more straightforward than writing data. Data is either read from your own device, if it lives there, or is fetched from peers over network connections. Throughout the writing data section, it was mentioned that Entries and even Headers have "addresses". These addresses are linked to the content itself, following a pattern known as ["content addressable storage"](https://en.wikipedia.org/wiki/Content-addressable_storage).
+
+This means that to determine the address, the content is passed through a cryptographic hash function, which will deterministically give the same hash whenever the same content is given, and can take an input of any length, and return a result of fixed length. The content is then deposited in a location on a computer, and a network, where it can be retrieved given its address/hash.
+
+Only Entries may be retrieved by their address, not Headers.
+
+So there is data that lives on your device
+
+
 
 ### Get an Entry
 

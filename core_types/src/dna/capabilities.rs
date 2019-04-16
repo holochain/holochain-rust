@@ -3,30 +3,6 @@
 use crate::cas::content::Address;
 
 //--------------------------------------------------------------------------------------------------
-// CapabilityCall
-//--------------------------------------------------------------------------------------------------
-/// a struct to hold the signature of the call
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
-pub struct CallSignature {}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
-pub struct CapabilityCall {
-    pub cap_token: Address,
-    pub caller: Option<Address>,
-    pub signature: CallSignature,
-}
-
-impl CapabilityCall {
-    pub fn new(token: Address, caller: Option<Address>) -> Self {
-        CapabilityCall {
-            cap_token: token,
-            caller,
-            signature: CallSignature {}, // FIXME
-        }
-    }
-}
-
-//--------------------------------------------------------------------------------------------------
 // CapabilityType
 //--------------------------------------------------------------------------------------------------
 

@@ -6,9 +6,14 @@ use hdk::holochain_core_types::dna::{
     fn_declarations::{FnDeclaration, FnParameter, TraitFns},
 };
 
+static GENESIS_ATTRIBUTE: &str = "genesis";
+static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
+static ENTRY_DEF_ATTRIBUTE: &str = "entry_def";
+
 pub type GenesisCallback = syn::Block;
 pub type ZomeFunctionCode = syn::Block;
 pub type EntryDefCallback = syn::ItemFn;
+
 #[derive(Clone)]
 pub struct ZomeFunction {
     pub declaration: FnDeclaration,
@@ -42,10 +47,7 @@ pub trait IntoZome {
 }
 
 
-static GENESIS_ATTRIBUTE: &str = "genesis";
-static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
-static ENTRY_DEF_ATTRIBUTE: &str = "entry_def";
-
+//////////////////////////////////////////////////////////////////////////
 
 // Return an iterator over the syn::ItemFn in a module
 fn funcs_iter(module: &syn::ItemMod) -> impl Iterator<Item = syn::ItemFn> {
@@ -279,6 +281,71 @@ mod tests {
     	assert_eq!{
     		zome_def.traits,
     		expected_traits
+    	}
+    }
+
+    #[test]
+    fn test_extract_function_params_and_return() {
+    	let module: syn::ItemMod = parse_quote!{
+    		mod zome {    			
+    			#[genesis]
+			    fn genisis() {
+			        Ok(())
+			    }
+
+    			#[zome_fn("test_trait")]
+			    fn a_fn(param1: i32, param2: String, param3: bool) -> String {
+			        "test".into()
+			    }
+    		}
+    	};
+    	let zome_def = module.extract_zome();
+
+    	assert_eq!{
+    		zome_def.zome_fns.first().unwrap().declaration,
+    		FnDeclaration{
+    			name: "a_fn".to_string(),
+    			inputs: vec![
+    				FnParameter::new("param1", "i32"),
+      				FnParameter::new("param2", "String"),
+    				FnParameter::new("param3", "bool"),
+    			],
+    			outputs: vec![
+    			    FnParameter::new("result", "String"),
+    			],
+    		}
+    	}
+    }
+
+    #[test]
+    fn test_single_entry() {
+    	let module: syn::ItemMod = parse_quote!{
+    		mod zome {    			
+    			#[genesis]
+			    fn genisis() {
+			        Ok(())
+			    }
+
+    			#[entry_def]
+			    fn test_entry_def() {
+			        entry!(
+			            name: "testEntryType",
+			            description: "asdfda",
+			            sharing: Sharing::Public,
+			            validation_package: || {
+			                hdk::ValidationPackageDefinition::ChainFull
+			            },
+			            validation: |_validation_data: hdk::EntryValidationData<TestEntryType>| {
+			                Ok(())
+			            }
+			        )
+			    }
+    		}
+    	};
+    	let zome_def = module.extract_zome();
+    	assert_eq!{
+    		zome_def.entry_def_fns.len(),
+    		1
     	}
     }
 }

@@ -7,6 +7,7 @@ const dna = Config.dna(dnaPath, 'app-spec')
 const agentAlice = Config.agent("alice")
 const agentBob = Config.agent("bob")
 const agentCarol = Config.agent("carol")
+const sleep = require("sleep");
 
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
@@ -16,7 +17,7 @@ const scenario1 = new Scenario([instanceAlice], { debugLog:true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
-scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
+/*scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
 
     const SignResult = bob.call("converse", "sign_message", { key_id:"", message: message });
@@ -461,39 +462,40 @@ scenario2.runTape('get_sources_from_link', async (t, { alice, bob }) => {
   t.equal(bob.agentId,bob_posts.Ok.headers[0].provenances[0][0]);
   t.equal(alice.agentId,alice_posts.Ok.headers[0].provenances[0][0]);
 
-})
+})*/
 
 scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
 
-  let alice_address = await bob.callSync("blog", "create_post",
+  console.log("ALICE CREATING POST");
+  await bob.callSync("blog", "create_post_with_agent",
     { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
   );
-
-  await alice.callSync("blog", "create_post",
+  console.log("BOB CREATING POST");
+  await alice.callSync("blog", "create_post_with_agent",
   { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
-);
-  
+  );
+
+  console.log("BOB GETTING POST");
   const alice_posts = bob.call("blog","authored_posts_with_sources",
   {
-    "agent" : alice_address.Ok
+    "agent" : alice.agentId
   });
-
-  const bob_posts = bob.call("blog","authored_posts_with_sources",
+  console.log("ALICE GETTING POST");
+  const bob_posts = alice.call("blog","authored_posts_with_sources",
   {
-    "agent" : alice_address.Ok
+    "agent" : alice.agentId
   });
 
- console.log("provananced for alice" + JSON.stringify(alice_posts.Ok));
- console.log("provananced for alice" + JSON.stringify(bob_posts.Ok));
-
-  t.equal(bob.agentId,alice_posts.Ok.headers[0].provenances[0][0]);
-  t.equal(alice.agentId,alice_posts.Ok.headers[1].provenances[0][0]);
-  t.equal(bob.agentId,bob_posts.Ok.headers[0].provenances[0][0]);
-  t.equal(alice.agentId,bob_posts.Ok.headers[1].provenances[0][0]);
+  console.log("from alice:" + JSON.stringify(alice_posts));
+  console.log("from bob:" + JSON.stringify(bob_posts));
+  t.equal(bob.agentId,alice_posts.Ok.links_results[0].headers[1].provenances[0][0]);
+  t.equal(alice.agentId,alice_posts.Ok.links_results[0].headers[1].provenances[1][0]);
+  t.equal(alice.agentId,bob_posts.Ok.links_results[0].headers[1].provenances[0][0]);
+  t.equal(bob.agentId,bob_posts.Ok.links_results[0].headers[1].provenances[1][0]);
 
 })
 
-scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
+/*scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = null
@@ -542,4 +544,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})
+})*/

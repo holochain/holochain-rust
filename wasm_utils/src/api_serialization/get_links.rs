@@ -38,17 +38,27 @@ impl Default for GetLinksOptions {
 }
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]
+pub struct LinksResult {
+    pub addresses: Address,
+    pub headers: Vec<ChainHeader>,
+}
+
+
+#[derive(Deserialize, Serialize, Debug, DefaultJson)]
 pub struct GetLinksResult {
-    addresses: Vec<Address>,
-    headers: Vec<ChainHeader>,
+    links_results : Vec<LinksResult>
 }
 
 impl GetLinksResult {
-    pub fn new(addresses: Vec<Address>, headers: Vec<ChainHeader>) -> GetLinksResult {
-        GetLinksResult { addresses, headers }
+    pub fn new(links_results: Vec<LinksResult>) -> GetLinksResult {
+        GetLinksResult { links_results }
     }
 
-    pub fn addresses(&self) -> &Vec<Address> {
-        &self.addresses
+    pub fn addresses(&self) -> Vec<Address> {
+         self
+        .links_results
+        .iter()
+        .map(|s|s.addresses.clone())
+        .collect()
     }
 }

@@ -91,7 +91,7 @@ impl DhtStore {
                 Some(entry_address).into(),
                 Some(Attribute::EntryHeader).into(),
                 None.into(),
-                IndexFilter::LatestByAttribute,
+                IndexFilter::LatestByAttribute
             ))?
             .into_iter()
             // get the header addresses
@@ -115,12 +115,28 @@ impl DhtStore {
         entry: &Entry,
         header: &ChainHeader,
     ) -> Result<(), HolochainError> {
+        let mut headers = self.get_headers(entry.address()).unwrap_or(Vec::new());
+        headers.push(header.clone());
+        let mut new_provenances = headers.iter().fold(Vec::new(),|prov_headers,new_headers|{
+            let mut new_prov = Vec::new();
+            new_prov.extend(prov_headers.clone());
+            new_prov.extend(new_headers.provenances().iter().cloned());
+            new_prov
+        });
+        let new_header = ChainHeader::new(header.entry_type(),
+        &header.entry_address(),
+        new_provenances.as_slice(),
+        &header.link(),
+        &header.link_same_type(),
+        &header.link_update_delete(),
+        &header.timestamp());
+
         let eavi = EntityAttributeValueIndex::new(
             &entry.address(),
             &Attribute::EntryHeader,
-            &header.address(),
+            &new_header.address(),
         )?;
-        self.content_storage().write().unwrap().add(header)?;
+        self.content_storage().write().unwrap().add(&new_header)?;
         self.meta_storage().write().unwrap().add_eavi(&eavi)?;
         Ok(())
     }

@@ -80,20 +80,38 @@ So in general, the process that Holochain follows while trying to write an Entry
 
 ### Updating Entries
 
-The act of updating an Entry is technically speaking just the same "committing an Entry", plus storing a bit of metadata indicating that this new entry is an "update" to the entry at an old address which is also given. This has the effect that when an attempt to retrieve an Entry by its address, it will forward the request along to the latest version in a potential series of updates, and return that instead. There is always the option to return the results for an Entry according to whether its the "initial" version, the "latest", or getting the entire history too.
+The act of updating an Entry is technically speaking just the same "committing an Entry", plus storing a bit of metadata indicating that this new entry is an "update" to the entry at an old address which is also given. This has the effect that when an attempt to retrieve an Entry by its address, it will forward the request along to the latest version in a potential series of updates, and return that instead. There is always the option to return the results for an Entry according to whether it's the "initial" version, the "latest", or getting the entire history too.
 
 So to update an Entry, use the address of that entry, and provide the new Entry to replace it. You can use the address of the Entry at any point in its update history as the address to update (as long as it hasn't been marked deleted), and it will still work, technically updating the very latest version of that Entry instead of whatever you pass in.
 
 So in general, the process that Holochain follows while trying to update an Entry during an "update_entry" call is this:
 
-1. Retrieve the very latest version of the given entry
-2. Create a new entry, marking THAT ^ entry as updated, not necessarily whatever was given
+1. Retrieve the very latest version of the Entry at the given address
+2. Collect data necessary for use in validation (a "validation package")
+3. Check whether the new entry is valid by passing it through the validation callback specified in the Zome for its' given entry type. If this fails, it will exit here and return either a user defined, or system level error message
+4. Creates a new Header for the Entry, and writes it to storage
+5. Writes the Entry itself to storage
+6. Announces over the network module this new Header and Entry, requesting that peers validate and hold a copy of it. This is known internally as "publishing". **This step also involves updating the metadata such that requests for the Entry at the old address will forward to the new Entry.**
+7. Returns the "address" of the new Entry, which is the crytographic hash of the Entry data combined with its entry type string. This address can be used later to retrieve the Entry.
 
 
 ### Removing Entries
 
-1. Get Current entry's latest version
-2. Create a special "DeletionEntry", which marks THAT^ entry as deleted, not necessarily whatever was given
+The goal of removing an Entry is so that it will not automatically show up as a result when attempts to retrieve it are made, it is NOT to delete it entirely. Removing an Entry will not prevent someone who wishes to retrieve it from retrieving it, they will just have to pass a special option to do so. This makes sense due to the "append-only" nature of Holochain: the original Entry is never gone.
+
+To remove an Entry, Holochain actually commits an Entry of a special type: `DeletionEntry`.
+
+So in general, the process that Holochain follows while trying to remove an Entry during an "remove_entry" call is this:
+
+1. Retrieve the very latest version of the Entry at the given address
+2. Collect data necessary for use in validation (a "validation package")
+3. Creates a new `DeletionEntry`, containing the address of the very latest version of the given entry
+4. Check whether the `DeletionEntry` is valid by passing it through the validation callback specified in the Zome for its' given entry type. If this fails, it will exit here and return either a user defined, or system level error message
+5. Creates a new Header for the Entry, and writes it to storage
+6. Writes the Entry itself to storage
+7. Announces over the network module this new Header and Entry, requesting that peers validate and hold a copy of it. This is known internally as "publishing". **This step also involves updating the metadata such that default requests for the Entry at the old address will return no Entry.**
+8. Returns a null value, as there is no need to retrieve the new `DeletionEntry` at any point for any reason.
+
 
 
 ## Reading Data

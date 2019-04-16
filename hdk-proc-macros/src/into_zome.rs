@@ -4,6 +4,7 @@ use hdk::holochain_core_types::dna::{
     zome::{ZomeTraits},
     fn_declarations::{FnDeclaration, FnParameter, TraitFns},
 };
+use quote::ToTokens;
 
 pub type GenesisCallback = syn::Block;
 pub type ZomeFunctionCode = syn::Block;
@@ -183,19 +184,44 @@ impl IntoZome for syn::ItemMod {
 	    .filter(is_tagged_with(ZOME_FN_ATTRIBUTE))
 	    .fold(BTreeMap::new(), |mut acc, func| {
             let func_name = func.ident.to_string();
-            func.attrs.iter().for_each(|attr| {
-                let mlist: syn::MetaList = syn::parse(attr.tts.clone().into()).unwrap();
-                mlist.nested.iter().for_each(|e| {
-                    if let syn::NestedMeta::Literal(syn::Lit::Str(lit)) = e {
-                        let trait_name = lit.value().clone();
-                        if let None = acc.get(&trait_name) {
-                            acc.insert(trait_name.clone(), TraitFns::new());
-                        }
-                        acc.get_mut(&trait_name).unwrap().functions.push(func_name.clone());
-                    }
-                });
+            func.attrs.iter().for_each(|attr| { // this will error if zome fn has multiple attriutes defined
+
+                let meta = attr.parse_meta().unwrap();
+                match meta {
+                	syn::Meta::List(meta_list) => {
+		                meta_list.nested.iter().for_each(|e| {
+		                    if let syn::NestedMeta::Literal(syn::Lit::Str(lit)) = e {
+		                        let trait_name = lit.value().clone();
+		                        if let None = acc.get(&trait_name) {
+		                            acc.insert(trait_name.clone(), TraitFns::new());
+		                        }
+		                        acc.get_mut(&trait_name).unwrap().functions.push(func_name.clone());
+		                    }
+		                });
+                	},
+                	syn::Meta::Word(_) => func.ident.span().unstable().warning("Function is tagged as zome_fn but is not exposed via a trait. Did you mean to expose it publicly '#[zome_fn(\"hc_public\")]'?").emit(),
+                	_ => func.ident.span().unstable().error("zome_fn must be preceded by a comma delimited list of traits e.g. #[zome_fn(\"hc_public\", \"custom_trait\")").emit(),
+                }
             });
 	        acc
 	    })
 	}
+}
+
+#[cfg(test)]
+mod tests {
+    // use super::*;
+    use syn::parse_quote;
+
+    #[test]
+    fn test_extract_genesis_smoke_test() {
+    	let _module: syn::ItemMod = parse_quote!{
+    		mod zome {
+    			#[genesis]
+			    fn genisis() {
+			        Ok(())
+			    }
+    		}
+    	};
+    }
 }

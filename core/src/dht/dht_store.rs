@@ -181,6 +181,7 @@ pub mod tests {
         store.add_header_for_entry(&entry, &header1).unwrap();
         store.add_header_for_entry(&entry, &header2).unwrap();
         let headers = store.get_headers(entry.address()).unwrap();
+        
         assert_eq!(headers, vec![header1, header2]);
     }
 }

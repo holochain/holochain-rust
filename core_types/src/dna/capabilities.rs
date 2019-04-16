@@ -2,6 +2,8 @@
 /// that a given capability has been granted for actions like zome calls
 use crate::{
     cas::content::Address,
+    error::HolochainError,
+    json::JsonString,
     signature::{Provenance, Signature},
 };
 
@@ -31,7 +33,7 @@ pub enum CapabilityType {
 /// a struct to hold the capability information needed to make any capability request,
 /// namely the provenance of the request (the agent address an signature) and the
 /// actual token being used to make the request
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash, DefaultJson)]
 pub struct CapabilityRequest {
     pub cap_token: Address,
     pub provenance: Provenance,
@@ -49,7 +51,7 @@ impl CapabilityRequest {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use holochain_core_types::cas::content::Address;
+    use crate::cas::content::Address;
 
     #[test]
     fn test_capability_request_new() {

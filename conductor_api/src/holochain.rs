@@ -234,14 +234,12 @@ mod tests {
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::{
-            actions::call_zome_function::make_cap_request_for_call,
-            ribosome::capabilities::CapabilityRequest,
-        },
+        nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
+        dna::capabilities::CapabilityRequest,
         json::RawString,
     };
     use holochain_wasm_utils::wasm_target_dir;

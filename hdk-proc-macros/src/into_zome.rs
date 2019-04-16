@@ -11,11 +11,14 @@ static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
 static ENTRY_DEF_ATTRIBUTE: &str = "entry_def";
 static RECEIVE_CALLBACK_ATTRIBUTE: &str = "receive";
 
-
 pub type GenesisCallback = syn::Block;
 pub type ZomeFunctionCode = syn::Block;
 pub type EntryDefCallback = syn::ItemFn;
-pub type ReceiveCallback = syn::Block;
+#[derive(Clone)]
+pub struct ReceiveCallback {
+    pub param: syn::Ident,
+    pub code: syn::Block,
+}
 
 #[derive(Clone)]
 pub struct ZomeFunction {
@@ -230,7 +233,8 @@ impl IntoZome for syn::ItemMod {
 						// any functions not tagged with a hdk attribute
 						!is_tagged_with(ZOME_FN_ATTRIBUTE)(func) &&
 						!is_tagged_with(GENESIS_ATTRIBUTE)(func) &&
-						!is_tagged_with(ENTRY_DEF_ATTRIBUTE)(func)
+						!is_tagged_with(ENTRY_DEF_ATTRIBUTE)(func) &&
+                        !is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE)(func)
 					} else {
 						true // and anything that is not a function
 					}
@@ -243,16 +247,44 @@ impl IntoZome for syn::ItemMod {
 
     fn extract_receive_callback(&self) -> Option<ReceiveCallback> {
         // find all the functions tagged as the genesis callback
-        let callbacks: Vec<Box<syn::Block>> =
+        let callbacks: Vec<ReceiveCallback> =
         funcs_iter(self)
         .filter(is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE))
         .fold(Vec::new(), |mut acc, func| {
-            acc.push(func.block);
+            let inputs = func.decl.inputs;
+
+            match inputs.len() {
+                1 => {
+                    let input = inputs.iter().next().unwrap();
+                    if let syn::FnArg::Captured(arg) = input {
+                        let name = match &arg.pat {
+                            syn::Pat::Ident(name_ident) => name_ident.ident.clone(),
+                            _ => { 
+                                func.ident.span().unstable()
+                                .error("The argument to receive must have a name")
+                                .emit();
+                                panic!()
+                            },
+                        };
+                        acc.push(ReceiveCallback{
+                            param: name,
+                            code: *func.block,
+                        });
+                    }
+
+                },
+                _ => { 
+                    func.ident.span().unstable()
+                    .error("Receive callback must take a single argument of type 'String'")
+                    .emit();
+                    panic!()
+                },
+            }
             acc
         });
         match callbacks.len() {
             0 => None,
-            1 => Some(*callbacks[0].clone()),
+            1 => Some(callbacks[0].clone()),
             _ => {
                 self.ident.span().unstable()
                 .error("Multiple functions tagged with receive. Only one permitted per zome.")

@@ -9,43 +9,43 @@ extern crate serde_derive;
 
 #[macro_use]
 extern crate hdk;
-use hdk::{
-	holochain_core_types::{
-		dna::entry_types::Sharing,
-		json::JsonString,
-		error::HolochainError,
-	},
-};
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-
-#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
-struct TestEntryType {
-    stuff: String,
-}
+use hdk::{
+    holochain_core_types::{
+        dna::entry_types::Sharing,
+        json::JsonString,
+        error::HolochainError,
+    },
+};
 
 #[zome]
 pub mod someZome {
-	
-	#[genesis]
-	fn genisis() {
-		Ok(())
-	}
 
-	#[zome_fn]
-	fn test_zome_fn(input: i32, next: bool, another: JsonString) -> JsonString {
-		JsonString::from_json("hi")
-	}
+    #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+    struct TestEntryType {
+        stuff: String,
+    }
+    
+    #[genesis]
+    fn genisis() {
+        Ok(())
+    }
 
-	#[zome_fn]
-	fn test_zome_fn2(input: i32, next: bool, another: JsonString) -> JsonString {
-		JsonString::from_json("hi")
-	}
+    #[zome_fn("hc_public", "trait2")]
+    fn test_zome_fn(input: i32, next: bool, another: JsonString) -> JsonString {
+        JsonString::from_json("hi")
+    }
 
-	#[entry_def]
-	fn test_entry_def() -> hdk::entry_definition::ValidatingEntryType {
-		entry!(
+    #[zome_fn("trait3")]
+    fn test_zome_fn2(input: i32, next: bool, another: TestEntryType) -> JsonString {
+        JsonString::from_json("hi")
+    }
+
+    #[entry_def]
+    fn test_entry_def() -> hdk::entry_definition::ValidatingEntryType {
+        entry!(
             name: "testEntryType",
             description: "asdfda",
             sharing: Sharing::Public,
@@ -56,6 +56,11 @@ pub mod someZome {
                 Ok(())
             }
         )
-	}
-	
+    }
+
+    #[receive]
+    fn glerp_glerp(message: String) -> String {
+        message
+    }
+    
 }

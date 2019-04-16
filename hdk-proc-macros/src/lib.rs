@@ -118,6 +118,11 @@ impl ZomeCodeDef {
         }).clone();
         let extra = &self.extra;
 
+        let (receive_blocks, receive_params) = match &self.receive_callback {
+            None => (Vec::new(), Vec::new()),
+            Some(callback) => (vec![callback.code.clone()], vec![callback.param.clone()]),
+        };
+
         let gen = quote! {
 
             #(#extra)*
@@ -166,6 +171,38 @@ impl ZomeCodeDef {
                 use std::collections::BTreeMap;
                 BTreeMap::new()
             }
+
+        
+            #(
+                #[no_mangle]
+                pub extern "C" fn receive(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
+                    let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
+                    let allocation = match maybe_allocation {
+                        Ok(allocation) => allocation,
+                        Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
+                    };
+                    let init = hdk::global_fns::init_global_memory(allocation);
+                    if init.is_err() {
+                        return hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                            init
+                        ).into();
+                    }
+
+                    // Deserialize input
+                    let input = load_string!(encoded_allocation_of_input);
+
+                    fn execute(payload: String) -> String {
+                        let #receive_params = payload;
+                        #receive_blocks
+                    }
+
+                    hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                        hdk::global_fns::write_json(
+                            JsonString::from_json(&execute(input))
+                        )
+                    ).into()
+                }
+            )*
 
             #[no_mangle]
             #[allow(unused_imports)]

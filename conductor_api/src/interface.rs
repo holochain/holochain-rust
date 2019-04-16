@@ -135,8 +135,10 @@ impl ConductorApiBuilder {
             let hc_lock = instance.clone();
             let hc_lock_inner = hc_lock.clone();
             let mut hc = hc_lock_inner.write().unwrap();
-            let call_params = params_map.get("params");
-            let params_string = serde_json::to_string(&call_params)
+
+            // Getting thee arguments of the call contained in the json-rpc 'params'
+            let call_args = params_map.get("args");
+            let args_string = serde_json::to_string(&call_args)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
             let zome_name = Self::get_as_string("zome", &params_map)?;
             let func_name = Self::get_as_string("function", &params_map)?;
@@ -161,7 +163,7 @@ impl ConductorApiBuilder {
                         context.clone(),
                         token,
                         &func_name,
-                        JsonString::from_json(&params_string.clone()),
+                        JsonString::from_json(&args_string.clone()),
                     ),
                     Some(json_provenance) => {
                         let provenance: Provenance =
@@ -177,7 +179,7 @@ impl ConductorApiBuilder {
             };
 
             let response = hc
-                .call(&zome_name, cap_request, &func_name, &params_string)
+                .call(&zome_name, cap_request, &func_name, &args_string)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
             Ok(Value::String(response.to_string()))
         });

@@ -93,13 +93,14 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     let conductor_api = context.conductor_api.clone();
 
     let params = format!(
-        r#"{{"instance_id":"{}", "zome": "{}", "function": "{}", "params": {}}}"#,
+        r#"{{"instance_id":"{}", "zome": "{}", "function": "{}", "args": {}}}"#,
         input.instance_handle, input.zome_name, input.fn_name, input.fn_args
     );
 
     let handler = conductor_api.write().unwrap();
 
     let id = ProcessUniqueId::new();
+    // json-rpc format
     let request = format!(
         r#"{{"jsonrpc": "2.0", "method": "call", "params": {}, "id": "{}"}}"#,
         params, id

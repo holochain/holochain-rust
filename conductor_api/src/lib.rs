@@ -78,7 +78,7 @@
 ///         .check_consistency()
 ///         .map_err(|string| HolochainError::ConfigError(string))?;
 ///     let mut conductor = Conductor::from_config(config);
-///     conductor.boot_from_config(None)?;
+///     conductor.boot_from_config()?;
 ///     Ok(conductor)
 /// }
 ///
@@ -93,11 +93,14 @@ extern crate holochain_cas_implementations;
 extern crate holochain_common;
 extern crate holochain_core;
 extern crate holochain_core_types;
+#[macro_use]
+extern crate holochain_core_types_derive;
 extern crate holochain_dpki;
 extern crate holochain_net;
 extern crate holochain_sodium;
 
 extern crate chrono;
+extern crate crossbeam_channel;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -105,6 +108,7 @@ extern crate boolinator;
 extern crate colored;
 #[cfg(test)]
 extern crate holochain_wasm_utils;
+extern crate jsonrpc_core;
 extern crate jsonrpc_http_server;
 extern crate jsonrpc_ws_server;
 extern crate petgraph;
@@ -128,7 +132,6 @@ extern crate tokio;
 #[macro_use]
 extern crate pretty_assertions;
 extern crate base64;
-extern crate crossbeam_channel;
 
 pub mod conductor;
 pub mod config;
@@ -142,6 +145,7 @@ pub mod interface_impls;
 pub mod key_loaders;
 pub mod keystore;
 pub mod logger;
+pub mod signal_wrapper;
 pub mod static_file_server;
 
 pub use crate::holochain::Holochain;

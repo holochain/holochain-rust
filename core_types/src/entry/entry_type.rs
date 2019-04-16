@@ -91,34 +91,6 @@ impl EntryType {
     pub fn is_sys(&self) -> bool {
         !self.is_app()
     }
-
-    pub fn can_publish(&self) -> bool {
-        /*
-                let dna = context
-            .state()
-            .expect("context must have a State.")
-            .nucleus()
-            .dna()
-            .expect("context.state must hold DNA in order to commit an app entry.");
-        let maybe_def = dna.get_entry_type_def(&entry.entry_type().to_string());
-        if maybe_def.is_none() {
-            // TODO #439 - Log the error. Once we have better logging.
-            return None;
-        }
-        let entry_type_def = maybe_def.unwrap();
-
-        // app entry type must be publishable
-        if !entry_type_def.sharing.clone().can_publish() {
-            return None;
-        }
-            */
-        match self {
-            EntryType::Dna => false,
-            EntryType::CapTokenGrant => false,
-            _ => true,
-        }
-    }
-
     /// Checks entry_type_name is valid
     pub fn has_valid_app_name(entry_type_name: &str) -> bool {
         // TODO #445 - do a real regex test instead
@@ -281,14 +253,4 @@ pub mod tests {
         }
     }
 
-    #[test]
-    fn can_publish_test() {
-        for t in test_types() {
-            match t {
-                EntryType::Dna => assert!(!t.can_publish()),
-                EntryType::CapTokenGrant => assert!(!t.can_publish()),
-                _ => assert!(t.can_publish()),
-            }
-        }
-    }
 }

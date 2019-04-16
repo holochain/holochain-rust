@@ -1494,7 +1494,7 @@ pub mod tests {
         let signals: Arc<parking_lot::Mutex<Vec<String>>> =
             Arc::new(parking_lot::Mutex::new(Vec::new()));
         let signals_clone = signals.clone();
-        thread::spawn(|| {
+        let websocket_thread = thread::spawn(|| {
             connect("ws://127.0.0.1:10031", move |_| {
                 let s = signals_clone.clone();
                 move |msg: Message| {
@@ -1505,26 +1505,32 @@ pub mod tests {
             .unwrap();
         });
 
-        let lock = conductor.instances.get("bridge-caller").unwrap();
-        let mut bridge_caller = lock.write().unwrap();
-        let cap_call = {
-            let context = bridge_caller.context();
-            make_cap_request_for_call(
-                context.clone(),
-                Address::from(context.clone().agent_id.address()),
+        let result = {
+            let lock = conductor.instances.get("bridge-caller").unwrap();
+            let mut bridge_caller = lock.write().unwrap();
+            let cap_call = {
+                let context = bridge_caller.context();
+                make_cap_request_for_call(
+                    context.clone(),
+                    Address::from(context.clone().agent_id.address()),
+                    "call_bridge",
+                    JsonString::empty_object(),
+                )
+            };
+            bridge_caller.call(
+                "test_zome",
+                cap_call,
                 "call_bridge",
-                JsonString::empty_object(),
+                &JsonString::empty_object().to_string(),
             )
         };
-        let result = bridge_caller.call(
-            "test_zome",
-            cap_call,
-            "call_bridge",
-            &JsonString::empty_object().to_string(),
-        );
 
         assert!(result.is_ok());
         thread::sleep(Duration::from_secs(2));
+        conductor.stop_all_interfaces();
+        websocket_thread
+            .join()
+            .expect("Could not join websocket thread");
         let received_signals = signals.lock().clone();
 
         assert!(received_signals.len() >= 3);

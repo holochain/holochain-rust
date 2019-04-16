@@ -10,8 +10,12 @@ use hdk::{
     },
     AGENT_ADDRESS, AGENT_ID_STR, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
 };
+
+
+
 use post::Post;
 use std::convert::TryFrom;
+use memo::Memo;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -87,8 +91,16 @@ fn post_entry(content: String) -> Entry {
     Entry::App("post".into(), Post::new(&content, "now").into())
 }
 
+fn memo_entry(content: String) -> Entry {
+    Entry::App("memo".into(), Memo::new(&content, "now").into())
+}
+
 pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&post_entry(content))
+}
+
+pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
+    hdk::entry_address(&memo_entry(content))
 }
 
 pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
@@ -101,6 +113,12 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
     }
+
+    Ok(address)
+}
+
+pub fn handle_create_memo(content: String) -> ZomeApiResult<Address> {
+    let address = hdk::commit_entry(&memo_entry(content))?;
 
     Ok(address)
 }
@@ -120,6 +138,15 @@ pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
 
 pub fn handle_my_posts() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&AGENT_ADDRESS, "authored_posts")
+}
+
+pub fn handle_my_memos() -> ZomeApiResult<Vec<Address>> {
+    hdk::query("memo".into(), 0, 0)
+}
+
+// As memos are private we expect this will never return anything but None.
+pub fn handle_get_memo(address:Address) -> ZomeApiResult<Option<Entry>> {
+    hdk::get_entry(&address)
 }
 
 pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
@@ -192,7 +219,7 @@ pub fn handle_get_history_post(post_address : Address) -> ZomeApiResult<EntryHis
 
 pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<Address> {
     let old_entry = hdk::get_entry(&post_address)?;
-   
+
     if let Some(Entry::App(_, json_string)) = old_entry {
         let post = Post::try_from(json_string)?;
         let updated_post_entry = Entry::App(

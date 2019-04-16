@@ -4,6 +4,7 @@ pub mod store;
 
 use crate::{
     context::Context,
+    entry::CanPublish,
     network::{
         actions::publish::publish,
         handler::{get::*, send::*, store::*},
@@ -194,7 +195,7 @@ fn republish_all_public_chain_entries(context: &Arc<Context>) {
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
         .iter(&top_header)
-        .filter(|ref chain_header| chain_header.entry_type().can_publish())
+        .filter(|ref chain_header| chain_header.entry_type().can_publish(context))
         .for_each(|chain_header| {
             let hash = HashString::from(chain_header.entry_address().to_string());
             match context.block_on(publish(hash.clone(), context)) {

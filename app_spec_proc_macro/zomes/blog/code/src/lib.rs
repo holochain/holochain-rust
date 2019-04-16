@@ -23,14 +23,6 @@ use hdk::{
 #[zome]
 pub mod someZome {
 
-    use hdk::{
-        holochain_core_types::{
-            dna::entry_types::Sharing,
-            json::JsonString,
-            error::HolochainError,
-        },
-    };
-
     const SOME_CONST: u32 = 123;
 
     fn non_zome_func() {

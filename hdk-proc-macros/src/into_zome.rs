@@ -9,10 +9,13 @@ use hdk::holochain_core_types::dna::{
 static GENESIS_ATTRIBUTE: &str = "genesis";
 static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
 static ENTRY_DEF_ATTRIBUTE: &str = "entry_def";
+static RECEIVE_CALLBACK_ATTRIBUTE: &str = "receive";
+
 
 pub type GenesisCallback = syn::Block;
 pub type ZomeFunctionCode = syn::Block;
 pub type EntryDefCallback = syn::ItemFn;
+pub type ReceiveCallback = syn::Block;
 
 #[derive(Clone)]
 pub struct ZomeFunction {
@@ -28,6 +31,7 @@ pub struct ZomeCodeDef {
     pub zome_fns: ZomeFunctions, // receive: ReceiveCallbacks
     pub entry_def_fns: Vec<syn::ItemFn>,
     pub traits: ZomeTraits,
+    pub receive_callback: Option<ReceiveCallback>,
     pub extra: Vec<syn::Item>, // extra stuff to be added as is to the zome code
 }
 
@@ -36,6 +40,7 @@ pub trait IntoZome {
 	fn extract_entry_defs(&self) -> EntryDefCallbacks;
 	fn extract_genesis(&self) -> GenesisCallback;
 	fn extract_traits(&self) -> ZomeTraits;
+    fn extract_receive_callback(&self) -> Option<ReceiveCallback>;
 	fn extract_extra(&self) -> Vec<syn::Item>;
 
 	fn extract_zome(&self) -> ZomeCodeDef {
@@ -43,6 +48,7 @@ pub trait IntoZome {
             traits: self.extract_traits(),
             entry_def_fns: self.extract_entry_defs(),
             genesis: self.extract_genesis(),
+            receive_callback: self.extract_receive_callback(),
             zome_fns: self.extract_zome_fns(),
             extra: self.extract_extra(),
         }
@@ -234,6 +240,27 @@ impl IntoZome for syn::ItemMod {
 			None => Vec::new(),
 		}
 	}
+
+    fn extract_receive_callback(&self) -> Option<ReceiveCallback> {
+        // find all the functions tagged as the genesis callback
+        let callbacks: Vec<Box<syn::Block>> =
+        funcs_iter(self)
+        .filter(is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE))
+        .fold(Vec::new(), |mut acc, func| {
+            acc.push(func.block);
+            acc
+        });
+        match callbacks.len() {
+            0 => None,
+            1 => Some(*callbacks[0].clone()),
+            _ => {
+                self.ident.span().unstable()
+                .error("Multiple functions tagged with receive. Only one permitted per zome.")
+                .emit();
+                panic!()
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -375,7 +402,6 @@ mod tests {
     	}
     }
 
-
     #[test]
     fn test_extra_code_in_module() {
     	let module: syn::ItemMod = parse_quote!{
@@ -402,5 +428,39 @@ mod tests {
     		zome_def.extra.len(),
     		3
     	}
+    }
+
+    #[test]
+    fn test_no_receive_callback() {
+        let module: syn::ItemMod = parse_quote!{
+            mod zome {              
+                #[genesis]
+                fn genisis() {
+                    Ok(())
+                }
+            }
+        };
+        let zome_def = module.extract_zome();
+        assert!(zome_def.receive_callback.is_none())
+
+    }
+
+    #[test]
+    fn test_receive_callback() {
+        let module: syn::ItemMod = parse_quote!{
+            mod zome {              
+                #[genesis]
+                fn genisis() {
+                    Ok(())
+                }
+
+                #[receive]
+                fn receive() {
+                    Ok(())
+                }
+            }
+        };
+        let zome_def = module.extract_zome();
+        assert!(zome_def.receive_callback.is_some())
     }
 }

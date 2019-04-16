@@ -120,9 +120,7 @@ impl ZomeCodeDef {
 
         let gen = quote! {
 
-            pub mod someMod {
-                #(#extra)*
-            }
+            #(#extra)*
 
             #(#entry_def_fns )*
 

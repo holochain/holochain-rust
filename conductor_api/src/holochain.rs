@@ -92,13 +92,17 @@ use holochain_core::{
     instance::Instance,
     nucleus::{
         call_zome_function,
-        ribosome::{capabilities::CapabilityRequest, run_dna, WasmCallData},
+        ribosome::{run_dna, WasmCallData},
         ZomeFnCall,
     },
     persister::{Persister, SimplePersister},
     state::State,
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    dna::{capabilities::CapabilityRequest, Dna},
+    error::HolochainError,
+    json::JsonString,
+};
 use std::sync::Arc;
 
 /// contains a Holochain application instance

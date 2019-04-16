@@ -50,7 +50,7 @@ pub mod tests {
         context::Context,
         instance::{tests::test_instance_and_context, Instance},
         nucleus::ribosome::{
-            api::{tests::*, ZomeApiFunction},
+            api::{tests::*, ZomeApiFunction, ZomeApiResult},
             Defn,
         },
     };
@@ -144,11 +144,11 @@ pub mod tests {
             test_link_args_bytes(String::from("test-tag")),
         );
 
+        let no_entry: Option<Entry> = None;
+        let result = ZomeApiInternalResult::success(no_entry);
         assert_eq!(
             call_result,
-            JsonString::from_json(
-                &(String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}")
-            ),
+            JsonString::from_json(&(String::from(JsonString::from(result)) + "\u{0}")),
         );
     }
 

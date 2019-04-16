@@ -61,6 +61,8 @@ After any chain-modifying functions are called, Holochain will attempt to notify
 ## Writing Data
 Broadly speaking, writing data is accomplished by writing Zome source code that makes API calls to Holochain to affect the local source chain. One should only modify chain data by calling Holochain API functions, as there is lots of internal logic that it is instrumental that Holochain perform, for each change. When an API function to alter the chain from Zome source code is invoked, a series of steps is performed internally. It is important to know, at least roughly, what those steps are so that you can use Holochain effectively.
 
+Apart from the following three functions, there is only one additional way that data can be written to the local source chain, which is written about in [linking](./linking.md).
+
 ### Creating Entries, or "Committing"
 Of course, first and foremost, there is the simple action of creating a new Entry. This is actually known as "committing" an Entry. It is known as "committing" an Entry in Holochain for precisely the reason that once you write it, you can't "unwrite" it, or delete it, without corrupting the integrity of your local source chain. It is there for good, and can only be "marked" as updated or deleted by writing additional entries in the future.
 

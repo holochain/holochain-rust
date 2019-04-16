@@ -102,6 +102,20 @@ pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&post_entry(content))
 }
 
+fn is_my_friend(addr: Address) -> bool {
+    addr == Address::from("Qmblahblah")
+}
+
+pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
+    let addr = CAPABILITY_REQ.provenance.source();
+    if is_my_friend(addr) {
+        Ok(None)
+    //Ok(Some(hdk::grant_capability(addr,"can_post",CapabilityType::Assigned,Some(vec!("create_post".to_string())))?))
+    } else {
+        Ok(None)
+    }
+}
+
 pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&memo_entry(content))
 }

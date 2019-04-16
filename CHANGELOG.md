@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Adds CAPABILITY_REQ global into the zome context. This makes the request available during all zome calls and is important for doing validation of provenance for a zome call that wants to create a capability grant. [#1273](https://github.com/holochain/holochain-rust/pull/1273)
+
 ### Changed
 
 - Performance optimization: Don't clone and parse WASM binaries for each distinct WASM execution such as Zome function calls and validation callbacks. Instead hold only one parsed module instance per zome on the heap and use that to initialize WASM instances. [#1211](https://github.com/holochain/holochain-rust/pull/1211)

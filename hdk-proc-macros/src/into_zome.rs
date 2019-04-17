@@ -1,10 +1,14 @@
 extern crate proc_macro2;
 
+use proc_macro2::{Ident, Span, TokenStream};
+
 use std::collections::BTreeMap;
 use hdk::holochain_core_types::dna::{
     zome::{ZomeTraits},
-    fn_declarations::{FnDeclaration, FnParameter, TraitFns},
+    fn_declarations::TraitFns,
 };
+use quote::{quote, ToTokens};
+
 
 static GENESIS_ATTRIBUTE: &str = "genesis";
 static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
@@ -14,13 +18,91 @@ static RECEIVE_CALLBACK_ATTRIBUTE: &str = "receive";
 pub type GenesisCallback = syn::Block;
 pub type ZomeFunctionCode = syn::Block;
 pub type EntryDefCallback = syn::ItemFn;
-#[derive(Clone)]
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct ReceiveCallback {
-    pub param: syn::Ident,
+    pub param: Ident,
     pub code: syn::Block,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
+pub struct FnParameter {
+    pub ident: Ident,
+    pub ty: syn::TypePath,
+}
+
+impl FnParameter {
+    pub fn new(ident: Ident, ty: syn::TypePath) -> Self {
+        FnParameter{
+            ident,
+            ty,
+        }
+    }
+
+    pub fn new_from_ident_str(ident_str: &str, ty: syn::TypePath) -> Self {
+        FnParameter{
+            ident: Ident::new(ident_str, Span::call_site()),
+            ty,
+        }
+    }
+
+    pub fn new_from_str(ident_str: &str, ty_str: &str) -> Self {
+        let ty: syn::TypePath = syn::parse_str(ty_str).unwrap();
+        FnParameter{
+            ident: Ident::new(ident_str, Span::call_site()),
+            ty,
+        }
+    }
+}
+
+impl From<FnParameter> for syn::Field {
+    fn from(param: FnParameter) -> Self {
+        syn::Field {
+            attrs: Vec::new(),
+            ident: Some(param.ident),
+            ty: syn::Type::Path(param.ty),
+            vis: syn::Visibility::Public(syn::VisPublic {
+                pub_token: syn::Token![pub](Span::call_site()),
+            }),
+            colon_token: Some(syn::Token![:](proc_macro2::Span::call_site())),
+        }
+    }
+}
+
+impl ToTokens for FnParameter {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let input_param_name = &self.ident;
+        let input_param_type = &self.ty;
+        tokens.extend(quote! {
+            FnParameter::new(#input_param_name, #input_param_type)
+        })
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct FnDeclaration {
+    pub name: String,
+    pub inputs: Vec<FnParameter>,
+    pub output: syn::ReturnType,
+}
+
+impl ToTokens for FnDeclaration {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let zome_function_name = &self.name;
+        let input_param_names = &self.inputs;
+        let output_param_name = &self.output;
+
+        tokens.extend(quote! {
+            FnDeclaration {
+                name: #zome_function_name.to_string(),
+                inputs: vec![#(#input_param_names,)*],
+                outputs: vec![#output_param_name],
+            }
+        })
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct ZomeFunction {
     pub declaration: FnDeclaration,
     pub code: ZomeFunctionCode,
@@ -90,24 +172,17 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
         .iter()
         .map(|e| {
             if let syn::FnArg::Captured(arg) = e {
-                let name: String = match &arg.pat {
-                    syn::Pat::Ident(name_ident) => name_ident.ident.to_string(),
-                    _ => "".into(),
+                let ident = match &arg.pat {
+                    syn::Pat::Ident(name_ident) => name_ident.ident.clone(),
+                    _ => panic!("not a valid parameter pattern"),
                 };
-                let parameter_type: String = match &arg.ty {
-                    syn::Type::Path(type_path) => type_path
-                        .path
-                        .segments
-                        .iter()
-                        .map(|segment| {
-                            segment.ident.to_string()
-                        })
-                        .collect(),
-                    _ => "".into(),
+                let ty = match arg.ty.clone() {
+                    syn::Type::Path(type_path) => type_path,
+                    _ => panic!("invalid type for parameter"),
                 };
                 FnParameter {
-                    name,
-                    parameter_type,
+                    ident,
+                    ty,
                 }
             } else {
                 panic!("could not parse function args")
@@ -115,25 +190,11 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
         })
         .collect();
 
-    let output_type: String = match &func.decl.output {
-        syn::ReturnType::Default => "()".to_string(),
-        syn::ReturnType::Type(_, ty) => match *(*ty).clone() {
-            syn::Type::Path(type_path) => type_path
-                .path
-                .segments
-                .iter()
-                .next()
-                .unwrap()
-                .ident
-                .to_string(),
-            _ => "".into(),
-        },
-    };
 
     FnDeclaration {
         name: func.ident.clone().to_string(),
         inputs: inputs,
-        outputs: vec![FnParameter::new("result", &output_type)],
+        output: func.decl.output.clone(),
     }
 }
 
@@ -391,13 +452,11 @@ mod tests {
     		FnDeclaration{
     			name: "a_fn".to_string(),
     			inputs: vec![
-    				FnParameter::new("param1", "i32"),
-      				FnParameter::new("param2", "String"),
-    				FnParameter::new("param3", "bool"),
+    				FnParameter::new_from_str("param1", "i32"),
+      				FnParameter::new_from_str("param2", "String"),
+    				FnParameter::new_from_str("param3", "bool"),
     			],
-    			outputs: vec![
-    			    FnParameter::new("result", "String"),
-    			],
+    			output: syn::parse_str("-> String").unwrap()
     		}
     	}
     }
@@ -424,9 +483,7 @@ mod tests {
             FnDeclaration{
                 name: "a_fn".to_string(),
                 inputs: vec![],
-                outputs: vec![
-                    FnParameter::new("result", "ZomeApiResult<String>"),
-                ],
+                output: syn::parse_str("-> ZomeApiResult<String>").unwrap(),
             }
         }
     }
@@ -516,7 +573,7 @@ mod tests {
                 }
 
                 #[receive]
-                fn receive() {
+                fn receive(message: String) {
                     Ok(())
                 }
             }

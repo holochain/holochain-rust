@@ -14,15 +14,11 @@ use syn;
 
 mod into_zome;
 
-
-use hdk::holochain_core_types::dna::{
-    fn_declarations::{FnDeclaration},
-};
-
 use crate::into_zome::{
     ZomeFunction,
     ZomeCodeDef,
     ZomeFunctionCode,
+    FnDeclaration
 };
 
 impl ToTokens for ZomeFunction {
@@ -34,14 +30,10 @@ impl ToTokens for ZomeFunction {
             .clone()
             .into_iter()
             .map(|param| syn::Field::from(param));
-        let input_param_names = self
+        let input_param_names = &self
             .declaration
-            .inputs
-            .clone()
-            .into_iter()
-            .map(|param| Ident::new(&param.name, Span::call_site()));
-        let output_param_type: syn::Type =
-            syn::parse_str(&self.declaration.outputs[0].parameter_type).unwrap();
+            .inputs;
+        let output_param_type = &self.declaration.output;
         let function_body = &self.code;
 
         tokens.extend(quote!{

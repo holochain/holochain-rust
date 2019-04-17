@@ -87,12 +87,6 @@ define_zome! {
             handler: blog::handle_create_post
         }
 
-        request_post_grant: {
-            inputs: | |,
-            outputs: |result: ZomeApiResult<Option<Address>>|,
-            handler: blog::handle_request_post_grant
-        }
-
         create_memo: {
             inputs: |content: String|,
             outputs: |result: ZomeApiResult<Address>|,

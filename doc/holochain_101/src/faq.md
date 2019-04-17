@@ -65,7 +65,7 @@ DHTs enable key/value pair storage and retrieval across many machines. The only 
 
 In fact, since many DHTs are used for illegal file sharing (Napster, Bittorrent, Sharezaa, etc.), they are designed to protect anonymity of uploaders so they won't get in trouble. File sharing DHTs frequently serve virus infected files, planted by uploaders trying to infect digital pirates. There's no accountability for actions or reliable way to ensure bad data doesn't spread.
 
-By embedding validation rules as a condition for the propagation of data, our DHT keeps its data bound to signed source chains. This can provide similar consistency and rule enforcement as blockchain ledgers asynchronously so bottlenecks of immediate consensus become of the thing of the past.
+By embedding validation rules as a condition for the propagation of data, our DHT keeps its data bound to signed source chains. This can provide similar consistency and rule enforcement as blockchain ledgers asynchronously so bottlenecks of immediate consensus become a thing of the past.
 
 The DHT leverages the signed source chains to ensure tamper-proof immutability of data, as well as cryptographic signatures to verify its origins and provenance.
 
@@ -112,7 +112,7 @@ Not only is there no consensus about an absolute order of events, but if you und
 
 That's how holochains are implemented. Each source chain for each person/agent/participant in a Holochain preserves the immutable data integrity and order of events of that agent's actions from their vantage point. As data is published from a source chain to the validating DHT, then other agents sign their validation, per the shared "physics" encoded into the DNA of that Holochain.
 
-The minor exception to the singular vantage point of each chain, is the case when a multi-party transaction is signed to each party's chain. That is an act of consensus -- but consensus on a very small scale -- just between the parties involved in the transaction. Each party signs the exact same transaction to with links to each of their previous chain entries. Luckily, it's pretty easy to reach consensus between 2 or 3 parties. In fact, that is already why they're doing a transaction together, because they all agree to it.
+The minor exception to the singular vantage point of each chain, is the case when a multi-party transaction is signed to each party's chain. That is an act of consensus -- but consensus on a very small scale -- just between the parties involved in the transaction. Each party signs the exact same transaction with links to each of their previous chain entries. Luckily, it's pretty easy to reach consensus between 2 or 3 parties. In fact, that is already why they're doing a transaction together, because they all agree to it.
 
 Holochains do sign every change of data and timestamp (without a universal time synchronization solution), This provides ample foundation for most applications which need solid data integrity for shared data in a fully distributed multi-agent system. Surely, there will be people who will build consensus algorithms on top of foundation (maybe like rounds, witnesses, supermajorities of [Swirlds](https://www.swirlds.com/)),
 

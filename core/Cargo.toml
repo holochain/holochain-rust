@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core"
-version = "0.0.10-alpha2"
+version = "0.0.11-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -36,12 +36,13 @@ holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_dpki = { path = "../dpki" }
 holochain_sodium = { path = "../sodium" }
 boolinator = "=2.4.0"
-jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
+jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 jsonrpc-lite = "=0.5.0"
 globset = "=0.4.2"
 pretty_assertions = "=0.6.1"
 pin-utils = "=0.1.0-alpha.4"
 clokwerk = "=0.1.0"
+crossbeam-channel = "=0.3.8"
 
 [dev-dependencies]
 wabt = "=0.7.4"

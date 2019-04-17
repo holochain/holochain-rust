@@ -104,14 +104,14 @@ pub mod tests {
 
         let expected_1 = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links_results\":[{{\"addresses\":\"{}\",\"headers\":[]}},{{\"addresses\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
                 entry_addresses[1], entry_addresses[2]
             ) + "\u{0}"),
         );
 
         let expected_2 = JsonString::from_json(
             &(format!(
-               r#"{{"ok":true,"value":"{{\"links_results\":[{{\"addresses\":\"{}\",\"headers\":[]}},{{\"addresses\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
+               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
                 entry_addresses[2], entry_addresses[1]
             ) + "\u{0}"),
         );
@@ -133,7 +133,7 @@ pub mod tests {
             call_result,
             JsonString::from_json(
                 &(String::from(
-                    r#"{"ok":true,"value":"{\"links_results\":[]}","error":"null"}"#,
+                    r#"{"ok":true,"value":"{\"links\":[]}","error":"null"}"#,
                 ) + "\u{0}")
             ),
         );

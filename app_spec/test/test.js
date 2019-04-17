@@ -13,11 +13,11 @@ const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 const instanceCarol = Config.instance(agentCarol, dna)
 
-const scenario1 = new Scenario([instanceAlice], { debugLog:true })
-const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
-const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
+const scenario1 = new Scenario([instanceAlice], { debugLog:false })
+const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: false })
+const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: false })
 
-/*scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
+scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
 
     const SignResult = bob.call("converse", "sign_message", { key_id:"", message: message });
@@ -145,7 +145,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   )
 
   t.ok(bob_create_post_result.Ok)
-  t.equal(bob_create_post_result.Ok.addresses.length, 1);
+  t.equal(bob_create_post_result.Ok.links.length, 1);
 
   //remove link by alicce
   await alice.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
@@ -154,7 +154,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   const bob_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
 
   t.ok(bob_agent_posts_expect_empty.Ok)
-  t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
+  t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
 })
 
 scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
@@ -409,7 +409,7 @@ scenario1.runTape('posts_by_agent', async (t, { alice }) => {
 
   const result = alice.call("blog", "posts_by_agent", params)
 
-  t.deepEqual(result.Ok, { "addresses": [], headers:[] })
+  t.deepEqual(result.Ok, { links : []})
 })
 
 scenario1.runTape('my_posts', async (t, { alice }) => {
@@ -424,7 +424,7 @@ scenario1.runTape('my_posts', async (t, { alice }) => {
 
   const result = alice.call("blog", "my_posts", {})
 
-  t.equal(result.Ok.addresses.length, 2)
+  t.equal(result.Ok.links.length, 2)
 })
 
 
@@ -443,59 +443,54 @@ scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
 
 scenario2.runTape('get_sources_from_link', async (t, { alice, bob }) => {
 
-  const alice_address = await alice.callSync("blog", "create_post",
+  await alice.callSync("blog", "create_post",
     { "content": "Holo world", "in_reply_to": null }
   );
 
-  const bob_address = await bob.callSync("blog", "create_post",
+  await bob.callSync("blog", "create_post",
   { "content": "Another one", "in_reply_to": null }
 );
   const alice_posts = bob.call("blog","authored_posts_with_sources",
   {
-    "agent" : alice_address.Ok
+    "agent" : alice.agentId
   });
 
   const bob_posts = alice.call("blog","authored_posts_with_sources",
   {
-    "agent" : bob_address.Ok
+    "agent" : bob.agentId
   });
-  t.equal(bob.agentId,bob_posts.Ok.headers[0].provenances[0][0]);
-  t.equal(alice.agentId,alice_posts.Ok.headers[0].provenances[0][0]);
 
-})*/
+  t.equal(bob.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
+  t.equal(alice.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
+
+})
 
 scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
 
-  console.log("ALICE CREATING POST");
   await bob.callSync("blog", "create_post_with_agent",
     { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
   );
-  console.log("BOB CREATING POST");
   await alice.callSync("blog", "create_post_with_agent",
   { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
   );
 
-  console.log("BOB GETTING POST");
   const alice_posts = bob.call("blog","authored_posts_with_sources",
   {
     "agent" : alice.agentId
   });
-  console.log("ALICE GETTING POST");
   const bob_posts = alice.call("blog","authored_posts_with_sources",
   {
     "agent" : alice.agentId
   });
 
-  console.log("from alice:" + JSON.stringify(alice_posts));
-  console.log("from bob:" + JSON.stringify(bob_posts));
-  t.equal(bob.agentId,alice_posts.Ok.links_results[0].headers[1].provenances[0][0]);
-  t.equal(alice.agentId,alice_posts.Ok.links_results[0].headers[1].provenances[1][0]);
-  t.equal(alice.agentId,bob_posts.Ok.links_results[0].headers[1].provenances[0][0]);
-  t.equal(bob.agentId,bob_posts.Ok.links_results[0].headers[1].provenances[1][0]);
+  t.equal(bob.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
+  t.equal(alice.agentId,alice_posts.Ok.links[0].headers[1].provenances[0][0]);
+  t.equal(bob.agentId,bob_posts.Ok.links[0].headers[1].provenances[0][0]);
+  t.equal(alice.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
 
 })
 
-/*scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
+scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = null
@@ -544,4 +539,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})*/
+})

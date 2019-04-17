@@ -33,6 +33,8 @@ pub async fn get_link_result_workflow<'a>(
     ))?;
 
     let (link_results,errors) : (Vec<_>,Vec<_>) = links.iter().map(|link|{
+
+        //we should probably replace this with get_entry_result_workflow, it does all the work needed
         context.block_on(get_entry_with_meta_workflow(
             &context,
             &link,
@@ -52,7 +54,7 @@ pub async fn get_link_result_workflow<'a>(
                         Vec::new()
                     };
                     Ok(LinksResult{
-                        addresses : link.clone(),
+                        address : link.clone(),
                         headers
                     })
                 })

@@ -26,7 +26,7 @@ Fundamental to creating the "chain", each header contains a reference to the "la
 
 Other data contained in the headers includes (but isn't limited to):
 - the public key/address, and the cryptographically signed signature of the author
-- a timestamp conveying the moment of creation of the header
+- a timestamp conveying the moment of creation of the header, from the perspective of the author's system clock
 - the hash of the "entry" being created
 - the "entry type" of the "entry" being created
 
@@ -34,16 +34,16 @@ The meaning and role of entries is covered next.
 
 ### Entries
 
-Entries are elements of data which get persisted to the same storage as Headers, yet have a different nature. They represent the substance of the data that is of interest to the end users of Holochain, storing records such as transactions, social media posts, or whatever else app developers come up with. The hash of each entry is stored and referenced in its corresponding header. Every local source chain should have the exact same number of Entries and Headers.
+Entries are elements of data which get persisted to the same storage as Headers, yet have a different nature. They represent the substance of the data that is of interest to the end users of Holochain, storing records such as transactions, social media posts, or whatever else app developers come up with. The hash of each entry is stored and referenced in its corresponding header. Every local source chain should have exactly one Entry for every Header.
 
 All Entries have a type. Entries can be "system" Entries, or "app" Entries. System Entries are Entries integral to the proper functioning of Holochain. Importantly, there are system Entries written to each local source chain, at the time of its initialization, or "genesis".
 
 #### System Entries
-These include firstly, the DNA itself. The DNA is written as the first entry into each local source chain. Importantly, this is what gives everyone totaly confidence in everyone elses chains: the fact that you all know you started out by running the same code (otherwise, the hash of the initial DNA entry would be different). There will be more discussion on this later.
+These include firstly, the DNA itself. The DNA is written as the first entry into each local source chain. Importantly, this is the foundation for establishing confidence in the data of everyone's chains: the fact that you all know you started out by running the same code (otherwise, the hash of the initial DNA entry would be different). There will be more discussion on this later.
 
 The second Entry to be written to the chain is information about the agent using this source chain. That includes their "public key" which is also their address on the network.
 
-There are also entries created relating to the "Capabilities" features of Holochain, but those will be covered elsewhere.
+There are also other system entry types which are automatically created to record the occurrence of certain actions such as the creation or removal of a link, the marking of an existing entry as deleted, or the granting or revoking of a capability token. These will be covered in more detail in later chapters.
 
 #### App Entries
 Next, there are the "App" Entries. The definitions for these entry types, and how to validate them, are in the hands of developers. When end users are attempting actions which should author data, the data will first be checked against the validation rules supplied by the DNA developer. The possibilities for App Entry type definitions are endless. Defining App Entry types is how you setup the schemas, data structures, and data integrity of your DNA.
@@ -51,12 +51,12 @@ Next, there are the "App" Entries. The definitions for these entry types, and ho
 #### Entry Sharing
 Not every Entry must be shared with other people running the same DNA. There are two (and may be more later) levels of sharing for App Entries defined: `public` and `private`.
 
-With `public`, all Entries of that type will get propogated to the other peers running the same DNA, so that they will hold a copy as well, and make your data more resilient, and so that it is available even when you're offline.
+With `public`, all Entries of that type will get propagated to the other peers running the same DNA, so that they will hold a copy as well, and make your data more resilient, and so that it is available even when you're offline.
 
-With `private`, the Entry will never leave your device. In order to still be able to verify your local source chain, the HEADER for that Entry will be propogated to other peers, but the Entry itself will not.
+With `private`, the Entry will never leave your device. In order to still be able to verify your local source chain, the HEADER for that Entry will be propagated to other peers, but the Entry itself will not.
 
-## Data Propogation
-After any chain-modifying functions are called, Holochain will attempt to notify other peers in the network of those actions. Note that it is not a requirement that the device be online or connected to any other networks or nodes for Holochain to be usable! Holochain will announce the new data over the network, by attempting to publish it to peers. As mentioned previously, if the entry is one of a `private` App Entry type, then only the Header will be published, not the entry itself. Publishing of the data is secondary to being able to author data in the first place, so this will be further elaborated in the [entry validation](./entry_validation.md) article.
+## Data Propagation
+After any chain-modifying functions are called, Holochain will attempt to notify other peers in the network of those actions. Note that it is not a requirement that the device be online or connected to any other networks or nodes for Holochain to be usable! Holochain will persist the changes locally to be gossiped to connected peers at a later date. As mentioned previously, if the entry is one of a `private` App Entry type, then only the Header will be published, not the entry itself. Publishing of the data is secondary to being able to author data in the first place, so this will be further elaborated in the [entry validation](./entry_validation.md) article.
 
 ## Writing Data
 Broadly speaking, writing data is accomplished by writing Zome source code that makes API calls to Holochain to affect the local source chain. One should only modify chain data by calling Holochain API functions, as there is lots of internal logic that it is instrumental that Holochain perform, for each change. When an API function to alter the chain from Zome source code is invoked, a series of steps is performed internally. It is important to know, at least roughly, what those steps are so that you can use Holochain effectively.
@@ -64,7 +64,7 @@ Broadly speaking, writing data is accomplished by writing Zome source code that 
 Apart from the following three functions, there is only one additional way that data can be written to the local source chain, which is written about in [linking](./linking.md).
 
 ### Creating Entries, or "Committing"
-Of course, first and foremost, there is the simple action of creating a new Entry. This is actually known as "committing" an Entry. It is known as "committing" an Entry in Holochain for precisely the reason that once you write it, you can't "unwrite" it, or delete it, without corrupting the integrity of your local source chain. It is there for good, and can only be "marked" as updated or deleted by writing additional entries in the future.
+Of course, first and foremost, there is the simple action of writing a new Entry. This is actually known as "committing" an Entry. It is known as "committing" an Entry in Holochain for precisely the reason that once you write it, you can't "unwrite" it, or delete it, without corrupting the integrity of your local source chain. It is there for good, and can only be "marked" as updated or deleted by writing additional entries in the future.
 
 Because the Entry will be permanent in your local source chain, it must first pass validation, in order to be written in the first place. Validation of Entries is core to the distributed data integrity model of Holochain.
 
@@ -72,8 +72,8 @@ Invoking the commit entry API function will not always return "success". The cal
 
 So in general, the process that Holochain follows while trying to write an Entry during a "commit" call is this:
 
-1. Collect data necessary for use in validation (a "validation package")
-2. Check whether the new entry is valid by passing it through the validation callback specified in the Zome for its' given entry type. If this fails, it will exit here and return either a user defined, or system level error message
+1. Collects data necessary for use in validation (a "validation package")
+2. Checks whether the new entry is valid by passing it through the validation callback specified in the Zome for its given entry type. If this fails, it will exit here and return either a user defined, or system level error message
 3. Creates a new Header for the Entry, and writes it to storage
 4. Writes the Entry itself to storage
 5. Announces over the network module this new Header and Entry, requesting that peers validate and hold a copy of it. This is known internally as "publishing".
@@ -88,12 +88,12 @@ So to update an Entry, use the address of that entry, and provide the new Entry 
 
 So in general, the process that Holochain follows while trying to update an Entry during an "update_entry" call is this:
 
-1. Retrieve the very latest version of the Entry at the given address
-2. Collect data necessary for use in validation (a "validation package")
-3. Check whether the new entry is valid by passing it through the validation callback specified in the Zome for its' given entry type. If this fails, it will exit here and return either a user defined, or system level error message
+1. Retrieves the very latest version of the Entry at the given address
+2. Collects data necessary for use in validation (a "validation package")
+3. Checks whether the new entry is valid by passing it through the validation callback specified in the Zome for its given entry type. If this fails, it will exit here and return either a user defined, or system level error message
 4. Creates a new Header for the Entry, and writes it to storage
 5. Writes the Entry itself to storage
-6. Announces over the network module this new Header and Entry, requesting that peers validate and hold a copy of it. This is known internally as "publishing". **This step also involves updating the metadata such that requests for the Entry at the old address will forward to the new Entry.**
+6. Announces over the network module this new Header and Entry, requesting that peers validate and hold a copy of it. This is known internally as "publishing". **This step also involves updating the metadata for the Entry at the old address such that default requests for it will forward to the new Entry.**
 7. Returns the "address" of the new Entry, which is the crytographic hash of the Entry data combined with its entry type string. This address can be used later to retrieve the Entry.
 
 
@@ -105,10 +105,10 @@ To remove an Entry, Holochain actually commits an Entry of a special type: `Dele
 
 So in general, the process that Holochain follows while trying to remove an Entry during an "remove_entry" call is this:
 
-1. Retrieve the very latest version of the Entry at the given address
-2. Collect data necessary for use in validation (a "validation package")
+1. Retrieves the very latest version of the Entry at the given address
+2. Collects data necessary for use in validation (a "validation package")
 3. Creates a new `DeletionEntry`, containing the address of the very latest version of the given entry
-4. Check whether the `DeletionEntry` is valid by passing it through the validation callback specified in the Zome for its' given entry type. If this fails, it will exit here and return either a user defined, or system level error message
+4. Checks whether the `DeletionEntry` is valid by passing it through the validation callback specified in the Zome for its given entry type. If this fails, it will exit here and return either a user defined, or system level error message
 5. Creates a new Header for the Entry, and writes it to storage
 6. Writes the Entry itself to storage
 7. Announces over the network module this new Header and Entry, requesting that peers validate and hold a copy of it. This is known internally as "publishing". **This step also involves updating the metadata such that default requests for the Entry at the old address will return no Entry.**

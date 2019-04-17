@@ -18,6 +18,7 @@ extern crate multihash;
 #[macro_use]
 pub mod predicate;
 pub mod basic_workflows;
+pub mod connection_workflows;
 pub mod constants;
 pub mod p2p_node;
 pub mod publish_hold_workflows;
@@ -28,7 +29,7 @@ use holochain_net::{connection::NetResult, tweetlog::*};
 use p2p_node::P2pNode;
 use std::{collections::HashMap, fs::File};
 
-type TwoNodesTestFn =
+pub(crate) type TwoNodesTestFn =
     fn(alex: &mut P2pNode, billy: &mut P2pNode, can_test_connect: bool) -> NetResult<()>;
 
 type ThreeNodesTestFn = fn(
@@ -76,7 +77,7 @@ fn print_three_nodes_test_name(print_str: &str, test_fn: ThreeNodesTestFn) {
 }
 
 #[cfg_attr(tarpaulin, skip)]
-fn print_two_nodes_test_name(print_str: &str, test_fn: TwoNodesTestFn) {
+pub(crate) fn print_two_nodes_test_name(print_str: &str, test_fn: TwoNodesTestFn) {
     print_test_name(print_str, test_fn as *mut std::os::raw::c_void);
 }
 
@@ -172,6 +173,17 @@ fn main() {
         }
     }
 
+    if config["suites"]["CONNECTION_WORKFLOWS"].as_bool().unwrap()
+        && config["modes"]["HACK_MODE"].as_bool().unwrap()
+    {
+        connection_workflows::two_nodes_disconnect_test(
+            "test_bin/data/network_config.json",
+            None,
+            basic_workflows::dht_test,
+        )
+        .unwrap();
+    }
+
     // Launch THREE_WORKFLOWS tests on each setup
     if config["suites"]["THREE_WORKFLOWS"].as_bool().unwrap() {
         for test_fn in THREE_NODES_TEST_FNS.clone() {
@@ -243,6 +255,7 @@ fn launch_two_nodes_test_with_ipc_mock(
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
     let mut billy = P2pNode::new_with_uri_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -277,6 +290,7 @@ fn launch_two_nodes_test(
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
     let mut billy = P2pNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -284,6 +298,7 @@ fn launch_two_nodes_test(
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
 
     log_i!("");
@@ -353,6 +368,7 @@ fn launch_three_nodes_test_with_ipc_mock(
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
     let mut billy = P2pNode::new_with_uri_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -393,6 +409,7 @@ fn launch_three_nodes_test(
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
     let mut billy = P2pNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
@@ -400,6 +417,7 @@ fn launch_three_nodes_test(
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
     let mut camille = P2pNode::new_with_spawn_ipc_network(
         CAMILLE_AGENT_ID.to_string(),
@@ -407,6 +425,7 @@ fn launch_three_nodes_test(
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
     );
 
     log_i!("");

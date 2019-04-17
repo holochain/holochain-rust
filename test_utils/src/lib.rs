@@ -6,6 +6,7 @@ extern crate serde_json;
 
 pub mod mock_signing;
 
+use crossbeam_channel::Receiver;
 use holochain_conductor_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
     action::Action,
@@ -36,7 +37,7 @@ use std::{
     path::PathBuf,
     hash::{Hash, Hasher},
     io::prelude::*,
-    sync::{mpsc::Receiver, Arc, Mutex},
+    sync::{Arc, Mutex},
     time::Duration,
 };
 use tempfile::tempdir;

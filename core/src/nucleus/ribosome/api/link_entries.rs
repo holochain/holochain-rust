@@ -194,7 +194,7 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from_json(&(String::from(JsonString::from(no_entry)) + "\u{0}")),
+            JsonString::from_json(&(String::from(JsonString::from(result)) + "\u{0}")),
         );
     }
 

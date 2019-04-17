@@ -13,9 +13,9 @@ const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 const instanceCarol = Config.instance(agentCarol, dna)
 
-const scenario1 = new Scenario([instanceAlice], { debugLog:false })
-const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: false })
-const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: false })
+const scenario1 = new Scenario([instanceAlice], { debugLog:true })
+const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
+const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
 scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";

@@ -36,14 +36,15 @@ pub fn ipc_spawn(
 
     env.insert("NO_CLEANUP".to_string(), "1".to_string());
 
-    let mut child = std::process::Command::new(n3h);
+    println!("n3h: {:?} | in: {}", n3h, work_dir);
+    let mut child = std::process::Command::new("n3h.bat");
 
     child
         .stdout(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped())
         .args(&n3h_args)
         .envs(&env)
-        .current_dir(work_dir);
+        .current_dir("C:\\github\\n3h\\bin"); // FIXME use work_dir
 
     let mut child = child.spawn()?;
 

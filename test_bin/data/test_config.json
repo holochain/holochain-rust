@@ -1,6 +1,6 @@
 {
   "modes": {
-    "IN_MEMORY": true,
+    "IN_MEMORY": false,
     "IPC_MOCK": true,
     "HACK_MODE": true
   },

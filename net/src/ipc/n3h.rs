@@ -38,8 +38,10 @@ struct Type {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct Arch {
-    pub aarch64: Option<Type>,
+    pub ia32: Option<Type>,
     pub x64: Option<Type>,
+    pub arm: Option<Type>,
+    pub arm64: Option<Type>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -136,12 +138,12 @@ fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<Vec<String>> {
     if res.is_ok() {
         return Ok(vec![]);
     }
-    tlog_e!("{:?}", res);
+        tlog_e!("{:?}", res);
     let res = sub_check_n3h_version(&path, &["--version", "--appimage-extract-and-run"]);
     if res.is_err() {
-        tlog_e!("{:?}", res);
-        bail!("{:?}", res);
-    }
+            tlog_e!("{:?}", res);
+            bail!("{:?}", res);
+        }
     return Ok(vec!["--appimage-extract-and-run".to_string()]);
 }
 
@@ -153,16 +155,21 @@ fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetRes
     if res.is_ok() {
         let res = res.unwrap();
         println!("raw response: {:?}", res);
-        let res = res.rsplit('\n').next().unwrap_or("");
-        println!("rsplit: {:?}", res);
-        if res != &N3H_INFO.version {
+        let re = regex::Regex::new(r#"(?m)#\s+n3h\s+version:\s+"([^"]+)"\s+#$"#)?;
+
+        let mut version = None;
+        for m in re.captures_iter(&res) {
+            version = Some(m[1].to_string());
+        }
+
+        if version.is_none() || version.as_ref().unwrap() != &N3H_INFO.version {
             bail!(
-                "n3h version mismatch, expected: {}, got: {}",
+                "n3h version mismatch, expected: {}, got: {:?}",
                 &N3H_INFO.version,
-                res
+                version
             );
         }
-        return Ok(());
+        return Ok(true);
     }
     println!("response: {:?}", res);
     bail!(format!("n3h not found in path: {:?}", &path));
@@ -180,8 +187,10 @@ fn get_artifact_info(os: &str, arch: &str, pkg_type: &str) -> NetResult<&'static
         bail!("os not available");
     }
     let arch = match arch {
-        "aarch64" => &os.as_ref().unwrap().aarch64,
+        "ia32" => &os.as_ref().unwrap().ia32,
         "x64" => &os.as_ref().unwrap().x64,
+        "arm" => &os.as_ref().unwrap().arm,
+        "arm64" => &os.as_ref().unwrap().arm64,
         _ => bail!("arch {} not available", arch),
     };
     if arch.is_none() {
@@ -228,10 +237,14 @@ fn get_os_arch() -> NetResult<(&'static str, &'static str, &'static str)> {
     } else {
         "appimage"
     };
-    if cfg!(target_os = "linux") && cfg!(target_arch = "x86_64") {
+    if cfg!(target_os = "linux") && cfg!(target_arch = "x86") {
+        Ok(("linux", "ia32", linux_pkg_type))
+    } else if cfg!(target_os = "linux") && cfg!(target_arch = "x86_64") {
         Ok(("linux", "x64", linux_pkg_type))
+    } else if cfg!(target_os = "linux") && cfg!(target_arch = "arm") {
+        Ok(("linux", "arm", linux_pkg_type))
     } else if cfg!(target_os = "linux") && cfg!(target_arch = "aarch64") {
-        Ok(("linux", "aarch64", linux_pkg_type))
+        Ok(("linux", "arm64", linux_pkg_type))
     } else if cfg!(windows) && cfg!(target_arch = "x86_64") {
         Ok(("win", "x64", "exe"))
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {

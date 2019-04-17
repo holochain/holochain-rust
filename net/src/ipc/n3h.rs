@@ -137,7 +137,7 @@ fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<Vec<String>> {
         return Ok(vec![]);
     } else {
         tlog_e!("{:?}", res);
-        let res = sub_check_n3h_version(&path, &["--version", "--appimage-extract-and-run"]);
+        let res = sub_check_n3h_version(&path, &["--appimage-extract-and-run", "--version"]);
         if res.is_ok() {
             return Ok(vec!["--appimage-extract-and-run".to_string()]);
         } else {
@@ -203,7 +203,10 @@ where
     S2: AsRef<std::ffi::OsStr>,
 {
     let mut cmd = std::process::Command::new(cmd);
-    cmd.args(args).env("N3H_VERSION_EXIT", "1").current_dir(dir);
+    cmd.args(args)
+        .env("N3H_VERSION_EXIT", "1")
+        .env("NO_CLEANUP", "1")
+        .current_dir(dir);
     tlog_d!("EXEC: {:?}", cmd);
     let res = cmd.output()?;
     if !ignore_errors && !res.status.success() {

@@ -136,8 +136,16 @@ impl ConductorApiBuilder {
             let hc_lock_inner = hc_lock.clone();
             let mut hc = hc_lock_inner.write().unwrap();
 
-            // Getting thee arguments of the call contained in the json-rpc 'params'
-            let call_args = params_map.get("args");
+            // Getting the arguments of the call contained in the json-rpc 'params'
+            let call_args = match params_map.get("args") {
+                Some(args) => Some(args),
+                None => {
+                    // TODO: Remove this fall back to the previous impl of inner 'params' 
+                    // as soon as its deprecation life cycle is over <17-04-19, yourname> //
+                    hc.context().log("DEPRECATION WARNING: Using 'params' instead of 'args' for a Zome function call is now deprecated.");
+                    params_map.get("params")
+                }
+            };
             let args_string = serde_json::to_string(&call_args)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
             let zome_name = Self::get_as_string("zome", &params_map)?;

@@ -12,6 +12,7 @@ extern crate holochain_core_types_derive;
 
 pub mod blog;
 pub mod post;
+pub mod memo;
 
 use hdk::{
     error::ZomeApiResult,
@@ -25,7 +26,8 @@ use blog::Env;
 define_zome! {
 
     entries: [
-        post::definition()
+        post::definition(),
+        memo::definition()
     ]
 
     genesis: || {
@@ -70,6 +72,12 @@ define_zome! {
             handler: blog::handle_post_address
         }
 
+        memo_address: {
+            inputs: |content: String|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_memo_address
+        }
+
         create_post: {
             inputs: |content: String, in_reply_to: Option<Address>|,
             outputs: |result: ZomeApiResult<Address>|,
@@ -80,6 +88,12 @@ define_zome! {
             inputs: |agent_id:Address,content: String, in_reply_to: Option<Address>|,
             outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_create_post_with_agent
+        }
+        
+        create_memo: {
+            inputs: |content: String|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_create_memo
         }
 
         delete_post: {
@@ -118,6 +132,12 @@ define_zome! {
             handler: blog::handle_get_post
         }
 
+        get_memo: {
+            inputs: |memo_address: Address|,
+            outputs: |post: ZomeApiResult<Option<Entry>>|,
+            handler: blog::handle_get_memo
+        }
+
         get_initial_post: {
             inputs: |post_address: Address|,
             outputs: |post: ZomeApiResult<Option<Entry>>|,
@@ -134,6 +154,12 @@ define_zome! {
             inputs: | |,
             outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
             handler: blog::handle_my_posts
+        }
+
+        my_memos: {
+            inputs: | |,
+            outputs: |memo_hashes: ZomeApiResult<Vec<Address>>|,
+            handler: blog::handle_my_memos
         }
 
         get_post_with_options_latest :{
@@ -175,6 +201,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post,get_history_post,get_post_with_options,get_post_with_options_latest,authored_posts_with_sources,create_post_with_agent]
+        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts,memo_address, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post,get_history_post,get_post_with_options,get_post_with_options_latest,authored_posts_with_sources,create_post_with_agent]
     }
 }

@@ -1,6 +1,9 @@
+use conductor::broadcaster::Broadcaster;
+use crossbeam_channel::Receiver;
 use interface::Interface;
-use jsonrpc_ws_server::{jsonrpc_core::IoHandler, ServerBuilder};
-use std::sync::mpsc::Receiver;
+use jsonrpc_core::IoHandler;
+use jsonrpc_ws_server::ServerBuilder;
+use std::thread;
 
 pub struct WebsocketInterface {
     port: u16,
@@ -13,12 +16,20 @@ impl WebsocketInterface {
 }
 
 impl Interface for WebsocketInterface {
-    fn run(&self, handler: IoHandler, kill_switch: Receiver<()>) -> Result<(), String> {
+    fn run(
+        &self,
+        handler: IoHandler,
+        kill_switch: Receiver<()>,
+    ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
         let url = format!("0.0.0.0:{}", self.port);
-        let _server = ServerBuilder::new(handler)
+        let server = ServerBuilder::new(handler)
             .start(&url.parse().expect("Invalid URL!"))
             .map_err(|e| e.to_string())?;
-        let _ = kill_switch.recv();
-        Ok(())
+        let broadcaster = Broadcaster::Ws(server.broadcaster());
+        let handle = thread::spawn(move || {
+            let _ = server; // move `server` into this thread
+            let _ = kill_switch.recv();
+        });
+        Ok((broadcaster, handle))
     }
 }

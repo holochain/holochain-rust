@@ -26,6 +26,11 @@ const Config = {
     agent: name => ({ name }),
     dna: (path, name = `${path}`) => ({ path, name }),
     instance: (agent, dna, name = `${agent.name}`) => ({ agent, dna, name }),
+    bridge: (handle, caller, callee) => ({
+        handle,
+        caller_id: caller.name,
+        callee_id: callee.name
+    }),
     conductor: (instances, opts = defaultOpts) => makeConfig(instances, opts)
 }
 

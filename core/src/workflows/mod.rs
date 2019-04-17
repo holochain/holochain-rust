@@ -1,6 +1,7 @@
 pub mod application;
 pub mod author_entry;
 pub mod get_entry_result;
+pub mod get_link_result;
 pub mod handle_custom_direct_message;
 pub mod hold_entry;
 pub mod hold_entry_remove;

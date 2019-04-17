@@ -43,10 +43,9 @@ pub struct LinksResult {
     pub headers: Vec<ChainHeader>,
 }
 
-
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]
 pub struct GetLinksResult {
-    links : Vec<LinksResult>
+    links: Vec<LinksResult>,
 }
 
 impl GetLinksResult {
@@ -55,10 +54,6 @@ impl GetLinksResult {
     }
 
     pub fn addresses(&self) -> Vec<Address> {
-         self
-        .links
-        .iter()
-        .map(|s|s.address.clone())
-        .collect()
+        self.links.iter().map(|s| s.address.clone()).collect()
     }
 }

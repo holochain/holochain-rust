@@ -91,7 +91,7 @@ impl DhtStore {
                 Some(entry_address).into(),
                 Some(Attribute::EntryHeader).into(),
                 None.into(),
-                IndexFilter::LatestByAttribute
+                IndexFilter::LatestByAttribute,
             ))?
             .into_iter()
             // get the header addresses

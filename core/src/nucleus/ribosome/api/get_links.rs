@@ -132,9 +132,8 @@ pub mod tests {
         assert_eq!(
             call_result,
             JsonString::from_json(
-                &(String::from(
-                    r#"{"ok":true,"value":"{\"links\":[]}","error":"null"}"#,
-                ) + "\u{0}")
+                &(String::from(r#"{"ok":true,"value":"{\"links\":[]}","error":"null"}"#,)
+                    + "\u{0}")
             ),
         );
     }

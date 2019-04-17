@@ -40,7 +40,7 @@ use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error:
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
-        get_links::{GetLinksResult,LinksResult}
+        get_links::{GetLinksResult, LinksResult},
     },
     wasm_target_dir,
 };
@@ -610,19 +610,32 @@ fn can_roundtrip_links() {
     let entry_address_2 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
     let entry_address_3 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
 
-    let expected_links: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(
-        vec![LinksResult{address : entry_address_2.clone(), headers : Vec::new()},
-             LinksResult{address : entry_address_3.clone(), headers : Vec::new()}]
-    ));
+    let expected_links: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
+        LinksResult {
+            address: entry_address_2.clone(),
+            headers: Vec::new(),
+        },
+        LinksResult {
+            address: entry_address_3.clone(),
+            headers: Vec::new(),
+        },
+    ]));
     let expected_links = JsonString::from(expected_links);
 
     let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
         Ok(vec![Ok(entry_2.clone()), Ok(entry_3.clone())]);
 
-    let expected_links_reversed: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(
-        vec![LinksResult{address : entry_address_3.clone(), headers : Vec::new()},
-             LinksResult{address : entry_address_2.clone(), headers : Vec::new()}]
-    ));
+    let expected_links_reversed: Result<GetLinksResult, HolochainError> =
+        Ok(GetLinksResult::new(vec![
+            LinksResult {
+                address: entry_address_3.clone(),
+                headers: Vec::new(),
+            },
+            LinksResult {
+                address: entry_address_2.clone(),
+                headers: Vec::new(),
+            },
+        ]));
     let expected_links_reversed = JsonString::from(expected_links_reversed);
 
     let expected_entries_reversed: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =

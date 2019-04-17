@@ -16,11 +16,10 @@
 //! extern crate tempfile;
 //! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
-//! use holochain_core::nucleus::ribosome::capabilities::CapabilityRequest;
 //! use holochain_core_types::{
 //!     cas::content::Address,
 //!     agent::AgentId,
-//!     dna::Dna,
+//!     dna::{Dna, capabilities::CapabilityRequest,},
 //!     json::JsonString,
 //!     signature::Signature,
 //! };

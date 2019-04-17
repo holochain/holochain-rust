@@ -105,7 +105,7 @@ pub mod tests {
         // don't change.
         assert_eq!(
             globals.public_token,
-            Address::from("QmdVUAMNz5GwjsgMQusqzXjxggWwqZi9y25SXzg5ba4z6d"),
+            Address::from("QmdZiJWdVCh8s38tCcAAq8f7HpHkd9KLFnHh9vLTddt8D2"),
         );
 
         assert_eq!(

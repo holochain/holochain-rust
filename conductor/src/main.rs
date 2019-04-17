@@ -25,7 +25,7 @@ use holochain_conductor_api::{
     config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::error::HolochainError;
-use std::{fs::File, io::prelude::*, path::PathBuf, thread::sleep, time::Duration};
+use std::{fs::File, io::prelude::*, path::PathBuf};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -47,28 +47,23 @@ fn main() {
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
         Ok(()) => {
-            {
-                let mut conductor_guard = CONDUCTOR.lock().unwrap();
-                let mut conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
-                println!(
-                    "Successfully loaded {} instance configurations",
-                    conductor.instances().len()
-                );
-                println!("Starting all of them...");
-                conductor
-                    .start_all_instances()
-                    .expect("Could not start instances!");
-                println!("Starting interfaces...");
-                conductor.start_all_interfaces();
-                println!("Done.");
-                println!("Starting UI servers");
-                conductor
-                    .start_all_static_servers()
-                    .expect("Could not start UI servers!");
-            }
-            loop {
-                sleep(Duration::from_secs(1))
-            }
+            let mut conductor_guard = CONDUCTOR.lock().unwrap();
+            let mut conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
+            println!(
+                "Successfully loaded {} instance configurations",
+                conductor.instances().len()
+            );
+            println!("Starting all of them...");
+            conductor
+                .start_all_instances()
+                .expect("Could not start instances!");
+            println!("Starting interfaces...");
+            conductor.start_all_interfaces();
+            println!("Done.");
+            println!("Starting UI servers");
+            conductor
+                .start_all_static_servers()
+                .expect("Could not start UI servers!");
         }
         Err(error) => println!("Error while trying to boot from config: {:?}", error),
     };

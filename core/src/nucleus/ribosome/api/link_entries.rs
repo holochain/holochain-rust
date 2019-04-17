@@ -50,7 +50,7 @@ pub mod tests {
         context::Context,
         instance::{tests::test_instance_and_context, Instance},
         nucleus::ribosome::{
-            api::{tests::*, ZomeApiFunction, ZomeApiResult},
+            api::{tests::*, ZomeApiFunction},
             Defn,
         },
     };

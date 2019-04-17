@@ -959,8 +959,11 @@ pub mod tests {
 
     use self::tempfile::tempdir;
     use test_utils::*;
+    #[cfg(not(windows))]
     extern crate ws;
+    #[cfg(not(windows))]
     use self::ws::{connect, Message};
+    #[cfg(not(windows))]
     extern crate parking_lot;
 
     pub fn test_dna_loader() -> DnaLoader {

@@ -20,6 +20,8 @@ pub struct SpawnResult {
     pub p2p_bindings: Vec<String>,
 }
 
+pub const DEFAULT_TIMEOUT_MS: usize = 5000;
+
 /// Spawn a holochain networking ipc sub-process
 /// Will block for IPC connection until timeout_ms is reached.
 /// Can also block for P2P connection

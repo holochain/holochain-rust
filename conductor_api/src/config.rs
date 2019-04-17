@@ -528,7 +528,7 @@ pub struct NetworkConfig {
 // holochain_common::env_vars module and should be updated
 // if this logic changes
 pub fn default_n3h_mode() -> String {
-    String::from("HACK")
+    String::from("REAL")
 }
 
 // note that this behaviour is documented within

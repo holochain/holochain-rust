@@ -111,7 +111,7 @@ So in general, the process that Holochain follows while trying to remove an Entr
 4. Checks whether the `DeletionEntry` is valid by passing it through the validation callback specified in the Zome for its given entry type. If this fails, it will exit here and return either a user defined, or system level error message
 5. Creates a new Header for the Entry, and writes it to storage
 6. Writes the Entry itself to storage
-7. Announces over the network module this new Header and Entry, requesting that peers validate and hold a copy of it. This is known internally as "publishing". **This step also involves updating the metadata such that default requests for the Entry at the old address will return no Entry.**
+7. Announces over the network module this new Header and Entry, requesting that peers validate and hold a copy of it. This is known internally as "publishing". **This step also involves updating the metadata for the Entry at the old address such that default requests for it will return no Entry.**
 8. Returns a null value, as there is no need to retrieve the new `DeletionEntry` at any point for any reason.
 
 

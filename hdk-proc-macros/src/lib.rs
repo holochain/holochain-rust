@@ -24,15 +24,23 @@ use crate::into_zome::{
 impl ToTokens for ZomeFunction {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let zome_function_name = Ident::new(&self.declaration.name, Span::call_site());
+
         let input_params = self
             .declaration
             .inputs
             .clone()
             .into_iter()
             .map(|param| syn::Field::from(param));
-        let input_param_names = &self
+
+        let input_param_names = self
             .declaration
-            .inputs;
+            .inputs
+            .clone()
+            .into_iter()
+            .map(|param| {
+                param.ident.clone()
+            });
+
         let output_param_type = &self.declaration.output;
         let function_body = &self.code;
 
@@ -68,7 +76,7 @@ impl ToTokens for ZomeFunction {
                 let input: InputStruct = hdk::load_json!(encoded_allocation_of_input);
 
                 // Macro'd function body
-                fn execute (params: InputStruct) -> #output_param_type {
+                fn execute (params: InputStruct) #output_param_type {
                     let InputStruct { #(#input_param_names),* } = params;
                     #function_body
                 }

@@ -11,8 +11,6 @@ extern crate serde_derive;
 use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
-        error::HolochainError,
-        json::{JsonString},
         signature::{Provenance, Signature},
     },
     holochain_wasm_utils::api_serialization::keystore::KeyType,
@@ -56,4 +54,5 @@ pub mod converse {
     pub fn list_secrets() -> ZomeApiResult<Vec<String>> {
         hdk::keystore_list().map(|keystore_ids| keystore_ids.ids)
     }
+
 }

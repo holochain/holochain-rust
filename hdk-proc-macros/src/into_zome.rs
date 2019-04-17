@@ -72,9 +72,11 @@ impl From<FnParameter> for syn::Field {
 impl ToTokens for FnParameter {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let input_param_name = &self.ident;
+
         let input_param_type = &self.ty;
+
         tokens.extend(quote! {
-            FnParameter::new(#input_param_name, #input_param_type)
+            FnParameter::new(stringify!(#input_param_name), stringify!(#input_param_type))
         })
     }
 }
@@ -89,14 +91,19 @@ pub struct FnDeclaration {
 impl ToTokens for FnDeclaration {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let zome_function_name = &self.name;
-        let input_param_names = &self.inputs;
-        let output_param_name = &self.output;
+        let input_params = &self.inputs;
+        let output_params = match &self.output {
+            syn::ReturnType::Default => Vec::new(),
+            syn::ReturnType::Type(_, ty) => {
+                vec![quote!(FnParameter::new("result", stringify!(#ty)))]
+            }   
+        };
 
         tokens.extend(quote! {
             FnDeclaration {
                 name: #zome_function_name.to_string(),
-                inputs: vec![#(#input_param_names,)*],
-                outputs: vec![#output_param_name],
+                inputs: vec![#(#input_params,)*],
+                outputs: vec![#(#output_params,)*],
             }
         })
     }
@@ -456,7 +463,7 @@ mod tests {
       				FnParameter::new_from_str("param2", "String"),
     				FnParameter::new_from_str("param3", "bool"),
     			],
-    			output: syn::parse_str("-> String").unwrap()
+    			output: syn::parse_quote!(-> String)
     		}
     	}
     }
@@ -483,7 +490,7 @@ mod tests {
             FnDeclaration{
                 name: "a_fn".to_string(),
                 inputs: vec![],
-                output: syn::parse_str("-> ZomeApiResult<String>").unwrap(),
+                output: syn::parse_quote!(-> ZomeApiResult<String>),
             }
         }
     }

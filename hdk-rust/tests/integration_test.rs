@@ -46,6 +46,7 @@ use holochain_wasm_utils::{
 };
 use std::{
     collections::BTreeMap,
+    path::PathBuf,
     sync::{Arc, Mutex},
     thread,
     time::Duration,
@@ -253,10 +254,24 @@ fn start_holochain_instance<T: Into<String>>(
     agent_name: T,
 ) -> (Holochain, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
-    let wasm = create_wasm_from_file(&format!(
-        "{}/wasm32-unknown-unknown/release/test_globals.wasm",
-        wasm_target_dir("hdk-rust/", "wasm-test/"),
-    ));
+
+    let mut wasm_path = PathBuf::new();
+    let wasm_dir_component: PathBuf = wasm_target_dir(
+        &String::from("hdk-rust").into(),
+        &String::from("wasm-test").into(),
+    );
+    wasm_path.push(wasm_dir_component);
+    let wasm_path_component: PathBuf = [
+        String::from("wasm32-unknown-unknown"),
+        String::from("release"),
+        String::from("test_globals.wasm"),
+    ]
+    .iter()
+    .collect();
+    wasm_path.push(wasm_path_component);
+
+    let wasm = create_wasm_from_file(&wasm_path);
+
     let defs = create_test_defs_with_fn_names(vec![
         "check_global",
         "check_commit_entry",

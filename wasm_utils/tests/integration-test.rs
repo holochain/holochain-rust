@@ -19,21 +19,31 @@ use holochain_core_types::{
     json::{JsonString, RawString},
 };
 use holochain_wasm_utils::{memory::MemoryInt, wasm_target_dir};
-use std::convert::TryFrom;
+use std::{convert::TryFrom, path::PathBuf};
 use test_utils::hc_setup_and_call_zome_fn;
 
 fn call_zome_function_with_hc<J: Into<JsonString>>(
     fn_name: &str,
     params: J,
 ) -> HolochainResult<JsonString> {
-    hc_setup_and_call_zome_fn(
-        &format!(
-            "{}/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
-            wasm_target_dir("wasm_utils/", "wasm-test/integration-test/"),
-        ),
-        fn_name,
-        params,
-    )
+    let mut wasm_path = PathBuf::new();
+    let wasm_path_component: PathBuf =
+        [String::from("wasm-test"), String::from("integration-test")]
+            .iter()
+            .collect();
+    wasm_path.push(wasm_target_dir(
+        &String::from("wasm_utils").into(),
+        &wasm_path_component,
+    ));
+    let wasm_file_path: PathBuf = [
+        String::from("wasm32-unknown-unknown"),
+        String::from("release"),
+        String::from("wasm_integration_test.wasm"),
+    ]
+    .iter()
+    .collect();
+    wasm_path.push(wasm_file_path);
+    hc_setup_and_call_zome_fn(&wasm_path, fn_name, params)
 }
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]

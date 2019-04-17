@@ -129,6 +129,7 @@ pub struct P2pNode {
     pub logger: TweetProxy,
 
     is_network_ready: bool,
+    pub p2p_binding: String,
 }
 
 /// Query logs
@@ -547,6 +548,7 @@ impl P2pNode {
             authored_meta_store: MetaStore::new(),
             logger: TweetProxy::new("p2pnode"),
             is_network_ready: false,
+            p2p_binding: String::new(),
         }
     }
 
@@ -578,18 +580,18 @@ impl P2pNode {
     pub fn new_with_spawn_ipc_network(
         agent_id: String,
         dna_address: Address,
-        n3h_path: &str,
         maybe_config_filepath: Option<&str>,
         maybe_end_user_config_filepath: Option<String>,
         bootstrap_nodes: Vec<String>,
+        maybe_dir_path: Option<String>,
     ) -> Self {
-        let (p2p_config, temp_dir) = create_ipc_config(
-            n3h_path,
+        let (p2p_config, _maybe_temp_dir) = create_ipc_config(
             maybe_config_filepath,
             maybe_end_user_config_filepath,
             bootstrap_nodes,
+            maybe_dir_path,
         );
-        return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, Some(temp_dir));
+        return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, _maybe_temp_dir);
     }
 
     /// See if there is a message to receive, and log it
@@ -778,6 +780,11 @@ impl P2pNode {
             JsonProtocol::UntrackDna(_) => {
                 panic!("Core should not receive UntrackDna message");
             }
+            JsonProtocol::GetStateResult(state) => {
+                if !state.bindings.is_empty() {
+                    self.p2p_binding = state.bindings[0].clone();
+                }
+            }
             JsonProtocol::Connect(_) => {
                 panic!("Core should not receive Connect message");
             }
@@ -912,17 +919,25 @@ impl NetSend for P2pNode {
 // create_ipc_config
 //--------------------------------------------------------------------------------------------------
 
-/// Create an P2pConfig for an IPC node that uses n3h and a temp folder
+/// Create a P2pConfig for an IPC node that uses n3h and possibily a specific folder.
+/// Return the generated P2pConfig and the created tempdir if no dir was provided.
 #[cfg_attr(tarpaulin, skip)]
 fn create_ipc_config(
-    n3h_path: &str,
     maybe_config_filepath: Option<&str>,
     maybe_end_user_config_filepath: Option<String>,
     bootstrap_nodes: Vec<String>,
-) -> (P2pConfig, tempfile::TempDir) {
-    // Create temp directory
-    let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
-    let dir = dir_ref.path().to_string_lossy().to_string();
+    maybe_dir_path: Option<String>,
+) -> (P2pConfig, Option<tempfile::TempDir>) {
+    // Create temp directory if no dir was provided
+    let mut maybe_dir_ref = None;
+    let dir = if let Some(dir_path) = maybe_dir_path {
+        dir_path
+    } else {
+        let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
+        let dir_path = dir_ref.path().clone().to_string_lossy().to_string();
+        maybe_dir_ref = Some(dir_ref);
+        dir_path
+    };
 
     log_i!("create_ipc_config() dir = {}", dir);
 
@@ -942,10 +957,6 @@ fn create_ipc_config(
                 "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {
-                    "cmd": p2p_config.backend_config["spawn"]["cmd"],
-                    "args": [
-                        format!("{}/packages/n3h/bin/n3h", n3h_path)
-                    ],
                     "workDir": dir.clone(),
                     "env": {
                         "N3H_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_MODE"],
@@ -966,10 +977,6 @@ fn create_ipc_config(
                 "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {
-                    "cmd": "node",
-                    "args": [
-                        format!("{}/packages/n3h/bin/n3h", n3h_path)
-                    ],
                     "workDir": dir.clone(),
                     "env": {
                         "N3H_MODE": "HACK",
@@ -985,5 +992,5 @@ fn create_ipc_config(
     config.maybe_end_user_config = Some(P2pConfig::load_end_user_config(
         maybe_end_user_config_filepath,
     ));
-    return (config, dir_ref);
+    return (config, maybe_dir_ref);
 }

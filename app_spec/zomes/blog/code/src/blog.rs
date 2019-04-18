@@ -2,8 +2,11 @@ use hdk::{
     self,
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
-        cas::content::Address, dna::capabilities::CapabilityRequest, entry::Entry,
-        error::HolochainError, json::JsonString,
+        cas::content::Address,
+        dna::capabilities::CapabilityRequest,
+        entry::{cap_entries::CapabilityType, Entry},
+        error::HolochainError,
+        json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{
         get_entry::{
@@ -16,7 +19,7 @@ use hdk::{
 
 use memo::Memo;
 use post::Post;
-use std::convert::TryFrom;
+use std::{collections::BTreeMap, convert::TryFrom};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -100,6 +103,26 @@ fn memo_entry(content: String) -> Entry {
 
 pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&post_entry(content))
+}
+
+fn is_my_friend(addr: Address) -> bool {
+    addr == Address::from("Qmblahblah")
+}
+
+pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
+    let addr = CAPABILITY_REQ.provenance.source();
+    if is_my_friend(addr.clone()) {
+        let mut functions = BTreeMap::new();
+        functions.insert("blog".to_string(), vec!["create_post".to_string()]);
+        Ok(Some(hdk::grant_capability(
+            "can_post",
+            CapabilityType::Assigned,
+            Some(vec![addr]),
+            functions,
+        )?))
+    } else {
+        Ok(None)
+    }
 }
 
 pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {

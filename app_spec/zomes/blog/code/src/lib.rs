@@ -92,7 +92,13 @@ define_zome! {
             outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_create_post_with_agent
         }
-        
+
+        request_post_grant: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Option<Address>>|,
+            handler: blog::handle_request_post_grant
+        }
+
         create_memo: {
             inputs: |content: String|,
             outputs: |result: ZomeApiResult<Address>|,
@@ -122,7 +128,7 @@ define_zome! {
             outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
             handler: blog::handle_posts_by_agent
         }
-        
+
         authored_posts_with_sources : {
             inputs : |agent : Address|,
             outputs : | post_hashes : ZomeApiResult<GetLinksResult>|,

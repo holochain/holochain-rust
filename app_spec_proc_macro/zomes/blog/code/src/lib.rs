@@ -1,5 +1,10 @@
 #![feature(try_from)]
 #![warn(unused_extern_crates)]
+#![feature(proc_macro_hygiene)]
+
+extern crate hdk_proc_macros;
+use hdk_proc_macros::zome;
+
 #[macro_use]
 extern crate hdk;
 #[macro_use]
@@ -15,154 +20,134 @@ pub mod post;
 
 use hdk::{
     error::ZomeApiResult,
+    entry_definition::ValidatingEntryType,
     holochain_core_types::{
-        cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
+        cas::content::Address,
+        entry::Entry,
+        json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}}
 };
 use blog::Env;
 
-define_zome! {
+#[zome]
+pub mod blog {
 
-    entries: [
+    #[entry_def]
+    pub fn post_entry_def() -> ValidatingEntryType {
         post::definition()
-    ]
+    }
 
-    genesis: || {
+    #[genesis]
+    pub fn genesis() {
         Ok(())
     }
 
-    receive: |message| {
+    #[receive]
+    pub fn receive(message: String) {
         json!({
             "message": message
         }).to_string()
     }
 
-    functions: [
-
-        show_env: {
-            inputs: | |,
-            outputs: |env: ZomeApiResult<Env>|,
-            handler: blog::handle_show_env
-        }
-
-        get_sources: {
-            inputs: |address: Address|,
-            outputs: |sources: ZomeApiResult<Vec<Address>>|,
-            handler: blog::handle_get_sources
-        }
-
-        check_sum: {
-            inputs: |num1: u32, num2: u32|,
-            outputs: |sum: ZomeApiResult<JsonString>|,
-            handler: blog::handle_check_sum
-        }
-
-        check_send: {
-            inputs: |to_agent: Address, message: String|,
-            outputs: |response: ZomeApiResult<JsonString>|,
-            handler: blog::handle_check_send
-        }
-
-        post_address: {
-            inputs: |content: String|,
-            outputs: |result: ZomeApiResult<Address>|,
-            handler: blog::handle_post_address
-        }
-
-        create_post: {
-            inputs: |content: String, in_reply_to: Option<Address>|,
-            outputs: |result: ZomeApiResult<Address>|,
-            handler: blog::handle_create_post
-        }
-
-        delete_post: {
-            inputs: |content: String|,
-            outputs: |result: ZomeApiResult<Address>|,
-            handler: blog::handle_delete_post
-        }
-
-        delete_entry_post: {
-            inputs: |post_address: Address|,
-            outputs: |result: ZomeApiResult<()>|,
-            handler: blog::handle_delete_entry_post
-        }
-
-        update_post: {
-            inputs: |post_address: Address, new_content: String|,
-            outputs: |result: ZomeApiResult<Address>|,
-            handler: blog::handle_update_post
-        }
-
-        posts_by_agent: {
-            inputs: |agent: Address|,
-            outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
-            handler: blog::handle_posts_by_agent
-        }
-
-        get_post: {
-            inputs: |post_address: Address|,
-            outputs: |post: ZomeApiResult<Option<Entry>>|,
-            handler: blog::handle_get_post
-        }
-
-        get_initial_post: {
-            inputs: |post_address: Address|,
-            outputs: |post: ZomeApiResult<Option<Entry>>|,
-            handler : blog::handle_get_initial_post
-        }
-
-        get_history_post : {
-            inputs: |post_address: Address|,
-            outputs: |post: ZomeApiResult<EntryHistory>|,
-            handler : blog::handle_get_history_post
-        }
-
-        my_posts: {
-            inputs: | |,
-            outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
-            handler: blog::handle_my_posts
-        }
-
-        get_post_with_options_latest :{
-            inputs: |post_address: Address|,
-            outputs: |post: ZomeApiResult<Entry>|,
-            handler:  blog::handle_get_post_with_options_latest
-        }
-
-        get_post_with_options :{
-            inputs: |post_address: Address|,
-            outputs: |post: ZomeApiResult<GetEntryResult>|,
-            handler:  blog::handle_my_post_with_options
-        }
-
-        my_posts_immediate_timeout: {
-            inputs: | |,
-            outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
-            handler: blog::handle_my_posts_immediate_timeout
-        }
-
-        my_posts_as_committed: {
-            inputs: | |,
-            outputs: |post_hashes: ZomeApiResult<Vec<Address>>|,
-            handler: blog::handle_my_posts_as_commited
-        }
-
-
-        recommend_post: {
-            inputs: |post_address: Address, agent_address: Address|,
-            outputs: |result: ZomeApiResult<()>|,
-            handler: blog::handle_recommend_post
-        }
-
-        my_recommended_posts: {
-            inputs: | |,
-            outputs: |result: ZomeApiResult<GetLinksResult>|,
-            handler: blog::handle_my_recommended_posts
-        }
-    ]
-
-    traits: {
-        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post,get_history_post,get_post_with_options,get_post_with_options_latest]
+    #[zome_fn("hc_public")]
+    pub fn show_env() -> ZomeApiResult<Env> {
+        blog::handle_show_env()
     }
+
+    #[zome_fn("hc_public")]
+    pub fn get_sources(address: Address) -> ZomeApiResult<Vec<Address>> {
+        blog::handle_get_sources(address)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
+        blog::handle_check_sum(num1, num2)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn check_send(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
+        blog::handle_check_send(to_agent, message)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn post_address(content: String) -> ZomeApiResult<Address> {
+        blog::handle_post_address(content)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn create_post(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
+        blog::handle_create_post(content, in_reply_to)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn delete_post(content: String) -> ZomeApiResult<Address> {
+        blog::handle_delete_post(content)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn delete_entry_post(post_address: Address) -> ZomeApiResult<()> {
+        blog::handle_delete_entry_post(post_address)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn update_post(post_address: Address, new_content: String) -> ZomeApiResult<Address> {
+        blog::handle_update_post(post_address, new_content)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
+        blog::handle_posts_by_agent(agent)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
+        blog::handle_get_post(post_address)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_initial_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
+        blog::handle_get_initial_post(post_address)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_history_post(post_address: Address) -> ZomeApiResult<EntryHistory> {
+        blog::handle_get_history_post(post_address)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn my_posts() -> ZomeApiResult<GetLinksResult> {
+        blog::handle_my_posts()
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_post_with_options_latest(post_address: Address) -> ZomeApiResult<Entry> {
+        blog::handle_get_post_with_options_latest(post_address)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_post_with_options(post_address: Address) ->ZomeApiResult<GetEntryResult> {
+        blog::handle_my_post_with_options(post_address)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
+        blog::handle_my_posts_immediate_timeout()
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn my_posts_as_committed() -> ZomeApiResult<Vec<Address>> {
+        blog::handle_my_posts_as_commited()
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<()> {
+        blog::handle_recommend_post(post_address, agent_address)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn my_recommended_posts() -> ZomeApiResult<GetLinksResult> {
+        blog::handle_my_recommended_posts()
+    }
+
 }

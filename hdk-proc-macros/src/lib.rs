@@ -123,6 +123,24 @@ impl ZomeCodeDef {
             Some(callback) => (vec![callback.code.clone()], vec![callback.param.clone()]),
         };
 
+        let traits = self.traits.iter().map(|(tr8, trait_funcs)| {
+
+            let funcs = trait_funcs.functions.clone();
+
+            quote!{
+                {
+                    let mut traitfns = TraitFns::new();
+                    traitfns.functions = vec![
+                        #(
+                            #funcs.into()
+                        ),*
+                    ];
+
+                    traitfns_map.insert(#tr8.into(), traitfns);
+                }
+            }
+        });
+
         let gen = quote! {
 
             #(#extra)*
@@ -168,8 +186,26 @@ impl ZomeCodeDef {
             #[no_mangle]
             #[allow(unused_imports)]
             pub fn __list_traits() -> hdk::holochain_core_types::dna::zome::ZomeTraits {
+                // use std::collections::BTreeMap;
+                // BTreeMap::new()
+
+                use hdk::holochain_core_types::dna::{
+                    fn_declarations::{FnParameter, FnDeclaration, TraitFns},
+                };
+
                 use std::collections::BTreeMap;
-                BTreeMap::new()
+
+                let return_value: hdk::holochain_core_types::dna::zome::ZomeTraits = {
+                    let mut traitfns_map = BTreeMap::new();
+
+                    #(
+                        #traits
+                    ),*
+
+                    traitfns_map
+                };
+
+                return_value
             }
 
         

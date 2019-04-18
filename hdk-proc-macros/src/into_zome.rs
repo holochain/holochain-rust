@@ -55,6 +55,8 @@ impl FnParameter {
     }
 }
 
+
+
 impl From<FnParameter> for syn::Field {
     fn from(param: FnParameter) -> Self {
         syn::Field {
@@ -267,7 +269,6 @@ impl IntoZome for syn::ItemMod {
 	    .fold(BTreeMap::new(), |mut acc, func| {
             let func_name = func.ident.to_string();
             func.attrs.iter().for_each(|attr| { // this will error if zome fn has multiple attriutes defined
-
                 let meta = attr.parse_meta().unwrap();
                 match meta {
                 	syn::Meta::List(meta_list) => {

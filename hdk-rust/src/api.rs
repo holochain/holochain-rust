@@ -1342,36 +1342,6 @@ pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
 }
 
 /// Adds a capability grant to the local chain
-/// # Examples
-/// ```rust
-/// # #[macro_use]
-/// # extern crate hdk;
-/// # extern crate holochain_core_types;
-/// # use hdk::error::ZomeApiResult;
-/// # use hdk::CAPABILITY_REQ;
-/// # use holochian_core_types::entry::cap_entries::CapabilityType;
-/// # use std::time::Duration;
-///
-/// # fn main() {
-/// pub fn is_my_friend() -> bool {
-///    CAPABILITY_REQ.provenance.source() == "<myfriend'shashgoeshere>";
-/// }
-/// pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
-///    if is_my_friend() {
-///        let mut functions = BTreeMap::new();
-///        functions.insert("blog".to_string(), vec!["create_post".to_string()]);
-///        Ok(Some(hdk::grant_capability(
-///            "can_post",
-///             CapabilityType::Assigned,
-///             Some(vec![addr],
-///             functions,
-///        )?))
-///    } else {
-///        Ok(None)
-///    }
-/// }
-/// # }
-/// ````
 pub fn grant_capability<S: Into<String>>(
     id: S,
     cap_type: CapabilityType,

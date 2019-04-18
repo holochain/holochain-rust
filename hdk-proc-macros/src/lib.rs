@@ -192,7 +192,7 @@ impl ZomeCodeDef {
 
                     #(
                         #traits
-                    ),*
+                    )*
 
                     traitfns_map
                 };

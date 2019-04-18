@@ -34,7 +34,7 @@ pub mod converse {
         }
     }
 
-    #[zome_fn("hc_public")]
+    #[zome_fn("hc_public", "other")]
     pub fn verify_message(message: String, provenance: Provenance) -> ZomeApiResult<bool> {
         hdk::verify_signature(provenance, message)
     }

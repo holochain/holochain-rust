@@ -167,14 +167,15 @@ fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetRes
             version = Some(m[1].to_string());
         }
 
-        if version.is_none() || version.as_ref().unwrap() != &N3H_INFO.version {
+        if version.is_some() && version.as_ref().unwrap() == &N3H_INFO.version {
+            Ok(true)
+        } else {
             bail!(
                 "n3h version mismatch, expected: {}, got: {:?}",
                 &N3H_INFO.version,
                 version
-            );
+            )
         }
-        Ok(true)
     }
 }
 

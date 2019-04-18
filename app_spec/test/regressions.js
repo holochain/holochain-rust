@@ -23,7 +23,7 @@ scenario.runTape('calling get_links before link_entries makes no difference', as
   const get2 = alice.call("blog", "my_posts", {})
   t.ok(get2.Ok)
 
-  t.equal(get2.Ok.addresses.length, 1)
+  t.equal(get2.Ok.links.length, 1)
 })
 
 scenario.runTape('calling get_links twice in a row is no different than calling it once', async (t, {alice}) => {
@@ -40,7 +40,7 @@ scenario.runTape('calling get_links twice in a row is no different than calling 
   const get2 = alice.call("blog", "my_posts", {})
   t.ok(get2.Ok)
 
-  t.equal(get2.Ok.addresses.length, 1)
+  t.equal(get2.Ok.links.length, 1)
 })
 
 scenario.runTape('not calling get_links in the beginning is also ok', async (t, {alice}) => {
@@ -51,7 +51,7 @@ scenario.runTape('not calling get_links in the beginning is also ok', async (t, 
   const get1 = alice.call("blog", "my_posts", {})
   t.ok(get1.Ok)
 
-  t.equal(get1.Ok.addresses.length, 1)
+  t.equal(get1.Ok.links.length, 1)
 })
 
 scenario.runTape('alice create & publish post -> recommend own post to self', async (t, {alice, tash}) => {
@@ -76,7 +76,7 @@ scenario.runTape('alice create & publish post -> recommend own post to self', as
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, alice.agentId)
 
-  t.equal(recommendedPosts.Ok.addresses.length, 1)
+  t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
 scenario.runTape('alice create & publish post -> tash recommend to self', async (t, {alice, tash}) => {
@@ -100,7 +100,7 @@ scenario.runTape('alice create & publish post -> tash recommend to self', async 
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, tash.agentId)
 
-  t.equal(recommendedPosts.Ok.addresses.length, 1)
+  t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
 scenario.runTape('create & publish post -> recommend to other agent', async (t, {alice, tash}) => {
@@ -124,5 +124,5 @@ scenario.runTape('create & publish post -> recommend to other agent', async (t, 
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, tash.agentId)
 
-  t.equal(recommendedPosts.Ok.addresses.length, 1)
+  t.equal(recommendedPosts.Ok.links.length, 1)
 })

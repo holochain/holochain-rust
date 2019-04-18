@@ -176,10 +176,22 @@ let
   ''
    ${pkgs.lib.concatMapStrings (path: build-wasm path) wasm-paths}
   '';
+
+  # simplified version of the c bindings test command in makefile
+  # hardcodes hc_dna to test rather than looping/scanning like make does
+  # might want to make this more sophisticated if we end up with many tests
+  hc-test-c-bindings = pkgs.writeShellScriptBin "hc-test-c-bindings"
+  ''
+  cargo build -p holochain_dna_c_binding
+  ( cd c_binding_tests/hc_dna && qmake -o $@Makefile $@qmake.pro && make )
+  ./target/debug/c_binding_tests/hc_dna/test_executable
+  '';
+
   hc-test = pkgs.writeShellScriptBin "hc-test"
   ''
    hc-build-wasm
    HC_SIMPLE_LOGGER_MUTE=1 RUST_BACKTRACE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target "$1";
+   hc-test-c-bindings
   '';
 
   hc-test-all = pkgs.writeShellScriptBin "hc-test-all"
@@ -681,6 +693,8 @@ stdenv.mkDerivation rec {
     pkgconfig
     rust-build
 
+    qt5.qmake
+
     nodejs-8_x
     yarn
 
@@ -708,6 +722,7 @@ stdenv.mkDerivation rec {
     hc-test-cli
     hc-test-app-spec
     hc-test-node-conductor
+    hc-test-c-bindings
 
     hc-fmt
     hc-fmt-check

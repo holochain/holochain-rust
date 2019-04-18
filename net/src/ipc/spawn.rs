@@ -7,6 +7,8 @@ use crate::{
     tweetlog::TWEETLOG,
 };
 
+use super::n3h::get_verify_n3h;
+
 use std::{
     collections::HashMap,
     io::{Read, Write},
@@ -18,24 +20,28 @@ pub struct SpawnResult {
     pub p2p_bindings: Vec<String>,
 }
 
+pub const DEFAULT_TIMEOUT_MS: usize = 5000;
+
 /// Spawn a holochain networking ipc sub-process
 /// Will block for IPC connection until timeout_ms is reached.
 /// Can also block for P2P connection
 pub fn ipc_spawn(
-    cmd: String,
-    args: Vec<String>,
     work_dir: String,
     end_user_config: String,
-    env: HashMap<String, String>,
+    mut env: HashMap<String, String>,
     timeout_ms: usize,
     can_wait_for_p2p: bool,
 ) -> NetResult<SpawnResult> {
-    let mut child = std::process::Command::new(cmd);
+    let (n3h, n3h_args) = get_verify_n3h()?;
+
+    env.insert("NO_CLEANUP".to_string(), "1".to_string());
+
+    let mut child = std::process::Command::new(n3h);
 
     child
         .stdout(std::process::Stdio::piped())
         .stdin(std::process::Stdio::piped())
-        .args(&args)
+        .args(&n3h_args)
         .envs(&env)
         .current_dir(work_dir);
 

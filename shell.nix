@@ -27,15 +27,15 @@ let
   # the unique hash at the end of the medium post url
   # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
   # would be 4867d777de94
-  pulse-url-hash = "358f0d57d125";
-  pulse-version = "23";
-  pulse-commit = "bae3db97373cd2f89cd473cb1987090d0e6b5616";
+  pulse-url-hash = "d387ffcfac72";
+  pulse-version = "24";
+  pulse-commit = "494c21b9dc7927b7b171533cc20c4d39bd92b45c";
 
-  core-previous-version = "0.0.10-alpha1";
-  core-version = "0.0.10-alpha2";
+  core-previous-version = "0.0.10-alpha2";
+  core-version = "0.0.11-alpha1";
 
-  node-conductor-previous-version = "0.4.9-alpha1";
-  node-conductor-version = "0.4.9-alpha2";
+  node-conductor-previous-version = "0.4.9-alpha2";
+  node-conductor-version = "0.4.10-alpha1";
 
   core-tag = "v${core-version}";
   node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
@@ -179,7 +179,7 @@ let
   hc-test = pkgs.writeShellScriptBin "hc-test"
   ''
    hc-build-wasm
-   HC_SIMPLE_LOGGER_MUTE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
+   HC_SIMPLE_LOGGER_MUTE=1 RUST_BACKTRACE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target "$1";
   '';
 
   hc-test-all = pkgs.writeShellScriptBin "hc-test-all"
@@ -306,10 +306,10 @@ Then run `nix-shell --run hc-prepare-release`
 - [ ] release cut from `master` with `hc-do-release`
 - [ ] core release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
-  - artifacts: {{ artifacts url }}
+  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${core-tag}
 - [ ] node release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
-  - artifacts: {{ artifacts url }}
+  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${node-conductor-tag}
 - [ ] all release artifacts found by `hc-check-release-artifacts`
 - [ ] npmjs deploy with `hc-npm-deploy` then `hc-npm-check-version`
 - [ ] `unknown` release assets renamed to `ubuntu`
@@ -501,7 +501,7 @@ All binaries are for 64-bit operating systems.
    # gets a markdown version of pulse
    # greps for everything from summary to details (not including details heading)
    # deletes null characters that throw warnings in bash
-   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${pulse-url} | grep -Pzo "(?s)(###.*Summary.*)(?=###.*Details)" | tr -d '\0' )
+   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${pulse-url} | grep -Pzo "(?s)(###.*Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
    WITH_NOTES=''${WITH_DATE/$PULSE_PLACEHOLDER/$PULSE_NOTES}
    echo "$WITH_NOTES"
   '';
@@ -628,9 +628,11 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
-
     # https://github.com/NixOS/pkgs/blob/master/doc/languages-frameworks/rust.section.md
-    binutils gcc gnumake openssl pkgconfig coreutils
+    binutils gcc gnumake openssl pkgconfig coreutils which
+
+    # for openssl static installation
+    perl
 
     cmake
     python
@@ -722,6 +724,8 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   DARWIN_NIX_LDFLAGS = if stdenv.isDarwin then "-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation " else "";
+
+  OPENSSL_STATIC = "1";
 
   shellHook = ''
    # cargo installs things to the user's home so we need it on the path

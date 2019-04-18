@@ -94,7 +94,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
         })
         .collect::<Result<Vec<()>, String>>()
         .map_err(|error| HolochainError::ConfigError(error))?;
-    conductor.boot_from_config(None)?;
+    conductor.boot_from_config()?;
     Ok(())
 }
 

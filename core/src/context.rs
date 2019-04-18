@@ -23,8 +23,8 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 use holochain_net::p2p_config::P2pConfig;
+use jsonrpc_core::{self, IoHandler};
 use jsonrpc_lite::JsonRpc;
-use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{
@@ -54,7 +54,7 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: Arc<RwLock<IoHandler>>,
-    pub signal_tx: Option<SyncSender<Signal>>,
+    signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
 impl Context {
@@ -118,7 +118,7 @@ impl Context {
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: Option<SyncSender<ActionWrapper>>,
-        signal_tx: Option<SyncSender<Signal>>,
+        signal_tx: Option<crossbeam_channel::Sender<Signal>>,
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
@@ -207,10 +207,8 @@ impl Context {
             .expect("Action channel not initialized")
     }
 
-    pub fn signal_tx(&self) -> &SyncSender<Signal> {
-        self.signal_tx
-            .as_ref()
-            .expect("Signal channel not initialized")
+    pub fn signal_tx(&self) -> Option<&crossbeam_channel::Sender<Signal>> {
+        self.signal_tx.as_ref()
     }
 
     pub fn observer_channel(&self) -> &SyncSender<Observer> {

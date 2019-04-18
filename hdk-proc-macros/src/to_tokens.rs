@@ -1,4 +1,6 @@
-use crate::types::{FnDeclaration, FnParameter, ZomeCodeDef, ZomeFunction, ZomeFunctionCode};
+use crate::zome_code_def::{
+    FnDeclaration, FnParameter, ZomeCodeDef, ZomeFunction, ZomeFunctionCode,
+};
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};

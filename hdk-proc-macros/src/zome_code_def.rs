@@ -1,5 +1,8 @@
+use std::convert::TryFrom;
+
+use crate::into_zome::IntoZome;
 use hdk::holochain_core_types::dna::zome::ZomeTraits;
-use proc_macro2::{Ident, Span};
+use proc_macro2::{Ident, Span, TokenStream};
 
 pub type GenesisCallback = syn::Block;
 pub type ZomeFunctionCode = syn::Block;
@@ -75,4 +78,15 @@ pub struct ZomeCodeDef {
     pub traits: ZomeTraits,
     pub receive_callback: Option<ReceiveCallback>,
     pub extra: Vec<syn::Item>, // extra stuff to be added as is to the zome code
+}
+
+// use this to convert from the tagged #[zome] module into a ZomeCodeDef struct
+
+impl TryFrom<TokenStream> for ZomeCodeDef {
+    type Error = syn::Error;
+
+    fn try_from(input: TokenStream) -> Result<Self, Self::Error> {
+        let module: syn::ItemMod = syn::parse(input.into())?;
+        Ok(module.extract_zome())
+    }
 }

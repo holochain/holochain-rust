@@ -5,29 +5,18 @@ extern crate hdk;
 extern crate proc_macro;
 extern crate proc_macro2;
 
-use crate::into_zome::IntoZome;
 use proc_macro2::TokenStream;
 use std::convert::TryFrom;
-use syn;
 
 mod into_zome;
 mod to_tokens;
-mod types;
+mod zome_code_def;
 
-use crate::types::ZomeCodeDef;
-
-// use this to convert from the tagged #[zome] module into a definition struct
-impl TryFrom<TokenStream> for ZomeCodeDef {
-    type Error = syn::Error;
-
-    fn try_from(input: TokenStream) -> Result<Self, Self::Error> {
-        let module: syn::ItemMod = syn::parse(input.into())?;
-        Ok(module.extract_zome())
-    }
-}
+use crate::zome_code_def::ZomeCodeDef;
 
 /**
- * @brief      Macro to be used on a Rust module. The contents of the module is processed and exported as a zome
+ * @brief Defines the #[zome] cacro to be used on a Rust module.
+ * The contents of the module is processed into a ZomeCodeDef and then re-exported as wasm friendly code
  */
 #[proc_macro_attribute]
 pub fn zome(

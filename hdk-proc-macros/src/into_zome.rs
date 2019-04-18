@@ -1,6 +1,6 @@
 extern crate proc_macro2;
 
-use crate::types::{
+use crate::zome_code_def::{
     EntryDefCallbacks, FnDeclaration, FnParameter, GenesisCallback, ReceiveCallback, ZomeCodeDef,
     ZomeFunction, ZomeFunctions,
 };

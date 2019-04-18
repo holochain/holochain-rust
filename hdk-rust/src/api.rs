@@ -1346,14 +1346,26 @@ pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
 /// ```rust
 /// # #[macro_use]
 /// # extern crate hdk;
+/// # extern crate holochain_core_types;
 /// # use hdk::error::ZomeApiResult;
+/// # use hdk::CAPABILITY_REQ;
+/// # use holochian_core_types::entry::cap_entries::CapabilityType;
 /// # use std::time::Duration;
 ///
 /// # fn main() {
+/// pub fn is_my_friend() -> bool {
+///    CAPABILITY_REQ.provenance.source() == "<myfriend'shashgoeshere>";
+/// }
 /// pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
-///    let addr = CAPABILITY_REQ.provenance.source();
-///    if is_my_friend(addr) {
-///        Ok(Some(hdk::grant_capability(addr,"can_post",CapabilityType::Assigned,Some(vec!("create_post".to_string())))?))
+///    if is_my_friend() {
+///        let mut functions = BTreeMap::new();
+///        functions.insert("blog".to_string(), vec!["create_post".to_string()]);
+///        Ok(Some(hdk::grant_capability(
+///            "can_post",
+///             CapabilityType::Assigned,
+///             Some(vec![addr],
+///             functions,
+///        )?))
 ///    } else {
 ///        Ok(None)
 ///    }

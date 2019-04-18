@@ -18,6 +18,9 @@ const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
 scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
+}
+
+scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
 
     const SignResult = bob.call("converse", "sign_message", { key_id:"", message: message });

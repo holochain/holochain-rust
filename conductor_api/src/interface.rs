@@ -145,7 +145,7 @@ impl ConductorApiBuilder {
                 None => {
                     // TODO: Remove this fall back to the previous impl of inner 'params' 
                     // as soon as its deprecation life cycle is over <17-04-19, yourname> //
-                    hc.context().log("DEPRECATION WARNING: Using 'params' instead of 'args' for a Zome function call is now deprecated.");
+                    hc.context().log("warn/interface: DEPRECATION WARNING: Using 'params' instead of 'args' for a Zome function call is now deprecated.");
                     params_map.get("params")
                 }
             };

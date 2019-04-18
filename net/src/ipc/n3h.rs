@@ -169,7 +169,7 @@ fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetRes
                 version
             );
         }
-        return Ok(true);
+        return Ok(());
     }
     println!("response: {:?}", res);
     bail!(format!("n3h not found in path: {:?}", &path));

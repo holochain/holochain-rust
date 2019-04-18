@@ -179,7 +179,7 @@ let
   hc-test = pkgs.writeShellScriptBin "hc-test"
   ''
    hc-build-wasm
-   HC_SIMPLE_LOGGER_MUTE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
+   HC_SIMPLE_LOGGER_MUTE=1 RUST_BACKTRACE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target "$1";
   '';
 
   hc-test-all = pkgs.writeShellScriptBin "hc-test-all"
@@ -305,10 +305,10 @@ Then run `nix-shell --run hc-prepare-release`
 - [ ] release cut from `master` with `hc-do-release`
 - [ ] core release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
-  - artifacts: {{ artifacts url }}
+  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${core-tag}
 - [ ] node release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
-  - artifacts: {{ artifacts url }}
+  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${node-conductor-tag}
 - [ ] all release artifacts found by `hc-check-release-artifacts`
 - [ ] npmjs deploy with `hc-npm-deploy` then `hc-npm-check-version`
 - [ ] `unknown` release assets renamed to `ubuntu`
@@ -500,7 +500,7 @@ All binaries are for 64-bit operating systems.
    # gets a markdown version of pulse
    # greps for everything from summary to details (not including details heading)
    # deletes null characters that throw warnings in bash
-   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${pulse-url} | grep -Pzo "(?s)(###.*Summary.*)(?=###.*Details)" | tr -d '\0' )
+   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${pulse-url} | grep -Pzo "(?s)(###.*Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
    WITH_NOTES=''${WITH_DATE/$PULSE_PLACEHOLDER/$PULSE_NOTES}
    echo "$WITH_NOTES"
   '';
@@ -658,9 +658,11 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
-
     # https://github.com/NixOS/pkgs/blob/master/doc/languages-frameworks/rust.section.md
-    binutils gcc gnumake openssl pkgconfig coreutils
+    binutils gcc gnumake openssl pkgconfig coreutils which
+
+    # for openssl static installation
+    perl
 
     # for openssl static installation
     perl

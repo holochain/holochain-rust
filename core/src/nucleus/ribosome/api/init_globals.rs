@@ -24,6 +24,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
         public_token: Address::from(""),
+        cap_request: runtime.zome_call_data()?.call.cap.clone(),
     };
 
     // Update fields
@@ -68,14 +69,15 @@ pub mod tests {
         Defn,
     };
     use holochain_core_types::{
-        cas::content::Address, error::ZomeApiInternalResult, json::JsonString,
+        cas::content::Address, dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult,
+        json::JsonString, signature::Signature,
     };
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use std::convert::TryFrom;
     use test_utils::mock_signing::registered_test_agent;
 
     #[test]
-    /// test that bytes passed to debug end up in the log
+    /// test that the correct globals values are created for zome calls
     fn test_init_globals() {
         let input: Vec<u8> = vec![];
         let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
@@ -103,7 +105,15 @@ pub mod tests {
         // don't change.
         assert_eq!(
             globals.public_token,
-            Address::from("QmdVUAMNz5GwjsgMQusqzXjxggWwqZi9y25SXzg5ba4z6d"),
+            Address::from("QmdZiJWdVCh8s38tCcAAq8f7HpHkd9KLFnHh9vLTddt8D2"),
+        );
+
+        assert_eq!(
+            globals.cap_request,
+            CapabilityRequest::new( Address::from("dummy_token"),
+                                    Address::from("HcSCimiBHJ8y3zejkjtHsu9Q8MZx96ztvfYRJ9fJH3Pbxodac5s8rqmShYqaamz"),
+                                    Signature::from("nI/AFdqZPYw1yoCeV92pKWwugdkB54JJDhLLf3JgMFl9sm3aFIWKpiRo+4t8L+wn+S0Pg1Vh0Bzbmq3DSfJwDw=="),
+                                    ),
         );
     }
 }

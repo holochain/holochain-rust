@@ -1,14 +1,8 @@
 extern crate proc_macro2;
 
 use crate::types::{
-    ZomeFunction,
-    ZomeFunctions,
-    FnParameter,
-    FnDeclaration,
-    ZomeCodeDef,
-    EntryDefCallbacks,
-    ReceiveCallback,
-    GenesisCallback
+    EntryDefCallbacks, FnDeclaration, FnParameter, GenesisCallback, ReceiveCallback, ZomeCodeDef,
+    ZomeFunction, ZomeFunctions,
 };
 
 use hdk::holochain_core_types::dna::{fn_declarations::TraitFns, zome::ZomeTraits};

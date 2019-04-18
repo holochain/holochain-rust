@@ -1,8 +1,4 @@
-use crate::types::{
-    ZomeFunction,
-    FnParameter,
-    FnDeclaration,
-};
+use crate::types::{FnDeclaration, FnParameter, ZomeFunction};
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};

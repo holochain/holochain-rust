@@ -1,5 +1,5 @@
-use proc_macro2::{Ident, Span};
 use hdk::holochain_core_types::dna::zome::ZomeTraits;
+use proc_macro2::{Ident, Span};
 
 pub type GenesisCallback = syn::Block;
 pub type ZomeFunctionCode = syn::Block;
@@ -58,7 +58,6 @@ pub struct FnDeclaration {
     pub inputs: Vec<FnParameter>,
     pub output: syn::ReturnType,
 }
-
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct ZomeFunction {

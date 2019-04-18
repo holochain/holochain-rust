@@ -265,7 +265,7 @@ workflows:
       filters:
        branches:
         only:
-         - cold-debugging
+         - develop
    # - cold.debian.stable.nix
 
  cold.mac:
@@ -274,12 +274,12 @@ workflows:
       filters:
        branches:
         only:
-         - develop
+         - cold-debugging
    - cold.mac.10.nix:
       filters:
        branches:
         only:
-         - develop
+         - cold-debugging
 
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow

@@ -48,7 +48,7 @@ pub(crate) fn two_nodes_disconnect_test(
     log_i!("#### alex_binding: {}", alex_binding);
     alex.stop();
     // check if billy is still alive or screaming
-    let count = billy.listen(2000);
+    let count = billy.listen(5000);
     log_i!("#### billy got: {}\n\n\n\n", count);
 
     // re-enable alex

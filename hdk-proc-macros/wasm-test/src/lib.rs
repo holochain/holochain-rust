@@ -35,12 +35,12 @@ pub mod someZome {
     }
 
     #[zome_fn("hc_public", "trait2")]
-    fn test_zome_fn(input: i32, next: bool, another: JsonString) -> JsonString {
+    fn test_zome_fn(_input: i32, _next: bool, _another: JsonString) -> JsonString {
         JsonString::from_json("hi")
     }
 
     #[zome_fn("trait3")]
-    fn test_zome_fn2(input: i32, next: bool, another: TestEntryType) -> ZomeApiResult<JsonString> {
+    fn test_zome_fn2(_input: i32, _next: bool, _another: TestEntryType) -> ZomeApiResult<JsonString> {
         Ok(JsonString::from_json("hi"))
     }
 

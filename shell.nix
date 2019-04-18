@@ -621,19 +621,28 @@ All binaries are for 64-bit operating systems.
    github-release -v edit --tag ${core-tag} --name ${core-tag} --description "$( hc-generate-release-notes )" --pre-release
   '';
 
-  build-release-artifact = path:
+  build-release-artifact = params:
   ''
-   export artifact_name=`sed "s/unknown/generic/g" <<< "${path}-${core-version}-${linux-release-target}"`
+   export artifact_name=`sed "s/unknown/generic/g" <<< "${params.path}-${core-version}-${linux-release-target}"`
    echo
    echo "building $artifact_name..."
    echo
 
-   CARGO_INCREMENTAL=0 cargo rustc --manifest-path ${path}/Cargo.toml --target ${linux-release-target} --release -- -C lto
+   CARGO_INCREMENTAL=0 cargo rustc --manifest-path ${params.path}/Cargo.toml --target ${linux-release-target} --release -- -C lto
    mkdir -p dist/$artifact_name
-   cp target/${linux-release-target}/release/hc ${path}/LICENSE ${path}/README.md dist/$artifact_name
+   cp target/${linux-release-target}/release/${params.name} ${params.path}/LICENSE ${params.path}/README.md dist/$artifact_name
    ( cd dist && tar czf $artifact_name.tar.gz $artifact_name && rm -rf $artifact_name )
   '';
-  build-release-paths = [ "cli" "conductor" ];
+  build-release-paramss = [
+                           {
+                            path = "cli";
+                            name = "hc";
+                           }
+                           {
+                            path = "conductor";
+                            name = "holochain";
+                           }
+                          ];
   build-node-conductor-artifact = node-version:
   ''
    hc-node-flush
@@ -648,7 +657,7 @@ All binaries are for 64-bit operating systems.
   build-node-conductor-versions = [ "nodejs-8_x" ];
   hc-build-release-artifacts = pkgs.writeShellScriptBin "hc-build-release-artifacts"
   ''
-   ${pkgs.lib.concatMapStrings (path: build-release-artifact path) build-release-paths}
+   ${pkgs.lib.concatMapStrings (params: build-release-artifact params) build-release-paramss}
    ${pkgs.lib.concatMapStrings (node-version: build-node-conductor-artifact node-version) build-node-conductor-versions}
   '';
 

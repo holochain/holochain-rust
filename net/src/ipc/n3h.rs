@@ -150,9 +150,17 @@ fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<Vec<String>> {
 }
 
 fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetResult<bool> {
-    let res = exec_output(path, out_args, ".", false);
-    if res.is_ok() {
-        let res = res.unwrap();
+    let res = exec_output(path, out_args, ".", false)
+        .map_err(|err| {
+            println!("response: {:?}", err);
+            format_err!("n3h not found in path: {:?}", &path)
+        })?;
+
+    // `n3h --version` returns only the version number, for example "v0.0.11-alpha"
+    if res == N3H_INFO.version {
+        Ok(true)
+    } else {
+        // but if that doesn't we might get a match using below regexp
         let re = regex::Regex::new(r#"(?m)#\s+n3h\s+version:\s+"([^"]+)"\s+#$"#)?;
 
         let mut version = None;
@@ -167,10 +175,8 @@ fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetRes
                 version
             );
         }
-        return Ok(true);
+        Ok(true)
     }
-    println!("response: {:?}", res);
-    bail!(format!("n3h not found in path: {:?}", &path));
 }
 
 /// check our pinned n3h version urls / hashes for the current os/arch

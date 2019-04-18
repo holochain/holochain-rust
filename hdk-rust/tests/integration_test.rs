@@ -40,7 +40,7 @@ use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error:
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
-        get_links::GetLinksResult,
+        get_links::{GetLinksResult, LinksResult},
     },
     wasm_target_dir,
 };
@@ -611,8 +611,14 @@ fn can_roundtrip_links() {
     let entry_address_3 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
 
     let expected_links: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
-        entry_address_2.clone(),
-        entry_address_3.clone(),
+        LinksResult {
+            address: entry_address_2.clone(),
+            headers: Vec::new(),
+        },
+        LinksResult {
+            address: entry_address_3.clone(),
+            headers: Vec::new(),
+        },
     ]));
     let expected_links = JsonString::from(expected_links);
 
@@ -620,7 +626,16 @@ fn can_roundtrip_links() {
         Ok(vec![Ok(entry_2.clone()), Ok(entry_3.clone())]);
 
     let expected_links_reversed: Result<GetLinksResult, HolochainError> =
-        Ok(GetLinksResult::new(vec![entry_address_3, entry_address_2]));
+        Ok(GetLinksResult::new(vec![
+            LinksResult {
+                address: entry_address_3.clone(),
+                headers: Vec::new(),
+            },
+            LinksResult {
+                address: entry_address_2.clone(),
+                headers: Vec::new(),
+            },
+        ]));
     let expected_links_reversed = JsonString::from(expected_links_reversed);
 
     let expected_entries_reversed: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =

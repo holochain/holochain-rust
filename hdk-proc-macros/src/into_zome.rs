@@ -2,13 +2,9 @@ extern crate proc_macro2;
 
 use proc_macro2::{Ident, Span, TokenStream};
 
-use std::collections::BTreeMap;
-use hdk::holochain_core_types::dna::{
-    zome::{ZomeTraits},
-    fn_declarations::TraitFns,
-};
+use hdk::holochain_core_types::dna::{fn_declarations::TraitFns, zome::ZomeTraits};
 use quote::{quote, ToTokens};
-
+use std::collections::BTreeMap;
 
 static GENESIS_ATTRIBUTE: &str = "genesis";
 static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
@@ -33,14 +29,11 @@ pub struct FnParameter {
 
 impl FnParameter {
     pub fn new(ident: Ident, ty: syn::TypePath) -> Self {
-        FnParameter{
-            ident,
-            ty,
-        }
+        FnParameter { ident, ty }
     }
 
     pub fn new_from_ident_str(ident_str: &str, ty: syn::TypePath) -> Self {
-        FnParameter{
+        FnParameter {
             ident: Ident::new(ident_str, Span::call_site()),
             ty,
         }
@@ -48,14 +41,12 @@ impl FnParameter {
 
     pub fn new_from_str(ident_str: &str, ty_str: &str) -> Self {
         let ty: syn::TypePath = syn::parse_str(ty_str).unwrap();
-        FnParameter{
+        FnParameter {
             ident: Ident::new(ident_str, Span::call_site()),
             ty,
         }
     }
 }
-
-
 
 impl From<FnParameter> for syn::Field {
     fn from(param: FnParameter) -> Self {
@@ -98,7 +89,7 @@ impl ToTokens for FnDeclaration {
             syn::ReturnType::Default => Vec::new(),
             syn::ReturnType::Type(_, ty) => {
                 vec![quote!(FnParameter::new("result", stringify!(#ty)))]
-            }   
+            }
         };
 
         tokens.extend(quote! {
@@ -130,15 +121,15 @@ pub struct ZomeCodeDef {
 }
 
 pub trait IntoZome {
-	fn extract_zome_fns(&self) -> ZomeFunctions;
-	fn extract_entry_defs(&self) -> EntryDefCallbacks;
-	fn extract_genesis(&self) -> GenesisCallback;
-	fn extract_traits(&self) -> ZomeTraits;
+    fn extract_zome_fns(&self) -> ZomeFunctions;
+    fn extract_entry_defs(&self) -> EntryDefCallbacks;
+    fn extract_genesis(&self) -> GenesisCallback;
+    fn extract_traits(&self) -> ZomeTraits;
     fn extract_receive_callback(&self) -> Option<ReceiveCallback>;
-	fn extract_extra(&self) -> Vec<syn::Item>;
+    fn extract_extra(&self) -> Vec<syn::Item>;
 
-	fn extract_zome(&self) -> ZomeCodeDef {
-		ZomeCodeDef {
+    fn extract_zome(&self) -> ZomeCodeDef {
+        ZomeCodeDef {
             traits: self.extract_traits(),
             entry_def_fns: self.extract_entry_defs(),
             genesis: self.extract_genesis(),
@@ -146,32 +137,27 @@ pub trait IntoZome {
             zome_fns: self.extract_zome_fns(),
             extra: self.extract_extra(),
         }
-	}
+    }
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 
 // Return an iterator over the syn::ItemFn in a module
 fn funcs_iter(module: &syn::ItemMod) -> impl Iterator<Item = syn::ItemFn> {
-	module
-    .clone()
-    .content
-    .unwrap()
-    .1
-    .into_iter()
-    .filter_map(|item| {
-    	match item {
-    		syn::Item::Fn(func) => Some(func),
-    		_ => None,
-    	}
-    })
+    module
+        .clone()
+        .content
+        .unwrap()
+        .1
+        .into_iter()
+        .filter_map(|item| match item {
+            syn::Item::Fn(func) => Some(func),
+            _ => None,
+        })
 }
 
 fn is_tagged_with(tag: &'static str) -> impl Fn(&syn::ItemFn) -> bool {
-	move |func| {
-		func.attrs.iter().any(|attr| attr.path.is_ident(tag))
-	}
+    move |func| func.attrs.iter().any(|attr| attr.path.is_ident(tag))
 }
 
 fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
@@ -189,16 +175,12 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
                     syn::Type::Path(type_path) => type_path,
                     _ => panic!("invalid type for parameter"),
                 };
-                FnParameter {
-                    ident,
-                    ty,
-                }
+                FnParameter { ident, ty }
             } else {
                 panic!("could not parse function args")
             }
         })
         .collect();
-
 
     FnDeclaration {
         name: func.ident.clone().to_string(),
@@ -208,63 +190,61 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
 }
 
 impl IntoZome for syn::ItemMod {
-
-	fn extract_genesis(&self) -> GenesisCallback {
-	    // find all the functions tagged as the genesis callback
-	    let geneses: Vec<Box<syn::Block>> =
-        funcs_iter(self)
-        .filter(is_tagged_with(GENESIS_ATTRIBUTE))
-        .fold(Vec::new(), |mut acc, func| {
-            acc.push(func.block);
-            acc
-        });
-	    // only a single function can be tagged in a valid some so error if there is more than one
-	    // if there is None then use the sensible default of Ok(())
-	    match geneses.len() {
-	        0 => {
-	            self.ident.span().unstable()
+    fn extract_genesis(&self) -> GenesisCallback {
+        // find all the functions tagged as the genesis callback
+        let geneses: Vec<Box<syn::Block>> = funcs_iter(self)
+            .filter(is_tagged_with(GENESIS_ATTRIBUTE))
+            .fold(Vec::new(), |mut acc, func| {
+                acc.push(func.block);
+                acc
+            });
+        // only a single function can be tagged in a valid some so error if there is more than one
+        // if there is None then use the sensible default of Ok(())
+        match geneses.len() {
+            0 => {
+                self.ident.span().unstable()
 	            .error("No genesis function defined! A zome definition requires a callback tagged with #[genesis]")
 	            .emit();
-	            panic!()
-	        }
-	        1 => *geneses[0].clone(),
-	        _ => {
-	            self.ident.span().unstable()
+                panic!()
+            }
+            1 => *geneses[0].clone(),
+            _ => {
+                self.ident.span().unstable()
 	            .error("Multiple functions tagged as genesis callback! Only one is permitted per zome definition.")
 	            .emit();
-	            panic!()
-	        }
-	    }
-	}
+                panic!()
+            }
+        }
+    }
 
-	fn extract_zome_fns(&self) -> ZomeFunctions {
-	    // find all the functions tagged as the zome_fn
-	    funcs_iter(self)
-	    .filter(is_tagged_with(ZOME_FN_ATTRIBUTE))
-	    .fold(Vec::new(), |mut acc, func| {
-            let fn_def = zome_fn_dec_from_syn(&func);
-            acc.push(ZomeFunction {
-                declaration: fn_def,
-                code: *func.block,
-            });
-	        acc
-	    })
-	}
+    fn extract_zome_fns(&self) -> ZomeFunctions {
+        // find all the functions tagged as the zome_fn
+        funcs_iter(self)
+            .filter(is_tagged_with(ZOME_FN_ATTRIBUTE))
+            .fold(Vec::new(), |mut acc, func| {
+                let fn_def = zome_fn_dec_from_syn(&func);
+                acc.push(ZomeFunction {
+                    declaration: fn_def,
+                    code: *func.block,
+                });
+                acc
+            })
+    }
 
-	fn extract_entry_defs(&self) -> Vec<syn::ItemFn> {
-	    funcs_iter(self)
-	    .filter(is_tagged_with(ENTRY_DEF_ATTRIBUTE))
-	    .fold(Vec::new(), |mut acc, mut func| {
-		    // drop all attributes on the fn. This may cause problems
-		    // and really should only drop the ENTRY_DEF_ATTRIBUTE
-		    func.attrs = Vec::new();
-		    acc.push(func);
-	        acc
-	    })
-	}
+    fn extract_entry_defs(&self) -> Vec<syn::ItemFn> {
+        funcs_iter(self)
+            .filter(is_tagged_with(ENTRY_DEF_ATTRIBUTE))
+            .fold(Vec::new(), |mut acc, mut func| {
+                // drop all attributes on the fn. This may cause problems
+                // and really should only drop the ENTRY_DEF_ATTRIBUTE
+                func.attrs = Vec::new();
+                acc.push(func);
+                acc
+            })
+    }
 
-	fn extract_traits(&self) -> ZomeTraits {
-	    funcs_iter(self)
+    fn extract_traits(&self) -> ZomeTraits {
+        funcs_iter(self)
 	    .filter(is_tagged_with(ZOME_FN_ATTRIBUTE))
 	    .fold(BTreeMap::new(), |mut acc, func| {
             let func_name = func.ident.to_string();
@@ -288,76 +268,80 @@ impl IntoZome for syn::ItemMod {
             });
 	        acc
 	    })
-	}
+    }
 
-	// For this implementation the `extra` is all the content of the module that is not tagged as special
-	// Without this the author can't write custom structs in the module
-	fn extract_extra(&self) -> Vec<syn::Item> {
-		match self.content.clone() {
-			Some((_, items)) => {
-				items
-				.into_iter()
-				.filter(|item| {
-					if let syn::Item::Fn(func) = item {
-						// any functions not tagged with a hdk attribute
-						!is_tagged_with(ZOME_FN_ATTRIBUTE)(func) &&
-						!is_tagged_with(GENESIS_ATTRIBUTE)(func) &&
-						!is_tagged_with(ENTRY_DEF_ATTRIBUTE)(func) &&
-                        !is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE)(func)
-					} else {
-						true // and anything that is not a function
-					}
-				})
-				.collect()
-			},
-			None => Vec::new(),
-		}
-	}
+    // For this implementation the `extra` is all the content of the module that is not tagged as special
+    // Without this the author can't write custom structs in the module
+    fn extract_extra(&self) -> Vec<syn::Item> {
+        match self.content.clone() {
+            Some((_, items)) => {
+                items
+                    .into_iter()
+                    .filter(|item| {
+                        if let syn::Item::Fn(func) = item {
+                            // any functions not tagged with a hdk attribute
+                            !is_tagged_with(ZOME_FN_ATTRIBUTE)(func)
+                                && !is_tagged_with(GENESIS_ATTRIBUTE)(func)
+                                && !is_tagged_with(ENTRY_DEF_ATTRIBUTE)(func)
+                                && !is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE)(func)
+                        } else {
+                            true // and anything that is not a function
+                        }
+                    })
+                    .collect()
+            }
+            None => Vec::new(),
+        }
+    }
 
     fn extract_receive_callback(&self) -> Option<ReceiveCallback> {
         // find all the functions tagged as the genesis callback
-        let callbacks: Vec<ReceiveCallback> =
-        funcs_iter(self)
-        .filter(is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE))
-        .fold(Vec::new(), |mut acc, func| {
-            let inputs = func.decl.inputs;
+        let callbacks: Vec<ReceiveCallback> = funcs_iter(self)
+            .filter(is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE))
+            .fold(Vec::new(), |mut acc, func| {
+                let inputs = func.decl.inputs;
 
-            match inputs.len() {
-                1 => {
-                    let input = inputs.iter().next().unwrap();
-                    if let syn::FnArg::Captured(arg) = input {
-                        let name = match &arg.pat {
-                            syn::Pat::Ident(name_ident) => name_ident.ident.clone(),
-                            _ => { 
-                                func.ident.span().unstable()
-                                .error("The argument to receive must have a name")
-                                .emit();
-                                panic!()
-                            },
-                        };
-                        acc.push(ReceiveCallback{
-                            param: name,
-                            code: *func.block,
-                        });
+                match inputs.len() {
+                    1 => {
+                        let input = inputs.iter().next().unwrap();
+                        if let syn::FnArg::Captured(arg) = input {
+                            let name = match &arg.pat {
+                                syn::Pat::Ident(name_ident) => name_ident.ident.clone(),
+                                _ => {
+                                    func.ident
+                                        .span()
+                                        .unstable()
+                                        .error("The argument to receive must have a name")
+                                        .emit();
+                                    panic!()
+                                }
+                            };
+                            acc.push(ReceiveCallback {
+                                param: name,
+                                code: *func.block,
+                            });
+                        }
                     }
-
-                },
-                _ => { 
-                    func.ident.span().unstable()
-                    .error("Receive callback must take a single argument of type 'String'")
-                    .emit();
-                    panic!()
-                },
-            }
-            acc
-        });
+                    _ => {
+                        func.ident
+                            .span()
+                            .unstable()
+                            .error("Receive callback must take a single argument of type 'String'")
+                            .emit();
+                        panic!()
+                    }
+                }
+                acc
+            });
         match callbacks.len() {
             0 => None,
             1 => Some(callbacks[0].clone()),
             _ => {
-                self.ident.span().unstable()
-                .error("Multiple functions tagged with receive. Only one permitted per zome.")
-                .emit();
+                self.ident
+                    .span()
+                    .unstable()
+                    .error("Multiple functions tagged with receive. Only one permitted per zome.")
+                    .emit();
                 panic!()
             }
         }
@@ -371,108 +355,128 @@ mod tests {
 
     #[test]
     fn test_extract_genesis_smoke_test() {
-    	let module: syn::ItemMod = parse_quote!{
-    		mod zome {
-    			#[genesis]
-			    fn genisis() {
-			        Ok(())
-			    }
-    		}
-    	};
-    	let _ = module.extract_zome();
+        let module: syn::ItemMod = parse_quote! {
+            mod zome {
+                #[genesis]
+                fn genisis() {
+                    Ok(())
+                }
+            }
+        };
+        let _ = module.extract_zome();
     }
 
     #[test]
     fn test_extract_single_trait() {
-    	let module: syn::ItemMod = parse_quote!{
-    		mod zome {    			
-    			#[genesis]
-			    fn genisis() {
-			        Ok(())
-			    }
+        let module: syn::ItemMod = parse_quote! {
+            mod zome {
+                #[genesis]
+                fn genisis() {
+                    Ok(())
+                }
 
-    			#[zome_fn("trait_name")]
-			    fn a_fn() {
-			        Ok(())
-			    }
-    		}
-    	};
-    	let zome_def = module.extract_zome();
-    	let mut expected_traits: ZomeTraits = BTreeMap::new();
-    	expected_traits.insert("trait_name".to_string(), TraitFns{functions: vec!["a_fn".to_string()]});
-    	assert_eq!{
-    		zome_def.traits,
-    		expected_traits
-    	}
+                #[zome_fn("trait_name")]
+                fn a_fn() {
+                    Ok(())
+                }
+            }
+        };
+        let zome_def = module.extract_zome();
+        let mut expected_traits: ZomeTraits = BTreeMap::new();
+        expected_traits.insert(
+            "trait_name".to_string(),
+            TraitFns {
+                functions: vec!["a_fn".to_string()],
+            },
+        );
+        assert_eq! {
+            zome_def.traits,
+            expected_traits
+        }
     }
 
     #[test]
     fn test_multi_function_multi_traits() {
-    	let module: syn::ItemMod = parse_quote!{
-    		mod zome {    			
-    			#[genesis]
-			    fn genisis() {
-			        Ok(())
-			    }
+        let module: syn::ItemMod = parse_quote! {
+            mod zome {
+                #[genesis]
+                fn genisis() {
+                    Ok(())
+                }
 
-    			#[zome_fn("trait1", "trait2")]
-			    fn a_fn() {
-			        Ok(())
-			    }
+                #[zome_fn("trait1", "trait2")]
+                fn a_fn() {
+                    Ok(())
+                }
 
-    			#[zome_fn("trait2", "trait3")]
-			    fn b_fn() {
-			        Ok(())
-			    }
-    		}
-    	};
-    	let zome_def = module.extract_zome();
-    	let mut expected_traits: ZomeTraits = BTreeMap::new();
-    	expected_traits.insert("trait1".to_string(), TraitFns{functions: vec!["a_fn".to_string()]});
-    	expected_traits.insert("trait2".to_string(), TraitFns{functions: vec!["a_fn".to_string(), "b_fn".to_string()]});
-    	expected_traits.insert("trait3".to_string(), TraitFns{functions: vec!["b_fn".to_string()]});
-    	
-    	assert_eq!{
-    		zome_def.traits,
-    		expected_traits
-    	}
+                #[zome_fn("trait2", "trait3")]
+                fn b_fn() {
+                    Ok(())
+                }
+            }
+        };
+        let zome_def = module.extract_zome();
+        let mut expected_traits: ZomeTraits = BTreeMap::new();
+        expected_traits.insert(
+            "trait1".to_string(),
+            TraitFns {
+                functions: vec!["a_fn".to_string()],
+            },
+        );
+        expected_traits.insert(
+            "trait2".to_string(),
+            TraitFns {
+                functions: vec!["a_fn".to_string(), "b_fn".to_string()],
+            },
+        );
+        expected_traits.insert(
+            "trait3".to_string(),
+            TraitFns {
+                functions: vec!["b_fn".to_string()],
+            },
+        );
+
+        assert_eq! {
+            zome_def.traits,
+            expected_traits
+        }
     }
 
     #[test]
     fn test_extract_function_params_and_return() {
-    	let module: syn::ItemMod = parse_quote!{
-    		mod zome {    			
-    			#[genesis]
-			    fn genisis() {
-			        Ok(())
-			    }
+        let module: syn::ItemMod = parse_quote! {
+            mod zome {
+                #[genesis]
+                fn genisis() {
+                    Ok(())
+                }
 
-    			#[zome_fn("test_trait")]
-			    fn a_fn(param1: i32, param2: String, param3: bool) -> String {
-			        "test".into()
-			    }
-    		}
-    	};
-    	let zome_def = module.extract_zome();
+                #[zome_fn("test_trait")]
+                fn a_fn(param1: i32, param2: String, param3: bool) -> String {
+                    "test".into()
+                }
+            }
+        };
+        let zome_def = module.extract_zome();
 
-    	assert_eq!{
-    		zome_def.zome_fns.first().unwrap().declaration,
-    		FnDeclaration{
-    			name: "a_fn".to_string(),
-    			inputs: vec![
-    				FnParameter::new_from_str("param1", "i32"),
-      				FnParameter::new_from_str("param2", "String"),
-    				FnParameter::new_from_str("param3", "bool"),
-    			],
-    			output: syn::parse_quote!(-> String)
-    		}
-    	}
+        assert_eq! {
+            zome_def.zome_fns.first().unwrap().declaration,
+            FnDeclaration{
+                name: "a_fn".to_string(),
+                inputs: vec![
+                    FnParameter::new_from_str("param1", "i32"),
+                      FnParameter::new_from_str("param2", "String"),
+                    FnParameter::new_from_str("param3", "bool"),
+                ],
+                output: syn::parse_quote!(-> String)
+            }
+        }
     }
 
     #[test]
     fn test_extract_function_with_generic_return() {
-        let module: syn::ItemMod = parse_quote!{
-            mod zome {              
+        let module: syn::ItemMod = parse_quote! {
+            mod zome {
                 #[genesis]
                 fn genisis() {
                     Ok(())
@@ -486,7 +490,7 @@ mod tests {
         };
         let zome_def = module.extract_zome();
 
-        assert_eq!{
+        assert_eq! {
             zome_def.zome_fns.first().unwrap().declaration,
             FnDeclaration{
                 name: "a_fn".to_string(),
@@ -498,68 +502,68 @@ mod tests {
 
     #[test]
     fn test_single_entry() {
-    	let module: syn::ItemMod = parse_quote!{
-    		mod zome {    			
-    			#[genesis]
-			    fn genisis() {
-			        Ok(())
-			    }
+        let module: syn::ItemMod = parse_quote! {
+            mod zome {
+                #[genesis]
+                fn genisis() {
+                    Ok(())
+                }
 
-    			#[entry_def]
-			    fn test_entry_def() {
-			        entry!(
-			            name: "testEntryType",
-			            description: "asdfda",
-			            sharing: Sharing::Public,
-			            validation_package: || {
-			                hdk::ValidationPackageDefinition::ChainFull
-			            },
-			            validation: |_validation_data: hdk::EntryValidationData<TestEntryType>| {
-			                Ok(())
-			            }
-			        )
-			    }
-    		}
-    	};
-    	let zome_def = module.extract_zome();
-    	assert_eq!{
-    		zome_def.entry_def_fns.len(),
-    		1
-    	}
+                #[entry_def]
+                fn test_entry_def() {
+                    entry!(
+                        name: "testEntryType",
+                        description: "asdfda",
+                        sharing: Sharing::Public,
+                        validation_package: || {
+                            hdk::ValidationPackageDefinition::ChainFull
+                        },
+                        validation: |_validation_data: hdk::EntryValidationData<TestEntryType>| {
+                            Ok(())
+                        }
+                    )
+                }
+            }
+        };
+        let zome_def = module.extract_zome();
+        assert_eq! {
+            zome_def.entry_def_fns.len(),
+            1
+        }
     }
 
     #[test]
     fn test_extra_code_in_module() {
-    	let module: syn::ItemMod = parse_quote!{
-    		mod zome {    			
-    			#[genesis]
-			    fn genisis() {
-			        Ok(())
-			    }
+        let module: syn::ItemMod = parse_quote! {
+            mod zome {
+                #[genesis]
+                fn genisis() {
+                    Ok(())
+                }
 
- 				const SOME_CONST: u32 = 123;
+                 const SOME_CONST: u32 = 123;
 
-			    fn non_zome_func() {
-			        Ok(())
-			    }
+                fn non_zome_func() {
+                    Ok(())
+                }
 
-			    struct SomeOtherStruct {
-			    	field: String
-			    }
-    		}
-    	};
-    	let zome_def = module.extract_zome();
-    	
-    	assert_eq!{
-    		zome_def.extra.len(),
-    		3
-    	}
+                struct SomeOtherStruct {
+                    field: String
+                }
+            }
+        };
+        let zome_def = module.extract_zome();
+
+        assert_eq! {
+            zome_def.extra.len(),
+            3
+        }
     }
 
     #[test]
     fn test_no_receive_callback() {
-        let module: syn::ItemMod = parse_quote!{
-            mod zome {              
+        let module: syn::ItemMod = parse_quote! {
+            mod zome {
                 #[genesis]
                 fn genisis() {
                     Ok(())
@@ -568,13 +572,12 @@ mod tests {
         };
         let zome_def = module.extract_zome();
         assert!(zome_def.receive_callback.is_none())
-
     }
 
     #[test]
     fn test_receive_callback() {
-        let module: syn::ItemMod = parse_quote!{
-            mod zome {              
+        let module: syn::ItemMod = parse_quote! {
+            mod zome {
                 #[genesis]
                 fn genisis() {
                     Ok(())

@@ -5,21 +5,15 @@ extern crate hdk;
 extern crate proc_macro;
 extern crate proc_macro2;
 
-use quote::ToTokens;
-use proc_macro2::{Ident, Span, TokenStream};
 use crate::into_zome::IntoZome;
-use quote::quote;
+use proc_macro2::{Ident, Span, TokenStream};
+use quote::{quote, ToTokens};
 use std::convert::TryFrom;
 use syn;
 
 mod into_zome;
 
-use crate::into_zome::{
-    ZomeFunction,
-    ZomeCodeDef,
-    ZomeFunctionCode,
-    FnDeclaration
-};
+use crate::into_zome::{FnDeclaration, ZomeCodeDef, ZomeFunction, ZomeFunctionCode};
 
 impl ToTokens for ZomeFunction {
     fn to_tokens(&self, tokens: &mut TokenStream) {
@@ -37,9 +31,7 @@ impl ToTokens for ZomeFunction {
             .inputs
             .clone()
             .into_iter()
-            .map(|param| {
-                param.ident.clone()
-            });
+            .map(|param| param.ident.clone());
 
         let output_param_type = &self.declaration.output;
         let function_body = &self.code;
@@ -89,7 +81,6 @@ impl ToTokens for ZomeFunction {
     }
 }
 
-
 // use this to convert from the tagged #[zome] module into a definition struct
 impl TryFrom<TokenStream> for ZomeCodeDef {
     type Error = syn::Error;
@@ -113,9 +104,11 @@ impl ZomeCodeDef {
         let zome_fns = self.zome_fns.clone();
 
         let entry_def_fns = self.entry_def_fns.clone();
-        let entry_fn_idents = self.entry_def_fns.iter().map(|func| {
-            func.ident.clone()
-        }).clone();
+        let entry_fn_idents = self
+            .entry_def_fns
+            .iter()
+            .map(|func| func.ident.clone())
+            .clone();
         let extra = &self.extra;
 
         let (receive_blocks, receive_params) = match &self.receive_callback {
@@ -124,10 +117,9 @@ impl ZomeCodeDef {
         };
 
         let traits = self.traits.iter().map(|(tr8, trait_funcs)| {
-
             let funcs = trait_funcs.functions.clone();
 
-            quote!{
+            quote! {
                 {
                     let mut traitfns = TraitFns::new();
                     traitfns.functions = vec![
@@ -208,7 +200,7 @@ impl ZomeCodeDef {
                 return_value
             }
 
-        
+
             #(
                 #[no_mangle]
                 pub extern "C" fn receive(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
@@ -282,7 +274,13 @@ impl ZomeCodeDef {
  * @brief      Macro to be used on a Rust module. The contents of the module is processed and exported as a zome
  */
 #[proc_macro_attribute]
-pub fn zome(_metadata: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn zome(
+    _metadata: proc_macro::TokenStream,
+    input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
     let input_stream: TokenStream = input.into();
-    ZomeCodeDef::try_from(input_stream).unwrap().to_wasm_friendly().into()
+    ZomeCodeDef::try_from(input_stream)
+        .unwrap()
+        .to_wasm_friendly()
+        .into()
 }

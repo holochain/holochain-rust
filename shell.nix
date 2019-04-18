@@ -4,10 +4,11 @@ let
 
   rust = import ./nix/rust/config.nix;
 
+  release = import ./nix/release/config.nix;
+
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
-  release-process-url = "https://hackmd.io/pt72afqYTWat7cuNqpAFjw";
   repo = "holochain/holochain-rust";
   upstream = "origin";
 
@@ -279,7 +280,7 @@ let
   ''
 Release ${core-version}
 
-current release process: ${release-process-url}
+current release process: ${release.process-url}
 
 ## Preparation
 

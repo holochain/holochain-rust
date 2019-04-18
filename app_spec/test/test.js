@@ -73,6 +73,9 @@ scenario1.runTape('show_env', async (t, { alice }) => {
   t.equal(result.Ok.dna_name, "HDK-spec-rust")
   t.equal(result.Ok.agent_address, alice.agentId)
   t.equal(result.Ok.agent_id, '{"nick":"alice","pub_sign_key":"' + alice.agentId + '"}')
+    t.deepEqual(result.Ok.cap_request, { cap_token: 'QmcopsAuC23FKVY1nSKHTzKXyRUXLbCtd7bG5PLYxLWCWk', provenance: [ alice.agentId, '+78GKy9y3laBbCNK1ajrj2rYVV3lBOxzGAZuuLDqXL2MLJUbMaB4lv7ut/UPWSoEeHx7OuXrTFXfu+PihtMMBQ==' ] }
+);
+
 })
 
 scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {

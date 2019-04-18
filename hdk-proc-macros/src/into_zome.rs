@@ -35,6 +35,14 @@ pub trait IntoZome {
 
 //////////////////////////////////////////////////////////////////////////
 
+fn emit_error(target: &proc_macro2::Ident, message: &str) {
+    target.span().unstable().error(message).emit();
+}
+
+fn emit_warning(target: &proc_macro2::Ident, message: &str) {
+    target.span().unstable().warning(message).emit();
+}
+
 // Return an iterator over the syn::ItemFn in a module
 fn funcs_iter(module: &syn::ItemMod) -> impl Iterator<Item = syn::ItemFn> {
     module
@@ -62,15 +70,25 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
             if let syn::FnArg::Captured(arg) = e {
                 let ident = match &arg.pat {
                     syn::Pat::Ident(name_ident) => name_ident.ident.clone(),
-                    _ => panic!("not a valid parameter pattern"),
+                    _ => {
+                        emit_error(
+                            &func.ident,
+                            "not a valid parameter pattern for zome function",
+                        );
+                        panic!()
+                    }
                 };
                 let ty = match arg.ty.clone() {
                     syn::Type::Path(type_path) => type_path,
-                    _ => panic!("invalid type for parameter"),
+                    _ => {
+                        emit_error(&func.ident, "Invalid type for zome function parameter");
+                        panic!()
+                    }
                 };
                 FnParameter { ident, ty }
             } else {
-                panic!("could not parse function args")
+                emit_error(&func.ident, "could not parse function args");
+                panic!()
             }
         })
         .collect();
@@ -95,16 +113,14 @@ impl IntoZome for syn::ItemMod {
         // if there is None then use the sensible default of Ok(())
         match geneses.len() {
             0 => {
-                self.ident.span().unstable()
-	            .error("No genesis function defined! A zome definition requires a callback tagged with #[genesis]")
-	            .emit();
+                emit_error(&self.ident,
+                    "No genesis function defined! A zome definition requires a callback tagged with #[genesis]");
                 panic!()
             }
             1 => *geneses[0].clone(),
             _ => {
-                self.ident.span().unstable()
-	            .error("Multiple functions tagged as genesis callback! Only one is permitted per zome definition.")
-	            .emit();
+                emit_error(&self.ident,
+                    "Multiple functions tagged as genesis callback! Only one is permitted per zome definition.");
                 panic!()
             }
         }
@@ -155,8 +171,10 @@ impl IntoZome for syn::ItemMod {
 		                    }
 		                });
                 	},
-                	syn::Meta::Word(_) => func.ident.span().unstable().warning("Function is tagged as zome_fn but is not exposed via a trait. Did you mean to expose it publicly '#[zome_fn(\"hc_public\")]'?").emit(),
-                	_ => func.ident.span().unstable().error("zome_fn must be preceded by a comma delimited list of traits e.g. #[zome_fn(\"hc_public\", \"custom_trait\")").emit(),
+                	syn::Meta::Word(_) => emit_warning(&func.ident,
+                        "Function is tagged as zome_fn but is not exposed via a trait. Did you mean to expose it publicly '#[zome_fn(\"hc_public\")]'?"),
+                	_ => emit_error(&func.ident,
+                        "zome_fn must be preceded by a comma delimited list of traits e.g. #[zome_fn(\"hc_public\", \"custom_trait\")"),
                 }
             });
 	        acc
@@ -201,11 +219,10 @@ impl IntoZome for syn::ItemMod {
                             let name = match &arg.pat {
                                 syn::Pat::Ident(name_ident) => name_ident.ident.clone(),
                                 _ => {
-                                    func.ident
-                                        .span()
-                                        .unstable()
-                                        .error("The argument to receive must have a name")
-                                        .emit();
+                                    emit_error(
+                                        &func.ident,
+                                        "The argument to receive must have a name",
+                                    );
                                     panic!()
                                 }
                             };
@@ -216,11 +233,10 @@ impl IntoZome for syn::ItemMod {
                         }
                     }
                     _ => {
-                        func.ident
-                            .span()
-                            .unstable()
-                            .error("Receive callback must take a single argument of type 'String'")
-                            .emit();
+                        emit_error(
+                            &func.ident,
+                            "Receive callback must take a single argument of type 'String'",
+                        );
                         panic!()
                     }
                 }
@@ -230,11 +246,10 @@ impl IntoZome for syn::ItemMod {
             0 => None,
             1 => Some(callbacks[0].clone()),
             _ => {
-                self.ident
-                    .span()
-                    .unstable()
-                    .error("Multiple functions tagged with receive. Only one permitted per zome.")
-                    .emit();
+                emit_error(
+                    &self.ident,
+                    "Multiple functions tagged with receive. Only one permitted per zome.",
+                );
                 panic!()
             }
         }

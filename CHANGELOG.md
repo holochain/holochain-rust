@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Adds CAPABILITY_REQ global into the zome context. This makes the request available during all zome calls and is important for doing validation of provenance for a zome call that wants to create a capability grant. [#1273](https://github.com/holochain/holochain-rust/pull/1273)
+- Adds CAPABILITY_REQ global for access from a zome function call to the capability request that was used to make the call. This is important for doing validation of provenance for a zome call that wants to create a [capability grant](doc/architecture/decisions/0017-capabilities.md). [#1273](https://github.com/holochain/holochain-rust/pull/1273)
 
 ### Changed
 

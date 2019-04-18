@@ -11,7 +11,7 @@ let
   # core-tag = "v${core-version}";
   # node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
 
-  rust-build = (pkgs.rustChannelOfTargets "nightly" rust.nightly-date [ rust.wasm-target ]);
+  rust-build = (pkgs.rustChannelOfTargets "nightly" rust.nightly-date [ rust.wasm-target rust.generic-linux-target ]);
 
   hc-node-flush = pkgs.writeShellScriptBin "hc-node-flush"
   ''
@@ -27,6 +27,7 @@ let
    echo "flushing cargo"
    rm -rf ~/.cargo/registry;
    rm -rf ~/.cargo/git;
+   rm -rf ./dist;
    find . -wholename "**/.cargo" | xargs -I {} rm -rf {};
    find . -wholename "**/target" | xargs -I {} rm -rf {};
   '';
@@ -599,6 +600,46 @@ All binaries are for 64-bit operating systems.
    github-release -v edit --tag ${release.core.tag} --name ${release.core.tag} --description "$( hc-generate-release-notes )" --pre-release
   '';
 
+  build-release-artifact = params:
+  ''
+   export artifact_name=`sed "s/unknown/generic/g" <<< "${params.path}-${core-version}-${linux-release-target}"`
+   echo
+   echo "building $artifact_name..."
+   echo
+
+   CARGO_INCREMENTAL=0 cargo rustc --manifest-path ${params.path}/Cargo.toml --target ${linux-release-target} --release -- -C lto
+   mkdir -p dist/$artifact_name
+   cp target/${linux-release-target}/release/${params.name} ${params.path}/LICENSE ${params.path}/README.md dist/$artifact_name
+   tar -C dist/$artifact_name -czf dist/$artifact_name.tar.gz . && rm -rf dist/$artifact_name
+  '';
+  build-release-paramss = [
+                           {
+                            path = "cli";
+                            name = "hc";
+                           }
+                           {
+                            path = "conductor";
+                            name = "holochain";
+                           }
+                          ];
+  build-node-conductor-artifact = node-version:
+  ''
+   hc-node-flush
+   echo
+   echo "building conductor for node ${node-version}..."
+   echo
+
+   node -v
+   ./scripts/build_nodejs_conductor.sh
+   cp nodejs_conductor/bin-package/index-v${node-conductor-version}-node-v57-linux-x64.tar.gz dist
+  '';
+  build-node-conductor-versions = [ "nodejs-8_x" ];
+  hc-build-release-artifacts = pkgs.writeShellScriptBin "hc-build-release-artifacts"
+  ''
+   ${pkgs.lib.concatMapStrings (params: build-release-artifact params) build-release-paramss}
+   ${pkgs.lib.concatMapStrings (node-version: build-node-conductor-artifact node-version) build-node-conductor-versions}
+  '';
+
 in
 with pkgs;
 stdenv.mkDerivation rec {
@@ -607,6 +648,9 @@ stdenv.mkDerivation rec {
   buildInputs = [
     # https://github.com/NixOS/pkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils which
+
+    # for openssl static installation
+    perl
 
     # for openssl static installation
     perl
@@ -674,6 +718,7 @@ stdenv.mkDerivation rec {
     hc-ensure-changelog-version
     hc-generate-release-notes
     hc-readme-grep-nightly
+    hc-build-release-artifacts
 
     hc-do-release
 

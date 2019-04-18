@@ -1,32 +1,15 @@
 let
 
   pkgs = import ./nix/nixpkgs/nixpkgs.nix;
-
   rust = import ./nix/rust/config.nix;
-
   release = import ./nix/release/config.nix;
+  github = import ./nix/github/config.nix;
 
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
-  repo = "holochain/holochain-rust";
-  upstream = "origin";
-
-  # the unique hash at the end of the medium post url
-  # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
-  # would be 4867d777de94
-  pulse-url-hash = "d387ffcfac72";
-  pulse-version = "24";
-  pulse-commit = "494c21b9dc7927b7b171533cc20c4d39bd92b45c";
-
-  core-previous-version = "0.0.10-alpha2";
-  core-version = "0.0.11-alpha1";
-
-  node-conductor-previous-version = "0.4.9-alpha2";
-  node-conductor-version = "0.4.10-alpha1";
-
-  core-tag = "v${core-version}";
-  node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
+  # core-tag = "v${core-version}";
+  # node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
 
   rust-build = (pkgs.rustChannelOfTargets "nightly" rust.nightly-date [ rust.wasm-target ]);
 
@@ -190,31 +173,29 @@ let
    && hc-test-app-spec
   '';
 
-  pulse-tag = "dev-pulse-${pulse-version}";
   hc-prepare-pulse-tag = pkgs.writeShellScriptBin "hc-prepare-pulse-tag"
   ''
   echo
-  echo 'tagging commit for pulse version ${pulse-version}'
+  echo 'tagging commit for pulse version ${release.pulse.version}'
   echo
   git fetch --tags
-  if git tag | grep -q "${pulse-tag}"
+  if git tag | grep -q "${release.pulse.tag}"
    then
-    echo "pulse tag for pulse ${pulse-version} already exists locally! doing nothing..."
-    echo "pulse commit: $(git show-ref -s ${pulse-tag})"
-    echo "to push upstream run: git push ${upstream} ${pulse-tag}"
+    echo "pulse tag for pulse ${release.pulse.version} already exists locally! doing nothing..."
+    echo "pulse commit: $(git show-ref -s ${release.pulse.tag})"
+    echo "to push upstream run: git push ${github.upstream} ${release.pulse.tag}"
    else
     echo "tagging..."
-    git tag -a ${pulse-tag} ${pulse-commit} -m 'Dev pulse ${pulse-version}'
+    git tag -a ${release.pulse.tag} ${release.pulse.commit} -m 'Dev pulse ${release.pulse.version}'
     echo "pushing..."
-    git push ${upstream} ${pulse-tag}
-    echo $'pulse tag ${pulse-tag} created and pushed'
+    git push ${github.upstream} ${release.pulse.tag}
+    echo $'pulse tag ${release.pulse.tag} created and pushed'
   fi
   echo
-  echo 'pulse tag on github: https://github.com/holochain/holochain-rust/releases/tag/${pulse-tag}'
+  echo 'pulse tag on github: https://github.com/holochain/holochain-rust/releases/tag/${release.pulse.tag}'
   echo
   '';
 
-  release-branch = "release-${core-version}";
   hc-prepare-release-branch = pkgs.writeShellScriptBin "hc-prepare-release-branch"
   ''
    echo
@@ -222,63 +203,63 @@ let
    echo
 
    git fetch
-   if git tag | grep -q "${release-branch}"
+   if git tag | grep -q "${release.branch}"
    then
-    echo "There is a tag with the same name as the release branch ${release-branch}! aborting..."
+    echo "There is a tag with the same name as the release branch ${release.branch}! aborting..."
     exit 1
    fi
 
    echo
    echo 'checkout or create release branch'
-   if git branch | grep -q "${release-branch}"
+   if git branch | grep -q "${release.branch}"
     then
-     git checkout ${release-branch}
+     git checkout ${release.branch}
      git pull
     else
-     git checkout ${pulse-commit}
-     git checkout -b ${release-branch}
-     git push -u ${upstream} ${release-branch}
+     git checkout ${release.pulse.commit}
+     git checkout -b ${release.branch}
+     git push -u ${github.upstream} ${release.branch}
    fi
    echo
   '';
 
   hc-prepare-crate-versions = pkgs.writeShellScriptBin "hc-prepare-crate-versions"
   ''
-   echo "bumping core version from ${core-previous-version} to ${core-version} in Cargo.toml"
+   echo "bumping core version from ${release.core.version.previous} to ${release.core.version.current} in Cargo.toml"
    find . \
     -name "Cargo.toml" \
     -not -path "**/.git/**" \
     -not -path "**/.cargo/**" \
     -not -path "./nodejs_conductor*" \
     | xargs -I {} \
-    sed -i 's/^\s*version\s*=\s*"${core-previous-version}"\s*$/version = "${core-version}"/g' {}
+    sed -i 's/^\s*version\s*=\s*"${release.core.version.previous}"\s*$/version = "${release.core.version.current}"/g' {}
 
-   echo "bumping core versions from ${core-previous-version} to ${core-version} in readmes"
+   echo "bumping core versions from ${release.core.version.previous} to ${release.core.version.current} in readmes"
    find . \
     -iname "readme.md" \
     -not -path "**/.git/**" \
     -not -path "**/.cargo/**" \
     | xargs -I {} \
-    sed -i 's/${core-previous-version}/${core-version}/g' {}
+    sed -i 's/${release.core.version.previous}/${release.core.version.current}/g' {}
 
-   echo "bumping versions from ${core-previous-version} to ${core-version} in CLI"
+   echo "bumping versions from ${release.core.version.previous} to ${release.core.version.current} in CLI"
    find . \
     -type f \
     -not -path "**/.git/**" \
     -path "./cli/*" \
     | xargs -I {} \
-    sed -i 's/${core-previous-version}/${core-version}/g' {}
+    sed -i 's/${release.core.version.previous}/${release.core.version.current}/g' {}
 
-   echo "bumping node conductor version from ${node-conductor-previous-version} to ${node-conductor-version}"
-   sed -i 's/^\s*version\s*=\s*"${node-conductor-previous-version}"\s*$/version = "${node-conductor-version}"/g' ./nodejs_conductor/native/Cargo.toml
-   sed -i 's/"version": "${node-conductor-previous-version}"/"version": "${node-conductor-version}"/g' ./nodejs_conductor/package.json
-   sed -i 's/"@holochain\/holochain-nodejs": "${node-conductor-previous-version}"/"@holochain\/holochain-nodejs": "${node-conductor-version}"/g' ./cli/src/cli/js-tests-scaffold/package.json
+   echo "bumping node conductor version from ${release.node-conductor.version.previous} to ${release.node-conductor.version.current}"
+   sed -i 's/^\s*version\s*=\s*"${release.node-conductor.version.previous}"\s*$/version = "${release.node-conductor.version.current}"/g' ./nodejs_conductor/native/Cargo.toml
+   sed -i 's/"version": "${release.node-conductor.version.previous}"/"version": "${release.node-conductor.version.current}"/g' ./nodejs_conductor/package.json
+   sed -i 's/"@holochain\/holochain-nodejs": "${release.node-conductor.version.previous}"/"@holochain\/holochain-nodejs": "${release.node-conductor.version.current}"/g' ./cli/src/cli/js-tests-scaffold/package.json
   '';
 
   # a few things should already be done by this point so precheck them :)
   release-details =
   ''
-Release ${core-version}
+Release ${release.core.version.current}
 
 current release process: ${release.process-url}
 
@@ -303,10 +284,10 @@ Then run `nix-shell --run hc-prepare-release`
 - [ ] release cut from `master` with `hc-do-release`
 - [ ] core release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
-  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${core-tag}
+  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${release.core.tag}
 - [ ] node release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
-  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${node-conductor-tag}
+  - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${release.node-conductor.tag}
 - [ ] all release artifacts found by `hc-check-release-artifacts`
 - [ ] npmjs deploy with `hc-npm-deploy` then `hc-npm-check-version`
 - [ ] `unknown` release assets renamed to `ubuntu`
@@ -328,15 +309,15 @@ Then run `nix-shell --run hc-prepare-release`
   ''
   echo
   echo 'ensure github PR'
-  git config --local hub.upstream ${repo}
-  git config --local hub.forkrepo ${repo}
-  git config --local hub.forkremote ${upstream}
-  if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release-branch}" ]
+  git config --local hub.upstream ${github.repo}
+  git config --local hub.forkrepo ${github.repo}
+  git config --local hub.forkremote ${github.upstream}
+  if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release.branch}" ]
    then
-    git add . && git commit -am 'Release ${core-version}'
-    git push && git hub pull new -b 'master' -m '${release-details}' --no-triangular ${release-branch}
+    git add . && git commit -am 'Release ${release.core.version.current}'
+    git push && git hub pull new -b 'master' -m '${release-details}' --no-triangular ${release.branch}
    else
-    echo "current branch is not ${release-branch}!"
+    echo "current branch is not ${release.branch}!"
     exit 1
   fi
   '';
@@ -352,13 +333,13 @@ Then run `nix-shell --run hc-prepare-release`
    echo
    echo "Current nix-shell config:"
    echo
-   echo "pulse-url-hash: ${pulse-url-hash}"
-   echo "pulse-version: ${pulse-version}"
-   echo "pulse-commit: ${pulse-commit}"
-   echo "core-previous-version: ${core-previous-version}"
-   echo "core-version: ${core-version}"
-   echo "node-conductor-previous-version: ${node-conductor-previous-version}"
-   echo "node-conductor-version: ${node-conductor-version}"
+   echo "pulse-url-hash: ${release.pulse.url-hash}"
+   echo "pulse-version: ${release.pulse.version}"
+   echo "pulse-commit: ${release.pulse.commit}"
+   echo "core-previous-version: ${release.core.version.previous}"
+   echo "core-version: ${release.core.version.current}"
+   echo "node-conductor-previous-version: ${release.node-conductor.version.previous}"
+   echo "node-conductor-version: ${release.node-conductor.version.current}"
    git hub --version
    echo
    read -r -p "Are you sure you want to cut a new release based on the current config in shell.nix? [y/N] " response
@@ -386,25 +367,25 @@ Then run `nix-shell --run hc-prepare-release`
   git pull
 
   echo
-  echo "releasing core ${core-tag}"
+  echo "releasing core ${release.core.tag}"
   echo
 
-  echo "tagging ${core-tag}"
-  git tag -a ${core-tag} -m "Version ${core-tag}"
-  git push ${upstream} ${core-tag}
+  echo "tagging ${release.core.tag}"
+  git tag -a ${release.core.tag} -m "Version ${release.core.tag}"
+  git push ${github.upstream} ${release.core.tag}
 
   echo
-  echo "releasing node conductor ${node-conductor-tag}"
+  echo "releasing node conductor ${release.node-conductor.tag}"
   echo
 
-  echo "tagging ${node-conductor-tag}"
-  git tag -a ${node-conductor-tag} -m "Node conductor version ${node-conductor-tag}"
-  git push ${upstream} ${node-conductor-tag}
+  echo "tagging ${release.node-conductor.tag}"
+  git tag -a ${release.node-conductor.tag} -m "Node conductor version ${release.node-conductor.tag}"
+  git push ${github.upstream} ${release.node-conductor.tag}
 
   echo "release tags pushed"
   echo "travis builds: https://travis-ci.com/holochain/holochain-rust/branches"
-  echo "core artifacts: https://github.com/holochain/holochain-rust/releases/tag/${core-tag}"
-  echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/${node-conductor-tag}"
+  echo "core artifacts: https://github.com/holochain/holochain-rust/releases/tag/${release.core.tag}"
+  echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/${release.node-conductor.tag}"
   '';
 
   changelog-template =
@@ -423,10 +404,10 @@ Then run `nix-shell --run hc-prepare-release`
   echo "locking off changelog version"
   echo
 
-  if ! $(grep -q "\[${core-version}\]" ./CHANGELOG.md)
+  if ! $(grep -q "\[${release.core.version.current}\]" ./CHANGELOG.md)
    then
     echo "timestamping and retemplating changelog"
-    sed -i "s/\[Unreleased\]/${changelog-template}\#\# \[${core-version}\] - $(date --iso --u)/" ./CHANGELOG.md
+    sed -i "s/\[Unreleased\]/${changelog-template}\#\# \[${release.core.version.current}\] - $(date --iso --u)/" ./CHANGELOG.md
   fi
   '';
 
@@ -440,20 +421,19 @@ Then run `nix-shell --run hc-prepare-release`
    | cat
   '';
 
-  pulse-url = "https://medium.com/@holochain/${pulse-url-hash}";
   release-notes-template = ''
-# ${core-version} release {{ release-date }}
+# ${release.core.version.current} release {{ release-date }}
 
 {{ pulse-notes }}
 
-See the [Dev Pulse](${pulse-url}) & [change log](https://github.com/holochain/holochain-rust/blob/release-${core-version}/CHANGELOG.md) for complete details.
+See the [Dev Pulse](${release.pulse.url}) & [change log](https://github.com/holochain/holochain-rust/blob/release-${release.core.version.current}/CHANGELOG.md) for complete details.
 
 ## **Installation**
 
 This release consists of binary builds of:
 
-- the [`hc` development command-line tool](https://github.com/holochain/holochain-rust/blob/${core-tag}/cli/README.md)
-- [`holochain` deployment conductor](https://github.com/holochain/holochain-rust/blob/${core-tag}/conductor/README.md) for different platforms.
+- the [`hc` development command-line tool](https://github.com/holochain/holochain-rust/blob/${release.core.tag}/cli/README.md)
+- [`holochain` deployment conductor](https://github.com/holochain/holochain-rust/blob/${release.core.tag}/conductor/README.md) for different platforms.
 
 To install, simply download and extract the binary for your platform.
 See our [installation quick-start instructions](https://developer.holochain.org/start.html) for details.
@@ -476,11 +456,11 @@ Rust and NodeJS are both required for `hc` to build and test DNA:
 
 Download only the binaries for your operating system.
 
-- MacOS: `cli-${core-tag}-x86_64-apple-darwin.tar.gz`
-- Linux: `cli-${core-tag}-x86_64-ubuntu-linux-gnu.tar.gz`
+- MacOS: `cli-${release.core.tag}-x86_64-apple-darwin.tar.gz`
+- Linux: `cli-${release.core.tag}-x86_64-ubuntu-linux-gnu.tar.gz`
 - Windows:
-  - mingw build system: `cli-${core-tag}-x86_64-pc-windows-gnu.tar.gz`
-  - Visual Studio build system: `cli-${core-tag}-x86_64-pc-windows-msvc.tar.gz`
+  - mingw build system: `cli-${release.core.tag}-x86_64-pc-windows-gnu.tar.gz`
+  - Visual Studio build system: `cli-${release.core.tag}-x86_64-pc-windows-msvc.tar.gz`
 
 All binaries are for 64-bit operating systems.
 32-bit systems are NOT supported.
@@ -498,7 +478,7 @@ All binaries are for 64-bit operating systems.
    # gets a markdown version of pulse
    # greps for everything from summary to details (not including details heading)
    # deletes null characters that throw warnings in bash
-   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${pulse-url} | grep -Pzo "(?s)(###.*Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
+   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${release.pulse.url} | grep -Pzo "(?s)(###.*Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
    WITH_NOTES=''${WITH_DATE/$PULSE_PLACEHOLDER/$PULSE_NOTES}
    echo "$WITH_NOTES"
   '';
@@ -510,7 +490,7 @@ All binaries are for 64-bit operating systems.
   echo
 
   echo
-  echo "checking ${core-tag}"
+  echo "checking ${release.core.tag}"
   echo
 
   core_binaries=( "cli" "conductor" )
@@ -520,8 +500,8 @@ All binaries are for 64-bit operating systems.
   do
    for platform in "''${core_platforms[@]}"
    do
-    file="$binary-${core-tag}-x86_64-$platform.tar.gz"
-    url="https://github.com/holochain/holochain-rust/releases/download/${core-tag}/$file"
+    file="$binary-${release.core.tag}-x86_64-$platform.tar.gz"
+    url="https://github.com/holochain/holochain-rust/releases/download/${release.core.tag}/$file"
     echo
     echo "pinging $file for release $release..."
     if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
@@ -537,7 +517,7 @@ All binaries are for 64-bit operating systems.
   echo
 
   echo
-  echo "checking ${node-conductor-tag}"
+  echo "checking ${release.node-conductor.tag}"
   echo
 
   node_versions=( "57" "64" "67" )
@@ -547,8 +527,8 @@ All binaries are for 64-bit operating systems.
   do
    for platform in "''${conductor_platforms[@]}"
    do
-    file="index-v${node-conductor-version}-node-v''${node_version}-''${platform}-x64.tar.gz"
-    url="https://github.com/holochain/holochain-rust/releases/download/${node-conductor-tag}/$file"
+    file="index-v${release.node-conductor.version.current}-node-v''${node_version}-''${platform}-x64.tar.gz"
+    url="https://github.com/holochain/holochain-rust/releases/download/${release.node-conductor.tag}/$file"
     echo
     echo "pinging $file for release $release..."
     if curl -Is "$url" | grep -q "HTTP/1.1 302 Found"
@@ -562,7 +542,7 @@ All binaries are for 64-bit operating systems.
 
   hc-npm-deploy = pkgs.writeShellScriptBin "hc-npm-deploy"
   ''
-   git checkout holochain-nodejs-v${node-conductor-version}
+   git checkout holochain-nodejs-v${release.node-conductor.version.current}
    npm login
    cd nodejs_conductor
    yarn install --ignore-scripts
@@ -573,8 +553,8 @@ All binaries are for 64-bit operating systems.
   echo
   echo "Checking deployed nodejs_conductor version."
   deployed=$( npm v @holochain/holochain-nodejs dist-tags.latest )
-  if [ $deployed == ${node-conductor-version} ]
-   then echo "Version ${node-conductor-version} deployed ✔"
+  if [ $deployed == ${release.node-conductor.version.current} ]
+   then echo "Version ${release.node-conductor.version.current} deployed ✔"
    else echo "Not deployed. $deployed found instead. ⨯"
   fi
   echo
@@ -585,15 +565,15 @@ All binaries are for 64-bit operating systems.
    echo
    echo 'ensure github PR against develop'
    echo
-   git config --local hub.upstream ${repo}
-   git config --local hub.forkrepo ${repo}
-   git config --local hub.forkremote ${upstream}
-   if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release-branch}" ]
+   git config --local hub.upstream ${github.repo}
+   git config --local hub.forkrepo ${github.repo}
+   git config --local hub.forkremote ${github.upstream}
+   if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release.branch}" ]
     then
-     git add . && git commit -am 'Release ${core-version}'
-     git push && git hub pull new -b 'develop' -m 'Merge release ${core-version} back to develop' --no-triangular ${release-branch}
+     git add . && git commit -am 'Release ${release.core.version.current}'
+     git push && git hub pull new -b 'develop' -m 'Merge release ${release.core.version.current} back to develop' --no-triangular ${release.branch}
     else
-     echo "current branch is not ${release-branch}!"
+     echo "current branch is not ${release.branch}!"
      exit 1
    fi
 
@@ -604,7 +584,7 @@ All binaries are for 64-bit operating systems.
    echo
    echo 'Setting release to pre-release state'
    echo
-   github-release -v edit --tag ${core-tag} --pre-release
+   github-release -v edit --tag ${release.core.tag} --pre-release
   '';
 
   hc-release-pulse-sync = pkgs.writeShellScriptBin "hc-release-pulse-sync"
@@ -616,7 +596,7 @@ All binaries are for 64-bit operating systems.
    echo
    echo 'Injecting medium summary/highlights into github release notes'
    echo
-   github-release -v edit --tag ${core-tag} --name ${core-tag} --description "$( hc-generate-release-notes )" --pre-release
+   github-release -v edit --tag ${release.core.tag} --name ${release.core.tag} --description "$( hc-generate-release-notes )" --pre-release
   '';
 
 in

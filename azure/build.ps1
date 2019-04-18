@@ -1,4 +1,5 @@
 ##  Auto login image
+## master / p4ssw0rd!1234
 ##  THIS IS ALREADY BAKED IN
 # 'Write-Warning "This script will overwrite current auto-logon settings if they exist"
 
@@ -21,60 +22,62 @@
 # del .\callme.ps1' > callme.ps1
 
 # .\callme.ps1
+
+
+# Write-Host "Changing PS execution policy to Unrestricted" -ForegroundColor Cyan
+# Set-ExecutionPolicy Unrestricted -Force
+
+# Write-Host "Disabling Server Manager auto-start" -ForegroundColor Cyan
+# $serverManagerMachineKey = "HKLM:\SOFTWARE\Microsoft\ServerManager"
+# $serverManagerUserKey = "HKCU:\SOFTWARE\Microsoft\ServerManager"
+# if(Test-Path $serverManagerMachineKey) {
+#     Set-ItemProperty -Path $serverManagerMachineKey -Name "DoNotOpenServerManagerAtLogon" -Value 1
+#     Write-Host "Disabled Server Manager at logon for all users" -ForegroundColor Green
+# }
+# if(Test-Path $serverManagerUserKey) {
+#     Set-ItemProperty -Path $serverManagerUserKey -Name "CheckedUnattendLaunchSetting" -Value 0
+#     Write-Host "Disabled Server Manager for current user" -ForegroundColor Green
+# }
+
+# # disable scheduled task
+# schtasks /Change /TN "\Microsoft\Windows\Server Manager\ServerManager" /DISABLE
+
+# Write-Host "Disabling UAC" -ForegroundColor Cyan
+
+# Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 00000000
+# Set-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -Value "0"
+
+# Write-Host "User Access Control (UAC) has been disabled." -ForegroundColor Green  
+
+# Write-Host "Disabling Windows Error Reporting (WER)" -ForegroundColor Cyan
+# $werKey = "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting"
+# Set-ItemProperty $werKey -Name "ForceQueue" -Value 1
+
+# if(Test-Path "$werKey\Consent") {
+#     Set-ItemProperty "$werKey\Consent" -Name "DefaultConsent" -Value 1
+# }
+# Write-Host "Windows Error Reporting (WER) dialog has been disabled." -ForegroundColor Green  
+
+# Write-Host "Disabling Internet Explorer ESC" -ForegroundColor Cyan
+# $AdminKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}"
+# $UserKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A8-37EF-4b3f-8CFC-4F3A74704073}"
+# if((Test-Path $AdminKey) -or (Test-Path $UserKey)) {
+#     Set-ItemProperty -Path $AdminKey -Name "IsInstalled" -Value 0
+#     Set-ItemProperty -Path $UserKey -Name "IsInstalled" -Value 0
+#     Stop-Process -Name Explorer
+#     Write-Host "IE Enhanced Security Configuration (ESC) has been disabled." -ForegroundColor Green
+# }
+
+# Write-Host "WinRM - allow * hosts" -ForegroundColor Cyan
+# cmd /c 'winrm set winrm/config/client @{TrustedHosts="*"}'
+# Write-Host "WinRM configured" -ForegroundColor Green
+
+# reg add HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Network\NewNetworkWindowOff /f
+# reg add HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Network\NetworkLocationWizard /v HideWizard /t REG_DWORD /d 1 /f
+
+
 #######
 # SO THIS IS ALREADY BAKED IN
-
-
-Write-Host "Changing PS execution policy to Unrestricted" -ForegroundColor Cyan
-Set-ExecutionPolicy Unrestricted -Force
-
-Write-Host "Disabling Server Manager auto-start" -ForegroundColor Cyan
-$serverManagerMachineKey = "HKLM:\SOFTWARE\Microsoft\ServerManager"
-$serverManagerUserKey = "HKCU:\SOFTWARE\Microsoft\ServerManager"
-if(Test-Path $serverManagerMachineKey) {
-    Set-ItemProperty -Path $serverManagerMachineKey -Name "DoNotOpenServerManagerAtLogon" -Value 1
-    Write-Host "Disabled Server Manager at logon for all users" -ForegroundColor Green
-}
-if(Test-Path $serverManagerUserKey) {
-    Set-ItemProperty -Path $serverManagerUserKey -Name "CheckedUnattendLaunchSetting" -Value 0
-    Write-Host "Disabled Server Manager for current user" -ForegroundColor Green
-}
-
-# disable scheduled task
-schtasks /Change /TN "\Microsoft\Windows\Server Manager\ServerManager" /DISABLE
-
-Write-Host "Disabling UAC" -ForegroundColor Cyan
-
-Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 00000000
-Set-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -Value "0"
-
-Write-Host "User Access Control (UAC) has been disabled." -ForegroundColor Green  
-
-Write-Host "Disabling Windows Error Reporting (WER)" -ForegroundColor Cyan
-$werKey = "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting"
-Set-ItemProperty $werKey -Name "ForceQueue" -Value 1
-
-if(Test-Path "$werKey\Consent") {
-    Set-ItemProperty "$werKey\Consent" -Name "DefaultConsent" -Value 1
-}
-Write-Host "Windows Error Reporting (WER) dialog has been disabled." -ForegroundColor Green  
-
-Write-Host "Disabling Internet Explorer ESC" -ForegroundColor Cyan
-$AdminKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}"
-$UserKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A8-37EF-4b3f-8CFC-4F3A74704073}"
-if((Test-Path $AdminKey) -or (Test-Path $UserKey)) {
-    Set-ItemProperty -Path $AdminKey -Name "IsInstalled" -Value 0
-    Set-ItemProperty -Path $UserKey -Name "IsInstalled" -Value 0
-    Stop-Process -Name Explorer
-    Write-Host "IE Enhanced Security Configuration (ESC) has been disabled." -ForegroundColor Green
-}
-
-Write-Host "WinRM - allow * hosts" -ForegroundColor Cyan
-cmd /c 'winrm set winrm/config/client @{TrustedHosts="*"}'
-Write-Host "WinRM configured" -ForegroundColor Green
-
-reg add HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Network\NewNetworkWindowOff /f
-reg add HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Network\NetworkLocationWizard /v HideWizard /t REG_DWORD /d 1 /f
 
 $pathUtilsPath = "$($env:USERPROFILE)\Documents\WindowsPowerShell\Modules\path-utils"
 New-Item $pathUtilsPath -ItemType Directory -Force
@@ -341,28 +344,28 @@ $knownhostfile = Join-Path $sshPath "known_hosts"
 
 Write-Host "Known hosts configured" -ForegroundColor Green
 
-$installerUrl = 'http://www.appveyor.com/downloads/build-agent/latest/AppveyorBuildAgent.msi'
-$installerFileName = "$($env:TEMP)\AppveyorBuildAgent.msi"
+# $installerUrl = 'http://www.appveyor.com/downloads/build-agent/latest/AppveyorBuildAgent.msi'
+# $installerFileName = "$($env:TEMP)\AppveyorBuildAgent.msi"
  
-$process = Get-Process -Name 'Appveyor.BuildAgent.Service' -ErrorAction SilentlyContinue
-if($process) {
-    $process | Stop-Process -Force
-}
-$process = Get-Process -Name 'Appveyor.BuildAgent.Interactive' -ErrorAction SilentlyContinue
-if($process) {
-    $process | Stop-Process -Force
-}
+# $process = Get-Process -Name 'Appveyor.BuildAgent.Service' -ErrorAction SilentlyContinue
+# if($process) {
+#     $process | Stop-Process -Force
+# }
+# $process = Get-Process -Name 'Appveyor.BuildAgent.Interactive' -ErrorAction SilentlyContinue
+# if($process) {
+#     $process | Stop-Process -Force
+# }
  
-(New-Object Net.WebClient).DownloadFile($installerUrl, $installerFileName)
-cmd /c start /wait msiexec /i $installerFileName /quiet APPVEYOR_MODE=Azure
-Remove-Item $installerFileName
+# (New-Object Net.WebClient).DownloadFile($installerUrl, $installerFileName)
+# cmd /c start /wait msiexec /i $installerFileName /quiet APPVEYOR_MODE=Azure
+# Remove-Item $installerFileName
 
-# display appveyor version
-& "C:\Program Files\AppVeyor\BuildAgent\appveyor.exe" version
+# # display appveyor version
+# & "C:\Program Files\AppVeyor\BuildAgent\appveyor.exe" version
 
-Clear-EventLog -LogName AppVeyor -ErrorAction SilentlyContinue
+# Clear-EventLog -LogName AppVeyor -ErrorAction SilentlyContinue
 
-Set-ItemProperty "HKLM:\SOFTWARE\AppVeyor\Build Agent\" -Name "Mode" -Value "Azure"
+# Set-ItemProperty "HKLM:\SOFTWARE\AppVeyor\Build Agent\" -Name "Mode" -Value "Azure"
 
 # Set-ItemProperty "HKLM:\SOFTWARE\AppVeyor\Build Agent\" -Name "Mode" -Value "AmazonEC2"
 
@@ -371,8 +374,8 @@ Set-ItemProperty "HKLM:\SOFTWARE\AppVeyor\Build Agent\" -Name "Mode" -Value "Azu
 
 ################# APP VEYOR SPECIFICS
 
-Set-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "AppVeyor.BuildAgent" `
-    -Value 'powershell -File "C:\Program Files\AppVeyor\BuildAgent\start-appveyor-agent.ps1"'
+# Set-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "AppVeyor.BuildAgent" `
+#     -Value 'powershell -File "C:\Program Files\AppVeyor\BuildAgent\start-appveyor-agent.ps1"'
 
 ################# Dependencies
 

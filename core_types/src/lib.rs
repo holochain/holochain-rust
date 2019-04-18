@@ -33,6 +33,7 @@ extern crate regex;
 extern crate maplit;
 extern crate hcid;
 extern crate uuid;
+extern crate wasmi;
 
 pub mod cas;
 pub mod chain_header;

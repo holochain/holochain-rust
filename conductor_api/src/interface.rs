@@ -1,5 +1,7 @@
 use crate::holo_signing_service::request_signing_service;
 use base64;
+use conductor::broadcaster::Broadcaster;
+use crossbeam_channel::Receiver;
 use holochain_core::nucleus::{
     actions::call_zome_function::make_cap_request_for_call,
     ribosome::capabilities::CapabilityRequest,
@@ -12,12 +14,13 @@ use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
-use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
+use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use std::{
     collections::HashMap,
     convert::TryFrom,
     path::PathBuf,
-    sync::{mpsc::Receiver, Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, RwLock},
+    thread,
 };
 
 use conductor::{ConductorAdmin, ConductorUiAdmin, CONDUCTOR};
@@ -146,8 +149,11 @@ impl ConductorApiBuilder {
                 // Get the token from the parameters.  If not there assume public token.
                 let maybe_token = Self::get_as_string("token", &params_map);
                 let token = match maybe_token {
-                    Err(_err) => context.get_public_token().ok_or_else(|| {
-                        jsonrpc_core::Error::invalid_params("public token not found")
+                    Err(_err) => context.get_public_token().map_err(|err| {
+                        jsonrpc_core::Error::invalid_params(format!(
+                            "Public token not found: {}",
+                            err.to_string()
+                        ))
                     })?,
                     Ok(token) => Address::from(token),
                 };
@@ -964,8 +970,15 @@ impl ConductorApiBuilder {
     }
 }
 
+/// A Broadcaster is something that knows how to send a Signal back to a client.
+/// Each Interface implementation's `run` method must return a Broadcaster, even if it's just the No-op.
+/// Then, if the Conductor is set up for it, it will start a new thread which continually consumes the signal channel and sends each signal over every interface via its Broadcaster.
 pub trait Interface {
-    fn run(&self, handler: IoHandler, kill_switch: Receiver<()>) -> Result<(), String>;
+    fn run(
+        &self,
+        handler: IoHandler,
+        kill_switch: Receiver<()>,
+    ) -> Result<(Broadcaster, thread::JoinHandle<()>), String>;
 }
 
 #[cfg(test)]
@@ -974,7 +987,7 @@ pub mod tests {
     use crate::{conductor::tests::test_conductor, config::Configuration};
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
-        let conductor = test_conductor();
+        let conductor = test_conductor(7777, 7778);
         let holochain = conductor
             .instances()
             .get("test-instance-1")

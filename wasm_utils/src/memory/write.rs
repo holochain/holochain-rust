@@ -15,7 +15,7 @@ impl WasmStack {
         let ptr = MemoryInt::from(self.allocate(next_allocation)?) as *mut c_char;
         let ptr_safe = unsafe { slice::from_raw_parts_mut(ptr, usize::from(length)) };
         for (i, byte) in bytes.iter().enumerate() {
-            ptr_safe[i] = *byte as i8;
+            ptr_safe[i] = *byte as c_char;
         }
 
         WasmAllocation::new((ptr as MemoryInt).into(), length)

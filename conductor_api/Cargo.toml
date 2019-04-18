@@ -1,25 +1,28 @@
 [package]
 name = "holochain_conductor_api"
-version = "0.0.9-alpha"
+version = "0.0.11-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
+holochain_core_types_derive = { path = "../core_types_derive" }
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
 holochain_sodium = { path = "../sodium" }
 holochain_common = { path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"
-serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde_derive = "=1.0.89"
 serde_regex = "=0.3.1"
 toml = "=0.5.0"
 boolinator = "=2.4.0"
-jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
-jsonrpc-http-server = { git = "https://github.com/paritytech/jsonrpc" }
+tiny_http = "=0.6.2"
+jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
+jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
+jsonrpc-http-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 petgraph = "=0.4.13"
 colored = "=1.7.0"
 regex = "=1.1.2"
@@ -43,3 +46,5 @@ tempfile = "=3.0.7"
 holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "=0.2.15"
 pretty_assertions = "=0.6.1"
+ws = "=0.8.0"
+parking_lot = "=0.7.1"

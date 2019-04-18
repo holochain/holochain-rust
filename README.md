@@ -63,3 +63,4 @@ t WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
  PURPOSE.
 
 **Note:** We are considering other 'looser' licensing options (like MIT license) but at this stage are using GPL while we're getting the matter sorted out.  See [this article](https://medium.com/holochain/licensing-needs-for-truly-p2p-software-a3e0fa42be6c) for some of our thinking on licensing for distributed application frameworks.
+

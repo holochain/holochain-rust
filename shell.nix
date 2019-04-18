@@ -631,7 +631,7 @@ All binaries are for 64-bit operating systems.
    CARGO_INCREMENTAL=0 cargo rustc --manifest-path ${params.path}/Cargo.toml --target ${linux-release-target} --release -- -C lto
    mkdir -p dist/$artifact_name
    cp target/${linux-release-target}/release/${params.name} ${params.path}/LICENSE ${params.path}/README.md dist/$artifact_name
-   ( cd dist && tar czf $artifact_name.tar.gz $artifact_name && rm -rf $artifact_name )
+   tar -C dist/$artifact_name -czf dist/$artifact_name.tar.gz . && rm -rf dist/$artifact_name
   '';
   build-release-paramss = [
                            {

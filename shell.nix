@@ -1,5 +1,7 @@
 let
 
+  config = import ./nix/config.nix;
+
   # https://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/
   inherit (import <nixpkgs> {}) fetchgit;
   # nixos holo-host channel @ 2019-04-02
@@ -18,8 +20,6 @@ let
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
-  date = "2019-01-24";
-  wasmTarget = "wasm32-unknown-unknown";
   release-process-url = "https://hackmd.io/pt72afqYTWat7cuNqpAFjw";
   repo = "holochain/holochain-rust";
   upstream = "origin";
@@ -40,7 +40,7 @@ let
   core-tag = "v${core-version}";
   node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
 
-  rust-build = (pkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
+  rust-build = (pkgs.rustChannelOfTargets "nightly" config.rust.date [ config.rust.wasmTarget ]);
 
   hc-node-flush = pkgs.writeShellScriptBin "hc-node-flush"
   ''
@@ -448,7 +448,7 @@ Then run `nix-shell --run hc-prepare-release`
    -iname "readme.*" \
    | xargs cat \
    | grep -E 'nightly-' \
-   | grep -v '${date}' \
+   | grep -v '${config.rust.date}' \
    | cat
   '';
 
@@ -473,12 +473,12 @@ See our [installation quick-start instructions](https://developer.holochain.org/
 Rust and NodeJS are both required for `hc` to build and test DNA:
 
 - [Rust](https://www.rust-lang.org/en-US/install.html)
-  - Must be `nightly-${date}` build with the WASM build target.
+  - Must be `nightly-${config.rust.date}` build with the WASM build target.
     Once you have first installed rustup:
     ```
-    rustup toolchain install nightly-${date}
-    rustup default nightly-${date}
-    rustup target add wasm32-unknown-unknown --toolchain nightly-${date}
+    rustup toolchain install nightly-${config.rust.date}
+    rustup default nightly-${config.rust.date}
+    rustup target add wasm32-unknown-unknown --toolchain nightly-${config.rust.date}
     ```
 - [Node.js](https://nodejs.org) version 8 or higher
   - E2E tests for Holochain apps are written in Javascript client-side and executed in NodeJS through websockets
@@ -732,7 +732,7 @@ stdenv.mkDerivation rec {
   # rust version through this environment variable.
   # https://github.com/rust-lang/rustup.rs#environment-variables
   # https://github.com/NixOS/nix/issues/903
-  RUSTUP_TOOLCHAIN = "nightly-${date}";
+  RUSTUP_TOOLCHAIN = "nightly-${config.rust.date}";
 
   DARWIN_NIX_LDFLAGS = if stdenv.isDarwin then "-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation " else "";
 

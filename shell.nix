@@ -1,6 +1,6 @@
 let
 
-  config = import ./nix/config.nix;
+  rust = import ./nix/rust/config.nix;
 
   # https://vaibhavsagar.com/blog/2018/05/27/quick-easy-nixpkgs-pinning/
   inherit (import <nixpkgs> {}) fetchgit;
@@ -11,10 +11,8 @@ let
     sha256 = "07glx6r08l8hwzh8xzj8i0hj6ak42iswqfb9hbhs75rqq56zq43a";
   };
 
-  moz_overlay = import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz);
-
   pkgs = import channel-holo-host {
-    overlays = [ moz_overlay ];
+    overlays = [ rust.moz-overlay ];
   };
 
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
@@ -40,7 +38,7 @@ let
   core-tag = "v${core-version}";
   node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
 
-  rust-build = (pkgs.rustChannelOfTargets "nightly" config.rust.date [ config.rust.wasmTarget ]);
+  rust-build = (pkgs.rustChannelOfTargets "nightly" rust.nightly-date [ rust.wasm-target ]);
 
   hc-node-flush = pkgs.writeShellScriptBin "hc-node-flush"
   ''
@@ -448,7 +446,7 @@ Then run `nix-shell --run hc-prepare-release`
    -iname "readme.*" \
    | xargs cat \
    | grep -E 'nightly-' \
-   | grep -v '${config.rust.date}' \
+   | grep -v '${rust.nightly-date}' \
    | cat
   '';
 
@@ -473,12 +471,12 @@ See our [installation quick-start instructions](https://developer.holochain.org/
 Rust and NodeJS are both required for `hc` to build and test DNA:
 
 - [Rust](https://www.rust-lang.org/en-US/install.html)
-  - Must be `nightly-${config.rust.date}` build with the WASM build target.
+  - Must be `nightly-${rust.nightly-date}` build with the WASM build target.
     Once you have first installed rustup:
     ```
-    rustup toolchain install nightly-${config.rust.date}
-    rustup default nightly-${config.rust.date}
-    rustup target add wasm32-unknown-unknown --toolchain nightly-${config.rust.date}
+    rustup toolchain install nightly-${rust.nightly-date}
+    rustup default nightly-${rust.nightly-date}
+    rustup target add wasm32-unknown-unknown --toolchain nightly-${rust.nightly-date}
     ```
 - [Node.js](https://nodejs.org) version 8 or higher
   - E2E tests for Holochain apps are written in Javascript client-side and executed in NodeJS through websockets
@@ -732,7 +730,7 @@ stdenv.mkDerivation rec {
   # rust version through this environment variable.
   # https://github.com/rust-lang/rustup.rs#environment-variables
   # https://github.com/NixOS/nix/issues/903
-  RUSTUP_TOOLCHAIN = "nightly-${config.rust.date}";
+  RUSTUP_TOOLCHAIN = "nightly-${rust.nightly-date}";
 
   DARWIN_NIX_LDFLAGS = if stdenv.isDarwin then "-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation " else "";
 

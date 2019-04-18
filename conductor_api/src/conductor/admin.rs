@@ -894,8 +894,8 @@ id = 'new-dna'"#,
                 None
             ),
             Err(HolochainError::DnaHashMismatch(
+                "wrong-address".into(),
                 dna.address(),
-                "wrong-address".into()
             )),
         );
     }

@@ -262,10 +262,10 @@ workflows:
  cold.debian:
   jobs:
    - cold.debian.stable.auto:
-      filters:
-       branches:
-        only:
-         - develop
+     #  filters:
+     #  branches:
+     #   only:
+     #    - develop
    # - cold.debian.stable.nix
 
  cold.mac:

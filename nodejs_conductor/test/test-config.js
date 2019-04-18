@@ -156,11 +156,10 @@ test('config construction with dpki', t => {
     const instanceDpki = C.instance(agentDpki, dnaDpki, 'dpki-instance')
     const config = C.conductor({
         instances: [instance1, instance2],
-        dpki: C.dpki(instanceDpki, {foo: 'bar'})
+        dpki: C.dpki(instanceDpki, JSON.stringify({foo: 'bar'}))
     })
     t.deepEqual(config.dpki, {
-        instance_id: 'dpki-instance',
-        init_params: {foo: 'bar'},
-    })
+      instance_id: 'dpki-instance',
+      init_params: '{"foo":"bar"}' })
     t.end()
 })

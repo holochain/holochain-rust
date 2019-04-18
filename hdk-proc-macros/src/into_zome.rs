@@ -1,124 +1,23 @@
 extern crate proc_macro2;
 
-use proc_macro2::{Ident, Span, TokenStream};
+use crate::types::{
+    ZomeFunction,
+    ZomeFunctions,
+    FnParameter,
+    FnDeclaration,
+    ZomeCodeDef,
+    EntryDefCallbacks,
+    ReceiveCallback,
+    GenesisCallback
+};
 
 use hdk::holochain_core_types::dna::{fn_declarations::TraitFns, zome::ZomeTraits};
-use quote::{quote, ToTokens};
 use std::collections::BTreeMap;
 
 static GENESIS_ATTRIBUTE: &str = "genesis";
 static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
 static ENTRY_DEF_ATTRIBUTE: &str = "entry_def";
 static RECEIVE_CALLBACK_ATTRIBUTE: &str = "receive";
-
-pub type GenesisCallback = syn::Block;
-pub type ZomeFunctionCode = syn::Block;
-pub type EntryDefCallback = syn::ItemFn;
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct ReceiveCallback {
-    pub param: Ident,
-    pub code: syn::Block,
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct FnParameter {
-    pub ident: Ident,
-    pub ty: syn::TypePath,
-}
-
-impl FnParameter {
-    pub fn new(ident: Ident, ty: syn::TypePath) -> Self {
-        FnParameter { ident, ty }
-    }
-
-    pub fn new_from_ident_str(ident_str: &str, ty: syn::TypePath) -> Self {
-        FnParameter {
-            ident: Ident::new(ident_str, Span::call_site()),
-            ty,
-        }
-    }
-
-    pub fn new_from_str(ident_str: &str, ty_str: &str) -> Self {
-        let ty: syn::TypePath = syn::parse_str(ty_str).unwrap();
-        FnParameter {
-            ident: Ident::new(ident_str, Span::call_site()),
-            ty,
-        }
-    }
-}
-
-impl From<FnParameter> for syn::Field {
-    fn from(param: FnParameter) -> Self {
-        syn::Field {
-            attrs: Vec::new(),
-            ident: Some(param.ident),
-            ty: syn::Type::Path(param.ty),
-            vis: syn::Visibility::Public(syn::VisPublic {
-                pub_token: syn::Token![pub](Span::call_site()),
-            }),
-            colon_token: Some(syn::Token![:](proc_macro2::Span::call_site())),
-        }
-    }
-}
-
-impl ToTokens for FnParameter {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let input_param_name = &self.ident;
-
-        let input_param_type = &self.ty;
-
-        tokens.extend(quote! {
-            FnParameter::new(stringify!(#input_param_name), stringify!(#input_param_type))
-        })
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct FnDeclaration {
-    pub name: String,
-    pub inputs: Vec<FnParameter>,
-    pub output: syn::ReturnType,
-}
-
-impl ToTokens for FnDeclaration {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let zome_function_name = &self.name;
-        let input_params = &self.inputs;
-        let output_params = match &self.output {
-            syn::ReturnType::Default => Vec::new(),
-            syn::ReturnType::Type(_, ty) => {
-                vec![quote!(FnParameter::new("result", stringify!(#ty)))]
-            }
-        };
-
-        tokens.extend(quote! {
-            FnDeclaration {
-                name: #zome_function_name.to_string(),
-                inputs: vec![#(#input_params,)*],
-                outputs: vec![#(#output_params,)*],
-            }
-        })
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct ZomeFunction {
-    pub declaration: FnDeclaration,
-    pub code: ZomeFunctionCode,
-}
-
-pub type ZomeFunctions = Vec<ZomeFunction>;
-pub type EntryDefCallbacks = Vec<EntryDefCallback>;
-
-pub struct ZomeCodeDef {
-    pub genesis: GenesisCallback,
-    pub zome_fns: ZomeFunctions, // receive: ReceiveCallbacks
-    pub entry_def_fns: Vec<syn::ItemFn>,
-    pub traits: ZomeTraits,
-    pub receive_callback: Option<ReceiveCallback>,
-    pub extra: Vec<syn::Item>, // extra stuff to be added as is to the zome code
-}
 
 pub trait IntoZome {
     fn extract_zome_fns(&self) -> ZomeFunctions;

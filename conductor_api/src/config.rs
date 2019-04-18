@@ -718,7 +718,7 @@ pub mod tests {
                     "wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"
                 )],
                 n3h_log_level: String::from("d"),
-                n3h_mode: String::from("HACK"),
+                n3h_mode: String::from("REAL"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
                 n3h_ipc_uri: None,
                 networking_config_file: Some(String::from(

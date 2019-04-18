@@ -150,11 +150,10 @@ fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<Vec<String>> {
 }
 
 fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetResult<bool> {
-    let res = exec_output(path, out_args, ".", false)
-        .map_err(|err| {
-            println!("response: {:?}", err);
-            format_err!("n3h not found in path: {:?}", &path)
-        })?;
+    let res = exec_output(path, out_args, ".", false).map_err(|err| {
+        println!("response: {:?}", err);
+        format_err!("n3h not found in path: {:?}", &path)
+    })?;
 
     // `n3h --version` returns only the version number, for example "v0.0.11-alpha"
     if res == N3H_INFO.version {

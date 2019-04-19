@@ -124,6 +124,10 @@ impl ConductorApiBuilder {
     fn setup_call_api(&mut self) {
         let instances = self.instances.clone();
         let instance_ids_map = self.instance_ids_map.clone();
+
+        // We need to place this one here in order to avoid compiler lifetime issue
+        let default_call_args = json!({});
+
         self.io.add_method("call", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let public_id_str = Self::get_as_string("instance_id", &params_map)?;
@@ -139,16 +143,22 @@ impl ConductorApiBuilder {
             let hc_lock_inner = hc_lock.clone();
             let mut hc = hc_lock_inner.write().unwrap();
 
+
             // Getting the arguments of the call contained in the json-rpc 'params'
-            let call_args = match params_map.get("args") {
-                Some(args) => Some(args),
-                None => {
-                    // TODO: Remove this fall back to the previous impl of inner 'params' 
-                    // as soon as its deprecation life cycle is over <17-04-19, yourname> //
-                    hc.context().log("warn/interface: DEPRECATION WARNING: Using 'params' instead of 'args' for a Zome function call is now deprecated.");
-                    params_map.get("params")
-                }
-            };
+            let mut call_args = params_map.get("args").or_else(|| {
+                // TODO: Remove this fall back to the previous impl of inner 'params'
+                // as soon as its deprecation life cycle is over <17-04-19, dymayday> //
+                hc.context()
+                    .log("warn/interface: DEPRECATION WARNING: Using 'params' for a Zome function call is now deprecated.\
+                    Please switch to 'args' instead, as 'params' will soon be phased out.");
+                params_map.get("params")
+            });
+
+            // For a consistent error behavior, we check if the passed value is 'null',
+            // which triggers an error, and fallback as if an empty obnject was passed instead '{}'
+            if json!(null) == *call_args.unwrap_or(&default_call_args) {
+                call_args = Some(&default_call_args);
+            }
             let args_string = serde_json::to_string(&call_args)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
             let zome_name = Self::get_as_string("zome", &params_map)?;

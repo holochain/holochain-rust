@@ -247,7 +247,7 @@ Then run `nix-shell --run hc-prepare-release`
   - travis build: {{ build url }}
   - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${release.node-conductor.tag}
 - [ ] all release artifacts found by `hc-check-release-artifacts`
-- [ ] npmjs deploy with `hc-npm-deploy` then `hc-npm-check-version`
+- [ ] npmjs deploy with `hc-npm-deploy` then `hc-release-npm-check-version`
 - [ ] `unknown` release assets renamed to `ubuntu`
 
 ## PR into develop
@@ -506,17 +506,6 @@ All binaries are for 64-bit operating systems.
    yarn install --ignore-scripts
    RUST_SODIUM_DISABLE_PIE=1 node ./publish.js --publish
   '';
-  hc-npm-check-version = pkgs.writeShellScriptBin "hc-npm-check-version"
-  ''
-  echo
-  echo "Checking deployed nodejs_conductor version."
-  deployed=$( npm v @holochain/holochain-nodejs dist-tags.latest )
-  if [ $deployed == ${release.node-conductor.version.current} ]
-   then echo "Version ${release.node-conductor.version.current} deployed ✔"
-   else echo "Not deployed. $deployed found instead. ⨯"
-  fi
-  echo
-  '';
 
   hc-release-merge-back = pkgs.writeShellScriptBin "hc-release-merge-back"
   ''
@@ -669,7 +658,6 @@ stdenv.mkDerivation rec {
     hc-do-release
 
     hc-npm-deploy
-    hc-npm-check-version
 
     hc-release-merge-back
     hc-release-pulse-sync

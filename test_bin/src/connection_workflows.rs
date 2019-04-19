@@ -222,7 +222,7 @@ pub(crate) fn three_nodes_disconnect_test(
     Ok(())
 }
 
-//
+// Test disconnects with multiple dna per Node
 #[cfg_attr(tarpaulin, skip)]
 pub(crate) fn three_nodes_multi_dna_disconnect_test(
     config_filepath: &str,
@@ -279,3 +279,6 @@ pub(crate) fn three_nodes_multi_dna_disconnect_test(
 
     Ok(())
 }
+
+// Test disconnects with multiple Peers per Node
+// FIXME

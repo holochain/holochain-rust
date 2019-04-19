@@ -2,13 +2,11 @@ use crate::holo_signing_service::request_signing_service;
 use base64;
 use conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;
-use holochain_core::nucleus::{
-    actions::call_zome_function::make_cap_request_for_call,
-    ribosome::capabilities::CapabilityRequest,
-};
+use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
 
 use holochain_core_types::{
-    agent::AgentId, cas::content::Address, json::JsonString, signature::Provenance,
+    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityRequest, json::JsonString,
+    signature::Provenance,
 };
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;

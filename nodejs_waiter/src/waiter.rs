@@ -365,12 +365,10 @@ impl Task for MainBackgroundTask {
 #[cfg(test)]
 mod tests {
     use super::{Action::*, *};
-    use holochain_core::nucleus::{
-        actions::call_zome_function::ExecuteZomeFnResponse,
-        ribosome::capabilities::CapabilityRequest,
-    };
+    use holochain_core::nucleus::actions::call_zome_function::ExecuteZomeFnResponse;
     use holochain_core_types::{
-        cas::content::Address, chain_header::test_chain_header, entry::Entry, json::JsonString,
+        cas::content::Address, chain_header::test_chain_header,
+        dna::capabilities::CapabilityRequest, entry::Entry, json::JsonString,
         link::link_data::LinkData, signature::Signature,
     };
     use std::sync::mpsc::sync_channel;

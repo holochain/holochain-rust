@@ -94,9 +94,10 @@ impl ConductorAdmin for Conductor {
                 ))
             })?;
 
-        if let Some(hash) = expected_hash {
-            if dna.address() != hash {
-                return Err(HolochainError::DnaHashMismatch(dna.address(), hash));
+        if let Some(provided_hash) = expected_hash {
+            let actual_hash = dna.address();
+            if actual_hash != provided_hash {
+                return Err(HolochainError::DnaHashMismatch(provided_hash, actual_hash));
             }
         }
 
@@ -893,8 +894,8 @@ id = 'new-dna'"#,
                 None
             ),
             Err(HolochainError::DnaHashMismatch(
+                "wrong-address".into(),
                 dna.address(),
-                "wrong-address".into()
             )),
         );
     }

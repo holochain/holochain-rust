@@ -959,12 +959,11 @@ pub mod tests {
 
     use self::tempfile::tempdir;
     use test_utils::*;
-    #[cfg(not(windows))]
-    extern crate ws;
-    #[cfg(not(windows))]
-    use self::ws::{connect, Message};
-    #[cfg(not(windows))]
-    extern crate parking_lot;
+
+    //    commented while test_signals_through_admin_websocket is broken
+    //    extern crate ws;
+    //    use self::ws::{connect, Message};
+    //    extern crate parking_lot;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|path: &PathBuf| {
@@ -1484,8 +1483,13 @@ pub mod tests {
         );
     }
 
-    #[cfg(not(windows))]
     #[test]
+    // flaky test
+    // signal ordering is not deterministic nor is timing
+    // test should poll and allow signals in different orders
+    // OR
+    // test should be totally removed because this is really an integration test
+    #[cfg(feature = "broken-tests")]
     fn test_signals_through_admin_websocket() {
         let mut conductor = test_conductor(10031, 10032);
         let _ = conductor.start_all_instances();

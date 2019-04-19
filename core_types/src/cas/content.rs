@@ -4,16 +4,34 @@
 //! A test suite for AddressableContent is also implemented here.
 
 use crate::{
-    cas::storage::ContentAddressableStorage, error::HolochainError, hash::HashString,
-    json::JsonString,
+    cas::storage::ContentAddressableStorage,
+    error::HolochainError,
+    hash::HashString,
+    json::{default_to_json, default_try_from_json, JsonString},
 };
 use multihash::Hash;
-use std::fmt::{Debug, Write};
+use std::{
+    convert::TryFrom,
+    fmt::{Debug, Write},
+};
 
 /// an Address for some Content
 /// ideally would be the Content but pragmatically must be Address
 /// consider what would happen if we had multi GB addresses...
 pub type Address = HashString;
+
+impl From<Option<Address>> for JsonString {
+    fn from(maybe_address: Option<Address>) -> Self {
+        default_to_json(maybe_address)
+    }
+}
+
+impl TryFrom<JsonString> for Option<Address> {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
+    }
+}
 
 /// the Content is a JsonString
 /// this is the only way to be confident in persisting all Rust types across all backends

@@ -9,5 +9,4 @@
   # the target used by all linux when we don't have a specific target
   generic-linux-target = "x86_64-unknown-linux-gnu";
 
-
 }

@@ -8,21 +8,6 @@ let
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
-  hc-cargo-flush = pkgs.writeShellScriptBin "hc-cargo-flush"
-  ''
-   echo "flushing cargo"
-   rm -rf ~/.cargo/registry;
-   rm -rf ~/.cargo/git;
-   rm -rf ./dist;
-   find . -wholename "**/.cargo" | xargs -I {} rm -rf {};
-   find . -wholename "**/target" | xargs -I {} rm -rf {};
-  '';
-  hc-cargo-lock-flush = pkgs.writeShellScriptBin "hc-cargo-lock-flush"
-  ''
-  echo "flushing cargo locks"
-  find . -name "Cargo.lock" | xargs -I {} rm {};
-  '';
-
   hc-flush-all = pkgs.writeShellScriptBin "hc-flush-all"
   ''
   hc-node-flush

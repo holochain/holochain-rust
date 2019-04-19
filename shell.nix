@@ -523,8 +523,7 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
 
-    coreutils which
-
+    coreutils
     cmake
     python
 

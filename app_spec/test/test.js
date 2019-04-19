@@ -632,3 +632,19 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
 })
+
+scenario2.runTape('request grant', async (t, { alice, bob }) => {
+
+    /*
+      This is not a complete test of requesting a grant because currently there
+      is no way in the test conductor to actually pass in the provenance of the
+      call.  That will be added when we convert the test framework to being built
+      on top of the rust conductor.   For now this is more a placeholder test, but
+      note that the value returned is actually the capbability token value.
+     */
+    const result = alice.call("blog", "request_post_grant", {})
+    t.ok(result.Ok)
+    t.notOk(result.Err)
+    t.equal(result.Ok, 'QmNuXP9fTqnGT1jYk5CSVuY4oWCBAJ6BF6k754oyvd47Yc')
+
+})

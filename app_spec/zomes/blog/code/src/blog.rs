@@ -106,7 +106,8 @@ pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
 }
 
 fn is_my_friend(addr: Address) -> bool {
-    addr == Address::from("Qmblahblah")
+    // this is "alice's" hash
+    addr == Address::from("HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui")
 }
 
 pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {

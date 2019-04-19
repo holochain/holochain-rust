@@ -194,7 +194,7 @@ Then run `nix-shell --run hc-prepare-release`
   - travis build: {{ build url }}
   - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${release.node-conductor.tag}
 - [ ] all release artifacts found by `hc-check-release-artifacts`
-- [ ] npmjs deploy with `hc-npm-deploy` then `hc-release-npm-check-version`
+- [ ] npmjs deploy with `hc-release-npm-deploy` then `hc-release-npm-check-version`
 - [ ] `unknown` release assets renamed to `ubuntu`
 
 ## PR into develop
@@ -445,15 +445,6 @@ All binaries are for 64-bit operating systems.
   done
   '';
 
-  hc-npm-deploy = pkgs.writeShellScriptBin "hc-npm-deploy"
-  ''
-   git checkout holochain-nodejs-v${release.node-conductor.version.current}
-   npm login
-   cd nodejs_conductor
-   yarn install --ignore-scripts
-   RUST_SODIUM_DISABLE_PIE=1 node ./publish.js --publish
-  '';
-
   hc-release-merge-back = pkgs.writeShellScriptBin "hc-release-merge-back"
   ''
    echo
@@ -548,9 +539,6 @@ stdenv.mkDerivation rec {
 
     qt5.qmake
 
-    nodejs-8_x
-    yarn
-
     hc-cargo-toml-set-ver
     hc-cargo-toml-test-ver
     hc-cargo-toml-grep-unpinned
@@ -592,8 +580,6 @@ stdenv.mkDerivation rec {
     hc-build-release-artifacts
 
     hc-do-release
-
-    hc-npm-deploy
 
     hc-release-merge-back
     hc-release-pulse-sync

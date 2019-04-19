@@ -173,17 +173,6 @@ fn main() {
         }
     }
 
-    if config["suites"]["CONNECTION_WORKFLOWS"].as_bool().unwrap()
-        && config["modes"]["HACK_MODE"].as_bool().unwrap()
-    {
-        connection_workflows::two_nodes_disconnect_test(
-            "test_bin/data/network_config.json",
-            None,
-            basic_workflows::dht_test,
-        )
-        .unwrap();
-    }
-
     // Launch THREE_WORKFLOWS tests on each setup
     if config["suites"]["THREE_WORKFLOWS"].as_bool().unwrap() {
         for test_fn in THREE_NODES_TEST_FNS.clone() {
@@ -203,6 +192,25 @@ fn main() {
                     .unwrap();
             }
         }
+    }
+
+    // CONNECTION_WORKFLOWS
+    if config["suites"]["CONNECTION_WORKFLOWS"].as_bool().unwrap()
+        && config["modes"]["HACK_MODE"].as_bool().unwrap()
+    {
+        //        connection_workflows::two_nodes_disconnect_test(
+        //            "test_bin/data/network_config.json",
+        //            None,
+        //            basic_workflows::dht_test,
+        //        )
+        //        .unwrap();
+
+        connection_workflows::three_nodes_disconnect_test(
+            "test_bin/data/network_config.json",
+            None,
+            three_workflows::hold_and_publish_test,
+        )
+        .unwrap();
     }
 
     // Wait a bit before closing

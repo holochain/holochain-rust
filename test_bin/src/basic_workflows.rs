@@ -2,7 +2,7 @@ use constants::*;
 use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
-        json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
+        json_protocol::{ConnectData, JsonProtocol},
         net_connection::NetSend,
         NetResult,
     },
@@ -90,14 +90,8 @@ pub fn setup_one_node(
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on both nodes
-    alex.send(
-        JsonProtocol::TrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: ALEX_AGENT_ID.to_string(),
-        })
-        .into(),
-    )
-    .expect("Failed sending TrackDnaData on alex");
+    alex.track_dna(&DNA_ADDRESS)
+        .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
@@ -147,28 +141,16 @@ pub fn setup_two_nodes(
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on both nodes
-    alex.send(
-        JsonProtocol::TrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: ALEX_AGENT_ID.to_string(),
-        })
-        .into(),
-    )
-    .expect("Failed sending TrackDnaData on alex");
+    alex.track_dna(&DNA_ADDRESS)
+        .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
     billy
-        .send(
-            JsonProtocol::TrackDna(TrackDnaData {
-                dna_address: DNA_ADDRESS.clone(),
-                agent_id: BILLY_AGENT_ID.to_string(),
-            })
-            .into(),
-        )
-        .expect("Failed sending TrackDnaData on billy");
+        .track_dna(&DNA_ADDRESS)
+        .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
@@ -434,14 +416,8 @@ pub fn untrack_alex_test(
     setup_two_nodes(alex, billy, can_connect)?;
 
     // Send Untrack
-    alex.send(
-        JsonProtocol::UntrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: ALEX_AGENT_ID.to_string(),
-        })
-        .into(),
-    )
-    .expect("Failed sending UntrackDna message on alex");
+    alex.untrack_dna(&DNA_ADDRESS)
+        .expect("Failed sending UntrackDna message on alex");
 
     // Send a message from alex to billy
     let before_count = alex.count_recv_json_messages();
@@ -469,13 +445,7 @@ pub fn untrack_billy_test(
 
     // Send Untrack
     billy
-        .send(
-            JsonProtocol::UntrackDna(TrackDnaData {
-                dna_address: DNA_ADDRESS.clone(),
-                agent_id: BILLY_AGENT_ID.to_string(),
-            })
-            .into(),
-        )
+        .untrack_dna(&DNA_ADDRESS)
         .expect("Failed sending UntrackDna message on alex");
 
     // Making sure Untrack has been received
@@ -508,24 +478,12 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
 
     // Billy untracks DNA
     billy
-        .send(
-            JsonProtocol::UntrackDna(TrackDnaData {
-                dna_address: DNA_ADDRESS.clone(),
-                agent_id: BILLY_AGENT_ID.to_string(),
-            })
-            .into(),
-        )
+        .untrack_dna(&DNA_ADDRESS)
         .expect("Failed sending UntrackDna message on billy");
 
     // Alex untracks DNA
-    alex.send(
-        JsonProtocol::UntrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: ALEX_AGENT_ID.to_string(),
-        })
-        .into(),
-    )
-    .expect("Failed sending UntrackDna message on alex");
+    alex.untrack_dna(&DNA_ADDRESS)
+        .expect("Failed sending UntrackDna message on alex");
 
     // Making sure Untrack has been received
     // TODO: Have server reply with successResult
@@ -534,23 +492,11 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
 
     // Billy re-tracks DNA
     billy
-        .send(
-            JsonProtocol::TrackDna(TrackDnaData {
-                dna_address: DNA_ADDRESS.clone(),
-                agent_id: BILLY_AGENT_ID.to_string(),
-            })
-            .into(),
-        )
-        .expect("Failed sending TrackDnaData on billy");
+        .track_dna(&DNA_ADDRESS)
+        .expect("Failed sending TrackDna on billy");
     // alex re-tracks DNA
-    alex.send(
-        JsonProtocol::TrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: ALEX_AGENT_ID.to_string(),
-        })
-        .into(),
-    )
-    .expect("Failed sending TrackDnaData on alex");
+    alex.track_dna(&DNA_ADDRESS)
+        .expect("Failed sending TrackDna on alex");
 
     // Making sure Track has been received
     // TODO: Have server reply with successResult

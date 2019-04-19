@@ -138,12 +138,12 @@ fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<Vec<String>> {
     if res.is_ok() {
         return Ok(vec![]);
     }
-        tlog_e!("{:?}", res);
+    tlog_e!("{:?}", res);
     let res = sub_check_n3h_version(&path, &["--version", "--appimage-extract-and-run"]);
     if res.is_err() {
-            tlog_e!("{:?}", res);
-            bail!("{:?}", res);
-        }
+        tlog_e!("{:?}", res);
+        bail!("{:?}", res);
+    }
     return Ok(vec!["--appimage-extract-and-run".to_string()]);
 }
 

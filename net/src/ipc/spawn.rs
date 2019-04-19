@@ -141,26 +141,28 @@ pub fn ipc_spawn(
 
     // close the pipe since we can never read from it again...
     child.stdout = None;
-    log_i!("READY! {} {:?} [{}]", out.ipc_binding, out.p2p_bindings, real_pid);
+    log_i!(
+        "READY! {} {:?} [{}]",
+        out.ipc_binding,
+        out.p2p_bindings,
+        real_pid
+    );
 
     // Set shutdown function to kill the sub-process
     out.kill = Some(Box::new(move || {
         match child.kill() {
-            Ok(()) => {
-                #[cfg(windows)]
-                {
-                    let mut child_killer = std::process::Command::new("taskkill");
+            Ok(()) =>
+            // #[cfg(windows)]
+            {
+                let mut child_killer = std::process::Command::new("taskkill");
 
-                    child_killer.args(&["/pid", &real_pid, "/f", "/t"]);
+                child_killer.args(&["/pid", &real_pid, "/f", "/t"]);
 
-                    let _ = child_killer.spawn();
+                let _ = child_killer.spawn();
 
-                    log_i!("Succesfully KILLED ipc sub-process {}", real_pid);
-                }
-            },
-            Err(e) => {
-                println!("failed to kill ipc sub-process: {:?}", e)
-            },
+                log_i!("Succesfully KILLED ipc sub-process {}", real_pid);
+            }
+            Err(e) => println!("failed to kill ipc sub-process: {:?}", e),
         };
     }));
 

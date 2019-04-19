@@ -137,24 +137,22 @@ fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<Vec<String>> {
     let res = sub_check_n3h_version(&path, &["--version"]);
     if res.is_ok() {
         return Ok(vec![]);
-    }
-    tlog_e!("{:?}", res);
-    let res = sub_check_n3h_version(&path, &["--version", "--appimage-extract-and-run"]);
-    if res.is_err() {
+    } else {
         tlog_e!("{:?}", res);
-        bail!("{:?}", res);
+        let res = sub_check_n3h_version(&path, &["--appimage-extract-and-run", "--version"]);
+        if res.is_ok() {
+            return Ok(vec!["--appimage-extract-and-run".to_string()]);
+        } else {
+            tlog_e!("{:?}", res);
+            bail!("{:?}", res);
+        }
     }
-    return Ok(vec!["--appimage-extract-and-run".to_string()]);
 }
 
-fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetResult<()> {
-    println!("sub_check_n3h_version: {:?} | {:?}", path, out_args);
-    // let res = exec_output(path, out_args, ".", false);
-    //let res = exec_output("n3h.bat", out_args, ".", false);
-    let res = exec_output("n3h.bat", out_args, "C:\\github\\n3h\\bin", false);
+fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetResult<bool> {
+    let res = exec_output(path, out_args, ".", false);
     if res.is_ok() {
         let res = res.unwrap();
-        println!("raw response: {:?}", res);
         let re = regex::Regex::new(r#"(?m)#\s+n3h\s+version:\s+"([^"]+)"\s+#$"#)?;
 
         let mut version = None;
@@ -169,7 +167,7 @@ fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetRes
                 version
             );
         }
-        return Ok(());
+        return Ok(true);
     }
     println!("response: {:?}", res);
     bail!(format!("n3h not found in path: {:?}", &path));
@@ -215,10 +213,11 @@ where
     S2: AsRef<std::ffi::OsStr>,
 {
     let mut cmd = std::process::Command::new(cmd);
-    cmd.args(args).env("N3H_VERSION_EXIT", "1").current_dir(dir);
+    cmd.args(args)
+        .env("N3H_VERSION_EXIT", "1")
+        .env("NO_CLEANUP", "1")
+        .current_dir(dir);
     tlog_d!("EXEC: {:?}", cmd);
-    // tlog_d!("ARGS: {:?}", args);
-    // tlog_d!("DIR: {:?}", dir);
     let res = cmd.output()?;
     if !ignore_errors && !res.status.success() {
         bail!(

@@ -128,33 +128,6 @@ let
    && hc-test-app-spec
   '';
 
-  hc-prepare-release-branch = pkgs.writeShellScriptBin "hc-prepare-release-branch"
-  ''
-   echo
-   echo 'preparing release branch'
-   echo
-
-   git fetch
-   if git tag | grep -q "${release.branch}"
-   then
-    echo "There is a tag with the same name as the release branch ${release.branch}! aborting..."
-    exit 1
-   fi
-
-   echo
-   echo 'checkout or create release branch'
-   if git branch | grep -q "${release.branch}"
-    then
-     git checkout ${release.branch}
-     git pull
-    else
-     git checkout ${release.pulse.commit}
-     git checkout -b ${release.branch}
-     git push -u ${git.github.upstream} ${release.branch}
-   fi
-   echo
-  '';
-
   hc-prepare-crate-versions = pkgs.writeShellScriptBin "hc-prepare-crate-versions"
   ''
    echo "bumping core version from ${release.core.version.previous} to ${release.core.version.current} in Cargo.toml"
@@ -278,7 +251,7 @@ Then run `nix-shell --run hc-prepare-release`
    case "$response" in
     [yY][eE][sS]|[yY])
      hc-release-pulse-tag \
-     && hc-prepare-release-branch \
+     && hc-release-git-branch \
      && hc-prepare-crate-versions \
      && hc-ensure-changelog-version \
      && hc-prepare-release-pr \
@@ -613,7 +586,6 @@ stdenv.mkDerivation rec {
     hc-codecov
     ci
 
-    hc-prepare-release-branch
     hc-prepare-release-pr
     hc-prepare-crate-versions
     hc-check-release-artifacts

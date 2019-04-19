@@ -1,9 +1,9 @@
 let
 
-  pkgs = import ./nix/nixpkgs/nixpkgs.nix;
-  rust = import ./nix/rust/config.nix;
-  release = import ./nix/release/config.nix;
-  github = import ./nix/github/config.nix;
+  pkgs = import ./holonix/nixpkgs/nixpkgs.nix;
+  rust = import ./holonix/rust/config.nix;
+  release = import ./holonix/release/config.nix;
+  github = import ./holonix/github/config.nix;
 
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
@@ -690,13 +690,13 @@ stdenv.mkDerivation rec {
   ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ]
 
   # node build inputs
-  ++ import ./nix/node/build.nix
+  ++ import ./holonix/node/build.nix
 
   # rust build inputs
-  ++ import ./nix/rust/build.nix
+  ++ import ./holonix/rust/build.nix
 
   # root build inputs
-  ++ import ./nix/build.nix
+  ++ import ./holonix/build.nix
   ;
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

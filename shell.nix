@@ -5,9 +5,6 @@ let
   release = import ./holonix/release/config.nix;
   git = import ./holonix/git/config.nix;
 
-  # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
-  frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
-
   hc-install-tarpaulin = pkgs.writeShellScriptBin "hc-install-tarpaulin"
   ''
    if ! cargo --list | grep --quiet tarpaulin;
@@ -660,7 +657,6 @@ stdenv.mkDerivation rec {
     hc-release-pulse-sync
 
   ]
-  ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ]
 
   # root build inputs
   ++ import ./holonix/build.nix;

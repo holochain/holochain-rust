@@ -153,7 +153,7 @@ impl ConductorApiBuilder {
             });
 
             // For a consistent error behavior, we check if the passed value is 'null',
-            // which triggers an error, and fallback as if an empty obnject was passed instead '{}'
+            // which triggers an error, and fallback as if an empty object was passed instead '{}'
             if json!(null) == *call_args.unwrap_or(&default_call_args) {
                 call_args = Some(&default_call_args);
             }

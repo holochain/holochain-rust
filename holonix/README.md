@@ -114,5 +114,7 @@ There are a few basic convensions to follow:
   - root `build.nix` and `src` should only aggregate deeper derivations
 - Scripts for binaries sit in named `foo.nix` files under `thing/src/foo.nix`
   - There is standard boilerplate for this, see an existing file for examples
-  - use `pkgs.writeShellScriptBin` by default
+  - Use `pkgs.writeShellScriptBin` by default
+  - CLI commands are named following the path sans `src`
+    - e.g. `holonix/foo/bar/src/baz.nix` becomes `hc-foo-bar-baz`
 - Make liberal use of `let .. in ..` scoping constructs in `.nix` files

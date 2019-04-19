@@ -8,11 +8,6 @@ let
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
-  hc-conductor-node-install = pkgs.writeShellScriptBin "hc-conductor-node-install"
-  ''
-
-  '';
-
   hc-install-tarpaulin = pkgs.writeShellScriptBin "hc-install-tarpaulin"
   ''
    if ! cargo --list | grep --quiet tarpaulin;
@@ -75,7 +70,6 @@ let
   hc-test-app-spec = pkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
   hc-test-node-conductor = pkgs.writeShellScriptBin "hc-test-node-conductor" "cd nodejs_conductor && npm test";
 
-  hc-fmt = pkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
   hc-fmt-check = pkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
 
   # runs all standard tests and reports code coverage
@@ -641,14 +635,12 @@ stdenv.mkDerivation rec {
     hc-install-edit
     hc-install-cli
     hc-install-conductor
-    hc-conductor-node-install
 
     hc-test-cli
     hc-test-app-spec
     hc-test-node-conductor
     hc-test-c-bindings
 
-    hc-fmt
     hc-fmt-check
 
     hc-test-all

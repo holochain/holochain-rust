@@ -3,8 +3,7 @@
 /// published on the dht.
 use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_core_types::{
-     error::HolochainError, json::JsonString,
-    dna::entry_types::Sharing
+    dna::entry_types::Sharing, error::HolochainError, json::JsonString,
 };
 
 /// We declare the structure of our entry type with this Rust struct.
@@ -12,7 +11,7 @@ use hdk::holochain_core_types::{
 /// to how this happens with functions parameters and zome_functions!.
 ///
 /// So this is our normative schema definition:
-#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Memo {
     pub content: String,
     pub date_created: String,
@@ -67,14 +66,14 @@ pub fn definition() -> ValidatingEntryType {
 mod tests {
 
     use crate::memo::{definition, Memo};
-    use hdk::{
-        holochain_core_types::{
-            dna::entry_types::{EntryTypeDef},
-            entry::{entry_type::{EntryType,AppEntryType},Entry},
-             dna::entry_types::Sharing,
-             validation::{EntryValidationData,ValidationPackage,EntryLifecycle,ValidationData},
-             chain_header::test_chain_header
+    use hdk::holochain_core_types::{
+        chain_header::test_chain_header,
+        dna::entry_types::{EntryTypeDef, Sharing},
+        entry::{
+            entry_type::{AppEntryType, EntryType},
+            Entry,
         },
+        validation::{EntryLifecycle, EntryValidationData, ValidationData, ValidationPackage},
     };
 
     #[test]
@@ -99,8 +98,8 @@ mod tests {
         let expected_definition = EntryTypeDef {
             description: "A private memo entry type.".to_string(),
             linked_from: vec![],
-            links_to : Vec::new(),
-            sharing : Sharing::Private
+            links_to: Vec::new(),
+            sharing: Sharing::Private,
         };
         assert_eq!(
             expected_definition,
@@ -114,17 +113,17 @@ mod tests {
         );
 
         let memo_ok = Memo::new("foo", "now");
-        let entry = Entry::App(AppEntryType::from("memo"),memo_ok.into());
-        let validation_data = ValidationData{
-            package : ValidationPackage::only_header(test_chain_header()),
-            lifecycle : EntryLifecycle::Chain
+        let entry = Entry::App(AppEntryType::from("memo"), memo_ok.into());
+        let validation_data = ValidationData {
+            package: ValidationPackage::only_header(test_chain_header()),
+            lifecycle: EntryLifecycle::Chain,
         };
         assert_eq!(
-            (memo_definition.validator)(
-               EntryValidationData::Create{entry,validation_data}
-            ),
+            (memo_definition.validator)(EntryValidationData::Create {
+                entry,
+                validation_data
+            }),
             Ok(()),
         );
-
     }
 }

@@ -3,16 +3,13 @@
 use crate::holochain::Holochain;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
+    dna::capabilities::CapabilityRequest,
     error::HolochainError,
     json::JsonString,
 };
 
 use holochain_core::{
-    context::Context,
-    nucleus::{
-        actions::call_zome_function::make_cap_request_for_call,
-        ribosome::capabilities::CapabilityRequest,
-    },
+    context::Context, nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 
 pub const DPKI_ZOME_NAME: &str = "dpki";

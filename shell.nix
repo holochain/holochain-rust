@@ -632,8 +632,8 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
-    # https://github.com/NixOS/pkgs/blob/master/doc/languages-frameworks/rust.section.md
-    binutils gcc gnumake openssl pkgconfig coreutils which
+
+    coreutils which
 
     # for openssl static installation
     perl

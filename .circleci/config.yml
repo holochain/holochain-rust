@@ -75,7 +75,7 @@ jobs:
 
    - run:
        name: install node conductor
-       command: nix-shell --run hc-install-node-conductor
+       command: nix-shell --run hc-conductor-node-install
 
    - run:
        name: app spec tests

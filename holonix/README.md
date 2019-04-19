@@ -109,6 +109,9 @@ There are a few basic convensions to follow:
 - Structure configuration as nested `foo.bar` rather than `foo-bar`
   - e.g. `holonix/release/config.nix` has a few good examples of this
 - All used and generated build inputs sit in a local `build.nix`
+  - `build.nix` files should "bubble up" to the root one level at a time
+    - e.g. `build.nix` imports `conductor/build.nix` imports `conductor/node/build.nix`
+  - root `build.nix` and `src` should only aggregate deeper derivations
 - Scripts for binaries sit in named `foo.nix` files under `thing/src/foo.nix`
   - There is standard boilerplate for this, see an existing file for examples
   - use `pkgs.writeShellScriptBin` by default

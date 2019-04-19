@@ -8,10 +8,9 @@ let
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
-  hc-install-node-conductor = pkgs.writeShellScriptBin "hc-install-node-conductor"
+  hc-conductor-node-install = pkgs.writeShellScriptBin "hc-conductor-node-install"
   ''
-  hc-node-flush;
-   ./scripts/build_nodejs_conductor.sh;
+
   '';
 
   hc-install-tarpaulin = pkgs.writeShellScriptBin "hc-install-tarpaulin"
@@ -134,7 +133,7 @@ let
    && hc-build-wasm \
    && hc-install-cli \
    && hc-install-conductor \
-   && hc-install-node-conductor \
+   && hc-conductor-node-install \
    && hc-test-app-spec
   '';
 
@@ -642,7 +641,7 @@ stdenv.mkDerivation rec {
     hc-install-edit
     hc-install-cli
     hc-install-conductor
-    hc-install-node-conductor
+    hc-conductor-node-install
 
     hc-test-cli
     hc-test-app-spec

@@ -1,6 +1,7 @@
 let
-  flush-all = import ./src/flush.nix;
+  flush = import ./src/flush.nix;
 in
 [
-  flush-all
+  flush
 ]
+++ import ./conductor/build.nix

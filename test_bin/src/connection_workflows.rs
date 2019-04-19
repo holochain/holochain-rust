@@ -174,8 +174,7 @@ pub(crate) fn three_nodes_disconnect_test(
         vec![billy.p2p_binding.clone()],
         Some(alex_dir_path),
     );
-    alex.track_dna()
-        .expect("Failed sending TrackDna on alex");
+    alex.track_dna().expect("Failed sending TrackDna on alex");
     log_i!("#### alex reborn ({})", alex.p2p_binding.clone());
 
     let count = alex.listen(500);
@@ -183,7 +182,7 @@ pub(crate) fn three_nodes_disconnect_test(
 
     // Make sure Peers are connected
     let fetch_entry = alex.request_entry(ENTRY_ADDRESS_3.clone());
-     // Alex or billy or Camille might receive HandleFetchEntry request as this moment
+    // Alex or billy or Camille might receive HandleFetchEntry request as this moment
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     if !has_received {
         let has_received = billy.wait_HandleFetchEntry_and_reply();

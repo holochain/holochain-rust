@@ -20,16 +20,13 @@ pub fn setup_three_nodes(
 ) -> NetResult<()> {
     // Send TrackDna message on all nodes
     // alex
-    alex.track_dna()
-        .expect("Failed sending TrackDna on alex");
+    alex.track_dna().expect("Failed sending TrackDna on alex");
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     println!("self connected result 1: {:?}", connect_result_1);
     // billy
-    billy
-        .track_dna()
-        .expect("Failed sending TrackDna on billy");
+    billy.track_dna().expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();

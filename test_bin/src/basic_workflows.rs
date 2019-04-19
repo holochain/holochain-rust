@@ -90,8 +90,7 @@ pub fn setup_one_node(
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on both nodes
-    alex.track_dna()
-        .expect("Failed sending TrackDna on alex");
+    alex.track_dna().expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
@@ -141,16 +140,13 @@ pub fn setup_two_nodes(
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on both nodes
-    alex.track_dna()
-        .expect("Failed sending TrackDna on alex");
+    alex.track_dna().expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
-    billy
-        .track_dna()
-        .expect("Failed sending TrackDna on billy");
+    billy.track_dna().expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
@@ -491,12 +487,9 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
     billy.listen(100);
 
     // Billy re-tracks DNA
-    billy
-        .track_dna()
-        .expect("Failed sending TrackDna on billy");
+    billy.track_dna().expect("Failed sending TrackDna on billy");
     // alex re-tracks DNA
-    alex.track_dna()
-        .expect("Failed sending TrackDna on alex");
+    alex.track_dna().expect("Failed sending TrackDna on alex");
 
     // Making sure Track has been received
     // TODO: Have server reply with successResult

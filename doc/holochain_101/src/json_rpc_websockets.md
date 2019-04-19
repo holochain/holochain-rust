@@ -74,7 +74,7 @@ The following code shows how to use `rpc-websockets` to call Zome functions.
 ```js
 ...
 ws.on('open', function() {
-    let method = 'call';
+    let method = 'call'
     let params = {
         instance_id: "test-instance",
         zome: "blog",
@@ -82,7 +82,12 @@ ws.on('open', function() {
         args: {
             content: "sample content"
         }
-    };
+    }
+
+    // call an RPC method with parameters
+    ws.call(method, params).then(result => {
+        console.log(result)
+    })
 })
 ```
 

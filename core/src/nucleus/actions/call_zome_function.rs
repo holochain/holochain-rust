@@ -3,13 +3,13 @@ use crate::{
     context::Context,
     nucleus::{
         actions::get_entry::get_entry_from_agent_chain,
-        ribosome::{self, capabilities::CapabilityRequest, WasmCallData},
+        ribosome::{self, WasmCallData},
         ZomeFnCall, ZomeFnResult,
     },
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    dna::wasm::DnaWasm,
+    dna::{capabilities::CapabilityRequest, wasm::DnaWasm},
     entry::{
         cap_entries::{CapTokenGrant, CapabilityType},
         Entry,
@@ -306,11 +306,12 @@ pub mod tests {
     use crate::{
         context::Context,
         instance::tests::*,
-        nucleus::{actions::tests::test_dna, ribosome::capabilities::CapabilityRequest, tests::*},
+        nucleus::{actions::tests::test_dna, tests::*},
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
+        dna::capabilities::CapabilityRequest,
         entry::{
             cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
             Entry,
@@ -376,8 +377,8 @@ pub mod tests {
 
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
-        let grant =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+        let grant = CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions)
+            .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant.clone());
         let grant_addr = context
             .block_on(author_entry(&grant_entry, None, &context))
@@ -411,7 +412,8 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
 
-        let grant = CapTokenGrant::create(CapabilityType::Public, None, cap_functions).unwrap();
+        let grant =
+            CapTokenGrant::create("foo", CapabilityType::Public, None, cap_functions).unwrap();
         let token = grant.token();
         assert!(verify_grant(
             context.clone(),
@@ -427,7 +429,8 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("other_fn")]);
         let grant_for_other_fn =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+            CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions)
+                .unwrap();
         assert!(!verify_grant(
             context.clone(),
             &grant_for_other_fn,
@@ -436,8 +439,8 @@ pub mod tests {
 
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
-        let grant =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+        let grant = CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions)
+            .unwrap();
 
         let token = grant.token();
         assert!(!verify_grant(
@@ -474,6 +477,7 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         let grant = CapTokenGrant::create(
+            "foo",
             CapabilityType::Assigned,
             Some(vec![test_address1.clone()]),
             cap_functions,

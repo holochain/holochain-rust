@@ -144,7 +144,6 @@ pub mod tests {
                     },
                     ZomeApiFunction,
                 },
-                capabilities::CapabilityRequest,
                 Defn,
             },
             tests::*,
@@ -154,6 +153,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         dna::{
+            capabilities::CapabilityRequest,
             fn_declarations::{FnDeclaration, TraitFns},
             traits::ReservedTraitNames,
             Dna,
@@ -322,8 +322,8 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         // make the call with an valid capability call from a different sources
-        let grant =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+        let grant = CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions)
+            .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = test_setup
             .context
@@ -363,6 +363,7 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         let grant = CapTokenGrant::create(
+            "foo",
             CapabilityType::Assigned,
             Some(vec![someone.clone()]),
             cap_functions,
@@ -479,8 +480,8 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         // add the transferable grant and get the token which is the grant's address
-        let grant =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+        let grant = CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions)
+            .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = context
             .block_on(author_entry(&grant_entry, None, &context))

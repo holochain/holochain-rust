@@ -76,12 +76,6 @@ let
   '';
 
 
-  # simulates all supported ci tests in a local circle ci environment
-  ci = pkgs.writeShellScriptBin "ci"
-  ''
-   circleci-cli local execute
-  '';
-
   build-wasm = wasm-path:
   ''
    export WASM_PATH=${wasm-path}/
@@ -562,7 +556,6 @@ stdenv.mkDerivation rec {
     # curl needed to push to codecov
     curl
     hc-codecov
-    ci
 
     hc-prepare-release-pr
     hc-prepare-crate-versions

@@ -3,7 +3,7 @@ let
   pkgs = import ./holonix/nixpkgs/nixpkgs.nix;
   rust = import ./holonix/rust/config.nix;
   release = import ./holonix/release/config.nix;
-  github = import ./holonix/github/config.nix;
+  git = import ./holonix/git/config.nix;
 
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
@@ -141,12 +141,12 @@ let
    then
     echo "pulse tag for pulse ${release.pulse.version} already exists locally! doing nothing..."
     echo "pulse commit: $(git show-ref -s ${release.pulse.tag})"
-    echo "to push upstream run: git push ${github.upstream} ${release.pulse.tag}"
+    echo "to push upstream run: git push ${git.github.upstream} ${release.pulse.tag}"
    else
     echo "tagging..."
     git tag -a ${release.pulse.tag} ${release.pulse.commit} -m 'Dev pulse ${release.pulse.version}'
     echo "pushing..."
-    git push ${github.upstream} ${release.pulse.tag}
+    git push ${git.github.upstream} ${release.pulse.tag}
     echo $'pulse tag ${release.pulse.tag} created and pushed'
   fi
   echo
@@ -176,7 +176,7 @@ let
     else
      git checkout ${release.pulse.commit}
      git checkout -b ${release.branch}
-     git push -u ${github.upstream} ${release.branch}
+     git push -u ${git.github.upstream} ${release.branch}
    fi
    echo
   '';
@@ -267,9 +267,9 @@ Then run `nix-shell --run hc-prepare-release`
   ''
   echo
   echo 'ensure github PR'
-  git config --local hub.upstream ${github.repo}
-  git config --local hub.forkrepo ${github.repo}
-  git config --local hub.forkremote ${github.upstream}
+  git config --local hub.upstream ${git.github.repo}
+  git config --local hub.forkrepo ${git.github.repo}
+  git config --local hub.forkremote ${git.github.upstream}
   if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release.branch}" ]
    then
     git add . && git commit -am 'Release ${release.core.version.current}'
@@ -330,7 +330,7 @@ Then run `nix-shell --run hc-prepare-release`
 
   echo "tagging ${release.core.tag}"
   git tag -a ${release.core.tag} -m "Version ${release.core.tag}"
-  git push ${github.upstream} ${release.core.tag}
+  git push ${git.github.upstream} ${release.core.tag}
 
   echo
   echo "releasing node conductor ${release.node-conductor.tag}"
@@ -338,7 +338,7 @@ Then run `nix-shell --run hc-prepare-release`
 
   echo "tagging ${release.node-conductor.tag}"
   git tag -a ${release.node-conductor.tag} -m "Node conductor version ${release.node-conductor.tag}"
-  git push ${github.upstream} ${release.node-conductor.tag}
+  git push ${git.github.upstream} ${release.node-conductor.tag}
 
   echo "release tags pushed"
   echo "travis builds: https://travis-ci.com/holochain/holochain-rust/branches"
@@ -523,9 +523,9 @@ All binaries are for 64-bit operating systems.
    echo
    echo 'ensure github PR against develop'
    echo
-   git config --local hub.upstream ${github.repo}
-   git config --local hub.forkrepo ${github.repo}
-   git config --local hub.forkremote ${github.upstream}
+   git config --local hub.upstream ${git.github.repo}
+   git config --local hub.forkrepo ${git.github.repo}
+   git config --local hub.forkremote ${git.github.upstream}
    if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release.branch}" ]
     then
      git add . && git commit -am 'Release ${release.core.version.current}'
@@ -645,9 +645,6 @@ stdenv.mkDerivation rec {
 
     hc-test-all
 
-    # dev tooling
-    git
-
     # curl needed to push to codecov
     curl
     hc-codecov
@@ -680,15 +677,8 @@ stdenv.mkDerivation rec {
   ]
   ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ]
 
-  # node build inputs
-  ++ import ./holonix/node/build.nix
-
-  # rust build inputs
-  ++ import ./holonix/rust/build.nix
-
   # root build inputs
-  ++ import ./holonix/build.nix
-  ;
+  ++ import ./holonix/build.nix;
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   # https://llogiq.github.io/2017/06/01/perf-pitfalls.html

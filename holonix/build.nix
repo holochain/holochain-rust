@@ -4,4 +4,8 @@ in
 [
   flush
 ]
+
 ++ import ./conductor/build.nix
+++ import ./git/build.nix
+++ import ./node/build.nix
+++ import ./rust/build.nix

@@ -542,12 +542,6 @@ stdenv.mkDerivation rec {
 
     coreutils which
 
-    # for openssl static installation
-    perl
-
-    # for openssl static installation
-    perl
-
     cmake
     python
     pkgconfig

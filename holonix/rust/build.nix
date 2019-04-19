@@ -5,6 +5,7 @@ let
 
   flush = import ./src/flush.nix;
   fmt = import ./src/fmt.nix;
+  fmt-check = import ./src/fmt-check.nix;
 in
 [ build ]
 # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
@@ -18,4 +19,5 @@ in
 ++ [
   flush
   fmt
+  fmt-check
 ]

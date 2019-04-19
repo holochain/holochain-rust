@@ -527,7 +527,6 @@ stdenv.mkDerivation rec {
 
     cmake
     python
-    pkgconfig
 
     qt5.qmake
 

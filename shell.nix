@@ -639,9 +639,6 @@ stdenv.mkDerivation rec {
     hc-codecov
     ci
 
-    # release tooling
-    gitAndTools.git-hub
-    github-release
     hc-prepare-pulse-tag
     hc-prepare-release-branch
     hc-prepare-release-pr

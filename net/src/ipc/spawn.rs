@@ -151,20 +151,20 @@ pub fn ipc_spawn(
     // Set shutdown function to kill the sub-process
     out.kill = Some(Box::new(move || {
         match child.kill() {
-            Ok(()) =>
-            // #[cfg(windows)]
-            {
-                let mut child_killer = std::process::Command::new("taskkill");
-
-                child_killer.args(&["/pid", &real_pid, "/f", "/t"]);
-
-                let _ = child_killer.spawn();
-
-                log_i!("Succesfully KILLED ipc sub-process {}", real_pid);
-            }
+            Ok(()) => kill_child(&real_pid),
             Err(e) => println!("failed to kill ipc sub-process: {:?}", e),
         };
     }));
 
     Ok(out)
 }
+
+#[cfg(windows)]
+fn kill_child(pid: &str) {
+    let mut child_killer = std::process::Command::new("taskkill");
+    child_killer.args(&["/pid", pid, "/f", "/t"]);
+    let _ = child_killer.spawn();
+}
+
+#[cfg(not(windows))]
+fn kill_child(pid: &str) { }

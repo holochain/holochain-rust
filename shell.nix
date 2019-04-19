@@ -8,15 +8,6 @@ let
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
-  hc-node-flush = pkgs.writeShellScriptBin "hc-node-flush"
-  ''
-  echo "flushing node artifacts"
-  find . -wholename "**/node_modules" | xargs -I {} rm -rf  {};
-  find . -wholename "./nodejs_conductor/bin-package" | xargs -I {} rm -rf {};
-  find . -wholename "./nodejs_conductor/build" | xargs -I {} rm -rf {};
-  find . -wholename "./nodejs_conductor/dist" | xargs -I {} rm -rf {};
-  '';
-
   hc-cargo-flush = pkgs.writeShellScriptBin "hc-cargo-flush"
   ''
    echo "flushing cargo"
@@ -659,7 +650,6 @@ stdenv.mkDerivation rec {
     nodejs-8_x
     yarn
 
-    hc-node-flush
     hc-cargo-flush
     hc-cargo-lock-flush
     hc-flush-all
@@ -725,6 +715,7 @@ stdenv.mkDerivation rec {
   ]
   ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ]
   ++ import ./nix/rust/build.nix
+  ++ import ./nix/node/build.nix
   ;
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

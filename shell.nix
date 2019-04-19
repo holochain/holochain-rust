@@ -8,13 +8,6 @@ let
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
-  hc-flush-all = pkgs.writeShellScriptBin "hc-flush-all"
-  ''
-  hc-node-flush
-  hc-cargo-flush
-  hc-cargo-lock-flush
-  '';
-
   hc-install-node-conductor = pkgs.writeShellScriptBin "hc-install-node-conductor"
   ''
   hc-node-flush;
@@ -635,10 +628,6 @@ stdenv.mkDerivation rec {
     nodejs-8_x
     yarn
 
-    hc-cargo-flush
-    hc-cargo-lock-flush
-    hc-flush-all
-
     hc-cargo-toml-set-ver
     hc-cargo-toml-test-ver
     hc-cargo-toml-grep-unpinned
@@ -699,8 +688,15 @@ stdenv.mkDerivation rec {
 
   ]
   ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ]
-  ++ import ./nix/rust/build.nix
+
+  # node build inputs
   ++ import ./nix/node/build.nix
+
+  # rust build inputs
+  ++ import ./nix/rust/build.nix
+
+  # root build inputs
+  ++ import ./nix/build.nix
   ;
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

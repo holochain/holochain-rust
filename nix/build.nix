@@ -1,5 +1,5 @@
 let
-  flush-all = import ./src/flush-all.nix;
+  flush-all = import ./src/flush.nix;
 in
 [
   flush-all

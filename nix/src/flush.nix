@@ -1,7 +1,7 @@
 let
   pkgs = import ../nixpkgs/nixpkgs.nix;
 
-  name = "hc-flush-all";
+  name = "hc-flush";
 
   script = pkgs.writeShellScriptBin name
   ''

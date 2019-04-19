@@ -128,29 +128,6 @@ let
    && hc-test-app-spec
   '';
 
-  hc-prepare-pulse-tag = pkgs.writeShellScriptBin "hc-prepare-pulse-tag"
-  ''
-  echo
-  echo 'tagging commit for pulse version ${release.pulse.version}'
-  echo
-  git fetch --tags
-  if git tag | grep -q "${release.pulse.tag}"
-   then
-    echo "pulse tag for pulse ${release.pulse.version} already exists locally! doing nothing..."
-    echo "pulse commit: $(git show-ref -s ${release.pulse.tag})"
-    echo "to push upstream run: git push ${git.github.upstream} ${release.pulse.tag}"
-   else
-    echo "tagging..."
-    git tag -a ${release.pulse.tag} ${release.pulse.commit} -m 'Dev pulse ${release.pulse.version}'
-    echo "pushing..."
-    git push ${git.github.upstream} ${release.pulse.tag}
-    echo $'pulse tag ${release.pulse.tag} created and pushed'
-  fi
-  echo
-  echo 'pulse tag on github: https://github.com/holochain/holochain-rust/releases/tag/${release.pulse.tag}'
-  echo
-  '';
-
   hc-prepare-release-branch = pkgs.writeShellScriptBin "hc-prepare-release-branch"
   ''
    echo
@@ -300,7 +277,7 @@ Then run `nix-shell --run hc-prepare-release`
    read -r -p "Are you sure you want to cut a new release based on the current config in shell.nix? [y/N] " response
    case "$response" in
     [yY][eE][sS]|[yY])
-     hc-prepare-pulse-tag \
+     hc-release-pulse-tag \
      && hc-prepare-release-branch \
      && hc-prepare-crate-versions \
      && hc-ensure-changelog-version \
@@ -433,7 +410,7 @@ All binaries are for 64-bit operating systems.
    # gets a markdown version of pulse
    # greps for everything from summary to details (not including details heading)
    # deletes null characters that throw warnings in bash
-   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${release.pulse-url} | grep -Pzo "(?s)(###\s+\**Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
+   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${release.pulse.url} | grep -Pzo "(?s)(###\s+\**Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
    WITH_NOTES=''${WITH_DATE/$PULSE_PLACEHOLDER/$PULSE_NOTES}
    echo "$WITH_NOTES"
   '';
@@ -636,7 +613,6 @@ stdenv.mkDerivation rec {
     hc-codecov
     ci
 
-    hc-prepare-pulse-tag
     hc-prepare-release-branch
     hc-prepare-release-pr
     hc-prepare-crate-versions

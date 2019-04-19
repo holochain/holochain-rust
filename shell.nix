@@ -11,7 +11,7 @@ let
   # core-tag = "v${core-version}";
   # node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
 
-  rust-build = (pkgs.rustChannelOfTargets "nightly" rust.nightly-date [ rust.wasm-target rust.generic-linux-target ]);
+  rust-build = (pkgs.rustChannelOfTargets "nightly" rust.nightly-date [ rust.wasm-target rust.generic-linux-target  ]);
 
   hc-node-flush = pkgs.writeShellScriptBin "hc-node-flush"
   ''
@@ -602,14 +602,14 @@ All binaries are for 64-bit operating systems.
 
   build-release-artifact = params:
   ''
-   export artifact_name=`sed "s/unknown/generic/g" <<< "${params.path}-${core-version}-${linux-release-target}"`
+   export artifact_name=`sed "s/unknown/generic/g" <<< "${params.path}-${release.core.version.current}-${rust.generic-linux-target}"`
    echo
    echo "building $artifact_name..."
    echo
 
-   CARGO_INCREMENTAL=0 cargo rustc --manifest-path ${params.path}/Cargo.toml --target ${linux-release-target} --release -- -C lto
+   CARGO_INCREMENTAL=0 cargo rustc --manifest-path ${params.path}/Cargo.toml --target ${rust.generic-linux-target} --release -- -C lto
    mkdir -p dist/$artifact_name
-   cp target/${linux-release-target}/release/${params.name} ${params.path}/LICENSE ${params.path}/README.md dist/$artifact_name
+   cp target/${rust.generic-linux-target}/release/${params.name} ${params.path}/LICENSE ${params.path}/README.md dist/$artifact_name
    tar -C dist/$artifact_name -czf dist/$artifact_name.tar.gz . && rm -rf dist/$artifact_name
   '';
   build-release-paramss = [
@@ -631,7 +631,7 @@ All binaries are for 64-bit operating systems.
 
    node -v
    ./scripts/build_nodejs_conductor.sh
-   cp nodejs_conductor/bin-package/index-v${node-conductor-version}-node-v57-linux-x64.tar.gz dist
+   cp nodejs_conductor/bin-package/index-v${release.node-conductor.version.current}-node-v57-linux-x64.tar.gz dist
   '';
   build-node-conductor-versions = [ "nodejs-8_x" ];
   hc-build-release-artifacts = pkgs.writeShellScriptBin "hc-build-release-artifacts"

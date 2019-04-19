@@ -8,11 +8,6 @@ let
   # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
-  # core-tag = "v${core-version}";
-  # node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
-
-  rust-build = (pkgs.rustChannelOfTargets "nightly" rust.nightly-date [ rust.wasm-target rust.generic-linux-target  ]);
-
   hc-node-flush = pkgs.writeShellScriptBin "hc-node-flush"
   ''
   echo "flushing node artifacts"
@@ -658,7 +653,6 @@ stdenv.mkDerivation rec {
     cmake
     python
     pkgconfig
-    rust-build
 
     qt5.qmake
 
@@ -728,7 +722,10 @@ stdenv.mkDerivation rec {
     hc-release-merge-back
     hc-release-pulse-sync
 
-  ] ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ];
+  ]
+  ++ lib.optionals stdenv.isDarwin [ frameworks.Security frameworks.CoreFoundation frameworks.CoreServices ]
+  ++ import ./nix/rust/build.nix
+  ;
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   # https://llogiq.github.io/2017/06/01/perf-pitfalls.html

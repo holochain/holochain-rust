@@ -174,7 +174,7 @@ pub(crate) fn three_nodes_disconnect_test(
         vec![billy.p2p_binding.clone()],
         Some(alex_dir_path),
     );
-    alex.track_dna(&DNA_ADDRESS)
+    alex.track_dna()
         .expect("Failed sending TrackDna on alex");
     log_i!("#### alex reborn ({})", alex.p2p_binding.clone());
 
@@ -222,63 +222,74 @@ pub(crate) fn three_nodes_disconnect_test(
     Ok(())
 }
 
-// Test disconnects with multiple dna per Node
-#[cfg_attr(tarpaulin, skip)]
-pub(crate) fn three_nodes_multi_dna_disconnect_test(
-    config_filepath: &str,
-    maybe_end_user_config_filepath: Option<String>,
-    test_fn: ThreeNodesTestFn,
-) -> NetResult<()> {
-    log_i!("");
-    print_three_nodes_test_name("N3H three_nodes_multi_dna_disconnect_test: ", test_fn);
-    log_i!("=================");
-    // Create alex & temp dir
-    let alex_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
-    let alex_dir_path = alex_dir.path().to_string_lossy().to_string();
-    let mut alex = P2pNode::new_with_spawn_ipc_network(
-        ALEX_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
-        Some(config_filepath),
-        maybe_end_user_config_filepath.clone(),
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
-        Some(alex_dir_path.clone()),
-    );
-    // Create billy & temp dir
-    let billy_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
-    let billy_dir_path = billy_dir.path().to_string_lossy().to_string();
-    let mut billy = P2pNode::new_with_spawn_ipc_network(
-        BILLY_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
-        Some(config_filepath),
-        maybe_end_user_config_filepath.clone(),
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
-        Some(billy_dir_path),
-    );
-    // Create camille & temp dir
-    let camille_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
-    let camille_dir_path = camille_dir.path().to_string_lossy().to_string();
-    let mut camille = P2pNode::new_with_spawn_ipc_network(
-        CAMILLE_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
-        Some(config_filepath),
-        maybe_end_user_config_filepath.clone(),
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
-        Some(camille_dir_path),
-    );
-
-
-    // FIXME
-
-
-    log_i!("============");
-    print_three_nodes_test_name("N3H three_nodes_multi_dna_disconnect_test END: ", test_fn);
-    // Kill nodes
-    alex.stop();
-    billy.stop();
-    camille.stop();
-
-    Ok(())
-}
+//// Test disconnects with multiple dna per Node
+//#[cfg_attr(tarpaulin, skip)]
+//pub(crate) fn three_nodes_multi_dna_disconnect_test(
+//    config_filepath: &str,
+//    maybe_end_user_config_filepath: Option<String>,
+//    test_fn: ThreeNodesTestFn,
+//) -> NetResult<()> {
+//    log_i!("");
+//    print_three_nodes_test_name("N3H three_nodes_multi_dna_disconnect_test: ", test_fn);
+//    log_i!("=================");
+//    // Create alex & temp dir
+//    let alex_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
+//    let alex_dir_path = alex_dir.path().to_string_lossy().to_string();
+//    let mut alex = P2pNode::new_with_spawn_ipc_network(
+//        ALEX_AGENT_ID.to_string(),
+//        DNA_ADDRESS.clone(),
+//        Some(config_filepath),
+//        maybe_end_user_config_filepath.clone(),
+//        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+//        Some(alex_dir_path.clone()),
+//    );
+//    // Create billy & temp dir
+//    let billy_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
+//    let billy_dir_path = billy_dir.path().to_string_lossy().to_string();
+//    let mut billy = P2pNode::new_with_spawn_ipc_network(
+//        BILLY_AGENT_ID.to_string(),
+//        DNA_ADDRESS.clone(),
+//        Some(config_filepath),
+//        maybe_end_user_config_filepath.clone(),
+//        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+//        Some(billy_dir_path),
+//    );
+//    // Create camille & temp dir
+//    let camille_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
+//    let camille_dir_path = camille_dir.path().to_string_lossy().to_string();
+//    let mut camille = P2pNode::new_with_spawn_ipc_network(
+//        CAMILLE_AGENT_ID.to_string(),
+//        DNA_ADDRESS.clone(),
+//        Some(config_filepath),
+//        maybe_end_user_config_filepath.clone(),
+//        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+//        Some(camille_dir_path),
+//    );
+//
+//    // Normal setup
+//    setup_three_nodes(alex, billy, camille, true)?;
+//    // Track more DNAs
+//    alex.track_dna(&DNA_ADDRESS_B)
+//        .expect("Failed sending TrackDna on alex");
+//    camille.track_dna(&DNA_ADDRESS_C)
+//        .expect("Failed sending TrackDna on camille");
+//    billy.track_dna(&DNA_ADDRESS_B)
+//           .expect("Failed sending TrackDna on billy");
+//    billy.track_dna(&DNA_ADDRESS_C)
+//         .expect("Failed sending TrackDna on billy");
+//
+//    // FIXME
+//
+//
+//    log_i!("============");
+//    print_three_nodes_test_name("N3H three_nodes_multi_dna_disconnect_test END: ", test_fn);
+//    // Kill nodes
+//    alex.stop();
+//    billy.stop();
+//    camille.stop();
+//
+//    Ok(())
+//}
 
 // Test disconnects with multiple Peers per Node
 // FIXME

@@ -170,7 +170,12 @@ impl P2pNode {
 
 // Track, publish, hold
 impl P2pNode {
-    pub fn track_dna(&mut self, dna_address: &Address) -> NetResult<()> {
+    pub fn track_dna(&mut self) -> NetResult<()> {
+        let dna_address = self.dna_address.clone();
+        self.track_extra_dna(&dna_address)
+    }
+
+    fn track_extra_dna(&mut self, dna_address: &Address) -> NetResult<()> {
         let agent_id = self.agent_id.clone();
         self.send(
             JsonProtocol::TrackDna(TrackDnaData {
@@ -181,7 +186,12 @@ impl P2pNode {
         )
     }
 
-    pub fn untrack_dna(&mut self, dna_address: &Address) -> NetResult<()> {
+    pub fn untrack_dna(&mut self) -> NetResult<()> {
+        let dna_address = self.dna_address.clone();
+        self.untrack_extra_dna(&dna_address)
+    }
+
+    fn untrack_extra_dna(&mut self, dna_address: &Address) -> NetResult<()> {
         let agent_id = self.agent_id.clone();
         self.send(
             JsonProtocol::UntrackDna(TrackDnaData {

@@ -2,9 +2,9 @@
 
 `hc run` uses mock networking by default and therefore doesn't talk to any other nodes.
 
-Start the server by running:
+In order to have `hc run` spawn a real network instance, start it with the `--networked` option:
 ```shell
-hc run
+hc run --networked
 ```
 
 You should see something like this:

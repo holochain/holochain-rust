@@ -4,11 +4,13 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 
 use holochain_conductor_api::{context_builder::ContextBuilder, Holochain};
-use holochain_core::{
-    context::Context, logger::Logger, nucleus::ribosome::capabilities::CapabilityRequest,
-};
+use holochain_core::{context::Context, logger::Logger};
 use holochain_core_types::{
-    agent::AgentId, cas::content::Address, dna::Dna, error::HolochainError, signature::Signature,
+    agent::AgentId,
+    cas::content::Address,
+    dna::{capabilities::CapabilityRequest, Dna},
+    error::HolochainError,
+    signature::Signature,
 };
 
 use std::sync::Arc;

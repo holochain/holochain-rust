@@ -30,6 +30,7 @@ use holochain_wasm_utils::{
         ZomeFnCallArgs,
     },
     holochain_core_types::{
+        dna::capabilities::CapabilityRequest,
         hash::HashString,
         json::{JsonString, RawString},
     },
@@ -201,6 +202,9 @@ lazy_static! {
     /// The Address of the public token (if any)
     pub static ref PUBLIC_TOKEN: &'static Address = &GLOBALS.public_token;
 
+    /// The CapabilityRequest under which this wasm function is executing
+    pub static ref CAPABILITY_REQ: &'static CapabilityRequest = &GLOBALS.cap_request;
+
 }
 
 impl From<DNA_NAME> for JsonString {
@@ -242,6 +246,12 @@ impl From<AGENT_LATEST_HASH> for JsonString {
 impl From<PUBLIC_TOKEN> for JsonString {
     fn from(public_token: PUBLIC_TOKEN) -> JsonString {
         JsonString::from(Address::from(public_token.to_string()))
+    }
+}
+
+impl From<CAPABILITY_REQ> for JsonString {
+    fn from(cap_request: CAPABILITY_REQ) -> JsonString {
+        JsonString::from(*cap_request)
     }
 }
 

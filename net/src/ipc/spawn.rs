@@ -167,4 +167,4 @@ fn kill_child(pid: &str) {
 }
 
 #[cfg(not(windows))]
-fn kill_child(pid: &str) { }
+fn kill_child(pid: &str) {}

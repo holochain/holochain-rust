@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Windows-only: Spawned `node.exe` process used by network module now closes properly on holochain termination [#1293](https://github.com/holochain/holochain-rust/pull/1293)   
+
 - Don't publish private zome entries [#1233](https://github.com/holochain/holochain-rust/pull/1233)
 
 - Fix unspecified errors that can occur during entry deletion/update [#1266](https://github.com/holochain/holochain-rust/pull/1266)

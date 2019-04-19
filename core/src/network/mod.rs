@@ -151,8 +151,8 @@ pub mod tests {
     }
 
     #[test]
-    // flaky thest
-    //  this test failed on macos cold builds blocking on the get_entry
+    // flaky test
+    //  this test failed on macOSx cold builds blocking on the get_entry
     //  adding a sleep after the publish would make it work, but that's flaky!
     #[cfg(feature = "broken-tests")]
     fn get_entry_when_alone() {

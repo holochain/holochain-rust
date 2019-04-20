@@ -3,7 +3,7 @@ let
   release = import ../../config.nix;
   git = import ../../../git/config.nix;
 
-  name = "hc-release-git-branch";
+  name = "hc-release-github-branch";
 
   script = pkgs.writeShellScriptBin name
   ''

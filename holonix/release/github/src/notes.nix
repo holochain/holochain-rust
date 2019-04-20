@@ -3,7 +3,7 @@ let
   release = import ../../config.nix;
   rust = import ../../../rust/config.nix;
 
-  name = "hc-release-git-notes";
+  name = "hc-release-github-notes";
 
   template =
   ''

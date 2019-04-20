@@ -3,7 +3,7 @@ let
   release = import ../../config.nix;
   git = import ../../../git/config.nix;
 
-  name = "hc-release-git-merge-back";
+  name = "hc-release-github-merge-back";
 
   script = pkgs.writeShellScriptBin name
   ''

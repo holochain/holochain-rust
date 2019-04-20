@@ -9,6 +9,7 @@ let
 in
 [ build ]
 ++ import ./manifest/build.nix
+++ import ./wasm/build.nix
 # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
 ++ [
   pkgs.binutils

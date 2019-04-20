@@ -67,24 +67,6 @@ let
    bash <(curl -s https://codecov.io/bash);
   '';
 
-
-  build-wasm = wasm-path:
-  ''
-   export WASM_PATH=${wasm-path}/
-   cargo build --release --target wasm32-unknown-unknown --manifest-path "$WASM_PATH"Cargo.toml --target-dir "$HC_TARGET_PREFIX""$WASM_PATH"target;
-  '';
-  wasm-paths = [
-   "hdk-rust/wasm-test"
-   "wasm_utils/wasm-test/integration-test"
-   "conductor_api/wasm-test"
-   "conductor_api/test-bridge-caller"
-   "core/src/nucleus/actions/wasm-test"
-  ];
-  hc-build-wasm = pkgs.writeShellScriptBin "hc-build-wasm"
-  ''
-   ${pkgs.lib.concatMapStrings (path: build-wasm path) wasm-paths}
-  '';
-
   # simplified version of the c bindings test command in makefile
   # hardcodes hc_dna to test rather than looping/scanning like make does
   # might want to make this more sophisticated if we end up with many tests
@@ -423,7 +405,6 @@ stdenv.mkDerivation rec {
     hc-cargo-toml-set-ver
     hc-cargo-toml-test-ver
 
-    hc-build-wasm
     hc-test
 
     hc-tarpaulin

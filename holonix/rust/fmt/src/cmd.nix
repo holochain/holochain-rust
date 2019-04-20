@@ -1,5 +1,5 @@
 let
-  pkgs = import ../../nixpkgs/nixpkgs.nix;
+  pkgs = import ../../../nixpkgs/nixpkgs.nix;
 
   name = "hc-rust-fmt";
 

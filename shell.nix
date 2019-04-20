@@ -14,11 +14,6 @@ let
   '';
   hc-tarpaulin = pkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
 
-  hc-install-fmt = pkgs.writeShellScriptBin "hc-install-fmt"
-  ''
-   rustup component add rustfmt
-  '';
-
   hc-install-edit = pkgs.writeShellScriptBin "hc-install-edit"
   ''
    cargo install cargo-edit
@@ -193,7 +188,6 @@ stdenv.mkDerivation rec {
     hc-tarpaulin
 
     hc-install-tarpaulin
-    hc-install-fmt
     hc-install-edit
     hc-install-cli
     hc-install-conductor

@@ -10,23 +10,6 @@ let
   cat CHANGELOG.md | grep -E '^-\s' | grep -Ev '[0-9]\]' | cat
   '';
 
-  hc-cargo-toml-test-ver = pkgs.writeShellScriptBin "hc-cargo-toml-test-ver"
-  ''
-   # node dists can mess with the process
-   hc-node-flush
-
-   # loop over all tomls
-   # find all possible upgrades
-   # ignore upgrades that are just unpinning themselves (=x.y.z will suggest x.y.z)
-   # | grep -vE 'v=([0-9]+\.[0-9]+\.[0-9]+) -> v\1'
-   echo "attempting to suggest new pinnable crate versions"
-   find . -name "Cargo.toml" \
-     | xargs -P "$NIX_BUILD_CORES" -I {} cargo upgrade --dry-run --allow-prerelease --all --manifest-path {} \
-     | grep -vE 'v=[0-9]+\.[0-9]+\.[0-9]+'
-
-   hc-cargo-toml-grep-unpinned
-  '';
-
   hc-test-app-spec = pkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
 
   # runs all standard tests and reports code coverage
@@ -156,8 +139,6 @@ stdenv.mkDerivation rec {
     # Reinstate and organise them ᕙ༼*◕_◕*༽ᕤ
     # coreutils
     # python
-
-    hc-cargo-toml-test-ver
 
     hc-test-app-spec
 

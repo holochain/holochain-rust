@@ -34,15 +34,7 @@ let
   ''
   cat CHANGELOG.md | grep -E '^-\s' | grep -Ev '[0-9]\]' | cat
   '';
-  hc-cargo-toml-grep-unpinned = pkgs.writeShellScriptBin "hc-cargo-toml-grep-unpinned"
-  ''
-   find . -type f \( -name "Cargo.toml" -or -name "Cargo.template.toml" \) \
-     | xargs cat \
-     | grep -Ev '=[0-9]+\.[0-9]+\.[0-9]+' \
-     | grep -E '[0-9]+' \
-     | grep -Ev '(version|edition|codegen-units)' \
-     | cat
-  '';
+
   hc-cargo-toml-test-ver = pkgs.writeShellScriptBin "hc-cargo-toml-test-ver"
   ''
    # node dists can mess with the process
@@ -430,7 +422,6 @@ stdenv.mkDerivation rec {
 
     hc-cargo-toml-set-ver
     hc-cargo-toml-test-ver
-    hc-cargo-toml-grep-unpinned
 
     hc-build-wasm
     hc-test

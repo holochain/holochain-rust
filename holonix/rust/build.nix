@@ -8,6 +8,7 @@ let
   fmt-check = import ./src/fmt-check.nix;
 in
 [ build ]
+++ import ./manifest/build.nix
 # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
 ++ [
   pkgs.binutils

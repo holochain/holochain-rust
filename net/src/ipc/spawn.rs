@@ -162,8 +162,8 @@ pub fn ipc_spawn(
 fn kill_child(pid: &str) {
     let mut child_killer = std::process::Command::new("taskkill");
     child_killer.args(&["/pid", pid, "/f", "/t"]);
-    let _ = child_killer.spawn();
+    let _ = child_killer.status();
 }
 
 #[cfg(not(windows))]
-fn kill_child(pid: &str) {}
+fn kill_child(_pid: &str) {}

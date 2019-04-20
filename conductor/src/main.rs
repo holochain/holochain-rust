@@ -64,6 +64,7 @@ fn main() {
             conductor
                 .start_all_static_servers()
                 .expect("Could not start UI servers!");
+             
         }
         Err(error) => println!("Error while trying to boot from config: {:?}", error),
     };

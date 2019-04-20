@@ -174,24 +174,6 @@ let
    | cat
   '';
 
-  build-node-conductor-artifact = node-version:
-  ''
-   hc-node-flush
-   echo
-   echo "building conductor for node ${node-version}..."
-   echo
-
-   node -v
-   ./scripts/build_nodejs_conductor.sh
-   cp nodejs_conductor/bin-package/index-v${release.node-conductor.version.current}-node-v57-linux-x64.tar.gz dist
-  '';
-  build-node-conductor-versions = [ "nodejs-8_x" ];
-  hc-build-release-artifacts = pkgs.writeShellScriptBin "hc-build-release-artifacts"
-  ''
-   
-   ${pkgs.lib.concatMapStrings (node-version: build-node-conductor-artifact node-version) build-node-conductor-versions}
-  '';
-
 in
 with pkgs;
 stdenv.mkDerivation rec {
@@ -230,7 +212,6 @@ stdenv.mkDerivation rec {
     hc-changelog-grep-pr-references
     hc-ensure-changelog-version
     hc-readme-grep-nightly
-    hc-build-release-artifacts
 
     hc-do-release
 

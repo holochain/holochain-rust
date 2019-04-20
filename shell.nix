@@ -464,18 +464,6 @@ All binaries are for 64-bit operating systems.
    github-release -v edit --tag ${release.core.tag} --pre-release
   '';
 
-  hc-release-pulse-sync = pkgs.writeShellScriptBin "hc-release-pulse-sync"
-  ''
-   export GITHUB_USER='holochain'
-   export GITHUB_REPO='holochain-rust'
-   export GITHUB_TOKEN=$( git config --get hub.oauthtoken )
-
-   echo
-   echo 'Injecting medium summary/highlights into github release notes'
-   echo
-   github-release -v edit --tag ${release.core.tag} --name ${release.core.tag} --description "$( hc-generate-release-notes )" --pre-release
-  '';
-
   build-release-artifact = params:
   ''
    export artifact_name=`sed "s/unknown/generic/g" <<< "${params.path}-${release.core.version.current}-${rust.generic-linux-target}"`
@@ -569,7 +557,6 @@ stdenv.mkDerivation rec {
     hc-do-release
 
     hc-release-merge-back
-    hc-release-pulse-sync
 
   ]
 

@@ -38,7 +38,7 @@ let
      url = "https://medium.com/@holochain/${base.pulse.url-hash}";
     };
 
-    core = base.core //{
+    core = base.core // {
      tag = "v${base.core.version.current}";
     };
 

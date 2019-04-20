@@ -174,28 +174,6 @@ let
    | cat
   '';
 
-  build-release-artifact = params:
-  ''
-   export artifact_name=`sed "s/unknown/generic/g" <<< "${params.path}-${release.core.version.current}-${rust.generic-linux-target}"`
-   echo
-   echo "building $artifact_name..."
-   echo
-
-   CARGO_INCREMENTAL=0 cargo rustc --manifest-path ${params.path}/Cargo.toml --target ${rust.generic-linux-target} --release -- -C lto
-   mkdir -p dist/$artifact_name
-   cp target/${rust.generic-linux-target}/release/${params.name} ${params.path}/LICENSE ${params.path}/README.md dist/$artifact_name
-   tar -C dist/$artifact_name -czf dist/$artifact_name.tar.gz . && rm -rf dist/$artifact_name
-  '';
-  build-release-paramss = [
-                           {
-                            path = "cli";
-                            name = "hc";
-                           }
-                           {
-                            path = "conductor";
-                            name = "holochain";
-                           }
-                          ];
   build-node-conductor-artifact = node-version:
   ''
    hc-node-flush
@@ -210,7 +188,7 @@ let
   build-node-conductor-versions = [ "nodejs-8_x" ];
   hc-build-release-artifacts = pkgs.writeShellScriptBin "hc-build-release-artifacts"
   ''
-   ${pkgs.lib.concatMapStrings (params: build-release-artifact params) build-release-paramss}
+   
    ${pkgs.lib.concatMapStrings (node-version: build-node-conductor-artifact node-version) build-node-conductor-versions}
   '';
 

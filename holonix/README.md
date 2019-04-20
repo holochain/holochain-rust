@@ -118,3 +118,5 @@ There are a few basic convensions to follow:
   - CLI commands are named following the path sans `src`
     - e.g. `holonix/foo/bar/src/baz.nix` becomes `hc-foo-bar-baz`
 - Make liberal use of `let .. in ..` scoping constructs in `.nix` files
+- Put functions for builds in `lib.nix` files
+  - e.g. `holonix/dist/rust/src/lib.nix`

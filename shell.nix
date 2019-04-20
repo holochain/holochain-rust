@@ -162,9 +162,6 @@ stdenv.mkDerivation rec {
     hc-test-app-spec
 
     hc-test-all
-
-    # curl needed to push to codecov
-    curl
     hc-codecov
 
     hc-prepare-crate-versions

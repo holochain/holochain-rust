@@ -10,6 +10,7 @@ in
 ++ import ./cli/build.nix
 ++ import ./conductor/build.nix
 ++ import ./darwin/build.nix
+++ import ./dist/build.nix
 ++ import ./git/build.nix
 ++ import ./node/build.nix
 ++ import ./openssl/build.nix

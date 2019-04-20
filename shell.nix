@@ -34,7 +34,6 @@ let
    hc-cargo-toml-grep-unpinned
   '';
 
-  hc-install-cli = pkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
   hc-install-conductor = pkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain --release && cargo install -f --path conductor";
 
   hc-test-app-spec = pkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
@@ -170,7 +169,6 @@ stdenv.mkDerivation rec {
     hc-cargo-toml-set-ver
     hc-cargo-toml-test-ver
 
-    hc-install-cli
     hc-install-conductor
 
     hc-test-app-spec

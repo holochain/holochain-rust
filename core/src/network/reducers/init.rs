@@ -10,11 +10,14 @@ use holochain_net::{
     },
     p2p_network::P2pNetwork,
 };
-use std::{time::{Instant, Duration}, sync::Arc};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
-use parking_lot::{Mutex, Condvar};
+use parking_lot::{Condvar, Mutex};
 
-const P2P_READY_TIMEOUT : u64 = 5000;
+const P2P_READY_TIMEOUT: u64 = 5000;
 
 pub fn reduce_init(
     context: Arc<Context>,
@@ -25,15 +28,21 @@ pub fn reduce_init(
     let network_settings = unwrap_to!(action => Action::InitNetwork);
     let ready_cond_var = Arc::new((Mutex::new(false), Condvar::new()));
     let mut network = P2pNetwork::new(
-        create_handler(&context, network_settings.dna_address.to_string(), &ready_cond_var),
+        create_handler(
+            &context,
+            network_settings.dna_address.to_string(),
+            &ready_cond_var,
+        ),
         &network_settings.p2p_config,
     )
     .unwrap();
 
     let &(ref ready_lock, ref ready_cond_var) = &*ready_cond_var;
     let mut ready = ready_lock.lock();
-    let ready_result = ready_cond_var.wait_until
-        (&mut ready, Instant::now() + Duration::from_secs(P2P_READY_TIMEOUT));
+    let ready_result = ready_cond_var.wait_until(
+        &mut ready,
+        Instant::now() + Duration::from_secs(P2P_READY_TIMEOUT),
+    );
 
     if ready_result.timed_out() {
         context.log("error/network/reducers: timed out waiting for p2p ready.");
@@ -63,6 +72,4 @@ pub fn reduce_init(
         state.agent_id = Some(network_settings.agent_id.clone());
         Ok(())
     });
-
-
 }

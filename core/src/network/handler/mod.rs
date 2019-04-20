@@ -11,10 +11,12 @@ use crate::{
     },
 };
 use holochain_core_types::hash::HashString;
-use holochain_net::connection::{protocol::Protocol, json_protocol::JsonProtocol, net_connection::NetHandler};
+use holochain_net::connection::{
+    json_protocol::JsonProtocol, net_connection::NetHandler, protocol::Protocol,
+};
 use std::{convert::TryFrom, sync::Arc};
 
-use parking_lot::{Mutex, Condvar};
+use parking_lot::{Condvar, Mutex};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -35,8 +37,11 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
-pub fn create_handler(c: &Arc<Context>, my_dna_address: String,
-                      ready_mutex_condvar:&Arc<(Mutex<bool>, Condvar)>) -> NetHandler {
+pub fn create_handler(
+    c: &Arc<Context>,
+    my_dna_address: String,
+    ready_mutex_condvar: &Arc<(Mutex<bool>, Condvar)>,
+) -> NetHandler {
     let context = c.clone();
     let ready_mutex_condvar = ready_mutex_condvar.clone();
     Box::new(move |message| {
@@ -48,12 +53,11 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String,
         let maybe_json_msg = JsonProtocol::try_from(message.clone());
         if let Err(_) = maybe_json_msg {
             match Protocol::from(message.clone()) {
-                Protocol::P2pReady =>
-                {
+                Protocol::P2pReady => {
                     handle_p2p_ready(&context, &ready_mutex_condvar);
-                    return Ok(())
+                    return Ok(());
                 }
-                _ => ()
+                _ => (),
             }
             return Ok(());
         }
@@ -203,8 +207,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String,
 }
 
 fn handle_p2p_ready(context: &Arc<Context>, ready_mutex_condvar: &Arc<(Mutex<bool>, Condvar)>) {
-    context.log(format!(
-            "debug/net/handle: P2pReady"));
+    context.log(format!("debug/net/handle: P2pReady"));
 
     let &(ref ready_lock, ref ready_condvar) = &*ready_mutex_condvar.clone();
     let mut started = ready_lock.lock();

@@ -4,8 +4,9 @@ let
   build = (pkgs.rustChannelOfTargets "nightly" rust.nightly-date [ rust.wasm-target rust.generic-linux-target  ]);
 
   flush = import ./src/flush.nix;
-  fmt = import ./src/fmt.nix;
   fmt-check = import ./src/fmt-check.nix;
+  fmt = import ./src/fmt.nix;
+  test = import ./src/test.nix;
 in
 [ build ]
 ++ import ./manifest/build.nix
@@ -20,6 +21,7 @@ in
 ]
 ++ [
   flush
-  fmt
   fmt-check
+  fmt
+  test
 ]

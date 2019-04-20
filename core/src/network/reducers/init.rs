@@ -17,7 +17,7 @@ use std::{
 
 use parking_lot::{Condvar, Mutex};
 
-const P2P_READY_TIMEOUT: u64 = 5000;
+const P2P_READY_TIMEOUT_MS : u64 = 5000;
 
 pub fn reduce_init(
     context: Arc<Context>,
@@ -41,7 +41,7 @@ pub fn reduce_init(
     let mut ready = ready_lock.lock();
     let ready_result = ready_cond_var.wait_until(
         &mut ready,
-        Instant::now() + Duration::from_secs(P2P_READY_TIMEOUT),
+        Instant::now() + Duration::from_millis(P2P_READY_TIMEOUT_MS),
     );
 
     if ready_result.timed_out() {

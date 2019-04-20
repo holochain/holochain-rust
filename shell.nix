@@ -5,13 +5,6 @@ let
   release = import ./holonix/release/config.nix;
   git = import ./holonix/git/config.nix;
 
-  hc-cargo-toml-set-ver = pkgs.writeShellScriptBin "hc-cargo-toml-set-ver"
-  ''
-   # node dist can mess with the process
-   hc-node-flush
-   find . -name "Cargo.toml" | xargs -I {} cargo upgrade "$1" --all --manifest-path {}
-  '';
-
   hc-changelog-grep-pr-references = pkgs.writeShellScriptBin "hc-changelog-grep-pr-references"
   ''
   cat CHANGELOG.md | grep -E '^-\s' | grep -Ev '[0-9]\]' | cat
@@ -164,10 +157,7 @@ stdenv.mkDerivation rec {
     # coreutils
     # python
 
-    hc-cargo-toml-set-ver
     hc-cargo-toml-test-ver
-
-    hc-install-conductor
 
     hc-test-app-spec
 

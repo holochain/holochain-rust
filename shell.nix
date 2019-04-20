@@ -37,7 +37,6 @@ let
   hc-install-cli = pkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
   hc-install-conductor = pkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain --release && cargo install -f --path conductor";
 
-  hc-test-cli = pkgs.writeShellScriptBin "hc-test-cli" "cd cli && cargo test";
   hc-test-app-spec = pkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
 
   # runs all standard tests and reports code coverage
@@ -174,7 +173,6 @@ stdenv.mkDerivation rec {
     hc-install-cli
     hc-install-conductor
 
-    hc-test-cli
     hc-test-app-spec
 
     hc-test-all

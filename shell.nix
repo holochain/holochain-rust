@@ -34,8 +34,6 @@ let
    hc-cargo-toml-grep-unpinned
   '';
 
-  hc-install-conductor = pkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain --release && cargo install -f --path conductor";
-
   hc-test-app-spec = pkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
 
   # runs all standard tests and reports code coverage

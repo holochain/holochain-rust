@@ -120,7 +120,9 @@ There are a few basic convensions to follow:
 - Make liberal use of `let .. in ..` scoping constructs in `.nix` files
 - Put functions for builds in `lib.nix` files
   - e.g. `holonix/dist/rust/src/lib.nix`
-- Use `cmd.nix` to avoid stutter in command names from directory structure
-  - e.g. `holonix/rust/fmt/src/cmd.nix` for `hc-rust-fmt`
+- File names can stutter but command names should not
+  - e.g. `holonix/rust/fmt/src/fmt.nix` for `hc-rust-fmt`
 - Use `install.nix` for scripts that install things outside of what nix manages
+  - Try to minimise use of additional install scripts, nix should handle as
+    much as possible.
   - e.g. cargo installs things to the user's home directory

@@ -5,15 +5,6 @@ let
   release = import ./holonix/release/config.nix;
   git = import ./holonix/git/config.nix;
 
-  hc-install-tarpaulin = pkgs.writeShellScriptBin "hc-install-tarpaulin"
-  ''
-   if ! cargo --list | grep --quiet tarpaulin;
-   then
-    RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin;
-   fi;
-  '';
-  hc-tarpaulin = pkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
-
   hc-cargo-toml-set-ver = pkgs.writeShellScriptBin "hc-cargo-toml-set-ver"
   ''
    # node dist can mess with the process
@@ -175,15 +166,11 @@ stdenv.mkDerivation rec {
     # I forgot what these are for!
     # Reinstate and organise them ᕙ༼*◕_◕*༽ᕤ
     # coreutils
-    # cmake
     # python
 
     hc-cargo-toml-set-ver
     hc-cargo-toml-test-ver
 
-    hc-tarpaulin
-
-    hc-install-tarpaulin
     hc-install-cli
     hc-install-conductor
 

@@ -9,6 +9,7 @@ let
   test = import ./src/test.nix;
 in
 [ build ]
+++ import ./coverage/build.nix
 ++ import ./fmt/build.nix
 ++ import ./manifest/build.nix
 ++ import ./wasm/build.nix

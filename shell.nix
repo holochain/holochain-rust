@@ -57,7 +57,6 @@ let
 
   hc-test-cli = pkgs.writeShellScriptBin "hc-test-cli" "cd cli && cargo test";
   hc-test-app-spec = pkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
-  hc-test-node-conductor = pkgs.writeShellScriptBin "hc-test-node-conductor" "cd nodejs_conductor && npm test";
 
   # runs all standard tests and reports code coverage
   hc-codecov = pkgs.writeShellScriptBin "hc-codecov"
@@ -241,7 +240,6 @@ stdenv.mkDerivation rec {
 
     hc-test-cli
     hc-test-app-spec
-    hc-test-node-conductor
 
     hc-test-all
 

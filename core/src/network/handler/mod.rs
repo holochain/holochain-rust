@@ -51,13 +51,24 @@ pub fn create_handler(
         //   context.agent_id.nick, message
         // ));
         let maybe_json_msg = JsonProtocol::try_from(message.clone());
-        if let Err(_) = maybe_json_msg {
-            match Protocol::from(message.clone()) {
-                Protocol::P2pReady => {
+        if let Err(json_error) = maybe_json_msg {
+            match Protocol::try_from(message.clone()) {
+                Ok(Protocol::P2pReady) => {
                     handle_p2p_ready(&context, &ready_mutex_condvar);
-                    return Ok(());
                 }
-                _ => (),
+                Ok(protocol_message) => {
+                    context.log(format!(
+                        "debug/net/handle: ignoring protocol message {:?}",
+                        protocol_message
+                    ));
+                }
+                Err(_protocol_error) => {
+                    // TODO why can't I use the above variable? Generates compiler error.
+                    //context.log(format!("warn/net/handle: unparsable as a protocol message", protocol_error.clone()));
+                    context.log(format!(
+                            "warn/net/handle: unparsable message received. Neither a json ({:?}) or protocol message.",
+                             json_error));
+                }
             }
             return Ok(());
         }

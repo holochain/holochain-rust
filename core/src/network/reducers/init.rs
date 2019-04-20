@@ -17,7 +17,7 @@ use std::{
 
 use parking_lot::{Condvar, Mutex};
 
-const P2P_READY_TIMEOUT_MS : u64 = 5000;
+const P2P_READY_TIMEOUT_MS: u64 = 5000;
 
 pub fn reduce_init(
     context: Arc<Context>,

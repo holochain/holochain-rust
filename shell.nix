@@ -14,10 +14,6 @@ let
   '';
   hc-tarpaulin = pkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
 
-  hc-install-edit = pkgs.writeShellScriptBin "hc-install-edit"
-  ''
-   cargo install cargo-edit
-  '';
   hc-cargo-toml-set-ver = pkgs.writeShellScriptBin "hc-cargo-toml-set-ver"
   ''
    # node dist can mess with the process
@@ -188,7 +184,6 @@ stdenv.mkDerivation rec {
     hc-tarpaulin
 
     hc-install-tarpaulin
-    hc-install-edit
     hc-install-cli
     hc-install-conductor
 

@@ -8,7 +8,7 @@ let
 in
 with pkgs;
 stdenv.mkDerivation rec {
-  name = "holochain-rust-environment";
+  name = "holonix-shell";
 
   buildInputs = import ./holonix/build.nix;
 

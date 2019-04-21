@@ -9,21 +9,21 @@ jobs:
   resource_class: large
   steps:
    - checkout
-   - run: nix-shell --run hc-test
+   - run: nix-shell --run hc-rust-test
 
  fmt:
   docker:
    - image: holochain/holochain-rust:latest
   steps:
    - checkout
-   - run: nix-shell --run hc-fmt-check
+   - run: nix-shell --run hc-rust-fmt-check
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
       command: |
         # temporary avoid build fails due to greps
         set +eo pipefail
-        export UNPINNED=`nix-shell --run hc-cargo-toml-grep-unpinned`
+        export UNPINNED=`nix-shell --run hc-rust-manifest-list-unpinned`
         set -eo pipefail
         if [[ $UNPINNED ]]
         then
@@ -37,7 +37,7 @@ jobs:
       command: |
         # temporary avoid build fails due to greps
         set +eo pipefail
-        export UNREFERENCED=`nix-shell --run hc-changelog-grep-pr-references`
+        export UNREFERENCED=`nix-shell --run hc-release-docs-changelog-list-missing-references`
         set -eo pipefail
         if [[ $UNREFERENCED ]]
         then
@@ -53,7 +53,7 @@ jobs:
       command: |
         # temporary avoid build fails due to greps
         set +eo pipefail
-        export BAD_NIGHTLY=`nix-shell --run hc-readme-grep-nightly`
+        export BAD_NIGHTLY=`nix-shell --run hc-release-docs-readme-list-stale-nightlies`
         set -eo pipefail
         if [[ $BAD_NIGHTLY ]]
         then
@@ -71,7 +71,7 @@ jobs:
 
    - run:
        name: install cli
-       command: nix-shell --run hc-install-cli
+       command: nix-shell --run hc-cli-install
 
    - run:
        name: install node conductor
@@ -79,11 +79,11 @@ jobs:
 
    - run:
        name: app spec tests
-       command: nix-shell --run hc-test-app-spec
+       command: nix-shell --run hc-app-spec-test
 
    - run:
        name: nodejs conductor tests
-       command: nix-shell --run hc-test-node-conductor
+       command: nix-shell --run hc-conductor-node-test
 
  cli-tests:
   docker:
@@ -93,11 +93,11 @@ jobs:
 
    - run:
        name: install cli
-       command: nix-shell --run hc-install-cli
+       command: nix-shell --run hc-cli-install
 
    - run:
       name: test cli
-      command: nix-shell --run hc-test-cli
+      command: nix-shell --run hc-cli-test
 
  # https://circleci.com/docs/2.0/building-docker-images/
  docker.start:
@@ -151,21 +151,6 @@ jobs:
    - run: ./scripts/install/auto.sh
    - run: make test
 
- # https://github.com/NixOS/nix/issues/1559
- # cold.ubuntu.bionic.nix:
- #  docker:
- #   - image: ubuntu:bionic
- #  resource_class: xlarge
- #  steps:
- #   - checkout
- #   - run:
- #      name: Install and run all tests via nix
- #      command: |
- #       export USER=`whoami`
- #       apt-get update && apt-get install -y curl bzip2 sudo
- #       curl https://nixos.org/nix/install | sh
- #       nix-shell --run hc-test-all
-
  cold.ubuntu.xenial.auto:
   docker:
    - image: ubuntu:xenial
@@ -175,21 +160,6 @@ jobs:
    - run: ./scripts/install/auto.sh
    - run: make test
 
- # https://github.com/NixOS/nix/issues/1559
- # cold.ubuntu.xenial.nix:
- #  docker:
- #   - image: ubuntu:xenial
- #  resource_class: xlarge
- #  steps:
- #   - checkout
- #   - run:
- #      name: Install and run all tests via nix
- #      command: |
- #       export USER=`whoami`
- #       apt-get update && apt-get install -y curl bzip2 sudo
- #       curl https://nixos.org/nix/install | sh
- #       nix-shell --run hc-test-all
-
  cold.debian.stable.auto:
   docker:
    - image: debian:stable
@@ -198,21 +168,6 @@ jobs:
    - checkout
    - run: ./scripts/install/auto.sh
    - run: make test
-
- # https://github.com/NixOS/nix/issues/1559
- # cold.debian.stable.nix:
- #  docker:
- #   - image: debian:stable
- #  resource_class: xlarge
- #  steps:
- #   - checkout
- #   - run:
- #      name: Install and run all tests via nix
- #      command: |
- #       export USER=`whoami`
- #       apt-get update && apt-get install -y curl bzip2 sudo
- #       curl https://nixos.org/nix/install | sh
- #       nix-shell --run hc-test-all
 
  cold.mac.10.auto:
   macos:
@@ -232,7 +187,7 @@ jobs:
       command: |
        curl https://nixos.org/nix/install | sh
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
-       nix-shell --run hc-test-all
+       nix-shell --run hc-test
 
 workflows:
  version: 2

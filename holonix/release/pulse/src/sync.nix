@@ -14,7 +14,7 @@ let
    echo
    echo 'Injecting medium summary/highlights into github release notes'
    echo
-   github-release -v edit --tag ${release.core.tag} --name ${release.core.tag} --description "$( hc-generate-release-notes )" --pre-release
+   github-release -v edit --tag ${release.core.tag} --name ${release.core.tag} --description "$( hc-release-github-notes )" --pre-release
   '';
 in
 script

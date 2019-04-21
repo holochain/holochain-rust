@@ -1,5 +1,4 @@
 let
-  dist = import ./src/dist.nix;
   flush = import ./src/flush.nix;
   test = import ./src/test.nix;
 in
@@ -8,7 +7,6 @@ in
   # Reinstate and organise them ᕙ༼*◕_◕*༽ᕤ
   # coreutils
 
-  dist
   flush
   test
 ]

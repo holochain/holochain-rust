@@ -15,7 +15,7 @@ current release process: ${release.process-url}
 ## Preparation
 
 First checkout `develop` and `git pull` to ensure you are up to date locally.
-Then run `nix-shell --run hc-prepare-release`
+Then run `nix-shell --run hc-release-prepare`
 
 - [x] develop is green
 - [x] correct dev pulse commit + version + url hash
@@ -30,20 +30,20 @@ Then run `nix-shell --run hc-prepare-release`
 
 ## Build and deploy release artifacts
 
-- [ ] release cut from `master` with `hc-do-release`
+- [ ] release cut from `master` with `hc-release-deploy`
 - [ ] core release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
   - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${release.core.tag}
 - [ ] node release tag + linux/mac/windows artifacts on github
   - travis build: {{ build url }}
   - artifacts: https://github.com/holochain/holochain-rust/releases/tag/${release.node-conductor.tag}
-- [ ] all release artifacts found by `hc-check-release-artifacts`
+- [ ] all release artifacts found by `hc-release-github-check-artifacts`
 - [ ] npmjs deploy with `hc-release-npm-deploy` then `hc-release-npm-check-version`
 - [ ] `unknown` release assets renamed to `ubuntu`
 
 ## PR into develop
 
-- [ ] `hc-release-merge-back`
+- [ ] `hc-release-github-merge-back`
 - [ ] `develop` PR changelog cleaned up
   - [ ] no new items from `develop` under recently released changelog header
 - [ ] merge `develop` PR

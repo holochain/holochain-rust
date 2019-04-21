@@ -8,25 +8,25 @@ let
      # the unique hash at the end of the medium post url
      # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
      # would be 4867d777de94
-     url-hash = "d387ffcfac72";
+     url-hash = "233cff610300";
      # current dev-pulse iteration, as seen by general public
-     version = "24";
+     version = "25";
      # the commit from `develop` branch that the dev pulse is targetting
      # the final release(s) will differ from this due to changelog updates etc.
-     commit = "494c21b9dc7927b7b171533cc20c4d39bd92b45c";
+     commit = "c91f62efcd7fbf883d07fe5eefda2ab396d331e3";
     };
 
     core = {
      version = {
-      previous = "0.0.10-alpha2";
-      current = "0.0.11-alpha1";
+      previous = "0.0.11-alpha1";
+      current = "0.0.12-alpha1";
      };
     };
 
     node-conductor = {
      version = {
-      previous = "0.4.9-alpha2";
-      current = "0.4.10-alpha1";
+      previous = "0.4.10-alpha1";
+      current = "0.4.11-alpha1";
      };
     };
 

@@ -88,16 +88,6 @@ let
   echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/${release.node-conductor.tag}"
   '';
 
-  hc-readme-grep-nightly = pkgs.writeShellScriptBin "hc-readme-grep-nightly"
-  ''
-  find . \
-   -iname "readme.*" \
-   | xargs cat \
-   | grep -E 'nightly-' \
-   | grep -v '${rust.nightly-date}' \
-   | cat
-  '';
-
 in
 with pkgs;
 stdenv.mkDerivation rec {
@@ -108,14 +98,11 @@ stdenv.mkDerivation rec {
     # I forgot what these are for!
     # Reinstate and organise them ᕙ༼*◕_◕*༽ᕤ
     # coreutils
-    # python
 
     hc-test-all
     hc-codecov
 
     hc-prepare-crate-versions
-
-    hc-readme-grep-nightly
 
     hc-do-release
 

@@ -12,5 +12,8 @@ in
   pkgs.nodejs-8_x
   pkgs.yarn
 
+  # needed by node-gyp
+  pkgs.python
+
   flush
 ]

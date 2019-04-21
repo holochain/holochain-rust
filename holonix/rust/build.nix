@@ -1,7 +1,7 @@
 let
   rust = import ./config.nix;
   pkgs = import ../nixpkgs/nixpkgs.nix;
-  build = (pkgs.rustChannelOfTargets "nightly" rust.nightly-date [ rust.wasm-target rust.generic-linux-target  ]);
+  build = (pkgs.rustChannelOfTargets "nightly" rust.nightly.date [ rust.wasm-target rust.generic-linux-target  ]);
 
   flush = import ./src/flush.nix;
   fmt-check = import ./src/fmt-check.nix;

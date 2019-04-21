@@ -10,7 +10,7 @@ let
     -iname "readme.*" \
     | xargs cat \
     | grep -E 'nightly-' \
-    | grep -v '${rust.nightly-date}' \
+    | grep -v '${rust.nightly.date}' \
     | cat
   '';
 in

@@ -27,7 +27,7 @@ stdenv.mkDerivation rec {
   # rust version through this environment variable.
   # https://github.com/rust-lang/rustup.rs#environment-variables
   # https://github.com/NixOS/nix/issues/903
-  RUSTUP_TOOLCHAIN = "nightly-${rust.nightly-date}";
+  RUSTUP_TOOLCHAIN = "${rust.nightly.version}";
 
   DARWIN_NIX_LDFLAGS = if stdenv.isDarwin then "-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation " else "";
 

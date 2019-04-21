@@ -26,12 +26,12 @@ let
   Rust and NodeJS are both required for `hc` to build and test DNA:
 
   - [Rust](https://www.rust-lang.org/en-US/install.html)
-  - Must be `nightly-${rust.nightly-date}` build with the WASM build target.
+  - Must be `${rust.nightly.version}` build with the WASM build target.
     Once you have first installed rustup:
     ```
-    rustup toolchain install nightly-${rust.nightly-date}
-    rustup default nightly-${rust.nightly-date}
-    rustup target add wasm32-unknown-unknown --toolchain nightly-${rust.nightly-date}
+    rustup toolchain install ${rust.nightly.version}
+    rustup default ${rust.nightly.version}
+    rustup target add wasm32-unknown-unknown --toolchain ${rust.nightly.version}
     ```
   - [Node.js](https://nodejs.org) version 8 or higher
   - E2E tests for Holochain apps are written in Javascript client-side and executed in NodeJS through websockets

@@ -17,8 +17,12 @@ in
    unpackPhase = ":";
 
    installPhase = ''
-     mkdir -p $out/{bin,share}
-     cp $src $out/share/${args.binary}
+     mkdir -p $out/bin
+     cp $src $out/bin/${args.binary}
+     # chmod +x $out/share/${args.binary}
+     # ln -s $out/share/${args.binary} $out/bin/${args.binary}
+     ls -la $out/bin/${args.binary}
+     # cp $src $out/bin/${args.binary}
    '';
   };
 

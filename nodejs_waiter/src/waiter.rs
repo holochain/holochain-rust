@@ -10,7 +10,7 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     sync::{
-        mpsc::{Receiver, RecvTimeoutError, SyncSender},
+        mpsc::{Receiver, SyncSender},
         Arc, Mutex,
     },
     time::Duration,
@@ -342,7 +342,7 @@ impl Task for MainBackgroundTask {
             // involves adding some kind of control variant to the Signal enum
             match self.signal_rx.recv_timeout(Duration::from_millis(250)) {
                 Ok(sig) => self.waiter.borrow_mut().process_signal(sig),
-                Err(RecvTimeoutError::Timeout) => continue,
+                Err(crossbeam_channel::RecvTimeoutError::Timeout) => continue,
                 Err(err) => return Err(err.to_string()),
             }
         }
@@ -365,12 +365,10 @@ impl Task for MainBackgroundTask {
 #[cfg(test)]
 mod tests {
     use super::{Action::*, *};
-    use holochain_core::nucleus::{
-        actions::call_zome_function::ExecuteZomeFnResponse,
-        ribosome::capabilities::CapabilityRequest,
-    };
+    use holochain_core::nucleus::actions::call_zome_function::ExecuteZomeFnResponse;
     use holochain_core_types::{
-        cas::content::Address, chain_header::test_chain_header, entry::Entry, json::JsonString,
+        cas::content::Address, chain_header::test_chain_header,
+        dna::capabilities::CapabilityRequest, entry::Entry, json::JsonString,
         link::link_data::LinkData, signature::Signature,
     };
     use std::sync::mpsc::sync_channel;

@@ -16,11 +16,10 @@
 //! extern crate tempfile;
 //! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
-//! use holochain_core::nucleus::ribosome::capabilities::CapabilityRequest;
 //! use holochain_core_types::{
 //!     cas::content::Address,
 //!     agent::AgentId,
-//!     dna::Dna,
+//!     dna::{Dna, capabilities::CapabilityRequest,},
 //!     json::JsonString,
 //!     signature::Signature,
 //! };
@@ -92,13 +91,17 @@ use holochain_core::{
     instance::Instance,
     nucleus::{
         call_zome_function,
-        ribosome::{capabilities::CapabilityRequest, run_dna, WasmCallData},
+        ribosome::{run_dna, WasmCallData},
         ZomeFnCall,
     },
     persister::{Persister, SimplePersister},
     state::State,
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    dna::{capabilities::CapabilityRequest, Dna},
+    error::HolochainError,
+    json::JsonString,
+};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -230,18 +233,19 @@ mod tests {
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::{
-            actions::call_zome_function::make_cap_request_for_call,
-            ribosome::capabilities::CapabilityRequest,
-        },
+        nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
+        dna::capabilities::CapabilityRequest,
         json::RawString,
     };
     use holochain_wasm_utils::wasm_target_dir;
-    use std::sync::{Arc, Mutex};
+    use std::{
+        path::PathBuf,
+        sync::{Arc, Mutex},
+    };
     use test_utils::{
         create_arbitrary_test_dna, create_test_defs_with_fn_name, create_test_dna_with_defs,
         create_test_dna_with_wat, create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
@@ -268,11 +272,21 @@ mod tests {
         )
     }
 
-    fn example_api_wasm_path() -> String {
-        format!(
-            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-            wasm_target_dir("conductor_api/", "wasm-test/"),
-        )
+    fn example_api_wasm_path() -> PathBuf {
+        let mut path = wasm_target_dir(
+            &String::from("conductor_api").into(),
+            &String::from("wasm-test").into(),
+        );
+        let wasm_path_component: PathBuf = [
+            String::from("wasm32-unknown-unknown"),
+            String::from("release"),
+            String::from("example_api_wasm.wasm"),
+        ]
+        .iter()
+        .collect();
+        path.push(wasm_path_component);
+
+        path
     }
 
     fn example_api_wasm() -> Vec<u8> {
@@ -688,8 +702,9 @@ mod tests {
         use holochain_core::action::Action;
         use std::time::Duration;
         let wasm = include_bytes!(format!(
-            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-            wasm_target_dir("conductor_api/", "wasm-test/"),
+            "{}{slash}wasm32-unknown-unknown{slash}release{slash}example_api_wasm.wasm",
+            slash = std::path::MAIN_SEPARATOR,
+            wasm_target_dir("conductor_api", "wasm-test"),
         ));
         let defs = test_utils::create_test_defs_with_fn_name("commit_test");
         let mut dna = test_utils::create_test_dna_with_defs("test_zome", defs, wasm);

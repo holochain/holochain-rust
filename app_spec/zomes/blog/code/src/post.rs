@@ -2,9 +2,8 @@ use boolinator::Boolinator;
 use hdk::entry_definition::ValidatingEntryType;
 /// This file holds everything that represents the "post" entry type.
 use hdk::holochain_core_types::{
-     error::HolochainError, json::JsonString,
-    validation::{EntryValidationData},
-    dna::entry_types::Sharing
+    dna::entry_types::Sharing, error::HolochainError, json::JsonString,
+    validation::EntryValidationData,
 };
 
 /// We declare the structure of our entry type with this Rust struct.
@@ -12,7 +11,7 @@ use hdk::holochain_core_types::{
 /// to how this happens with functions parameters and zome_functions!.
 ///
 /// So this is our normative schema definition:
-#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Post {
     pub content: String,
     pub date_created: String,
@@ -57,7 +56,7 @@ pub fn definition() -> ValidatingEntryType {
         validation: |validation_data: hdk::EntryValidationData<Post>| {
             match validation_data
             {
-                EntryValidationData::Create{entry:post,validation_data:_} => 
+                EntryValidationData::Create{entry:post,validation_data:_} =>
                 {
                     (post.content.len() < 280)
                    .ok_or_else(|| String::from("Content too long"))
@@ -65,16 +64,16 @@ pub fn definition() -> ValidatingEntryType {
                 EntryValidationData::Modify{new_entry:new_post,old_entry:old_post,old_entry_header:_,validation_data:_} =>
                 {
                    (new_post.content != old_post.content)
-                   .ok_or_else(|| String::from("Trying to modify with same data"))   
+                   .ok_or_else(|| String::from("Trying to modify with same data"))
                 },
                 EntryValidationData::Delete{old_entry:old_post,old_entry_header:_,validation_data:_} =>
                 {
                    (old_post.content!="SYS")
-                   .ok_or_else(|| String::from("Trying to delete native type with content SYS"))   
+                   .ok_or_else(|| String::from("Trying to delete native type with content SYS"))
                 }
-                
+
             }
-       
+
         },
 
         links: [
@@ -108,13 +107,15 @@ mod tests {
     use crate::post::{definition, Post};
     use hdk::{
         holochain_core_types::{
-            dna::entry_types::{EntryTypeDef, LinkedFrom},
-            entry::{entry_type::{EntryType,AppEntryType},Entry},
-             dna::entry_types::Sharing,
-             validation::{EntryValidationData,ValidationPackage,EntryLifecycle,ValidationData},
-             chain_header::test_chain_header
+            chain_header::test_chain_header,
+            dna::entry_types::{EntryTypeDef, LinkedFrom, Sharing},
+            entry::{
+                entry_type::{AppEntryType, EntryType},
+                Entry,
+            },
+            validation::{EntryLifecycle, EntryValidationData, ValidationData, ValidationPackage},
         },
-        holochain_wasm_utils::api_serialization::validation::LinkDirection
+        holochain_wasm_utils::api_serialization::validation::LinkDirection,
     };
     use std::convert::TryInto;
 
@@ -139,16 +140,18 @@ mod tests {
 
         let expected_definition = EntryTypeDef {
             description: "blog entry post".to_string(),
-            linked_from: vec![LinkedFrom {
-                base_type: "%agent_id".to_string(),
-                tag: "authored_posts".to_string(),
-            },
-            LinkedFrom {
-                base_type: "%agent_id".to_string(),
-                tag: "recommended_posts".to_string(),
-            }],
-            links_to : Vec::new(),
-            sharing : Sharing::Public
+            linked_from: vec![
+                LinkedFrom {
+                    base_type: "%agent_id".to_string(),
+                    tag: "authored_posts".to_string(),
+                },
+                LinkedFrom {
+                    base_type: "%agent_id".to_string(),
+                    tag: "recommended_posts".to_string(),
+                },
+            ],
+            links_to: Vec::new(),
+            sharing: Sharing::Public,
         };
         assert_eq!(
             expected_definition,
@@ -162,15 +165,16 @@ mod tests {
         );
 
         let post_ok = Post::new("foo", "now");
-        let entry = Entry::App(AppEntryType::from("post"),post_ok.into());
-        let validation_data = ValidationData{
-            package : ValidationPackage::only_header(test_chain_header()),
-            lifecycle : EntryLifecycle::Chain
+        let entry = Entry::App(AppEntryType::from("post"), post_ok.into());
+        let validation_data = ValidationData {
+            package: ValidationPackage::only_header(test_chain_header()),
+            lifecycle: EntryLifecycle::Chain,
         };
         assert_eq!(
-            (post_definition.validator)(
-               EntryValidationData::Create{entry,validation_data}
-            ),
+            (post_definition.validator)(EntryValidationData::Create {
+                entry,
+                validation_data
+            }),
             Ok(()),
         );
 
@@ -180,17 +184,18 @@ mod tests {
         );
 
         let entry = Entry::App(
-                    post_definition.name.clone().try_into().unwrap(),
-                    post_not_ok.into(),
-                );
-        let validation_data = ValidationData{
-            package : ValidationPackage::only_header(test_chain_header()),
-            lifecycle : EntryLifecycle::Chain
+            post_definition.name.clone().try_into().unwrap(),
+            post_not_ok.into(),
+        );
+        let validation_data = ValidationData {
+            package: ValidationPackage::only_header(test_chain_header()),
+            lifecycle: EntryLifecycle::Chain,
         };
         assert_eq!(
-            (post_definition.validator)(
-               EntryValidationData::Create{entry,validation_data}
-            ),
+            (post_definition.validator)(EntryValidationData::Create {
+                entry,
+                validation_data
+            }),
             Err("Content too long".to_string()),
         );
 

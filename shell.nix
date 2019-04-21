@@ -1,9 +1,8 @@
 let
 
   pkgs = import ./holonix/nixpkgs/nixpkgs.nix;
+  darwin = import ./holonix/darwin/config.nix;
   rust = import ./holonix/rust/config.nix;
-  release = import ./holonix/release/config.nix;
-  git = import ./holonix/git/config.nix;
 
 in
 with pkgs;
@@ -27,14 +26,12 @@ stdenv.mkDerivation rec {
   # https://github.com/NixOS/nix/issues/903
   RUSTUP_TOOLCHAIN = "${rust.nightly.version}";
 
-  DARWIN_NIX_LDFLAGS = if stdenv.isDarwin then "-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation " else "";
-
   OPENSSL_STATIC = "1";
 
   shellHook = ''
    # cargo installs things to the user's home so we need it on the path
    export PATH=$PATH:~/.cargo/bin
    export HC_TARGET_PREFIX=~/nix-holochain/
-   export NIX_LDFLAGS="$DARWIN_NIX_LDFLAGS$NIX_LDFLAGS"
+   export NIX_LDFLAGS="${darwin.ld-flags}$NIX_LDFLAGS"
   '';
 }

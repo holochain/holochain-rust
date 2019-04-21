@@ -17,7 +17,7 @@ use std::{
 
 use parking_lot::{Condvar, Mutex};
 
-const P2P_READY_TIMEOUT_MS: u64 = 5000;
+const P2P_READY_TIMEOUT_MS: u64 = 10000;
 
 pub fn reduce_init(
     context: Arc<Context>,
@@ -49,6 +49,7 @@ pub fn reduce_init(
         panic!("p2p networking failed- timed out waiting for p2p ready.");
     }
 
+    context.log("debug/network/reducers: p2p networking ready");
     // Configure network logger
     // Enable this for debugging network
     //    {

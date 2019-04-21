@@ -223,7 +223,7 @@ fn handle_p2p_ready(context: &Arc<Context>, ready_mutex_condvar: &Arc<(Mutex<boo
     let &(ref ready_lock, ref ready_condvar) = &*ready_mutex_condvar.clone();
     let mut started = ready_lock.lock();
     *started = true;
-    ready_condvar.notify_one();
+    ready_condvar.notify_all();
 }
 
 fn republish_all_public_chain_entries(context: &Arc<Context>) {

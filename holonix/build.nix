@@ -5,27 +5,6 @@ let
   test = import ./src/test.nix;
 
   release = import ./release/config.nix;
-
-  holochain = pkgs.stdenv.mkDerivation {
-   name = "holochain-conductor";
-
-   src = pkgs.fetchurl {
-    url = "https://github.com/holochain/holochain-rust/releases/download/v0.0.12-alpha1/conductor-v0.0.12-alpha1-x86_64-generic-linux-gnu.tar.gz";
-    sha256 = "0wdlv85vwwp9cwnmnsp20aafrxljsxlc6m00h0905q0cydsf86kq";
-   };
-
-   unpackPhase = ":";
-
-   installPhase = ''
-     mkdir -p $out/{bin,share}
-     cp $src $out/share/holochain
-   '';
-
-  };
-
-
-  # import (builtins.fetchTarball holochain-src);
-  # cli = import (builtins.fetchTarball https://github.com/holochain/holochain-rust/releases/download/v0.0.12-alpha1/cli-v0.0.12-alpha1-x86_64-generic-linux-gnu.tar.gz);
 in
 [
   # I forgot what these are for!
@@ -35,8 +14,6 @@ in
   flush
   test
 
-  holochain
-  # cli
 ]
 
 ++ import ./app-spec/build.nix

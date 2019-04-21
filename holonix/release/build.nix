@@ -1,7 +1,9 @@
 let
+  deploy = import ./src/deploy.nix;
   prepare = import ./src/prepare.nix;
 in
 [
+  deploy
   prepare
 ]
 ++ import ./docs/build.nix

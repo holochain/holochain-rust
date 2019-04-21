@@ -5,13 +5,6 @@ let
   release = import ./holonix/release/config.nix;
   git = import ./holonix/git/config.nix;
 
-  # runs all standard tests and reports code coverage
-  hc-codecov = pkgs.writeShellScriptBin "hc-codecov"
-  ''
-   hc-install-tarpaulin && \
-   hc-tarpaulin && \
-   bash <(curl -s https://codecov.io/bash);
-  '';
 
   hc-test-all = pkgs.writeShellScriptBin "hc-test-all"
   ''
@@ -100,7 +93,6 @@ stdenv.mkDerivation rec {
     # coreutils
 
     hc-test-all
-    hc-codecov
 
     hc-prepare-crate-versions
 

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary tarballs no longer extract to a subdirectory [#1265](https://github.com/holochain/holochain-rust/pull/1265)
 - Linux binary tarballs are now named `generic` rather than `ubuntu` [#1265](https://github.com/holochain/holochain-rust/pull/1265)
 - **many** changes to `nix-shell` command names due to `holonix` refactor [#1292](https://github.com/holochain/holochain-rust/pull/1292)
+  - note: `hc-test` is now `hc-rust-test` and `hc-test-all` is now `hc-test`
 
 ### Deprecated
 

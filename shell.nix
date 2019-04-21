@@ -90,29 +90,6 @@ let
   echo "nodejs artifacts: https://github.com/holochain/holochain-rust/releases/tag/${release.node-conductor.tag}"
   '';
 
-  changelog-template =
-  ''\
-\[Unreleased\]\n\n\
-\#\#\# Added\n\n\
-\#\#\# Changed\n\n\
-\#\#\# Deprecated\n\n\
-\#\#\# Removed\n\n\
-\#\#\# Fixed\n\n\
-\#\#\# Security\n\n\
-  '';
-  hc-ensure-changelog-version = pkgs.writeShellScriptBin "hc-ensure-changelog-version"
-  ''
-  echo
-  echo "locking off changelog version"
-  echo
-
-  if ! $(grep -q "\[${release.core.version.current}\]" ./CHANGELOG.md)
-   then
-    echo "timestamping and retemplating changelog"
-    sed -i "s/\[Unreleased\]/${changelog-template}\#\# \[${release.core.version.current}\] - $(date --iso --u)/" ./CHANGELOG.md
-  fi
-  '';
-
   hc-readme-grep-nightly = pkgs.writeShellScriptBin "hc-readme-grep-nightly"
   ''
   find . \
@@ -142,7 +119,6 @@ stdenv.mkDerivation rec {
 
     hc-prepare-crate-versions
 
-    hc-ensure-changelog-version
     hc-readme-grep-nightly
 
     hc-do-release

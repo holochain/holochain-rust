@@ -1,5 +1,6 @@
 let
   pkgs = import ../../../../nixpkgs/nixpkgs.nix;
+  release = import ../../../config.nix;
 
   name = "hc-release-docs-changelog-sync-version";
 

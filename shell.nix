@@ -5,8 +5,6 @@ let
   release = import ./holonix/release/config.nix;
   git = import ./holonix/git/config.nix;
 
-  hc-test-app-spec = pkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
-
   # runs all standard tests and reports code coverage
   hc-codecov = pkgs.writeShellScriptBin "hc-codecov"
   ''
@@ -111,8 +109,6 @@ stdenv.mkDerivation rec {
     # Reinstate and organise them ᕙ༼*◕_◕*༽ᕤ
     # coreutils
     # python
-
-    hc-test-app-spec
 
     hc-test-all
     hc-codecov

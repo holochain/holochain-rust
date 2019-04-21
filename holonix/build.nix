@@ -4,6 +4,10 @@ let
   test = import ./src/test.nix;
 in
 [
+  # I forgot what these are for!
+  # Reinstate and organise them ᕙ༼*◕_◕*༽ᕤ
+  # coreutils
+
   dist
   flush
   test

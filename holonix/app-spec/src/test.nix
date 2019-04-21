@@ -5,6 +5,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
+  hc-conductor-node-install
    ( cd app_spec && . build_and_test.sh )
   '';
 in

@@ -5,11 +5,6 @@ let
   release = import ./holonix/release/config.nix;
   git = import ./holonix/git/config.nix;
 
-  hc-changelog-grep-pr-references = pkgs.writeShellScriptBin "hc-changelog-grep-pr-references"
-  ''
-  cat CHANGELOG.md | grep -E '^-\s' | grep -Ev '[0-9]\]' | cat
-  '';
-
   hc-test-app-spec = pkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
 
   # runs all standard tests and reports code coverage
@@ -147,7 +142,6 @@ stdenv.mkDerivation rec {
 
     hc-prepare-crate-versions
 
-    hc-changelog-grep-pr-references
     hc-ensure-changelog-version
     hc-readme-grep-nightly
 

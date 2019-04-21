@@ -1,10 +1,12 @@
 let
   dist = import ./src/dist.nix;
   flush = import ./src/flush.nix;
+  test = import ./src/test.nix;
 in
 [
   dist
   flush
+  test
 ]
 
 ++ import ./app-spec/build.nix

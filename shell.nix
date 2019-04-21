@@ -5,18 +5,6 @@ let
   release = import ./holonix/release/config.nix;
   git = import ./holonix/git/config.nix;
 
-
-  hc-test-all = pkgs.writeShellScriptBin "hc-test-all"
-  ''
-   hc-fmt-check \
-   && hc-qt-c-bindings-test \
-   && hc-build-wasm \
-   && hc-install-cli \
-   && hc-install-conductor \
-   && hc-conductor-node-install \
-   && hc-test-app-spec
-  '';
-
   hc-prepare-crate-versions = pkgs.writeShellScriptBin "hc-prepare-crate-versions"
   ''
    echo "bumping core version from ${release.core.version.previous} to ${release.core.version.current} in Cargo.toml"
@@ -91,8 +79,6 @@ stdenv.mkDerivation rec {
     # I forgot what these are for!
     # Reinstate and organise them ᕙ༼*◕_◕*༽ᕤ
     # coreutils
-
-    hc-test-all
 
     hc-prepare-crate-versions
 

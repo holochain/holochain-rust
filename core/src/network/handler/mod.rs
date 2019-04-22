@@ -20,8 +20,6 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 
-//use parking_lot::{Condvar, Mutex};
-
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
 fn is_my_dna(my_dna_address: &String, dna_address: &String) -> bool {
@@ -68,11 +66,13 @@ pub fn create_handler(
                     ));
                 }
                 Err(_protocol_error) => {
-                    // TODO why can't I use the above variable? Generates compiler error.
-                    //context.log(format!("warn/net/handle: unparsable as a protocol message", protocol_error.clone()));
+                    // TODO why can't I use the above variable?
+                    // Generates compiler error.
                     context.log(format!(
-                            "warn/net/handle: unparsable message received. Neither a json ({:?}) or protocol message.",
-                             json_error));
+                        "warn/net/handle: unparsable message received. \
+                         Neither a json ({:?}) or protocol message.",
+                        json_error
+                    ));
                 }
             }
             return Ok(());
@@ -212,6 +212,8 @@ pub fn create_handler(
                 if is_my_id(&context, &peer_data.agent_id) {
                     return Ok(());
                 }
+
+                context.log(format!("debug/net/handle: PeerConnected: {:?}", peer_data));
                 // Total hack in lieu of a world-model.
                 // Just republish everything when a new person comes on-line!!
                 republish_all_public_chain_entries(&context);

@@ -4,7 +4,7 @@ use hdk::{
     holochain_core_types::{
         cas::content::Address,
         dna::capabilities::CapabilityRequest,
-        entry::{cap_entries::CapabilityType, Entry},
+        entry::{cap_entries::CapabilityType, Entry, entry_type::EntryType},
         error::HolochainError,
         json::JsonString,
     },
@@ -124,6 +124,10 @@ pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
     } else {
         Ok(None)
     }
+}
+
+pub fn handle_get_grants() -> ZomeApiResult<Vec<Address>> {
+    hdk::query(EntryType::CapTokenGrant.into(), 0, 0)
 }
 
 pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {

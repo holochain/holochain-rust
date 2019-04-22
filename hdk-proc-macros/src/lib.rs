@@ -6,8 +6,10 @@ extern crate proc_macro;
 extern crate proc_macro2;
 
 use proc_macro2::TokenStream;
+use quote::ToTokens;
 use std::convert::TryFrom;
 
+mod code_generators;
 mod into_zome;
 mod to_tokens;
 mod zome_code_def;
@@ -26,6 +28,6 @@ pub fn zome(
     let input_stream: TokenStream = input.into();
     ZomeCodeDef::try_from(input_stream)
         .unwrap()
-        .to_wasm_friendly()
+        .into_token_stream()
         .into()
 }

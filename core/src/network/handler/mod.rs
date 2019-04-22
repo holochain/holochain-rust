@@ -15,7 +15,10 @@ use holochain_net::connection::{
     json_protocol::JsonProtocol, net_connection::NetHandler, protocol::Protocol,
 };
 
-use std::{convert::TryFrom, sync::{Arc, mpsc::Sender}};
+use std::{
+    convert::TryFrom,
+    sync::{mpsc::Sender, Arc},
+};
 
 //use parking_lot::{Condvar, Mutex};
 
@@ -41,7 +44,7 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
 pub fn create_handler(
     c: &Arc<Context>,
     my_dna_address: String,
-    s: &Sender<Protocol>
+    s: &Sender<Protocol>,
 ) -> NetHandler {
     let context = c.clone();
     let sender = s.clone();

@@ -237,7 +237,9 @@ impl Instance {
             let signal = Signal::Internal(action);
             tx.send(signal).unwrap_or_else(|e| {
                 context.log(format!(
-                    "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).", e));
+                    "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                    e
+                ));
             })
         }
     }

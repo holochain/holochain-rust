@@ -18,26 +18,15 @@ in
     sha256 = args.sha256;
    };
 
-  unpackPhase =
-    if pkgs.stdenv.isDarwin
-    then
-      "tar --strip-components=1 -zxvf $src"
-    else
-      ":";
+  unpackPhase = "tar --strip-components=1 -zxvf $src";
 
   installPhase =
-    if pkgs.stdenv.isDarwin
-    then
-      ''
-        mkdir -p $out/bin
-        mv ${args.binary} $out/bin/${args.binary}
-      ''
-    else
-      ''
-        mkdir -p $out/bin
-        cp $src $out/bin/${args.binary}
-      '';
-
+  ''
+    mkdir -p $out/bin
+    mv ${args.binary} $out/bin/${args.binary}
+    patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $out/bin/${args.binary}
+    patchelf --shrink-rpath $out/bin/${args.binary}
+  '';
 
   };
 

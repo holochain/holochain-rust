@@ -29,7 +29,7 @@ $ cargo install holochain --force --git https://github.com/holochain/holochain-r
 
 To install the latest released version of the Holochain conductor, run the following command in a terminal
 ```shell
-$ cargo install holochain --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.11-alpha1
+$ cargo install holochain --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.12-alpha1
 ```
 
 The Conductor should then be available from your command line using the `holochain` command.

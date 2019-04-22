@@ -14,9 +14,10 @@ use holochain_core_types::hash::HashString;
 use holochain_net::connection::{
     json_protocol::JsonProtocol, net_connection::NetHandler, protocol::Protocol,
 };
-use std::{convert::TryFrom, sync::Arc};
 
-use parking_lot::{Condvar, Mutex};
+use std::{convert::TryFrom, sync::{Arc, mpsc::Sender}};
+
+//use parking_lot::{Condvar, Mutex};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -40,10 +41,11 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
 pub fn create_handler(
     c: &Arc<Context>,
     my_dna_address: String,
-    ready_mutex_condvar: &Arc<(Mutex<bool>, Condvar)>,
+    s: &Sender<Protocol>
 ) -> NetHandler {
     let context = c.clone();
-    let ready_mutex_condvar = ready_mutex_condvar.clone();
+    let sender = s.clone();
+
     Box::new(move |message| {
         let message = message.unwrap();
         // context.log(format!(
@@ -54,7 +56,7 @@ pub fn create_handler(
         if let Err(json_error) = maybe_json_msg {
             match Protocol::try_from(message.clone()) {
                 Ok(Protocol::P2pReady) => {
-                    handle_p2p_ready(&context, &ready_mutex_condvar);
+                    handle_p2p_ready(&context, &sender);
                 }
                 Ok(protocol_message) => {
                     context.log(format!(
@@ -217,13 +219,11 @@ pub fn create_handler(
     })
 }
 
-fn handle_p2p_ready(context: &Arc<Context>, ready_mutex_condvar: &Arc<(Mutex<bool>, Condvar)>) {
-    context.log(format!("debug/net/handle: P2pReady"));
+fn handle_p2p_ready(context: &Arc<Context>, tx: &Sender<Protocol>) {
+    context.log(format!("debug/net/handle: handle P2pReady start"));
 
-    let &(ref ready_lock, ref ready_condvar) = &*ready_mutex_condvar.clone();
-    let mut started = ready_lock.lock();
-    *started = true;
-    ready_condvar.notify_all();
+    tx.send(Protocol::P2pReady).unwrap();;
+    context.log(format!("debug/net/handle: handle P2pReady end"));
 }
 
 fn republish_all_public_chain_entries(context: &Arc<Context>) {

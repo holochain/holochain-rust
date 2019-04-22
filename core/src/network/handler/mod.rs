@@ -11,14 +11,9 @@ use crate::{
     },
 };
 use holochain_core_types::hash::HashString;
-use holochain_net::connection::{
-    json_protocol::JsonProtocol, net_connection::NetHandler, protocol::Protocol,
-};
+use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 
-use std::{
-    convert::TryFrom,
-    sync::{mpsc::Sender, Arc},
-};
+use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -39,44 +34,15 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
-pub fn create_handler(
-    c: &Arc<Context>,
-    my_dna_address: String,
-    s: &Sender<Protocol>,
-) -> NetHandler {
+pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
-    let sender = s.clone();
-
-    Box::new(move |message| {
+    let handler: NetHandler = Box::new(move |message| {
         let message = message.unwrap();
         // context.log(format!(
         //   "trace/net/handle:({}): {:?}",
         //   context.agent_id.nick, message
         // ));
-        let maybe_json_msg = JsonProtocol::try_from(message.clone());
-        if let Err(json_error) = maybe_json_msg {
-            match Protocol::try_from(message.clone()) {
-                Ok(Protocol::P2pReady) => {
-                    handle_p2p_ready(&context, &sender);
-                }
-                Ok(protocol_message) => {
-                    context.log(format!(
-                        "debug/net/handle: ignoring protocol message {:?}",
-                        protocol_message
-                    ));
-                }
-                Err(_protocol_error) => {
-                    // TODO why can't I use the above variable?
-                    // Generates compiler error.
-                    context.log(format!(
-                        "warn/net/handle: unparsable message received. \
-                         Neither a json ({:?}) or protocol message.",
-                        json_error
-                    ));
-                }
-            }
-            return Ok(());
-        }
+        let maybe_json_msg = JsonProtocol::try_from(message);
         match maybe_json_msg.unwrap() {
             JsonProtocol::FailureResult(failure_data) => {
                 if !is_my_dna(&my_dna_address, &failure_data.dna_address.to_string()) {
@@ -221,14 +187,8 @@ pub fn create_handler(
             _ => {}
         }
         Ok(())
-    })
-}
-
-fn handle_p2p_ready(context: &Arc<Context>, tx: &Sender<Protocol>) {
-    context.log(format!("debug/net/handle: handle P2pReady start"));
-
-    tx.send(Protocol::P2pReady).unwrap();;
-    context.log(format!("debug/net/handle: handle P2pReady end"));
+    });
+    handler
 }
 
 fn republish_all_public_chain_entries(context: &Arc<Context>) {

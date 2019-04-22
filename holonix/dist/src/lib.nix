@@ -18,12 +18,26 @@ in
     sha256 = args.sha256;
    };
 
-   unpackPhase = ":";
+  unpackPhase =
+    if pkgs.stdenv.isDarwin
+    then
+      "tar --strip-components=1 -zxvf $src"
+    else
+      ":";
 
-   installPhase = ''
-     mkdir -p $out/bin
-     cp $src $out/bin/${args.binary}
-   '';
+  installPhase =
+    if pkgs.stdenv.isDarwin
+    then
+      ''
+        mkdir -p $out/bin
+        mv ${args.binary} $out/bin/${args.binary}
+      ''
+    else
+      ''
+        mkdir -p $out/bin
+        cp $src $out/bin/${args.binary}
+      '';
+
 
   };
 

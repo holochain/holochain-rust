@@ -14,7 +14,6 @@ for:
   image: hc-cold
   test_script:
     - echo This is my custom test script cold
-for:
 -
   branches:
     except:

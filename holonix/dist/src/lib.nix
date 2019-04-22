@@ -6,11 +6,15 @@ let
 in
 {
  binary-derivation = args:
+  let
+   artifact-name = "${args.name}-v${dist.version}-${dist.artifact-target}";
+  in
   pkgs.stdenv.mkDerivation {
    name = "holochain-${args.name}";
 
+
    src = pkgs.fetchurl {
-    url = "https://github.com/${git.github.repo}/releases/download/v${dist.version}/${args.name}-v${dist.version}-${dist.artifact-target}.tar.gz";
+    url = "https://github.com/${git.github.repo}/releases/download/v${dist.version}/${artifact-name}.tar.gz";
     sha256 = args.sha256;
    };
 
@@ -18,11 +22,10 @@ in
 
    installPhase = ''
      mkdir -p $out/bin
-     cp $src $out/bin/${args.binary}
-     # chmod +x $out/share/${args.binary}
-     # ln -s $out/share/${args.binary} $out/bin/${args.binary}
-     ls -la $out/bin/${args.binary}
-     # cp $src $out/bin/${args.binary}
+     cp $src $out/bin/${args.binary}.tar.gz
+     tar --strip-components=1 -C $out/bin -zxvf $out/bin/${args.binary}.tar.gz
+     rm $out/bin/${args.binary}.tar.gz
+     chmod +x $out/bin/${args.binary}
    '';
   };
 

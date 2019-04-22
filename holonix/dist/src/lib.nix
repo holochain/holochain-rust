@@ -22,11 +22,9 @@ in
 
    installPhase = ''
      mkdir -p $out/bin
-     cp $src $out/bin/${args.binary}.tar.gz
-     tar --strip-components=1 -C $out/bin -zxvf $out/bin/${args.binary}.tar.gz
-     rm $out/bin/${args.binary}.tar.gz
-     chmod +x $out/bin/${args.binary}
+     cp $src $out/bin/${args.binary}
    '';
+
   };
 
 }

@@ -104,10 +104,10 @@ impl NetConnectionThread {
             });
         });
 
-        // Retrieve endpoint from spawned thread
-        let endpoint = recv_endpoint
-            .recv()
-            .expect("Failed to receive endpoint address from net worker");
+        // Retrieve endpoint from spawned thread.
+        let endpoint = recv_endpoint.recv().map_err(|e| {
+            format_err!("Failed to receive endpoint address from net worker: {}", e)
+        })?;
         let endpoint = endpoint
             .expect("Should have an endpoint address")
             .to_string();

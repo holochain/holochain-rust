@@ -19,7 +19,8 @@ let
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 
   date = "2019-01-24";
-  wasmTarget = "wasm32-unknown-unknown";
+  wasm-target = "wasm32-unknown-unknown";
+  linux-release-target = "x86_64-unknown-linux-gnu";
   release-process-url = "https://hackmd.io/pt72afqYTWat7cuNqpAFjw";
   repo = "holochain/holochain-rust";
   upstream = "origin";
@@ -27,20 +28,20 @@ let
   # the unique hash at the end of the medium post url
   # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
   # would be 4867d777de94
-  pulse-url-hash = "d387ffcfac72";
-  pulse-version = "24";
-  pulse-commit = "494c21b9dc7927b7b171533cc20c4d39bd92b45c";
+  pulse-url-hash = "233cff610300";
+  pulse-version = "25";
+  pulse-commit = "c91f62efcd7fbf883d07fe5eefda2ab396d331e3";
 
-  core-previous-version = "0.0.10-alpha2";
-  core-version = "0.0.11-alpha1";
+  core-previous-version = "0.0.11-alpha1";
+  core-version = "0.0.12-alpha1";
 
-  node-conductor-previous-version = "0.4.9-alpha2";
-  node-conductor-version = "0.4.10-alpha1";
+  node-conductor-previous-version = "0.4.10-alpha1";
+  node-conductor-version = "0.4.11-alpha1";
 
   core-tag = "v${core-version}";
   node-conductor-tag = "holochain-nodejs-v${node-conductor-version}";
 
-  rust-build = (pkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
+  rust-build = (pkgs.rustChannelOfTargets "nightly" date [ wasm-target linux-release-target ]);
 
   hc-node-flush = pkgs.writeShellScriptBin "hc-node-flush"
   ''
@@ -56,6 +57,7 @@ let
    echo "flushing cargo"
    rm -rf ~/.cargo/registry;
    rm -rf ~/.cargo/git;
+   rm -rf ./dist;
    find . -wholename "**/.cargo" | xargs -I {} rm -rf {};
    find . -wholename "**/target" | xargs -I {} rm -rf {};
   '';
@@ -176,10 +178,22 @@ let
   ''
    ${pkgs.lib.concatMapStrings (path: build-wasm path) wasm-paths}
   '';
+
+  # simplified version of the c bindings test command in makefile
+  # hardcodes hc_dna to test rather than looping/scanning like make does
+  # might want to make this more sophisticated if we end up with many tests
+  hc-test-c-bindings = pkgs.writeShellScriptBin "hc-test-c-bindings"
+  ''
+  cargo build -p holochain_dna_c_binding
+  ( cd c_binding_tests/hc_dna && qmake -o $@Makefile $@qmake.pro && make )
+  ./target/debug/c_binding_tests/hc_dna/test_executable
+  '';
+
   hc-test = pkgs.writeShellScriptBin "hc-test"
   ''
    hc-build-wasm
    HC_SIMPLE_LOGGER_MUTE=1 RUST_BACKTRACE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target "$1";
+   hc-test-c-bindings
   '';
 
   hc-test-all = pkgs.writeShellScriptBin "hc-test-all"
@@ -501,7 +515,7 @@ All binaries are for 64-bit operating systems.
    # gets a markdown version of pulse
    # greps for everything from summary to details (not including details heading)
    # deletes null characters that throw warnings in bash
-   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${pulse-url} | grep -Pzo "(?s)(###.*Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
+   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${pulse-url} | grep -Pzo "(?s)(###\s+\**Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
    WITH_NOTES=''${WITH_DATE/$PULSE_PLACEHOLDER/$PULSE_NOTES}
    echo "$WITH_NOTES"
   '';
@@ -622,6 +636,46 @@ All binaries are for 64-bit operating systems.
    github-release -v edit --tag ${core-tag} --name ${core-tag} --description "$( hc-generate-release-notes )" --pre-release
   '';
 
+  build-release-artifact = params:
+  ''
+   export artifact_name=`sed "s/unknown/generic/g" <<< "${params.path}-${core-version}-${linux-release-target}"`
+   echo
+   echo "building $artifact_name..."
+   echo
+
+   CARGO_INCREMENTAL=0 cargo rustc --manifest-path ${params.path}/Cargo.toml --target ${linux-release-target} --release -- -C lto
+   mkdir -p dist/$artifact_name
+   cp target/${linux-release-target}/release/${params.name} ${params.path}/LICENSE ${params.path}/README.md dist/$artifact_name
+   tar -C dist/$artifact_name -czf dist/$artifact_name.tar.gz . && rm -rf dist/$artifact_name
+  '';
+  build-release-paramss = [
+                           {
+                            path = "cli";
+                            name = "hc";
+                           }
+                           {
+                            path = "conductor";
+                            name = "holochain";
+                           }
+                          ];
+  build-node-conductor-artifact = node-version:
+  ''
+   hc-node-flush
+   echo
+   echo "building conductor for node ${node-version}..."
+   echo
+
+   node -v
+   ./scripts/build_nodejs_conductor.sh
+   cp nodejs_conductor/bin-package/index-v${node-conductor-version}-node-v57-linux-x64.tar.gz dist
+  '';
+  build-node-conductor-versions = [ "nodejs-8_x" ];
+  hc-build-release-artifacts = pkgs.writeShellScriptBin "hc-build-release-artifacts"
+  ''
+   ${pkgs.lib.concatMapStrings (params: build-release-artifact params) build-release-paramss}
+   ${pkgs.lib.concatMapStrings (node-version: build-node-conductor-artifact node-version) build-node-conductor-versions}
+  '';
+
 in
 with pkgs;
 stdenv.mkDerivation rec {
@@ -634,10 +688,15 @@ stdenv.mkDerivation rec {
     # for openssl static installation
     perl
 
+    # for openssl static installation
+    perl
+
     cmake
     python
     pkgconfig
     rust-build
+
+    qt5.qmake
 
     nodejs-8_x
     yarn
@@ -667,6 +726,7 @@ stdenv.mkDerivation rec {
     hc-test-app-spec
     hc-test-app-spec-proc
     hc-test-node-conductor
+    hc-test-c-bindings
 
     hc-fmt
     hc-fmt-check
@@ -695,6 +755,7 @@ stdenv.mkDerivation rec {
     hc-ensure-changelog-version
     hc-generate-release-notes
     hc-readme-grep-nightly
+    hc-build-release-artifacts
 
     hc-do-release
 

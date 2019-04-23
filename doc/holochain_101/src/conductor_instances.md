@@ -34,7 +34,7 @@ id = "app spec instance 1"
 agent = "test agent 1"
 dna = "app spec rust"
 
-[instances.storage]
-type = "file"
-path = "example-config/tmp-storage"
+    [instances.storage]
+    type = "file"
+    path = "example-config/tmp-storage"
 ```

@@ -33,21 +33,21 @@ black, red, green, yellow, blue, magenta, cyan, white
 ```toml
 [logger]
 type = "debug"
-[[logger.rules.rules]]
-color = "red"
-exclude = false
-pattern = "^err/"
+    [[logger.rules.rules]]
+    color = "red"
+    exclude = false
+    pattern = "^err/"
 
-[[logger.rules.rules]]
-color = "white"
-exclude = false
-pattern = "^debug/dna"
+    [[logger.rules.rules]]
+    color = "white"
+    exclude = false
+    pattern = "^debug/dna"
 
-[[logger.rules.rules]]
-exclude = true
-pattern = "^debug/reduce"
+    [[logger.rules.rules]]
+    exclude = true
+    pattern = "^debug/reduce"
 
-[[logger.rules.rules]]
-exclude = false
-pattern = ".*"
+    [[logger.rules.rules]]
+    exclude = false
+    pattern = ".*"
 ```

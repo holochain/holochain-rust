@@ -42,12 +42,12 @@ A reference to the given ID of a defined [instance](./conductor_instances.md)
 [[interfaces]]
 id = "websocket interface"
 
-[[interfaces.instances]]
-id = "app spec instance 1"
+    [[interfaces.instances]]
+    id = "app spec instance 1"
 
-[interfaces.driver]
-type = "websocket"
-port = 4000
+    [interfaces.driver]
+    type = "websocket"
+    port = 4000
 ```
 
 ### Example With Admin
@@ -56,10 +56,10 @@ port = 4000
 id = "http interface"
 admin = true
 
-[[interfaces.instances]]
-id = "app spec instance 1"
+    [[interfaces.instances]]
+    id = "app spec instance 1"
 
-[interfaces.driver]
-type = "http"
-port = 4000
+    [interfaces.driver]
+    type = "http"
+    port = 4000
 ```

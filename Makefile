@@ -177,8 +177,6 @@ build_nodejs_conductor: version_rustup core_toolchain
 c_build: core_toolchain
 	cd dna_c_binding && $(CARGO) build
 
-test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
-
 .PHONY: wasm_build
 wasm_build: ensure_wasm_target
 	@echo -e "\033[0;93m## Building wasm targets... ##\033[0m"

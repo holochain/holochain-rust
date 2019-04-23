@@ -11,17 +11,20 @@ extern crate serde_json;
 extern crate holochain_core_types_derive;
 
 pub mod blog;
-pub mod post;
 pub mod memo;
+pub mod post;
 
+use blog::Env;
 use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
         cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
     },
-    holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}}
+    holochain_wasm_utils::api_serialization::{
+        get_entry::{EntryHistory, GetEntryResult},
+        get_links::GetLinksResult,
+    },
 };
-use blog::Env;
 
 define_zome! {
 

@@ -41,10 +41,10 @@ To use as the JSON-RPC "method" the instance ID (as seen in the `info/instances`
 `"method": "test-instance/blogs/create_blog"`
 
 Unlike `info/instances`, Zome functions usually expect arguments. To give arguments, a JSON object should be constructed. It may look like the following:
-`"params": {"blog": {"content": "sample content"}}`
+`"args": {"content": "sample content"}`
 
 With all this, a request like the following could be made via cURL from a terminal:
-`curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc": "2.0", "id": "0", "method": "test-instance/blogs/create_blog", "params": {"item":{"content":"sample content"}}}' http://localhost:8888`
+`curl -X POST -H "Content-Type: application/json" -d '{"id": "0", "jsonrpc": "2.0", "method": "call", "params": {"instance_id": "test-instance", "zome": "blog", "function": "create_post", "args": { "content": "sample content"} }}' http://127.0.0.1:8888`
 
 A response like the following might be returned:
 ```json

@@ -48,7 +48,9 @@ impl NetConnectionThread {
         // Spawn worker thread
         let thread = thread::spawn(move || {
             // Create worker
-            let mut worker = worker_factory(handler).unwrap_or_else(|e| panic!("{:?}", e));
+            let mut worker = worker_factory(handler).unwrap_or_else(|e| {
+                panic!("Failure while attempting to create network worker with provided P2pConfig. Error: {:?}", e)
+            });
             // Get endpoint and send it to owner (NetConnectionThread)
             let endpoint = worker.endpoint();
             send_endpoint
@@ -104,10 +106,10 @@ impl NetConnectionThread {
             });
         });
 
-        // Retrieve endpoint from spawned thread
-        let endpoint = recv_endpoint
-            .recv()
-            .expect("Failed to receive endpoint address from net worker");
+        // Retrieve endpoint from spawned thread.
+        let endpoint = recv_endpoint.recv().map_err(|e| {
+            format_err!("Failed to receive endpoint address from net worker: {}", e)
+        })?;
         let endpoint = endpoint
             .expect("Should have an endpoint address")
             .to_string();

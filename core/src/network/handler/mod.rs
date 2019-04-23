@@ -42,7 +42,11 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
         //   "trace/net/handle:({}): {:?}",
         //   context.agent_id.nick, message
         // ));
+
         let maybe_json_msg = JsonProtocol::try_from(message);
+        if let Err(_) = maybe_json_msg {
+            return Ok(());
+        }
         match maybe_json_msg.unwrap() {
             JsonProtocol::FailureResult(failure_data) => {
                 if !is_my_dna(&my_dna_address, &failure_data.dna_address.to_string()) {

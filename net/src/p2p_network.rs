@@ -69,29 +69,27 @@ impl P2pNetwork {
                 Ok(Protocol::P2pReady) => {
                     //context.log(format!("debug/net/handle: handle P2pReady start"));
                     tx.send(Protocol::P2pReady).unwrap();
+                    ()
                     //context.log(format!("debug/net/handle: handle P2pReady end"));
-                    handler(Ok(cloned))
                 }
                 Ok(_protocol_message) => {
                     //context.log(format!(
                     //  "debug/net/handle: ignoring protocol message {:?}",
                     //   protocol_message
                     // ));
-                    handler(Ok(cloned))
                 }
                 Err(_protocol_error) => {
                     // TODO why can't I use the above variable?
                     // Generates compiler error.
-                    handler(Ok(cloned))
                 }
-            }
+            };
+            handler(Ok(cloned))
         });
 
         // Create NetConnectionThread with appropriate worker factory
         let connection = NetConnectionThread::new(wrapped_handler, worker_factory, None)?;
 
         P2pNetwork::wait_p2p_ready(&rx);
-        drop(t);
         // Done
         Ok(P2pNetwork { connection })
     }
@@ -99,9 +97,13 @@ impl P2pNetwork {
     fn wait_p2p_ready(rx: &Receiver<Protocol>) {
         let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
         match maybe_message {
-            Ok(Protocol::P2pReady) => (),
+            Ok(Protocol::P2pReady) => {
+                println!("wait_p2p_ready: READY!");
+                ()
+            }
             //context.log("debug/net/handle: p2p networking ready"),
             Ok(_protocol_message) => {
+                println!("wait_p2p_ready: unsupported protocol message.");
                 ()
                 //            context.log(format!(
                 //                "warn/net/handle: unexpected \
@@ -110,6 +112,7 @@ impl P2pNetwork {
                 //            ));
             }
             Err(_e) => {
+                println!("wait_p2p_ready: PANIC!");
                 //            context.log(format!(
                 //                "err/net/handle: timed out waiting for p2p \
                 //                network to be ready: {:?}",

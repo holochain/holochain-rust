@@ -515,8 +515,7 @@ pub struct NetworkConfig {
     /// REAL is the default and what should be used in all production cases.
     /// MOCK is for using n3h only as a local hub that apps connect to directly, i.e. n3h will
     /// not connect to any other n3h instance.
-    /// HACK is for trying out things and should only be used by n3h developers who know why
-    /// they need this (i.e. testing new code). Might get removed soon.
+    /// HACK is Deprecated. Used by n3h developers only. Will get removed soon.
     #[serde(default = "default_n3h_mode")]
     pub n3h_mode: String,
     /// Absolute path to the directory that n3h uses to store persisted data.

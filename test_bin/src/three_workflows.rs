@@ -306,12 +306,13 @@ pub fn publish_entry_stress_test(
     let fetch_entry = camille.request_entry(address_42.clone());
     let req_id = fetch_entry.request_id.clone();
     // Alex or Billy or Camille might receive HandleFetchEntry request as this moment
+    #[allow(unused_assignments)]
     let mut has_received = false;
-    has_received = alex.wait_HandleFetchEntry_and_reply(Some(req_id.clone()));
+    has_received = alex.wait_HandleFetchEntry_and_reply();
     if !has_received {
-        has_received = billy.wait_HandleFetchEntry_and_reply(Some(req_id.clone()));
+        has_received = billy.wait_HandleFetchEntry_and_reply();
         if !has_received {
-            has_received = camille.wait_HandleFetchEntry_and_reply(Some(req_id.clone()));
+            has_received = camille.wait_HandleFetchEntry_and_reply();
         }
     }
     log_i!("has_received 'HandleFetchEntry': {}", has_received);

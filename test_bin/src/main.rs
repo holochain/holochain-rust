@@ -66,6 +66,7 @@ lazy_static! {
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
         three_workflows::setup_three_nodes,
         three_workflows::hold_and_publish_test,
+        three_workflows::publish_entry_stress_test,
     ];
     pub static ref MULTI_NODES_TEST_FNS: Vec<MultiNodesTestFn> = vec![
     ];

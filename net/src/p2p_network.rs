@@ -56,7 +56,7 @@ impl P2pNetwork {
         // configuration failed to produce a connection.
         let connection = NetConnectionThread::new(handler, worker_factory, None).map_err(|e| {
             format_err!(
-                "Failed to obtain p2p connection w/ config: {}: {}",
+                "Failed to obtain a connection to a p2p network module w/ config: {}: {}",
                 p2p_config.as_str(),
                 e
             )

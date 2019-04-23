@@ -79,10 +79,17 @@ impl P2pNetwork {
             handler(Ok(message))
         });
 
-        // Create NetConnectionThread with appropriate worker factory
-        let connection = NetConnectionThread::new(wrapped_handler, worker_factory, None)?;
-
+        // Create NetConnectionThread with appropriate worker factory.  Indicate *what*
+        // configuration failed to produce a connection.
+        let connection = NetConnectionThread::new(handler, worker_factory, None).map_err(|e| {
+            format_err!(
+                "Failed to obtain a connection to a p2p network module w/ config: {}: {}",
+                p2p_config.as_str(),
+                e
+            )
+        })?;
         P2pNetwork::wait_p2p_ready(&rx);
+
         // Done
         Ok(P2pNetwork { connection })
     }

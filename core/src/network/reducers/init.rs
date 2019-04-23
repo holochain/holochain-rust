@@ -10,7 +10,7 @@ use holochain_net::{
     },
     p2p_network::P2pNetwork,
 };
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub fn reduce_init(
     context: Arc<Context>,
@@ -43,7 +43,7 @@ pub fn reduce_init(
     });
 
     let _ = network.send(json.into()).and_then(|_| {
-        state.network = Some(Arc::new(std::sync::Mutex::new(network)));
+        state.network = Some(Arc::new(Mutex::new(network)));
         state.dna_address = Some(network_settings.dna_address.clone());
         state.agent_id = Some(network_settings.agent_id.clone());
         Ok(())

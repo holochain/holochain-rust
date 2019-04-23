@@ -20,7 +20,7 @@ use std::{
     time::Duration,
 };
 
-const P2P_READY_TIMEOUT_MS: u64 = 10000;
+const P2P_READY_TIMEOUT_MS: u64 = 5000;
 
 /// Facade handling a p2p module responsable for the network connection
 /// Holds a NetConnectionThread and implements itself the NetSend Trait
@@ -64,26 +64,19 @@ impl P2pNetwork {
         let tx = t.clone();
         let wrapped_handler: NetHandler = Box::new(move |message| {
             let unwrapped = message.unwrap();
-            let cloned = unwrapped.clone();
+            let message = unwrapped.clone();
             match Protocol::try_from(unwrapped.clone()) {
                 Ok(Protocol::P2pReady) => {
-                    //context.log(format!("debug/net/handle: handle P2pReady start"));
                     tx.send(Protocol::P2pReady).unwrap();
                     ()
-                    //context.log(format!("debug/net/handle: handle P2pReady end"));
                 }
-                Ok(_protocol_message) => {
-                    //context.log(format!(
-                    //  "debug/net/handle: ignoring protocol message {:?}",
-                    //   protocol_message
-                    // ));
-                }
+                Ok(_protocol_message) => {}
                 Err(_protocol_error) => {
                     // TODO why can't I use the above variable?
                     // Generates compiler error.
                 }
             };
-            handler(Ok(cloned))
+            handler(Ok(message))
         });
 
         // Create NetConnectionThread with appropriate worker factory
@@ -97,27 +90,9 @@ impl P2pNetwork {
     fn wait_p2p_ready(rx: &Receiver<Protocol>) {
         let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
         match maybe_message {
-            Ok(Protocol::P2pReady) => {
-                println!("wait_p2p_ready: READY!");
-                ()
-            }
-            //context.log("debug/net/handle: p2p networking ready"),
-            Ok(_protocol_message) => {
-                println!("wait_p2p_ready: unsupported protocol message.");
-                ()
-                //            context.log(format!(
-                //                "warn/net/handle: unexpected \
-                //                 protocol message {:?}",
-                //                protocol_message
-                //            ));
-            }
+            Ok(Protocol::P2pReady) => {}
+            Ok(_protocol_message) => {}
             Err(_e) => {
-                println!("wait_p2p_ready: PANIC!");
-                //            context.log(format!(
-                //                "err/net/handle: timed out waiting for p2p \
-                //                network to be ready: {:?}",
-                //              e
-                //          ));
                 panic!(
                     "p2p network not ready within alloted time of {:?} ms",
                     P2P_READY_TIMEOUT_MS

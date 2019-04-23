@@ -48,7 +48,9 @@ impl NetConnectionThread {
         // Spawn worker thread
         let thread = thread::spawn(move || {
             // Create worker
-            let mut worker = worker_factory(handler).unwrap_or_else(|e| panic!("{:?}", e));
+            let mut worker = worker_factory(handler).unwrap_or_else(|e| {
+                panic!("Failure while attempting to create network worker with provided P2pConfig. Error: {:?}", e)
+            });
             // Get endpoint and send it to owner (NetConnectionThread)
             let endpoint = worker.endpoint();
             send_endpoint

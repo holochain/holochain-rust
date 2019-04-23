@@ -40,8 +40,15 @@ Setup a Core Development Environment to work on Holochain itself:
 
 [Core Developer Setup](./doc/CoreDevSetup.md)
 
-## Documentation: The Book on Holochain
-There is a work-in-progress book of documentation being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://developer.holochain.org/guide/latest](https://developer.holochain.org/guide/latest). See instructions for how to contribute to the book at [doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
+## Documentation
+
+### API Reference
+Auto generated documentation for all of the code written in Rust is published online, with different versions to match the releases here: [https://developer.holochain.org/api](https://developer.holochain.org/api).
+
+### The Holochain Guidebook
+There is a guide for understanding and developing with Holochain. It is published online, with different versions to match the releases here: [https://developer.holochain.org/guide](https://developer.holochain.org/guide).
+ 
+ See instructions for how to contribute to the book at [doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
 
 
 ## Contribute

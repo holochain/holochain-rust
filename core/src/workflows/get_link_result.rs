@@ -1,13 +1,14 @@
 use crate::{
     context::Context, network::actions::get_links::get_links,
-    workflows::get_entry_result::get_entry_with_meta_workflow,
+    workflows::get_entry_result::get_entry_result_workflow,
 };
 
 use futures_util::future::FutureExt;
 use holochain_core_types::error::HolochainError;
-use holochain_wasm_utils::api_serialization::get_links::{
+use holochain_wasm_utils::api_serialization::{get_links::{
     GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
-};
+},
+get_entry::{GetEntryArgs,GetEntryOptions}};
 use std::sync::Arc;
 
 pub async fn get_link_result_workflow<'a>(
@@ -31,40 +32,28 @@ pub async fn get_link_result_workflow<'a>(
     ))?;
 
     let (link_results, errors): (Vec<_>, Vec<_>) = links
-        .iter()
+        .into_iter()
         .map(|link| {
-            //we should probably replace this with get_entry_result_workflow, it does all the work needed
+            let entry_args = GetEntryArgs
+            {
+                address : link,
+                options : GetEntryOptions
+                {
+                    status_request : link_args.options.link_status_request.clone(),
+                    headers : link_args.options.headers.clone(),
+                    timeout : link_args.options.timeout.clone(),
+                    ..Default::default()
+                }
+            
+            };
             context
-                .block_on(
-                    get_entry_with_meta_workflow(&context, &link, &link_args.options.timeout).map(
-                        |link_entry_result| {
-                            link_entry_result
-                                .map(|link_entry_option| {
-                                    link_entry_option.map(|link_entry| {
-                                        let headers = if link_args.options.headers {
-                                            link_entry.headers
-                                        } else {
-                                            Vec::new()
-                                        };
-                                        Ok(LinksResult {
-                                            address: link.clone(),
-                                            headers,
-                                        })
-                                    })
-                                })
-                                .unwrap_or(None)
-                        },
-                    ),
-                )
-                .unwrap_or(Err(HolochainError::ErrorGeneric(
-                    "Could not get links".to_string(),
-                )))
+                .block_on(get_entry_result_workflow(&context, &entry_args))
         })
         .partition(Result::is_ok);
 
     if errors.is_empty() {
         Ok(GetLinksResult::new(
-            link_results.into_iter().map(|s| s.unwrap()).collect(),
+            link_results.into_iter().map(|s|LinksResult{ link : s.unwrap()}).collect(),
         ))
     } else {
         Err(HolochainError::ErrorGeneric(

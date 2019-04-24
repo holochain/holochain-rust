@@ -232,6 +232,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_entry(),
             context.clone(),
+            &vec![]
         ));
         println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
@@ -260,6 +261,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_entries(),
             context.clone(),
+            &vec![]
         ));
         println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
@@ -288,6 +290,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_headers(),
             context.clone(),
+            &vec![]
         ));
         assert!(maybe_validation_package.is_ok());
 
@@ -315,6 +318,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_full(),
             context.clone(),
+            &vec![]
         ));
         assert!(maybe_validation_package.is_ok());
 

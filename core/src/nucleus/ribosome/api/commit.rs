@@ -33,9 +33,9 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
     runtime.store_result(task_result)
 }
 
-/// ZomeApiFunction::CommitAppEntry function code
+/// ZomeApiFunction::CommitAppEntryWithProvenance function code
 /// args: [0] encoded MemoryAllocation as u64
-/// Expected complex argument: CommitWithProvenanceArgs
+/// Expected complex argument: EntryWithProvenance
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_commit_app_entry_with_provenance(
     runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
@@ -48,7 +48,7 @@ pub fn invoke_commit_app_entry_with_provenance(
         // Exit on error
         Err(_) => {
             context.log(format!(
-                "err/zome: invoke_commit_app_entry failed to deserialize Entry: {:?}",
+                "err/zome: invoke_commit_app_entry_with_provenance failed to deserialize Entry: {:?}",
                 args_str
             ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
@@ -66,15 +66,17 @@ pub fn invoke_commit_app_entry_with_provenance(
 
 #[cfg(test)]
 pub mod tests {
+    use super::*;
     use crate::nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
     use holochain_core_types::{
-        cas::content::Address,
+        cas::content::{Address, AddressableContent},
         entry::{test_entry, Entry},
         error::ZomeApiInternalResult,
         json::JsonString,
+        signature::{test_signature, Provenance},
     };
 
     /// dummy commit args from standard test entry
@@ -83,6 +85,17 @@ pub mod tests {
 
         let serialized_entry = Entry::from(entry);
         JsonString::from(serialized_entry).to_bytes()
+    }
+
+    /// dummy commit args from standard test entry
+    pub fn test_commit_with_provenance_args_bytes() -> Vec<u8> {
+        let entry = test_entry();
+        let address : Address = entry.address();
+        let signature = test_signature();
+        let provenances = vec![Provenance::new(address, signature)];
+        let serialized_entry_with_provenance =
+            EntryWithProvenance::new(entry, provenances);
+        JsonString::from(serialized_entry_with_provenance).to_bytes()
     }
 
     #[test]
@@ -102,4 +115,24 @@ pub mod tests {
             ),
         );
     }
+
+    #[test]
+    /// test that we can round trip bytes through a commit action with
+    /// additional provenance and get the result from WASM
+    fn test_commit_with_provenance_round_trip() {
+        let (call_result, _) = test_zome_api_function(
+            ZomeApiFunction::CommitAppEntryWithProvenance.as_str(),
+            test_commit_with_provenance_args_bytes(),
+        );
+
+        assert_eq!(
+            call_result,
+            JsonString::from_json(
+                &(String::from(JsonString::from(ZomeApiInternalResult::success(
+                    Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq")
+                ))) + "\u{0}")
+            ),
+        );
+    }
+
 }

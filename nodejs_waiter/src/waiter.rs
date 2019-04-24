@@ -178,7 +178,7 @@ impl Waiter {
                         }
                     },
 
-                    (Some(checker), Action::Commit((committed_entry, link_update_delete))) => {
+                    (Some(checker), Action::Commit((committed_entry, link_update_delete, _provenances))) => {
                         // Pair every `Commit` with N `Hold`s of that same entry, regardless of type
                         // TODO: is there a possiblity that this can get messed up if the same
                         // entry is committed multiple times?
@@ -471,7 +471,7 @@ mod tests {
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call), 1);
 
-        waiter.process_signal(sig(Commit((entry.clone(), None))));
+        waiter.process_signal(sig(Commit((entry.clone(), None, vec![]))));
         assert_eq!(num_conditions(&waiter, &call), 2);
 
         waiter.process_signal(sig(Hold(entry_wh)));
@@ -500,10 +500,10 @@ mod tests {
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call), 1);
 
-        waiter.process_signal(sig(Commit((entry_1.clone(), None))));
+        waiter.process_signal(sig(Commit((entry_1.clone(), None, vec![]))));
         assert_eq!(num_conditions(&waiter, &call), 2);
 
-        waiter.process_signal(sig(Commit((entry_2.clone(), None))));
+        waiter.process_signal(sig(Commit((entry_2.clone(), None, vec![]))));
         assert_eq!(num_conditions(&waiter, &call), 3);
 
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call.clone()))));
@@ -537,7 +537,7 @@ mod tests {
         assert_eq!(waiter.checkers.len(), 0);
         waiter.process_signal(sig(SignalZomeFunctionCall(call_1.clone())));
         assert_eq!(waiter.checkers.len(), 0);
-        waiter.process_signal(sig(Commit((entry_1.clone(), None))));
+        waiter.process_signal(sig(Commit((entry_1.clone(), None, vec![]))));
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_1.clone()))));
         assert_eq!(waiter.checkers.len(), 0);
         // no checkers should be registered during any of this
@@ -551,10 +551,10 @@ mod tests {
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call_2), 1);
 
-        waiter.process_signal(sig(Commit((entry_2.clone(), None))));
+        waiter.process_signal(sig(Commit((entry_2.clone(), None, vec![]))));
         assert_eq!(num_conditions(&waiter, &call_2), 2);
 
-        waiter.process_signal(sig(Commit((entry_3.clone(), None))));
+        waiter.process_signal(sig(Commit((entry_3.clone(), None, vec![]))));
         assert_eq!(num_conditions(&waiter, &call_2), 3);
 
         // a Hold left over from that first unregistered function: should do nothing
@@ -567,7 +567,7 @@ mod tests {
         assert_eq!(waiter.checkers.len(), 1);
         waiter.process_signal(sig(SignalZomeFunctionCall(call_3.clone())));
         assert_eq!(waiter.checkers.len(), 1);
-        waiter.process_signal(sig(Commit((entry_4.clone(), None))));
+        waiter.process_signal(sig(Commit((entry_4.clone(), None, vec![]))));
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_3.clone()))));
         assert_eq!(waiter.checkers.len(), 1);
         // again, shouldn't change things at all
@@ -604,7 +604,7 @@ mod tests {
         assert_eq!(num_conditions(&waiter, &call), 1);
 
         // this adds two actions to await
-        waiter.process_signal(sig(Commit((entry.clone(), None))));
+        waiter.process_signal(sig(Commit((entry.clone(), None, vec![]))));
         assert_eq!(num_conditions(&waiter, &call), 3);
 
         waiter.process_signal(sig(Hold(entry_wh)));
@@ -639,7 +639,7 @@ mod tests {
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call_1), 1);
 
-        waiter.process_signal(sig(Commit((entry_1.clone(), None))));
+        waiter.process_signal(sig(Commit((entry_1.clone(), None, vec![]))));
         assert_eq!(num_conditions(&waiter, &call_1), 2);
 
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_1.clone()))));
@@ -654,10 +654,10 @@ mod tests {
         assert_eq!(waiter.checkers.len(), 2);
         assert_eq!(num_conditions(&waiter, &call_2), 1);
 
-        waiter.process_signal(sig(Commit((entry_2.clone(), None))));
+        waiter.process_signal(sig(Commit((entry_2.clone(), None, vec![]))));
         assert_eq!(num_conditions(&waiter, &call_2), 2);
 
-        waiter.process_signal(sig(Commit((entry_3.clone(), None))));
+        waiter.process_signal(sig(Commit((entry_3.clone(), None, vec![]))));
         assert_eq!(num_conditions(&waiter, &call_2), 3);
 
         expect_final(control_rx_1, || {

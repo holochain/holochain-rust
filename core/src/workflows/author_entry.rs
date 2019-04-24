@@ -107,6 +107,7 @@ pub mod tests {
                 &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
                 None,
                 &context1,
+                &vec![]
             ))
             .unwrap();
         thread::sleep(time::Duration::from_millis(500));

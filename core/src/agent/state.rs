@@ -414,7 +414,7 @@ pub mod tests {
             .set_state(Arc::new(RwLock::new(state)));
 
         let header = create_new_chain_header(&test_entry(), context.clone(), &None,
-                                             vec![]).unwrap();
+                                             &vec![]).unwrap();
         println!("{:?}", header);
         assert_eq!(
             header,

@@ -314,7 +314,7 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit((test_entry(), None)))
+        ActionWrapper::new(Action::Commit((test_entry(), None, vec![])))
     }
 
     /// dummy action for a get of test_hash()

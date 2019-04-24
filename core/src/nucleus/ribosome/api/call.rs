@@ -328,7 +328,7 @@ pub mod tests {
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = test_setup
             .context
-            .block_on(author_entry(&grant_entry, None, &test_setup.context))
+            .block_on(author_entry(&grant_entry, None, &test_setup.context, &vec![]))
             .unwrap();
         let other_agent_context = test_context("other agent", None);
         let cap_request =
@@ -373,7 +373,7 @@ pub mod tests {
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = test_setup
             .context
-            .block_on(author_entry(&grant_entry, None, &test_setup.context))
+            .block_on(author_entry(&grant_entry, None, &test_setup.context, &vec![]))
             .unwrap();
         let cap_request = make_cap_request_for_call(
             test_context("random other agent", None),
@@ -485,7 +485,7 @@ pub mod tests {
             .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = context
-            .block_on(author_entry(&grant_entry, None, &context))
+            .block_on(author_entry(&grant_entry, None, &context, &vec![]))
             .unwrap();
 
         // make the call with a valid capability call from a random source should succeed

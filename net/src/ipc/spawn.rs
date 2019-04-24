@@ -149,6 +149,13 @@ pub fn ipc_spawn(
 
     // Set shutdown function to kill the sub-process
     out.kill = Some(Box::new(move || {
+        unsafe {
+            if libc::kill(child.id() as i32, libc::SIGTERM) == 0 {
+                libc::waitpid(child.id() as i32, std::ptr::null_mut(), 0);
+                kill_child(&real_pid);
+                return
+            }
+        }
         match child.kill() {
             Ok(()) => kill_child(&real_pid),
             Err(e) => println!("failed to kill ipc sub-process: {:?}", e),

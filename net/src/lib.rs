@@ -14,6 +14,7 @@ extern crate holochain_common;
 pub extern crate holochain_core_types_derive;
 #[macro_use]
 extern crate lazy_static;
+extern crate libc;
 extern crate directories;
 extern crate reqwest;
 extern crate sha2;

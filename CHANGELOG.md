@@ -5,6 +5,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.12-alpha1] - 2019-04-21
+
+### Added
 - Allows the user to get headers using GetLinkOptions. [#1250](https://github.com/holochain/holochain-rust/pull/1250)
 
 - `Config.bridge` added to Scenario API, allowing bridges to be configured [#1259]()https://github.com/holochain/holochain-rust/pull/1259

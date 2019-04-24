@@ -786,7 +786,8 @@ pub fn link_entries<S: Into<String>>(
     })
 }
 
-/// Marks a link as deleted.
+/// Commits a LinkRemove entry to your local source chain that marks a link as 'deleted' by setting
+/// its status metadata to `Deleted` which gets published to the DHT.
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that removes a
 /// relationship between them, called a `tag`. Later, lists of entries.
 /// # Examples
@@ -1061,9 +1062,8 @@ pub fn update_agent() -> ZomeApiResult<Address> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Commit a DeletionEntry to your local source chain that marks an entry as 'deleted' by setting
-/// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
-/// metadata, which will be used by validation routes.
+/// Commit a Deletion entry to your local source chain that marks an entry as 'deleted' by setting
+/// its status metadata to `Deleted` which gets propagated to the DHT.
 pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
     Dispatch::RemoveEntry.with_input(address.to_owned())
 }

@@ -563,3 +563,42 @@ pub fn no_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
     // Done
     Ok(())
 }
+
+// this is all debug code, no need to track code test coverage
+#[cfg_attr(tarpaulin, skip)]
+pub fn no_entry_meta_test(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
+    can_connect: bool,
+) -> NetResult<()> {
+    // Setup
+    setup_two_nodes(alex, billy, can_connect)?;
+
+    // Alex publish data on the network
+    alex.author_meta(
+        &ENTRY_ADDRESS_1,
+        &META_LINK_ATTRIBUTE.to_string(),
+        &META_LINK_CONTENT_1,
+        true,
+    )?;
+
+    // Billy asks for metadata on the network.
+    let fetch_meta = billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.to_string());
+
+    // Alex sends that data back to the network
+    alex.reply_to_HandleFetchMeta(&fetch_meta)?;
+
+    // Billy should receive meta
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .unwrap();
+
+    log_i!("got GetMetaResult: {:?}", result);
+    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
+    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
+    assert_eq!(meta_data.content_list.len(), 1);
+    assert_eq!(meta_data.content_list[0], META_LINK_CONTENT_1.clone());
+    // Done
+    Ok(())
+}

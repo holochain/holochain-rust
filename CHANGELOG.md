@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **many** changes to `nix-shell` command names due to `holonix` refactor [#1292](https://github.com/holochain/holochain-rust/pull/1292)
+- refactored `shell.nix` into `holonix` directory for rationalized `nix-shell` commands and easier maintenance and clarity. [#1292](https://github.com/holochain/holochain-rust/pull/1292)
   - note: `hc-test` is now `hc-rust-test` and `hc-test-all` is now `hc-test`
 
 ### Deprecated

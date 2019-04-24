@@ -346,7 +346,7 @@ pub enum BundleOnClose {
 /// # Examples
 /// Here are two example Zomes, where one performs a `call` into the other.
 ///
-/// This first zome, is the "callee" i.e. the zome that receives the call, and is named `summer`
+/// This first zome is the "callee"; i.e., the zome that receives the call, and is named `summer`.
 /// because the call sums two numbers.
 /// ```rust
 /// # #![feature(try_from)]
@@ -643,9 +643,9 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
 /// the specified address.
 /// Returns None if no entry exists at the specified address or
-/// if the entry's status DELETED.  Note that if the entry was updated, the value retrieved
+/// if the entry's status is DELETED.  Note that if the entry was updated, the value retrieved
 /// may be of the updated entry which will have a different hash value.  If you need
-/// to get the value what ever the status, use [get_entry_initial](fn.get_entry_initial.html), or if you need to know
+/// to get the original value whatever the status, use [get_entry_initial](fn.get_entry_initial.html), or if you need to know
 /// the address of the updated entry use [get_entry_result](fn.get_entry_result.html)
 /// # Examples
 /// ```rust
@@ -924,7 +924,8 @@ pub fn keystore_new_random<S: Into<String>>(dst_id: S, size: usize) -> ZomeApiRe
     })
 }
 
-/// Creates a new derived Seed secret in the keystore derived from on a previously defined seed
+/// Creates a new derived seed secret in the keystore, derived from a previously defined seed.
+/// Accepts two arguments: the keystore ID of the previously defined seed, and a keystore ID for the newly derived seed.
 pub fn keystore_derive_seed<S: Into<String>>(
     src_id: S,
     dst_id: S,
@@ -939,7 +940,8 @@ pub fn keystore_derive_seed<S: Into<String>>(
     })
 }
 
-/// Creates a new derived Key secret in the keystore derived from on a previously defined seed
+/// Creates a new derived key secret in the keystore derived from on a previously defined seed.
+/// Accepts two arguments: the keystore ID of the previously defined seed, and a keystore ID for the newly derived key.
 pub fn keystore_derive_key<S: Into<String>>(
     src_id: S,
     dst_id: S,
@@ -952,7 +954,8 @@ pub fn keystore_derive_key<S: Into<String>>(
     })
 }
 
-/// Signs a payload using a key from the keystore.
+/// Signs a payload using a private key from the keystore.
+/// Accepts one argument: the keystore ID of the desired private key.
 pub fn keystore_sign<S: Into<String>>(src_id: S, payload: S) -> ZomeApiResult<String> {
     Dispatch::KeystoreSign.with_input(KeystoreSignArgs {
         src_id: src_id.into(),

@@ -43,7 +43,7 @@ Nix approach offers unique benefits:
   - Further isolation from host environment can be achieved with `nix-shell --pure`
 - Dependencies are hashed
   - "Dependency hell" is avoided
-  - Nice parallels with the hashed zomes model
+  - Nice parallels with Holochain's hashed zomes model
   - Security + reliability benefits
 - Dependencies can be garbage collected with the `nix-collect-garbage` command
 - Single "package manager" across most operating systems

@@ -23,7 +23,8 @@ pub async fn commit_entry(
     context: &Arc<Context>,
 ) -> Result<Address, HolochainError> {
     let action_wrapper =
-        ActionWrapper::new(Action::Commit((entry.clone(), maybe_link_update_delete)));
+        ActionWrapper::new(Action::Commit((entry.clone(), maybe_link_update_delete,
+                                           vec![])));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     await!(CommitFuture {
         context: context.clone(),

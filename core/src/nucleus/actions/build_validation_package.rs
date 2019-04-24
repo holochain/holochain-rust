@@ -16,13 +16,15 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
+    signature::Provenance,
 };
 use snowflake;
-use std::{convert::TryInto, pin::Pin, sync::Arc, thread};
+use std::{convert::TryInto, pin::Pin, sync::Arc, thread, vec::Vec};
 
-pub async fn build_validation_package(
-    entry: &Entry,
+pub async fn build_validation_package<'a>(
+    entry: &'a Entry,
     context: Arc<Context>,
+    provenances: &'a Vec<Provenance>,
 ) -> Result<ValidationPackage, HolochainError> {
     let id = snowflake::ProcessUniqueId::new();
 
@@ -88,7 +90,7 @@ pub async fn build_validation_package(
             // and just used for the validation, I don't see why it would be a problem.
             // If it was a problem, we would have to make sure that the whole commit process
             // (including validtion) is atomic.
-            agent::state::create_new_chain_header(&entry, context.clone(), &None)?,
+            agent::state::create_new_chain_header(&entry, context.clone(), &None, provenances)?,
         );
 
         thread::spawn(move || {

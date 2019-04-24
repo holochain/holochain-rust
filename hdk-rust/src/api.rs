@@ -1,11 +1,11 @@
-//! This file contains many of the structs, enums, and functions relevant for Zome
+
 //! developers! Detailed references and examples can be found here for how to use the
 //! HDK exposed functions to access powerful Holochain functions.
 
 use crate::error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{
     cas::content::Address,
-    entry::Entry,
+    entry::{Entry, EntryWithProvenance},
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
     signature::Provenance,
     time::Timeout,
@@ -140,6 +140,7 @@ macro_rules! def_api_fns {
 def_api_fns! {
     hc_init_globals, InitGlobals;
     hc_commit_entry, CommitEntry;
+    hc_commit_entry_with_provenance, CommitEntryWithProvenance;
     hc_get_entry, GetEntry;
     hc_entry_address, EntryAddress;
     hc_query, Query;
@@ -364,6 +365,8 @@ pub enum BundleOnClose {
 /// # #[no_mangle]
 /// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_commit_entry_with_provenance(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -461,6 +464,8 @@ pub enum BundleOnClose {
 /// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_commit_entry_with_provenance(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -631,6 +636,13 @@ pub fn debug<J: Into<String>>(msg: J) -> ZomeApiResult<()> {
 pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
     Dispatch::CommitEntry.with_input(entry)
 }
+
+// TODO document (copy / mutate the above)
+pub fn commit_entry_with_provenance(
+    entry_with_provenance: &EntryWithProvenance) -> ZomeApiResult<Address> {
+    Dispatch::CommitEntryWithProvenance.with_input(entry_with_provenance)
+}
+
 
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
 /// the specified address.

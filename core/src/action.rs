@@ -21,6 +21,7 @@ use holochain_core_types::{
     error::HolochainError,
     link::Link,
     validation::ValidationPackage,
+    signature::Provenance,
 };
 use holochain_net::{
     connection::json_protocol::{
@@ -32,6 +33,7 @@ use snowflake;
 use std::{
     hash::{Hash, Hasher},
     sync::Arc,
+    vec::Vec,
 };
 
 /// Wrapper for actions that provides a unique ID
@@ -93,7 +95,7 @@ pub enum Action {
     // ----------------
     /// Writes an entry to the source chain.
     /// Does not validate, assumes entry is valid.
-    Commit((Entry, Option<Address>)),
+    Commit((Entry, Option<Address>, Vec<Provenance>)),
 
     // -------------
     // DHT actions:

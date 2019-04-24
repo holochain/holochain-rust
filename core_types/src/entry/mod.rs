@@ -25,6 +25,7 @@ use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;
 use std::convert::TryFrom;
+use signature::Provenance;
 
 pub type AppEntryValue = JsonString;
 
@@ -74,6 +75,29 @@ pub enum Entry {
     ChainMigrate(ChainMigrate),
     CapToken(CapToken),
     CapTokenGrant(CapTokenGrant),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
+pub struct EntryWithProvenance {
+    entry: Entry,
+    provenances: Vec<Provenance>
+}
+
+impl EntryWithProvenance {
+    pub fn new(entry:Entry, provenances:Vec<Provenance>) -> Self {
+       EntryWithProvenance {
+           entry,
+           provenances
+       }
+    }
+
+    pub fn entry(&self) -> Entry {
+        self.entry.clone()
+    }
+
+    pub fn provenances(&self) -> Vec<Provenance> {
+        self.provenances.clone()
+    }
 }
 
 impl From<Option<Entry>> for JsonString {

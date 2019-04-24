@@ -2,7 +2,8 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
 };
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
+use holochain_core_types::{cas::content::Address,
+    entry::{Entry, EntryWithProvenance}, error::HolochainError};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -27,10 +28,41 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
     };
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> =
-        context.block_on(author_entry(&entry, None, &context));
+        context.block_on(author_entry(&entry, None, &context, &vec![]));
 
     runtime.store_result(task_result)
 }
+
+/// ZomeApiFunction::CommitAppEntry function code
+/// args: [0] encoded MemoryAllocation as u64
+/// Expected complex argument: CommitWithProvenanceArgs
+/// Returns an HcApiReturnCode as I64
+pub fn invoke_commit_app_entry_with_provenance(
+    runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+    let entry_with_provenance =
+        match EntryWithProvenance::try_from(args_str.clone()) {
+        Ok(entry_with_provenance_input) => entry_with_provenance_input,
+        // Exit on error
+        Err(_) => {
+            context.log(format!(
+                "err/zome: invoke_commit_app_entry failed to deserialize Entry: {:?}",
+                args_str
+            ));
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
+    };
+    // Wait for future to be resolved
+    let task_result: Result<Address, HolochainError> =
+        context.block_on(author_entry(
+                &entry_with_provenance.entry(), None, &context,
+                &entry_with_provenance.provenances()));
+
+    runtime.store_result(task_result)
+}
+
 
 #[cfg(test)]
 pub mod tests {

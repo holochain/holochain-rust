@@ -163,6 +163,7 @@ pub fn create_new_chain_header(
     entry: &Entry,
     context: Arc<Context>,
     crud_link: &Option<Address>,
+    provenances: &Vec<Provenance>
 ) -> Result<ChainHeader, HolochainError> {
     let agent_state = context
         .state()
@@ -180,10 +181,14 @@ pub fn create_new_chain_header(
     let duration_since_epoch = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("System time must not be before UNIX EPOCH");
+
+    let mut provenances: Vec<Provenance> = provenances.to_vec();
+    provenances.push(Provenance::new(agent_address, signature));
+
     Ok(ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
-        &vec![Provenance::new(agent_address, signature)],
+        &provenances,
         &agent_state
             .top_chain_header
             .clone()
@@ -212,9 +217,9 @@ fn reduce_commit_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (entry, maybe_link_update_delete) = unwrap_to!(action => Action::Commit);
+    let (entry, maybe_link_update_delete, provenances) = unwrap_to!(action => Action::Commit);
 
-    let result = create_new_chain_header(&entry, context.clone(), &maybe_link_update_delete)
+    let result = create_new_chain_header(&entry, context.clone(), &maybe_link_update_delete, provenances)
         .and_then(|chain_header| {
             let storage = &state.chain_store.content_storage().clone();
             storage.write().unwrap().add(entry)?;
@@ -408,7 +413,8 @@ pub mod tests {
             .unwrap()
             .set_state(Arc::new(RwLock::new(state)));
 
-        let header = create_new_chain_header(&test_entry(), context.clone(), &None).unwrap();
+        let header = create_new_chain_header(&test_entry(), context.clone(), &None,
+                                             vec![]).unwrap();
         println!("{:?}", header);
         assert_eq!(
             header,

@@ -336,14 +336,13 @@ pub enum BundleOnClose {
 //--------------------------------------------------------------------------------------------------
 
 /// Call an exposed function from another zome or another (bridged) instance running
-/// on the same agent in the same conductor.
-/// Arguments for the called function are passed as `JsonString`.
-/// Returns the value that's returned by the given function as a json str.
+/// in the same conductor.
+/// Arguments for the called function are passed and resturned as `JsonString`.
 /// # Examples
-/// In order to utilize `call`, you must have at least two separate Zomes.
-/// Here are two Zome examples, where one performs a `call` into the other.
+/// Here are two example Zomes, where one performs a `call` into the other.
 ///
-/// This first one, is the one that is called into, with the Zome name `summer`.
+/// This first zome, is the "callee" i.e. the zome that receives the call, and is named name `summer`
+/// because the call sums two numbers.
 /// ```rust
 /// # #![feature(try_from)]
 /// # #[macro_use]
@@ -434,7 +433,7 @@ pub enum BundleOnClose {
 /// # }
 /// ```
 ///
-/// This second one, is the one that performs the call into the `summer` Zome.
+/// This second zome is the "caller" that makes the call into the `summer` Zome.
 /// ```rust
 /// # #![feature(try_from)]
 /// # #[macro_use]
@@ -555,7 +554,7 @@ pub fn call<S: Into<String>>(
     })
 }
 
-/// Prints a string through the stdout of the running service, and also
+/// Prints a string through the stdout of the running conductor, and also
 /// writes that string to the logger in the execution context
 /// # Examples
 /// ```rust
@@ -580,10 +579,10 @@ pub fn debug<J: Into<String>>(msg: J) -> ZomeApiResult<()> {
     Ok(())
 }
 
-/// Attempts to commit an entry to your local source chain. The entry
-/// will have to pass the defined validation rules for that entry type.
-/// If the entry type is defined as public, will also publish the entry to the DHT.
-/// Returns either an address of the committed entry as a string, or an error.
+/// Attempts to commit an entry to the local source chain. The entry
+/// will also be checked against the defined validation rules for that entry type.
+/// If the entry type is defined as public, it will also be published to the DHT.
+/// Returns either an address of the committed entry, or an error.
 /// # Examples
 /// ```rust
 /// # #![feature(try_from)]
@@ -635,7 +634,10 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
 /// the specified address.
 /// Returns None if no entry exists at the specified address or
-/// if the entry's crud-status is not LIVE.
+/// if the entry's status DELETED.  Note that if the entry was updated, the value retrieved
+/// may be of the updated entry which will have a different hash value.  If you need
+/// to get the value what ever the status, use [get_entry_initial](fn.get_entry_initial.html), or if you need to know
+/// the address of the updated entry use [get_entry_result](fn.get_entry_result.html)
 /// # Examples
 /// ```rust
 /// # extern crate hdk;
@@ -666,7 +668,7 @@ pub fn get_entry(address: &Address) -> ZomeApiResult<Option<Entry>> {
     Ok(entry)
 }
 
-/// Returns the Entry at the exact address specified, whatever its crud-status.
+/// Returns the Entry at the exact address specified, whatever its status.
 /// Returns None if no entry exists at the specified address.
 pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(
@@ -706,6 +708,7 @@ pub fn get_entry_result(
     })
 }
 
+/// Adds a named, directed link between two entries on the DHT.
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
 /// relationship between them, called a `tag`. Later, lists of entries can be looked up by using [get_links](fn.get_links.html). Entries
 /// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
@@ -774,6 +777,7 @@ pub fn link_entries<S: Into<String>>(
     })
 }
 
+/// Marks a link as deleted.
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that removes a
 /// relationship between them, called a `tag`. Later, lists of entries.
 /// # Examples
@@ -836,14 +840,57 @@ pub fn remove_link<S: Into<String>>(
     })
 }
 
-/// sign ( priv_id_str, base64payload ) -> ( base64signature )
+/// Signs a string payload using the agent's private key.
+/// Returns the signature as a string.
+/// # Examples
+/// ```rust
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::signature::{Provenance, Signature};
+/// # use hdk::error::ZomeApiResult;
+/// # fn main() {
+/// pub fn handle_sign_message(message: String) -> ZomeApiResult<Signature> {
+///    hdk::sign(message).map(Signature::from)
+/// }
+/// # }
+/// ```
 pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     Dispatch::Sign.with_input(SignArgs {
         payload: payload.into(),
     })
 }
 
-/// sign_one_time ( priv_id_str, base64payloads ) -> ( base64signature )
+/// Signs a vector of payloads with a private key that is generated and shredded.
+/// Returns the signatures of the payloads and the public key that can be used to verify the signatures.
+/// # Examples
+/// ```rust
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::signature::{Provenance, Signature};
+/// # use hdk::error::ZomeApiResult;
+/// # use hdk::holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignOneTimeResult};
+/// # fn main() {
+/// pub fn handle_one_time_sign(key_id: String, message: String) -> ZomeApiResult<Signature> {
+///    hdk::sign(message).map(Signature::from)
+/// }
+/// # }
+/// ```
 pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOneTimeResult> {
     let mut converted_payloads = Vec::new();
     for p in payloads {
@@ -854,12 +901,12 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
     })
 }
 
-/// keystore_list ( ) -> ( Vec<String> )
+/// Returns a list of the named secrets stored in the keystore.
 pub fn keystore_list() -> ZomeApiResult<KeystoreListResult> {
     Dispatch::KeystoreList.without_input()
 }
 
-/// keystore_new_random ( dst_id, size ) -> ( () )
+/// Creates a new random "root" Seed secret in the keystore
 pub fn keystore_new_random<S: Into<String>>(dst_id: S, size: usize) -> ZomeApiResult<()> {
     Dispatch::KeystoreNewRandom.with_input(KeystoreNewRandomArgs {
         dst_id: dst_id.into(),
@@ -867,7 +914,7 @@ pub fn keystore_new_random<S: Into<String>>(dst_id: S, size: usize) -> ZomeApiRe
     })
 }
 
-/// keystore_derive_seed ( ) -> ( () )
+/// Creates a new derived Seed secret in the keystore derived from on a previously defined seed
 pub fn keystore_derive_seed<S: Into<String>>(
     src_id: S,
     dst_id: S,
@@ -882,7 +929,7 @@ pub fn keystore_derive_seed<S: Into<String>>(
     })
 }
 
-/// keystore_derive_key ( ) -> (  )
+/// Creates a new derived Key secret in the keystore derived from on a previously defined seed
 pub fn keystore_derive_key<S: Into<String>>(
     src_id: S,
     dst_id: S,
@@ -895,7 +942,7 @@ pub fn keystore_derive_key<S: Into<String>>(
     })
 }
 
-/// keystore_sign ( ) -> (  )
+/// Signs a payload using a key from the keystore.
 pub fn keystore_sign<S: Into<String>>(src_id: S, payload: S) -> ZomeApiResult<String> {
     Dispatch::KeystoreSign.with_input(KeystoreSignArgs {
         src_id: src_id.into(),
@@ -956,7 +1003,27 @@ pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
     Dispatch::EntryAddress.with_input(entry)
 }
 
-/// NOT YET AVAILABLE
+/// Verifies that a provenance (public key, signature) against a payload
+/// # Examples
+/// ```rust
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::signature::Provenance;
+/// # use hdk::error::ZomeApiResult;
+/// # fn main() {
+/// pub fn handle_verify_message(message: String, provenance: Provenance) -> ZomeApiResult<bool> {
+///     hdk::verify_signature(provenance, message)
+/// }
+/// # }
+/// ```
 pub fn verify_signature<S: Into<String>>(
     provenance: Provenance,
     payload: S,

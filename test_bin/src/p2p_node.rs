@@ -708,9 +708,9 @@ impl P2pNode {
     #[allow(non_snake_case)]
     pub fn wait_HandleFetchEntry_and_reply(&mut self) -> bool {
         let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
-            if maybe_request.is_none() {
-                return false;
-            }
+        if maybe_request.is_none() {
+            return false;
+        }
         let request = maybe_request.unwrap();
         // extract msg data
         let fetch_data = unwrap_to!(request => JsonProtocol::HandleFetchEntry);

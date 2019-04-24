@@ -46,13 +46,13 @@ pub fn generate_dna_id(i: u32) -> Address {
 pub fn generate_entry(i: u32) -> (Address, serde_json::Value) {
     let address = format!("entry_addr_{}", i);
     let content = format!("hello-{}", i);
-    let entry : serde_json::Value = json!({"ry":content});
+    let entry: serde_json::Value = json!({ "ry": content });
     (address.into(), entry)
 }
 
 //
 pub fn generate_meta(i: u32) -> serde_json::Value {
     let content = format!("hello-{}-meta", i);
-    let meta : serde_json::Value = json!({"mt":content});
+    let meta: serde_json::Value = json!({ "mt": content });
     meta
 }

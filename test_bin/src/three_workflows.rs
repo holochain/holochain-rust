@@ -277,13 +277,13 @@ pub fn publish_entry_stress_test(
         match i % 3 {
             0 => {
                 alex.author_entry(&address, &entry, true)?;
-            },
+            }
             1 => {
                 billy.author_entry(&address, &entry, true)?;
-            },
+            }
             2 => {
                 camille.author_entry(&address, &entry, true)?;
-            },
+            }
             _ => unreachable!(),
         };
     }
@@ -294,10 +294,12 @@ pub fn publish_entry_stress_test(
     let address_42_clone = address_42.clone();
     // #fulldht
     // wait for store entry request
-    let result = camille.wait_with_timeout(Box::new(one_is_where!(
-            JsonProtocol::HandleStoreEntry(entry_data),
-            { entry_data.entry_address == address_42_clone }
-        )), 10000);
+    let result = camille.wait_with_timeout(
+        Box::new(one_is_where!(JsonProtocol::HandleStoreEntry(entry_data), {
+            entry_data.entry_address == address_42_clone
+        })),
+        10000,
+    );
     assert!(result.is_some());
     // let _msg_count = camille.listen(300);
 
@@ -320,7 +322,7 @@ pub fn publish_entry_stress_test(
 
     // Camille should receive the data
     log_i!("Waiting for fetch result...\n\n");
-    
+
     let mut result = camille.find_recv_msg(
         0,
         Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
@@ -328,10 +330,12 @@ pub fn publish_entry_stress_test(
         })),
     );
     if result.is_none() {
-        result = camille.wait_with_timeout(Box::new(one_is_where!(
-            JsonProtocol::FetchEntryResult(entry_data),
-            { entry_data.request_id == fetch_entry.request_id }
-        )), 10000)
+        result = camille.wait_with_timeout(
+            Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+                entry_data.request_id == fetch_entry.request_id
+            })),
+            10000,
+        )
     }
     let json = result.unwrap();
     log_i!("got result 1: {:?}", json);
@@ -342,11 +346,42 @@ pub fn publish_entry_stress_test(
     let time_end = SystemTime::now();
 
     // report
-    println!("Total : {}s", time_end.duration_since(time_start).unwrap().as_millis() as f32 / 1000.0);
-    println!("  - startup    : {:?}s", time_after_startup.duration_since(time_start).unwrap().as_millis() as f32 / 1000.0);
-    println!("  - Authoring  : {:?}s", time_after_authoring.duration_since(time_after_startup).unwrap().as_millis() as f32 / 1000.0);
-    println!("  - Handling   : {:?}s", time_after_handle_fetch.duration_since(time_after_authoring).unwrap().as_millis() as f32 / 1000.0);
-    println!("  - Fetching   : {:?}s", time_end.duration_since(time_after_handle_fetch).unwrap().as_millis() as f32 / 1000.0);
+    println!(
+        "Total : {}s",
+        time_end.duration_since(time_start).unwrap().as_millis() as f32 / 1000.0
+    );
+    println!(
+        "  - startup    : {:?}s",
+        time_after_startup
+            .duration_since(time_start)
+            .unwrap()
+            .as_millis() as f32
+            / 1000.0
+    );
+    println!(
+        "  - Authoring  : {:?}s",
+        time_after_authoring
+            .duration_since(time_after_startup)
+            .unwrap()
+            .as_millis() as f32
+            / 1000.0
+    );
+    println!(
+        "  - Handling   : {:?}s",
+        time_after_handle_fetch
+            .duration_since(time_after_authoring)
+            .unwrap()
+            .as_millis() as f32
+            / 1000.0
+    );
+    println!(
+        "  - Fetching   : {:?}s",
+        time_end
+            .duration_since(time_after_handle_fetch)
+            .unwrap()
+            .as_millis() as f32
+            / 1000.0
+    );
     // Done
     Ok(())
 }

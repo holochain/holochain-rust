@@ -196,6 +196,11 @@ pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
+#[no_mangle]
+pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
 pub fn create_test_defs_with_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {
     let mut traitfns = TraitFns::new();
     let mut fn_declarations = Vec::new();

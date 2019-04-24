@@ -13,13 +13,14 @@ use hdk::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
         get_links::{GetLinksOptions, GetLinksResult},
+        QueryArgsOptions, QueryResult,
     },
     AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
 };
 
 use memo::Memo;
 use post::Post;
-use std::{collections::BTreeMap, convert::TryFrom};
+use std::{collections::BTreeMap, convert::{TryFrom, TryInto}};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -128,6 +129,43 @@ pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
 
 pub fn handle_get_grants() -> ZomeApiResult<Vec<Address>> {
     hdk::query(EntryType::CapTokenGrant.into(), 0, 0)
+}
+
+pub fn handle_record_post_claim(identifier: String, claim: Address) -> ZomeApiResult<Address> {
+    hdk::commit_capability_claim(identifier, claim)
+}
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
+struct CreatePostArgs {
+    content: String,
+    in_reply_to: Option<Address>,
+}
+
+pub fn handle_create_post_with_claim(instance_id: String, content: String, in_reply_to: Option<Address>) ->  ZomeApiResult<Address> {
+    // retrieve a previously stored claimed
+    let claim = hdk::query_result(EntryType::CapTokenClaim.into(),
+                                   QueryArgsOptions {
+                                       entries: true,
+                                       ..Default::default()
+                                   }
+    ).and_then(|result| match result {
+        QueryResult::Entries(entries) => {
+            let entry = &entries[0].1;
+            match entry {
+                Entry::CapTokenClaim(ref claim) => Ok(claim.token()),
+                _ => Err(ZomeApiError::Internal("failed to get claim".into())),
+            }
+        },
+        _ => Err(ZomeApiError::Internal("failed to get claim".into()))
+    })?;
+    let addr = hdk::call(
+        instance_id,
+        "blog".to_string(),
+        claim,
+        "create_post".to_string(),
+        CreatePostArgs {content, in_reply_to}.into(),
+    )?;
+    addr.try_into().map_err(|err| ZomeApiError::Internal(format!("unable to convert result: {}",err)))
 }
 
 pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {

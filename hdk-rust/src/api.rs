@@ -17,7 +17,7 @@ use holochain_core_types::{
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        capabilities::GrantCapabilityArgs,
+        capabilities::{CommitCapabilityClaimArgs, GrantCapabilityArgs},
         get_entry::{
             EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
             StatusRequestKind,
@@ -165,6 +165,7 @@ def_api_fns! {
     hc_keystore_derive_key, KeystoreDeriveKey;
     hc_keystore_sign, KeystoreSign;
     hc_grant_capability, GrantCapability;
+    hc_commit_capability_claim, CommitCapabilityClaim;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -410,6 +411,8 @@ pub enum BundleOnClose {
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]
 /// # pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -510,6 +513,8 @@ pub enum BundleOnClose {
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]
 /// # pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -1264,6 +1269,8 @@ pub fn query_result(
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]
 /// # pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
@@ -1353,5 +1360,13 @@ pub fn grant_capability<S: Into<String>>(
         cap_type,
         assignees,
         functions,
+    })
+}
+
+/// Adds a capability claim to the local chain
+pub fn commit_capability_claim<S: Into<String>>(id: S, token: Address) -> ZomeApiResult<Address> {
+    Dispatch::CommitCapabilityClaim.with_input(CommitCapabilityClaimArgs {
+        id: id.into(),
+        token,
     })
 }

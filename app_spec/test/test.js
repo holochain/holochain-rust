@@ -653,4 +653,9 @@ scenario2.runTape('request grant', async (t, { alice, bob }) => {
     t.notOk(grants.Err)
 
     t.equal(result.Ok, grants.Ok[0])
+
+    const claim = bob.call("blog", "store post_claim", {identifier: "post for alice", claim: result.Ok})
+    t.ok(claim.Ok)
+    t.notOk(claim.Err)
+
 })

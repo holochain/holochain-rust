@@ -13,3 +13,10 @@ pub struct GrantCapabilityArgs {
     pub assignees: Option<Vec<Address>>,
     pub functions: CapFunctions,
 }
+
+// arguments required for calling commit_capability_claim
+#[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
+pub struct CommitCapabilityClaimArgs {
+    pub id: String,
+    pub token: Address,
+}

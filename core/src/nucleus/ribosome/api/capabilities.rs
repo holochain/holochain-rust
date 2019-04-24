@@ -4,10 +4,15 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    entry::{cap_entries::CapTokenGrant, Entry},
+    entry::{
+        cap_entries::{CapTokenClaim, CapTokenGrant},
+        Entry,
+    },
     error::HolochainError,
 };
-use holochain_wasm_utils::api_serialization::capabilities::GrantCapabilityArgs;
+use holochain_wasm_utils::api_serialization::capabilities::{
+    CommitCapabilityClaimArgs, GrantCapabilityArgs,
+};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -36,6 +41,24 @@ pub fn invoke_grant_capability(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
     runtime.store_result(task_result)
 }
 
+pub fn invoke_commit_capability_claim(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+    let args = match CommitCapabilityClaimArgs::try_from(args_str.clone()) {
+        Ok(input) => input,
+        Err(..) => return ribosome_error_code!(ArgumentDeserializationFailed),
+    };
+
+    let claim = CapTokenClaim::new(args.id, args.token);
+    let task_result: Result<Address, HolochainError> = context.block_on(commit_entry(
+        Entry::CapTokenClaim(claim.clone()),
+        None,
+        &context.clone(),
+    ));
+    runtime.store_result(task_result)
+}
+
 #[cfg(test)]
 pub mod tests {
     use crate::nucleus::ribosome::{
@@ -46,7 +69,9 @@ pub mod tests {
         cas::content::Address, entry::cap_entries::CapabilityType, error::ZomeApiInternalResult,
         json::JsonString,
     };
-    use holochain_wasm_utils::api_serialization::capabilities::GrantCapabilityArgs;
+    use holochain_wasm_utils::api_serialization::capabilities::{
+        CommitCapabilityClaimArgs, GrantCapabilityArgs,
+    };
     use std::collections::BTreeMap;
 
     /// dummy args
@@ -61,6 +86,15 @@ pub mod tests {
         };
 
         JsonString::from(grant_args).to_bytes()
+    }
+
+    pub fn test_commit_capability_claim_args_bytes() -> Vec<u8> {
+        let claim_args = CommitCapabilityClaimArgs {
+            id: "some_id".to_string(),
+            token: Address::from("fake"),
+        };
+
+        JsonString::from(claim_args).to_bytes()
     }
 
     #[test]
@@ -80,4 +114,23 @@ pub mod tests {
             ),
         );
     }
+
+    #[test]
+    /// test that we can round trip bytes through a commit_capability_claim action and get the result from WASM
+    fn test_commit_capability_claim_round_trip() {
+        let (call_result, _) = test_zome_api_function(
+            ZomeApiFunction::CommitCapabilityClaim.as_str(),
+            test_commit_capability_claim_args_bytes(),
+        );
+
+        assert_eq!(
+            call_result,
+            JsonString::from_json(
+                &(String::from(JsonString::from(ZomeApiInternalResult::success(
+                    Address::from("QmawSmcC5FJWd7AQnh7gdbxtqm7i22E9H6KP37qv7aDMsy")
+                ))) + "\u{0}")
+            ),
+        );
+    }
+
 }

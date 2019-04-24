@@ -62,18 +62,22 @@ pub type CapTokenValue = Address;
 /// a collection functions by zome name that are authorized within a capability
 pub type CapFunctions = BTreeMap<String, Vec<String>>;
 
-/// System entry to hold a capability token for use as a caller
+/// System entry to hold a capability token claim for use as a caller
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
-pub struct CapToken {
+pub struct CapTokenClaim {
+    id: String,
     token: CapTokenValue,
 }
 
-impl CapToken {
-    pub fn new(token: CapTokenValue) -> Self {
-        CapToken { token }
+impl CapTokenClaim {
+    pub fn new(id: String, token: CapTokenValue) -> Self {
+        CapTokenClaim { id, token }
     }
-    pub fn token(self) -> CapTokenValue {
-        self.token
+    pub fn token(&self) -> CapTokenValue {
+        self.token.clone()
+    }
+    pub fn id(&self) -> String {
+        self.id.clone()
     }
 }
 
@@ -184,6 +188,14 @@ pub mod tests {
     /// test that a canonical string can be created from ReservedCapabilityId
     fn test_reserved_capid_as_str() {
         assert_eq!(ReservedCapabilityId::Public.as_str(), "hc_public");
+    }
+
+    #[test]
+    fn test_new_cap_token_claim_entry() {
+        let token = Address::from("fake");
+        let claim = CapTokenClaim::new("foo".to_string(), token.clone());
+        assert_eq!(claim.id(), "foo".to_string());
+        assert_eq!(claim.token(), token);
     }
 
     #[test]

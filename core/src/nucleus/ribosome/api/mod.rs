@@ -25,7 +25,7 @@ pub mod verify_signature;
 use crate::nucleus::ribosome::{
     api::{
         call::invoke_call,
-        capabilities::invoke_grant_capability,
+        capabilities::{invoke_commit_capability_claim, invoke_grant_capability},
         commit::invoke_commit_app_entry,
         debug::invoke_debug,
         entry_address::invoke_entry_address,
@@ -132,6 +132,9 @@ link_zome_api! {
 
     /// Commit a capability grant to the source chain
     "hc_grant_capability", GrantCapability, invoke_grant_capability;
+
+    /// Commit a capability grant to the source chain
+    "hc_commit_capability_claim", CommitCapabilityClaim, invoke_commit_capability_claim;
 }
 
 #[cfg(test)]

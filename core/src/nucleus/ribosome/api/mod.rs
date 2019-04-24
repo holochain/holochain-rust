@@ -11,6 +11,7 @@ pub mod init_globals;
 pub mod link_entries;
 #[macro_use]
 mod macros;
+pub mod capabilities;
 pub mod keystore;
 pub mod query;
 pub mod remove_entry;
@@ -24,6 +25,7 @@ pub mod verify_signature;
 use crate::nucleus::ribosome::{
     api::{
         call::invoke_call,
+        capabilities::invoke_grant_capability,
         commit::invoke_commit_app_entry,
         debug::invoke_debug,
         entry_address::invoke_entry_address,
@@ -127,6 +129,9 @@ link_zome_api! {
 
     /// Sign a block of data using a key in the keystore
     "hc_keystore_sign", KeystoreSign, invoke_keystore_sign;
+
+    /// Commit a capability grant to the source chain
+    "hc_grant_capability", GrantCapability, invoke_grant_capability;
 }
 
 #[cfg(test)]

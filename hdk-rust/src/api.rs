@@ -346,7 +346,7 @@ pub enum BundleOnClose {
 /// # Examples
 /// Here are two example Zomes, where one performs a `call` into the other.
 ///
-/// This first zome, is the "callee" i.e. the zome that receives the call, and is named name `summer`
+/// This first zome, is the "callee" i.e. the zome that receives the call, and is named `summer`
 /// because the call sums two numbers.
 /// ```rust
 /// # #![feature(try_from)]
@@ -563,7 +563,7 @@ pub fn call<S: Into<String>>(
     })
 }
 
-/// Prints a string through the stdout of the running conductor, and also
+/// Prints a string through the stdout of the running Conductor, and also
 /// writes that string to the logger in the execution context
 /// # Examples
 /// ```rust

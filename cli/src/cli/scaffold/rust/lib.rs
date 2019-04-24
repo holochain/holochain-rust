@@ -13,7 +13,11 @@ use hdk::{
     error::ZomeApiResult,
 };
 use hdk::holochain_core_types::{
-    cas::content::Address, entry::Entry, dna::entry_types::Sharing, error::HolochainError, json::JsonString,
+    cas::content::Address,
+    entry::Entry,
+    dna::entry_types::Sharing,
+    error::HolochainError,
+    json::JsonString,
     validation::EntryValidationData
 };
 

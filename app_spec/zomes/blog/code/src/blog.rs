@@ -4,7 +4,7 @@ use hdk::{
     holochain_core_types::{
         cas::content::Address,
         dna::capabilities::CapabilityRequest,
-        entry::{cap_entries::CapabilityType, Entry, entry_type::EntryType},
+        entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
         error::HolochainError,
         json::JsonString,
     },
@@ -148,7 +148,11 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
     Ok(address)
 }
 
-pub fn handle_create_post_with_agent(agent_id:Address,content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
+pub fn handle_create_post_with_agent(
+    agent_id: Address,
+    content: String,
+    in_reply_to: Option<Address>,
+) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;
 
     hdk::link_entries(&agent_id, &address, "authored_posts")?;
@@ -202,14 +206,16 @@ pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
     )
 }
 
-pub fn handle_my_posts_get_my_sources(agent:Address) -> ZomeApiResult<GetLinksResult>
-{
-    hdk::get_links_with_options(&agent,"authored_posts",GetLinksOptions{
-        headers : true,
-        ..Default::default()
-    })
+pub fn handle_my_posts_get_my_sources(agent: Address) -> ZomeApiResult<GetLinksResult> {
+    hdk::get_links_with_options(
+        &agent,
+        "authored_posts",
+        GetLinksOptions {
+            headers: true,
+            ..Default::default()
+        },
+    )
 }
-
 
 pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
     // In the current implementation of hdk::query the second parameter

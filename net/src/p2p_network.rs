@@ -12,6 +12,7 @@ use crate::{
     in_memory::memory_worker::InMemoryWorker,
     ipc_net_worker::IpcNetWorker,
     p2p_config::*,
+    tweetlog::*,
 };
 use holochain_core_types::json::JsonString;
 use std::{
@@ -68,7 +69,7 @@ impl P2pNetwork {
             match Protocol::try_from(unwrapped.clone()) {
                 Ok(Protocol::P2pReady) => {
                     tx.send(Protocol::P2pReady).unwrap();
-                    ()
+                    log_d!("net/p2p_network: sent P2pReady event")
                 }
                 Ok(_protocol_message) => {}
                 Err(_protocol_error) => {
@@ -98,9 +99,12 @@ impl P2pNetwork {
     fn wait_p2p_ready(rx: &Receiver<Protocol>) {
         let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
         match maybe_message {
-            Ok(Protocol::P2pReady) => {}
+            Ok(Protocol::P2pReady) => {
+                log_d!("net/p2p_network: received P2pReady event")
+            }
             Ok(_protocol_message) => {}
-            Err(_e) => {
+            Err(e) => {
+                log_e!("net/p2p_network: did not receive P2pReady: {:?}", e);
                 panic!(
                     "p2p network not ready within alloted time of {:?} ms",
                     P2P_READY_TIMEOUT_MS

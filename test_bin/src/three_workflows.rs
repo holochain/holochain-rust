@@ -264,7 +264,6 @@ pub fn publish_entry_stress_test(
     let time_start = SystemTime::now();
 
     // Setup
-    println!("Testing: publish_entry_stress_test()");
     setup_three_nodes(alex, billy, camille, can_connect)?;
 
     let time_after_startup = SystemTime::now();
@@ -301,7 +300,6 @@ pub fn publish_entry_stress_test(
         10000,
     );
     assert!(result.is_some());
-    // let _msg_count = camille.listen(300);
 
     log_i!("Requesting entry \n\n");
     // Camille requests that entry

@@ -665,7 +665,7 @@ impl P2pNode {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
                     self.logger.e(&format!(
-                        "({}) ###### Received parse error: {} {:?}",
+                        "({}) ###### Received parse error: {} | data = {:?}",
                         self.agent_id, s, data,
                     ));
                 }

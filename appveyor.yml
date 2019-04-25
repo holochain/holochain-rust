@@ -1,5 +1,5 @@
 build_cloud: azure
-image: hc-azure
+image: hc-cold
 
 shallow_clone: true
 version: 1.0.{build}

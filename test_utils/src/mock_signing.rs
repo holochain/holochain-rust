@@ -54,7 +54,7 @@ pub fn mock_signer(payload: String, agent_id: &AgentId) -> String { TEST_AGENT_K
         .get(&agent_id.address())
         .expect(format!(
                 "Agent {:?} not found in mock registry. \
-                 Test agent keys need to be registered first.", agent_id))
+                 Test agent keys need to be registered first.", agent_id).as_str())
         .lock()
         .map(|mut keybundle| {
             // Convert payload string into a SecBuf

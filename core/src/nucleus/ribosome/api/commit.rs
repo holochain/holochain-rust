@@ -45,15 +45,17 @@ pub fn invoke_commit_app_entry_with_provenance(
     args: &RuntimeArgs,
 ) -> ZomeApiResult {
     let context = runtime.context()?;
+    context.log("debug/zome: invoke_commit_app_entry_with_provenance started.");
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let entry_with_provenance = match EntryWithProvenance::try_from(args_str.clone()) {
         Ok(entry_with_provenance_input) => entry_with_provenance_input,
         // Exit on error
-        Err(_) => {
+        Err(error) => {
             context.log(format!(
-                "err/zome: invoke_commit_app_entry_with_provenance failed to deserialize Entry: {:?}",
-                args_str
+                "err/zome: invoke_commit_app_entry_with_provenance failed to \
+                 deserialize Entry: {:?} with error {:?}",
+                args_str, error
             ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
@@ -66,6 +68,7 @@ pub fn invoke_commit_app_entry_with_provenance(
         &entry_with_provenance.provenances(),
     ));
 
+    context.log("debug/zome: invoke_commit_app_entry_with_provenance finished.");
     runtime.store_result(task_result)
 }
 

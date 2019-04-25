@@ -97,19 +97,25 @@ pub async fn call_zome_function(
             Some(zome_call_clone.clone().parameters.to_bytes()),
             WasmCallData::new_zome_call(context_clone.clone(), zome_call_clone.clone()),
         );
+        context_clone.log("debug/actions/call_zome_fn: got call_result from ribosome::run_dna.");
         // Construct response
         let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);
         // Send ReturnZomeFunctionResult Action
+        context_clone.log("debug/actions/call_zome_fn: sending ReturnZomeFunctionResult action.");
         context_clone
             .action_channel()
             .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
                 response,
             )))
             .expect("action channel to be open in reducer");
+        context_clone.log("debug/actions/call_zome_fn: sent ReturnZomeFunctionResult action.");
     });
 
-    context.log(format!("debug/actions/call_zome_fn: awaiting for \
-                 future call result of {:?}", zome_call));
+    context.log(format!(
+        "debug/actions/call_zome_fn: awaiting for \
+         future call result of {:?}",
+        zome_call
+    ));
 
     await!(CallResultFuture {
         context: context.clone(),

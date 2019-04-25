@@ -1,6 +1,6 @@
 # Holonix
 
-NixOS and `nix-shell` in other OS environments implements the HC ops tooling.
+Comprehensive Holochain Core ops tooling (build/test/release) for use in nix compatible environments (NixOS and anywhere `nix-shell` runs).
 
 ## Scope
 
@@ -50,7 +50,7 @@ Nix approach offers unique benefits:
 - Ability to ship utility scripts in the `shell.nix` file
 - Access to the nix functional programming language for dependencies/script management
   - Allows for a structured approach to coding the ops infrastructure
-  - Modern programming paradigm such as immutability, scopes, data structures, etc.
+  - Makes modern programming paradigm such as immutability, scopes, data structures, etc. in the ops tooling as opposed limitations and lack of expressivity of Bash/Makefile/etc.
 - NixOS runs on HoloPorts so `nix-shell` provides similar behaviour/environment
   - Everything is pinned to the same nix channel and commit
 
@@ -101,21 +101,21 @@ The `shell.nix` file is used by `nix-shell` automatically by default.
 This consumes `holonix/**` and does not provide any new derivations.
 End-users should not need to interact with `holonix/**` outside `shell.nix`.
 
-There are a few basic convensions to follow:
+There are a few basic conventions to follow:
 
 - Nest folders according to theme/tech/specificity
   - e.g. conductor management for conductor `x` sits under `conductor/x/**`
 - All configuration strings and other primitives sit in a local `config.nix`
 - Structure configuration as nested `foo.bar` rather than `foo-bar`
   - e.g. `holonix/release/config.nix` has a few good examples of this
-- All used and generated build inputs sit in a local `build.nix`
+- All used and generated inputs to build the nix derivations sit in a local `build.nix`
   - `build.nix` files should "bubble up" to the root one level at a time
     - e.g. `build.nix` imports `conductor/build.nix` imports `conductor/node/build.nix`
   - root `build.nix` and `src` should only aggregate deeper derivations
 - Scripts for binaries sit in named `foo.nix` files under `thing/src/foo.nix`
   - There is standard boilerplate for this, see an existing file for examples
   - Use `pkgs.writeShellScriptBin` by default
-  - CLI commands are named following the path sans `src`
+  - derived nix CLI commands are named following the path sans `src`
     - e.g. `holonix/foo/bar/src/baz.nix` becomes `hc-foo-bar-baz`
 - Make liberal use of `let .. in ..` scoping constructs in `.nix` files
 - Put functions for builds in `lib.nix` files

@@ -36,7 +36,7 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
 /// has to handle.
 pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
-    let handler: NetHandler = Box::new(move |message| {
+    Box::new(move |message| {
         let message = message.unwrap();
         // context.log(format!(
         //   "trace/net/handle:({}): {:?}",
@@ -191,8 +191,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             _ => {}
         }
         Ok(())
-    });
-    handler
+    })
 }
 
 fn republish_all_public_chain_entries(context: &Arc<Context>) {

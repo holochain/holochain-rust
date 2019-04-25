@@ -18,5 +18,6 @@ pub struct GrantCapabilityArgs {
 #[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
 pub struct CommitCapabilityClaimArgs {
     pub id: String,
+    pub grantor: Address,
     pub token: Address,
 }

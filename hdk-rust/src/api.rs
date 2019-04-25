@@ -1364,9 +1364,10 @@ pub fn grant_capability<S: Into<String>>(
 }
 
 /// Adds a capability claim to the local chain
-pub fn commit_capability_claim<S: Into<String>>(id: S, token: Address) -> ZomeApiResult<Address> {
+pub fn commit_capability_claim<S: Into<String>>(id: S, grantor: Address, token: Address) -> ZomeApiResult<Address> {
     Dispatch::CommitCapabilityClaim.with_input(CommitCapabilityClaimArgs {
         id: id.into(),
+        grantor,
         token,
     })
 }

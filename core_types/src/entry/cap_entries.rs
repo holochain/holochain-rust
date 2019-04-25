@@ -66,18 +66,22 @@ pub type CapFunctions = BTreeMap<String, Vec<String>>;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct CapTokenClaim {
     id: String,
+    grantor: Address,
     token: CapTokenValue,
 }
 
 impl CapTokenClaim {
-    pub fn new(id: String, token: CapTokenValue) -> Self {
-        CapTokenClaim { id, token }
+    pub fn new(id: String, grantor: Address, token: CapTokenValue) -> Self {
+        CapTokenClaim { id, grantor, token }
     }
     pub fn token(&self) -> CapTokenValue {
         self.token.clone()
     }
     pub fn id(&self) -> String {
         self.id.clone()
+    }
+    pub fn grantor(&self) -> Address {
+        self.grantor.clone()
     }
 }
 
@@ -193,8 +197,10 @@ pub mod tests {
     #[test]
     fn test_new_cap_token_claim_entry() {
         let token = Address::from("fake");
-        let claim = CapTokenClaim::new("foo".to_string(), token.clone());
+        let grantor = Address::from("fake grantor");
+        let claim = CapTokenClaim::new("foo".to_string(), grantor.clone(), token.clone());
         assert_eq!(claim.id(), "foo".to_string());
+        assert_eq!(claim.grantor(), grantor);
         assert_eq!(claim.token(), token);
     }
 

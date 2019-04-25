@@ -50,7 +50,7 @@ pub fn invoke_commit_capability_claim(runtime: &mut Runtime, args: &RuntimeArgs)
         Err(..) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
-    let claim = CapTokenClaim::new(args.id, args.token);
+    let claim = CapTokenClaim::new(args.id, args.grantor, args.token);
     let task_result: Result<Address, HolochainError> = context.block_on(commit_entry(
         Entry::CapTokenClaim(claim.clone()),
         None,
@@ -91,6 +91,7 @@ pub mod tests {
     pub fn test_commit_capability_claim_args_bytes() -> Vec<u8> {
         let claim_args = CommitCapabilityClaimArgs {
             id: "some_id".to_string(),
+            grantor: Address::from("fake grantor"),
             token: Address::from("fake"),
         };
 
@@ -127,7 +128,7 @@ pub mod tests {
             call_result,
             JsonString::from_json(
                 &(String::from(JsonString::from(ZomeApiInternalResult::success(
-                    Address::from("QmawSmcC5FJWd7AQnh7gdbxtqm7i22E9H6KP37qv7aDMsy")
+                    Address::from("QmeuneB3iJjcGMkei7N8kyoc7Ubi4ab3xMNPYXSse2vdm5")
                 ))) + "\u{0}")
             ),
         );

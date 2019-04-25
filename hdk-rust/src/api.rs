@@ -541,7 +541,7 @@ pub enum BundleOnClose {
 ///     ]
 ///
 ///     traits: {
-///         hc_public [sum]
+///         hc_public [check_sum]
 ///     }
 /// }
 ///

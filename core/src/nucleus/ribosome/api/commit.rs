@@ -2,8 +2,11 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
 };
-use holochain_core_types::{cas::content::Address,
-    entry::{Entry, EntryWithProvenance}, error::HolochainError};
+use holochain_core_types::{
+    cas::content::Address,
+    entry::{Entry, EntryWithProvenance},
+    error::HolochainError,
+};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -38,12 +41,13 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
 /// Expected complex argument: EntryWithProvenance
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_commit_app_entry_with_provenance(
-    runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    runtime: &mut Runtime,
+    args: &RuntimeArgs,
+) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let entry_with_provenance =
-        match EntryWithProvenance::try_from(args_str.clone()) {
+    let entry_with_provenance = match EntryWithProvenance::try_from(args_str.clone()) {
         Ok(entry_with_provenance_input) => entry_with_provenance_input,
         // Exit on error
         Err(_) => {
@@ -55,14 +59,15 @@ pub fn invoke_commit_app_entry_with_provenance(
         }
     };
     // Wait for future to be resolved
-    let task_result: Result<Address, HolochainError> =
-        context.block_on(author_entry(
-                &entry_with_provenance.entry(), None, &context,
-                &entry_with_provenance.provenances()));
+    let task_result: Result<Address, HolochainError> = context.block_on(author_entry(
+        &entry_with_provenance.entry(),
+        None,
+        &context,
+        &entry_with_provenance.provenances(),
+    ));
 
     runtime.store_result(task_result)
 }
-
 
 #[cfg(test)]
 pub mod tests {
@@ -76,7 +81,7 @@ pub mod tests {
         entry::{test_entry, Entry},
         error::ZomeApiInternalResult,
         json::JsonString,
-        signature::{test_signature, Provenance},
+        signature::{Provenance, Signature},
     };
 
     /// dummy commit args from standard test entry
@@ -87,14 +92,21 @@ pub mod tests {
         JsonString::from(serialized_entry).to_bytes()
     }
 
-    /// dummy commit args from standard test entry
+    /// dummy commit with provenance args from standard test entry
     pub fn test_commit_with_provenance_args_bytes() -> Vec<u8> {
         let entry = test_entry();
-        let address : Address = entry.address();
-        let signature = test_signature();
-        let provenances = vec![Provenance::new(address, signature)];
-        let serialized_entry_with_provenance =
-            EntryWithProvenance::new(entry, provenances);
+        let address: Address = entry.address();
+
+        let agent_nick = "counter-signer";
+        let agent_id = test_utils::mock_signing::registered_test_agent(agent_nick);
+
+        let signature = Signature::from(test_utils::mock_signing::mock_signer(
+            address.clone().into(),
+            &agent_id,
+        ));
+
+        let provenances = vec![Provenance::new(agent_id.address(), signature)];
+        let serialized_entry_with_provenance = EntryWithProvenance::new(entry, provenances);
         JsonString::from(serialized_entry_with_provenance).to_bytes()
     }
 

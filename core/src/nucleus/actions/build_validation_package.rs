@@ -15,8 +15,8 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
-    validation::{ValidationPackage, ValidationPackageDefinition::*},
     signature::Provenance,
+    validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
 use std::{convert::TryInto, pin::Pin, sync::Arc, thread, vec::Vec};
@@ -232,7 +232,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_entry(),
             context.clone(),
-            &vec![]
+            &vec![],
         ));
         println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
@@ -261,7 +261,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_entries(),
             context.clone(),
-            &vec![]
+            &vec![],
         ));
         println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
@@ -290,7 +290,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_headers(),
             context.clone(),
-            &vec![]
+            &vec![],
         ));
         assert!(maybe_validation_package.is_ok());
 
@@ -318,7 +318,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_full(),
             context.clone(),
-            &vec![]
+            &vec![],
         ));
         assert!(maybe_validation_package.is_ok());
 

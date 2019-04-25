@@ -766,8 +766,8 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex", netname);
         let agent_entry = Entry::AgentId(context.agent_id.clone());
-        let commit_agent_action = ActionWrapper::new(
-            Action::Commit((agent_entry.clone(), None, vec![])));
+        let commit_agent_action =
+            ActionWrapper::new(Action::Commit((agent_entry.clone(), None, vec![])));
 
         // Set up instance and process the action
         let instance = Instance::new(context.clone());

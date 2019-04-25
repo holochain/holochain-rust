@@ -12,17 +12,17 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
-    validation::{EntryLifecycle, ValidationData},
     signature::Provenance,
+    validation::{EntryLifecycle, ValidationData},
 };
 
-use std::{vec::Vec, sync::Arc};
+use std::{sync::Arc, vec::Vec};
 
 pub async fn author_entry<'a>(
     entry: &'a Entry,
     maybe_link_update_delete: Option<Address>,
     context: &'a Arc<Context>,
-    provenances: &'a Vec<Provenance>
+    provenances: &'a Vec<Provenance>,
 ) -> Result<Address, HolochainError> {
     let address = entry.address();
     context.log(format!(
@@ -31,8 +31,11 @@ pub async fn author_entry<'a>(
     ));
 
     // 1. Build the context needed for validation of the entry
-    let validation_package = await!(
-        build_validation_package(&entry, context.clone(), provenances))?;
+    let validation_package = await!(build_validation_package(
+        &entry,
+        context.clone(),
+        provenances
+    ))?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
@@ -107,7 +110,7 @@ pub mod tests {
                 &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
                 None,
                 &context1,
-                &vec![]
+                &vec![],
             ))
             .unwrap();
         thread::sleep(time::Duration::from_millis(500));

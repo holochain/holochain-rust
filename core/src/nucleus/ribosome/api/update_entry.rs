@@ -58,7 +58,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             &entry,
             Some(latest_entry.clone().address()),
             &context.clone(),
-            &vec![] // TODO should provenance be a parameter?
+            &vec![], // TODO should provenance be a parameter?
         ))
         .map_err(|validation_error| HolochainError::from(validation_error));
 

@@ -163,7 +163,7 @@ pub fn create_new_chain_header(
     entry: &Entry,
     context: Arc<Context>,
     crud_link: &Option<Address>,
-    provenances: &Vec<Provenance>
+    provenances: &Vec<Provenance>,
 ) -> Result<ChainHeader, HolochainError> {
     let agent_state = context
         .state()
@@ -219,17 +219,22 @@ fn reduce_commit_entry(
     let action = action_wrapper.action();
     let (entry, maybe_link_update_delete, provenances) = unwrap_to!(action => Action::Commit);
 
-    let result = create_new_chain_header(&entry, context.clone(), &maybe_link_update_delete, provenances)
-        .and_then(|chain_header| {
-            let storage = &state.chain_store.content_storage().clone();
-            storage.write().unwrap().add(entry)?;
-            storage.write().unwrap().add(&chain_header)?;
-            Ok((chain_header, entry.address()))
-        })
-        .and_then(|(chain_header, address)| {
-            state.top_chain_header = Some(chain_header);
-            Ok(address)
-        });
+    let result = create_new_chain_header(
+        &entry,
+        context.clone(),
+        &maybe_link_update_delete,
+        provenances,
+    )
+    .and_then(|chain_header| {
+        let storage = &state.chain_store.content_storage().clone();
+        storage.write().unwrap().add(entry)?;
+        storage.write().unwrap().add(&chain_header)?;
+        Ok((chain_header, entry.address()))
+    })
+    .and_then(|(chain_header, address)| {
+        state.top_chain_header = Some(chain_header);
+        Ok(address)
+    });
 
     state
         .actions
@@ -413,8 +418,8 @@ pub mod tests {
             .unwrap()
             .set_state(Arc::new(RwLock::new(state)));
 
-        let header = create_new_chain_header(&test_entry(), context.clone(), &None,
-                                             &vec![]).unwrap();
+        let header =
+            create_new_chain_header(&test_entry(), context.clone(), &None, &vec![]).unwrap();
         println!("{:?}", header);
         assert_eq!(
             header,

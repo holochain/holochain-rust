@@ -20,8 +20,8 @@ use holochain_core_types::{
     entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
     link::Link,
-    validation::ValidationPackage,
     signature::Provenance,
+    validation::ValidationPackage,
 };
 use holochain_net::{
     connection::json_protocol::{

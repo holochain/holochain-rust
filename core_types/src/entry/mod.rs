@@ -23,9 +23,9 @@ use json::{default_to_json, default_try_from_json, JsonString, RawString};
 use link::{link_data::LinkData, link_list::LinkList};
 use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
+use signature::Provenance;
 use snowflake;
 use std::convert::TryFrom;
-use signature::Provenance;
 
 pub type AppEntryValue = JsonString;
 
@@ -80,15 +80,12 @@ pub enum Entry {
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct EntryWithProvenance {
     entry: Entry,
-    provenances: Vec<Provenance>
+    provenances: Vec<Provenance>,
 }
 
 impl EntryWithProvenance {
-    pub fn new(entry:Entry, provenances:Vec<Provenance>) -> Self {
-       EntryWithProvenance {
-           entry,
-           provenances
-       }
+    pub fn new(entry: Entry, provenances: Vec<Provenance>) -> Self {
+        EntryWithProvenance { entry, provenances }
     }
 
     pub fn entry(&self) -> Entry {

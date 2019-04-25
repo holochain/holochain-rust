@@ -6,7 +6,9 @@ use crate::{
     nucleus::actions::build_validation_package::build_validation_package,
 };
 
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError, signature::Provenance};
+use holochain_core_types::{
+    cas::content::Address, entry::Entry, error::HolochainError, signature::Provenance,
+};
 use std::{convert::TryFrom, sync::Arc, vec::Vec};
 
 fn get_entry(address: &Address, context: &Arc<Context>) -> Result<Entry, HolochainError> {
@@ -31,10 +33,15 @@ pub async fn respond_validation_package_request(
     msg_id: String,
     requested_entry_address: Address,
     context: Arc<Context>,
-    provenances: &Vec<Provenance>
+    provenances: &Vec<Provenance>,
 ) {
     let maybe_validation_package = match get_entry(&requested_entry_address, &context) {
-        Ok(entry) => await!(build_validation_package(&entry, context.clone(), provenances)).ok(),
+        Ok(entry) => await!(build_validation_package(
+            &entry,
+            context.clone(),
+            provenances
+        ))
+        .ok(),
         Err(_) => None,
     };
 

@@ -178,7 +178,10 @@ impl Waiter {
                         }
                     },
 
-                    (Some(checker), Action::Commit((committed_entry, link_update_delete, _provenances))) => {
+                    (
+                        Some(checker),
+                        Action::Commit((committed_entry, link_update_delete, _provenances)),
+                    ) => {
                         // Pair every `Commit` with N `Hold`s of that same entry, regardless of type
                         // TODO: is there a possiblity that this can get messed up if the same
                         // entry is committed multiple times?

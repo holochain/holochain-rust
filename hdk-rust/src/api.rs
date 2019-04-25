@@ -1,4 +1,3 @@
-
 //! developers! Detailed references and examples can be found here for how to use the
 //! HDK exposed functions to access powerful Holochain functions.
 
@@ -639,10 +638,10 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 
 // TODO document (copy / mutate the above)
 pub fn commit_entry_with_provenance(
-    entry_with_provenance: &EntryWithProvenance) -> ZomeApiResult<Address> {
+    entry_with_provenance: &EntryWithProvenance,
+) -> ZomeApiResult<Address> {
     Dispatch::CommitEntryWithProvenance.with_input(entry_with_provenance)
 }
-
 
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
 /// the specified address.

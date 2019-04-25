@@ -53,6 +53,7 @@ lazy_static! {
         basic_workflows::retrack_test,
         basic_workflows::dht_test,
         basic_workflows::meta_test,
+        basic_workflows::no_meta_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,
@@ -66,6 +67,7 @@ lazy_static! {
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
         three_workflows::setup_three_nodes,
         three_workflows::hold_and_publish_test,
+        three_workflows::publish_entry_stress_test,
     ];
     pub static ref MULTI_NODES_TEST_FNS: Vec<MultiNodesTestFn> = vec![
     ];

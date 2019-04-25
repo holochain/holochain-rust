@@ -48,12 +48,13 @@ pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
 /// but with key generated from a static/deterministic mock seed.
 /// This enables unit testing of core code that creates signatures without
 /// depending on the conductor or actual key files.
-pub fn mock_signer(payload: String, agent_id: &AgentId) -> String {
-    TEST_AGENT_KEYBUNDLES
+pub fn mock_signer(payload: String, agent_id: &AgentId) -> String { TEST_AGENT_KEYBUNDLES
         .lock()
         .unwrap()
         .get(&agent_id.address())
-        .expect("Test agent keys need to be registered first")
+        .expect(format!(
+                "Agent {:?} not found in mock registry. \
+                 Test agent keys need to be registered first.", agent_id))
         .lock()
         .map(|mut keybundle| {
             // Convert payload string into a SecBuf

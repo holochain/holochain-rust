@@ -108,6 +108,9 @@ pub async fn call_zome_function(
             .expect("action channel to be open in reducer");
     });
 
+    context.log(format!("debug/actions/call_zome_fn: awaiting for \
+                 future call result of {:?}", zome_call));
+
     await!(CallResultFuture {
         context: context.clone(),
         zome_call,

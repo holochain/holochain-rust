@@ -144,6 +144,27 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+scenario2.runTape('create_post_countersigned', async (t, { alice, bob }) => {
+
+  const content = "Holo world"
+  const in_reply_to = null
+
+  const message = "Hello everyone! Time to start the secret meeting";
+
+  const SignResult = bob.call("converse", "sign_message", { key_id:"", message: message });
+    t.deepEqual(SignResult, { Ok: 'YVystBCmNEJGW/91bg43cUUybbtiElex0B+QWYy+PlB+nE3W8TThYGE4QzuUexvzkGqSutV04dSN8oyZxTJiBg==' });
+
+  const provenance = [bob.agentId, SignResult.Ok];
+
+  const params = { content, in_reply_to, provenance }
+  const result = alice.call("blog", "create_post_countersigned", params)
+
+  t.ok(result.Ok)
+  t.notOk(result.Err)
+  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+})
+
+
 scenario1.runTape('create_memo', async (t, { alice }) => {
 
   const content = "Reminder: Buy some HOT."

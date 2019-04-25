@@ -2,8 +2,9 @@ use hdk::{
     self,
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
-        cas::content::Address, dna::capabilities::CapabilityRequest, entry::Entry,
+        cas::content::Address, dna::capabilities::CapabilityRequest, entry::{Entry, EntryWithProvenance},
         error::HolochainError, json::JsonString,
+        signature::Provenance
     },
     holochain_wasm_utils::api_serialization::{
         get_entry::{
@@ -119,6 +120,28 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
 
     Ok(address)
 }
+
+pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Address>,
+                                        counter_signature: Provenance) -> ZomeApiResult<Address> {
+
+    let entry = post_entry(content);
+
+    let entry_with_provenance =
+        EntryWithProvenance::new(entry, vec![counter_signature]);
+
+    let address = hdk::commit_entry_with_provenance(&entry_with_provenance)?;
+
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
+
+    if let Some(in_reply_to_address) = in_reply_to {
+        // return with Err if in_reply_to_address points to missing entry
+        hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+    }
+
+    Ok(address)
+}
+
 
 pub fn handle_create_post_with_agent(agent_id:Address,content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;

@@ -98,6 +98,17 @@ define_zome! {
             inputs: |content: String, in_reply_to: Option<Address>, counter_signature:Provenance|,
             outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_create_post_countersigned
+
+        request_post_grant: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Option<Address>>|,
+            handler: blog::handle_request_post_grant
+        }
+
+        get_grants: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Vec<Address>>|,
+            handler: blog::handle_get_grants
         }
 
         create_memo: {
@@ -129,7 +140,7 @@ define_zome! {
             outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
             handler: blog::handle_posts_by_agent
         }
-        
+
         authored_posts_with_sources : {
             inputs : |agent : Address|,
             outputs : | post_hashes : ZomeApiResult<GetLinksResult>|,
@@ -211,6 +222,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, create_post_countersigned, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts,memo_address,get_memo,my_memos,create_memo,my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post,get_history_post,get_post_with_options,get_post_with_options_latest,authored_posts_with_sources,create_post_with_agent]
+        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, create_post_countersigned, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, memo_address, get_memo, my_memos, create_memo, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post, get_history_post, get_post_with_options, get_post_with_options_latest, authored_posts_with_sources, create_post_with_agent, request_post_grant,get_grants]
     }
 }

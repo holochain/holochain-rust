@@ -73,7 +73,9 @@ scenario1.runTape('show_env', async (t, { alice }) => {
   t.equal(result.Ok.dna_name, "HDK-spec-rust")
   t.equal(result.Ok.agent_address, alice.agentId)
   t.equal(result.Ok.agent_id, '{"nick":"alice","pub_sign_key":"' + alice.agentId + '"}')
-    t.deepEqual(result.Ok.cap_request, { cap_token: 'QmcopsAuC23FKVY1nSKHTzKXyRUXLbCtd7bG5PLYxLWCWk', provenance: [ alice.agentId, '+78GKy9y3laBbCNK1ajrj2rYVV3lBOxzGAZuuLDqXL2MLJUbMaB4lv7ut/UPWSoEeHx7OuXrTFXfu+PihtMMBQ==' ] }
+
+  // don't compare the public token because it changes every time we change the dna.
+  t.deepEqual(result.Ok.cap_request.provenance, [ alice.agentId, '+78GKy9y3laBbCNK1ajrj2rYVV3lBOxzGAZuuLDqXL2MLJUbMaB4lv7ut/UPWSoEeHx7OuXrTFXfu+PihtMMBQ==' ]
 );
 
 })
@@ -652,4 +654,24 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
+})
+
+scenario2.runTape('request grant', async (t, { alice, bob }) => {
+
+    /*
+      This is not a complete test of requesting a grant because currently there
+      is no way in the test conductor to actually pass in the provenance of the
+      call.  That will be added when we convert the test framework to being built
+      on top of the rust conductor.   For now this is more a placeholder test, but
+      note that the value returned is actually the capbability token value.
+    */
+    const result = alice.call("blog", "request_post_grant", {})
+    t.ok(result.Ok)
+    t.notOk(result.Err)
+
+    const grants = alice.call("blog", "get_grants", {})
+    t.ok(grants.Ok)
+    t.notOk(grants.Err)
+
+    t.equal(result.Ok, grants.Ok[0])
 })

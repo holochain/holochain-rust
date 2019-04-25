@@ -49,6 +49,8 @@ pub async fn get_link_result_workflow<'a>(
                                         Ok(LinksResult {
                                             address: link.clone(),
                                             headers,
+                                            crud_status : link_entry.entry_with_meta.crud_status,
+                                            crud_link : link_entry.entry_with_meta.maybe_link_update_delete
                                         })
                                     })
                                 })

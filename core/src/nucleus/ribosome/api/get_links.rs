@@ -104,14 +104,14 @@ pub mod tests {
 
         let expected_1 = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"crud_status\":\"live\",\"crud_link\":null}},{{\"address\":\"{}\",\"headers\":[],\"crud_status\":\"live\",\"crud_link\":null}}]}}","error":"null"}}"#,
                 entry_addresses[1], entry_addresses[2]
             ) + "\u{0}"),
         );
 
         let expected_2 = JsonString::from_json(
             &(format!(
-               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
+               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"crud_status\":\"live\",\"crud_link\":null}},{{\"address\":\"{}\",\"headers\":[],\"crud_status\":\"live\",\"crud_link\":null}}]}}","error":"null"}}"#,
                 entry_addresses[2], entry_addresses[1]
             ) + "\u{0}"),
         );

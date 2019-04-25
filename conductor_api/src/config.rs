@@ -136,7 +136,11 @@ impl Configuration {
     pub fn check_consistency<'a>(&'a self) -> Result<(), String> {
         detect_dupes("agent", self.agents.iter().map(|c| &c.id))?;
         detect_dupes("dna", self.dnas.iter().map(|c| &c.id))?;
+
         detect_dupes("instance", self.instances.iter().map(|c| &c.id))?;
+        self.check_instances_storage()?;
+
+
         detect_dupes("interface", self.interfaces.iter().map(|c| &c.id))?;
 
         for ref instance in self.instances.iter() {
@@ -349,6 +353,34 @@ impl Configuration {
             .collect();
 
         self
+    }
+
+    /// This function checks if there is duplicated file storage from the instances section of a provided TOML configuration
+    /// file. For efficiency purposes, we short-circuit on the first encountered of duplicated
+    /// values.
+    fn check_instances_storage(&self) -> Result<(), String> {
+        let storage_paths: Vec<&str> = self.instances.iter()
+            .filter_map(|stg_config|
+                 {
+                     match stg_config.storage {
+                        StorageConfiguration::File{ref path} | StorageConfiguration::Pickle {ref path} => Some(path.as_str()),
+                        _ => None
+                     }
+                 })
+            .collect();
+
+        // Here we don't use the already implemented 'detect_dupes' function because we don't need
+        // to keep track of all the duplicated values of storage instances. But instead we use the
+        // return value of 'HashSet.insert()' conbined with the short-circuiting capability of 'iter().all()'
+        // so we don't iterate on all the possible value once we found duplicated storage entry.
+        let mut path_set: HashSet<&str> = HashSet::new();
+        let has_uniq_values = storage_paths.iter()
+            .all(|&x| path_set.insert(x));
+
+        if !has_uniq_values {
+            Err(String::from("Forbidden duplicated file storage value encountered.\
+                             Please fix this in the 'TOML Conductor configuration file'."))
+        } else { Ok(()) }
     }
 }
 
@@ -1202,5 +1234,90 @@ pub mod tests {
                     .to_string()
             )
         );
+    }
+
+    #[test]
+    fn test_check_instances_storage() -> Result<(), String> {
+        let toml = r#"
+        [[agents]]
+        id = "test agent 1"
+        keystore_file = "holo_tester.key"
+        name = "Holo Tester 1"
+        public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+        [[agents]]
+        id = "test agent 2"
+        keystore_file = "holo_tester.key"
+        name = "Holo Tester 2"
+        public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+
+        [[instances]]
+        agent = "test agent 1"
+        dna = "app spec rust"
+        id = "app spec instance 1"
+
+            [instances.storage]
+            path = "example-config/tmp-storage-1"
+            type = "file"
+
+        [[instances]]
+        agent = "test agent 2"
+        dna = "app spec rust"
+        id = "app spec instance 2"
+
+            [instances.storage]
+            path = "example-config/tmp-storage-2"
+            type = "file"
+        "#;
+
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+
+        assert_eq!(
+            config.check_instances_storage(),
+            Ok(())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_check_instances_storage_err() -> Result<(), String> {
+
+        // Here we have a forbidden duplicated 'instances.storage'
+        let toml = r#"
+        [[agents]]
+        id = "test agent 1"
+        keystore_file = "holo_tester.key"
+        name = "Holo Tester 1"
+        public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+        [[instances]]
+        agent = "test agent 1"
+        dna = "app spec rust"
+        id = "app spec instance 1"
+
+            [instances.storage]
+            path = "forbidden-duplicated-storage-file-path"
+            type = "file"
+
+        [[instances]]
+        agent = "test agent 2"
+        dna = "app spec rust"
+        id = "app spec instance 2"
+
+            [instances.storage]
+            path = "forbidden-duplicated-storage-file-path"
+            type = "file"
+        "#;
+
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+
+        assert_eq!(
+            config.check_instances_storage(),
+            Err(String::from("Forbidden duplicated file storage value encountered.\
+                             Please fix this in the 'TOML Conductor configuration file'."))
+        );
+        Ok(())
     }
 }

@@ -17,7 +17,7 @@ const scenario1 = new Scenario([instanceAlice], { debugLog:true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
-/*scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
+scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
 
     const SignResult = bob.call("converse", "sign_message", { key_id:"", message: message });
@@ -528,7 +528,7 @@ scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
   t.ok(result.Err)
   console.log(result)
   t.equal(JSON.parse(result.Err.Internal).kind, "Timeout")
-})*/
+})
 
 scenario2.runTape('get_sources_from_link', async (t, { alice, bob }) => {
 
@@ -549,8 +549,8 @@ scenario2.runTape('get_sources_from_link', async (t, { alice, bob }) => {
     "agent" : bob.agentId
   });
 
-  t.equal(bob.agentId,bob_posts.Ok.links[0].link.result.Single.headers[0].provenances[0][0]);
-  t.equal(alice.agentId,alice_posts.Ok.links[0].link.result.Single.headers[0].provenances[0][0]);
+  t.equal(bob.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
+  t.equal(alice.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
 
 })
 
@@ -572,14 +572,14 @@ scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
     "agent" : alice.agentId
   });
 
-  t.equal(bob.agentId,alice_posts.Ok.links[0].link.result.Single.headers[0].provenances[0][0]);
-  t.equal(alice.agentId,alice_posts.Ok.links[0].link.result.Single.headers[1].provenances[0][0]);
-  t.equal(bob.agentId,bob_posts.Ok.links[0].link.result.Single.headerss[1].provenances[0][0]);
-  t.equal(alice.agentId,bob_posts.Ok.links[0].link.result.Single.headers[0].provenances[0][0]);
+  t.equal(bob.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
+  t.equal(alice.agentId,alice_posts.Ok.links[0].headers[1].provenances[0][0]);
+  t.equal(bob.agentId,bob_posts.Ok.links[0].headers[1].provenances[0][0]);
+  t.equal(alice.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
 
 })
 
-/*scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
+scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = null
@@ -595,9 +595,9 @@ scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
   t.equal(entry_value.content, content)
   t.equal(entry_value.date_created, "now")
 
-})*/
+})
 
-/*scenario1.runTape('get_post with non-existant address returns null', async (t, { alice }) => {
+scenario1.runTape('get_post with non-existant address returns null', async (t, { alice }) => {
 
   const post_address = "RANDOM"
   const params_get = { post_address }
@@ -608,9 +608,9 @@ scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
   // successfully discovered the entry does not exity
   const entry = result.Ok
   t.same(entry, null)
-})*/
+})
 
-/*scenario2.runTape('scenario test create & publish post -> get from other instance', async (t, { alice, bob }) => {
+scenario2.runTape('scenario test create & publish post -> get from other instance', async (t, { alice, bob }) => {
 
   const initialContent = "Holo world"
   const params = { content: initialContent, in_reply_to: null }
@@ -628,4 +628,4 @@ scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})*/
+})

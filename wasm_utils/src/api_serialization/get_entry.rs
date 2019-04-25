@@ -9,7 +9,7 @@ use holochain_core_types::{
 };
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq,Eq,Hash)]
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]
 pub enum StatusRequestKind {
     Initial,
     Latest,

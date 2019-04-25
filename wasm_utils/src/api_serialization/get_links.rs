@@ -1,5 +1,3 @@
-use crate::api_serialization::get_entry::{StatusRequestKind,GetEntryArgs,GetEntryResult,GetEntryResultType};
-
 use holochain_core_types::{
     cas::content::Address, chain_header::ChainHeader, error::HolochainError, json::*, time::Timeout,
 };
@@ -26,7 +24,6 @@ impl Default for LinksStatusRequestKind {
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Hash, Eq)]
 pub struct GetLinksOptions {
     pub status_request: LinksStatusRequestKind,
-    pub link_status_request : StatusRequestKind,
     pub headers: bool,
     pub timeout: Timeout,
 }
@@ -34,7 +31,6 @@ impl Default for GetLinksOptions {
     fn default() -> Self {
         GetLinksOptions {
             status_request: LinksStatusRequestKind::default(),
-            link_status_request : StatusRequestKind::default(),
             headers: false,
             timeout: Default::default(),
         }
@@ -43,7 +39,8 @@ impl Default for GetLinksOptions {
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]
 pub struct LinksResult {
-    pub link : GetEntryResult
+    pub address: Address,
+    pub headers: Vec<ChainHeader>,
 }
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]
@@ -56,25 +53,7 @@ impl GetLinksResult {
         GetLinksResult { links }
     }
 
-    pub fn addresses(self) -> Vec<Address>
-    {
-        let links = self
-                    .links
-                    .iter()
-                    .map(|s|{
-                        match s.link.result
-                        {
-                        GetEntryResultType::Single(ref single) => vec![single.clone().meta.map(|s|s.address).unwrap_or_default()],
-                        GetEntryResultType::All(ref multiple) => multiple.items.iter().map(|m|{
-                            m.clone().meta.map(|x|x.address).unwrap_or_default()
-                        }).collect()
-                        }
-                    })
-                    .flatten()
-                    .filter(|s| !s.to_string().is_empty())
-                    .collect();
-        links
-
+    pub fn addresses(&self) -> Vec<Address> {
+        self.links.iter().map(|s| s.address.clone()).collect()
     }
-
 }

@@ -67,8 +67,8 @@ link_zome_api! {
     /// commit_entry(entry_type: String, entry_value: String) -> Address
     "hc_commit_entry", CommitAppEntry, invoke_commit_app_entry;
 
-    /// Commit an app entry to source chain
-    /// commit_entry(entry_type: String, entry_value: String) -> Address
+    /// Commit an app entry with additional provenances to source chain
+    /// commit_entry_with_provenance(entry_type: String, entry_value: String, provenances: Vec<Provenace>) -> Address
     "hc_commit_entry_with_provenance", CommitAppEntryWithProvenance, invoke_commit_app_entry_with_provenance;
 
 

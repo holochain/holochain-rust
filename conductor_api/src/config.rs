@@ -372,7 +372,7 @@ impl Configuration {
         // Here we don't use the already implemented 'detect_dupes' function because we don't need
         // to keep track of all the duplicated values of storage instances. But instead we use the
         // return value of 'HashSet.insert()' conbined with the short-circuiting capability of 'iter().all()'
-        // so we don't iterate on all the possible value once we found duplicated storage entry.
+        // so we don't iterate on all the possible value once we found a duplicated storage entry.
         let mut path_set: HashSet<&str> = HashSet::new();
         let has_uniq_values = storage_paths.iter()
             .all(|&x| path_set.insert(x));

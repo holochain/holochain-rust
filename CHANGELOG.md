@@ -5,17 +5,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Adds hdk::grant_capability() for zome functions to be able to create [capability grant](doc/architecture/decisions/0017-capabilities.md)  [#1285](https://github.com/holochain/holochain-rust/pull/1285)
 
 ### Changed
+- changed JSON-RPC Zome call `params` key to `args` for clarity (due to confusion between JSON-RPC `params` and Holochain `params` keys): see [#1203](https://github.com/holochain/holochain-rust/pull/1203) and [#1271](https://github.com/holochain/holochain-rust/pull/1271)
 
 - refactored `shell.nix` into `holonix` directory for rationalized `nix-shell` commands and easier maintenance and clarity. [#1292](https://github.com/holochain/holochain-rust/pull/1292)
   - note: `hc-test` is now `hc-rust-test` and `hc-test-all` is now `hc-test`
 
 ### Deprecated
+- `params` Zome call argument deprecated in favor of `args`. [#1271](https://github.com/holochain/holochain-rust/pull/1271)
 
 ### Removed
 
 ### Fixed
+- Windows-only: Spawned `node.exe` process used by network module now closes properly on holochain termination [#1293](https://github.com/holochain/holochain-rust/pull/1293)   
 
 ### Security
 
@@ -27,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Config.bridge` added to Scenario API, allowing bridges to be configured [#1259]()https://github.com/holochain/holochain-rust/pull/1259
 
 - Adds CAPABILITY_REQ global for access from a zome function call to the capability request that was used to make the call. This is important for doing validation of provenance for a zome call that wants to create a [capability grant](doc/architecture/decisions/0017-capabilities.md). [#1273](https://github.com/holochain/holochain-rust/pull/1273)
+
 
 ### Changed
 
@@ -40,8 +45,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Fixed
-
-- Windows-only: Spawned `node.exe` process used by network module now closes properly on holochain termination [#1293](https://github.com/holochain/holochain-rust/pull/1293)   
 
 - Don't publish private zome entries [#1233](https://github.com/holochain/holochain-rust/pull/1233)
 

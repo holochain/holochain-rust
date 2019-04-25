@@ -399,16 +399,20 @@ impl Conductor {
         if self.config.network.is_none() {
             return P2pConfig::new_with_unique_memory_backend();
         }
-        // if there is a config then either we need to spawn a process and get the
-        // ipc_uri for it and save it for future calls to `load_config`
-        // or we use that uri value that was created from previous calls!
+        // if there is a config then either we need to spawn a process and get
+        // the ipc_uri for it and save it for future calls to `load_config` or
+        // we use a (non-empty) uri value that was created from previous calls!
         let net_config = self.config.network.clone().unwrap();
-        let uri = net_config.n3h_ipc_uri.clone().or_else(|| {
-            self.network_spawn = self.spawn_network().ok();
-            self.network_spawn
-                .as_ref()
-                .map(|spawn| spawn.ipc_binding.clone())
-        });
+        let uri = net_config
+            .n3h_ipc_uri
+            .clone()
+            .and_then(|v| if v == "" { None } else { Some(v) })
+            .or_else(|| {
+                self.network_spawn = self.spawn_network().ok();
+                self.network_spawn
+                    .as_ref()
+                    .map(|spawn| spawn.ipc_binding.clone())
+            });
 
         P2pConfig::new_ipc_uri(
             uri,

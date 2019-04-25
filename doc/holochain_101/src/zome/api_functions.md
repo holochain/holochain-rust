@@ -181,11 +181,11 @@ Sends a node-to-node message to the given agent. This works in conjunction with 
 
 ### Grant Capability
 
-Canonical name: `grant_capability`
+Canonical name: `commit_capability_grant`
 
 Creates a capability grant on the local chain for allowing access to zome functions.
 
-[View it in the Rust HDK](https://developer.holochain.org/api/0.0.7-alpha/hdk/api/fn.grant_capability.html)
+[View it in the Rust HDK](https://developer.holochain.org/api/0.0.7-alpha/hdk/api/fn.commit_capability_grant.html)
 
 ### Start Bundle
 

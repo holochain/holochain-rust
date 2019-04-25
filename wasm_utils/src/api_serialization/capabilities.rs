@@ -5,9 +5,9 @@ use holochain_core_types::{
     json::*,
 };
 
-// arguments required for calling grant_capability
+// arguments required for calling commit_capability_grant
 #[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
-pub struct GrantCapabilityArgs {
+pub struct CommitCapabilityGrantArgs {
     pub id: String,
     pub cap_type: CapabilityType,
     pub assignees: Option<Vec<Address>>,

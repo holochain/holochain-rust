@@ -116,7 +116,7 @@ pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
     if is_my_friend(addr.clone()) {
         let mut functions = BTreeMap::new();
         functions.insert("blog".to_string(), vec!["create_post".to_string()]);
-        Ok(Some(hdk::grant_capability(
+        Ok(Some(hdk::commit_capability_grant(
             "can_post",
             CapabilityType::Assigned,
             Some(vec![addr]),

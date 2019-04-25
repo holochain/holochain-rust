@@ -11,16 +11,16 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::capabilities::{
-    CommitCapabilityClaimArgs, GrantCapabilityArgs,
+    CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
-pub fn invoke_grant_capability(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+pub fn invoke_commit_capability_grant(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let args = match GrantCapabilityArgs::try_from(args_str.clone()) {
+    let args = match CommitCapabilityGrantArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         Err(..) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
@@ -70,15 +70,15 @@ pub mod tests {
         json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::capabilities::{
-        CommitCapabilityClaimArgs, GrantCapabilityArgs,
+        CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
     };
     use std::collections::BTreeMap;
 
     /// dummy args
-    pub fn test_grant_capability_args_bytes() -> Vec<u8> {
+    pub fn test_commit_capability_grant_args_bytes() -> Vec<u8> {
         let mut functions = BTreeMap::new();
         functions.insert("test_zome".to_string(), vec!["test_function".to_string()]);
-        let grant_args = GrantCapabilityArgs {
+        let grant_args = CommitCapabilityGrantArgs {
             id: "some_id".to_string(),
             cap_type: CapabilityType::Assigned,
             assignees: Some(vec![Address::from("fake address")]),
@@ -99,11 +99,11 @@ pub mod tests {
     }
 
     #[test]
-    /// test that we can round trip bytes through a grant_capability action and get the result from WASM
-    fn test_grant_capability_round_trip() {
+    /// test that we can round trip bytes through a commit_capability_grant action and get the result from WASM
+    fn test_commit_capability_grant_round_trip() {
         let (call_result, _) = test_zome_api_function(
-            ZomeApiFunction::GrantCapability.as_str(),
-            test_grant_capability_args_bytes(),
+            ZomeApiFunction::CommitCapabilityGrant.as_str(),
+            test_commit_capability_grant_args_bytes(),
         );
 
         assert_eq!(

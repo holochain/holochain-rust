@@ -197,7 +197,7 @@ pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 }
 
 #[no_mangle]
-pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 

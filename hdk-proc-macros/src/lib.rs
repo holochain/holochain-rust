@@ -17,7 +17,7 @@ mod zome_code_def;
 use crate::zome_code_def::ZomeCodeDef;
 
 /**
- * @brief Defines the #[zome] cacro to be used on a Rust module.
+ * @brief Defines the #[zome] macro to be used on a Rust module.
  * The contents of the module is processed into a ZomeCodeDef and then re-exported as wasm friendly code
  */
 #[proc_macro_attribute]

@@ -153,7 +153,7 @@ pub fn ipc_spawn(
             if libc::kill(child.id() as i32, libc::SIGTERM) == 0 {
                 libc::waitpid(child.id() as i32, std::ptr::null_mut(), 0);
                 kill_child(&real_pid);
-                return
+                return;
             }
         }
         match child.kill() {

@@ -1,7 +1,7 @@
 use constants::*;
 use holochain_net::{
     connection::{
-        json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
+        json_protocol::{ConnectData, JsonProtocol},
         net_connection::NetSend,
         NetResult,
     },
@@ -20,42 +20,21 @@ pub fn setup_three_nodes(
 ) -> NetResult<()> {
     // Send TrackDna message on all nodes
     // alex
-    alex.send(
-        JsonProtocol::TrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: ALEX_AGENT_ID.to_string(),
-        })
-        .into(),
-    )
-    .expect("Failed sending TrackDnaData on alex");
+    alex.track_dna().expect("Failed sending TrackDna on alex");
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     println!("self connected result 1: {:?}", connect_result_1);
     // billy
-    billy
-        .send(
-            JsonProtocol::TrackDna(TrackDnaData {
-                dna_address: DNA_ADDRESS.clone(),
-                agent_id: BILLY_AGENT_ID.to_string(),
-            })
-            .into(),
-        )
-        .expect("Failed sending TrackDnaData on billy");
+    billy.track_dna().expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     println!("self connected result 2: {:?}", connect_result_2);
     // camille
     camille
-        .send(
-            JsonProtocol::TrackDna(TrackDnaData {
-                dna_address: DNA_ADDRESS.clone(),
-                agent_id: CAMILLE_AGENT_ID.to_string(),
-            })
-            .into(),
-        )
-        .expect("Failed sending TrackDnaData on camille");
+        .track_dna()
+        .expect("Failed sending TrackDna on camille");
     let connect_result_3 = camille
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
@@ -232,7 +211,6 @@ pub fn hold_and_publish_test(
             { entry_data.request_id == fetch_entry.request_id }
         )))
     }
-
     let json = result.unwrap();
     log_i!("got result 1: {:?}", json);
     let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);

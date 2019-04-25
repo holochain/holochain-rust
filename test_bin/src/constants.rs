@@ -12,7 +12,9 @@ pub static META_CRUD_ATTRIBUTE: &'static str = "crud";
 pub static META_LINK_ATTRIBUTE: &'static str = "link__yay";
 
 lazy_static! {
-    pub static ref DNA_ADDRESS: Address = HashString::from("DUMMY_DNA_ADDRESS");
+    pub static ref DNA_ADDRESS: Address = HashString::from("DNA_A");
+    pub static ref DNA_ADDRESS_B: Address = HashString::from("DNA_B");
+    pub static ref DNA_ADDRESS_C: Address = HashString::from("DNA_C");
     pub static ref ENTRY_ADDRESS_1: Address = HashString::from("entry_addr_1");
     pub static ref ENTRY_ADDRESS_2: Address = HashString::from("entry_addr_2");
     pub static ref ENTRY_ADDRESS_3: Address = HashString::from("entry_addr_3");

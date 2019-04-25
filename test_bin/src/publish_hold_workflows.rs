@@ -98,7 +98,7 @@ pub fn publish_meta_list_test(
     // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     assert!(has_received);
-    // billy might receive HandleDhtStore
+    // billy might receive HandleFetchMeta
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
     // billy asks for reported published data.
     billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
@@ -212,7 +212,7 @@ pub fn double_publish_meta_list_test(
     // Should NOT receive a HandleFetchMeta request from network module
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     assert!(!has_received);
-    // billy might receive HandleDhtStore
+    // billy might receive HandleFetchMeta
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
     // billy asks for reported published data.
     billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
@@ -276,7 +276,7 @@ pub fn many_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     assert!(has_received);
 
-    // billy might receive HandleDhtStore
+    // billy might receive HandleFetchMeta
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
     log_d!("alex has_received done");
 
@@ -291,9 +291,9 @@ pub fn many_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
     log_d!("node has_received HandleFetchMeta 1 = {}", has_received);
 
     // Alex or billy should receive HandleFetchMeta request
-    let has_received = alex.wait_HandleFetchMeta_and_reply();
+    let mut has_received = alex.wait_HandleFetchMeta_and_reply();
     if !has_received {
-        billy.wait_HandleFetchMeta_and_reply();
+        has_received = billy.wait_HandleFetchMeta_and_reply();
     }
     log_d!("node has_received HandleFetchMeta 2 = {}", has_received);
 

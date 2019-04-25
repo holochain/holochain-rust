@@ -32,5 +32,7 @@ conductor_api/tmp-test/*
 tmp-test-conductor-config.toml
 tmp-*-conductor-config.toml
 
+app_spec_proc_macro/test/*
+
 Cargo.lock
 dist/**

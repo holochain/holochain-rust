@@ -12,8 +12,9 @@ rm -f dist/app_spec.dna.json
 hc package --output dist/app_spec.dna.json --strip-meta
 echo "DONE."
 echo "===================================================================================="
-echo "Running test.js in node"
+echo "Copying test from app_spec and running test.js in node"
 echo "------------------------------------------------------------------------------------"
+cp -rf ../app_spec/test ./test
 cd test
 npm install
 npm test

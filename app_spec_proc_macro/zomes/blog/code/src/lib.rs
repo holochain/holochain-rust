@@ -17,6 +17,7 @@ extern crate holochain_core_types_derive;
 
 pub mod blog;
 pub mod post;
+pub mod memo;
 
 use hdk::{
     error::ZomeApiResult,
@@ -36,6 +37,11 @@ pub mod blog {
     #[entry_def]
     pub fn post_entry_def() -> ValidatingEntryType {
         post::definition()
+    }
+
+    #[entry_def]
+    pub fn memo_entry_def() -> ValidatingEntryType {
+        memo::definition()
     }
 
     #[genesis]
@@ -81,6 +87,16 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
+    pub fn create_post_with_agent(agent_id: Address,content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
+        blog::handle_create_post_with_agent(agent_id, content, in_reply_to)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn create_memo(content: String) -> ZomeApiResult<Address> {
+        blog::handle_create_memo(content)
+    }
+
+    #[zome_fn("hc_public")]
     pub fn delete_post(content: String) -> ZomeApiResult<Address> {
         blog::handle_delete_post(content)
     }
@@ -106,6 +122,11 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
+    pub fn get_memo(memo_address: Address) -> ZomeApiResult<Option<Entry>> {
+        blog::handle_get_memo(memo_address)
+    }
+
+    #[zome_fn("hc_public")]
     pub fn get_initial_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
         blog::handle_get_initial_post(post_address)
     }
@@ -118,6 +139,26 @@ pub mod blog {
     #[zome_fn("hc_public")]
     pub fn my_posts() -> ZomeApiResult<GetLinksResult> {
         blog::handle_my_posts()
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn my_memos() -> ZomeApiResult<Vec<Address>> {
+        blog::handle_my_memos()
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn request_post_grant() -> ZomeApiResult<Option<Address>> {
+        blog::handle_request_post_grant()
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_grants() -> ZomeApiResult<Vec<Address>> {
+        blog::handle_get_grants()
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn memo_address(content: String) -> ZomeApiResult<Address> {
+        blog::handle_memo_address(content)
     }
 
     #[zome_fn("hc_public")]
@@ -148,6 +189,11 @@ pub mod blog {
     #[zome_fn("hc_public")]
     pub fn my_recommended_posts() -> ZomeApiResult<GetLinksResult> {
         blog::handle_my_recommended_posts()
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn authored_posts_with_sources(agent: Address) -> ZomeApiResult<GetLinksResult> {
+        blog::handle_my_posts_get_my_sources(agent)
     }
 
 }

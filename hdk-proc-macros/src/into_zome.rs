@@ -144,7 +144,7 @@ impl IntoZome for syn::ItemMod {
         funcs_iter(self)
             .filter(is_tagged_with(ENTRY_DEF_ATTRIBUTE))
             .fold(Vec::new(), |mut acc, mut func| {
-                // drop all attributes on the fn. This may cause problems
+                // TODO: drop all attributes on the fn. This may cause problems
                 // and really should only drop the ENTRY_DEF_ATTRIBUTE
                 func.attrs = Vec::new();
                 acc.push(func);

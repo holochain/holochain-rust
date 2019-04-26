@@ -656,8 +656,8 @@ impl ConductorApiBuilder {
                 }) // Option<Result<_, _>>
                 .transpose()?; // Result<Option<_>, _>
 
-            conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;
-            Ok(json!({"success": true}))
+            let agent_id = conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;
+            Ok(json!({"agentId": agent_id}))
         });
 
         self.io.add_method("admin/agent/remove", move |params| {

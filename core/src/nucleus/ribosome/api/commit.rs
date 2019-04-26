@@ -45,7 +45,6 @@ pub fn invoke_commit_app_entry_with_provenance(
     args: &RuntimeArgs,
 ) -> ZomeApiResult {
     let context = runtime.context()?;
-    context.log("debug/zome: invoke_commit_app_entry_with_provenance started.");
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let entry_with_provenance = match EntryWithProvenance::try_from(args_str.clone()) {
@@ -68,7 +67,6 @@ pub fn invoke_commit_app_entry_with_provenance(
         &entry_with_provenance.provenances(),
     ));
 
-    context.log("debug/zome: invoke_commit_app_entry_with_provenance finished.");
     runtime.store_result(task_result)
 }
 

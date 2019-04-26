@@ -1,6 +1,6 @@
 use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, error::HolochainError, json::*, time::Timeout,
-    crud_status::CrudStatus
+    cas::content::Address, chain_header::ChainHeader, crud_status::CrudStatus,
+    error::HolochainError, json::*, time::Timeout,
 };
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
@@ -42,8 +42,8 @@ impl Default for GetLinksOptions {
 pub struct LinksResult {
     pub address: Address,
     pub headers: Vec<ChainHeader>,
-    pub crud_status : CrudStatus,
-    pub crud_link : Option<Address>
+    pub crud_status: CrudStatus,
+    pub crud_link: Option<Address>,
 }
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]

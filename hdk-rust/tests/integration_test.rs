@@ -22,6 +22,7 @@ use holochain_core::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
+    crud_status::CrudStatus,
     dna::{
         entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
@@ -34,7 +35,6 @@ use holochain_core_types::{
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     hash::HashString,
     json::JsonString,
-    crud_status::CrudStatus
 };
 #[cfg(not(windows))]
 use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error::CoreError};
@@ -615,14 +615,14 @@ fn can_roundtrip_links() {
         LinksResult {
             address: entry_address_2.clone(),
             headers: Vec::new(),
-            crud_status : CrudStatus::Live,
-            crud_link : None
+            crud_status: CrudStatus::Live,
+            crud_link: None,
         },
         LinksResult {
             address: entry_address_3.clone(),
             headers: Vec::new(),
-            crud_status : CrudStatus::Live,
-            crud_link : None
+            crud_status: CrudStatus::Live,
+            crud_link: None,
         },
     ]));
     let expected_links = JsonString::from(expected_links);
@@ -635,14 +635,14 @@ fn can_roundtrip_links() {
             LinksResult {
                 address: entry_address_3.clone(),
                 headers: Vec::new(),
-                crud_status : CrudStatus::Live,
-                crud_link : None
+                crud_status: CrudStatus::Live,
+                crud_link: None,
             },
             LinksResult {
                 address: entry_address_2.clone(),
                 headers: Vec::new(),
-                crud_status : CrudStatus::Live,
-                crud_link : None
+                crud_status: CrudStatus::Live,
+                crud_link: None,
             },
         ]));
     let expected_links_reversed = JsonString::from(expected_links_reversed);

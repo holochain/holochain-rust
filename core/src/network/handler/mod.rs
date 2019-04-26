@@ -184,7 +184,32 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 // Just republish everything when a new person comes on-line!!
                 republish_all_public_chain_entries(&context);
             }
-            _ => {}
+            JsonProtocol::HandleGetHoldingEntryList(entries) => {
+                context.log(format!("HandleGetHoldingEntryList: {:?}", entries))
+            }
+            JsonProtocol::HandleGetHoldingEntryListResult(entries) => {
+                context.log(format!("HandleGetHoldingEntryListResult: {:?}", entries))
+            }
+            JsonProtocol::HandleGetPublishingEntryList(entries) => {
+                context.log(format!("HandleGetPublishingEntryList: {:?}", entries))
+            }
+            JsonProtocol::HandleGetPublishingEntryListResult(entries) => {
+                context.log(format!("HandleGetPublishingEntryListResult: {:?}", entries))
+            }
+            JsonProtocol::HandleGetPublishingMetaList(meta) => {
+                context.log(format!("HandleGetPublishingMetaList: {:?}", meta))
+            }
+            JsonProtocol::HandleGetPublishingMetaListResult(meta) => {
+                context.log(format!("HandleGetPublishingMetaListResult: {:?}", meta))
+            }
+            JsonProtocol::HandleGetHoldingMetaList(meta) => {
+                context.log(format!("HandleGetHoldingMetaList: {:?}", meta))
+            }
+            JsonProtocol::HandleGetHoldingMetaListResult(meta) => {
+                context.log(format!("HandleGetHoldingMetaListResult: {:?}", meta))
+            }
+            JsonProtocol
+           _ => {}
         }
         Ok(())
     })

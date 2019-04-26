@@ -7,7 +7,7 @@ use holochain_core_types::{
     dna::capabilities::CapabilityRequest,
     entry::{
         cap_entries::{CapFunctions, CapabilityType},
-        Entry, EntryWithProvenance
+        Entry, EntryWithProvenance,
     },
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
     signature::Provenance,

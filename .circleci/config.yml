@@ -62,11 +62,11 @@ jobs:
           exit 1
         fi
 
-  scaffold-tests:
-    docker:
-    - image: holochain/holochain-rust:latest
-    resource_class: xlarge
-    steps:
+ scaffold-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
     - checkout
 
     - run:

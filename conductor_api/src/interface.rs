@@ -423,9 +423,10 @@ impl ConductorApiBuilder {
     ///     Params:
     ///     * `id`: Handle of this agent configuration as used in the config / other function calls
     ///     * `name`: Nickname of this agent configuration
-    ///     * `public_address`: Public part of this agents key. Has to match the private key in the
-    ///         given key file.
-    ///     * `keystore_file`: Local path to the file that holds this agent configuration's private key
+    ///     * `holo_remote_key`: [Option<String>] Create this agent from an existing keypair generated externally. Public key is passed as param.
+    ///         All signing calls will be redirected externally via the wormhole websocket.
+    ///         If this param is not provided the key generation will be handled by the conductor and signing done internally.
+    ///     Returns the agent public key
     ///
     ///  * `admin/agent/remove`
     ///     Remove an agent from the conductor config.

@@ -140,7 +140,6 @@ impl Configuration {
         detect_dupes("instance", self.instances.iter().map(|c| &c.id))?;
         self.check_instances_storage()?;
 
-
         detect_dupes("interface", self.interfaces.iter().map(|c| &c.id))?;
 
         for ref instance in self.instances.iter() {
@@ -355,32 +354,36 @@ impl Configuration {
         self
     }
 
-    /// This function checks if there is duplicated file storage from the instances section of a provided TOML configuration
-    /// file. For efficiency purposes, we short-circuit on the first encountered of duplicated
-    /// values.
+    /// This function checks if there is duplicated file storage from the instances section of a provided
+    /// TOML configuration file. For efficiency purposes, we short-circuit on the first encounter of a
+    /// duplicated values.
     fn check_instances_storage(&self) -> Result<(), String> {
-        let storage_paths: Vec<&str> = self.instances.iter()
-            .filter_map(|stg_config|
-                 {
-                     match stg_config.storage {
-                        StorageConfiguration::File{ref path} | StorageConfiguration::Pickle {ref path} => Some(path.as_str()),
-                        _ => None
-                     }
-                 })
+        let storage_paths: Vec<&str> = self
+            .instances
+            .iter()
+            .filter_map(|stg_config| match stg_config.storage {
+                StorageConfiguration::File { ref path }
+                | StorageConfiguration::Pickle { ref path } => Some(path.as_str()),
+                _ => None,
+            })
             .collect();
 
         // Here we don't use the already implemented 'detect_dupes' function because we don't need
         // to keep track of all the duplicated values of storage instances. But instead we use the
-        // return value of 'HashSet.insert()' conbined with the short-circuiting capability of 'iter().all()'
-        // so we don't iterate on all the possible value once we found a duplicated storage entry.
+        // return value of 'HashSet.insert()' conbined with the short-circuiting propiety of
+        // 'iter().all()' so we don't iterate on all the possible value once we found a duplicated
+        // storage entry.
         let mut path_set: HashSet<&str> = HashSet::new();
-        let has_uniq_values = storage_paths.iter()
-            .all(|&x| path_set.insert(x));
+        let has_uniq_values = storage_paths.iter().all(|&x| path_set.insert(x));
 
         if !has_uniq_values {
-            Err(String::from("Forbidden duplicated file storage value encountered.\
-                             Please fix this in the 'TOML Conductor configuration file'."))
-        } else { Ok(()) }
+            Err(String::from(
+                "Forbidden duplicated file storage value encountered.\
+                 Please fix this in the 'TOML Conductor configuration file'.",
+            ))
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -1273,16 +1276,12 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
 
-        assert_eq!(
-            config.check_instances_storage(),
-            Ok(())
-        );
+        assert_eq!(config.check_instances_storage(), Ok(()));
         Ok(())
     }
 
     #[test]
     fn test_check_instances_storage_err() -> Result<(), String> {
-
         // Here we have a forbidden duplicated 'instances.storage'
         let toml = r#"
         [[agents]]
@@ -1315,8 +1314,10 @@ pub mod tests {
 
         assert_eq!(
             config.check_instances_storage(),
-            Err(String::from("Forbidden duplicated file storage value encountered.\
-                             Please fix this in the 'TOML Conductor configuration file'."))
+            Err(String::from(
+                "Forbidden duplicated file storage value encountered.\
+                 Please fix this in the 'TOML Conductor configuration file'."
+            ))
         );
         Ok(())
     }

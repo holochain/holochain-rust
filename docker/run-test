@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-./docker/run nix-shell --run 'hc-build-wasm && hc-test'
+# runs the basic rust tests inside docker
+./docker/run nix-shell --run hc-rust-test

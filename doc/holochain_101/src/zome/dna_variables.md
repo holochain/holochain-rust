@@ -12,3 +12,4 @@ For the Rust `hdk`, [see here](https://developer.holochain.org/api/0.0.7-alpha/h
 | AGENT_ADDRESS | The address (constructed from the public key) of this agent. |
 | AGENT_INITIAL_HASH | The hash of the first identity entry on the local chain. |
 | AGENT_LATEST_HASH | The hash of the most recent identity entry that has been committed to the local chain. |
+| CAPABILITY_REQ | The capability request that was used to run the zome call |

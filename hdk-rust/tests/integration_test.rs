@@ -30,14 +30,14 @@ use holochain_core_types::{
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
-        Entry,
+        Entry,EntryWithMeta
     },
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     hash::HashString,
     json::JsonString,
 };
 #[cfg(not(windows))]
-use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error::CoreError};
+use holochain_core_types::{error::CoreError};
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},

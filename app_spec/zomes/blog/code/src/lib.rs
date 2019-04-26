@@ -98,6 +98,7 @@ define_zome! {
             inputs: |content: String, in_reply_to: Option<Address>, counter_signature:Provenance|,
             outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_create_post_countersigned
+        }
 
         request_post_grant: {
             inputs: | |,

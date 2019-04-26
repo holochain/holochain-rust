@@ -52,8 +52,15 @@ impl P2pNetwork {
                 Ok(Box::new(InMemoryWorker::new(h, &backend_config)?) as Box<NetWorker>)
             }),
         };
-        // Create NetConnectionThread with appropriate worker factory
-        let connection = NetConnectionThread::new(handler, worker_factory, None)?;
+        // Create NetConnectionThread with appropriate worker factory.  Indicate *what*
+        // configuration failed to produce a connection.
+        let connection = NetConnectionThread::new(handler, worker_factory, None).map_err(|e| {
+            format_err!(
+                "Failed to obtain a connection to a p2p network module w/ config: {}: {}",
+                p2p_config.as_str(),
+                e
+            )
+        })?;
         if let P2pBackendKind::IPC = p2p_config.backend_kind {
             // TODO: this is a hack until Core takes in account the 'P2pReady' message sent by the network module
             // see: https://realtimeboard.com/app/board/o9J_kyiXmFs=/?moveToWidget=3074457346457995629

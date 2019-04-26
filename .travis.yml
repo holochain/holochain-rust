@@ -12,11 +12,6 @@ _trusty_nodejs: &_trusty_nodejs
   node_js:
     - "8"
 
-_trusty_bash: &_trusty_bash
-  dist: trusty
-  # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-  language: bash
-
 _cargo_cache_template: &_cargo_cache_template
   # manually cache as we manually install rustup
   # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
@@ -181,26 +176,6 @@ jobs:
   # test builds are ordered from slowest to quickest
   # this allows us to keep walltimes down
   include:
-
-    - name: "C binding tests"
-      <<: *_trusty_bash
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          # faster to build this than manage a cache for the target
-          # - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-      script:
-        - make test_c_ci
-      before_cache:
-        - rm -rf $HOME/.cargo/registry/index
 
     # holochain-cli releases section
     - name: "CLI DEPLOY - 64 bit Linux"

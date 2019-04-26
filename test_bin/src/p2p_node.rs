@@ -6,7 +6,7 @@ use holochain_net::{
         json_protocol::{
             DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
             FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-            MessageData, MetaKey, MetaListData, MetaTuple,
+            MessageData, MetaKey, MetaListData, MetaTuple, TrackDnaData,
         },
         net_connection::NetSend,
         protocol::Protocol,
@@ -168,8 +168,40 @@ impl P2pNode {
     }
 }
 
-// Publish, hold
+// Track, publish, hold
 impl P2pNode {
+    pub fn track_dna(&mut self) -> NetResult<()> {
+        let dna_address = self.dna_address.clone();
+        self.track_extra_dna(&dna_address)
+    }
+
+    fn track_extra_dna(&mut self, dna_address: &Address) -> NetResult<()> {
+        let agent_id = self.agent_id.clone();
+        self.send(
+            JsonProtocol::TrackDna(TrackDnaData {
+                dna_address: dna_address.clone(),
+                agent_id,
+            })
+            .into(),
+        )
+    }
+
+    pub fn untrack_dna(&mut self) -> NetResult<()> {
+        let dna_address = self.dna_address.clone();
+        self.untrack_extra_dna(&dna_address)
+    }
+
+    fn untrack_extra_dna(&mut self, dna_address: &Address) -> NetResult<()> {
+        let agent_id = self.agent_id.clone();
+        self.send(
+            JsonProtocol::UntrackDna(TrackDnaData {
+                dna_address: dna_address.clone(),
+                agent_id,
+            })
+            .into(),
+        )
+    }
+
     pub fn author_entry(
         &mut self,
         entry_address: &Address,
@@ -633,7 +665,7 @@ impl P2pNode {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
                     self.logger.e(&format!(
-                        "({}) ###### Received parse error: {} {:?}",
+                        "({}) ###### Received parse error: {} | data = {:?}",
                         self.agent_id, s, data,
                     ));
                 }
@@ -682,7 +714,7 @@ impl P2pNode {
         let request = maybe_request.unwrap();
         // extract msg data
         let fetch_data = unwrap_to!(request => JsonProtocol::HandleFetchEntry);
-        // Alex responds: should send entry data back
+        // Respond
         self.reply_to_HandleFetchEntry(&fetch_data)
             .expect("Reply to HandleFetchEntry should work");
         true

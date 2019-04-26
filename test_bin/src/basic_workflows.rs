@@ -2,7 +2,7 @@ use constants::*;
 use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
-        json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
+        json_protocol::{ConnectData, JsonProtocol},
         net_connection::NetSend,
         NetResult,
     },
@@ -90,14 +90,7 @@ pub fn setup_one_node(
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on both nodes
-    alex.send(
-        JsonProtocol::TrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: ALEX_AGENT_ID.to_string(),
-        })
-        .into(),
-    )
-    .expect("Failed sending TrackDnaData on alex");
+    alex.track_dna().expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
@@ -147,28 +140,13 @@ pub fn setup_two_nodes(
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on both nodes
-    alex.send(
-        JsonProtocol::TrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: ALEX_AGENT_ID.to_string(),
-        })
-        .into(),
-    )
-    .expect("Failed sending TrackDnaData on alex");
+    alex.track_dna().expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
-    billy
-        .send(
-            JsonProtocol::TrackDna(TrackDnaData {
-                dna_address: DNA_ADDRESS.clone(),
-                agent_id: BILLY_AGENT_ID.to_string(),
-            })
-            .into(),
-        )
-        .expect("Failed sending TrackDnaData on billy");
+    billy.track_dna().expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
@@ -434,14 +412,8 @@ pub fn untrack_alex_test(
     setup_two_nodes(alex, billy, can_connect)?;
 
     // Send Untrack
-    alex.send(
-        JsonProtocol::UntrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: ALEX_AGENT_ID.to_string(),
-        })
-        .into(),
-    )
-    .expect("Failed sending UntrackDna message on alex");
+    alex.untrack_dna()
+        .expect("Failed sending UntrackDna message on alex");
 
     // Send a message from alex to billy
     let before_count = alex.count_recv_json_messages();
@@ -469,13 +441,7 @@ pub fn untrack_billy_test(
 
     // Send Untrack
     billy
-        .send(
-            JsonProtocol::UntrackDna(TrackDnaData {
-                dna_address: DNA_ADDRESS.clone(),
-                agent_id: BILLY_AGENT_ID.to_string(),
-            })
-            .into(),
-        )
+        .untrack_dna()
         .expect("Failed sending UntrackDna message on alex");
 
     // Making sure Untrack has been received
@@ -508,24 +474,12 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
 
     // Billy untracks DNA
     billy
-        .send(
-            JsonProtocol::UntrackDna(TrackDnaData {
-                dna_address: DNA_ADDRESS.clone(),
-                agent_id: BILLY_AGENT_ID.to_string(),
-            })
-            .into(),
-        )
+        .untrack_dna()
         .expect("Failed sending UntrackDna message on billy");
 
     // Alex untracks DNA
-    alex.send(
-        JsonProtocol::UntrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: ALEX_AGENT_ID.to_string(),
-        })
-        .into(),
-    )
-    .expect("Failed sending UntrackDna message on alex");
+    alex.untrack_dna()
+        .expect("Failed sending UntrackDna message on alex");
 
     // Making sure Untrack has been received
     // TODO: Have server reply with successResult
@@ -533,24 +487,9 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
     billy.listen(100);
 
     // Billy re-tracks DNA
-    billy
-        .send(
-            JsonProtocol::TrackDna(TrackDnaData {
-                dna_address: DNA_ADDRESS.clone(),
-                agent_id: BILLY_AGENT_ID.to_string(),
-            })
-            .into(),
-        )
-        .expect("Failed sending TrackDnaData on billy");
+    billy.track_dna().expect("Failed sending TrackDna on billy");
     // alex re-tracks DNA
-    alex.send(
-        JsonProtocol::TrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: ALEX_AGENT_ID.to_string(),
-        })
-        .into(),
-    )
-    .expect("Failed sending TrackDnaData on alex");
+    alex.track_dna().expect("Failed sending TrackDna on alex");
 
     // Making sure Track has been received
     // TODO: Have server reply with successResult
@@ -592,6 +531,84 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
         msg.content.to_string()
     );
 
+    // Done
+    Ok(())
+}
+
+// this is all debug code, no need to track code test coverage
+#[cfg_attr(tarpaulin, skip)]
+pub fn no_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+    // Setup
+    setup_two_nodes(alex, billy, can_connect)?;
+
+    // No Meta & No Entry
+    // ==================
+    // Billy asks for missing metadata on the network.
+    let fetch_meta = billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.to_string());
+
+    // Alex sends that data back to the network
+    alex.reply_to_HandleFetchMeta(&fetch_meta)?;
+
+    // Billy should receive an empty list
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .unwrap();
+
+    log_i!("got GetMetaResult: {:?}", result);
+    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
+    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
+    assert_eq!(meta_data.content_list.len(), 0);
+
+    // Entry but no Meta
+    // =================
+    // Alex publish data on the network
+    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+
+    // Billy asks for missing metadata on the network.
+    let fetch_meta = billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.to_string());
+
+    // Alex sends that data back to the network
+    alex.reply_to_HandleFetchMeta(&fetch_meta)?;
+
+    // Billy should receive an empty list
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .unwrap();
+
+    log_i!("got GetMetaResult: {:?}", result);
+    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
+    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
+    assert_eq!(meta_data.content_list.len(), 0);
+
+    // Meta but no Entry
+    // =================
+    // Alex publish data on the network
+    alex.author_meta(
+        &ENTRY_ADDRESS_2,
+        &META_LINK_ATTRIBUTE.to_string(),
+        &META_LINK_CONTENT_2,
+        true,
+    )?;
+
+    // Billy asks for metadata on the network.
+    let fetch_meta = billy.request_meta(ENTRY_ADDRESS_2.clone(), META_LINK_ATTRIBUTE.to_string());
+
+    // Alex sends that data back to the network
+    alex.reply_to_HandleFetchMeta(&fetch_meta)?;
+
+    // Billy should receive meta
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .unwrap();
+
+    log_i!("got GetMetaResult: {:?}", result);
+    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_2.clone());
+    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
+    assert_eq!(meta_data.content_list.len(), 1);
+    assert_eq!(meta_data.content_list[0], META_LINK_CONTENT_2.clone());
     // Done
     Ok(())
 }

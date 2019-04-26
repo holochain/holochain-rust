@@ -16,11 +16,10 @@
 //! extern crate tempfile;
 //! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
-//! use holochain_core::nucleus::ribosome::capabilities::CapabilityRequest;
 //! use holochain_core_types::{
 //!     cas::content::Address,
 //!     agent::AgentId,
-//!     dna::Dna,
+//!     dna::{Dna, capabilities::CapabilityRequest,},
 //!     json::JsonString,
 //!     signature::Signature,
 //! };
@@ -92,13 +91,17 @@ use holochain_core::{
     instance::Instance,
     nucleus::{
         call_zome_function,
-        ribosome::{capabilities::CapabilityRequest, run_dna, WasmCallData},
+        ribosome::{run_dna, WasmCallData},
         ZomeFnCall,
     },
     persister::{Persister, SimplePersister},
     state::State,
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    dna::{capabilities::CapabilityRequest, Dna},
+    error::HolochainError,
+    json::JsonString,
+};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -230,14 +233,12 @@ mod tests {
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::{
-            actions::call_zome_function::make_cap_request_for_call,
-            ribosome::capabilities::CapabilityRequest,
-        },
+        nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
+        dna::capabilities::CapabilityRequest,
         json::RawString,
     };
     use holochain_wasm_utils::wasm_target_dir;

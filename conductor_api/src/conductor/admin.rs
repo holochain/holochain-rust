@@ -6,6 +6,7 @@ use crate::{
     },
     dpki_instance::DpkiInstance,
     error::HolochainInstanceError,
+    key_loaders::mock_passphrase_manager,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
 use holochain_core_types::{
@@ -55,6 +56,7 @@ pub trait ConductorAdmin {
         id: String,
         name: String,
         holo_remote_key: Option<&str>,
+        passphrase: Option<String>,
     ) -> Result<String, HolochainError>;
     fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_bridge(&mut self, new_bridge: Bridge) -> Result<(), HolochainError>;
@@ -394,6 +396,7 @@ impl ConductorAdmin for Conductor {
         id: String,
         name: String,
         holo_remote_key: Option<&str>,
+        passphrase: Option<String>,
     ) -> Result<String, HolochainError> {
         let mut new_config = self.config.clone();
         if new_config.agents.iter().any(|i| i.id == id) {
@@ -429,7 +432,17 @@ impl ConductorAdmin for Conductor {
                 keystore.add_keybundle(PRIMARY_KEYBUNDLE_ID, &mut keybundle)?;
                 (keystore, keybundle.get_id())
             } else {
-                Keystore::new_standalone(self.passphrase_manager.clone(), self.hash_config.clone())?
+                if let Some(passphrase_str) = passphrase {
+                    Keystore::new_standalone(
+                        mock_passphrase_manager(passphrase_str.to_string()),
+                        self.hash_config.clone(),
+                    )?
+                } else {
+                    Keystore::new_standalone(
+                        self.passphrase_manager.clone(),
+                        self.hash_config.clone(),
+                    )?
+                }
             };
             let keystore_file = self
                 .instance_storage_dir_path()
@@ -1438,7 +1451,12 @@ type = 'websocket'"#,
         let test_name = "test_add_agent";
         let mut conductor = create_test_conductor(test_name, 3009);
 
-        let result = conductor.add_agent(String::from("new-agent"), String::from("Mr. New"), None);
+        let result = conductor.add_agent(
+            String::from("new-agent"),
+            String::from("Mr. New"),
+            None,
+            None,
+        );
         assert!(result.is_ok());
         let pub_key = result.unwrap();
 

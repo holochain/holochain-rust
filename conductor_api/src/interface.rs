@@ -426,6 +426,9 @@ impl ConductorApiBuilder {
     ///     * `holo_remote_key`: [Option<String>] Create this agent from an existing keypair generated externally. Public key is passed as param.
     ///         All signing calls will be redirected externally via the wormhole websocket.
     ///         If this param is not provided the key generation will be handled by the conductor and signing done internally.
+    ///     * `passphrase`: [Option<String>] A clear text passphrase with which to encrypt the key_store.
+    ///         This prevents the running conductor from prompting for a password.
+    ///         For test agents only. NOT SECURE!
     ///     Returns the agent public key
     ///
     ///  * `admin/agent/remove`
@@ -656,8 +659,10 @@ impl ConductorApiBuilder {
                 }) // Option<Result<_, _>>
                 .transpose()?; // Result<Option<_>, _>
 
-            let agent_id = conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;
-            Ok(json!({"agentId": agent_id}))
+            let passphrase = Self::get_as_string("passphrase", &params_map).ok();
+
+            let agent_id = conductor_call!(|c| c.add_agent(id, name, holo_remote_key, passphrase))?;
+            Ok(json!({ "agentId": agent_id }))
         });
 
         self.io.add_method("admin/agent/remove", move |params| {

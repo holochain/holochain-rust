@@ -220,6 +220,7 @@ workflows:
    - fmt
    - app-spec-tests
    - cli-tests
+   - scaffold-tests
 
  cold.ubuntu:
   jobs:

@@ -62,6 +62,29 @@ jobs:
           exit 1
         fi
 
+  scaffold-tests:
+    docker:
+    - image: holochain/holochain-rust:latest
+    resource_class: xlarge
+    steps:
+    - checkout
+
+    - run:
+        name: install cli
+        command: nix-shell --run hc-cli-install
+
+    - run:
+        name: install node conductor
+        command: nix-shell --run hc-conductor-node-install
+
+    - run:
+        name: scaffold tests
+        command: |
+          hc init my_app
+          cd my_app
+          HC_SCAFFOLD_VERSION='branch="$TRAVIS_BRANCH"' hc generate zomes/my_zome
+          hc test
+
  app-spec-tests:
   docker:
    - image: holochain/holochain-rust:latest

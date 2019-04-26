@@ -179,6 +179,14 @@ Sends a node-to-node message to the given agent. This works in conjunction with 
 
 [View it in the Rust HDK](https://developer.holochain.org/api/0.0.7-alpha/hdk/api/fn.send.html)
 
+### Grant Capability
+
+Canonical name: `grant_capability`
+
+Creates a capability grant on the local chain for allowing access to zome functions.
+
+[View it in the Rust HDK](https://developer.holochain.org/api/0.0.7-alpha/hdk/api/fn.grant_capability.html)
+
 ### Start Bundle
 
 Canonical name: `start_bundle`

@@ -18,7 +18,7 @@ pub enum LinksStatusRequestKind {
 }
 impl Default for LinksStatusRequestKind {
     fn default() -> Self {
-        LinksStatusRequestKind::Live
+        LinksStatusRequestKind::All
     }
 }
 

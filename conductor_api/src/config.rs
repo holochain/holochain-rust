@@ -982,7 +982,7 @@ pub mod tests {
     agent = "test agent"
         [instances.storage]
         type = "file"
-        path = "app_spec_storage"
+        path = "app1_spec_storage"
 
     [[instances]]
     id = "app2"
@@ -990,7 +990,7 @@ pub mod tests {
     agent = "test agent"
         [instances.storage]
         type = "file"
-        path = "app_spec_storage"
+        path = "app2_spec_storage"
 
     [[instances]]
     id = "app3"
@@ -998,7 +998,7 @@ pub mod tests {
     agent = "test agent"
         [instances.storage]
         type = "file"
-        path = "app_spec_storage"
+        path = "app3_spec_storage"
 
     {}
     "#, bridges)

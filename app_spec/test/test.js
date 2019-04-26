@@ -151,14 +151,16 @@ scenario2.runTape('create_post_countersigned', async (t, { alice, bob }) => {
   const content = "Holo world"
   const in_reply_to = null
 
-  const message = "Hello everyone! Time to start the secret meeting";
+  const address_params = { content }
+  const address_result = bob.call("blog", "post_address", address_params)
 
-  const SignResult = bob.call("converse", "sign_message", { key_id:"", message: message });
-    t.deepEqual(SignResult, { Ok: 'YVystBCmNEJGW/91bg43cUUybbtiElex0B+QWYy+PlB+nE3W8TThYGE4QzuUexvzkGqSutV04dSN8oyZxTJiBg==' });
+  t.ok(address_result.Ok)
+  const SignResult = bob.call("converse", "sign_message", { key_id:"", message: address_result.Ok });
+  t.ok(SignResult.Ok)
 
-  const provenance = [bob.agentId, SignResult.Ok];
+  const counter_signature = [bob.agentId, SignResult.Ok];
 
-  const params = { content, in_reply_to, provenance }
+  const params = { content, in_reply_to, counter_signature }
   const result = alice.call("blog", "create_post_countersigned", params)
 
   t.ok(result.Ok)

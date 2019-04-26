@@ -235,10 +235,11 @@ impl Instance {
             // @TODO: if needed for performance, could add a filter predicate here
             // to prevent emitting too many unneeded signals
             let signal = Signal::Internal(action);
-            tx.send(signal).unwrap_or_else(|_e| {
+            tx.send(signal).unwrap_or_else(|e| {
                 context.log(format!(
-                    "warn/reduce: Signal channel is closed! No signals can be sent."
-                ))
+                    "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                    e
+                ));
             })
         }
     }

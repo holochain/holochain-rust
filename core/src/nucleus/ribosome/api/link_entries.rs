@@ -6,6 +6,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
+    cas::content::{Address,AddressableContent}
 };
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
@@ -34,9 +35,9 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let link_add = LinkData::from_link(&link, LinkActionKind::ADD);
     let entry = Entry::LinkAdd(link_add);
     // Wait for future to be resolved
-    let result: Result<(), HolochainError> = context
+    let result: Result<Address, HolochainError> = context
         .block_on(author_entry(&entry, None, &context))
-        .map(|_| ());
+        .map(|_| entry.address().clone());
 
     runtime.store_result(result)
 }
@@ -55,10 +56,11 @@ pub mod tests {
         },
     };
     use holochain_core_types::{
-        cas::content::AddressableContent,
+        cas::content::{Address,AddressableContent},
         entry::{test_entry, Entry},
         error::{CoreError, ZomeApiInternalResult},
         json::JsonString,
+        hash::HashString
     };
     use holochain_wasm_utils::api_serialization::link_entries::*;
     use serde_json;
@@ -144,7 +146,7 @@ pub mod tests {
             test_link_args_bytes(String::from("test-tag")),
         );
 
-        let no_entry: Option<Entry> = None;
+        let no_entry: Option<Address> = Some(HashString::from("QmWXM2r3iujqGvka8XMKU2wLdz5N14bEhvDp7Rx3R3oaEP"));
         let result = ZomeApiInternalResult::success(no_entry);
         assert_eq!(
             call_result,
@@ -189,7 +191,7 @@ pub mod tests {
             test_link_2_args_bytes(String::from("test-tag")),
         );
 
-        let no_entry: Option<Entry> = None;
+        let no_entry: Option<Address> = Some(HashString::from("QmcmcrbAfoaqJMZun74Xs1TsCUndXAohJNrKu7xZyr68P8"));
         let result = ZomeApiInternalResult::success(no_entry);
 
         assert_eq!(

@@ -146,6 +146,19 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+scenario1.runTape('create_post_malformed_args', async (t, { alice }) => {
+
+  const content = "Holo world"
+  const malformed_arg = content
+  const params = { malformed_arg }
+  const result = alice.call("blog", "create_post", params)
+
+  t.notOk(result.Ok)
+  // TODO The result should have a deserialization error but this assertion instead fails!
+  t.ok(result.Err)
+})
+
+
 scenario1.runTape('create_memo', async (t, { alice }) => {
 
   const content = "Reminder: Buy some HOT."

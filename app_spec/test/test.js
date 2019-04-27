@@ -266,7 +266,7 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const deletionParams = { post_address: createResult.Ok }
   const deletionResult = await alice.callSync("blog", "delete_entry_post", deletionParams)
 
-  t.Ok(deletionResult.Ok)
+  t.ok(deletionResult.Ok)
 
 
   //delete should fail

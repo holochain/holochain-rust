@@ -43,7 +43,7 @@ pub mod tests {
             ribosome::{
                 self,
                 api::{
-                    commit::tests::test_commit_args_bytes,
+                    commit::tests::test_commit_entry_args_bytes,
                     tests::{test_parameters, test_zome_name},
                 },
                 runtime::WasmCallData,
@@ -213,7 +213,7 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            Some(test_commit_args_bytes()),
+            Some(test_commit_entry_args_bytes()),
             WasmCallData::new_zome_call(Arc::clone(&context), commit_call),
         )
         .expect("test should be callable");

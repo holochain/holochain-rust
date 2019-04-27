@@ -26,7 +26,7 @@ use crate::nucleus::ribosome::{
     api::{
         call::invoke_call,
         capabilities::invoke_grant_capability,
-        commit::{invoke_commit_app_entry, invoke_commit_app_entry_with_provenance},
+        commit::invoke_commit_app_entry,
         debug::invoke_debug,
         entry_address::invoke_entry_address,
         get_entry::invoke_get_entry,
@@ -68,11 +68,6 @@ link_zome_api! {
     /// Commit an app entry to source chain
     /// commit_entry(entry_type: String, entry_value: String) -> Address
     "hc_commit_entry", CommitAppEntry, invoke_commit_app_entry;
-
-    /// Commit an app entry with additional provenances to source chain
-    /// commit_entry_with_provenance(entry_type: String, entry_value: String, provenances: Vec<Provenace>) -> Address
-    "hc_commit_entry_with_provenance", CommitAppEntryWithProvenance, invoke_commit_app_entry_with_provenance;
-
 
     /// Get an app entry from source chain by key (header hash)
     /// get_entry(address: Address) -> Entry

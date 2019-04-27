@@ -4,7 +4,7 @@ use hdk::{
     holochain_core_types::{
         cas::content::Address,
         dna::capabilities::CapabilityRequest,
-        entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry, EntryWithProvenance},
+        entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
         error::HolochainError,
         json::JsonString,
         signature::Provenance
@@ -13,6 +13,7 @@ use hdk::{
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
+        commit_entry::CommitEntryOptions,
         get_links::{GetLinksOptions, GetLinksResult},
     },
     AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
@@ -154,10 +155,9 @@ pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Add
 
     let entry = post_entry(content);
 
-    let entry_with_provenance =
-        EntryWithProvenance::new(entry, vec![counter_signature]);
+    let options = CommitEntryOptions::new(vec![counter_signature]);
 
-    let address = hdk::commit_entry_with_provenance(&entry_with_provenance)?;
+    let address = hdk::commit_entry_result(&entry, options)?;
 
     hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
 

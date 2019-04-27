@@ -7,7 +7,7 @@ use holochain_core_types::{
     dna::capabilities::CapabilityRequest,
     entry::{
         cap_entries::{CapFunctions, CapabilityType},
-        Entry, EntryWithProvenance,
+        Entry,
     },
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
     signature::Provenance,
@@ -17,6 +17,7 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         capabilities::GrantCapabilityArgs,
+        commit_entry::{CommitEntryArgs, CommitEntryOptions},
         get_entry::{
             EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
             StatusRequestKind,
@@ -143,7 +144,6 @@ macro_rules! def_api_fns {
 def_api_fns! {
     hc_init_globals, InitGlobals;
     hc_commit_entry, CommitEntry;
-    hc_commit_entry_with_provenance, CommitEntryWithProvenance;
     hc_get_entry, GetEntry;
     hc_entry_address, EntryAddress;
     hc_query, Query;
@@ -369,8 +369,6 @@ pub enum BundleOnClose {
 /// # #[no_mangle]
 /// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry_with_provenance(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// # #[no_mangle]
 /// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -470,8 +468,6 @@ pub enum BundleOnClose {
 /// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// # #[no_mangle]
-/// # pub fn hc_commit_entry_with_provenance(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -641,15 +637,15 @@ pub fn debug<J: Into<String>>(msg: J) -> ZomeApiResult<()> {
 ///
 /// # }
 /// ```
-pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
-    Dispatch::CommitEntry.with_input(entry)
+pub fn commit_entry_result(entry: &Entry, options: CommitEntryOptions) -> ZomeApiResult<Address> {
+    Dispatch::CommitEntry.with_input(CommitEntryArgs {
+        entry: entry.clone(),
+        options,
+    })
 }
 
-// TODO document (copy / mutate the above)
-pub fn commit_entry_with_provenance(
-    entry_with_provenance: &EntryWithProvenance,
-) -> ZomeApiResult<Address> {
-    Dispatch::CommitEntryWithProvenance.with_input(entry_with_provenance)
+pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
+    commit_entry_result(entry, CommitEntryOptions::default())
 }
 
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using

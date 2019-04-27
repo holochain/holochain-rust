@@ -266,7 +266,7 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const deletionParams = { post_address: createResult.Ok }
   const deletionResult = await alice.callSync("blog", "delete_entry_post", deletionParams)
 
-  t.notOk(deletionResult.Ok)
+  t.Ok(deletionResult.Ok)
 
 
   //delete should fail
@@ -436,7 +436,7 @@ scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
   //delete
   const removeParamsV2 = { post_address: createResult.Ok }
   const removeResultV2 = await bob.callSync("blog", "delete_entry_post", removeParamsV2)
-  t.notOk(removeResultV2.Ok)
+  t.Ok(removeResultV2.Ok)
 
   //get v2 using initial adders
   const Postv2Initial = alice.call("blog", "get_initial_post", { post_address: createResult.Ok })

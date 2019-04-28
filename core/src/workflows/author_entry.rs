@@ -16,6 +16,8 @@ use holochain_core_types::{
     validation::{EntryLifecycle, ValidationData},
 };
 
+use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryResult;
+
 use std::{sync::Arc, vec::Vec};
 
 pub async fn author_entry<'a>(
@@ -23,7 +25,7 @@ pub async fn author_entry<'a>(
     maybe_link_update_delete: Option<Address>,
     context: &'a Arc<Context>,
     provenances: &'a Vec<Provenance>,
-) -> Result<Address, HolochainError> {
+) -> Result<CommitEntryResult, HolochainError> {
     let address = entry.address();
     context.log(format!(
         "debug/workflow/authoring_entry: {} with content: {:?}",
@@ -86,7 +88,7 @@ pub async fn author_entry<'a>(
             address
         ));
     }
-    Ok(addr)
+    Ok(CommitEntryResult::new(addr))
 }
 
 #[cfg(test)]
@@ -112,7 +114,7 @@ pub mod tests {
                 &context1,
                 &vec![],
             ))
-            .unwrap();
+            .unwrap().address();
         thread::sleep(time::Duration::from_millis(500));
 
         let mut json: Option<JsonString> = None;

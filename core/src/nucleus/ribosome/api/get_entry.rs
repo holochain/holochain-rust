@@ -59,7 +59,9 @@ pub mod tests {
         error::ZomeApiInternalResult,
         json::JsonString,
     };
-    use holochain_wasm_utils::api_serialization::get_entry::*;
+    use holochain_wasm_utils::api_serialization::
+        {get_entry::*, commit_entry::CommitEntryResult};
+
     use std::sync::Arc;
 
     /// dummy get args from standard test entry
@@ -222,7 +224,7 @@ pub mod tests {
             call_result,
             JsonString::from_json(
                 &(String::from(JsonString::from(ZomeApiInternalResult::success(
-                    test_entry().address()
+                    CommitEntryResult::new(test_entry().address())
                 ))) + "\u{0}")
             ),
         );

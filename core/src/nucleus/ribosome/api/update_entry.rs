@@ -3,7 +3,7 @@ use crate::{
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
+    cas::content::AddressableContent,
     entry::Entry,
     error::HolochainError,
 };
@@ -53,7 +53,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Create Chain Entry
     let entry = Entry::from(entry_args.new_entry.clone());
 
-    let res: Result<Address, HolochainError> = context
+    let res: Result<_, HolochainError> = context
         .block_on(author_entry(
             &entry,
             Some(latest_entry.clone().address()),

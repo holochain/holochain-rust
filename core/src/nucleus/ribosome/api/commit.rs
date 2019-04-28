@@ -2,9 +2,10 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::error::HolochainError;
 
-use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryArgs;
+use holochain_wasm_utils::api_serialization::commit_entry::
+    {CommitEntryArgs, CommitEntryResult};
 
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -30,7 +31,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         }
     };
     // Wait for future to be resolved
-    let task_result: Result<Address, HolochainError> = context.block_on(author_entry(
+    let task_result: Result<CommitEntryResult, HolochainError> = context.block_on(author_entry(
         &commit_entry_arg.entry(),
         None,
         &context,
@@ -54,7 +55,7 @@ pub mod tests {
         signature::{Provenance, Signature},
     };
     use holochain_wasm_utils::api_serialization::commit_entry::{
-        CommitEntryArgs, CommitEntryOptions,
+        CommitEntryArgs, CommitEntryOptions, CommitEntryResult
     };
 
     /// dummy commit with provenance args from standard test entry
@@ -89,7 +90,8 @@ pub mod tests {
             call_result,
             JsonString::from_json(
                 &(String::from(JsonString::from(ZomeApiInternalResult::success(
-                    Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq")
+                    CommitEntryResult::new(
+                        Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq"))
                 ))) + "\u{0}")
             ),
         );

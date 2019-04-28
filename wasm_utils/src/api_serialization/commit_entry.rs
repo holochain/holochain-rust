@@ -1,13 +1,16 @@
-use holochain_core_types::{entry::Entry, error::HolochainError, json::*, signature::Provenance};
+use holochain_core_types::{cas::content::Address,
+    entry::Entry, error::HolochainError, json::*, signature::Provenance
+};
 
-/// Structure used to specify what should be returned to a call to commit_entry_result()
-/// The default is to return the latest entry.
+/// Structure used to specify additional options to a commit_entry_result call.
 #[derive(Deserialize, Debug, Serialize, DefaultJson, PartialEq, Clone)]
 pub struct CommitEntryOptions {
     pub provenance: Vec<Provenance>,
 }
 
 impl Default for CommitEntryOptions {
+
+    /// The default CommitEntryOptions has no additional provenance.
     fn default() -> Self {
         CommitEntryOptions { provenance: vec![] }
     }
@@ -23,6 +26,8 @@ impl CommitEntryOptions {
     }
 }
 
+
+/// The arguments required to execute a commit_entry_result() call.
 #[derive(Deserialize, Debug, Serialize, DefaultJson)]
 pub struct CommitEntryArgs {
     pub entry: Entry,
@@ -43,12 +48,21 @@ impl CommitEntryArgs {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    /*    use super::*;
-    use holochain_core_types::{
-        chain_header::test_chain_header,
-        entry::{test_entry, test_entry_a, test_entry_b},
-    };*/
-
+/// Represents any useful information to return after
+/// entries are committed
+#[derive(Deserialize, Debug, Clone, Serialize, DefaultJson)]
+pub struct CommitEntryResult {
+    pub address: Address,
 }
+
+impl CommitEntryResult {
+
+    pub fn new(address:Address) -> Self {
+        Self {
+            address
+        }
+    }
+
+    pub fn address(&self) -> Address { self.address.clone() }
+}
+

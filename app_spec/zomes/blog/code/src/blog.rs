@@ -157,7 +157,7 @@ pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Add
 
     let options = CommitEntryOptions::new(vec![counter_signature]);
 
-    let address = hdk::commit_entry_result(&entry, options)?;
+    let address = hdk::commit_entry_result(&entry, options).unwrap().address();
 
     hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
 

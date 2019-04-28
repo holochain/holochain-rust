@@ -4,14 +4,12 @@
 let
   pkgs = import ../../../nixpkgs/nixpkgs.nix;
 
-  name = "hc-qt-c-bindings-test";
+  name = "hc-qt-c-bindings-flush";
 
   script = pkgs.writeShellScriptBin name
   ''
-   hc-qt-c-bindings-flush
-   cargo build -p holochain_dna_c_binding
-   ( cd c_binding_tests/hc_dna && qmake -o $@Makefile $@qmake.pro && make )
-   ./target/debug/c_binding_tests/hc_dna/test_executable
+   rm c_binding_tests/hc_dna/.qmake.stash
+   rm c_binding_tests/hc_dna/Makefile
   '';
 in
 script

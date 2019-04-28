@@ -114,7 +114,8 @@ pub mod tests {
                 &context1,
                 &vec![],
             ))
-            .unwrap().address();
+            .unwrap()
+            .address();
         thread::sleep(time::Duration::from_millis(500));
 
         let mut json: Option<JsonString> = None;

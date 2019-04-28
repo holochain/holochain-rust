@@ -59,8 +59,7 @@ pub mod tests {
         error::ZomeApiInternalResult,
         json::JsonString,
     };
-    use holochain_wasm_utils::api_serialization::
-        {get_entry::*, commit_entry::CommitEntryResult};
+    use holochain_wasm_utils::api_serialization::{commit_entry::CommitEntryResult, get_entry::*};
 
     use std::sync::Arc;
 

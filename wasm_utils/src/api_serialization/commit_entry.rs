@@ -1,5 +1,5 @@
-use holochain_core_types::{cas::content::Address,
-    entry::Entry, error::HolochainError, json::*, signature::Provenance
+use holochain_core_types::{
+    cas::content::Address, entry::Entry, error::HolochainError, json::*, signature::Provenance,
 };
 
 /// Structure used to specify additional options to a commit_entry_result call.
@@ -9,7 +9,6 @@ pub struct CommitEntryOptions {
 }
 
 impl Default for CommitEntryOptions {
-
     /// The default CommitEntryOptions has no additional provenance.
     fn default() -> Self {
         CommitEntryOptions { provenance: vec![] }
@@ -25,7 +24,6 @@ impl CommitEntryOptions {
         self.provenance.clone()
     }
 }
-
 
 /// The arguments required to execute a commit_entry_result() call.
 #[derive(Deserialize, Debug, Serialize, DefaultJson)]
@@ -56,13 +54,11 @@ pub struct CommitEntryResult {
 }
 
 impl CommitEntryResult {
-
-    pub fn new(address:Address) -> Self {
-        Self {
-            address
-        }
+    pub fn new(address: Address) -> Self {
+        Self { address }
     }
 
-    pub fn address(&self) -> Address { self.address.clone() }
+    pub fn address(&self) -> Address {
+        self.address.clone()
+    }
 }
-

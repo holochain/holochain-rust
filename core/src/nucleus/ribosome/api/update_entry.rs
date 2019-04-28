@@ -2,11 +2,7 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
-use holochain_core_types::{
-    cas::content::AddressableContent,
-    entry::Entry,
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::AddressableContent, entry::Entry, error::HolochainError};
 use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};

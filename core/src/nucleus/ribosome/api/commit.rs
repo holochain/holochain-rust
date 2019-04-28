@@ -4,8 +4,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 
-use holochain_wasm_utils::api_serialization::commit_entry::
-    {CommitEntryArgs, CommitEntryResult};
+use holochain_wasm_utils::api_serialization::commit_entry::{CommitEntryArgs, CommitEntryResult};
 
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -55,7 +54,7 @@ pub mod tests {
         signature::{Provenance, Signature},
     };
     use holochain_wasm_utils::api_serialization::commit_entry::{
-        CommitEntryArgs, CommitEntryOptions, CommitEntryResult
+        CommitEntryArgs, CommitEntryOptions, CommitEntryResult,
     };
 
     /// dummy commit with provenance args from standard test entry
@@ -90,8 +89,9 @@ pub mod tests {
             call_result,
             JsonString::from_json(
                 &(String::from(JsonString::from(ZomeApiInternalResult::success(
-                    CommitEntryResult::new(
-                        Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq"))
+                    CommitEntryResult::new(Address::from(
+                        "Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq"
+                    ))
                 ))) + "\u{0}")
             ),
         );

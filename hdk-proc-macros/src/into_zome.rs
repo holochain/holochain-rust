@@ -266,7 +266,7 @@ mod tests {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
                 #[genesis]
-                fn genisis() {
+                fn genesis() {
                     Ok(())
                 }
             }
@@ -279,7 +279,7 @@ mod tests {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
                 #[genesis]
-                fn genisis() {
+                fn genesis() {
                     Ok(())
                 }
 
@@ -308,7 +308,7 @@ mod tests {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
                 #[genesis]
-                fn genisis() {
+                fn genesis() {
                     Ok(())
                 }
 
@@ -355,7 +355,7 @@ mod tests {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
                 #[genesis]
-                fn genisis() {
+                fn genesis() {
                     Ok(())
                 }
 
@@ -386,7 +386,7 @@ mod tests {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
                 #[genesis]
-                fn genisis() {
+                fn genesis() {
                     Ok(())
                 }
 
@@ -413,7 +413,7 @@ mod tests {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
                 #[genesis]
-                fn genisis() {
+                fn genesis() {
                     Ok(())
                 }
 
@@ -445,7 +445,7 @@ mod tests {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
                 #[genesis]
-                fn genisis() {
+                fn genesis() {
                     Ok(())
                 }
 
@@ -473,7 +473,7 @@ mod tests {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
                 #[genesis]
-                fn genisis() {
+                fn genesis() {
                     Ok(())
                 }
             }
@@ -487,7 +487,7 @@ mod tests {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
                 #[genesis]
-                fn genisis() {
+                fn genesis() {
                     Ok(())
                 }
 

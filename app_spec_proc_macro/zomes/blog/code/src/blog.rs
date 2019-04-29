@@ -290,7 +290,8 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
 pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<()> {
     hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
     hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
-    hdk::link_entries(&agent_address, &post_address, "recommended_posts")
+    hdk::link_entries(&agent_address, &post_address, "recommended_posts")?;
+    Ok(())
 }
 
 pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {

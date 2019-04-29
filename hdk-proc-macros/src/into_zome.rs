@@ -109,8 +109,9 @@ impl IntoZome for syn::ItemMod {
                 acc.push(func.block);
                 acc
             });
-        // only a single function can be tagged in a valid Zome so error if there is more than one
-        // if there is None then use the sensible default of Ok(())
+        // only a single function can be tagged as genesis in a valid Zome. 
+        // Error if there is more than one
+        // Also error if there is no genesis
         match geneses.len() {
             0 => {
                 emit_error(&self.ident,

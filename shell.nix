@@ -30,7 +30,7 @@ stdenv.mkDerivation rec {
 
   shellHook = ''
    # cargo installs things to the user's home so we need it on the path
-   export PATH=$PATH:~/.cargo/bin
+   export PATH=~/.cargo/bin:$PATH
    export HC_TARGET_PREFIX=~/nix-holochain/
    export NIX_LDFLAGS="${darwin.ld-flags}$NIX_LDFLAGS"
   '';

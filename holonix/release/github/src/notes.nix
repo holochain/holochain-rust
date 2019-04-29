@@ -1,6 +1,7 @@
 let
   pkgs = import ../../../nixpkgs/nixpkgs.nix;
   release = import ../../config.nix;
+  release-pulse = import ../../pulse/config.nix;
   rust = import ../../../rust/config.nix;
 
   name = "hc-release-github-notes";
@@ -11,7 +12,7 @@ let
 
   {{ pulse-notes }}
 
-  See the [Dev Pulse](${release.pulse.url}) & [change log](https://github.com/holochain/holochain-rust/blob/release-${release.core.version.current}/CHANGELOG.md) for complete details.
+  See the [Dev Pulse](${release-pulse.url}) & [change log](https://github.com/holochain/holochain-rust/blob/release-${release.core.version.current}/CHANGELOG.md) for complete details.
 
   ## **Installation**
 
@@ -64,7 +65,7 @@ let
    # gets a markdown version of pulse
    # greps for everything from summary to details (not including details heading)
    # deletes null characters that throw warnings in bash
-   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${release.pulse.url} | grep -Pzo "(?s)(###\s+\**Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
+   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${release-pulse.url} | grep -Pzo "(?s)(###\s+\**Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
    WITH_NOTES=''${WITH_DATE/$PULSE_PLACEHOLDER/$PULSE_NOTES}
    echo "$WITH_NOTES"
   '';

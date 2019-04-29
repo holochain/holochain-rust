@@ -30,13 +30,13 @@ This code is loosely based on the [Golang prototype](https://github.com/holochai
 
 ## Application Developer
 
-Setup a Development Environment to create Holochain Application:
+Setup a development environment with the latest release to build Holochain applications:
 
 https://developer.holochain.org/start.html
 
 ## Core Developer
 
-Setup a Core Development Environment to work on Holochain itself:
+Setup a core development environment to work on Holochain itself:
 
 [Core Developer Setup](./doc/CoreDevSetup.md)
 

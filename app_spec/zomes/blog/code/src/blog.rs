@@ -2,20 +2,24 @@ use hdk::{
     self,
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
-        cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
+        cas::content::Address,
+        dna::capabilities::CapabilityRequest,
+        entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
+        error::HolochainError,
+        json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{
-        get_entry::{GetEntryOptions, GetEntryResultType,EntryHistory, StatusRequestKind,GetEntryResult},
-        get_links::{GetLinksOptions, GetLinksResult}
+        get_entry::{
+            EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
+        },
+        get_links::{GetLinksOptions, GetLinksResult},
     },
-    AGENT_ADDRESS, AGENT_ID_STR, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
+    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
 };
 
-
-
-use post::Post;
-use std::convert::TryFrom;
 use memo::Memo;
+use post::Post;
+use std::{collections::BTreeMap, convert::TryFrom};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -29,6 +33,7 @@ pub struct Env {
     dna_address: String,
     agent_id: String,
     agent_address: String,
+    cap_request: CapabilityRequest,
 }
 
 /// This handler shows how you can access the globals that are always available
@@ -42,6 +47,7 @@ pub fn handle_show_env() -> ZomeApiResult<Env> {
         dna_address: DNA_ADDRESS.to_string(),
         agent_id: AGENT_ID_STR.to_string(),
         agent_address: AGENT_ADDRESS.to_string(),
+        cap_request: CAPABILITY_REQ.clone(),
     })
 }
 
@@ -99,6 +105,31 @@ pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&post_entry(content))
 }
 
+fn is_my_friend(addr: Address) -> bool {
+    // this is "alice's" hash
+    addr == Address::from("HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui")
+}
+
+pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
+    let addr = CAPABILITY_REQ.provenance.source();
+    if is_my_friend(addr.clone()) {
+        let mut functions = BTreeMap::new();
+        functions.insert("blog".to_string(), vec!["create_post".to_string()]);
+        Ok(Some(hdk::grant_capability(
+            "can_post",
+            CapabilityType::Assigned,
+            Some(vec![addr]),
+            functions,
+        )?))
+    } else {
+        Ok(None)
+    }
+}
+
+pub fn handle_get_grants() -> ZomeApiResult<Vec<Address>> {
+    hdk::query(EntryType::CapTokenGrant.into(), 0, 0)
+}
+
 pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&memo_entry(content))
 }
@@ -117,7 +148,11 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
     Ok(address)
 }
 
-pub fn handle_create_post_with_agent(agent_id:Address,content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
+pub fn handle_create_post_with_agent(
+    agent_id: Address,
+    content: String,
+    in_reply_to: Option<Address>,
+) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;
 
     hdk::link_entries(&agent_id, &address, "authored_posts")?;
@@ -137,11 +172,9 @@ pub fn handle_create_memo(content: String) -> ZomeApiResult<Address> {
     Ok(address)
 }
 
-
-pub fn handle_delete_post(content:String) -> ZomeApiResult<Address>
-{
+pub fn handle_delete_post(content: String) -> ZomeApiResult<Address> {
     let address = hdk::entry_address(&post_entry(content))?;
-    hdk::remove_link(&AGENT_ADDRESS,&address.clone(),"authored_posts")?;
+    hdk::remove_link(&AGENT_ADDRESS, &address.clone(), "authored_posts")?;
     Ok(address)
 }
 
@@ -158,7 +191,7 @@ pub fn handle_my_memos() -> ZomeApiResult<Vec<Address>> {
 }
 
 // As memos are private we expect this will never return anything but None.
-pub fn handle_get_memo(address:Address) -> ZomeApiResult<Option<Entry>> {
+pub fn handle_get_memo(address: Address) -> ZomeApiResult<Option<Entry>> {
     hdk::get_entry(&address)
 }
 
@@ -173,14 +206,16 @@ pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
     )
 }
 
-pub fn handle_my_posts_get_my_sources(agent:Address) -> ZomeApiResult<GetLinksResult>
-{
-    hdk::get_links_with_options(&agent,"authored_posts",GetLinksOptions{
-        headers : true,
-        ..Default::default()
-    })
+pub fn handle_my_posts_get_my_sources(agent: Address) -> ZomeApiResult<GetLinksResult> {
+    hdk::get_links_with_options(
+        &agent,
+        "authored_posts",
+        GetLinksOptions {
+            headers: true,
+            ..Default::default()
+        },
+    )
 }
-
 
 pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
     // In the current implementation of hdk::query the second parameter
@@ -208,36 +243,33 @@ pub fn handle_delete_entry_post(post_address: Address) -> ZomeApiResult<()> {
     Ok(())
 }
 
-pub fn handle_get_initial_post(post_address: Address) ->ZomeApiResult<Option<Entry>>
-{
+pub fn handle_get_initial_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     hdk::get_entry_initial(&post_address)
 }
 
-pub fn handle_get_post_with_options_latest(post_address : Address) -> ZomeApiResult<Entry>
-{
+pub fn handle_get_post_with_options_latest(post_address: Address) -> ZomeApiResult<Entry> {
     let res = hdk::get_entry_result(
         &post_address,
         GetEntryOptions::new(StatusRequestKind::All, false, false, Default::default()),
     )?;
-    let latest = res.latest().ok_or(ZomeApiError::Internal("Could not get latest".into()))?;
+    let latest = res
+        .latest()
+        .ok_or(ZomeApiError::Internal("Could not get latest".into()))?;
     Ok(latest)
 }
 
-pub fn handle_my_post_with_options(post_address : Address) ->ZomeApiResult<GetEntryResult>
-{
+pub fn handle_my_post_with_options(post_address: Address) -> ZomeApiResult<GetEntryResult> {
     hdk::get_entry_result(
         &post_address,
         GetEntryOptions::new(StatusRequestKind::All, false, false, Default::default()),
     )
 }
 
-pub fn handle_get_history_post(post_address : Address) -> ZomeApiResult<EntryHistory>
-{
-    let history = hdk::get_entry_history(&post_address)?.ok_or(ZomeApiError::Internal("Could not get History".into()));
+pub fn handle_get_history_post(post_address: Address) -> ZomeApiResult<EntryHistory> {
+    let history = hdk::get_entry_history(&post_address)?
+        .ok_or(ZomeApiError::Internal("Could not get History".into()));
     history
 }
-
-
 
 pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<Address> {
     let old_entry = hdk::get_entry(&post_address)?;

@@ -123,6 +123,9 @@ macro_rules! load_string {
 /// # pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+///
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
@@ -156,8 +159,8 @@ macro_rules! load_string {
 ///              {
 ///              EntryValidationData::Create{entry:test_entry,validation_data:_} =>
 ///              {
-///                        
-///                        
+///
+///
 ///                        (test_entry.content != "FAIL")
 ///                        .ok_or_else(|| "FAIL content is not allowed".to_string())
 ///                }

@@ -27,3 +27,32 @@ lazy_static! {
     pub static ref META_LINK_CONTENT_2: serde_json::Value = json!({"mt":"hello-2-meta"});
     pub static ref META_LINK_CONTENT_3: serde_json::Value = json!({"mt":"hello-3-meta"});
 }
+
+//--------------------------------------------------------------------------------------------------
+// Generators
+//--------------------------------------------------------------------------------------------------
+
+//
+pub fn generate_agent_id(i: u32) -> String {
+    format!("node_{}", i)
+}
+
+//
+pub fn generate_dna_id(i: u32) -> Address {
+    HashString::from(format!("DNA_{}", i))
+}
+
+//
+pub fn generate_entry(i: u32) -> (Address, serde_json::Value) {
+    let address = format!("entry_addr_{}", i);
+    let content = format!("hello-{}", i);
+    let entry: serde_json::Value = json!({ "ry": content });
+    (address.into(), entry)
+}
+
+//
+pub fn generate_meta(i: u32) -> serde_json::Value {
+    let content = format!("hello-{}-meta", i);
+    let meta: serde_json::Value = json!({ "mt": content });
+    meta
+}

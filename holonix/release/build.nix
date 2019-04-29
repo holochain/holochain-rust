@@ -1,8 +1,10 @@
 let
+  audit = import ./src/audit.nix;
   deploy = import ./src/deploy.nix;
   prepare = import ./src/prepare.nix;
 in
 [
+  audit
   deploy
   prepare
 ]

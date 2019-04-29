@@ -21,7 +21,7 @@ use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 #[cfg(not(windows))]
-use holochain_core_types::error::CoreError;
+use holochain_core_types::{entry::EntryWithMeta,error::CoreError};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
@@ -32,7 +32,7 @@ use holochain_core_types::{
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
-        Entry, EntryWithMeta,
+        Entry
     },
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     hash::HashString,

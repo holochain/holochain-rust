@@ -114,7 +114,7 @@ impl IpcNetWorker {
         let mut wss_socket = TransportWss::with_std_tcp_stream();
         let transport_id = wss_socket.wait_connect(&ipc_uri)?;
 
-        log.i(&format!("connection success. tId = {}", transport_id));
+        log.i(&format!("connection success. ipc tId = {}", transport_id));
 
         Ok(IpcNetWorker {
             handler,

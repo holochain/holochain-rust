@@ -104,6 +104,7 @@ jobs:
   machine: true
   steps:
    - checkout
+   - run: sysctl -w kernel.unprivileged_userns_clone=1
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
    - run: docker build -f .circleci/Dockerfile..start -t holochain/holochain-rust:circle..start .
    - run: docker push holochain/holochain-rust:circle..start

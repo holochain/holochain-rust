@@ -775,7 +775,7 @@ pub fn link_entries<S: Into<String>>(
     base: &Address,
     target: &Address,
     tag: S,
-) -> Result<(), ZomeApiError> {
+) -> Result<Address, ZomeApiError> {
     Dispatch::LinkEntries.with_input(LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
@@ -997,7 +997,7 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// Commit a DeletionEntry to your local source chain that marks an entry as 'deleted' by setting
 /// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
 /// metadata, which will be used by validation routes.
-pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
+pub fn remove_entry(address: &Address) -> ZomeApiResult<Address> {
     Dispatch::RemoveEntry.with_input(address.to_owned())
 }
 

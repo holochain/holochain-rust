@@ -661,33 +661,33 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[interfaces]]
     id = "app spec websocket interface"
-    [interfaces.driver]
-    type = "websocket"
-    port = 8888
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "websocket"
+        port = 8888
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec http interface"
-    [interfaces.driver]
-    type = "http"
-    port = 4000
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "http"
+        port = 4000
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec domainsocket interface"
-    [interfaces.driver]
-    type = "domainsocket"
-    file = "/tmp/holochain.sock"
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "domainsocket"
+        file = "/tmp/holochain.sock"
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [network]
     bootstrap_nodes = ["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"]
@@ -746,39 +746,39 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[interfaces]]
     id = "app spec websocket interface"
-    [interfaces.driver]
-    type = "websocket"
-    port = 8888
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "websocket"
+        port = 8888
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec http interface"
-    [interfaces.driver]
-    type = "http"
-    port = 4000
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "http"
+        port = 4000
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec domainsocket interface"
-    [interfaces.driver]
-    type = "domainsocket"
-    file = "/tmp/holochain.sock"
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "domainsocket"
+        file = "/tmp/holochain.sock"
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [logger]
     type = "debug"
-    [[logger.rules.rules]]
-    pattern = ".*"
-    color = "red"
+        [[logger.rules.rules]]
+        pattern = ".*"
+        color = "red"
 
     [[ui_bundles]]
     id = "bundle1"
@@ -790,7 +790,6 @@ pub mod tests {
     bundle = "bundle1"
     port = 3000
     dna_interface = "app spec domainsocket interface"
-
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -831,10 +830,9 @@ pub mod tests {
     id = "app spec instance"
     dna = "WRONG DNA ID"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
-
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
     "#;
 
         let config: Configuration =
@@ -861,17 +859,17 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[interfaces]]
     id = "app spec interface"
-    [interfaces.driver]
-    type = "websocket"
-    port = 8888
-    [[interfaces.instances]]
-    id = "WRONG INSTANCE ID"
+        [interfaces.driver]
+        type = "websocket"
+        port = 8888
+        [[interfaces.instances]]
+        id = "WRONG INSTANCE ID"
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -905,17 +903,17 @@ pub mod tests {
     dna = "app spec rust"
     agent = "test agent"
     network = "{}"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[interfaces]]
     id = "app spec interface"
-    [interfaces.driver]
-    type = "invalid type"
-    port = 8888
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "invalid type"
+        port = 8888
+        [[interfaces.instances]]
+        id = "app spec instance"
     "#,
             example_serialized_network_config()
         );
@@ -947,25 +945,25 @@ pub mod tests {
     id = "app1"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[instances]]
     id = "app2"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[instances]]
     id = "app3"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     {}
     "#, bridges)
@@ -1112,39 +1110,39 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[interfaces]]
     id = "app spec websocket interface"
-    [interfaces.driver]
-    type = "websocket"
-    port = 8888
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "websocket"
+        port = 8888
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec http interface"
-    [interfaces.driver]
-    type = "http"
-    port = 4000
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "http"
+        port = 4000
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec domainsocket interface"
-    [interfaces.driver]
-    type = "domainsocket"
-    file = "/tmp/holochain.sock"
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "domainsocket"
+        file = "/tmp/holochain.sock"
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [logger]
     type = "debug"
-    [[logger.rules.rules]]
-    pattern = ".*"
-    color = "red"
+        [[logger.rules.rules]]
+        pattern = ".*"
+        color = "red"
 
     [[ui_bundles]]
     id = "bundle1"
@@ -1156,7 +1154,6 @@ pub mod tests {
     bundle = "bundle1"
     port = 3000
     dna_interface = "<not existant>"
-
     "#;
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
@@ -1184,14 +1181,13 @@ pub mod tests {
     id = "deepkey"
     dna = "deepkey"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "deepkey_storage"
+        [instances.storage]
+        type = "file"
+        path = "deepkey_storage"
 
     [dpki]
     instance_id = "bogus instance"
     init_params = "{}"
-
     "#;
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");

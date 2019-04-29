@@ -20,6 +20,6 @@ dna_interface = "websocket interface"
 admin = true
 id = "websocket interface"
 
-[interfaces.driver]
-port = 4000
-type = "websocket"
+    [interfaces.driver]
+    port = 4000
+    type = "websocket"

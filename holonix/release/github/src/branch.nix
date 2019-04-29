@@ -1,6 +1,7 @@
 let
   pkgs = import ../../../nixpkgs/nixpkgs.nix;
   release = import ../../config.nix;
+  release-pulse = import ../../pulse/config.nix;
   git = import ../../../git/config.nix;
 
   name = "hc-release-github-branch";
@@ -25,7 +26,7 @@ let
      git checkout ${release.branch}
      git pull
     else
-     git checkout ${release.pulse.commit}
+     git checkout ${release.commit}
      git checkout -b ${release.branch}
      git push -u ${git.github.upstream} ${release.branch}
    fi

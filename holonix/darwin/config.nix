@@ -1,6 +1,6 @@
 let
   pkgs = import ../nixpkgs/nixpkgs.nix;
-  
+
   frameworks = if pkgs.stdenv.isDarwin then pkgs.darwin.apple_sdk.frameworks else {};
 in
 {

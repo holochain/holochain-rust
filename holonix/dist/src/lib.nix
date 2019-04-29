@@ -5,7 +5,7 @@ let
  git = import ../../git/config.nix;
 in rec
 {
- artifact-name = args: "${args.name}-v${dist.version}-${dist.artifact-target}";
+ artifact-name = args: "${args.name}-v${dist.version}-${args.target}";
 
  artifact-url = args: "https://github.com/${git.github.repo}/releases/download/v${dist.version}/${artifact-name args}.tar.gz";
 
@@ -14,7 +14,7 @@ in rec
    name = "holochain-${args.name}";
 
    src = pkgs.fetchurl {
-    url = artifact-url args;
+    url = artifact-url ( { target = dist.artifact-target; } // args );
     sha256 = if pkgs.stdenv.isDarwin then args.sha256.darwin else args.sha256.linux;
    };
 

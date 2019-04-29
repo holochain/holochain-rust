@@ -235,12 +235,10 @@ pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     hdk::get_entry(&post_address)
 }
 
-pub fn handle_delete_entry_post(post_address: Address) -> ZomeApiResult<()> {
+pub fn handle_delete_entry_post(post_address: Address) -> ZomeApiResult<Address> {
     hdk::get_entry(&post_address)?;
 
-    hdk::remove_entry(&post_address)?;
-
-    Ok(())
+    hdk::remove_entry(&post_address)
 }
 
 pub fn handle_get_initial_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
@@ -287,7 +285,7 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
     }
 }
 
-pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<()> {
+pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<Address> {
     hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
     hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
     hdk::link_entries(&agent_address, &post_address, "recommended_posts")

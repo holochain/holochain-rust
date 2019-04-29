@@ -46,21 +46,14 @@ ${heading-placeholder}
    heading_placeholder="${heading-placeholder}"
    heading="## [${release.core.version.current}] - $(date --iso --u)"
 
-   echo $template
-   echo $heading_placeholder
-   echo $heading
-
    prepend=''${template/$heading_placeholder/$heading}
-   current=$(cat ${changelog-path})
+   current=$( cat ./CHANGELOG.md | sed -e '1,4d' )
+
+   echo "timestamping and retemplating changelog"
 
    printf '%s\n\n%s\n' "$prepend" "$current" > ${changelog-path}
 
    echo '${template}' > '${unreleased-path}'
-
-   if ! $(grep -q "\[${release.core.version.current}\]" ${changelog-path})
-    then
-     echo "timestamping and retemplating changelog"
-   fi
   '';
 in
 script

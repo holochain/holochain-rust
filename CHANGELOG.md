@@ -8,9 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds hdk::grant_capability() for zome functions to be able to create [capability grant](doc/architecture/decisions/0017-capabilities.md)  [#1285](https://github.com/holochain/holochain-rust/pull/1285)
 - `nix-shell` includes latest `hc` and `holochain` binaries [#1306](https://github.com/holochain/holochain-rust/pull/1306)
 - Adds `hc-cli-uninstall` and `hc-conductor-rust-uninstall` to drop local development installations of these binaries that would override dist binaries [#1351](https://github.com/holochain/holochain-rust/pull/1351)
-
-- Adds hdk::commit_entry_result() which features: optional argument to include additional provenances. [#1320](https://github.com/holochain/holochain-rust/pull/1320)
-
 ### Changed
 - changed JSON-RPC Zome call `params` key to `args` for clarity (due to confusion between JSON-RPC `params` and Holochain `params` keys): see [#1203](https://github.com/holochain/holochain-rust/pull/1203) and [#1271](https://github.com/holochain/holochain-rust/pull/1271)
 - Remove sleeps during network initialization, block until P2pReady event is received [#1284](https://github.com/holochain/holochain-rust/pull/1284).

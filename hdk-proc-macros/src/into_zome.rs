@@ -206,7 +206,7 @@ impl IntoZome for syn::ItemMod {
     }
 
     fn extract_receive_callback(&self) -> Option<ReceiveCallback> {
-        // find all the functions tagged as the genesis callback
+        // find all the functions tagged as the receive callback
         let callbacks: Vec<ReceiveCallback> = funcs_iter(self)
             .filter(is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE))
             .fold(Vec::new(), |mut acc, func| {

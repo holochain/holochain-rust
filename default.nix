@@ -9,7 +9,7 @@ in
 with pkgs;
 stdenv.mkDerivation rec {
 
- name = "holonix-binaries";
+ name = "holochain-binaries";
 
  buildInputs = [
   cli

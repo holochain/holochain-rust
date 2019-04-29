@@ -12,7 +12,7 @@ use hdk::holochain_core_types::{
 /// to how this happens with functions parameters and zome_functions!.
 ///
 /// So this is our normative schema definition:
-#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Post {
     pub content: String,
     pub date_created: String,

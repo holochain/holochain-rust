@@ -99,7 +99,7 @@ pub fn send(
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or(HolochainError::ErrorGeneric(
-            "Network not intialized".to_string(),
+            "Network not initialized".to_string(),
         ))?
 }
 

@@ -12,9 +12,16 @@ use crate::{
     in_memory::memory_worker::InMemoryWorker,
     ipc_net_worker::IpcNetWorker,
     p2p_config::*,
+    tweetlog::*,
 };
 use holochain_core_types::json::JsonString;
-use std::{thread::sleep, time::Duration};
+use std::{
+    convert::TryFrom,
+    sync::mpsc::{channel, Receiver},
+    time::Duration,
+};
+
+const P2P_READY_TIMEOUT_MS: u64 = 5000;
 
 /// Facade handling a p2p module responsable for the network connection
 /// Holds a NetConnectionThread and implements itself the NetSend Trait
@@ -28,9 +35,10 @@ impl P2pNetwork {
     /// Constructor
     /// `config` is the configuration of the p2p module
     /// `handler` is the closure for handling Protocol messages received from the network.
-    pub fn new(handler: NetHandler, p2p_config: &P2pConfig) -> NetResult<Self> {
+    pub fn new(mut handler: NetHandler, p2p_config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
         let backend_config = JsonString::from_json(&p2p_config.backend_config.to_string());
+
         // Provide worker factory depending on backend kind
         let worker_factory: NetWorkerFactory = match p2p_config.backend_kind {
             // Create an IpcNetWorker with the passed backend config
@@ -52,22 +60,55 @@ impl P2pNetwork {
                 Ok(Box::new(InMemoryWorker::new(h, &backend_config)?) as Box<NetWorker>)
             }),
         };
+
+        let (t, rx) = channel();
+        let tx = t.clone();
+        let wrapped_handler: NetHandler = Box::new(move |message| {
+            let unwrapped = message.unwrap();
+            let message = unwrapped.clone();
+            match Protocol::try_from(unwrapped.clone()) {
+                Ok(Protocol::P2pReady) => {
+                    tx.send(Protocol::P2pReady).unwrap();
+                    log_d!("net/p2p_network: sent P2pReady event")
+                }
+                Ok(_protocol_message) => {}
+                Err(_protocol_error) => {
+                    // TODO why can't I use the above variable?
+                    // Generates compiler error.
+                }
+            };
+            handler(Ok(message))
+        });
+
         // Create NetConnectionThread with appropriate worker factory.  Indicate *what*
         // configuration failed to produce a connection.
-        let connection = NetConnectionThread::new(handler, worker_factory, None).map_err(|e| {
-            format_err!(
-                "Failed to obtain a connection to a p2p network module w/ config: {}: {}",
-                p2p_config.as_str(),
-                e
-            )
-        })?;
-        if let P2pBackendKind::IPC = p2p_config.backend_kind {
-            // TODO: this is a hack until Core takes in account the 'P2pReady' message sent by the network module
-            // see: https://realtimeboard.com/app/board/o9J_kyiXmFs=/?moveToWidget=3074457346457995629
-            sleep(Duration::from_millis(1000));
-        }
+        let connection =
+            NetConnectionThread::new(wrapped_handler, worker_factory, None).map_err(|e| {
+                format_err!(
+                    "Failed to obtain a connection to a p2p network module w/ config: {}: {}",
+                    p2p_config.as_str(),
+                    e
+                )
+            })?;
+        P2pNetwork::wait_p2p_ready(&rx);
+
         // Done
         Ok(P2pNetwork { connection })
+    }
+
+    fn wait_p2p_ready(rx: &Receiver<Protocol>) {
+        let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
+        match maybe_message {
+            Ok(Protocol::P2pReady) => log_d!("net/p2p_network: received P2pReady event"),
+            Ok(_protocol_message) => {}
+            Err(e) => {
+                log_e!("net/p2p_network: did not receive P2pReady: {:?}", e);
+                panic!(
+                    "p2p network not ready within alloted time of {:?} ms",
+                    P2P_READY_TIMEOUT_MS
+                );
+            }
+        };
     }
 
     /// Stop the network connection (disconnect any sockets, join any threads, etc)

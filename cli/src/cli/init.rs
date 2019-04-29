@@ -3,7 +3,7 @@ use crate::{
         package::{GITIGNORE_FILE_NAME, IGNORE_FILE_NAME},
         test::TEST_DIR_NAME,
     },
-    config_files::App as AppConfig,
+    config_files::XyzzyPackage,
     error::DefaultResult,
     util::DIST_DIR_NAME,
 };
@@ -15,6 +15,8 @@ use std::{
     io::Write,
     path::PathBuf,
 };
+
+const MANIFEST_FILE_NAME: &str = "hcdna.json";
 
 fn create_test_file(
     test_folder_path: &PathBuf,
@@ -85,8 +87,8 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
     fs::create_dir_all(path.join("zomes"))?;
 
     // create base DNA json config
-    let app_config_file = File::create(path.join("app.json"))?;
-    serde_json::to_writer_pretty(app_config_file, &AppConfig::default())?;
+    let app_config_file = File::create(path.join(MANIFEST_FILE_NAME))?;
+    serde_json::to_writer_pretty(app_config_file, &XyzzyPackage::default())?;
 
     // create a default .gitignore file with good defaults
     let gitignore_file_path = path.join(GITIGNORE_FILE_NAME);
@@ -138,7 +140,7 @@ pub mod tests {
 
         assert!(result.is_ok());
         assert!(dir_path_buf.join("zomes").exists());
-        assert!(dir_path_buf.join("app.json").exists());
+        assert!(dir_path_buf.join(MANIFEST_FILE_NAME).exists());
         assert!(dir_path_buf.join(IGNORE_FILE_NAME).exists());
         assert!(dir_path_buf.join(GITIGNORE_FILE_NAME).exists());
         assert!(dir_path_buf.join(TEST_DIR_NAME).exists());

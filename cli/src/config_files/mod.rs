@@ -1,9 +1,9 @@
-mod app;
 mod build;
 mod dht;
+mod xyzzy_package;
 
 pub use self::{
-    app::{App, Author},
     build::Build,
     dht::Dht,
+    xyzzy_package::{Author, XyzzyPackage},
 };

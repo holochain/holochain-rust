@@ -2,17 +2,26 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.0.13-alpha1] - 2019-04-29
 
 ### Added
+- Adds hdk::grant_capability() for zome functions to be able to create [capability grant](doc/architecture/decisions/0017-capabilities.md)  [#1285](https://github.com/holochain/holochain-rust/pull/1285)
+- `nix-shell` includes latest `hc` and `holochain` binaries [#1306](https://github.com/holochain/holochain-rust/pull/1306)
+- Adds `hc-cli-uninstall` and `hc-conductor-rust-uninstall` to drop local development installations of these binaries that would override dist binaries [#1351](https://github.com/holochain/holochain-rust/pull/1351)
 
 ### Changed
+- changed JSON-RPC Zome call `params` key to `args` for clarity (due to confusion between JSON-RPC `params` and Holochain `params` keys): see [#1203](https://github.com/holochain/holochain-rust/pull/1203) and [#1271](https://github.com/holochain/holochain-rust/pull/1271)
+- Remove sleeps during network initialization, block until P2pReady event is received [#1284](https://github.com/holochain/holochain-rust/pull/1284).
+- refactored `shell.nix` into `holonix` directory for rationalized `nix-shell` commands and easier maintenance and clarity. [#1292](https://github.com/holochain/holochain-rust/pull/1292)
+  - note: `hc-test` is now `hc-rust-test` and `hc-test-all` is now `hc-test`
 
 ### Deprecated
+- `params` Zome call argument deprecated in favor of `args`. [#1271](https://github.com/holochain/holochain-rust/pull/1271)
 
 ### Removed
 
 ### Fixed
+- Windows-only: Spawned `node.exe` process used by network module now closes properly on holochain termination [#1293](https://github.com/holochain/holochain-rust/pull/1293)   
 
 ### Security
 
@@ -25,8 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Adds CAPABILITY_REQ global for access from a zome function call to the capability request that was used to make the call. This is important for doing validation of provenance for a zome call that wants to create a [capability grant](doc/architecture/decisions/0017-capabilities.md). [#1273](https://github.com/holochain/holochain-rust/pull/1273)
 
-- Adds hdk::grant_capability() for zome functions to be able to create [capability grant](doc/architecture/decisions/0017-capabilities.md)  [#1285](https://github.com/holochain/holochain-rust/pull/1285)
-
 
 ### Changed
 
@@ -34,14 +41,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clarifies the error received when attempting to add a DNA whose expected hash mismatches the actual hash [#1287](https://github.com/holochain/holochain-rust/pull/1287).
 - Binary tarballs no longer extract to a subdirectory [#1265](https://github.com/holochain/holochain-rust/pull/1265)
 - Linux binary tarballs are now named `generic` rather than `ubuntu` [#1265](https://github.com/holochain/holochain-rust/pull/1265)
+- When getting links, the result has changed from `addresses: Vec<Address>` to `links: Vec<LinksResult>`. [#1250](https://github.com/holochain/holochain-rust/pull/1250)
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
-
-- Windows-only: Spawned `node.exe` process used by network module now closes properly on holochain termination [#1293](https://github.com/holochain/holochain-rust/pull/1293)   
 
 - Don't publish private zome entries [#1233](https://github.com/holochain/holochain-rust/pull/1233)
 
@@ -98,11 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `add_agent()` admin function now creates keystore file instead of just recording file in config [#1182](https://github.com/holochain/holochain-rust/pull/1182)
 - One-time-signing now takes a vector of payloads, and returns a vector of signatures. [#1193](https://github.com/holochain/holochain-rust/pull/1193)
 - Pins nixpkgs to Holo-Host channel in shell and CI [#1162](https://github.com/holochain/holochain-rust/pull/1162)
-- changed JSON-RPC Zome call `params` key to `args` for clarity (due to confusion between JSON-RPC `params` and Holochain `params` keys): see [#1203](https://github.com/holochain/holochain-rust/pull/1203) and [#1271](https://github.com/holochain/holochain-rust/pull/1271)
 
 ### Deprecated
-
-- `params` Zome call argument deprecated in favor of `args`. [#1271](https://github.com/holochain/holochain-rust/pull/1271)
 
 ### Removed
 

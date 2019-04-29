@@ -665,7 +665,7 @@ impl P2pNode {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
                     self.logger.e(&format!(
-                        "({}) ###### Received parse error: {} {:?}",
+                        "({}) ###### Received parse error: {} | data = {:?}",
                         self.agent_id, s, data,
                     ));
                 }
@@ -714,7 +714,7 @@ impl P2pNode {
         let request = maybe_request.unwrap();
         // extract msg data
         let fetch_data = unwrap_to!(request => JsonProtocol::HandleFetchEntry);
-        // Alex responds: should send entry data back
+        // Respond
         self.reply_to_HandleFetchEntry(&fetch_data)
             .expect("Reply to HandleFetchEntry should work");
         true

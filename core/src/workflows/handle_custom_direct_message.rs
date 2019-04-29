@@ -23,7 +23,7 @@ pub async fn handle_custom_direct_message(
     let result = receive(context.clone(), &zome, &CallbackParams::Receive(payload));
     let response = match result {
         CallbackResult::ReceiveResult(response) => Ok(response),
-        _ => Err("Error calling receive callback".to_string()),
+        err => Err(format!("Error calling receive callback: {:?}", err)),
     };
 
     let custom_direct_message = CustomDirectMessage {

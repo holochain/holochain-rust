@@ -7,6 +7,7 @@ use hdk::{
         entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
         error::HolochainError,
         json::JsonString,
+        signature::{Provenance, Signature},
     },
     holochain_wasm_utils::api_serialization::{
         get_entry::{
@@ -20,7 +21,10 @@ use hdk::{
 
 use memo::Memo;
 use post::Post;
-use std::{collections::BTreeMap, convert::{TryFrom, TryInto}};
+use std::{
+    collections::BTreeMap,
+    convert::{TryFrom, TryInto},
+};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -89,8 +93,13 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
     )
 }
 
-pub fn handle_check_send(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
-    let received_str = hdk::send(to_agent, message, 10000.into())?;
+pub fn handle_ping(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
+    let json_msg = json!({
+        "msg_type": "ping",
+        "body" : message
+    })
+    .to_string();
+    let received_str = hdk::send(to_agent, json_msg, 10000.into())?;
     Ok(JsonString::from_json(&received_str))
 }
 
@@ -106,13 +115,20 @@ pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&post_entry(content))
 }
 
+pub static BOB_AGENT_ID: &'static str =
+    "HcScj5GbxXdTq69sfnz3jcA4u5f35zftsuu5Eb3dBxHjgd9byUUW6JmN3Bvzqqr";
+
 fn is_my_friend(addr: Address) -> bool {
-    // this is "alice's" hash
-    addr == Address::from("HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui")
+    addr == Address::from(BOB_AGENT_ID)
 }
 
 pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
-    let addr = CAPABILITY_REQ.provenance.source();
+    // if it worked for the nodejs conductor to make calls with different provenances
+    // we could get the caller we want from the CAPABILITY_REQ global like this:
+    //    let addr = CAPABILITY_REQ.provenance.source();
+    // but it doesn't work yet so for this test we are hard-coding the "friend"" to bob
+    let addr = Address::from(BOB_AGENT_ID);
+
     if is_my_friend(addr.clone()) {
         let mut functions = BTreeMap::new();
         functions.insert("blog".to_string(), vec!["create_post".to_string()]);
@@ -131,8 +147,8 @@ pub fn handle_get_grants() -> ZomeApiResult<Vec<Address>> {
     hdk::query(EntryType::CapTokenGrant.into(), 0, 0)
 }
 
-pub fn handle_record_post_claim(identifier: String, claim: Address) -> ZomeApiResult<Address> {
-    hdk::commit_capability_claim(identifier, claim)
+pub fn handle_commit_post_claim(grantor: Address, claim: Address) -> ZomeApiResult<Address> {
+    hdk::commit_capability_claim("can post", grantor, claim)
 }
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
@@ -141,31 +157,160 @@ struct CreatePostArgs {
     in_reply_to: Option<Address>,
 }
 
-pub fn handle_create_post_with_claim(instance_id: String, content: String, in_reply_to: Option<Address>) ->  ZomeApiResult<Address> {
-    // retrieve a previously stored claimed
-    let claim = hdk::query_result(EntryType::CapTokenClaim.into(),
-                                   QueryArgsOptions {
-                                       entries: true,
-                                       ..Default::default()
-                                   }
-    ).and_then(|result| match result {
+#[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
+struct Message {
+    msg_type: String,
+    body: JsonString,
+}
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
+struct PostMessageBody {
+    claim: Address,
+    signature: Signature,
+    args: CreatePostArgs,
+    source: Address, // temporary till receive gets "from"
+}
+
+fn check_claim_against_grant(claim: &Address, provenance: Provenance, payload: String) -> bool {
+    // first make sure the payload is what was signed in the provenance
+    let signed = hdk::verify_signature(provenance.clone(), payload).unwrap_or(false);
+    if !signed {
+        return false;
+    };
+
+    // Then look up grants and find one that matches the claim, and then check to see if the
+    // source in the provenance matches one of the assignees of the grant.
+    let result = match hdk::query_result(
+        EntryType::CapTokenGrant.into(),
+        QueryArgsOptions {
+            entries: true,
+            ..Default::default()
+        },
+    ) {
+        Ok(r) => r,
+        Err(_) => return false,
+    };
+    match result {
+        QueryResult::Entries(entries) => {
+            let found = entries.iter().find(|(addr, entry)| {
+                claim == addr
+                    && match entry {
+                        Entry::CapTokenGrant(ref grant) => match grant.assignees() {
+                            Some(assignees) => assignees.contains(&provenance.source()),
+                            None => false,
+                        },
+                        _ => false,
+                    }
+            });
+            found.is_some()
+        }
+        _ => false,
+    }
+}
+
+// this is an example of a receive function that can handle a typed messaged
+pub fn handle_receive(json_msg: JsonString) -> String {
+    let maybe_message: Result<Message, HolochainError> = json_msg.try_into();
+    let response = match maybe_message {
+        Err(err) => format!("error: {}", err),
+        Ok(message) => match message.msg_type.as_str() {
+            // ping simply returns the body of the message
+            "ping" => message.body.to_string(),
+
+            // post calls the create_post zome function handler after checking the supplied signature
+            "post" => {
+                let maybe_post_body: Result<PostMessageBody, HolochainError> =
+                    message.body.try_into();
+                match maybe_post_body {
+                    Err(err) => format!("error: couldn't parse body: {}", err),
+                    Ok(post_body) => {
+                        // check that the claim matches a grant and correctly signed the content
+                        if !check_claim_against_grant(
+                            &post_body.claim,
+                            Provenance::new(post_body.source, post_body.signature),
+                            post_body.args.content.clone(),
+                        ) {
+                            "error: no matching grant for claim".to_string()
+                        } else {
+                            let x = match hdk::commit_entry(&post_entry(post_body.args.content)) {
+                                Err(err) => format!("error: couldn't create post: {}", err),
+                                Ok(addr) => addr.to_string(),
+                            };
+                            let _ =
+                                hdk::debug("For some reason this link_entries statement fails!?!?");
+                            //                            let _ = hdk::link_entries(&AGENT_ADDRESS, &Address::from(x.clone()), "authored_posts");
+
+                            x
+
+                            /*
+                                When we figure out why link_entries above throws an BadCall wasm error
+                                Then we can reinstate calling the creating using the handler as below
+                                match handle_create_post(post_body.args.content, post_body.args.in_reply_to) {
+                                Err(err) => format!("error: couldn't create post: {}", err),
+                                Ok(address) => address.to_string(),
+                            }*/
+                        }
+                    }
+                }
+            }
+            typ => format!("unknown message type: {}", typ),
+        },
+    };
+    json!({
+        "msg_type": "response",
+        "body": response
+    })
+    .to_string()
+}
+
+fn find_claim(_identifier: &str, _grantor: &Address) -> Result<Address, HolochainError> {
+    //   Ok(Address::from("Qmebh1y2kYgVG1RPhDDzDFTAskPcRWvz5YNhiNEi17vW9G"))
+    let claim = hdk::query_result(
+        EntryType::CapTokenClaim.into(),
+        QueryArgsOptions {
+            entries: true,
+            ..Default::default()
+        },
+    )
+    .and_then(|result| match result {
         QueryResult::Entries(entries) => {
             let entry = &entries[0].1;
             match entry {
                 Entry::CapTokenClaim(ref claim) => Ok(claim.token()),
                 _ => Err(ZomeApiError::Internal("failed to get claim".into())),
             }
-        },
-        _ => Err(ZomeApiError::Internal("failed to get claim".into()))
+        }
+        _ => Err(ZomeApiError::Internal("failed to get claim".into())),
     })?;
-    let addr = hdk::call(
-        instance_id,
-        "blog".to_string(),
+    Ok(claim)
+}
+
+pub fn handle_create_post_with_claim(
+    grantor: Address,
+    content: String,
+    in_reply_to: Option<Address>,
+) -> ZomeApiResult<Address> {
+    // retrieve a previously stored claimed
+    let claim = find_claim("can_blog", &grantor)?;
+
+    let post_body = PostMessageBody {
         claim,
-        "create_post".to_string(),
-        CreatePostArgs {content, in_reply_to}.into(),
-    )?;
-    addr.try_into().map_err(|err| ZomeApiError::Internal(format!("unable to convert result: {}",err)))
+        signature: hdk::sign(content.clone()).map(Signature::from)?,
+        args: CreatePostArgs {
+            content,
+            in_reply_to,
+        },
+        source: Address::from(AGENT_ADDRESS.to_string()),
+    };
+
+    let message = Message {
+        msg_type: "post".to_string(),
+        body: post_body.into(),
+    };
+
+    let response = hdk::send(grantor, JsonString::from(message).into(), 10000.into())?;
+    let response_message: Message = JsonString::from_json(&response).try_into()?;
+    Ok(Address::from(response_message.body.to_string()))
 }
 
 pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {

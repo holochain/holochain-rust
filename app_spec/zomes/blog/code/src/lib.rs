@@ -37,10 +37,8 @@ define_zome! {
         Ok(())
     }
 
-    receive: |message| {
-        json!({
-            "message": message
-        }).to_string()
+    receive: |msg_json| {
+        blog::handle_receive(JsonString::from_json(&msg_json))
     }
 
     functions: [
@@ -63,10 +61,10 @@ define_zome! {
             handler: blog::handle_check_sum
         }
 
-        check_send: {
+        ping: {
             inputs: |to_agent: Address, message: String|,
             outputs: |response: ZomeApiResult<JsonString>|,
-            handler: blog::handle_check_send
+            handler: blog::handle_ping
         }
 
         post_address: {
@@ -88,7 +86,7 @@ define_zome! {
         }
 
         create_post_with_agent: {
-            inputs: |agent_id:Address,content: String, in_reply_to: Option<Address>|,
+            inputs: |agent_id:Address, content: String, in_reply_to: Option<Address>|,
             outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_create_post_with_agent
         }
@@ -103,7 +101,18 @@ define_zome! {
             inputs: | |,
             outputs: |result: ZomeApiResult<Vec<Address>>|,
             handler: blog::handle_get_grants
+        }
 
+        commit_post_claim: {
+            inputs: |grantor: Address, claim: Address|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_commit_post_claim
+        }
+
+        create_post_with_claim: {
+            inputs: |grantor: Address, content: String, in_reply_to: Option<Address>|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_create_post_with_claim
         }
 
         create_memo: {
@@ -217,6 +226,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, memo_address, get_memo, my_memos, create_memo, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post, get_history_post, get_post_with_options, get_post_with_options_latest, authored_posts_with_sources, create_post_with_agent, request_post_grant,get_grants]
+        hc_public [show_env, check_sum, ping, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, memo_address, get_memo, my_memos, create_memo, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post, get_history_post, get_post_with_options, get_post_with_options_latest, authored_posts_with_sources, create_post_with_agent, request_post_grant, get_grants, commit_post_claim, create_post_with_claim]
     }
 }

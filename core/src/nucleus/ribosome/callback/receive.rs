@@ -38,7 +38,7 @@ pub fn receive(
         WasmCallData::new_callback_call(context, call),
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),
-        Err(_) => CallbackResult::NotImplemented("receive/4".into()),
+        Err(err) => CallbackResult::Fail(err.to_string()),
     }
 }
 

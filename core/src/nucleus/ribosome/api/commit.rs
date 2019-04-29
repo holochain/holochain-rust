@@ -9,7 +9,7 @@ use holochain_wasm_utils::api_serialization::commit_entry::{CommitEntryArgs, Com
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
-/// ZomeApiFunction::CommitArgs function code
+/// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: CommitEntryArg
 /// Returns an HcApiReturnCode as I64

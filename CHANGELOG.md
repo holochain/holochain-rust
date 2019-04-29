@@ -2,7 +2,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.0.13-alpha1] - 2019-04-29
 
 ### Added
 - Adds hdk::grant_capability() for zome functions to be able to create [capability grant](doc/architecture/decisions/0017-capabilities.md)  [#1285](https://github.com/holochain/holochain-rust/pull/1285)
@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clarifies the error received when attempting to add a DNA whose expected hash mismatches the actual hash [#1287](https://github.com/holochain/holochain-rust/pull/1287).
 - Binary tarballs no longer extract to a subdirectory [#1265](https://github.com/holochain/holochain-rust/pull/1265)
 - Linux binary tarballs are now named `generic` rather than `ubuntu` [#1265](https://github.com/holochain/holochain-rust/pull/1265)
+- When getting links, the result has changed from `addresses: Vec<Address>` to `links: Vec<LinksResult>`. [#1250](https://github.com/holochain/holochain-rust/pull/1250)
 
 ### Deprecated
 

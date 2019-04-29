@@ -1,6 +1,7 @@
 let
   pkgs = import ../../nixpkgs/nixpkgs.nix;
   release = import ../config.nix;
+  release-pulse = import ../pulse/config.nix;
 
   name = "hc-release-prepare";
 
@@ -13,16 +14,11 @@ let
    echo "3. git config --global hub.oauthtoken <token>"
    echo "4. git config --global hub.username <username>"
    echo
-   echo "Current nix-shell config:"
-   echo
-   echo "pulse-url-hash: ${release.pulse.url-hash}"
-   echo "pulse-version: ${release.pulse.version}"
-   echo "pulse-commit: ${release.pulse.commit}"
-   echo "core-previous-version: ${release.core.version.previous}"
-   echo "core-version: ${release.core.version.current}"
-   echo "node-conductor-previous-version: ${release.node-conductor.version.previous}"
-   echo "node-conductor-version: ${release.node-conductor.version.current}"
+
+   hc-release-audit
+
    git hub --version
+
    echo
    read -r -p "Are you sure you want to cut a new release based on the current config in shell.nix? [y/N] " response
    case "$response" in
@@ -30,7 +26,7 @@ let
      hc-release-pulse-tag \
      && hc-release-github-branch \
      && hc-release-rust-manifest-version-sync \
-     && hc-release-doc-changelog-version-sync \
+     && hc-release-docs-changelog-version-sync \
      && hc-release-github-pr \
      ;;
     *)

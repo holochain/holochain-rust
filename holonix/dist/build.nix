@@ -1,14 +1,16 @@
 let
+  pkgs = import ../nixpkgs/nixpkgs.nix;
+
+  audit = import ./src/audit.nix;
   dist = import ./src/dist.nix;
   flush = import ./src/flush.nix;
-
-  holochain = import ./src/holochain.nix;
-  hc = import ./src/hc.nix;
 in
 [
+  pkgs.nix-prefetch-scripts
+
+  audit
   dist
   flush
-
-  holochain
-  hc
 ]
+++ import ./cli/build.nix
+++ import ./conductor/build.nix

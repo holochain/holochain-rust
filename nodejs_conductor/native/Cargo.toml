@@ -1,6 +1,6 @@
 [package]
 name = "holochain-node"
-version = "0.4.11-alpha1"
+version = "0.4.12-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 license = "MIT"
 build = "build.rs"

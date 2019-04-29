@@ -8,13 +8,13 @@ use holochain_net::{
     },
     tweetlog::TWEETLOG,
 };
-use p2p_node::P2pNode;
+use p2p_node::test_node::TestNode;
 
 /// Tests if we can get back data published on the network
 #[cfg_attr(tarpaulin, skip)]
 fn confirm_published_data(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
     address: &Address,
     content: &serde_json::Value,
 ) -> NetResult<()> {
@@ -48,8 +48,8 @@ fn confirm_published_data(
 /// Tests if we can get back metadata published on the network
 #[cfg_attr(tarpaulin, skip)]
 fn confirm_published_metadata(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
     address: &Address,
     attribute: &str,
     link_entry_address: &serde_json::Value,
@@ -85,12 +85,14 @@ fn confirm_published_metadata(
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
 pub fn setup_one_node(
-    alex: &mut P2pNode,
-    _billy: &mut P2pNode,
+    alex: &mut TestNode,
+    _billy: &mut TestNode,
+    dna_address: &Address,
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on both nodes
-    alex.track_dna().expect("Failed sending TrackDna on alex");
+    alex.track_dna(dna_address, true)
+        .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
@@ -135,18 +137,22 @@ pub fn setup_one_node(
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
 pub fn setup_two_nodes(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    dna_address: &Address,
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on both nodes
-    alex.track_dna().expect("Failed sending TrackDna on alex");
+    alex.track_dna(dna_address, true)
+        .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
-    billy.track_dna().expect("Failed sending TrackDna on billy");
+    billy
+        .track_dna(dna_address, true)
+        .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
@@ -223,10 +229,9 @@ pub fn setup_two_nodes(
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
     // Setup
-    println!("Testing: send_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Send a message from alex to billy
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
@@ -267,10 +272,9 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
     // Setup
-    println!("Testing: meta_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Send data & metadata on same address
     confirm_published_data(alex, billy, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1)?;
@@ -339,10 +343,9 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
     // Setup
-    println!("Testing: dht_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Alex publish data on the network
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
@@ -386,7 +389,13 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
 }
 
 /// Sending a Message before doing a 'TrackDna' should fail
-pub fn no_setup_test(alex: &mut P2pNode, billy: &mut P2pNode, _connect: bool) -> NetResult<()> {
+pub fn no_setup_test(alex: &mut TestNode, billy: &mut TestNode, _connect: bool) -> NetResult<()> {
+    alex.track_dna(&DNA_ADDRESS_A, true)
+        .expect("Failed sending TrackDna message on alex");
+    alex.untrack_current_dna()
+        .expect("Failed sending UntrackDna message on alex");
+    alex.set_current_dna(&DNA_ADDRESS_A);
+
     // Send a message from alex to billy
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
 
@@ -403,17 +412,17 @@ pub fn no_setup_test(alex: &mut P2pNode, billy: &mut P2pNode, _connect: bool) ->
 
 /// Sending a Message before doing a 'TrackDna' should fail
 pub fn untrack_alex_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: untrack_alex_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Send Untrack
-    alex.untrack_dna()
+    alex.untrack_current_dna()
         .expect("Failed sending UntrackDna message on alex");
+    alex.set_current_dna(&DNA_ADDRESS_A);
 
     // Send a message from alex to billy
     let before_count = alex.count_recv_json_messages();
@@ -431,17 +440,16 @@ pub fn untrack_alex_test(
 
 /// Sending a Message before doing a 'TrackDna' should fail
 pub fn untrack_billy_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: untrack_billy_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Send Untrack
     billy
-        .untrack_dna()
+        .untrack_current_dna()
         .expect("Failed sending UntrackDna message on alex");
 
     // Making sure Untrack has been received
@@ -467,18 +475,17 @@ pub fn untrack_billy_test(
 }
 
 /// Sending a Message before doing a 'TrackDna' should fail
-pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
     // Setup
-    println!("Testing: untrack_billy_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Billy untracks DNA
     billy
-        .untrack_dna()
+        .untrack_current_dna()
         .expect("Failed sending UntrackDna message on billy");
 
     // Alex untracks DNA
-    alex.untrack_dna()
+    alex.untrack_current_dna()
         .expect("Failed sending UntrackDna message on alex");
 
     // Making sure Untrack has been received
@@ -487,9 +494,12 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
     billy.listen(100);
 
     // Billy re-tracks DNA
-    billy.track_dna().expect("Failed sending TrackDna on billy");
+    billy
+        .track_dna(&DNA_ADDRESS_A, true)
+        .expect("Failed sending TrackDna on billy");
     // alex re-tracks DNA
-    alex.track_dna().expect("Failed sending TrackDna on alex");
+    alex.track_dna(&DNA_ADDRESS_A, true)
+        .expect("Failed sending TrackDna on alex");
 
     // Making sure Track has been received
     // TODO: Have server reply with successResult
@@ -537,9 +547,9 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-pub fn no_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
     // Setup
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // No Meta & No Entry
     // ==================

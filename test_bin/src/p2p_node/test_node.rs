@@ -886,7 +886,6 @@ impl TestNode {
                 // n/a
             }
             JsonProtocol::HandleSendMessage(msg) => {
-                assert!(self.is_tracking(&msg.dna_address));
                 // log the direct message sent to us
                 self.recv_dm_log.push(msg);
             }
@@ -900,8 +899,7 @@ impl TestNode {
             JsonProtocol::FetchEntryResult(_) => {
                 // n/a
             }
-            JsonProtocol::HandleFetchEntry(msg) => {
-                assert!(self.is_tracking(&msg.dna_address));
+            JsonProtocol::HandleFetchEntry(_msg) => {
                 // n/a
             }
             JsonProtocol::HandleFetchEntryResult(_msg) => {
@@ -912,24 +910,26 @@ impl TestNode {
                 panic!("Core should not receive PublishDhtData message");
             }
             JsonProtocol::HandleStoreEntry(msg) => {
-                assert!(self.is_tracking(&msg.dna_address));
-                // Store data in local datastore
-                let mut dna_store = self
-                    .dna_stores
-                    .get_mut(&msg.dna_address)
-                    .expect("No dna_store for this DNA");
-                dna_store
-                    .entry_store
-                    .insert(msg.entry_address, msg.entry_content);
+                if self.is_tracking(&msg.dna_address) {
+                    // Store data in local datastore
+                    let mut dna_store = self
+                        .dna_stores
+                        .get_mut(&msg.dna_address)
+                        .expect("No dna_store for this DNA");
+                    dna_store
+                        .entry_store
+                        .insert(msg.entry_address, msg.entry_content);
+                }
             }
             JsonProtocol::HandleDropEntry(msg) => {
-                assert!(self.is_tracking(&msg.dna_address));
-                // Remove data in local datastore
-                let mut dna_store = self
-                    .dna_stores
-                    .get_mut(&msg.dna_address)
-                    .expect("No dna_store for this DNA");
-                dna_store.entry_store.remove(&msg.entry_address);
+                if self.is_tracking(&msg.dna_address) {
+                    // Remove data in local datastore
+                    let mut dna_store = self
+                        .dna_stores
+                        .get_mut(&msg.dna_address)
+                        .expect("No dna_store for this DNA");
+                    dna_store.entry_store.remove(&msg.entry_address);
+                }
             }
 
             JsonProtocol::FetchMeta(_msg) => {
@@ -938,8 +938,7 @@ impl TestNode {
             JsonProtocol::FetchMetaResult(_msg) => {
                 // n/a
             }
-            JsonProtocol::HandleFetchMeta(msg) => {
-                assert!(self.is_tracking(&msg.dna_address));
+            JsonProtocol::HandleFetchMeta(_msg) => {
                 // n/a
             }
             JsonProtocol::HandleFetchMetaResult(_msg) => {
@@ -950,15 +949,16 @@ impl TestNode {
                 panic!("Core should not receive PublishDhtMeta message");
             }
             JsonProtocol::HandleStoreMeta(msg) => {
-                assert!(self.is_tracking(&msg.dna_address));
-                // Store data in local datastore
-                let meta_key = (msg.entry_address, msg.attribute);
-                let mut dna_store = self
-                    .dna_stores
-                    .get_mut(&msg.dna_address)
-                    .expect("No dna_store for this DNA");
-                for content in msg.content_list {
-                    dna_store.meta_store.insert(meta_key.clone(), content);
+                if self.is_tracking(&msg.dna_address) {
+                    // Store data in local datastore
+                    let meta_key = (msg.entry_address, msg.attribute);
+                    let mut dna_store = self
+                        .dna_stores
+                        .get_mut(&msg.dna_address)
+                        .expect("No dna_store for this DNA");
+                    for content in msg.content_list {
+                        dna_store.meta_store.insert(meta_key.clone(), content);
+                    }
                 }
             }
             // TODO

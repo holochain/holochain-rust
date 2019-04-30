@@ -104,7 +104,7 @@ pub enum Action {
 
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.
-    AddLink(Link),
+    AddLink((Link,Entry)),
 
     //action for updating crudstatus
     CrudStatus((EntryWithHeader, CrudStatus)),

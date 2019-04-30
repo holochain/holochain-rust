@@ -480,7 +480,7 @@ impl ConductorApiBuilder {
                     expected_hash,
                     properties
                 ))?;
-                Ok(json!({"dna_hash": dna_hash}))
+                Ok(json!({ "dna_hash": dna_hash }))
             });
 
         self.io.add_method("admin/dna/uninstall", move |params| {

@@ -753,14 +753,15 @@ pattern = '.*'"#
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
 
-        assert!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 false,
                 None,
                 None
-            ).is_ok());
+            )
+            .is_ok());
 
         let new_dna =
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
@@ -820,14 +821,15 @@ id = 'new-dna'"#,
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
 
-        assert!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 true,
                 None,
                 None
-            ).is_ok());
+            )
+            .is_ok());
 
         let new_dna =
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
@@ -870,14 +872,15 @@ id = 'new-dna'"#,
         new_dna_path.push("new-dna.dna.json");
         let dna = Arc::get_mut(&mut conductor.dna_loader).unwrap()(&new_dna_path).unwrap();
 
-        assert!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 false,
                 Some(dna.address()),
                 None
-            ).is_ok());
+            )
+            .is_ok());
 
         assert_eq!(
             conductor.install_dna_from_file(
@@ -916,14 +919,15 @@ id = 'new-dna'"#,
             )),
         );
 
-        assert!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna-with-props"),
                 true,
                 None,
                 Some(&new_props)
-            ).is_ok());
+            )
+            .is_ok());
 
         let mut new_dna =
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))

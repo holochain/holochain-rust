@@ -47,7 +47,7 @@ pub mod tests {
         cas::content::Address,
         entry::{entry_type::test_app_entry_type, Entry},
         json::{JsonString, RawString},
-        link::{Link,link_data::LinkData}
+        link::{link_data::LinkData, Link},
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use serde_json;
@@ -89,15 +89,31 @@ pub mod tests {
 
         let link1 = Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag");
         let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag");
-        let link_entry_1 = Entry::LinkAdd(LinkData::new_add(&entry_addresses[0], &entry_addresses[1].clone(), "test-tag"));
-        initialized_context.block_on(commit_entry(link_entry_1.clone(), None, &initialized_context));
-        let link_entry_2 = Entry::LinkAdd(LinkData::new_add(&entry_addresses[0], &entry_addresses[2].clone(), "test-tag"));
-        initialized_context.block_on(commit_entry(link_entry_2.clone(), None, &initialized_context));
+        let link_entry_1 = Entry::LinkAdd(LinkData::new_add(
+            &entry_addresses[0],
+            &entry_addresses[1].clone(),
+            "test-tag",
+        ));
+        initialized_context.block_on(commit_entry(
+            link_entry_1.clone(),
+            None,
+            &initialized_context,
+        ));
+        let link_entry_2 = Entry::LinkAdd(LinkData::new_add(
+            &entry_addresses[0],
+            &entry_addresses[2].clone(),
+            "test-tag",
+        ));
+        initialized_context.block_on(commit_entry(
+            link_entry_2.clone(),
+            None,
+            &initialized_context,
+        ));
         assert!(initialized_context
-            .block_on(add_link(&link_entry_1,&link1, &initialized_context))
+            .block_on(add_link(&link_entry_1, &link1, &initialized_context))
             .is_ok());
         assert!(initialized_context
-            .block_on(add_link(&link_entry_2,&link2, &initialized_context))
+            .block_on(add_link(&link_entry_2, &link2, &initialized_context))
             .is_ok());
 
         let call_result = test_zome_api_function_call(

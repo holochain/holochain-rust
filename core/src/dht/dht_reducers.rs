@@ -133,7 +133,7 @@ pub(crate) fn reduce_add_link(
         let eav = EntityAttributeValueIndex::new(
             link.base(),
             &Attribute::LinkTag(link.tag().to_owned()),
-            &entry.address()
+            &entry.address(),
         );
         eav.map(|e| {
             let storage = new_store.meta_storage();
@@ -417,7 +417,7 @@ pub mod tests {
         let context = Arc::new(context);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
-        let action = ActionWrapper::new(Action::AddLink((link.clone(),entry.clone())));
+        let action = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
 
         let new_dht_store: DhtStore;
         {
@@ -457,7 +457,7 @@ pub mod tests {
         let context = Arc::new(context);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
-        let mut action = ActionWrapper::new(Action::AddLink((link.clone(),entry.clone())));
+        let mut action = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
 
         let new_dht_store: DhtStore;
         {
@@ -511,7 +511,7 @@ pub mod tests {
         let context = Arc::new(context);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
-        let action = ActionWrapper::new(Action::AddLink((link.clone(),entry.clone())));
+        let action = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
 
         let new_dht_store: DhtStore;
         {

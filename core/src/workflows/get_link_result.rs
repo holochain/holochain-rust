@@ -4,7 +4,7 @@ use crate::{
 };
 
 use futures_util::future::FutureExt;
-use holochain_core_types::{error::HolochainError,entry::Entry,cas::content::Address};
+use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
 };
@@ -23,7 +23,7 @@ pub async fn get_link_result_workflow<'a>(
         Ok(())
     }?;
     //get links
-    let links = await!(get_link_caches(context,link_args))?;
+    let links = await!(get_link_caches(context, link_args))?;
 
     let (link_results, errors): (Vec<_>, Vec<_>) = links
         .into_iter()
@@ -68,9 +68,10 @@ pub async fn get_link_result_workflow<'a>(
     }
 }
 
-
-async fn get_link_caches<'a>(context : &'a Arc<Context>, link_args : &'a GetLinksArgs) -> Result<Vec<Address>,HolochainError>
-{
+async fn get_link_caches<'a>(
+    context: &'a Arc<Context>,
+    link_args: &'a GetLinksArgs,
+) -> Result<Vec<Address>, HolochainError> {
     let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
@@ -78,29 +79,36 @@ async fn get_link_caches<'a>(context : &'a Arc<Context>, link_args : &'a GetLink
         link_args.options.timeout.clone()
     ))?;
 
-    let (links_result,get_links_error) : (Vec<_>, Vec<_>) = links_caches.iter().map(|s|{
-        let entry_with_header = context.block_on(get_entry_with_meta_workflow(&context.clone(),&s.clone(),&link_args.options.timeout.clone()));
-        entry_with_header.map(|link_entry_result|{
-            link_entry_result.map(|link_entry|{
-                    match link_entry.entry_with_meta.entry
-                    {
+    let (links_result, get_links_error): (Vec<_>, Vec<_>) = links_caches
+        .iter()
+        .map(|s| {
+            let entry_with_header = context.block_on(get_entry_with_meta_workflow(
+                &context.clone(),
+                &s.clone(),
+                &link_args.options.timeout.clone(),
+            ));
+            entry_with_header
+                .map(|link_entry_result| {
+                    link_entry_result.map(|link_entry| match link_entry.entry_with_meta.entry {
                         Entry::LinkAdd(link) => Ok(link.link().target().clone()),
-                        _ => Err(HolochainError::ErrorGeneric("expected entry of type link".to_string()))
-                    }
-               
-            })
+                        _ => Err(HolochainError::ErrorGeneric(
+                            "expected entry of type link".to_string(),
+                        )),
+                    })
+                })
+                .unwrap_or(None)
+                .unwrap_or(Err(HolochainError::ErrorGeneric(
+                    "expected entry of type link".to_string(),
+                )))
         })
-        .unwrap_or(None)
-        .unwrap_or(Err(HolochainError::ErrorGeneric("expected entry of type link".to_string())))
-    })
-    .partition(Result::is_ok);
+        .partition(Result::is_ok);
 
-    if get_links_error.is_empty()
-    {
-        Ok(links_result.into_iter().map(|s|s.unwrap()).collect::<Vec<_>>())
-    }
-    else
-    {
+    if get_links_error.is_empty() {
+        Ok(links_result
+            .into_iter()
+            .map(|s| s.unwrap())
+            .collect::<Vec<_>>())
+    } else {
         Err(HolochainError::ErrorGeneric(
             "Could not get links".to_string(),
         ))

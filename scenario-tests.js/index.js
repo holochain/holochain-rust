@@ -18,55 +18,6 @@ const Config = {
 
 /// //////////////////////////////////////////////////////////
 
-// Conductor.prototype._start = Conductor.prototype.start
-// Conductor.prototype._stop = Conductor.prototype.stop
-// Conductor.prototype._callRaw = Conductor.prototype.call
-
-// // DEPRECATED: use Conductor.run()
-// Conductor.prototype.start = function () {
-//     this._stopPromise = new Promise((fulfill, reject) => {
-//         try {
-//             this._start(callbackFromPromise(fulfill, reject))
-//         } catch (e) {
-//             reject(e)
-//         }
-//     })
-// }
-
-// // DEPRECATED: use Conductor.run()
-// Conductor.prototype.stop = function () {
-//     this._stop()
-//     return this._stopPromise
-// }
-
-/**
- * Run a new Conductor, specified by a closure which returns a Promise:
- * (stop, conductor) => { (code to run) }
- * where `stop` is a function that shuts down the Conductor and must be called in the closure body
- *
- * e.g.:
- *      Conductor.run(Config.conductor([
- *          instanceAlice,
- *          instanceBob,
- *          instanceCarol,
- *      ]), (stop, conductor) => {
- *          doStuffWith(conductor)
- *          stop()
- *      })
- */
-// Conductor.run = function (config, fn) {
-//     const conductor = new Conductor(config)
-//     return new Promise(async (fulfill, reject) => {
-//         try {
-//             conductor._start(callbackFromPromise(fulfill, reject))
-//             await fn(() => conductor._stop(), conductor)
-//         } catch (e) {
-//             conductor._stop()
-//             reject(e)
-//         }
-//     })
-// }
-
 /**
  * Represents a conductor process to which calls can be made via RPC
  *
@@ -91,28 +42,24 @@ class Conductor {
   async initialize () {
     const call = this.call
     await this.instances.forEach(async instance => {
-      const dnaAddress = await call('admin/dna/install_from_file')(instance.dna)
-      const agentId = await call('test/agent/add')(instance.agent)
+      const installDnaResponse = await call('admin/dna/install_from_file')(instance.dna)
+      const addAgentResponse = await call('test/agent/add')(instance.agent)
 
       await call('admin/instance/add')(instance)
       await call('admin/instance/start')(instance)
       await call('admin/interface/add_instance')({ interface_id: TEST_INTERFACE_ID, instance_id: instance.id })
 
-      this.agentIds[instance.id] = agentId
-      this.dnaAddresses[instance.id] = dnaAddress
+      this.agentIds[instance.id] = addAgentResponse.agent_id
+      this.dnaAddresses[instance.id] = installDnaResponse.dna_hash
     })
   }
 
   agent_id (instanceId) {
-    throw new Error('Not Implemented')
+    return this.agentIds[instanceId]
   }
 
   dna_address (instanceId) {
-    throw new Error('Not Implemented')
-  }
-
-  async _callRaw (nstanceId, zome, fn, stringInput) {
-    throw new Error('Not Implemented')
+    return this.dnaAddresses[instanceId]
   }
 
   register_callback (callback) {
@@ -132,24 +79,15 @@ class DnaInstance {
     this.dnaAddress = this.conductor.dna_address(instanceId)
   }
 
-  // internally calls `this.conductor._callRaw`
+  // internally calls `this.conductor.call`
   call (zome, fn, params) {
-    const stringInput = JSON.stringify(params)
-    let rawResult
-    let result
     try {
-      rawResult = this.conductor._callRaw(this.id, zome, fn, stringInput)
+      const result = await this.conductor.call(this.id, zome, fn, params)
+      return result
     } catch (e) {
       console.error('Exception occurred while calling zome function: ', e)
       throw e
     }
-    try {
-      result = JSON.parse(rawResult)
-    } catch (e) {
-      console.warn('JSON.parse failed to parse the result. The raw value is: ', rawResult)
-      return rawResult
-    }
-    return result
   }
 
   // internally calls `this.call`

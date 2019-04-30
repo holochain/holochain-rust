@@ -4,7 +4,9 @@
   "description": "Javascript module for running single and multi-agents tests against DNAs running in the Holochain conductor",
   "main": "index.js",
   "scripts": {
-    "test": "faucet test/*"
+    "test": "faucet test/*",
+    "lint": "eslint .",
+    "lint-fix": "eslint --fix ."
   },
   "author": "Holochain Core Dev Team <devcore@holochain.org>",
   "license": "GPL-3",

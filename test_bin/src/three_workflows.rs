@@ -1,4 +1,5 @@
 use constants::*;
+use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
         json_protocol::{ConnectData, JsonProtocol},
@@ -7,34 +8,38 @@ use holochain_net::{
     },
     tweetlog::*,
 };
-use p2p_node::P2pNode;
+use p2p_node::test_node::TestNode;
 use std::time::SystemTime;
 
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
 pub fn setup_three_nodes(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    camille: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    camille: &mut TestNode,
+    dna_address: &Address,
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on all nodes
     // alex
-    alex.track_dna().expect("Failed sending TrackDna on alex");
+    alex.track_dna(dna_address, true)
+        .expect("Failed sending TrackDna on alex");
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     println!("self connected result 1: {:?}", connect_result_1);
     // billy
-    billy.track_dna().expect("Failed sending TrackDna on billy");
+    billy
+        .track_dna(dna_address, true)
+        .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     println!("self connected result 2: {:?}", connect_result_2);
     // camille
     camille
-        .track_dna()
+        .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on camille");
     let connect_result_3 = camille
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
@@ -163,14 +168,14 @@ pub fn setup_three_nodes(
 /// Reply with some data in hold_list
 #[cfg_attr(tarpaulin, skip)]
 pub fn hold_and_publish_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    camille: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    camille: &mut TestNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
     println!("Testing: hold_entry_list_test()");
-    setup_three_nodes(alex, billy, camille, can_connect)?;
+    setup_three_nodes(alex, billy, camille, &DNA_ADDRESS_A, can_connect)?;
 
     // Have alex hold some data
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, false)?;
@@ -256,15 +261,15 @@ pub fn hold_and_publish_test(
 ///
 #[cfg_attr(tarpaulin, skip)]
 pub fn publish_entry_stress_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    camille: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    camille: &mut TestNode,
     can_connect: bool,
 ) -> NetResult<()> {
     let time_start = SystemTime::now();
 
     // Setup
-    setup_three_nodes(alex, billy, camille, can_connect)?;
+    setup_three_nodes(alex, billy, camille, &DNA_ADDRESS_A, can_connect)?;
 
     let time_after_startup = SystemTime::now();
 

@@ -1,20 +1,20 @@
 let
  pkgs = import ../nixpkgs/nixpkgs.nix;
  rust = import ../rust/config.nix;
-in
+in rec
 {
 
  path = "dist";
 
- version = "0.0.12-alpha1";
+ version = "0.0.13-alpha1";
 
- artifact-target = if pkgs.stdenv.isDarwin
-  then
-   rust.generic-mac-target
-  else
-   builtins.replaceStrings
+ normalize-artifact-target = target:
+  builtins.replaceStrings
     [ "unknown" ]
     [ "generic" ]
-    rust.generic-linux-target;
+    target
+ ;
+
+ artifact-target = normalize-artifact-target ( if pkgs.stdenv.isDarwin then rust.generic-mac-target else rust.generic-linux-target );
 
 }

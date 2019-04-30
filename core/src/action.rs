@@ -20,6 +20,7 @@ use holochain_core_types::{
     entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
     link::Link,
+    signature::Provenance,
     validation::ValidationPackage,
 };
 use holochain_net::{
@@ -32,6 +33,7 @@ use snowflake;
 use std::{
     hash::{Hash, Hasher},
     sync::Arc,
+    vec::Vec,
 };
 
 /// Wrapper for actions that provides a unique ID
@@ -93,7 +95,7 @@ pub enum Action {
     // ----------------
     /// Writes an entry to the source chain.
     /// Does not validate, assumes entry is valid.
-    Commit((Entry, Option<Address>)),
+    Commit((Entry, Option<Address>, Vec<Provenance>)),
 
     // -------------
     // DHT actions:
@@ -312,7 +314,7 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit((test_entry(), None)))
+        ActionWrapper::new(Action::Commit((test_entry(), None, vec![])))
     }
 
     /// dummy action for a get of test_hash()

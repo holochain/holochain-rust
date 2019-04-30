@@ -473,14 +473,14 @@ impl ConductorApiBuilder {
                     None => None,
                 };
                 let properties = params_map.get("properties");
-                conductor_call!(|c| c.install_dna_from_file(
+                let dna_hash = conductor_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
                     id.to_string(),
                     copy,
                     expected_hash,
                     properties
                 ))?;
-                Ok(json!({"success": true}))
+                Ok(json!({"dna_hash": dna_hash}))
             });
 
         self.io.add_method("admin/dna/uninstall", move |params| {

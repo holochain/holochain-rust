@@ -109,7 +109,7 @@ impl IntoZome for syn::ItemMod {
                 acc.push(func.block);
                 acc
             });
-        // only a single function can be tagged as genesis in a valid Zome. 
+        // only a single function can be tagged as genesis in a valid Zome.
         // Error if there is more than one
         // Also error if there is no genesis
         match geneses.len() {

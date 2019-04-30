@@ -536,7 +536,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit((entry, _)) => {
+                Action::Commit((entry, _, _)) => {
                     assert!(
                         entry.entry_type() == EntryType::AgentId
                             || entry.entry_type() == EntryType::Dna
@@ -735,7 +735,7 @@ pub mod tests {
         let context = test_context("alex", netname);
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let dna_entry = Entry::Dna(Box::new(dna));
-        let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None)));
+        let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None, vec![])));
 
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
@@ -751,7 +751,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit((entry, _)) => {
+                Action::Commit((entry, _, _)) => {
                     assert_eq!(entry.entry_type(), EntryType::Dna);
                     assert_eq!(entry.content(), dna_entry.content());
                     true
@@ -767,7 +767,8 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex", netname);
         let agent_entry = Entry::AgentId(context.agent_id.clone());
-        let commit_agent_action = ActionWrapper::new(Action::Commit((agent_entry.clone(), None)));
+        let commit_agent_action =
+            ActionWrapper::new(Action::Commit((agent_entry.clone(), None, vec![])));
 
         // Set up instance and process the action
         let instance = Instance::new(context.clone());
@@ -783,7 +784,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit((entry, _)) => {
+                Action::Commit((entry, _, _)) => {
                     assert_eq!(entry.entry_type(), EntryType::AgentId);
                     assert_eq!(entry.content(), agent_entry.content());
                     true

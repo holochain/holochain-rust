@@ -94,21 +94,25 @@ pub mod tests {
             &entry_addresses[1].clone(),
             "test-tag",
         ));
-        initialized_context.block_on(commit_entry(
-            link_entry_1.clone(),
-            None,
-            &initialized_context,
-        )).expect("Could not commit link");
+        initialized_context
+            .block_on(commit_entry(
+                link_entry_1.clone(),
+                None,
+                &initialized_context,
+            ))
+            .expect("Could not commit link");
         let link_entry_2 = Entry::LinkAdd(LinkData::new_add(
             &entry_addresses[0],
             &entry_addresses[2].clone(),
             "test-tag",
         ));
-        initialized_context.block_on(commit_entry(
-            link_entry_2.clone(),
-            None,
-            &initialized_context,
-        )).expect("Could not commit link");
+        initialized_context
+            .block_on(commit_entry(
+                link_entry_2.clone(),
+                None,
+                &initialized_context,
+            ))
+            .expect("Could not commit link");
         assert!(initialized_context
             .block_on(add_link(&link_entry_1, &link1, &initialized_context))
             .is_ok());

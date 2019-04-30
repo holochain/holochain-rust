@@ -871,9 +871,9 @@ impl ConductorApiBuilder {
     ///     Adds a test agent. Test agents do not use the regular keystore and instead use
     ///     the test_keystore_loader. This makes test running much faster
     ///     Params:
-    ///         - agent_id
-    ///         - name
-    ///     Returns: The agent address of the newly added agent
+    ///         - agent_id [String] Id to assign to the agent to refer to it in interfaces
+    ///         - name [String] Nickname for the agent. Can be the same as agent_id 
+    ///     Returns: Json object containing the newly created agent address
     pub fn with_test_admin_functions(mut self) -> Self {
         self.io.add_method("test/agent/add", move |params| {
             let params_map = Self::unwrap_params_map(params)?;

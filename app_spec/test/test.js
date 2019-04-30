@@ -146,6 +146,29 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+scenario2.runTape('create_post_countersigned', async (t, { alice, bob }) => {
+
+  const content = "Holo world"
+  const in_reply_to = null
+
+  const address_params = { content }
+  const address_result = bob.call("blog", "post_address", address_params)
+
+  t.ok(address_result.Ok)
+  const SignResult = bob.call("converse", "sign_message", { key_id:"", message: address_result.Ok });
+  t.ok(SignResult.Ok)
+
+  const counter_signature = [bob.agentId, SignResult.Ok];
+
+  const params = { content, in_reply_to, counter_signature }
+  const result = alice.call("blog", "create_post_countersigned", params)
+
+  t.ok(result.Ok)
+  t.notOk(result.Err)
+  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+})
+
+
 scenario1.runTape('create_memo', async (t, { alice }) => {
 
   const content = "Reminder: Buy some HOT."

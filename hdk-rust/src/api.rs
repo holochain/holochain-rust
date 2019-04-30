@@ -1,4 +1,3 @@
-//! This file contains many of the structs, enums, and functions relevant for Zome
 //! developers! Detailed references and examples can be found here for how to use the
 //! HDK exposed functions to access powerful Holochain functions.
 
@@ -18,6 +17,7 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         capabilities::GrantCapabilityArgs,
+        commit_entry::{CommitEntryArgs, CommitEntryOptions, CommitEntryResult},
         get_entry::{
             EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
             StatusRequestKind,
@@ -638,7 +638,23 @@ pub fn debug<J: Into<String>>(msg: J) -> ZomeApiResult<()> {
 /// # }
 /// ```
 pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
-    Dispatch::CommitEntry.with_input(entry)
+    commit_entry_result(entry, CommitEntryOptions::default()).map(|result| result.address())
+}
+
+/// Attempts to commit an entry to your local source chain. The entry
+/// will have to pass the defined validation rules for that entry type.
+/// If the entry type is defined as public, will also publish the entry to the DHT.
+///
+/// Additional provenances can be added to the commit using the options argument.
+/// Returns a CommitEntryResult which contains the address of the committed entry.
+pub fn commit_entry_result(
+    entry: &Entry,
+    options: CommitEntryOptions,
+) -> ZomeApiResult<CommitEntryResult> {
+    Dispatch::CommitEntry.with_input(CommitEntryArgs {
+        entry: entry.clone(),
+        options,
+    })
 }
 
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using

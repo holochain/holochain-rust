@@ -10,8 +10,11 @@ use crate::{
         handler::{get::*, send::*, store::*},
     },
 };
-use holochain_core_types::hash::HashString;
-use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
+use holochain_core_types::{cas::content::Address, hash::HashString};
+use holochain_net::connection::{
+    json_protocol::{EntryListData, GetListData, JsonProtocol},
+    net_connection::NetHandler,
+};
 
 use std::{convert::TryFrom, sync::Arc};
 
@@ -194,8 +197,9 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             JsonProtocol::HandleGetHoldingEntryListResult(entries) => {
                 context.log(format!("HandleGetHoldingEntryListResult: {:?}", entries))
             }
-            JsonProtocol::HandleGetPublishingEntryList(entries) => {
-                context.log(format!("HandleGetPublishingEntryList: {:?}", entries))
+            JsonProtocol::HandleGetPublishingEntryList(get_list_data) => {
+                context.log(format!("HandleGetPublishingEntryList: {:?}", get_list_data));
+                handle_get_publishing_entries(&context, &get_list_data);
             }
             JsonProtocol::HandleGetPublishingEntryListResult(entries) => {
                 context.log(format!("HandleGetPublishingEntryListResult: {:?}", entries))
@@ -212,8 +216,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             JsonProtocol::HandleGetHoldingMetaListResult(meta) => {
                 context.log(format!("HandleGetHoldingMetaListResult: {:?}", meta))
             }
-            JsonProtocol
-           _ => {}
+            _ => {}
         }
         Ok(())
     })
@@ -235,4 +238,28 @@ fn republish_all_public_chain_entries(context: &Arc<Context>) {
                 _ => {}
             }
         });
+}
+
+fn handle_get_publishing_entries(context: &Arc<Context>, get_list_data: &GetListData) {
+    let chain = context.state().unwrap().agent().chain_store();
+    let top_header = context.state().unwrap().agent().top_chain_header();
+    let entry_address_list = chain
+        .iter(&top_header)
+        .filter(|ref chain_header| chain_header.entry_type().can_publish(context))
+        .map(|chain_header| {
+            let address: &Address = chain_header.entry_address();
+            address.clone()
+        })
+        .collect();
+    let entry_list_data = EntryListData {
+        dna_address: get_list_data.dna_address.clone(),
+        request_id: get_list_data.request_id.clone(),
+        entry_address_list: entry_address_list,
+    };
+
+    context.log(format!(
+        "debug/net/handle: handle_get_publishing_entries returning {:?}",
+        entry_list_data
+    ));
+    // Send the list back to the calling peer
 }

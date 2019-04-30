@@ -126,7 +126,7 @@ define_zome! {
 
         delete_entry_post: {
             inputs: |post_address: Address|,
-            outputs: |result: ZomeApiResult<()>|,
+            outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_delete_entry_post
         }
 
@@ -211,7 +211,7 @@ define_zome! {
 
         recommend_post: {
             inputs: |post_address: Address, agent_address: Address|,
-            outputs: |result: ZomeApiResult<()>|,
+            outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_recommend_post
         }
 

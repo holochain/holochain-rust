@@ -58,14 +58,14 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
 
-    let res: Result<(), HolochainError> = context
+    let res: Result<Address, HolochainError> = context
         .block_on(author_entry(
             &deletion_entry.clone(),
             Some(deleted_entry_address.clone()),
             &context.clone(),
             &vec![],
         ))
-        .map(|_| ());
+        .map(|_| deletion_entry.address());
 
     runtime.store_result(res)
 }

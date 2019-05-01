@@ -245,7 +245,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
         JsonProtocol::HandleSendMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!("{\"ry\":\"hello\"}".to_string(), msg.content.to_string());
+    assert_eq!(ENTRY_CONTENT_1.to_string(), msg.content.to_string());
 
     // Send a message back from billy to alex
     billy.send_reponse(
@@ -390,6 +390,7 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
 
 /// Sending a Message before doing a 'TrackDna' should fail
 pub fn no_setup_test(alex: &mut TestNode, billy: &mut TestNode, _connect: bool) -> NetResult<()> {
+    // Little dance for making alex have its current_dna set to DNA_ADDRESS_A
     alex.track_dna(&DNA_ADDRESS_A, true)
         .expect("Failed sending TrackDna message on alex");
     alex.untrack_current_dna()

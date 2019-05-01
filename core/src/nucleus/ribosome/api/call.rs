@@ -12,6 +12,7 @@ use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
 use std::{convert::TryFrom, sync::Arc};
 use wasmi::{RuntimeArgs, RuntimeValue};
+use serde_json::Value;
 
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {

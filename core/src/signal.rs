@@ -1,32 +1,14 @@
 use crate::action::ActionWrapper;
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{error::HolochainError, json::JsonString};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer};
 use std::thread;
 
-#[derive(Clone, Debug, DefaultJson)]
+#[derive(Clone, Debug, Serialize, DefaultJson)]
+#[serde(tag = "type")]
 pub enum Signal {
     Internal(ActionWrapper),
     User(JsonString),
-}
-
-impl Serialize for Signal {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            Signal::Internal(action_wrapper) => serializer.serialize_newtype_variant(
-                "Signal",
-                0,
-                "Internal",
-                &format!("{:?}", action_wrapper.action()),
-            ),
-            Signal::User(msg) => {
-                serializer.serialize_newtype_variant("Signal", 1, "User", &msg.to_string())
-            }
-        }
-    }
 }
 
 impl<'de> Deserialize<'de> for Signal {

@@ -43,13 +43,13 @@ In the last example, the instance ID "test-instance" was returned, which can be 
 
 > Any top level keys of the `args` field should correspond **exactly** with the name of an argument expected by the Zome method being called.
 
-**example zome function arguments**
+**Example Zome Function Arguments**
 
 ```json
 { "blog": { "content": "sample content" }}
 ```
 
-### Example request
+### Example Request
 
 **example request**
 ```json

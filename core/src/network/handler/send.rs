@@ -43,6 +43,7 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
                     message_data.request_id,
                     address,
                     context.clone(),
+                    &vec![]
                 ));
             });
         }

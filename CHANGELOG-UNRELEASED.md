@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- default.nix file added to facilitate `nix-env` based binary installation [#1356](https://github.com/holochain/holochain-rust/pull/1356)
+
 ### Changed
 
 ### Deprecated
@@ -15,5 +17,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
-
-

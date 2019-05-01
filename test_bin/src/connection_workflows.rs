@@ -11,7 +11,7 @@ use holochain_net::{
     },
     tweetlog::*,
 };
-use p2p_node::P2pNode;
+use p2p_node::test_node::TestNode;
 
 // Disconnect & reconnect a Node in a two nodes scenario
 #[cfg_attr(tarpaulin, skip)]
@@ -24,17 +24,15 @@ pub(crate) fn two_nodes_disconnect_test(
     let alex_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
     let alex_dir_path = alex_dir.path().to_string_lossy().to_string();
     // Create two nodes
-    let mut alex = P2pNode::new_with_spawn_ipc_network(
+    let mut alex = TestNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         Some(alex_dir_path.clone()),
     );
-    let mut billy = P2pNode::new_with_spawn_ipc_network(
+    let mut billy = TestNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -55,16 +53,15 @@ pub(crate) fn two_nodes_disconnect_test(
     log_i!("#### billy got: {}\n\n\n\n", count);
 
     // re-enable alex
-    alex = P2pNode::new_with_spawn_ipc_network(
+    alex = TestNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         // TODO test bootstrap with billy's endpoint
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         Some(alex_dir_path),
     );
-    basic_workflows::setup_one_node(&mut alex, &mut billy, true)?;
+    basic_workflows::setup_one_node(&mut alex, &mut billy, &DNA_ADDRESS_A, true)?;
 
     let alex_binding_2 = alex.p2p_binding.clone();
     log_i!("#### alex_binding_2: {}", alex_binding_2);
@@ -119,9 +116,8 @@ pub(crate) fn three_nodes_disconnect_test(
     // Create alex & temp dir
     let alex_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
     let alex_dir_path = alex_dir.path().to_string_lossy().to_string();
-    let mut alex = P2pNode::new_with_spawn_ipc_network(
+    let mut alex = TestNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -130,9 +126,8 @@ pub(crate) fn three_nodes_disconnect_test(
     // Create billy & temp dir
     let billy_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
     let billy_dir_path = billy_dir.path().to_string_lossy().to_string();
-    let mut billy = P2pNode::new_with_spawn_ipc_network(
+    let mut billy = TestNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -141,9 +136,8 @@ pub(crate) fn three_nodes_disconnect_test(
     // Create camille & temp dir
     let camille_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
     let camille_dir_path = camille_dir.path().to_string_lossy().to_string();
-    let mut camille = P2pNode::new_with_spawn_ipc_network(
+    let mut camille = TestNode::new_with_spawn_ipc_network(
         CAMILLE_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -166,15 +160,15 @@ pub(crate) fn three_nodes_disconnect_test(
     log_i!("#### billy got alex camille authoring: {}\n\n\n\n", count);
 
     // re-enable alex
-    alex = P2pNode::new_with_spawn_ipc_network(
+    alex = TestNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec![billy.p2p_binding.clone()],
         Some(alex_dir_path),
     );
-    alex.track_dna().expect("Failed sending TrackDna on alex");
+    alex.track_dna(&DNA_ADDRESS_A, true)
+        .expect("Failed sending TrackDna on alex");
     log_i!("#### alex reborn ({})", alex.p2p_binding.clone());
 
     let count = alex.listen(500);

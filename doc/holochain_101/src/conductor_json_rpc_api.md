@@ -31,18 +31,17 @@ The method `info/instances` doesn't require any input parameters, so `params` ca
 
 The following explains the general JSON-RPC pattern for how to call a Zome function.
 
-Unlike `info/instances`, a zome function call also expects arguments. We will need to include a JSON-RPC `params` field in our RPC call.
+Unlike `info/instances`, a Zome function call also expects arguments. We will need to include a JSON-RPC `args` field in our RPC call.
 
 To call a Zome function, use `"call"` as the JSON-RPC `method`, and a `params` object with four items:
 1. `instance_id`: The instance ID, corresponding to the instance IDs returned by `info/instances`
 2. `zome`: The name of the Zome
 3. `function`: The name of the function
-4. `params`: The actual parameters of the zome function call 
-    - (yes, it's a little confusing that a sub-field of `params` is also named `params`, but we are using an RPC method to call a zome function, so nested parameters are inevitable!)
+4. `args`: The actual parameters of the zome function call
 
 In the last example, the instance ID "test-instance" was returned, which can be used here as the instance ID. Say there was a Zome in a DNA called "blogs", this is the Zome name. That Zome has a function called "create_blog", that is the function name. 
 
-> Any top level keys of the `params` field should correspond **exactly** with the name of an argument expected by the Zome method being called.
+> Any top level keys of the `args` field should correspond **exactly** with the name of an argument expected by the Zome method being called.
 
 **example zome function arguments**
 
@@ -62,7 +61,7 @@ In the last example, the instance ID "test-instance" was returned, which can be 
         "instance_id": "test-instance",
         "zome": "blog",
         "function": "create_blog",
-        "params": {
+        "args": {
             "blog": {
                 "content": "sample content"
             } 

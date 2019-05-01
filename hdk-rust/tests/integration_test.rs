@@ -580,7 +580,10 @@ fn can_link_entries() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from_json(r#"{"Ok":null}"#));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+    );
 }
 
 #[test]
@@ -589,7 +592,10 @@ fn can_remove_link() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from_json(r#"{"Ok":null}"#));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+    );
 }
 
 #[test]

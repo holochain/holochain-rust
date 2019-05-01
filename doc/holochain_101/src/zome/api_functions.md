@@ -118,8 +118,8 @@ Not yet available.
 Canonical name: `remove_entry`
 
 Enables an entry, referred to by its address, to be marked in the chain as 'deleted'. This is done by adding a new entry
-which indicates the deleted status of the old one. This will change which types of results that entry would then show up in,
-according to its new 'deleted' status. It can still be retrieved, but only if specifically asked for.
+which indicates the deleted status of the old one. This will changes which types of results that entry would then show up in,
+according to its new 'deleted' status. It can still be retrieved, but only if specifically asked for. This function also returns the Hash of the deletion entry on completion
 
 [View it in the Rust HDK](https://developer.holochain.org/api/0.0.7-alpha/hdk/api/fn.remove_entry.html)
 
@@ -159,7 +159,7 @@ Consumes two values, the first of which is the address of an entry, base, and th
 
 Canonical name: `link_entries`
 
-Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a relationship between them, called a `tag`. Later, lists of entries can be looked up by using `get_links`. Entries can only be looked up in the direction from the `base`, which is the first argument, to the `target`, which is the second.
+Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a relationship between them, called a `tag`. Later, lists of entries can be looked up by using `get_links`. Entries can only be looked up in the direction from the `base`, which is the first argument, to the `target`, which is the second. This function returns a hash for the LinkAdd entry on completion.
 
 [View it in the Rust HDK](https://developer.holochain.org/api/0.0.7-alpha/hdk/api/fn.link_entries.html)
 

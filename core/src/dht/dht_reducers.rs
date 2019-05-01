@@ -155,7 +155,7 @@ pub(crate) fn reduce_remove_link(
 ) -> Option<DhtStore> {
     // Get Action's input data
     let action = action_wrapper.action();
-    let link = unwrap_to!(action => Action::RemoveLink);
+    let (link,entry) = unwrap_to!(action => Action::RemoveLink);
     let mut new_store = (*old_store).clone();
     let storage = &old_store.content_storage().clone();
     if !(*storage.read().unwrap()).contains(link.base()).unwrap() {
@@ -170,7 +170,7 @@ pub(crate) fn reduce_remove_link(
         let eav = EntityAttributeValueIndex::new(
             link.base(),
             &Attribute::RemovedLink(link.tag().to_string()),
-            link.target(),
+            &entry.address(),
         );
         eav.map(|e| {
             let storage = new_store.meta_storage();

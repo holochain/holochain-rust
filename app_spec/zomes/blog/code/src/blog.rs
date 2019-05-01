@@ -7,11 +7,13 @@ use hdk::{
         entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
         error::HolochainError,
         json::JsonString,
+        signature::Provenance
     },
     holochain_wasm_utils::api_serialization::{
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
+        commit_entry::CommitEntryOptions,
         get_links::{GetLinksOptions, GetLinksResult},
     },
     AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
@@ -148,6 +150,27 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
     Ok(address)
 }
 
+pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Address>,
+                                        counter_signature: Provenance) -> ZomeApiResult<Address> {
+
+    let entry = post_entry(content);
+
+    let options = CommitEntryOptions::new(vec![counter_signature]);
+
+    let address = hdk::commit_entry_result(&entry, options).unwrap().address();
+
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
+
+    if let Some(in_reply_to_address) = in_reply_to {
+        // return with Err if in_reply_to_address points to missing entry
+        hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+    }
+
+    Ok(address)
+}
+
+
 pub fn handle_create_post_with_agent(
     agent_id: Address,
     content: String,
@@ -235,12 +258,10 @@ pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     hdk::get_entry(&post_address)
 }
 
-pub fn handle_delete_entry_post(post_address: Address) -> ZomeApiResult<()> {
+pub fn handle_delete_entry_post(post_address: Address) -> ZomeApiResult<Address> {
     hdk::get_entry(&post_address)?;
 
-    hdk::remove_entry(&post_address)?;
-
-    Ok(())
+    hdk::remove_entry(&post_address)
 }
 
 pub fn handle_get_initial_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
@@ -287,7 +308,7 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
     }
 }
 
-pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<()> {
+pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<Address> {
     hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
     hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
     hdk::link_entries(&agent_address, &post_address, "recommended_posts")

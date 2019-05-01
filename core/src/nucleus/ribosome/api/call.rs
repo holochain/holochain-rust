@@ -6,7 +6,10 @@ use crate::{
         ZomeFnCall,
     },
 };
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    error::HolochainError,
+    json::{JsonString, RawString},
+};
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use serde_json::Value;
@@ -139,6 +142,20 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
                 .and_then(|result| match result {
                     Ok(value) => Ok(JsonString::from(value)),
                     Err(error) => Err(error),
+                })
+                .or_else(|_| {
+                    // If we could not parse the result into a Result, well then the called
+                    // zome function maybe returns a plain return value.
+                    // We don't want to make this impossible so we just return that as
+                    // JsonString.
+                    // We just need to make sure it is valid JSON, so we do try to parse
+                    // one last time:
+                    let maybe_parsed_value: Result<Value, serde_json::error::Error> =
+                        serde_json::from_str(&sanitized_response);
+                    match maybe_parsed_value {
+                        Ok(parsed_value) => Ok(JsonString::from(parsed_value)),
+                        Err(_) => Ok(JsonString::from(RawString::from(sanitized_response))),
+                    }
                 })
         }
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(

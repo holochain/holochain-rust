@@ -7,11 +7,13 @@ use hdk::{
         entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
         error::HolochainError,
         json::JsonString,
+        signature::Provenance
     },
     holochain_wasm_utils::api_serialization::{
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
+        commit_entry::CommitEntryOptions,
         get_links::{GetLinksOptions, GetLinksResult},
     },
     AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
@@ -147,6 +149,27 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
 
     Ok(address)
 }
+
+pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Address>,
+                                        counter_signature: Provenance) -> ZomeApiResult<Address> {
+
+    let entry = post_entry(content);
+
+    let options = CommitEntryOptions::new(vec![counter_signature]);
+
+    let address = hdk::commit_entry_result(&entry, options).unwrap().address();
+
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
+
+    if let Some(in_reply_to_address) = in_reply_to {
+        // return with Err if in_reply_to_address points to missing entry
+        hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+    }
+
+    Ok(address)
+}
+
 
 pub fn handle_create_post_with_agent(
     agent_id: Address,

@@ -89,7 +89,7 @@ impl Hash for ActionWrapper {
 
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
 #[derive(Clone, PartialEq, Debug, Serialize)]
-#[serde(tag = "type")]
+#[serde(tag = "action_type", content = "data")]
 pub enum Action {
     // ----------------
     // Agent actions:

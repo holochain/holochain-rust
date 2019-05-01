@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer};
 use std::thread;
 
 #[derive(Clone, Debug, Serialize, DefaultJson)]
-#[serde(tag = "type")]
+#[serde(tag = "signal_type")]
 pub enum Signal {
     Internal(ActionWrapper),
     User(JsonString),

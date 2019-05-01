@@ -1,11 +1,14 @@
-//! This file contains many of the structs, enums, and functions relevant for Zome
 //! developers! Detailed references and examples can be found here for how to use the
 //! HDK exposed functions to access powerful Holochain functions.
 
 use crate::error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{
     cas::content::Address,
-    entry::Entry,
+    dna::capabilities::CapabilityRequest,
+    entry::{
+        cap_entries::{CapFunctions, CapabilityType},
+        Entry,
+    },
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
     signature::Provenance,
     time::Timeout,
@@ -13,6 +16,8 @@ use holochain_core_types::{
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
+        capabilities::GrantCapabilityArgs,
+        commit_entry::{CommitEntryArgs, CommitEntryOptions, CommitEntryResult},
         get_entry::{
             EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
             StatusRequestKind,
@@ -58,10 +63,10 @@ macro_rules! def_api_fns {
             pub fn without_input<O: TryFrom<JsonString> + Into<JsonString>>(
                 &self,
             ) -> ZomeApiResult<O> {
-                self.with_input("{}")
+                self.with_input(JsonString::empty_object())
             }
 
-            pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(
+            pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString>>(
                 &self,
                 input: I,
             ) -> ZomeApiResult<O> {
@@ -90,7 +95,7 @@ macro_rules! def_api_fns {
 
                 // Done
                 if result.ok {
-                    JsonString::from(result.value)
+                    JsonString::from_json(&result.value)
                         .try_into()
                         .map_err(|_| ZomeApiError::from(String::from("Failed to deserialize return value")))
                 } else {
@@ -159,6 +164,7 @@ def_api_fns! {
     hc_keystore_derive_seed, KeystoreDeriveSeed;
     hc_keystore_derive_key, KeystoreDeriveKey;
     hc_keystore_sign, KeystoreSign;
+    hc_grant_capability, GrantCapability;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -201,6 +207,9 @@ lazy_static! {
     /// The Address of the public token (if any)
     pub static ref PUBLIC_TOKEN: &'static Address = &GLOBALS.public_token;
 
+    /// The CapabilityRequest under which this wasm function is executing
+    pub static ref CAPABILITY_REQ: &'static CapabilityRequest = &GLOBALS.cap_request;
+
 }
 
 impl From<DNA_NAME> for JsonString {
@@ -242,6 +251,12 @@ impl From<AGENT_LATEST_HASH> for JsonString {
 impl From<PUBLIC_TOKEN> for JsonString {
     fn from(public_token: PUBLIC_TOKEN) -> JsonString {
         JsonString::from(Address::from(public_token.to_string()))
+    }
+}
+
+impl From<CAPABILITY_REQ> for JsonString {
+    fn from(cap_request: CAPABILITY_REQ) -> JsonString {
+        JsonString::from(*cap_request)
     }
 }
 
@@ -393,6 +408,8 @@ pub enum BundleOnClose {
 /// # pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -491,6 +508,8 @@ pub enum BundleOnClose {
 /// # pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -563,8 +582,8 @@ pub fn call<S: Into<String>>(
 ///
 /// # }
 /// ```
-pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
-    let _: ZomeApiResult<()> = Dispatch::Debug.with_input(msg);
+pub fn debug<J: Into<String>>(msg: J) -> ZomeApiResult<()> {
+    let _: ZomeApiResult<()> = Dispatch::Debug.with_input(JsonString::from_json(&msg.into()));
     // internally returns RibosomeEncodedValue::Success which is a zero length allocation
     // return Ok(()) unconditionally instead of the "error" from success
     Ok(())
@@ -619,7 +638,23 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # }
 /// ```
 pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
-    Dispatch::CommitEntry.with_input(entry)
+    commit_entry_result(entry, CommitEntryOptions::default()).map(|result| result.address())
+}
+
+/// Attempts to commit an entry to your local source chain. The entry
+/// will have to pass the defined validation rules for that entry type.
+/// If the entry type is defined as public, will also publish the entry to the DHT.
+///
+/// Additional provenances can be added to the commit using the options argument.
+/// Returns a CommitEntryResult which contains the address of the committed entry.
+pub fn commit_entry_result(
+    entry: &Entry,
+    options: CommitEntryOptions,
+) -> ZomeApiResult<CommitEntryResult> {
+    Dispatch::CommitEntry.with_input(CommitEntryArgs {
+        entry: entry.clone(),
+        options,
+    })
 }
 
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
@@ -756,7 +791,7 @@ pub fn link_entries<S: Into<String>>(
     base: &Address,
     target: &Address,
     tag: S,
-) -> Result<(), ZomeApiError> {
+) -> Result<Address, ZomeApiError> {
     Dispatch::LinkEntries.with_input(LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
@@ -946,7 +981,7 @@ pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
     Dispatch::EntryAddress.with_input(entry)
 }
 
-/// NOT YET AVAILABLE
+/// Verifies a that a given provenance signed the payload
 pub fn verify_signature<S: Into<String>>(
     provenance: Provenance,
     payload: S,
@@ -978,7 +1013,7 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// Commit a DeletionEntry to your local source chain that marks an entry as 'deleted' by setting
 /// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
 /// metadata, which will be used by validation routes.
-pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
+pub fn remove_entry(address: &Address) -> ZomeApiResult<Address> {
     Dispatch::RemoveEntry.with_input(address.to_owned())
 }
 
@@ -1243,6 +1278,8 @@ pub fn query_result(
 /// # pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
@@ -1318,4 +1355,19 @@ pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
     // internally returns RibosomeEncodedValue::Success which is a zero length allocation
     // return Ok(()) unconditionally instead of the "error" from success
     Ok(())
+}
+
+/// Adds a capability grant to the local chain
+pub fn grant_capability<S: Into<String>>(
+    id: S,
+    cap_type: CapabilityType,
+    assignees: Option<Vec<Address>>,
+    functions: CapFunctions,
+) -> ZomeApiResult<Address> {
+    Dispatch::GrantCapability.with_input(GrantCapabilityArgs {
+        id: id.into(),
+        cap_type,
+        assignees,
+        functions,
+    })
 }

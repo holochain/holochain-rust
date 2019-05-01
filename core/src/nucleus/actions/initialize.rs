@@ -16,7 +16,7 @@ use holochain_core_types::{
     cas::content::Address,
     dna::{traits::ReservedTraitNames, Dna},
     entry::{
-        cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
+        cap_entries::{CapFunctions, CapTokenGrant, CapabilityType, ReservedCapabilityId},
         Entry,
     },
     error::HolochainError,
@@ -108,8 +108,14 @@ pub async fn initialize_chain(
     }
 
     let mut cap_functions = CapFunctions::new();
+    let zomes = dna.clone().zomes;
+    if zomes.is_empty() {
+        return Err(HolochainError::ErrorGeneric(
+            "Attempting to initialize DNA with zero zomes!".into(),
+        ));
+    }
     // Commit Public Capability Grants to chain
-    for (zome_name, zome) in dna.clone().zomes {
+    for (zome_name, zome) in zomes {
         let maybe_public = zome
             .traits
             .iter()
@@ -120,10 +126,14 @@ pub async fn initialize_chain(
         }
     }
     let public_token = if cap_functions.len() > 0 {
-        let maybe_public_cap_grant_entry =
-            CapTokenGrant::create(CapabilityType::Public, None, cap_functions);
+        let maybe_public_cap_grant_entry = CapTokenGrant::create(
+            ReservedCapabilityId::Public.as_str(),
+            CapabilityType::Public,
+            None,
+            cap_functions,
+        );
 
-        // Let initialization fail if Public Grant could not be committed.
+        // Let initialization fail if Public Grant could not be created.
         if maybe_public_cap_grant_entry.is_err() {
             dispatch_error_result(&context_clone, maybe_public_cap_grant_entry.err().unwrap());
             return Err(HolochainError::InitializationFailed(

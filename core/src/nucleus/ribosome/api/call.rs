@@ -22,9 +22,14 @@ impl ZomeFnCall {
             context.clone(),
             args.cap_token,
             &args.fn_name,
-            args.fn_args.clone(),
+            JsonString::from_json(&args.fn_args.clone()),
         );
-        ZomeFnCall::new(&args.zome_name, cap_call, &args.fn_name, args.fn_args)
+        ZomeFnCall::new(
+            &args.zome_name,
+            cap_call,
+            &args.fn_name,
+            JsonString::from_json(&args.fn_args),
+        )
     }
 }
 
@@ -88,13 +93,14 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     let conductor_api = context.conductor_api.clone();
 
     let params = format!(
-        r#"{{"instance_id":"{}", "zome": "{}", "function": "{}", "params": {}}}"#,
+        r#"{{"instance_id":"{}", "zome": "{}", "function": "{}", "args": {}}}"#,
         input.instance_handle, input.zome_name, input.fn_name, input.fn_args
     );
 
     let handler = conductor_api.write().unwrap();
 
     let id = ProcessUniqueId::new();
+    // json-rpc format
     let request = format!(
         r#"{{"jsonrpc": "2.0", "method": "call", "params": {}, "id": "{}"}}"#,
         params, id
@@ -107,9 +113,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     let response = JsonRpc::parse(&response)?;
 
     match response {
-        JsonRpc::Success(_) => Ok(JsonString::from(
-            serde_json::to_string(&response.get_result().unwrap()).unwrap(),
-        )),
+        JsonRpc::Success(_) => Ok(JsonString::from(response.get_result().unwrap().to_owned())),
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
             serde_json::to_string(&response.get_error().unwrap()).unwrap(),
         )),
@@ -141,7 +145,6 @@ pub mod tests {
                     },
                     ZomeApiFunction,
                 },
-                capabilities::CapabilityRequest,
                 Defn,
             },
             tests::*,
@@ -151,6 +154,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         dna::{
+            capabilities::CapabilityRequest,
             fn_declarations::{FnDeclaration, TraitFns},
             traits::ReservedTraitNames,
             Dna,
@@ -193,7 +197,7 @@ pub mod tests {
             zome_name: test_zome_name(),
             cap_token: Address::from("test_token"),
             fn_name: test_function_name(),
-            fn_args: test_parameters(),
+            fn_args: test_parameters().to_string(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")
@@ -319,13 +323,19 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         // make the call with an valid capability call from a different sources
-        let grant =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+        let grant = CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions)
+            .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = test_setup
             .context
-            .block_on(author_entry(&grant_entry, None, &test_setup.context))
-            .unwrap();
+            .block_on(author_entry(
+                &grant_entry,
+                None,
+                &test_setup.context,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
         let other_agent_context = test_context("other agent", None);
         let cap_request =
             make_cap_request_for_call(other_agent_context.clone(), addr, "test", "{}");
@@ -360,6 +370,7 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         let grant = CapTokenGrant::create(
+            "foo",
             CapabilityType::Assigned,
             Some(vec![someone.clone()]),
             cap_functions,
@@ -368,8 +379,14 @@ pub mod tests {
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = test_setup
             .context
-            .block_on(author_entry(&grant_entry, None, &test_setup.context))
-            .unwrap();
+            .block_on(author_entry(
+                &grant_entry,
+                None,
+                &test_setup.context,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
         let cap_request = make_cap_request_for_call(
             test_context("random other agent", None),
             grant_addr.clone(),
@@ -476,12 +493,13 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         // add the transferable grant and get the token which is the grant's address
-        let grant =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+        let grant = CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions)
+            .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = context
-            .block_on(author_entry(&grant_entry, None, &context))
-            .unwrap();
+            .block_on(author_entry(&grant_entry, None, &context, &vec![]))
+            .unwrap()
+            .address();
 
         // make the call with a valid capability call from a random source should succeed
         let zome_call = ZomeFnCall::new(

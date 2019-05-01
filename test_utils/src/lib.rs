@@ -6,20 +6,22 @@ extern crate serde_json;
 
 pub mod mock_signing;
 
+use crossbeam_channel::Receiver;
 use holochain_conductor_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
     action::Action,
     context::Context,
     logger::{test_logger, TestLogger},
-    signal::Signal,
     nucleus::actions::call_zome_function::make_cap_request_for_call,
-    };
+    signal::Signal,
+}
+;
 use holochain_core_types::{
     cas::content::AddressableContent,
     dna::{
-        traits::ReservedTraitNames,
-        entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
+        entry_types::{EntryTypeDef, LinkedFrom, LinksTo, Sharing},
         fn_declarations::{FnDeclaration, TraitFns},
+        traits::ReservedTraitNames,
         wasm::DnaWasm,
         zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,
@@ -32,18 +34,19 @@ use holochain_net::p2p_config::P2pConfig;
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
     fs::File,
+    path::PathBuf,
     hash::{Hash, Hasher},
     io::prelude::*,
-    sync::{mpsc::Receiver, Arc, Mutex},
+    sync::{Arc, Mutex},
     time::Duration,
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem
-pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
-    let mut file = File::open(fname)
-        .unwrap_or_else(|err| panic!("Couldn't create WASM from file: {}; {}", fname, err));
+pub fn create_wasm_from_file(path: &PathBuf) -> Vec<u8> {
+    let mut file = File::open(path)
+        .unwrap_or_else(|err| panic!("Couldn't create WASM from file: {:?}; {}", path, err));
     let mut buf = Vec::new();
     file.read_to_end(&mut buf).unwrap();
     buf
@@ -96,7 +99,11 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
         tag: String::from("test-tag"),
     });
 
+    let mut test_entry_c_def = EntryTypeDef::new();
+    test_entry_c_def.sharing = Sharing::Private;
+
     let mut entry_types = BTreeMap::new();
+
     entry_types.insert(
         EntryType::App(AppEntryType::from("testEntryType")),
         test_entry_def,
@@ -105,6 +112,11 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
         EntryType::App(AppEntryType::from("testEntryTypeB")),
         test_entry_b_def,
     );
+    entry_types.insert(
+        EntryType::App(AppEntryType::from("testEntryTypeC")),
+        test_entry_c_def,
+    );
+
 
     let mut zome = Zome::new(
         "some zome description",
@@ -112,7 +124,7 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
         &entry_types,
         &defs.0,
         &defs.1,
-        &DnaWasm { code: wasm },
+        &DnaWasm::from_bytes(wasm),
     );
 
     let mut trait_fns = TraitFns::new();
@@ -154,15 +166,30 @@ pub fn create_test_dna_with_defs(
         &entry_types,
         &defs.0,
         &defs.1,
-        &DnaWasm {
-            code: wasm.to_owned(),
-        },
+        &DnaWasm::from_bytes(wasm.to_owned()),
     );
 
     dna.zomes.insert(zome_name.to_string(), zome);
     dna.name = "TestApp".into();
     dna.uuid = "8ed84a02-a0e6-4c8c-a752-34828e302986".into();
     dna
+}
+
+pub fn create_arbitrary_test_dna() -> Dna {
+    let wat = r#"
+    (module
+     (memory 1)
+     (export "memory" (memory 0))
+     (export "public_test_fn" (func $func0))
+     (func $func0 (param $p0 i64) (result i64)
+           i64.const 16
+           )
+     (data (i32.const 0)
+           "{\"holo\":\"world\"}"
+           )
+     )
+    "#;
+    create_test_dna_with_wat("test_zome", Some(wat))
 }
 
 #[cfg_attr(tarpaulin, skip)]
@@ -212,7 +239,7 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
 pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
-    wasm_path: &str,
+    wasm_path: &PathBuf,
     fn_name: &str,
     params: J,
 ) -> HolochainResult<JsonString> {
@@ -225,22 +252,17 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
     let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
 
     let params_string = String::from(params.into());
-    let cap_request =  make_cap_request_for_call(
+    let cap_request = make_cap_request_for_call(
         context.clone(),
         context.clone().agent_id.address(),
         fn_name,
-        params_string.clone(),
+        JsonString::from_json(&params_string.clone()),
     );
 
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
-    return hc.call(
-        "test_zome",
-        cap_request,
-        fn_name,
-        &params_string,
-    );
+    return hc.call("test_zome", cap_request, fn_name, &params_string);
 }
 
 /// create a test context and TestLogger pair so we can use the logger in assertions

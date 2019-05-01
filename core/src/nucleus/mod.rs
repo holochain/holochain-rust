@@ -13,10 +13,11 @@ pub use crate::{
             call_zome_function, make_cap_request_for_call, ExecuteZomeFnResponse,
         },
         reducers::reduce,
-        ribosome::capabilities::CapabilityRequest,
     },
 };
-use holochain_core_types::{cas::content::Address, error::HcResult, json::JsonString};
+use holochain_core_types::{
+    cas::content::Address, dna::capabilities::CapabilityRequest, error::HcResult, json::JsonString,
+};
 
 use snowflake;
 use std::sync::Arc;
@@ -110,7 +111,7 @@ pub mod tests {
         },
         nucleus::{
             call_zome_function,
-            ribosome::{api::call::tests::setup_test, capabilities::CapabilityRequest},
+            ribosome::api::call::tests::setup_test,
             state::{NucleusState, NucleusStatus},
         },
     };
@@ -118,6 +119,7 @@ pub mod tests {
 
     use holochain_core_types::{
         cas::content::AddressableContent,
+        dna::capabilities::CapabilityRequest,
         error::{DnaError, HolochainError},
         json::{JsonString, RawString},
         signature::Signature,
@@ -195,8 +197,8 @@ pub mod tests {
     }
 
     /// dummy parameters compatible with ZomeFnCall
-    pub fn test_parameters() -> String {
-        "".to_string()
+    pub fn test_parameters() -> JsonString {
+        JsonString::empty_object()
     }
 
     /// dummy function call

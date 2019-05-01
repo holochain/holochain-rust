@@ -40,12 +40,13 @@ use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error:
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
-        get_links::GetLinksResult,
+        get_links::{GetLinksResult, LinksResult},
     },
     wasm_target_dir,
 };
 use std::{
     collections::BTreeMap,
+    path::PathBuf,
     sync::{Arc, Mutex},
     thread,
     time::Duration,
@@ -195,6 +196,11 @@ pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
+#[no_mangle]
+pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
 pub fn create_test_defs_with_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {
     let mut traitfns = TraitFns::new();
     let mut fn_declarations = Vec::new();
@@ -253,10 +259,24 @@ fn start_holochain_instance<T: Into<String>>(
     agent_name: T,
 ) -> (Holochain, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
-    let wasm = create_wasm_from_file(&format!(
-        "{}/wasm32-unknown-unknown/release/test_globals.wasm",
-        wasm_target_dir("hdk-rust/", "wasm-test/"),
-    ));
+
+    let mut wasm_path = PathBuf::new();
+    let wasm_dir_component: PathBuf = wasm_target_dir(
+        &String::from("hdk-rust").into(),
+        &String::from("wasm-test").into(),
+    );
+    wasm_path.push(wasm_dir_component);
+    let wasm_path_component: PathBuf = [
+        String::from("wasm32-unknown-unknown"),
+        String::from("release"),
+        String::from("test_globals.wasm"),
+    ]
+    .iter()
+    .collect();
+    wasm_path.push(wasm_path_component);
+
+    let wasm = create_wasm_from_file(&wasm_path);
+
     let defs = create_test_defs_with_fn_names(vec![
         "check_global",
         "check_commit_entry",
@@ -328,7 +348,12 @@ fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainR
     let cap_call = {
         let context = hc.context();
         let token = context.get_public_token().unwrap();
-        make_cap_request_for_call(context.clone(), token, fn_name, params.to_string())
+        make_cap_request_for_call(
+            context.clone(),
+            token,
+            fn_name,
+            JsonString::from_json(params),
+        )
     };
     hc.call("test_zome", cap_call, fn_name, params)
 }
@@ -392,7 +417,7 @@ fn can_round_trip() {
     );
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"first\":\"bob\",\"second\":\"had a boring day\"}"),
+        JsonString::from_json("{\"first\":\"bob\",\"second\":\"had a boring day\"}"),
     );
 
     let test_logger = test_logger.lock().unwrap();
@@ -538,7 +563,7 @@ fn has_populated_validation_data() {
     //
     /*
     assert_eq!(
-        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"package\\\":{\\\"chain_header\\\":{\\\"entry_type\\\":{\\\"App\\\":\\\"validation_package_tester\\\"},\\\"entry_address\\\":\\\"QmYQPp1fExXdKfmcmYTbkw88HnCr3DzMSFUZ4ncEd9iGBY\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmSQqKHPpYZbafF7PXPKx31UwAbNAmPVuSHHxcBoDcYsci\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},\\\"source_chain_entries\\\":[{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"alex\\\",\\\"entry_type\\\":\\\"%agent_id\\\"}],\\\"source_chain_headers\\\":[{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmRHUwiUuFJiMyRmKaA1U49fXEnT8qbZMoj2V9maa4Q3JE\\\",\\\"link_same_type\\\":\\\"QmRHUwiUuFJiMyRmKaA1U49fXEnT8qbZMoj2V9maa4Q3JE\\\",\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmRYerwRRXYxmYoxq1LTZMVVRfjNMAeqmdELTNDxURtHEZ\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":\\\"AgentId\\\",\\\"entry_address\\\":\\\"QmQw3V41bAWkQA9kwpNfU3ZDNzr9YW4p9RV4QHhFD3BkqA\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmQJxUSfJe2QoxTyEwKQX9ypbkcNv3cw1vasGTx1CUpJFm\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"}],\\\"custom\\\":null},\\\"sources\\\":[\\\"<insert your agent key here>\\\"],\\\"lifecycle\\\":\\\"Chain\\\",\\\"action\\\":\\\"Commit\\\"}\"}}"),
+        JsonString::from_json("{\"Err\":{\"Internal\":\"{\\\"package\\\":{\\\"chain_header\\\":{\\\"entry_type\\\":{\\\"App\\\":\\\"validation_package_tester\\\"},\\\"entry_address\\\":\\\"QmYQPp1fExXdKfmcmYTbkw88HnCr3DzMSFUZ4ncEd9iGBY\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmSQqKHPpYZbafF7PXPKx31UwAbNAmPVuSHHxcBoDcYsci\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},\\\"source_chain_entries\\\":[{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"alex\\\",\\\"entry_type\\\":\\\"%agent_id\\\"}],\\\"source_chain_headers\\\":[{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmRHUwiUuFJiMyRmKaA1U49fXEnT8qbZMoj2V9maa4Q3JE\\\",\\\"link_same_type\\\":\\\"QmRHUwiUuFJiMyRmKaA1U49fXEnT8qbZMoj2V9maa4Q3JE\\\",\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmRYerwRRXYxmYoxq1LTZMVVRfjNMAeqmdELTNDxURtHEZ\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":\\\"AgentId\\\",\\\"entry_address\\\":\\\"QmQw3V41bAWkQA9kwpNfU3ZDNzr9YW4p9RV4QHhFD3BkqA\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmQJxUSfJe2QoxTyEwKQX9ypbkcNv3cw1vasGTx1CUpJFm\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"}],\\\"custom\\\":null},\\\"sources\\\":[\\\"<insert your agent key here>\\\"],\\\"lifecycle\\\":\\\"Chain\\\",\\\"action\\\":\\\"Commit\\\"}\"}}"),
         result.unwrap(),
     );
     */
@@ -550,7 +575,10 @@ fn can_link_entries() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+    );
 }
 
 #[test]
@@ -559,7 +587,10 @@ fn can_remove_link() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+    );
 }
 
 #[test]
@@ -591,8 +622,14 @@ fn can_roundtrip_links() {
     let entry_address_3 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
 
     let expected_links: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
-        entry_address_2.clone(),
-        entry_address_3.clone(),
+        LinksResult {
+            address: entry_address_2.clone(),
+            headers: Vec::new(),
+        },
+        LinksResult {
+            address: entry_address_3.clone(),
+            headers: Vec::new(),
+        },
     ]));
     let expected_links = JsonString::from(expected_links);
 
@@ -600,7 +637,16 @@ fn can_roundtrip_links() {
         Ok(vec![Ok(entry_2.clone()), Ok(entry_3.clone())]);
 
     let expected_links_reversed: Result<GetLinksResult, HolochainError> =
-        Ok(GetLinksResult::new(vec![entry_address_3, entry_address_2]));
+        Ok(GetLinksResult::new(vec![
+            LinksResult {
+                address: entry_address_3.clone(),
+                headers: Vec::new(),
+            },
+            LinksResult {
+                address: entry_address_2.clone(),
+                headers: Vec::new(),
+            },
+        ]));
     let expected_links_reversed = JsonString::from(expected_links_reversed);
 
     let expected_entries_reversed: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
@@ -612,7 +658,7 @@ fn can_roundtrip_links() {
     // (i.e. longer on a slow CI and when multiple tests are run simultaneausly).
     let mut both_links_present = false;
     let mut tries = 0;
-    let mut result_of_get = JsonString::from("");
+    let mut result_of_get = JsonString::from_json("{}");
     while !both_links_present && tries < 10 {
         tries = tries + 1;
         // Now get_links on the base and expect both to be there

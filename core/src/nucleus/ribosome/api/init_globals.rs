@@ -14,15 +14,17 @@ use wasmi::RuntimeArgs;
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
     let call_data = runtime.call_data()?;
+    let dna_name = runtime.context()?.get_dna().unwrap().name.clone();
     // Create the ZomeApiGlobals struct with some default values
     let mut globals = ZomeApiGlobals {
-        dna_name: call_data.dna_name.to_string(),
+        dna_name,
         dna_address: Address::from(""),
         agent_id_str: JsonString::from(call_data.context.agent_id.clone()).to_string(),
         agent_address: Address::from(call_data.context.agent_id.address()),
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
         public_token: Address::from(""),
+        cap_request: runtime.zome_call_data()?.call.cap.clone(),
     };
 
     // Update fields
@@ -52,7 +54,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
 
     // Update public_token
     let maybe_token = call_data.context.get_public_token();
-    if maybe_token.is_some() {
+    if maybe_token.is_ok() {
         globals.public_token = maybe_token.unwrap();
     }
 
@@ -67,21 +69,23 @@ pub mod tests {
         Defn,
     };
     use holochain_core_types::{
-        cas::content::Address, error::ZomeApiInternalResult, json::JsonString,
+        cas::content::Address, dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult,
+        json::JsonString, signature::Signature,
     };
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use std::convert::TryFrom;
     use test_utils::mock_signing::registered_test_agent;
 
     #[test]
-    /// test that bytes passed to debug end up in the log
+    /// test that the correct globals values are created for zome calls
     fn test_init_globals() {
         let input: Vec<u8> = vec![];
         let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
 
         let zome_api_internal_result = ZomeApiInternalResult::try_from(call_result).unwrap();
         let globals =
-            ZomeApiGlobals::try_from(JsonString::from(zome_api_internal_result.value)).unwrap();
+            ZomeApiGlobals::try_from(JsonString::from_json(&zome_api_internal_result.value))
+                .unwrap();
 
         assert_eq!(globals.dna_name, "TestApp");
         let expected_agent = registered_test_agent("jane");
@@ -101,7 +105,15 @@ pub mod tests {
         // don't change.
         assert_eq!(
             globals.public_token,
-            Address::from("QmdVUAMNz5GwjsgMQusqzXjxggWwqZi9y25SXzg5ba4z6d"),
+            Address::from("QmdZiJWdVCh8s38tCcAAq8f7HpHkd9KLFnHh9vLTddt8D2"),
+        );
+
+        assert_eq!(
+            globals.cap_request,
+            CapabilityRequest::new( Address::from("dummy_token"),
+                                    Address::from("HcSCimiBHJ8y3zejkjtHsu9Q8MZx96ztvfYRJ9fJH3Pbxodac5s8rqmShYqaamz"),
+                                    Signature::from("nI/AFdqZPYw1yoCeV92pKWwugdkB54JJDhLLf3JgMFl9sm3aFIWKpiRo+4t8L+wn+S0Pg1Vh0Bzbmq3DSfJwDw=="),
+                                    ),
         );
     }
 }

@@ -123,6 +123,9 @@ macro_rules! load_string {
 /// # pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+///
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
@@ -156,8 +159,8 @@ macro_rules! load_string {
 ///              {
 ///              EntryValidationData::Create{entry:test_entry,validation_data:_} =>
 ///              {
-///                        
-///                        
+///
+///
 ///                        (test_entry.content != "FAIL")
 ///                        .ok_or_else(|| "FAIL content is not allowed".to_string())
 ///                }
@@ -297,7 +300,7 @@ macro_rules! define_zome {
 
                 $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
                     $crate::global_fns::write_json(
-                        execute(input)
+                        JsonString::from_json(&execute(input))
                     )
                 ).into()
             }

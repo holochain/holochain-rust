@@ -1,6 +1,6 @@
 [package]
 name = "test_utils"
-version = "0.0.8-alpha"
+version = "0.0.13-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -15,6 +15,7 @@ holochain_sodium = { path = "../sodium" }
 wabt = "=0.7.4"
 tempfile = "=3.0.7"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+crossbeam-channel = "=0.3.8"
 lazy_static = "=1.2.0"
-jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
+jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 base64 = "=0.10.1"

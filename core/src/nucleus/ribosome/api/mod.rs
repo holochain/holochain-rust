@@ -11,6 +11,7 @@ pub mod init_globals;
 pub mod link_entries;
 #[macro_use]
 mod macros;
+pub mod capabilities;
 pub mod keystore;
 pub mod query;
 pub mod remove_entry;
@@ -24,6 +25,7 @@ pub mod verify_signature;
 use crate::nucleus::ribosome::{
     api::{
         call::invoke_call,
+        capabilities::invoke_grant_capability,
         commit::invoke_commit_app_entry,
         debug::invoke_debug,
         entry_address::invoke_entry_address,
@@ -127,6 +129,9 @@ link_zome_api! {
 
     /// Sign a block of data using a key in the keystore
     "hc_keystore_sign", KeystoreSign, invoke_keystore_sign;
+
+    /// Commit a capability grant to the source chain
+    "hc_grant_capability", GrantCapability, invoke_grant_capability;
 }
 
 #[cfg(test)]
@@ -134,7 +139,7 @@ pub mod tests {
     use self::wabt::Wat2Wasm;
     use crate::{
         context::Context,
-        instance::{tests::test_instance_and_context, Instance},
+        instance::tests::test_instance_and_context,
         nucleus::{
             ribosome::{self, runtime::WasmCallData},
             tests::test_capability_request,
@@ -308,19 +313,13 @@ pub mod tests {
     }
 
     /// dummy parameters for a zome API function call
-    pub fn test_parameters() -> String {
-        String::new()
+    pub fn test_parameters() -> JsonString {
+        JsonString::empty_object()
     }
 
     /// calls the zome API function with passed bytes argument using the instance runtime
     /// returns the runtime after the call completes
-    pub fn test_zome_api_function_call(
-        dna_name: &str,
-        context: Arc<Context>,
-        _instance: &Instance,
-        wasm: &Vec<u8>,
-        args_bytes: Vec<u8>,
-    ) -> JsonString {
+    pub fn test_zome_api_function_call(context: Arc<Context>, args_bytes: Vec<u8>) -> JsonString {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
             test_capability_request(context.clone(), &test_function_name(), test_parameters()),
@@ -328,9 +327,8 @@ pub mod tests {
             test_parameters(),
         );
         ribosome::run_dna(
-            wasm.clone(),
             Some(args_bytes),
-            WasmCallData::new_zome_call(context, dna_name.to_string(), zome_call),
+            WasmCallData::new_zome_call(context, zome_call),
         )
         .expect("test should be callable")
     }
@@ -347,12 +345,10 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
-        let dna_name = &dna.name.to_string().clone();
-        let (instance, context) =
+        let (_, context) =
             test_instance_and_context(dna, None).expect("Could not create test instance");
 
-        let call_result =
-            test_zome_api_function_call(&dna_name, context.clone(), &instance, &wasm, args_bytes);
+        let call_result = test_zome_api_function_call(context.clone(), args_bytes);
         (call_result, context)
     }
 }

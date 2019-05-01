@@ -1,21 +1,24 @@
 use crate::holo_signing_service::request_signing_service;
 use base64;
-use holochain_core::nucleus::{
-    actions::call_zome_function::make_cap_request_for_call,
-    ribosome::capabilities::CapabilityRequest,
-};
+use conductor::broadcaster::Broadcaster;
+use crossbeam_channel::Receiver;
+use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
 
-use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance};
+use holochain_core_types::{
+    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityRequest, json::JsonString,
+    signature::Provenance,
+};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
-use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
+use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use std::{
     collections::HashMap,
     convert::TryFrom,
     path::PathBuf,
-    sync::{mpsc::Receiver, Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, RwLock},
+    thread,
 };
 
 use conductor::{ConductorAdmin, ConductorUiAdmin, CONDUCTOR};
@@ -119,6 +122,10 @@ impl ConductorApiBuilder {
     fn setup_call_api(&mut self) {
         let instances = self.instances.clone();
         let instance_ids_map = self.instance_ids_map.clone();
+
+        // We need to place this one here in order to avoid compiler lifetime issue
+        let default_call_args = json!({});
+
         self.io.add_method("call", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let public_id_str = Self::get_as_string("instance_id", &params_map)?;
@@ -133,8 +140,24 @@ impl ConductorApiBuilder {
             let hc_lock = instance.clone();
             let hc_lock_inner = hc_lock.clone();
             let mut hc = hc_lock_inner.write().unwrap();
-            let call_params = params_map.get("params");
-            let params_string = serde_json::to_string(&call_params)
+
+
+            // Getting the arguments of the call contained in the json-rpc 'params'
+            let mut call_args = params_map.get("args").or_else(|| {
+                // TODO: Remove this fall back to the previous impl of inner 'params'
+                // as soon as its deprecation life cycle is over <17-04-19, dymayday> //
+                hc.context()
+                    .log("warn/interface: DEPRECATION WARNING: Using 'params' for a Zome function call is now deprecated.\
+                    Please switch to 'args' instead, as 'params' will soon be phased out.");
+                params_map.get("params")
+            });
+
+            // For a consistent error behavior, we check if the passed value is 'null',
+            // which triggers an error, and fallback as if an empty object was passed instead '{}'
+            if json!(null) == *call_args.unwrap_or(&default_call_args) {
+                call_args = Some(&default_call_args);
+            }
+            let args_string = serde_json::to_string(&call_args)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
             let zome_name = Self::get_as_string("zome", &params_map)?;
             let func_name = Self::get_as_string("function", &params_map)?;
@@ -144,8 +167,11 @@ impl ConductorApiBuilder {
                 // Get the token from the parameters.  If not there assume public token.
                 let maybe_token = Self::get_as_string("token", &params_map);
                 let token = match maybe_token {
-                    Err(_err) => context.get_public_token().ok_or_else(|| {
-                        jsonrpc_core::Error::invalid_params("public token not found")
+                    Err(_err) => context.get_public_token().map_err(|err| {
+                        jsonrpc_core::Error::invalid_params(format!(
+                            "Public token not found: {}",
+                            err.to_string()
+                        ))
                     })?,
                     Ok(token) => Address::from(token),
                 };
@@ -156,7 +182,7 @@ impl ConductorApiBuilder {
                         context.clone(),
                         token,
                         &func_name,
-                        params_string.clone(),
+                        JsonString::from_json(&args_string.clone()),
                     ),
                     Some(json_provenance) => {
                         let provenance: Provenance =
@@ -172,7 +198,7 @@ impl ConductorApiBuilder {
             };
 
             let response = hc
-                .call(&zome_name, cap_request, &func_name, &params_string)
+                .call(&zome_name, cap_request, &func_name, &args_string)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
             Ok(Value::String(response.to_string()))
         });
@@ -619,21 +645,17 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             let name = Self::get_as_string("name", &params_map)?;
-            let public_address = Self::get_as_string("public_address", &params_map)?;
-            let keystore_file = Self::get_as_string("keystore_file", &params_map)?;
+
             let holo_remote_key = params_map
                 .get("holo_remote_key")
-                .map(|k| k.as_bool())
-                .unwrap_or_default();
+                .map(|k| {
+                    k.as_str()
+                        .ok_or("holo_remote_key must be a string")
+                        .map_err(|e| jsonrpc_core::Error::invalid_params(e))
+                }) // Option<Result<_, _>>
+                .transpose()?; // Result<Option<_>, _>
 
-            let agent = AgentConfiguration {
-                id,
-                name,
-                public_address,
-                keystore_file,
-                holo_remote_key,
-            };
-            conductor_call!(|c| c.add_agent(agent))?;
+            conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;
             Ok(json!({"success": true}))
         });
 
@@ -966,8 +988,15 @@ impl ConductorApiBuilder {
     }
 }
 
+/// A Broadcaster is something that knows how to send a Signal back to a client.
+/// Each Interface implementation's `run` method must return a Broadcaster, even if it's just the No-op.
+/// Then, if the Conductor is set up for it, it will start a new thread which continually consumes the signal channel and sends each signal over every interface via its Broadcaster.
 pub trait Interface {
-    fn run(&self, handler: IoHandler, kill_switch: Receiver<()>) -> Result<(), String>;
+    fn run(
+        &self,
+        handler: IoHandler,
+        kill_switch: Receiver<()>,
+    ) -> Result<(Broadcaster, thread::JoinHandle<()>), String>;
 }
 
 #[cfg(test)]
@@ -976,7 +1005,7 @@ pub mod tests {
     use crate::{conductor::tests::test_conductor, config::Configuration};
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
-        let conductor = test_conductor();
+        let conductor = test_conductor(7777, 7778);
         let holochain = conductor
             .instances()
             .get("test-instance-1")

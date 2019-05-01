@@ -2,24 +2,133 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.0.13-alpha1] - 2019-04-29
 
 ### Added
-- Adds hdk access to keystore [#1148](https://github.com/holochain/holochain-rust/pull/1148)
-- Adds a `--path` option to `hc keygen` to specify the location of the generated keybundle. [#1194](https://github.com/holochain/holochain-rust/pull/1194)
-- Adds pickle db for cas and eav [#1178](https://github.com/holochain/holochain-rust/pull/1178)
-- Adds a `--quiet` option to `hc keygen` for machine-readable output, intended for use in scripts. [#1197](https://github.com/holochain/holochain-rust/pull/1197)
+- Adds hdk::grant_capability() for zome functions to be able to create [capability grant](doc/architecture/decisions/0017-capabilities.md)  [#1285](https://github.com/holochain/holochain-rust/pull/1285)
+- `nix-shell` includes latest `hc` and `holochain` binaries [#1306](https://github.com/holochain/holochain-rust/pull/1306)
+- Adds `hc-cli-uninstall` and `hc-conductor-rust-uninstall` to drop local development installations of these binaries that would override dist binaries [#1351](https://github.com/holochain/holochain-rust/pull/1351)
+### Changed
+- changed JSON-RPC Zome call `params` key to `args` for clarity (due to confusion between JSON-RPC `params` and Holochain `params` keys): see [#1203](https://github.com/holochain/holochain-rust/pull/1203) and [#1271](https://github.com/holochain/holochain-rust/pull/1271)
+- Remove sleeps during network initialization, block until P2pReady event is received [#1284](https://github.com/holochain/holochain-rust/pull/1284).
+- refactored `shell.nix` into `holonix` directory for rationalized `nix-shell` commands and easier maintenance and clarity. [#1292](https://github.com/holochain/holochain-rust/pull/1292)
+  - note: `hc-test` is now `hc-rust-test` and `hc-test-all` is now `hc-test`
+
+### Deprecated
+- `params` Zome call argument deprecated in favor of `args`. [#1271](https://github.com/holochain/holochain-rust/pull/1271)
+
+### Removed
+
+### Fixed
+- Windows-only: Spawned `node.exe` process used by network module now closes properly on holochain termination [#1293](https://github.com/holochain/holochain-rust/pull/1293)   
+
+### Security
+
+## [0.0.12-alpha1] - 2019-04-21
+
+### Added
+- Allows the user to get headers using GetLinkOptions. [#1250](https://github.com/holochain/holochain-rust/pull/1250)
+
+- `Config.bridge` added to Scenario API, allowing bridges to be configured [#1259]()https://github.com/holochain/holochain-rust/pull/1259
+
+- Adds CAPABILITY_REQ global for access from a zome function call to the capability request that was used to make the call. This is important for doing validation of provenance for a zome call that wants to create a [capability grant](doc/architecture/decisions/0017-capabilities.md). [#1273](https://github.com/holochain/holochain-rust/pull/1273)
 
 
 ### Changed
-- Performance optimization: don't recalculate DNA hash during handling of every network message but instead cache the DNA hash. [PR#1163](https://github.com/holochain/holochain-rust/pull/1163)
-- One-time-signing now takes a vector of payloads, and returns a vector of signatures.
+
+- Increased timeout on n3h spawn and wait for `#P2P-READY#` message [#1276](https://github.com/holochain/holochain-rust/pull/1276).
+- Clarifies the error received when attempting to add a DNA whose expected hash mismatches the actual hash [#1287](https://github.com/holochain/holochain-rust/pull/1287).
+- Binary tarballs no longer extract to a subdirectory [#1265](https://github.com/holochain/holochain-rust/pull/1265)
+- Linux binary tarballs are now named `generic` rather than `ubuntu` [#1265](https://github.com/holochain/holochain-rust/pull/1265)
+- When getting links, the result has changed from `addresses: Vec<Address>` to `links: Vec<LinksResult>`. [#1250](https://github.com/holochain/holochain-rust/pull/1250)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Don't publish private zome entries [#1233](https://github.com/holochain/holochain-rust/pull/1233)
+
+- Fix unspecified errors that can occur during entry deletion/update [#1266](https://github.com/holochain/holochain-rust/pull/1266)
+
+### Security
+
+## [0.0.11-alpha1] - 2019-04-11
+
+### Added
+
+### Changed
+
+- Performance optimization: Don't clone and parse WASM binaries for each distinct WASM execution such as Zome function calls and validation callbacks. Instead hold only one parsed module instance per zome on the heap and use that to initialize WASM instances. [#1211](https://github.com/holochain/holochain-rust/pull/1211)
+- OpenSSL is vendored (statically linked) on nixos and other linux [#1245](https://github.com/holochain/holochain-rust/pull/1245)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Fixes problem where Scenario tests hang when throwing an error during `runTape` [#1232](https://github.com/holochain/holochain-rust/pull/1232)
+
+### Security
+
+## [0.0.10-alpha2] - 2019-04-04
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.10-alpha1] - 2019-04-04
+
+### Added
+
+- Adds conductor handling of agent key creation in the context of DPKI [#1182](https://github.com/holochain/holochain-rust/pull/1182)
+- Adds a `--path` option to `hc keygen` to specify the location of the generated keybundle. [#1194](https://github.com/holochain/holochain-rust/pull/1194)
+- Adds pickle db for cas and eav [#1178](https://github.com/holochain/holochain-rust/pull/1178)
+- Adds a `--quiet` option to `hc keygen` for machine-readable output, intended for use in scripts. [#1197](https://github.com/holochain/holochain-rust/pull/1197)
+- Adds logging output for every failed WASM execution showing the call that caused this error. [#1200](https://github.com/holochain/holochain-rust/pull/1200) This helps with debugging "Arguement Deserialization failed" errors.
+- Adds DNA hash to `hc package` output [#1212](https://github.com/holochain/holochain-rust/pull/1212)
+
+### Changed
+
+- `add_agent()` admin function now creates keystore file instead of just recording file in config [#1182](https://github.com/holochain/holochain-rust/pull/1182)
+- One-time-signing now takes a vector of payloads, and returns a vector of signatures. [#1193](https://github.com/holochain/holochain-rust/pull/1193)
+- Pins nixpkgs to Holo-Host channel in shell and CI [#1162](https://github.com/holochain/holochain-rust/pull/1162)
 
 ### Deprecated
 
 ### Removed
 
 - Removes deprecated zome calling route [#1147](https://github.com/holochain/holochain-rust/pull/1147). This is a breaking change for users of hc-web-client prior to version 0.1.3.  Please upgrade to 0.1.3 or later and use the callZome syntax.
+- Removes JsonString::From<String> and replaces it with JsonString::from_json(&str). This makes conversions more explicit and allows for validating that the string is actually valid json [#1184](https://github.com/holochain/holochain-rust/pull/1184)
+
+### Fixed
+
+-This pull request fixes the various issues with the pickledb implementation. Better guards and directory fixes [#1202]
+(https://github.com/holochain/holochain-rust/pull/1202)
+
+### Security
+
+## [0.0.9-alpha] - 2019-03-31
+
+### Added
+- Adds hdk access to keystore [#1148](https://github.com/holochain/holochain-rust/pull/1148)
+
+### Changed
+- Performance optimization: don't recalculate DNA hash during handling of every network message but instead cache the DNA hash. [PR#1163](https://github.com/holochain/holochain-rust/pull/1163)
+
+### Deprecated
+
+### Removed
 
 ### Fixed
 
@@ -93,7 +202,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New network setting via environment variable HC_N3H_LOG_LEVEL [#1085](https://github.com/holochain/holochain-rust/pull/1085)
 - Ability to sign data via `hdk::sign` using the agent key [PR#1080](https://github.com/holochain/holochain-rust/pull/1080)
 - Adds PUBLIC_TOKEN global variable for use in hdk::call in calling public functions. [PR#895](https://github.com/holochain/holochain-rust/pull/895)
-- Adds an [ADR](doc/architecture/decisions/0017-capabilities.md) for capabilities
+- Adds an [ADR](doc/architecture/decisions/0017-capabilities.md) for capabilities [#895](https://github.com/holochain/holochain-rust/pull/895)
 - CrudStatus works over network [#1048](https://github.com/holochain/holochain-rust/pull/1048)
 - Adds utils submodule of hdk which contains the following helper functions [#1006](https://github.com/holochain/holochain-rust/pull/10006):
   - get_links_and_load_type - calls try_from for a given type when getting links
@@ -137,14 +246,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Futures handling and zome function execution refactored which enables using complex API functions like `commit_entry` in callbacks such as `receive`.  This also fixes long standing flaky tests and blocking behaviors we have been experiencing. [#991](https://github.com/holochain/holochain-rust/pull/991)
 ### Changed
 - Capabilities now separated from function declarations and renamed to `traits` in `define_zome!` and calling zome functions no longer uses capability name parameter [#997](https://github.com/holochain/holochain-rust/pull/997) & [#791](https://github.com/holochain/holochain-rust/pull/791)
-- `hash` properties for `UiBundleConfiguration` and `DnaConfiguration` in Conductor config files is now optional
+- `hash` properties for `UiBundleConfiguration` and `DnaConfiguration` in Conductor config files is now optional [#966](https://github.com/holochain/holochain-rust/pull/966)
 - `ChainHeader::sources()` is now `ChainHeader::provenances()` which stores both source address, and signature  [#932](https://github.com/holochain/holochain-rust/pull/932)
 - `hdk::get_entry_results` supports return of ChainHeaders for all agents who have committed the same entry [#932](https://github.com/holochain/holochain-rust/pull/932)
 - Renames the term Container and all references to it to Conductor [#942](https://github.com/holochain/holochain-rust/pull/942)
-- Renames the `holochain_container` executable to simply `holochain`
+- Renames the `holochain_container` executable to simply `holochain` [#942](https://github.com/holochain/holochain-rust/pull/942)
 - Renames the `cmd` crate (which implements the `hc` command line tool) to `cli` [#940](https://github.com/holochain/holochain-rust/pull/940)
 - Encoded values in ribosome function's input/output are u64 (up from u32) [#915](https://github.com/holochain/holochain-rust/pull/915)
-- Updated dependencies:
+- Updated dependencies: [#924](https://github.com/holochain/holochain-rust/pull/924)
   * Rust nightly to `2019-01-24`
   * futures to `0.3.0-alpha.12`
 - All chain headers are sent in the validation package, not just those for public entry types. [#926](https://github.com/holochain/holochain-rust/pull/926)
@@ -154,11 +263,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds an environment variable `NETWORKING_CONFIG_FILE` for specifing the location of the json file containing the network settings used by n3h. [#976](https://github.com/holochain/holochain-rust/pull/976)
 - Adds an environment variable `HC_SIMPLE_LOGGER_MUTE` for use in testing which silences logging output so CI logs won't be too big. [#960](https://github.com/holochain/holochain-rust/pull/960)
 - Adds Zome API function `hdk::sleep(std::time::Duration)` which works the same as `std::thread::sleep`.[#935](https://github.com/holochain/holochain-rust/pull/935)
-- All structs/values to all HDK functions must implement `Into<JsonString>` and `TryFrom<JsonString>` (derive `DefaultJson` to do this automatically)
-- HDK globals `AGENT_ADDRESS`, `AGENT_ID_STR`, `DNA_NAME` and `DNA_ADDRESS` are now set to real, correct values.
+- All structs/values to all HDK functions must implement `Into<JsonString>` and `TryFrom<JsonString>` (derive `DefaultJson` to do this automatically) [#854](https://github.com/holochain/holochain-rust/pull/854)
+- HDK globals `AGENT_ADDRESS`, `AGENT_ID_STR`, `DNA_NAME` and `DNA_ADDRESS` are now set to real, correct values. [#796](https://github.com/holochain/holochain-rust/pull/796)
 - `hc run` now looks for the --interface flag or `HC_INTERFACE` env var if you want to specify the `http` interface [#846]((https://github.com/holochain/holochain-rust/pull/846)
-- NodeJS Conductor added to allow running conductors for testing purposes in JavaScript.
-- Scenario API added to enable deterministic scenario tests for zome functions. See the [NodeJS Conductor README](nodejs_conductor/README.md) for details.
+- NodeJS Conductor added to allow running conductors for testing purposes in JavaScript. [#1007](https://github.com/holochain/holochain-rust/pull/1007)
+- Scenario API added to enable deterministic scenario tests for zome functions. See the [NodeJS Conductor README](nodejs_conductor/README.md) for details. [#942](https://github.com/holochain/holochain-rust/pull/942)
 - `hdk::holochain_core_types::time::Iso8601` now supports validation and conversion to DateTime, and is sortable. [#917](https://github.com/holochain/holochain-rust/pull/917)
 - `hdk::query_result` API supports return of ChainHeader and/or Entry data for the matched EntryType(s) [#868](https://github.com/holochain/holochain-rust/pull/868)
 - Admin RPC functions added to container interface. Any (websocket) container interface that is configured with  `admin = true`  now can call a number of functions to remotely change any aspect of the container config. [#840](https://github.com/holochain/holochain-rust/pull/840)
@@ -168,12 +277,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.0.3] - 2019-01-15
 ### Fixed
-- build problems because of changes to upstream futures-preview crate
+- build problems because of changes to upstream futures-preview crate [#864](https://github.com/holochain/holochain-rust/pull/864)
 ### Added
-- Networking: beyond mock, using [n3h](https://github.com/holochain/n3h)
+- Networking: beyond mock, using [n3h](https://github.com/holochain/n3h) [#831](https://github.com/holochain/holochain-rust/pull/831)
 - Bridging now works and is configurable in the container (no capabilities yet) [#779](https://github.com/holochain/holochain-rust/pull/779) & [#776](https://github.com/holochain/holochain-rust/pull/776)
 - Validation across network [#727](https://github.com/holochain/holochain-rust/pull/727)
-- API/HDK:
+- API/HDK: [#831](https://github.com/holochain/holochain-rust/pull/831)
     - CRUD for entries working
     - Node-to-node messaging [#746](https://github.com/holochain/holochain-rust/pull/746)
     - GetEntryOptions:
@@ -183,23 +292,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         - meta data: sources
     - GetLinks helpers: get_links_and_load
     - Query: return multiple entry types with glob matching [#781](https://github.com/holochain/holochain-rust/pull/781)
-- Conductor:
+- Conductor: [#942](https://github.com/holochain/holochain-rust/pull/942)
     - configuration builder and config files
     - http interface [#823](https://github.com/holochain/holochain-rust/pull/823)
-- hc command-line tool:
+- hc command-line tool: [#831](https://github.com/holochain/holochain-rust/pull/831)
     - `run --persist` flag for keeping state across runs [#729](https://github.com/holochain/holochain-rust/pull/729/files)
     - Added env variables to activate real networking [#826](https://github.com/holochain/holochain-rust/pull/826)
 - Groundwork for: capabilities & signals [#762](https://github.com/holochain/holochain-rust/pull/826) & [#732](https://github.com/holochain/holochain-rust/pull/732)
 - Improved debug logging with log rules and colorization [#819](https://github.com/holochain/holochain-rust/pull/819)
-- This change log!
+- This change log! [#831](https://github.com/holochain/holochain-rust/pull/831)
 
 ### Changed
-- API/HDK:
+- API/HDK: [#831](https://github.com/holochain/holochain-rust/pull/831)
     - native return types (JsonStrings)
     - many places where we referred to "Hash" we now use the more correct term "Address"
 
 ## [0.0.2] - 2018-11-28
 ### Added
-- mock networking
-- `hc run` with support for
-- multi-instance scenario testing
+- mock networking [#831](https://github.com/holochain/holochain-rust/pull/831)
+- `hc run` with support for [#831](https://github.com/holochain/holochain-rust/pull/831)
+- multi-instance scenario testing [#831](https://github.com/holochain/holochain-rust/pull/831)

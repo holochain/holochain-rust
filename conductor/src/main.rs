@@ -25,7 +25,7 @@ use holochain_conductor_api::{
     config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::error::HolochainError;
-use std::{fs::File, io::prelude::*, path::PathBuf};
+use std::{fs::File, io::prelude::*, path::PathBuf, thread::sleep, time::Duration};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -54,7 +54,7 @@ fn main() {
                     "Successfully loaded {} instance configurations",
                     conductor.instances().len()
                 );
-                println!("Starting all of them...");
+                println!("Starting instances...");
                 conductor
                     .start_all_instances()
                     .expect("Could not start instances!");
@@ -66,7 +66,11 @@ fn main() {
                     .start_all_static_servers()
                     .expect("Could not start UI servers!");
             }
-            loop {}
+
+            // TODO wait for a SIGKILL or SIGINT instead here.
+            loop {
+                sleep(Duration::from_secs(1))
+            }
         }
         Err(error) => println!("Error while trying to boot from config: {:?}", error),
     };
@@ -92,7 +96,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
         })
         .collect::<Result<Vec<()>, String>>()
         .map_err(|error| HolochainError::ConfigError(error))?;
-    conductor.load_config()?;
+    conductor.boot_from_config()?;
     Ok(())
 }
 

@@ -22,6 +22,7 @@ use holochain_core::{
 use holochain_core_types::{
     cas::content::AddressableContent,
     entry::Entry,
+    json::JsonString,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
@@ -54,6 +55,7 @@ fn await_held_agent_ids(config: Configuration, signal_rx: &SignalReceiver) {
 pub struct TestConductor {
     conductor: RustConductor,
     sender_tx: Option<SyncSender<SyncSender<ControlMsg>>>,
+    signal_rx: SignalReceiver,
     is_running: Arc<Mutex<bool>>,
     is_started: bool,
 }
@@ -74,11 +76,12 @@ declare_types! {
             } else {
                 panic!("Invalid type specified for config, must be object or string");
             };
-            let mut conductor = RustConductor::from_config(config);
+            let (signal_tx, signal_rx) = signal_channel();
+            let mut conductor = RustConductor::from_config(config).with_signal_channel(signal_tx);
             conductor.key_loader = test_keystore_loader();
             let is_running = Arc::new(Mutex::new(false));
 
-            Ok(TestConductor { conductor, sender_tx: None, is_running, is_started: false })
+            Ok(TestConductor { conductor, sender_tx: None, signal_rx, is_running, is_started: false })
         }
 
         // Start the backing Conductor and spawn a MainBackgroundTask
@@ -89,7 +92,6 @@ declare_types! {
             let js_callback: Handle<JsFunction> = cx.argument(0)?;
             let mut this = cx.this();
 
-            let (signal_tx, signal_rx) = signal_channel();
             let (sender_tx, sender_rx) = sync_channel(1);
 
             let result = {
@@ -100,11 +102,11 @@ declare_types! {
                     let mut is_running = tc.is_running.lock().unwrap();
                     *is_running = true;
                 }
-                tc.conductor.load_config_with_signal(Some(signal_tx)).and_then(|_| {
+                tc.conductor.boot_from_config().and_then(|_| {
                     tc.conductor.start_all_instances().map_err(|e| e.to_string()).map(|_| {
-                        await_held_agent_ids(tc.conductor.config(), &signal_rx);
+                        await_held_agent_ids(tc.conductor.config(), &tc.signal_rx);
                         let num_instances = tc.conductor.instances().len();
-                        let background_task = MainBackgroundTask::new(signal_rx, sender_rx, tc.is_running.clone(), num_instances);
+                        let background_task = MainBackgroundTask::new(tc.signal_rx.clone(), sender_rx, tc.is_running.clone(), num_instances);
                         background_task.schedule(js_callback);
                         tc.is_started = true;
 
@@ -168,7 +170,7 @@ declare_types! {
                         context.clone(),
                         token,
                         &fn_name,
-                        params.clone(),
+                        JsonString::from_json(&params),
                     )
                 };
                 instance.call(&zome, cap, &fn_name, &params)

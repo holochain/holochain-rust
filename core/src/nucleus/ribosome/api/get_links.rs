@@ -1,10 +1,8 @@
 use crate::{
-    network::actions::get_links::get_links,
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::get_link_result::get_link_result_workflow,
 };
-use holochain_wasm_utils::api_serialization::get_links::{
-    GetLinksArgs, GetLinksResult, LinksStatusRequestKind,
-};
+use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -27,28 +25,9 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
 
-    if input.options.status_request != LinksStatusRequestKind::Live {
-        context.log("get links status request other than Live not implemented!");
-        return ribosome_error_code!(Unspecified);
-    }
+    let result = context.block_on(get_link_result_workflow(&context, &input));
 
-    if input.options.sources {
-        context.log("get links retrieve sources not implemented!");
-        return ribosome_error_code!(Unspecified);
-    }
-
-    // Get links from DHT
-    let maybe_links = context.block_on(get_links(
-        context.clone(),
-        input.entry_address,
-        input.tag,
-        input.options.timeout,
-    ));
-
-    runtime.store_result(match maybe_links {
-        Ok(links) => Ok(GetLinksResult::new(links)),
-        Err(hc_err) => Err(hc_err),
-    })
+    runtime.store_result(result)
 }
 
 #[cfg(test)]
@@ -67,7 +46,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         entry::{entry_type::test_app_entry_type, Entry},
-        json::JsonString,
+        json::{JsonString, RawString},
         link::Link,
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
@@ -90,7 +69,6 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
-        let dna_name = &dna.name.to_string().clone();
         let netname = Some("returns_list_of_links");
         let instance = test_instance(dna, netname).expect("Could not create test instance");
 
@@ -99,7 +77,10 @@ pub mod tests {
 
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
+            let entry = Entry::App(
+                test_app_entry_type(),
+                JsonString::from(RawString::from(format!("entry{} value", i))),
+            );
             let address = initialized_context
                 .block_on(commit_entry(entry, None, &initialized_context))
                 .expect("Could not commit entry for testing");
@@ -117,25 +98,22 @@ pub mod tests {
             .is_ok());
 
         let call_result = test_zome_api_function_call(
-            &dna_name,
             initialized_context.clone(),
-            &instance,
-            &wasm,
             test_get_links_args_bytes(&entry_addresses[0], "test-tag"),
         );
 
-        let expected_1 = JsonString::from(
-            format!(
-                r#"{{"ok":true,"value":"{{\"addresses\":[\"{}\",\"{}\"]}}","error":"null"}}"#,
+        let expected_1 = JsonString::from_json(
+            &(format!(
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
                 entry_addresses[1], entry_addresses[2]
-            ) + "\u{0}",
+            ) + "\u{0}"),
         );
 
-        let expected_2 = JsonString::from(
-            format!(
-                r#"{{"ok":true,"value":"{{\"addresses\":[\"{}\",\"{}\"]}}","error":"null"}}"#,
+        let expected_2 = JsonString::from_json(
+            &(format!(
+               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
                 entry_addresses[2], entry_addresses[1]
-            ) + "\u{0}",
+            ) + "\u{0}"),
         );
 
         assert!(
@@ -147,18 +125,15 @@ pub mod tests {
         );
 
         let call_result = test_zome_api_function_call(
-            &dna_name,
             initialized_context.clone(),
-            &instance,
-            &wasm,
             test_get_links_args_bytes(&entry_addresses[0], "other-tag"),
         );
 
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(r#"{"ok":true,"value":"{\"addresses\":[]}","error":"null"}"#)
-                    + "\u{0}"
+            JsonString::from_json(
+                &(String::from(r#"{"ok":true,"value":"{\"links\":[]}","error":"null"}"#,)
+                    + "\u{0}")
             ),
         );
     }

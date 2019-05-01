@@ -61,7 +61,7 @@ impl ::std::convert::TryFrom<ZomeApiInternalResult> for CoreError {
                 "Attempted to deserialize CoreError from a non-error ZomeApiInternalResult".into(),
             ))
         } else {
-            CoreError::try_from(JsonString::from(zome_api_internal_result.error))
+            CoreError::try_from(JsonString::from_json(&zome_api_internal_result.error))
         }
     }
 }
@@ -136,7 +136,7 @@ impl fmt::Display for HolochainError {
             InitializationFailed(err_msg) => write!(f, "{}", err_msg),
             DnaHashMismatch(hash1, hash2) => write!(
                 f,
-                "DNA hash does not match expected hash!\n{} != {}",
+                "Provided DNA hash does not match actual DNA hash! {} != {}",
                 hash1, hash2
             ),
         }
@@ -271,7 +271,7 @@ mod tests {
     fn test_to_json() {
         let err = HolochainError::new("foo");
         assert_eq!(
-            JsonString::from("{\"ErrorGeneric\":\"foo\"}"),
+            JsonString::from_json("{\"ErrorGeneric\":\"foo\"}"),
             JsonString::from(err),
         );
     }

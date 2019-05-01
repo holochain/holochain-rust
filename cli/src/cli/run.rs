@@ -30,7 +30,7 @@ pub fn run(
     conductor.key_loader = test_keystore_loader();
 
     conductor
-        .load_config()
+        .boot_from_config()
         .map_err(|err| format_err!("{}", err))?;
 
     conductor.start_all_interfaces();
@@ -195,15 +195,8 @@ fn logger_configuration(logging: bool) -> LoggerConfiguration {
 
 // NETWORKING
 fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
-    // note that this behaviour is documented within
-    // holochain_common::env_vars module and should be updated
-    // if this logic changes
-    let maybe_n3h_path = EnvVar::N3hPath.value().ok();
-
     // create an n3h network config if the --networked flag is set
-    // or if a value where to find n3h has been put into the
-    // HC_N3H_PATH environment variable
-    if maybe_n3h_path.is_none() && !networked {
+    if !networked {
         return None;
     }
 
@@ -221,7 +214,6 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
             .value()
             .ok()
             .unwrap_or_else(default_n3h_log_level),
-        n3h_path: maybe_n3h_path.unwrap_or_else(default_n3h_path),
         n3h_mode: EnvVar::N3hMode
             .value()
             .ok()
@@ -374,7 +366,6 @@ mod tests {
             Some(NetworkConfig {
                 bootstrap_nodes: Vec::new(),
                 n3h_log_level: default_n3h_log_level(),
-                n3h_path: default_n3h_path(),
                 n3h_mode: default_n3h_mode(),
                 n3h_persistence_path: default_n3h_persistence_path(),
                 n3h_ipc_uri: Default::default(),

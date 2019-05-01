@@ -37,8 +37,12 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         options: Default::default(),
     };
     let maybe_entry_result = context.block_on(get_entry_result_workflow(&context, &get_args));
-    if let Err(_err) = maybe_entry_result {
-        return ribosome_error_code!(EntryNotFound);
+    if let Err(err) = maybe_entry_result {
+        context.log(format!(
+            "err/zome: get_entry_result_workflow failed: {:?}",
+            err
+        ));
+        return ribosome_error_code!(WorkflowFailed);
     }
     let entry_result = maybe_entry_result.clone().unwrap();
     if !entry_result.found() {
@@ -54,7 +58,9 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             &entry,
             Some(latest_entry.clone().address()),
             &context.clone(),
+            &vec![], // TODO should provenance be a parameter?
         ))
+        .map(|result| result.address())
         .map_err(|validation_error| HolochainError::from(validation_error));
 
     runtime.store_result(res)

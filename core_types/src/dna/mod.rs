@@ -24,6 +24,7 @@
 //! ```
 
 pub mod bridges;
+pub mod capabilities;
 pub mod entry_types;
 pub mod fn_declarations;
 pub mod traits;
@@ -330,7 +331,7 @@ pub mod tests {
                 }
             }"#,
         );
-        Dna::try_from(JsonString::from(fixture)).unwrap()
+        Dna::try_from(JsonString::from_json(&fixture)).unwrap()
     }
 
     #[test]
@@ -507,7 +508,7 @@ pub mod tests {
         )
         .replace(char::is_whitespace, "");
 
-        let dna = Dna::try_from(JsonString::from(fixture.clone())).unwrap();
+        let dna = Dna::try_from(JsonString::from_json(&fixture.clone())).unwrap();
 
         println!("{}", dna.to_json_pretty().unwrap());
 
@@ -530,7 +531,7 @@ pub mod tests {
         let expected = JsonString::from(dna.clone());
         println!("{:?}", expected);
 
-        let fixture = Dna::try_from(JsonString::from(
+        let fixture = Dna::try_from(JsonString::from_json(
             r#"{
                 "name": "",
                 "description": "",
@@ -564,7 +565,7 @@ pub mod tests {
 
     #[test]
     fn parse_with_defaults_dna() {
-        let dna = Dna::try_from(JsonString::from(
+        let dna = Dna::try_from(JsonString::from_json(
             r#"{
             }"#,
         ))
@@ -575,7 +576,7 @@ pub mod tests {
 
     #[test]
     fn parse_with_defaults_entry_type() {
-        let dna = Dna::try_from(JsonString::from(
+        let dna = Dna::try_from(JsonString::from_json(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -602,7 +603,7 @@ pub mod tests {
 
     #[test]
     fn parse_wasm() {
-        let dna = Dna::try_from(JsonString::from(
+        let dna = Dna::try_from(JsonString::from_json(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -618,13 +619,13 @@ pub mod tests {
         ))
         .unwrap();
 
-        assert_eq!(vec![0, 1, 2, 3], dna.zomes.get("zome1").unwrap().code.code);
+        assert_eq!(vec![0, 1, 2, 3], *dna.zomes.get("zome1").unwrap().code.code);
     }
 
     #[test]
     #[should_panic]
     fn parse_fail_if_bad_type_dna() {
-        Dna::try_from(JsonString::from(
+        Dna::try_from(JsonString::from_json(
             r#"{
                 "name": 42
             }"#,
@@ -635,7 +636,7 @@ pub mod tests {
     #[test]
     #[should_panic]
     fn parse_fail_if_bad_type_zome() {
-        Dna::try_from(JsonString::from(
+        Dna::try_from(JsonString::from_json(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -650,7 +651,7 @@ pub mod tests {
     #[test]
     #[should_panic]
     fn parse_fail_if_bad_type_entry_type() {
-        Dna::try_from(JsonString::from(
+        Dna::try_from(JsonString::from_json(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -668,7 +669,7 @@ pub mod tests {
 
     #[test]
     fn parse_accepts_arbitrary_dna_properties() {
-        let dna = Dna::try_from(JsonString::from(
+        let dna = Dna::try_from(JsonString::from_json(
             r#"{
                 "properties": {
                     "str": "hello",
@@ -710,7 +711,7 @@ pub mod tests {
 
     #[test]
     fn get_wasm_from_zome_name() {
-        let dna = Dna::try_from(JsonString::from(
+        let dna = Dna::try_from(JsonString::from_json(
             r#"{
                 "name": "test",
                 "description": "test",
@@ -741,7 +742,7 @@ pub mod tests {
         .unwrap();
 
         let wasm = dna.get_wasm_from_zome_name("test zome");
-        assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
+        assert_eq!("AAECAw==", base64::encode(&*wasm.unwrap().code));
 
         let fail = dna.get_wasm_from_zome_name("non existant zome");
         assert_eq!(None, fail);
@@ -749,7 +750,7 @@ pub mod tests {
 
     #[test]
     fn test_get_zome_name_for_entry_type() {
-        let dna = Dna::try_from(JsonString::from(
+        let dna = Dna::try_from(JsonString::from_json(
             r#"{
                 "name": "test",
                 "description": "test",
@@ -797,7 +798,7 @@ pub mod tests {
 
     #[test]
     fn test_get_required_bridges() {
-        let dna = Dna::try_from(JsonString::from(
+        let dna = Dna::try_from(JsonString::from_json(
             r#"{
                 "name": "test",
                 "description": "test",

@@ -27,7 +27,12 @@ impl Logger for SimpleLogger {
         // if this logic changes
         if EnvVar::SimpleLoggerMute.value().is_err() {
             let date = Local::now();
-            println!("{}:{}", date.format("%Y-%m-%d %H:%M:%S"), msg);
+            println!(
+                "{} {:?}:{}",
+                date.format("%Y-%m-%d %H:%M:%S"),
+                std::thread::current().id(),
+                msg
+            );
         }
     }
 }
@@ -78,7 +83,12 @@ impl ChannelLogger {
 }
 pub fn default_handler(msg: String) {
     let date = Local::now();
-    println!("{}:{}", date.format("%Y-%m-%d %H:%M:%S"), msg);
+    println!(
+        "{} {:?}:{}",
+        date.format("%Y-%m-%d %H:%M:%S"),
+        std::thread::current().id(),
+        msg
+    );
 }
 
 #[cfg(test)]

@@ -121,23 +121,26 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
             // First we try to unwrap a potential stringification:
             let value_response = response.get_result().unwrap().to_owned();
             let string_response = value_response.to_string();
-            let maybe_parsed_string: Result<String, serde_json::error::Error> = serde_json::from_str(&string_response);
-            let sanitized_response = match maybe_parsed_string  {
+            let maybe_parsed_string: Result<String, serde_json::error::Error> =
+                serde_json::from_str(&string_response);
+            let sanitized_response = match maybe_parsed_string {
                 Ok(string) => string,
                 Err(_) => string_response,
             };
             // Below, sanitized_response is the same response but guaranteed without quotes.
 
             // Now we unwrap the Result by parsing it into a Result<Value, _>:
-            let maybe_parsed_result: Result<Result<Value, HolochainError>, serde_json::error::Error> = serde_json::from_str(&sanitized_response);
+            let maybe_parsed_result: Result<
+                Result<Value, HolochainError>,
+                serde_json::error::Error,
+            > = serde_json::from_str(&sanitized_response);
             maybe_parsed_result
                 .map_err(|e| HolochainError::SerializationError(e.to_string()))
                 .and_then(|result| match result {
                     Ok(value) => Ok(JsonString::from(value)),
-                    Err(error) => Err(error)
+                    Err(error) => Err(error),
                 })
-
-        },
+        }
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
             serde_json::to_string(&response.get_error().unwrap()).unwrap(),
         )),

@@ -46,6 +46,7 @@ pub fn ipc_spawn(
         .current_dir(work_dir);
 
     let mut child = child.spawn()?;
+    let mut real_pid = String::new();
 
     if let Some(ref mut child_stdin) = child.stdin {
         child_stdin.write(&end_user_config.into_bytes())?;
@@ -59,6 +60,10 @@ pub fn ipc_spawn(
         ipc_binding: String::new(),
         p2p_bindings: Vec::new(),
     };
+
+    // PID
+    let re_pid = regex::Regex::new("(?m)^#PID#:(.+)$")?;
+    let re_pid_ready = regex::Regex::new("#PID-READY#")?;
 
     // transport info (uri) for connecting to the ipc socket
     let re_ipc = regex::Regex::new("(?m)^#IPC-BINDING#:(.+)$")?;
@@ -80,6 +85,7 @@ pub fn ipc_spawn(
     // and `#P2P-READY#` if `can_wait_for_p2p` is set
     if let Some(ref mut stdout) = child.stdout {
         let mut has_ipc = false;
+        let mut has_pid = false;
         let mut has_p2p = !can_wait_for_p2p;
         let mut wait_ms = 0;
         let mut data: Vec<u8> = Vec::new();
@@ -90,6 +96,17 @@ pub fn ipc_spawn(
             if size > 0 {
                 data.extend_from_slice(&buf[..size]);
                 let tmp = String::from_utf8_lossy(&data);
+
+                // look for PID
+                if !has_pid.clone() {
+                    if re_pid_ready.is_match(&tmp) {
+                        for m in re_pid.captures_iter(&tmp) {
+                            real_pid = m[1].to_string();
+                            break;
+                        }
+                        has_pid = true
+                    }
+                }
 
                 // look for IPC-READY
                 if !has_ipc.clone() {
@@ -123,16 +140,49 @@ pub fn ipc_spawn(
 
     // close the pipe since we can never read from it again...
     child.stdout = None;
-
-    log_i!("READY! {} {:?}", out.ipc_binding, out.p2p_bindings);
+    log_i!(
+        "READY! {} {:?} [{}]",
+        out.ipc_binding,
+        out.p2p_bindings,
+        real_pid
+    );
 
     // Set shutdown function to kill the sub-process
     out.kill = Some(Box::new(move || {
+        if term_child(child.id()) {
+            return;
+        }
         match child.kill() {
-            Ok(()) => (),
+            Ok(()) => kill_child(&real_pid),
             Err(e) => println!("failed to kill ipc sub-process: {:?}", e),
         };
     }));
 
     Ok(out)
 }
+
+#[cfg(windows)]
+fn term_child(_pid: u32) -> bool {
+    false
+}
+
+#[cfg(not(windows))]
+fn term_child(pid: u32) -> bool {
+    unsafe {
+        if libc::kill(pid as i32, libc::SIGTERM) == 0 {
+            libc::waitpid(pid as i32, std::ptr::null_mut(), 0);
+            return true;
+        }
+    }
+    false
+}
+
+#[cfg(windows)]
+fn kill_child(pid: &str) {
+    let mut child_killer = std::process::Command::new("taskkill");
+    child_killer.args(&["/pid", pid, "/f", "/t"]);
+    let _ = child_killer.status();
+}
+
+#[cfg(not(windows))]
+fn kill_child(_pid: &str) {}

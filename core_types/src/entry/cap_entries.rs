@@ -6,7 +6,11 @@ use crate::{
 };
 use std::{collections::BTreeMap, str::FromStr};
 
-/// Enum for Zome CapabilityType.  Public capabilities require public grant token.  Transferable
+//--------------------------------------------------------------------------------------------------
+// CapabilityType
+//--------------------------------------------------------------------------------------------------
+
+/// Enum for CapabilityType.  Public capabilities require public grant token.  Transferable
 /// capabilities require a token, but don't limit the capability to specific agent(s);
 /// this functions like a password in that you can give the token to someone else and it works.
 /// Assigned capabilities check the request's signature against the list of agents to which
@@ -19,6 +23,12 @@ pub enum CapabilityType {
     Transferable,
     #[serde(rename = "assigned")]
     Assigned,
+}
+
+impl Default for CapabilityType {
+    fn default() -> CapabilityType {
+        CapabilityType::Assigned
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -48,6 +58,8 @@ impl ReservedCapabilityId {
 }
 
 pub type CapTokenValue = Address;
+
+/// a collection functions by zome name that are authorized within a capability
 pub type CapFunctions = BTreeMap<String, Vec<String>>;
 
 /// System entry to hold a capability token for use as a caller

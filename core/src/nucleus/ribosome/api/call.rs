@@ -93,13 +93,14 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     let conductor_api = context.conductor_api.clone();
 
     let params = format!(
-        r#"{{"instance_id":"{}", "zome": "{}", "function": "{}", "params": {}}}"#,
+        r#"{{"instance_id":"{}", "zome": "{}", "function": "{}", "args": {}}}"#,
         input.instance_handle, input.zome_name, input.fn_name, input.fn_args
     );
 
     let handler = conductor_api.write().unwrap();
 
     let id = ProcessUniqueId::new();
+    // json-rpc format
     let request = format!(
         r#"{{"jsonrpc": "2.0", "method": "call", "params": {}, "id": "{}"}}"#,
         params, id
@@ -327,8 +328,14 @@ pub mod tests {
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = test_setup
             .context
-            .block_on(author_entry(&grant_entry, None, &test_setup.context))
-            .unwrap();
+            .block_on(author_entry(
+                &grant_entry,
+                None,
+                &test_setup.context,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
         let other_agent_context = test_context("other agent", None);
         let cap_request =
             make_cap_request_for_call(other_agent_context.clone(), addr, "test", "{}");
@@ -372,8 +379,14 @@ pub mod tests {
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = test_setup
             .context
-            .block_on(author_entry(&grant_entry, None, &test_setup.context))
-            .unwrap();
+            .block_on(author_entry(
+                &grant_entry,
+                None,
+                &test_setup.context,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
         let cap_request = make_cap_request_for_call(
             test_context("random other agent", None),
             grant_addr.clone(),
@@ -484,8 +497,9 @@ pub mod tests {
             .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = context
-            .block_on(author_entry(&grant_entry, None, &context))
-            .unwrap();
+            .block_on(author_entry(&grant_entry, None, &context, &vec![]))
+            .unwrap()
+            .address();
 
         // make the call with a valid capability call from a random source should succeed
         let zome_call = ZomeFnCall::new(

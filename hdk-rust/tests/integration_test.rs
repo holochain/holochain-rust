@@ -196,6 +196,11 @@ pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
+#[no_mangle]
+pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
 pub fn create_test_defs_with_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {
     let mut traitfns = TraitFns::new();
     let mut fn_declarations = Vec::new();
@@ -570,7 +575,10 @@ fn can_link_entries() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from_json(r#"{"Ok":null}"#));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+    );
 }
 
 #[test]
@@ -579,7 +587,10 @@ fn can_remove_link() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from_json(r#"{"Ok":null}"#));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+    );
 }
 
 #[test]

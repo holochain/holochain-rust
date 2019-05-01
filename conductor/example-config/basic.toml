@@ -22,59 +22,59 @@ agent = "test agent 1"
 dna = "app spec rust"
 id = "app spec instance 1"
 
-[instances.storage]
-path = "example-config/tmp-storage"
-type = "file"
+    [instances.storage]
+    path = "example-config/tmp-storage"
+    type = "file"
 
 [[instances]]
 agent = "test agent 2"
 dna = "app spec rust"
 id = "app spec instance 2"
 
-[instances.storage]
-path = "example-config/tmp-storage-2"
-type = "file"
+    [instances.storage]
+    path = "example-config/tmp-storage-2"
+    type = "file"
 
 [[interfaces]]
 admin = true
 id = "websocket interface"
 
-[[interfaces.instances]]
-id = "app spec instance 1"
+    [[interfaces.instances]]
+    id = "app spec instance 1"
 
-[[interfaces.instances]]
-id = "app spec instance 2"
+    [[interfaces.instances]]
+    id = "app spec instance 2"
 
-[interfaces.driver]
-port = 3000
-type = "websocket"
+    [interfaces.driver]
+    port = 3000
+    type = "websocket"
 
 [[interfaces]]
 admin = true
 id = "http interface"
 
-[[interfaces.instances]]
-id = "app spec instance 1"
+    [[interfaces.instances]]
+    id = "app spec instance 1"
 
-[[interfaces.instances]]
-id = "app spec instance 2"
+    [[interfaces.instances]]
+    id = "app spec instance 2"
 
-[interfaces.driver]
-port = 4000
-type = "http"
+    [interfaces.driver]
+    port = 4000
+    type = "http"
 
 [logger]
 type = "debug"
-[[logger.rules.rules]]
-color = "red"
-exclude = false
-pattern = "^err/"
+    [[logger.rules.rules]]
+    color = "red"
+    exclude = false
+    pattern = "^err/"
 
-[[logger.rules.rules]]
-color = "white"
-exclude = false
-pattern = "^debug/dna"
+    [[logger.rules.rules]]
+    color = "white"
+    exclude = false
+    pattern = "^debug/dna"
 
-[[logger.rules.rules]]
-exclude = false
-pattern = ".*"
+    [[logger.rules.rules]]
+    exclude = false
+    pattern = ".*"

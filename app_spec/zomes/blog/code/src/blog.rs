@@ -2,13 +2,18 @@ use hdk::{
     self,
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
-        cas::content::Address, dna::capabilities::CapabilityRequest, entry::Entry,
-        error::HolochainError, json::JsonString,
+        cas::content::Address,
+        dna::capabilities::CapabilityRequest,
+        entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
+        error::HolochainError,
+        json::JsonString,
+        signature::Provenance
     },
     holochain_wasm_utils::api_serialization::{
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
+        commit_entry::CommitEntryOptions,
         get_links::{GetLinksOptions, GetLinksResult},
     },
     AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
@@ -16,7 +21,7 @@ use hdk::{
 
 use memo::Memo;
 use post::Post;
-use std::convert::TryFrom;
+use std::{collections::BTreeMap, convert::TryFrom};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -102,6 +107,31 @@ pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&post_entry(content))
 }
 
+fn is_my_friend(addr: Address) -> bool {
+    // this is "alice's" hash
+    addr == Address::from("HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui")
+}
+
+pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
+    let addr = CAPABILITY_REQ.provenance.source();
+    if is_my_friend(addr.clone()) {
+        let mut functions = BTreeMap::new();
+        functions.insert("blog".to_string(), vec!["create_post".to_string()]);
+        Ok(Some(hdk::grant_capability(
+            "can_post",
+            CapabilityType::Assigned,
+            Some(vec![addr]),
+            functions,
+        )?))
+    } else {
+        Ok(None)
+    }
+}
+
+pub fn handle_get_grants() -> ZomeApiResult<Vec<Address>> {
+    hdk::query(EntryType::CapTokenGrant.into(), 0, 0)
+}
+
 pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&memo_entry(content))
 }
@@ -120,7 +150,32 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
     Ok(address)
 }
 
-pub fn handle_create_post_with_agent(agent_id:Address,content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
+pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Address>,
+                                        counter_signature: Provenance) -> ZomeApiResult<Address> {
+
+    let entry = post_entry(content);
+
+    let options = CommitEntryOptions::new(vec![counter_signature]);
+
+    let address = hdk::commit_entry_result(&entry, options).unwrap().address();
+
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
+
+    if let Some(in_reply_to_address) = in_reply_to {
+        // return with Err if in_reply_to_address points to missing entry
+        hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+    }
+
+    Ok(address)
+}
+
+
+pub fn handle_create_post_with_agent(
+    agent_id: Address,
+    content: String,
+    in_reply_to: Option<Address>,
+) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;
 
     hdk::link_entries(&agent_id, &address, "authored_posts")?;
@@ -174,14 +229,16 @@ pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
     )
 }
 
-pub fn handle_my_posts_get_my_sources(agent:Address) -> ZomeApiResult<GetLinksResult>
-{
-    hdk::get_links_with_options(&agent,"authored_posts",GetLinksOptions{
-        headers : true,
-        ..Default::default()
-    })
+pub fn handle_my_posts_get_my_sources(agent: Address) -> ZomeApiResult<GetLinksResult> {
+    hdk::get_links_with_options(
+        &agent,
+        "authored_posts",
+        GetLinksOptions {
+            headers: true,
+            ..Default::default()
+        },
+    )
 }
-
 
 pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
     // In the current implementation of hdk::query the second parameter
@@ -201,12 +258,10 @@ pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     hdk::get_entry(&post_address)
 }
 
-pub fn handle_delete_entry_post(post_address: Address) -> ZomeApiResult<()> {
+pub fn handle_delete_entry_post(post_address: Address) -> ZomeApiResult<Address> {
     hdk::get_entry(&post_address)?;
 
-    hdk::remove_entry(&post_address)?;
-
-    Ok(())
+    hdk::remove_entry(&post_address)
 }
 
 pub fn handle_get_initial_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
@@ -253,7 +308,7 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
     }
 }
 
-pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<()> {
+pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<Address> {
     hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
     hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
     hdk::link_entries(&agent_address, &post_address, "recommended_posts")

@@ -55,7 +55,7 @@ pub mod tests {
     };
 
     #[test]
-    fn not_implemented() {
+    fn receive_fail() {
         let zome = "test_zome";
         let netname = Some("not_implemented test");
         let instance = test_callback_instance(
@@ -68,7 +68,7 @@ pub mod tests {
         .expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test", netname));
 
-        if let CallbackResult::NotImplemented(_) =
+        if let CallbackResult::Fail(_) =
             receive(context, zome, &CallbackParams::Receive(String::from("")))
         {
             ()

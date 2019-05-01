@@ -38,7 +38,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
 
     // Wait for future to be resolved
     let result: Result<(), HolochainError> = context
-        .block_on(author_entry(&entry, None, &context))
+        .block_on(author_entry(&entry, None, &context, &vec![]))
         .map(|_| ());
 
     runtime.store_result(result)

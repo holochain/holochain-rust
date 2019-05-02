@@ -134,6 +134,10 @@ impl IpcNetWorker {
 impl NetWorker for IpcNetWorker {
     /// stop the net worker
     fn stop(mut self: Box<Self>) -> NetResult<()> {
+        // Nothing to do if sub-process already terminated
+        if self.last_known_state == "terminated" {
+            return Ok(());
+        }
         self.wss_socket.close_all()?;
         if let Some(done) = self.done {
             done();
@@ -194,8 +198,17 @@ impl NetWorker for IpcNetWorker {
                         };
                     }
                     // Send data back to handler
-                    (self.handler)(Ok(msg))?;
+                    (self.handler)(Ok(msg.clone()))?;
 
+                    // on shutdown, close all connections
+                    if msg == Protocol::Terminated {
+                        self.is_network_ready = false;
+                        self.last_known_state = "terminated".to_string();
+                        let res = self.wss_socket.close_all();
+                        if let Err(e) = res {
+                            self.log.w(&format!("Error while stopping worker: {:?}", e));
+                        }
+                    }
                     // When p2p module is ready:
                     // - Notify handler that the p2p module is ready
                     // - Try connecting to boostrap nodes

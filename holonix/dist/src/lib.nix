@@ -11,7 +11,7 @@ in rec
 
  binary-derivation = args:
   pkgs.stdenv.mkDerivation {
-   name = "holochain-${args.name}";
+   name = "${args.binary}";
 
    src = pkgs.fetchurl {
     url = artifact-url ( { target = dist.artifact-target; } // args );

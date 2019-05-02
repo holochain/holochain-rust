@@ -24,6 +24,7 @@
 //! ```
 
 pub mod bridges;
+pub mod capabilities;
 pub mod entry_types;
 pub mod fn_declarations;
 pub mod traits;
@@ -618,7 +619,7 @@ pub mod tests {
         ))
         .unwrap();
 
-        assert_eq!(vec![0, 1, 2, 3], dna.zomes.get("zome1").unwrap().code.code);
+        assert_eq!(vec![0, 1, 2, 3], *dna.zomes.get("zome1").unwrap().code.code);
     }
 
     #[test]
@@ -741,7 +742,7 @@ pub mod tests {
         .unwrap();
 
         let wasm = dna.get_wasm_from_zome_name("test zome");
-        assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
+        assert_eq!("AAECAw==", base64::encode(&*wasm.unwrap().code));
 
         let fail = dna.get_wasm_from_zome_name("non existant zome");
         assert_eq!(None, fail);

@@ -55,7 +55,7 @@ We use rust-fmt to enforce code style so that we don't spend time arguing about 
 Run the formatter with:
 
 ``` shell
-nix-shell --run hc-fmt
+nix-shell --run hc-rust-fmt
 ```
 
 or

@@ -41,25 +41,31 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         .clone()
         .block_on(get_entry_result_workflow(&context, &get_args));
 
-    if let Err(_err) = maybe_entry_result {
-        return ribosome_error_code!(Unspecified);
+    if let Err(err) = maybe_entry_result {
+        context.log(format!(
+            "err/zome: get_entry_result_workflow failed: {:?}",
+            err
+        ));
+        return ribosome_error_code!(WorkflowFailed);
     }
+
     let entry_result = maybe_entry_result.unwrap();
     if !entry_result.found() {
-        return ribosome_error_code!(Unspecified);
+        return ribosome_error_code!(EntryNotFound);
     }
     let deleted_entry_address = entry_result.latest().unwrap().address();
 
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
 
-    let res: Result<(), HolochainError> = context
+    let res: Result<Address, HolochainError> = context
         .block_on(author_entry(
             &deletion_entry.clone(),
             Some(deleted_entry_address.clone()),
             &context.clone(),
+            &vec![],
         ))
-        .map(|_| ());
+        .map(|_| deletion_entry.address());
 
     runtime.store_result(res)
 }

@@ -11,7 +11,6 @@ use crate::logger::LogRules;
 ///   the conductor
 /// * bridges, which are
 use boolinator::*;
-use directories;
 use holochain_core_types::{
     agent::{AgentId, Base32},
     dna::Dna,
@@ -508,9 +507,6 @@ pub struct NetworkConfig {
     /// Global logging level output by N3H
     #[serde(default = "default_n3h_log_level")]
     pub n3h_log_level: String,
-    /// Absolute path to the local installation/repository of n3h
-    #[serde(default)]
-    pub n3h_path: String,
     /// networking mode used by n3h
     #[serde(default = "default_n3h_mode")]
     pub n3h_mode: String,
@@ -540,23 +536,6 @@ pub fn default_n3h_mode() -> String {
 // if this logic changes
 pub fn default_n3h_log_level() -> String {
     String::from("i")
-}
-
-// note that this behaviour is documented within
-// holochain_common::env_vars module and should be updated
-// if this logic changes
-pub fn default_n3h_path() -> String {
-    if let Some(user_dirs) = directories::UserDirs::new() {
-        user_dirs
-            .home_dir()
-            .join(".hc")
-            .join("net")
-            .join("n3h")
-            .to_string_lossy()
-            .to_string()
-    } else {
-        String::from("n3h")
-    }
 }
 
 // note that this behaviour is documented within
@@ -682,37 +661,36 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[interfaces]]
     id = "app spec websocket interface"
-    [interfaces.driver]
-    type = "websocket"
-    port = 8888
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "websocket"
+        port = 8888
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec http interface"
-    [interfaces.driver]
-    type = "http"
-    port = 4000
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "http"
+        port = 4000
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec domainsocket interface"
-    [interfaces.driver]
-    type = "domainsocket"
-    file = "/tmp/holochain.sock"
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "domainsocket"
+        file = "/tmp/holochain.sock"
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [network]
     bootstrap_nodes = ["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"]
-    n3h_path = "/Users/cnorris/.holochain/n3h"
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     networking_config_file = "/Users/cnorris/.holochain/network_config.json"
     n3h_log_level = "d"
@@ -740,7 +718,6 @@ pub mod tests {
                     "wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"
                 )],
                 n3h_log_level: String::from("d"),
-                n3h_path: String::from("/Users/cnorris/.holochain/n3h"),
                 n3h_mode: String::from("HACK"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
                 n3h_ipc_uri: None,
@@ -769,39 +746,39 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[interfaces]]
     id = "app spec websocket interface"
-    [interfaces.driver]
-    type = "websocket"
-    port = 8888
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "websocket"
+        port = 8888
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec http interface"
-    [interfaces.driver]
-    type = "http"
-    port = 4000
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "http"
+        port = 4000
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec domainsocket interface"
-    [interfaces.driver]
-    type = "domainsocket"
-    file = "/tmp/holochain.sock"
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "domainsocket"
+        file = "/tmp/holochain.sock"
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [logger]
     type = "debug"
-    [[logger.rules.rules]]
-    pattern = ".*"
-    color = "red"
+        [[logger.rules.rules]]
+        pattern = ".*"
+        color = "red"
 
     [[ui_bundles]]
     id = "bundle1"
@@ -813,7 +790,6 @@ pub mod tests {
     bundle = "bundle1"
     port = 3000
     dna_interface = "app spec domainsocket interface"
-
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -854,10 +830,9 @@ pub mod tests {
     id = "app spec instance"
     dna = "WRONG DNA ID"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
-
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
     "#;
 
         let config: Configuration =
@@ -884,17 +859,17 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[interfaces]]
     id = "app spec interface"
-    [interfaces.driver]
-    type = "websocket"
-    port = 8888
-    [[interfaces.instances]]
-    id = "WRONG INSTANCE ID"
+        [interfaces.driver]
+        type = "websocket"
+        port = 8888
+        [[interfaces.instances]]
+        id = "WRONG INSTANCE ID"
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -928,17 +903,17 @@ pub mod tests {
     dna = "app spec rust"
     agent = "test agent"
     network = "{}"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[interfaces]]
     id = "app spec interface"
-    [interfaces.driver]
-    type = "invalid type"
-    port = 8888
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "invalid type"
+        port = 8888
+        [[interfaces.instances]]
+        id = "app spec instance"
     "#,
             example_serialized_network_config()
         );
@@ -970,25 +945,25 @@ pub mod tests {
     id = "app1"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[instances]]
     id = "app2"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[instances]]
     id = "app3"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     {}
     "#, bridges)
@@ -1118,19 +1093,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_n3h_defaults() {
-        assert_eq!(default_n3h_mode(), String::from("HACK"));
-
-        #[cfg(not(windows))]
-        assert!(default_n3h_path().contains("/.hc/net/n3h"));
-
-        // the path can be lots of things in different environments (travis CI etc)
-        // so we are just testing that it isn't null
-        #[cfg(not(windows))]
-        assert!(default_n3h_persistence_path() != String::from(""));
-    }
-
-    #[test]
     fn test_inconsistent_ui_interface() {
         let toml = r#"
     [[agents]]
@@ -1148,39 +1110,39 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "app_spec_storage"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
 
     [[interfaces]]
     id = "app spec websocket interface"
-    [interfaces.driver]
-    type = "websocket"
-    port = 8888
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "websocket"
+        port = 8888
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec http interface"
-    [interfaces.driver]
-    type = "http"
-    port = 4000
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "http"
+        port = 4000
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [[interfaces]]
     id = "app spec domainsocket interface"
-    [interfaces.driver]
-    type = "domainsocket"
-    file = "/tmp/holochain.sock"
-    [[interfaces.instances]]
-    id = "app spec instance"
+        [interfaces.driver]
+        type = "domainsocket"
+        file = "/tmp/holochain.sock"
+        [[interfaces.instances]]
+        id = "app spec instance"
 
     [logger]
     type = "debug"
-    [[logger.rules.rules]]
-    pattern = ".*"
-    color = "red"
+        [[logger.rules.rules]]
+        pattern = ".*"
+        color = "red"
 
     [[ui_bundles]]
     id = "bundle1"
@@ -1192,7 +1154,6 @@ pub mod tests {
     bundle = "bundle1"
     port = 3000
     dna_interface = "<not existant>"
-
     "#;
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
@@ -1220,14 +1181,13 @@ pub mod tests {
     id = "deepkey"
     dna = "deepkey"
     agent = "test agent"
-    [instances.storage]
-    type = "file"
-    path = "deepkey_storage"
+        [instances.storage]
+        type = "file"
+        path = "deepkey_storage"
 
     [dpki]
     instance_id = "bogus instance"
     init_params = "{}"
-
     "#;
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");

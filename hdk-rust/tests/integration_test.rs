@@ -40,12 +40,13 @@ use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error:
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
-        get_links::GetLinksResult,
+        get_links::{GetLinksResult, LinksResult},
     },
     wasm_target_dir,
 };
 use std::{
     collections::BTreeMap,
+    path::PathBuf,
     sync::{Arc, Mutex},
     thread,
     time::Duration,
@@ -195,6 +196,11 @@ pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
+#[no_mangle]
+pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
 pub fn create_test_defs_with_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {
     let mut traitfns = TraitFns::new();
     let mut fn_declarations = Vec::new();
@@ -253,10 +259,24 @@ fn start_holochain_instance<T: Into<String>>(
     agent_name: T,
 ) -> (Holochain, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
-    let wasm = create_wasm_from_file(&format!(
-        "{}/wasm32-unknown-unknown/release/test_globals.wasm",
-        wasm_target_dir("hdk-rust/", "wasm-test/"),
-    ));
+
+    let mut wasm_path = PathBuf::new();
+    let wasm_dir_component: PathBuf = wasm_target_dir(
+        &String::from("hdk-rust").into(),
+        &String::from("wasm-test").into(),
+    );
+    wasm_path.push(wasm_dir_component);
+    let wasm_path_component: PathBuf = [
+        String::from("wasm32-unknown-unknown"),
+        String::from("release"),
+        String::from("test_globals.wasm"),
+    ]
+    .iter()
+    .collect();
+    wasm_path.push(wasm_path_component);
+
+    let wasm = create_wasm_from_file(&wasm_path);
+
     let defs = create_test_defs_with_fn_names(vec![
         "check_global",
         "check_commit_entry",
@@ -555,7 +575,10 @@ fn can_link_entries() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from_json(r#"{"Ok":null}"#));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+    );
 }
 
 #[test]
@@ -564,7 +587,10 @@ fn can_remove_link() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from_json(r#"{"Ok":null}"#));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+    );
 }
 
 #[test]
@@ -596,8 +622,14 @@ fn can_roundtrip_links() {
     let entry_address_3 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
 
     let expected_links: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
-        entry_address_2.clone(),
-        entry_address_3.clone(),
+        LinksResult {
+            address: entry_address_2.clone(),
+            headers: Vec::new(),
+        },
+        LinksResult {
+            address: entry_address_3.clone(),
+            headers: Vec::new(),
+        },
     ]));
     let expected_links = JsonString::from(expected_links);
 
@@ -605,7 +637,16 @@ fn can_roundtrip_links() {
         Ok(vec![Ok(entry_2.clone()), Ok(entry_3.clone())]);
 
     let expected_links_reversed: Result<GetLinksResult, HolochainError> =
-        Ok(GetLinksResult::new(vec![entry_address_3, entry_address_2]));
+        Ok(GetLinksResult::new(vec![
+            LinksResult {
+                address: entry_address_3.clone(),
+                headers: Vec::new(),
+            },
+            LinksResult {
+                address: entry_address_2.clone(),
+                headers: Vec::new(),
+            },
+        ]));
     let expected_links_reversed = JsonString::from(expected_links_reversed);
 
     let expected_entries_reversed: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =

@@ -1,6 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
+    entry::CanPublish,
     instance::dispatch_action,
     nucleus,
 };
@@ -15,19 +16,23 @@ use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     let address = Address::from(get_dht_data.entry_address.clone());
     let get_entry = nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone())
-        .map(|entry_with_meta| {
+        .map(|entry_with_meta_opt| {
             let state = context
                 .state()
                 .expect("Could not get state for handle_fetch_entry");
             state
                 .get_headers(address)
                 .map(|headers| {
-                    entry_with_meta
-                        .map(|entry| {
-                            Some(EntryWithMetaAndHeader {
-                                entry_with_meta: entry.clone(),
-                                headers,
-                            })
+                    entry_with_meta_opt
+                        .map(|entry_with_meta| {
+                            if entry_with_meta.entry.entry_type().can_publish(&context) {
+                                Some(EntryWithMetaAndHeader {
+                                    entry_with_meta: entry_with_meta.clone(),
+                                    headers,
+                                })
+                            } else {
+                                None
+                            }
                         })
                         .unwrap_or(None)
                 })

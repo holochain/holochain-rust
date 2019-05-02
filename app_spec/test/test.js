@@ -7,14 +7,18 @@ const dna = Config.dna(dnaPath, 'app-spec')
 const agentAlice = Config.agent("alice")
 const agentBob = Config.agent("bob")
 const agentCarol = Config.agent("carol")
+const sleep = require("sleep");
 
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 const instanceCarol = Config.instance(agentCarol, dna)
 
-const scenario1 = new Scenario([instanceAlice], { debugLog: true })
+const scenario1 = new Scenario([instanceAlice], { debugLog:true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
+
+const testBridge = Config.bridge('test-bridge', instanceAlice, instanceBob)
+const scenarioBridge = new Scenario([instanceAlice, instanceBob], { bridges: [testBridge], debugLog: true })
 
 scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
@@ -72,6 +76,11 @@ scenario1.runTape('show_env', async (t, { alice }) => {
   t.equal(result.Ok.dna_name, "HDK-spec-rust")
   t.equal(result.Ok.agent_address, alice.agentId)
   t.equal(result.Ok.agent_id, '{"nick":"alice","pub_sign_key":"' + alice.agentId + '"}')
+
+  // don't compare the public token because it changes every time we change the dna.
+  t.deepEqual(result.Ok.cap_request.provenance, [ alice.agentId, '+78GKy9y3laBbCNK1ajrj2rYVV3lBOxzGAZuuLDqXL2MLJUbMaB4lv7ut/UPWSoEeHx7OuXrTFXfu+PihtMMBQ==' ]
+);
+
 })
 
 scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {
@@ -120,6 +129,14 @@ scenario1.runTape('hash_post', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+scenario1.runTape('hash_memo', async (t, { alice }) => {
+
+  const params = { content: "Reminder: Buy some HOT." }
+  const result = alice.call("blog", "memo_address", params)
+
+  t.equal(result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
+})
+
 scenario1.runTape('create_post', async (t, { alice }) => {
 
   const content = "Holo world"
@@ -131,6 +148,110 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.notOk(result.Err)
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
+
+scenario2.runTape('create_post_countersigned', async (t, { alice, bob }) => {
+
+  const content = "Holo world"
+  const in_reply_to = null
+
+  const address_params = { content }
+  const address_result = bob.call("blog", "post_address", address_params)
+
+  t.ok(address_result.Ok)
+  const SignResult = bob.call("converse", "sign_message", { key_id:"", message: address_result.Ok });
+  t.ok(SignResult.Ok)
+
+  const counter_signature = [bob.agentId, SignResult.Ok];
+
+  const params = { content, in_reply_to, counter_signature }
+  const result = alice.call("blog", "create_post_countersigned", params)
+
+  t.ok(result.Ok)
+  t.notOk(result.Err)
+  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+})
+
+
+scenario1.runTape('create_memo', async (t, { alice }) => {
+
+  const content = "Reminder: Buy some HOT."
+  const params = { content }
+  const result = alice.call("blog", "create_memo", params)
+
+  t.ok(result.Ok)
+  t.notOk(result.Err)
+  t.equal(result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
+})
+
+scenario1.runTape('my_memos', async (t, { alice }) => {
+
+  const content = "Reminder: Buy some HOT."
+  const params = { content }
+  const create_memo_result = alice.call("blog", "create_memo", params)
+
+  t.ok(create_memo_result.Ok)
+  t.notOk(create_memo_result.Err)
+  t.equal(create_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
+
+  const my_memos_result = alice.call("blog", "my_memos", {})
+
+  t.ok(my_memos_result.Ok)
+  t.notOk(my_memos_result.Err)
+  t.deepEqual(my_memos_result.Ok, ["QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i"])
+})
+
+
+scenario2.runTape('get_memo_returns_none', async (t, { alice, bob}) => {
+
+  const content = "Reminder: Buy some HOT."
+  const params = { content }
+  const create_memo_result = alice.call("blog", "create_memo", params)
+
+  t.ok(create_memo_result.Ok)
+  t.notOk(create_memo_result.Err)
+  t.equal(create_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
+
+  const alice_get_memo_result = alice.call("blog", "get_memo",
+    { memo_address:create_memo_result.Ok })
+
+  t.ok(alice_get_memo_result.Ok)
+  t.notOk(alice_get_memo_result.Err)
+  t.deepEqual(alice_get_memo_result.Ok,
+    { App: [ 'memo', '{"content":"Reminder: Buy some HOT.","date_created":"now"}' ] })
+
+  const bob_get_memo_result = bob.call("blog", "get_memo",
+    { memo_address:create_memo_result.Ok })
+
+  t.equal(bob_get_memo_result.Ok, null)
+  t.notOk(bob_get_memo_result.Err)
+
+})
+
+scenario2.runTape('my_memos_are_private', async (t, { alice, bob }) => {
+
+  const content = "Reminder: Buy some HOT."
+  const params = { content }
+  const create_memo_result = alice.call("blog", "create_memo", params)
+
+  t.ok(create_memo_result.Ok)
+  t.notOk(create_memo_result.Err)
+  t.equal(create_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
+
+  const alice_memos_result = alice.call("blog", "my_memos", {})
+
+  t.ok(alice_memos_result.Ok)
+  t.notOk(alice_memos_result.Err)
+  t.deepEqual(alice_memos_result.Ok,
+    ["QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i"])
+
+  const bob_memos_result = bob.call("blog", "my_memos", {})
+
+  t.ok(bob_memos_result.Ok)
+  t.notOk(bob_memos_result.Err)
+  t.deepEqual(bob_memos_result.Ok, [])
+
+})
+
 
 scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
@@ -144,7 +265,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   )
 
   t.ok(bob_create_post_result.Ok)
-  t.equal(bob_create_post_result.Ok.addresses.length, 1);
+  t.equal(bob_create_post_result.Ok.links.length, 1);
 
   //remove link by alicce
   await alice.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
@@ -153,7 +274,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   const bob_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
 
   t.ok(bob_agent_posts_expect_empty.Ok)
-  t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
+  t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
 })
 
 scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
@@ -171,12 +292,12 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const deletionParams = { post_address: createResult.Ok }
   const deletionResult = await alice.callSync("blog", "delete_entry_post", deletionParams)
 
-  t.notOk(deletionResult.Ok)
+  t.ok(deletionResult.Ok)
 
 
   //delete should fail
   const failedDelete = await bob.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
-  t.deepEqual(failedDelete.Err, { Internal: 'Unspecified' });
+  t.deepEqual(failedDelete.Err, { Internal: 'Entry Could Not Be Found' });
 
   //get initial entry
   const GetInitialParamsResult = bob.call("blog", "get_initial_post", { post_address: createResult.Ok })
@@ -341,7 +462,7 @@ scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
   //delete
   const removeParamsV2 = { post_address: createResult.Ok }
   const removeResultV2 = await bob.callSync("blog", "delete_entry_post", removeParamsV2)
-  t.notOk(removeResultV2.Ok)
+  t.ok(removeResultV2.Ok)
 
   //get v2 using initial adders
   const Postv2Initial = alice.call("blog", "get_initial_post", { post_address: createResult.Ok })
@@ -350,7 +471,7 @@ scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
 
   //failed delete
   const failedDelete = await alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
-  t.deepEqual(failedDelete.Err, { Internal: 'Unspecified' });
+  t.deepEqual(failedDelete.Err, { Internal: 'Entry Could Not Be Found' });
 })
 
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
@@ -408,7 +529,7 @@ scenario1.runTape('posts_by_agent', async (t, { alice }) => {
 
   const result = alice.call("blog", "posts_by_agent", params)
 
-  t.deepEqual(result.Ok, { "addresses": [] })
+  t.deepEqual(result.Ok, { links : []})
 })
 
 scenario1.runTape('my_posts', async (t, { alice }) => {
@@ -423,7 +544,7 @@ scenario1.runTape('my_posts', async (t, { alice }) => {
 
   const result = alice.call("blog", "my_posts", {})
 
-  t.equal(result.Ok.addresses.length, 2)
+  t.equal(result.Ok.links.length, 2)
 })
 
 
@@ -438,6 +559,55 @@ scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
   t.ok(result.Err)
   console.log(result)
   t.equal(JSON.parse(result.Err.Internal).kind, "Timeout")
+})
+
+scenario2.runTape('get_sources_from_link', async (t, { alice, bob }) => {
+
+  await alice.callSync("blog", "create_post",
+    { "content": "Holo world", "in_reply_to": null }
+  );
+
+  await bob.callSync("blog", "create_post",
+  { "content": "Another one", "in_reply_to": null }
+);
+  const alice_posts = bob.call("blog","authored_posts_with_sources",
+  {
+    "agent" : alice.agentId
+  });
+
+  const bob_posts = alice.call("blog","authored_posts_with_sources",
+  {
+    "agent" : bob.agentId
+  });
+
+  t.equal(bob.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
+  t.equal(alice.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
+
+})
+
+scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
+
+  await bob.callSync("blog", "create_post_with_agent",
+    { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
+  );
+  await alice.callSync("blog", "create_post_with_agent",
+  { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
+  );
+
+  const alice_posts = bob.call("blog","authored_posts_with_sources",
+  {
+    "agent" : alice.agentId
+  });
+  const bob_posts = alice.call("blog","authored_posts_with_sources",
+  {
+    "agent" : alice.agentId
+  });
+
+  t.equal(bob.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
+  t.equal(alice.agentId,alice_posts.Ok.links[0].headers[1].provenances[0][0]);
+  t.equal(bob.agentId,bob_posts.Ok.links[0].headers[1].provenances[0][0]);
+  t.equal(alice.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
+
 })
 
 scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
@@ -489,4 +659,41 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
+})
+
+scenarioBridge.runTape('scenario test create & publish -> getting post via bridge', async (t, {alice, bob}) => {
+
+  const initialContent = "Holo world"
+  const params = { content: initialContent, in_reply_to: null }
+  const create_result = await bob.callSync("blog", "create_post", params)
+
+  t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+
+  const post_address = create_result.Ok
+  const params_get = { post_address }
+
+  const result = alice.call("blog", "get_post_bridged", params_get)
+  console.log("BRIDGE CALL RESULT: " + JSON.stringify(result))
+  const value = JSON.parse(result.Ok.App[1])
+  t.equal(value.content, initialContent)
+})
+
+scenario2.runTape('request grant', async (t, { alice, bob }) => {
+
+    /*
+      This is not a complete test of requesting a grant because currently there
+      is no way in the test conductor to actually pass in the provenance of the
+      call.  That will be added when we convert the test framework to being built
+      on top of the rust conductor.   For now this is more a placeholder test, but
+      note that the value returned is actually the capbability token value.
+    */
+    const result = alice.call("blog", "request_post_grant", {})
+    t.ok(result.Ok)
+    t.notOk(result.Err)
+
+    const grants = alice.call("blog", "get_grants", {})
+    t.ok(grants.Ok)
+    t.notOk(grants.Err)
+
+    t.equal(result.Ok, grants.Ok[0])
 })

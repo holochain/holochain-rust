@@ -94,9 +94,10 @@ impl ConductorAdmin for Conductor {
                 ))
             })?;
 
-        if let Some(hash) = expected_hash {
-            if dna.address() != hash {
-                return Err(HolochainError::DnaHashMismatch(dna.address(), hash));
+        if let Some(provided_hash) = expected_hash {
+            let actual_hash = dna.address();
+            if actual_hash != provided_hash {
+                return Err(HolochainError::DnaHashMismatch(provided_hash, actual_hash));
             }
         }
 
@@ -200,7 +201,7 @@ impl ConductorAdmin for Conductor {
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency()?;
-        let instance = self.instantiate_from_config(id, &new_config, None)?;
+        let instance = self.instantiate_from_config(id, &new_config)?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;
@@ -738,7 +739,7 @@ pattern = '.*'"#
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.boot_from_config(None).unwrap();
+        conductor.boot_from_config().unwrap();
         conductor.hash_config = test_hash_config();
         conductor.passphrase_manager = mock_passphrase_manager(test_name.to_string());
         conductor
@@ -893,8 +894,8 @@ id = 'new-dna'"#,
                 None
             ),
             Err(HolochainError::DnaHashMismatch(
+                "wrong-address".into(),
                 dna.address(),
-                "wrong-address".into()
             )),
         );
     }
@@ -1378,13 +1379,13 @@ type = 'websocket'"#,
     #[test]
     fn test_remove_instance_from_interface() {
         let test_name = "test_remove_instance_from_interface";
-        let mut conductor = create_test_conductor(test_name, 3008);
+        let mut conductor = create_test_conductor(test_name, 3308);
 
-        conductor.start_all_interfaces();
-        assert!(conductor
-            .interface_threads
-            .get("websocket interface")
-            .is_some());
+        //conductor.start_all_interfaces();
+        //assert!(conductor
+        //    .interface_threads
+        //    .get("websocket interface")
+        //    .is_some());
 
         assert_eq!(
             conductor.remove_instance_from_interface(
@@ -1417,7 +1418,7 @@ id = 'websocket interface'
 id = 'test-instance-2'
 
 [interfaces.driver]
-port = 3008
+port = 3308
 type = 'websocket'"#,
             ),
         );

@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
-use holochain_core_types::{cas::content::Address, hash::HashString};
+use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
         json_protocol::{
             DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
             FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-            MessageData, MetaKey, MetaListData, MetaTuple,
+            MessageData, MetaKey, MetaListData, TrackDnaData,
         },
         net_connection::NetSend,
         protocol::Protocol,
@@ -16,91 +16,19 @@ use holochain_net::{
     p2p_network::P2pNetwork,
     tweetlog::{TweetProxy, *},
 };
-use multihash::Hash;
-use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
+
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryFrom,
+    sync::mpsc,
+};
+
+use super::{dna_store::DnaStore, ipc_config::create_ipc_config};
 
 static TIMEOUT_MS: usize = 5000;
 
-pub type MetaStoreValue = serde_json::Value;
-
-pub struct MetaStore {
-    // TODO: Changed once meta is only Addresses
-    // pub meta_store: HashMap<MetaKey, HashSet<Address>>,
-    store: HashMap<MetaKey, HashMap<Address, serde_json::Value>>,
-}
-
-impl MetaStore {
-    pub fn new() -> Self {
-        MetaStore {
-            store: HashMap::new(),
-        }
-    }
-
-    /// Check if this value is already stored
-    pub fn has(&self, meta_key: MetaKey, v: &MetaStoreValue) -> bool {
-        let hash = HashString::encode_from_str(&v.to_string(), Hash::SHA2256);
-        let maybe_map = self.store.get(&meta_key);
-        if maybe_map.is_none() {
-            return false;
-        }
-        maybe_map.unwrap().get(&hash).is_some()
-    }
-
-    ///
-    pub fn insert(&mut self, meta_key: MetaKey, v: MetaStoreValue) {
-        let hash = HashString::encode_from_str(&v.to_string(), Hash::SHA2256);
-        if let None = self.store.get_mut(&meta_key) {
-            let mut map = HashMap::new();
-            log_tt!(
-                "metastore",
-                "MetaStore: first content for '{:?}' = {} | {}",
-                meta_key,
-                v,
-                hash,
-            );
-            map.insert(hash, v);
-            self.store.insert(meta_key, map);
-        } else {
-            if let Some(map) = self.store.get_mut(&meta_key) {
-                assert!(map.get(&hash).is_none());
-                log_tt!(
-                    "metastore",
-                    "MetaStore: adding content for '{:?}' = {} | {}",
-                    meta_key,
-                    v,
-                    hash,
-                );
-                map.insert(hash, v);
-            };
-        };
-    }
-
-    /// Get all values for a meta_key as a vec
-    pub fn get(&self, meta_key: MetaKey) -> Vec<serde_json::Value> {
-        let maybe_metas = self.store.get(&meta_key);
-        let metas = match maybe_metas.clone() {
-            Some(map) => map.clone(),
-            // if meta not found return empty list (will make the aggregation easier)
-            None => HashMap::new(),
-        };
-        let res = metas.iter().map(|(_, v)| v.clone()).collect();
-        res
-    }
-
-    /// Get all values stored
-    pub fn get_all(&self) -> Vec<MetaTuple> {
-        let mut meta_list: Vec<MetaTuple> = Vec::new();
-        for (meta_key, meta_map) in self.store.clone() {
-            for (_, v) in meta_map {
-                meta_list.push((meta_key.0.clone(), meta_key.1.clone(), v));
-            }
-        }
-        meta_list
-    }
-}
-
 /// Core Mock
-pub struct P2pNode {
+pub struct TestNode {
     // Need to hold the tempdir to keep it alive, otherwise we will get a dir error.
     _maybe_temp_dir: Option<tempfile::TempDir>,
     p2p_connection: P2pNetwork,
@@ -117,22 +45,20 @@ pub struct P2pNode {
     recv_msg_log: Vec<Protocol>,
     recv_dm_log: Vec<MessageData>,
 
-    // datastores for one dna
-    // TODO: Have a datastore per dna ; perhaps in a CoreMock struct
-    pub dna_address: Address,
-    pub entry_store: HashMap<Address, serde_json::Value>,
+    // datastores per dna
+    dna_stores: HashMap<Address, DnaStore>,
+    tracked_dnas: HashSet<Address>,
 
-    pub meta_store: MetaStore,
-    pub authored_entry_store: HashMap<Address, serde_json::Value>,
-    pub authored_meta_store: MetaStore,
+    pub current_dna: Option<Address>,
 
     pub logger: TweetProxy,
 
     is_network_ready: bool,
+    pub p2p_binding: String,
 }
 
 /// Query logs
-impl P2pNode {
+impl TestNode {
     /// Return number of JsonProtocol message this node has received
     pub fn count_recv_json_messages(&self) -> usize {
         let mut count = 0;
@@ -167,21 +93,107 @@ impl P2pNode {
     }
 }
 
-// Publish, hold
-impl P2pNode {
+// Track
+impl TestNode {
+    pub fn track_current_dna(&mut self) -> NetResult<()> {
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        self.track_dna(&current_dna, false)
+    }
+
+    pub fn track_dna(&mut self, dna_address: &Address, can_set_current: bool) -> NetResult<()> {
+        if self.tracked_dnas.contains(dna_address) {
+            if can_set_current {
+                self.set_current_dna(dna_address);
+            }
+            return Ok(());
+        }
+        let agent_id = self.agent_id.clone();
+        let res = self.send(
+            JsonProtocol::TrackDna(TrackDnaData {
+                dna_address: dna_address.clone(),
+                agent_id,
+            })
+            .into(),
+        );
+        if res.is_ok() {
+            self.tracked_dnas.insert(dna_address.clone());
+            if !self.dna_stores.contains_key(dna_address) {
+                self.dna_stores
+                    .insert(dna_address.clone(), DnaStore::new(dna_address.clone()));
+            }
+            if can_set_current {
+                self.set_current_dna(dna_address);
+            }
+        }
+        res
+    }
+
+    pub fn untrack_current_dna(&mut self) -> NetResult<()> {
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        let res = self.untrack_dna(&current_dna);
+        if res.is_ok() {
+            self.current_dna = None;
+        }
+        res
+    }
+
+    pub fn untrack_dna(&mut self, dna_address: &Address) -> NetResult<()> {
+        if !self.tracked_dnas.contains(dna_address) {
+            return Ok(());
+        }
+        let agent_id = self.agent_id.clone();
+        let res = self.send(
+            JsonProtocol::UntrackDna(TrackDnaData {
+                dna_address: dna_address.clone(),
+                agent_id,
+            })
+            .into(),
+        );
+        if res.is_ok() {
+            self.tracked_dnas.remove(dna_address);
+        }
+        res
+    }
+
+    ///
+    pub fn is_tracking(&self, dna_address: &Address) -> bool {
+        self.tracked_dnas.contains(dna_address)
+    }
+
+    ///
+    pub fn set_current_dna(&mut self, dna_address: &Address) {
+        if self.dna_stores.contains_key(dna_address) {
+            self.current_dna = Some(dna_address.clone());
+        };
+    }
+}
+
+/// publish, hold
+impl TestNode {
     pub fn author_entry(
         &mut self,
         entry_address: &Address,
         entry_content: &serde_json::Value,
         can_publish: bool,
     ) -> NetResult<()> {
-        assert!(!self.authored_entry_store.get(&entry_address).is_some());
-        assert!(!self.entry_store.get(&entry_address).is_some());
-        self.authored_entry_store
-            .insert(entry_address.clone(), entry_content.clone());
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        {
+            let dna_store = self
+                .dna_stores
+                .get_mut(&current_dna)
+                .expect("No dna_store for this DNA");
+            assert!(!dna_store.authored_entry_store.get(&entry_address).is_some());
+            assert!(!dna_store.entry_store.get(&entry_address).is_some());
+            dna_store
+                .authored_entry_store
+                .insert(entry_address.clone(), entry_content.clone());
+        }
         if can_publish {
             let msg_data = EntryData {
-                dna_address: self.dna_address.clone(),
+                dna_address: current_dna,
                 provider_agent_id: self.agent_id.clone(),
                 entry_address: entry_address.clone(),
                 entry_content: entry_content.clone(),
@@ -199,19 +211,28 @@ impl P2pNode {
         link_entry_address: &serde_json::Value,
         can_publish: bool,
     ) -> NetResult<MetaKey> {
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
         let meta_key = (entry_address.clone(), attribute.to_string());
 
         // bookkeep
         {
+            let dna_store = self
+                .dna_stores
+                .get_mut(&current_dna)
+                .expect("No dna_store for this DNA");
             // Must not already have meta
-            assert!(!self.meta_store.has(meta_key.clone(), link_entry_address));
-            self.authored_meta_store
+            assert!(!dna_store
+                .meta_store
+                .has(meta_key.clone(), link_entry_address));
+            dna_store
+                .authored_meta_store
                 .insert(meta_key.clone(), link_entry_address.clone());
         }
         // publish it
         if can_publish {
             let msg_data = DhtMetaData {
-                dna_address: self.dna_address.clone(),
+                dna_address: self.current_dna.clone().unwrap(),
                 provider_agent_id: self.agent_id.clone(),
                 entry_address: entry_address.clone(),
                 attribute: attribute.to_string(),
@@ -225,9 +246,16 @@ impl P2pNode {
     }
 
     pub fn hold_entry(&mut self, entry_address: &Address, entry_content: &serde_json::Value) {
-        assert!(!self.authored_entry_store.get(&entry_address).is_some());
-        assert!(!self.entry_store.get(&entry_address).is_some());
-        self.entry_store
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        let dna_store = self
+            .dna_stores
+            .get_mut(&current_dna)
+            .expect("No dna_store for this DNA");
+        assert!(!dna_store.authored_entry_store.get(&entry_address).is_some());
+        assert!(!dna_store.entry_store.get(&entry_address).is_some());
+        dna_store
+            .entry_store
             .insert(entry_address.clone(), entry_content.clone());
     }
 
@@ -237,17 +265,25 @@ impl P2pNode {
         attribute: &str,
         link_entry_address: &serde_json::Value,
     ) {
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        let dna_store = self
+            .dna_stores
+            .get_mut(&current_dna)
+            .expect("No dna_store for this DNA");
         let meta_key = (entry_address.clone(), attribute.to_string());
         // Must not already have meta
-        assert!(!self
+        assert!(!dna_store
             .authored_meta_store
             .has(meta_key.clone(), link_entry_address));
-        self.meta_store.insert(meta_key, link_entry_address.clone());
+        dna_store
+            .meta_store
+            .insert(meta_key, link_entry_address.clone());
     }
 }
 
 /// fetch & sendMessage
-impl P2pNode {
+impl TestNode {
     /// generate a new request_id
     fn generate_request_id(&mut self) -> String {
         self.request_count += 1;
@@ -258,9 +294,11 @@ impl P2pNode {
 
     /// Node asks for some entry on the network.
     pub fn request_entry(&mut self, entry_address: Address) -> FetchEntryData {
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
         let fetch_data = FetchEntryData {
             request_id: self.generate_request_id(),
-            dna_address: self.dna_address.clone(),
+            dna_address: current_dna,
             requester_agent_id: self.agent_id.clone(),
             entry_address,
         };
@@ -271,9 +309,11 @@ impl P2pNode {
 
     /// Node asks for some meta on the network.
     pub fn request_meta(&mut self, entry_address: Address, attribute: String) -> FetchMetaData {
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
         let fetch_meta = FetchMetaData {
             request_id: self.generate_request_id(),
-            dna_address: self.dna_address.clone(),
+            dna_address: current_dna,
             requester_agent_id: self.agent_id.to_string(),
             entry_address,
             attribute,
@@ -285,8 +325,11 @@ impl P2pNode {
 
     /// Node sends Message on the network.
     pub fn send_message(&mut self, to_agent_id: String, content: serde_json::Value) -> MessageData {
+        println!("set_current_dna: {:?}", self.current_dna);
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
         let msg_data = MessageData {
-            dna_address: self.dna_address.clone(),
+            dna_address: current_dna,
             from_agent_id: self.agent_id.to_string(),
             request_id: self.generate_request_id(),
             to_agent_id,
@@ -303,10 +346,12 @@ impl P2pNode {
         msg: MessageData,
         response_content: serde_json::Value,
     ) -> MessageData {
-        assert_eq!(msg.dna_address, self.dna_address);
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        assert_eq!(msg.dna_address, current_dna.clone());
         assert_eq!(msg.to_agent_id, self.agent_id);
         let response = MessageData {
-            dna_address: self.dna_address.clone(),
+            dna_address: current_dna.clone(),
             from_agent_id: self.agent_id.to_string(),
             request_id: msg.request_id,
             to_agent_id: msg.from_agent_id.clone(),
@@ -319,18 +364,24 @@ impl P2pNode {
 }
 
 // Replies
-impl P2pNode {
+impl TestNode {
     // -- FETCH -- //
 
     /// Send a reponse to a FetchDhtData request
     pub fn reply_to_HandleFetchEntry(&mut self, request: &FetchEntryData) -> NetResult<()> {
-        assert_eq!(request.dna_address, self.dna_address);
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        assert_eq!(request.dna_address, current_dna);
         let msg;
         {
             // Get data from local datastores
-            let mut maybe_data = self.authored_entry_store.get(&request.entry_address);
+            let dna_store = self
+                .dna_stores
+                .get_mut(&current_dna)
+                .expect("No dna_store for this DNA");
+            let mut maybe_data = dna_store.authored_entry_store.get(&request.entry_address);
             if maybe_data.is_none() {
-                maybe_data = self.entry_store.get(&request.entry_address);
+                maybe_data = dna_store.entry_store.get(&request.entry_address);
             }
             // Send failure or success response
             msg = match maybe_data.clone() {
@@ -365,14 +416,20 @@ impl P2pNode {
 
     /// Send a reponse to a FetchDhtMetaData request
     pub fn reply_to_HandleFetchMeta(&mut self, request: &FetchMetaData) -> NetResult<()> {
-        assert_eq!(request.dna_address, self.dna_address);
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        assert_eq!(request.dna_address, current_dna);
         let msg;
         {
+            let dna_store = self
+                .dna_stores
+                .get_mut(&current_dna)
+                .expect("No dna_store for this DNA");
             // Get meta from local datastores
             let meta_key = (request.entry_address.clone(), request.attribute.clone());
-            let mut metas = self.authored_meta_store.get(meta_key.clone());
+            let mut metas = dna_store.authored_meta_store.get(meta_key.clone());
             if metas.is_empty() {
-                metas = self.meta_store.get(meta_key);
+                metas = dna_store.meta_store.get(meta_key);
             }
             self.logger.t(&format!("metas = {:?}", metas));
             msg = FetchMetaResultData {
@@ -395,17 +452,26 @@ impl P2pNode {
         &mut self,
         request: &GetListData,
     ) -> NetResult<()> {
-        assert_eq!(request.dna_address, self.dna_address);
-        let entry_address_list = self
-            .authored_entry_store
-            .iter()
-            .map(|(k, _)| k.clone())
-            .collect();
-        let msg = EntryListData {
-            entry_address_list: entry_address_list,
-            request_id: request.request_id.clone(),
-            dna_address: request.dna_address.clone(),
-        };
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        assert_eq!(request.dna_address, current_dna);
+        let msg;
+        {
+            let dna_store = self
+                .dna_stores
+                .get_mut(&current_dna)
+                .expect("No dna_store for this DNA");
+            let entry_address_list = dna_store
+                .authored_entry_store
+                .iter()
+                .map(|(k, _)| k.clone())
+                .collect();
+            msg = EntryListData {
+                entry_address_list: entry_address_list,
+                request_id: request.request_id.clone(),
+                dna_address: request.dna_address.clone(),
+            };
+        }
         self.send(JsonProtocol::HandleGetPublishingEntryListResult(msg).into())
     }
     /// Look for the first HandleGetPublishingEntryList request received from network module and reply
@@ -423,12 +489,21 @@ impl P2pNode {
 
     /// Reply to a HandleGetPublishingMetaList request
     pub fn reply_to_HandleGetPublishingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
-        assert_eq!(request.dna_address, self.dna_address);
-        let msg = MetaListData {
-            request_id: request.request_id.clone(),
-            dna_address: request.dna_address.clone(),
-            meta_list: self.authored_meta_store.get_all(),
-        };
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        assert_eq!(request.dna_address, current_dna);
+        let msg;
+        {
+            let dna_store = self
+                .dna_stores
+                .get_mut(&current_dna)
+                .expect("No dna_store for this DNA");
+            msg = MetaListData {
+                request_id: request.request_id.clone(),
+                dna_address: request.dna_address.clone(),
+                meta_list: dna_store.authored_meta_store.get_all(),
+            };
+        }
         self.send(JsonProtocol::HandleGetPublishingMetaListResult(msg).into())
     }
     /// Look for the first HandleGetPublishingMetaList request received from network module and reply
@@ -450,13 +525,26 @@ impl P2pNode {
 
     /// Reply to a HandleGetHoldingEntryList request
     pub fn reply_to_HandleGetHoldingEntryList(&mut self, request: &GetListData) -> NetResult<()> {
-        assert_eq!(request.dna_address, self.dna_address);
-        let entry_address_list = self.entry_store.iter().map(|(k, _)| k.clone()).collect();
-        let msg = EntryListData {
-            request_id: request.request_id.clone(),
-            dna_address: request.dna_address.clone(),
-            entry_address_list: entry_address_list,
-        };
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        assert_eq!(request.dna_address, current_dna);
+        let msg;
+        {
+            let dna_store = self
+                .dna_stores
+                .get_mut(&current_dna)
+                .expect("No dna_store for this DNA");
+            let entry_address_list = dna_store
+                .entry_store
+                .iter()
+                .map(|(k, _)| k.clone())
+                .collect();
+            msg = EntryListData {
+                request_id: request.request_id.clone(),
+                dna_address: request.dna_address.clone(),
+                entry_address_list: entry_address_list,
+            };
+        }
         self.send(JsonProtocol::HandleGetHoldingEntryListResult(msg).into())
     }
     /// Look for the first HandleGetHoldingEntryList request received from network module and reply
@@ -476,12 +564,21 @@ impl P2pNode {
 
     /// Reply to a HandleGetHoldingMetaList request
     pub fn reply_to_HandleGetHoldingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
-        assert_eq!(request.dna_address, self.dna_address);
-        let msg = MetaListData {
-            request_id: request.request_id.clone(),
-            dna_address: request.dna_address.clone(),
-            meta_list: self.meta_store.get_all(),
-        };
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        assert_eq!(request.dna_address, current_dna);
+        let msg;
+        {
+            let dna_store = self
+                .dna_stores
+                .get_mut(&current_dna)
+                .expect("No dna_store for this DNA");
+            msg = MetaListData {
+                request_id: request.request_id.clone(),
+                dna_address: request.dna_address.clone(),
+                meta_list: dna_store.meta_store.get_all(),
+            };
+        }
         self.send(JsonProtocol::HandleGetHoldingMetaListResult(msg).into())
     }
     /// Look for the first HandleGetHoldingMetaList request received from network module and reply
@@ -500,18 +597,17 @@ impl P2pNode {
     }
 }
 
-impl P2pNode {
+impl TestNode {
     /// Private constructor
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_config(
         agent_id_arg: String,
-        dna_address: Address,
         config: &P2pConfig,
         _maybe_temp_dir: Option<tempfile::TempDir>,
     ) -> Self {
         log_dd!(
             "p2pnode",
-            "new P2pNode '{}' with config: {:?}",
+            "new TestNode '{}' with config: {:?}",
             agent_id_arg,
             config
         );
@@ -530,7 +626,7 @@ impl P2pNode {
         )
         .expect("Failed to create P2pNetwork");
 
-        P2pNode {
+        TestNode {
             _maybe_temp_dir,
             p2p_connection,
             receiver,
@@ -540,13 +636,12 @@ impl P2pNode {
             request_count: 0,
             recv_msg_log: Vec::new(),
             recv_dm_log: Vec::new(),
-            dna_address,
-            entry_store: HashMap::new(),
-            meta_store: MetaStore::new(),
-            authored_entry_store: HashMap::new(),
-            authored_meta_store: MetaStore::new(),
+            dna_stores: HashMap::new(),
+            tracked_dnas: HashSet::new(),
+            current_dna: None,
             logger: TweetProxy::new("p2pnode"),
             is_network_ready: false,
+            p2p_binding: String::new(),
         }
     }
 
@@ -557,39 +652,34 @@ impl P2pNode {
 
     /// Constructor for an in-memory P2P Network
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_unique_memory_network(agent_id: String, dna_address: Address) -> Self {
+    pub fn new_with_unique_memory_network(agent_id: String) -> Self {
         let config = P2pConfig::new_with_unique_memory_backend();
-        return P2pNode::new_with_config(agent_id, dna_address, &config, None);
+        return TestNode::new_with_config(agent_id, &config, None);
     }
 
     /// Constructor for an IPC node that uses an existing n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_uri_ipc_network(
-        agent_id: String,
-        dna_address: Address,
-        ipc_binding: &str,
-    ) -> Self {
+    pub fn new_with_uri_ipc_network(agent_id: String, ipc_binding: &str) -> Self {
         let p2p_config = P2pConfig::default_ipc_uri(Some(ipc_binding));
-        return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, None);
+        return TestNode::new_with_config(agent_id, &p2p_config, None);
     }
 
     /// Constructor for an IPC node that spawns and uses a n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_spawn_ipc_network(
         agent_id: String,
-        dna_address: Address,
-        n3h_path: &str,
         maybe_config_filepath: Option<&str>,
         maybe_end_user_config_filepath: Option<String>,
         bootstrap_nodes: Vec<String>,
+        maybe_dir_path: Option<String>,
     ) -> Self {
-        let (p2p_config, temp_dir) = create_ipc_config(
-            n3h_path,
+        let (p2p_config, _maybe_temp_dir) = create_ipc_config(
             maybe_config_filepath,
             maybe_end_user_config_filepath,
             bootstrap_nodes,
+            maybe_dir_path,
         );
-        return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, Some(temp_dir));
+        return TestNode::new_with_config(agent_id, &p2p_config, _maybe_temp_dir);
     }
 
     /// See if there is a message to receive, and log it
@@ -631,7 +721,7 @@ impl P2pNode {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
                     self.logger.e(&format!(
-                        "({}) ###### Received parse error: {} {:?}",
+                        "({}) ###### Received parse error: {} | data = {:?}",
                         self.agent_id, s, data,
                     ));
                 }
@@ -680,7 +770,7 @@ impl P2pNode {
         let request = maybe_request.unwrap();
         // extract msg data
         let fetch_data = unwrap_to!(request => JsonProtocol::HandleFetchEntry);
-        // Alex responds: should send entry data back
+        // Respond
         self.reply_to_HandleFetchEntry(&fetch_data)
             .expect("Reply to HandleFetchEntry should work");
         true
@@ -778,6 +868,11 @@ impl P2pNode {
             JsonProtocol::UntrackDna(_) => {
                 panic!("Core should not receive UntrackDna message");
             }
+            JsonProtocol::GetStateResult(state) => {
+                if !state.bindings.is_empty() {
+                    self.p2p_binding = state.bindings[0].clone();
+                }
+            }
             JsonProtocol::Connect(_) => {
                 panic!("Core should not receive Connect message");
             }
@@ -791,7 +886,6 @@ impl P2pNode {
                 // n/a
             }
             JsonProtocol::HandleSendMessage(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
                 // log the direct message sent to us
                 self.recv_dm_log.push(msg);
             }
@@ -805,8 +899,7 @@ impl P2pNode {
             JsonProtocol::FetchEntryResult(_) => {
                 // n/a
             }
-            JsonProtocol::HandleFetchEntry(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
+            JsonProtocol::HandleFetchEntry(_msg) => {
                 // n/a
             }
             JsonProtocol::HandleFetchEntryResult(_msg) => {
@@ -817,15 +910,26 @@ impl P2pNode {
                 panic!("Core should not receive PublishDhtData message");
             }
             JsonProtocol::HandleStoreEntry(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
-                // Store data in local datastore
-                self.entry_store
-                    .insert(msg.entry_address, msg.entry_content);
+                if self.is_tracking(&msg.dna_address) {
+                    // Store data in local datastore
+                    let mut dna_store = self
+                        .dna_stores
+                        .get_mut(&msg.dna_address)
+                        .expect("No dna_store for this DNA");
+                    dna_store
+                        .entry_store
+                        .insert(msg.entry_address, msg.entry_content);
+                }
             }
             JsonProtocol::HandleDropEntry(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
-                // Remove data in local datastore
-                self.entry_store.remove(&msg.entry_address);
+                if self.is_tracking(&msg.dna_address) {
+                    // Remove data in local datastore
+                    let mut dna_store = self
+                        .dna_stores
+                        .get_mut(&msg.dna_address)
+                        .expect("No dna_store for this DNA");
+                    dna_store.entry_store.remove(&msg.entry_address);
+                }
             }
 
             JsonProtocol::FetchMeta(_msg) => {
@@ -834,8 +938,7 @@ impl P2pNode {
             JsonProtocol::FetchMetaResult(_msg) => {
                 // n/a
             }
-            JsonProtocol::HandleFetchMeta(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
+            JsonProtocol::HandleFetchMeta(_msg) => {
                 // n/a
             }
             JsonProtocol::HandleFetchMetaResult(_msg) => {
@@ -846,30 +949,33 @@ impl P2pNode {
                 panic!("Core should not receive PublishDhtMeta message");
             }
             JsonProtocol::HandleStoreMeta(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
-                // Store data in local datastore
-                let meta_key = (msg.entry_address, msg.attribute);
-                for content in msg.content_list {
-                    self.meta_store.insert(meta_key.clone(), content);
+                if self.is_tracking(&msg.dna_address) {
+                    // Store data in local datastore
+                    let meta_key = (msg.entry_address, msg.attribute);
+                    let mut dna_store = self
+                        .dna_stores
+                        .get_mut(&msg.dna_address)
+                        .expect("No dna_store for this DNA");
+                    for content in msg.content_list {
+                        dna_store.meta_store.insert(meta_key.clone(), content);
+                    }
                 }
             }
             // TODO
             //            JsonProtocol::HandleDropMeta(msg) => {
-            //                assert_eq!(msg.dna_address, self.dna_address);
+            //                assert!(self.is_tracking(&msg.dna_address));
             //                // Remove data in local datastore
             //                self.meta_store.remove(&(msg.entry_address, msg.attribute));
             //            }
 
             // -- Publish & Hold data -- //
-            JsonProtocol::HandleGetPublishingEntryList(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
+            JsonProtocol::HandleGetPublishingEntryList(_) => {
                 // n/a
             }
             JsonProtocol::HandleGetPublishingEntryListResult(_) => {
                 panic!("Core should not receive HandleGetPublishingDataListResult message");
             }
-            JsonProtocol::HandleGetHoldingEntryList(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
+            JsonProtocol::HandleGetHoldingEntryList(_) => {
                 // n/a
             }
             // Our request for the hold_list has returned
@@ -878,15 +984,13 @@ impl P2pNode {
             }
 
             // -- Publish & Hold meta -- //
-            JsonProtocol::HandleGetPublishingMetaList(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
+            JsonProtocol::HandleGetPublishingMetaList(_) => {
                 // n/a
             }
             JsonProtocol::HandleGetPublishingMetaListResult(_) => {
                 panic!("Core should not receive HandleGetPublishingMetaListResult message");
             }
-            JsonProtocol::HandleGetHoldingMetaList(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
+            JsonProtocol::HandleGetHoldingMetaList(_) => {
                 // n/a
             }
             // Our request for the hold_list has returned
@@ -899,91 +1003,11 @@ impl P2pNode {
     }
 }
 
-impl NetSend for P2pNode {
+impl NetSend for TestNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         self.logger
             .d(&format!(">> ({}) send: {:?}", self.agent_id, data));
         self.p2p_connection.send(data)
     }
-}
-
-//--------------------------------------------------------------------------------------------------
-// create_ipc_config
-//--------------------------------------------------------------------------------------------------
-
-/// Create an P2pConfig for an IPC node that uses n3h and a temp folder
-#[cfg_attr(tarpaulin, skip)]
-fn create_ipc_config(
-    n3h_path: &str,
-    maybe_config_filepath: Option<&str>,
-    maybe_end_user_config_filepath: Option<String>,
-    bootstrap_nodes: Vec<String>,
-) -> (P2pConfig, tempfile::TempDir) {
-    // Create temp directory
-    let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
-    let dir = dir_ref.path().to_string_lossy().to_string();
-
-    log_i!("create_ipc_config() dir = {}", dir);
-
-    // Create config
-    let mut config: P2pConfig = match maybe_config_filepath {
-        Some(filepath) => {
-            log_d!("filepath = {}", filepath);
-            // Get config from file
-            let p2p_config = P2pConfig::from_file(filepath);
-            assert_eq!(p2p_config.backend_kind, P2pBackendKind::IPC);
-            // complement missing fields
-            serde_json::from_value(json!({
-            "backend_kind": String::from(p2p_config.backend_kind),
-            "backend_config":
-            {
-                "socketType": p2p_config.backend_config["socketType"],
-                "bootstrapNodes": bootstrap_nodes,
-                "spawn":
-                {
-                    "cmd": p2p_config.backend_config["spawn"]["cmd"],
-                    "args": [
-                        format!("{}/packages/n3h/bin/n3h", n3h_path)
-                    ],
-                    "workDir": dir.clone(),
-                    "env": {
-                        "N3H_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_MODE"],
-                        "N3H_WORK_DIR": dir.clone(),
-                        "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
-                        "N3H_LOG_LEVEL": p2p_config.backend_config["spawn"]["env"]["N3H_LOG_LEVEL"],
-                    }
-                },
-            }})).expect("Failled making valid P2pConfig with filepath")
-        }
-        None => {
-            // use default config
-            serde_json::from_value(json!({
-            "backend_kind": "IPC",
-            "backend_config":
-            {
-                "socketType": "ws",
-                "bootstrapNodes": bootstrap_nodes,
-                "spawn":
-                {
-                    "cmd": "node",
-                    "args": [
-                        format!("{}/packages/n3h/bin/n3h", n3h_path)
-                    ],
-                    "workDir": dir.clone(),
-                    "env": {
-                        "N3H_MODE": "HACK",
-                        "N3H_WORK_DIR": dir.clone(),
-                        "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
-                        "N3H_LOG_LEVEL": "t"
-                }
-            },
-            }}))
-            .expect("Failled making valid default P2pConfig")
-        }
-    };
-    config.maybe_end_user_config = Some(P2pConfig::load_end_user_config(
-        maybe_end_user_config_filepath,
-    ));
-    return (config, dir_ref);
 }

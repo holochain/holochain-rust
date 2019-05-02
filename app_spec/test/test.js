@@ -17,6 +17,9 @@ const scenario1 = new Scenario([instanceAlice], { debugLog:true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
+const testBridge = Config.bridge('test-bridge', instanceAlice, instanceBob)
+const scenarioBridge = new Scenario([instanceAlice, instanceBob], { bridges: [testBridge], debugLog: true })
+
 scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
 
@@ -146,6 +149,29 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+scenario2.runTape('create_post_countersigned', async (t, { alice, bob }) => {
+
+  const content = "Holo world"
+  const in_reply_to = null
+
+  const address_params = { content }
+  const address_result = bob.call("blog", "post_address", address_params)
+
+  t.ok(address_result.Ok)
+  const SignResult = bob.call("converse", "sign_message", { key_id:"", message: address_result.Ok });
+  t.ok(SignResult.Ok)
+
+  const counter_signature = [bob.agentId, SignResult.Ok];
+
+  const params = { content, in_reply_to, counter_signature }
+  const result = alice.call("blog", "create_post_countersigned", params)
+
+  t.ok(result.Ok)
+  t.notOk(result.Err)
+  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+})
+
+
 scenario1.runTape('create_memo', async (t, { alice }) => {
 
   const content = "Reminder: Buy some HOT."
@@ -266,7 +292,7 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
   const deletionParams = { post_address: createResult.Ok }
   const deletionResult = await alice.callSync("blog", "delete_entry_post", deletionParams)
 
-  t.notOk(deletionResult.Ok)
+  t.ok(deletionResult.Ok)
 
 
   //delete should fail
@@ -436,7 +462,7 @@ scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
   //delete
   const removeParamsV2 = { post_address: createResult.Ok }
   const removeResultV2 = await bob.callSync("blog", "delete_entry_post", removeParamsV2)
-  t.notOk(removeResultV2.Ok)
+  t.ok(removeResultV2.Ok)
 
   //get v2 using initial adders
   const Postv2Initial = alice.call("blog", "get_initial_post", { post_address: createResult.Ok })
@@ -631,6 +657,23 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const params_get = { post_address }
 
   const result = bob.call("blog", "get_post", params_get)
+  const value = JSON.parse(result.Ok.App[1])
+  t.equal(value.content, initialContent)
+})
+
+scenarioBridge.runTape('scenario test create & publish -> getting post via bridge', async (t, {alice, bob}) => {
+
+  const initialContent = "Holo world"
+  const params = { content: initialContent, in_reply_to: null }
+  const create_result = await bob.callSync("blog", "create_post", params)
+
+  t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+
+  const post_address = create_result.Ok
+  const params_get = { post_address }
+
+  const result = alice.call("blog", "get_post_bridged", params_get)
+  console.log("BRIDGE CALL RESULT: " + JSON.stringify(result))
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
 })

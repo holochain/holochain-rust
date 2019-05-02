@@ -218,9 +218,13 @@ pub fn meta_test(
         camille.request_meta(ENTRY_ADDRESS_3.clone(), META_LINK_ATTRIBUTE.to_string());
     // Camille should not receive requested metadata
     let result =
-        camille.wait_with_timeout(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))), 1000);
+        camille.wait_with_timeout(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))), 1000)
+        .unwrap();
     log_i!("got GetMetaResult: {:?}", result);
-    assert!(result.is_none());
+    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_3.clone());
+    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
+    assert_eq!(meta_data.content_list.len(), 0);
 
     // Done
     Ok(())

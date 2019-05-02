@@ -128,6 +128,7 @@ fn make_config(
         instances: instance_configs,
         bridges: bridges,
         logger,
+        expose_trace_signals: true,
         ..Default::default()
     };
     config

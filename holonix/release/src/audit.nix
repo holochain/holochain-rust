@@ -9,6 +9,12 @@ let
   script = pkgs.writeShellScriptBin name
   ''
    echo
+   echo "Current git:"
+   echo
+
+   git show --pretty=oneline
+
+   echo
    echo "All the important release vars:"
    echo
 

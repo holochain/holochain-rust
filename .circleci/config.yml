@@ -80,6 +80,10 @@ jobs:
     - run:
         name: scaffold tests
         command: |
+          # workaround until we vendor bins better
+          # ~/.cargo/bin is not on the path by default so installed binaries aren't found
+          # @see https://github.com/holochain/holochain-rust/pull/1339
+          export PATH=$PATH:~/.cargo/bin
           hc init my_app
           cd my_app
           HC_SCAFFOLD_VERSION='branch="$TRAVIS_BRANCH"' hc generate zomes/my_zome

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Changes `LinkAdd` and `RemoveEntry` so that they return a hash instead of a null [#1343](https://github.com/holochain/holochain-rust/pull/1343)
+- Merged `default.nix` and `shell.nix` to improve `nix-shell` handling [#1371](https://github.com/holochain/holochain-rust/pull/1371)
 
 ### Deprecated
 

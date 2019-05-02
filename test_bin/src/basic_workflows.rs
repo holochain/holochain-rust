@@ -613,9 +613,10 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
 
     // Billy should receive meta
     let result = billy
-        .wait(Box::new(one_is_where!(JsonProtocol::FetchMetaResult(meta_data), {
-            meta_data.request_id == fetch_meta.request_id
-        })))
+        .wait(Box::new(one_is_where!(
+            JsonProtocol::FetchMetaResult(meta_data),
+            { meta_data.request_id == fetch_meta.request_id }
+        )))
         .unwrap();
 
     log_i!("got GetMetaResult: {:?}", result);

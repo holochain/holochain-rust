@@ -172,7 +172,12 @@ fn main() {
             .unwrap();
         }
         if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-            launch_two_nodes_test("test_bin/data/network_config.json", Some("test_bin/data/end_user_net_config.json".to_string()), test_fn).unwrap();
+            launch_two_nodes_test(
+                "test_bin/data/network_config.json",
+                Some("test_bin/data/end_user_net_config.json".to_string()),
+                test_fn,
+            )
+            .unwrap();
         }
     }
 
@@ -191,8 +196,12 @@ fn main() {
                 .unwrap();
             }
             if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-                launch_three_nodes_test("test_bin/data/network_config.json", Some("test_bin/data/end_user_net_config.json".to_string()), test_fn)
-                    .unwrap();
+                launch_three_nodes_test(
+                    "test_bin/data/network_config.json",
+                    Some("test_bin/data/end_user_net_config.json".to_string()),
+                    test_fn,
+                )
+                .unwrap();
             }
         }
     }

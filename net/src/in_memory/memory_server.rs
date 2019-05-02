@@ -369,7 +369,7 @@ impl InMemoryServer {
 
             _ => {
                 self.log.w(&format!("unexpected {:?}", &maybe_json_msg));
-            },
+            }
         }
         Ok(())
     }

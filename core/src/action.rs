@@ -112,7 +112,7 @@ pub enum Action {
     CrudStatus((EntryWithHeader, CrudStatus)),
 
     //Removes a link for the local DHT
-    RemoveLink((Link,Entry)),
+    RemoveLink((Link, Entry)),
 
     // ----------------
     // Network actions:

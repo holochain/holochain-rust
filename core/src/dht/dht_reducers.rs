@@ -155,7 +155,7 @@ pub(crate) fn reduce_remove_link(
 ) -> Option<DhtStore> {
     // Get Action's input data
     let action = action_wrapper.action();
-    let (link,entry) = unwrap_to!(action => Action::RemoveLink);
+    let (link, entry) = unwrap_to!(action => Action::RemoveLink);
     let mut new_store = (*old_store).clone();
     let storage = &old_store.content_storage().clone();
     if !(*storage.read().unwrap()).contains(link.base()).unwrap() {
@@ -465,7 +465,7 @@ pub mod tests {
 
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
-        action = ActionWrapper::new(Action::RemoveLink((link.clone(),entry.clone())));
+        action = ActionWrapper::new(Action::RemoveLink((link.clone(), entry.clone())));
 
         let _ = new_dht_store.meta_storage();
 

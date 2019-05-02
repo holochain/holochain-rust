@@ -297,7 +297,7 @@ scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {
 
   //delete should fail
   const failedDelete = await bob.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
-  t.deepEqual(failedDelete.Err, { Internal: 'Entry Could Not Be Found' });
+  t.deepEqual(failedDelete.Err, { Trace: 'Entry Could Not Be Found' });
 
   //get initial entry
   const GetInitialParamsResult = bob.call("blog", "get_initial_post", { post_address: createResult.Ok })
@@ -313,7 +313,7 @@ scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
   const updateParams = { post_address: "1234", new_content: "Hello Holo V2" }
   const UpdateResult = await bob.callSync("blog", "update_post", updateParams)
 
-  t.deepEqual(UpdateResult.Err, { Internal: 'failed to update post' });
+  t.deepEqual(UpdateResult.Err, { Trace: 'failed to update post' });
 
   const content = "Hello Holo world 321"
   const in_reply_to = null
@@ -326,7 +326,7 @@ scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
 
   const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo world 321" }
   const UpdateResultV2 = await bob.callSync("blog", "update_post", updateParamsV2)
-  t.deepEqual(JSON.parse(UpdateResultV2.Err.Internal).kind.ValidationFailed, "Trying to modify with same data");
+  t.deepEqual(JSON.parse(UpdateResultV2.Err.Trace).kind.ValidationFailed, "Trying to modify with same data");
 
 
 })
@@ -471,7 +471,7 @@ scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
 
   //failed delete
   const failedDelete = await alice.callSync("blog", "delete_entry_post", { post_address: createResult.Ok })
-  t.deepEqual(failedDelete.Err, { Internal: 'Entry Could Not Be Found' });
+  t.deepEqual(failedDelete.Err, { Trace: 'Entry Could Not Be Found' });
 })
 
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
@@ -483,7 +483,7 @@ scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
   // bad in_reply_to is an error condition
   t.ok(result.Err)
   t.notOk(result.Ok)
-  const error = JSON.parse(result.Err.Internal)
+  const error = JSON.parse(result.Err.Trace)
   t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
   t.ok(error.file)
   t.ok(error.line)
@@ -498,7 +498,7 @@ scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
   // bad in_reply_to is an error condition
   t.ok(result_bob_delete.Err)
   t.notOk(result_bob_delete.Ok)
-  const error = JSON.parse(result_bob_delete.Err.Internal)
+  const error = JSON.parse(result_bob_delete.Err.Trace)
   t.deepEqual(error.kind, { ErrorGeneric: "Target for link not found" })
   t.ok(error.file)
   t.ok(error.line)
@@ -515,7 +515,7 @@ scenario1.runTape('post max content size 280 characters', async (t, { alice }) =
   t.ok(result.Err);
   t.notOk(result.Ok)
 
-  const inner = JSON.parse(result.Err.Internal)
+  const inner = JSON.parse(result.Err.Trace)
 
   t.ok(inner.file)
   t.deepEqual(inner.kind, { "ValidationFailed": "Content too long" })
@@ -558,7 +558,7 @@ scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
 
   t.ok(result.Err)
   console.log(result)
-  t.equal(JSON.parse(result.Err.Internal).kind, "Timeout")
+  t.equal(JSON.parse(result.Err.Trace).kind, "Timeout")
 })
 
 scenario2.runTape('get_sources_from_link', async (t, { alice, bob }) => {

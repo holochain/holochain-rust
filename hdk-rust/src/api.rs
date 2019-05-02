@@ -71,7 +71,7 @@ macro_rules! def_api_fns {
                 input: I,
             ) -> ZomeApiResult<O> {
                 let mut mem_stack = unsafe { G_MEM_STACK }
-                .ok_or_else(|| ZomeApiError::Internal("debug failed to load mem_stack".to_string()))?;
+                .ok_or_else(|| ZomeApiError::Trace("debug failed to load mem_stack".to_string()))?;
 
                 let wasm_allocation = mem_stack.write_json(input)?;
 
@@ -171,11 +171,11 @@ def_api_fns! {
 // ZOME API GLOBAL VARIABLES
 //--------------------------------------------------------------------------------------------------
 
-/// Internal global for memory usage
+/// Trace global for memory usage
 pub static mut G_MEM_STACK: Option<WasmStack> = None;
 
 lazy_static! {
-    /// Internal global for retrieving all Zome API globals
+    /// Trace global for retrieving all Zome API globals
     pub(crate) static ref GLOBALS: ZomeApiGlobals = init_globals().unwrap();
 
     /// The `name` property as taken from the DNA.
@@ -1181,7 +1181,7 @@ pub fn get_links_and_load<S: Into<String>>(
         let get_type = get_result?.result;
         match get_type {
             GetEntryResultType::Single(elem) => Ok(elem.entry.unwrap().to_owned()),
-            GetEntryResultType::All(_) => Err(ZomeApiError::Internal("Invalid response. get_links_result returned all entries when latest was requested".to_string()))
+            GetEntryResultType::All(_) => Err(ZomeApiError::Trace("Invalid response. get_links_result returned all entries when latest was requested".to_string()))
         }
     })
     .collect();

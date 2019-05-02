@@ -11,7 +11,7 @@ use std::{error::Error, fmt};
 /// This does not have to be sent back to Ribosome unless its an InternalError.
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum ZomeApiError {
-    Internal(String),
+    Trace(String),
     FunctionNotImplemented,
     HashNotFound,
     ValidationFailed(String),
@@ -40,7 +40,7 @@ impl From<HolochainError> for ZomeApiError {
         match holochain_error {
             HolochainError::ValidationFailed(s) => ZomeApiError::ValidationFailed(s),
             HolochainError::Timeout => ZomeApiError::Timeout,
-            _ => ZomeApiError::Internal(holochain_error.to_string()),
+            _ => ZomeApiError::Trace(holochain_error.to_string()),
         }
     }
 }
@@ -53,7 +53,7 @@ impl From<!> for ZomeApiError {
 
 impl From<String> for ZomeApiError {
     fn from(s: String) -> ZomeApiError {
-        ZomeApiError::Internal(s)
+        ZomeApiError::Trace(s)
     }
 }
 
@@ -66,15 +66,13 @@ impl From<RibosomeErrorCode> for ZomeApiError {
 impl From<AllocationError> for ZomeApiError {
     fn from(allocation_error: AllocationError) -> ZomeApiError {
         match allocation_error {
-            AllocationError::OutOfBounds => {
-                ZomeApiError::Internal("Allocation out of bounds".into())
-            }
-            AllocationError::ZeroLength => ZomeApiError::Internal("Allocation zero length".into()),
+            AllocationError::OutOfBounds => ZomeApiError::Trace("Allocation out of bounds".into()),
+            AllocationError::ZeroLength => ZomeApiError::Trace("Allocation zero length".into()),
             AllocationError::BadStackAlignment => {
-                ZomeApiError::Internal("Allocation out of alignment with stack".into())
+                ZomeApiError::Trace("Allocation out of alignment with stack".into())
             }
             AllocationError::Serialization => {
-                ZomeApiError::Internal("Allocation serialization failure".into())
+                ZomeApiError::Trace("Allocation serialization failure".into())
             }
         }
     }
@@ -85,7 +83,7 @@ impl Error for ZomeApiError {}
 impl fmt::Display for ZomeApiError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ZomeApiError::Internal(msg) => write!(f, "{}", msg),
+            ZomeApiError::Trace(msg) => write!(f, "{}", msg),
             ZomeApiError::FunctionNotImplemented => write!(f, "Function not implemented"),
             ZomeApiError::HashNotFound => write!(f, "Hash not found"),
             ZomeApiError::ValidationFailed(msg) => write!(f, "{}", msg),

@@ -7,13 +7,13 @@ use hdk::{
         entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
         error::HolochainError,
         json::JsonString,
-        signature::Provenance
+        signature::Provenance,
     },
     holochain_wasm_utils::api_serialization::{
+        commit_entry::CommitEntryOptions,
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
-        commit_entry::CommitEntryOptions,
         get_links::{GetLinksOptions, GetLinksResult},
     },
     AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
@@ -21,7 +21,10 @@ use hdk::{
 
 use memo::Memo;
 use post::Post;
-use std::{collections::BTreeMap, convert::TryFrom, convert::TryInto};
+use std::{
+    collections::BTreeMap,
+    convert::{TryFrom, TryInto},
+};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -150,9 +153,11 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
     Ok(address)
 }
 
-pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Address>,
-                                        counter_signature: Provenance) -> ZomeApiResult<Address> {
-
+pub fn handle_create_post_countersigned(
+    content: String,
+    in_reply_to: Option<Address>,
+    counter_signature: Provenance,
+) -> ZomeApiResult<Address> {
     let entry = post_entry(content);
 
     let options = CommitEntryOptions::new(vec![counter_signature]);
@@ -169,7 +174,6 @@ pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Add
 
     Ok(address)
 }
-
 
 pub fn handle_create_post_with_agent(
     agent_id: Address,
@@ -275,7 +279,7 @@ pub fn handle_get_post_with_options_latest(post_address: Address) -> ZomeApiResu
     )?;
     let latest = res
         .latest()
-        .ok_or(ZomeApiError::Internal("Could not get latest".into()))?;
+        .ok_or(ZomeApiError::Trace("Could not get latest".into()))?;
     Ok(latest)
 }
 
@@ -288,7 +292,7 @@ pub fn handle_my_post_with_options(post_address: Address) -> ZomeApiResult<GetEn
 
 pub fn handle_get_history_post(post_address: Address) -> ZomeApiResult<EntryHistory> {
     let history = hdk::get_entry_history(&post_address)?
-        .ok_or(ZomeApiError::Internal("Could not get History".into()));
+        .ok_or(ZomeApiError::Trace("Could not get History".into()));
     history
 }
 
@@ -304,11 +308,14 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
 
         hdk::update_entry(updated_post_entry, &post_address)
     } else {
-        Err(ZomeApiError::Internal("failed to update post".into()))
+        Err(ZomeApiError::Trace("failed to update post".into()))
     }
 }
 
-pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<Address> {
+pub fn handle_recommend_post(
+    post_address: Address,
+    agent_address: Address,
+) -> ZomeApiResult<Address> {
     hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
     hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
     hdk::link_entries(&agent_address, &post_address, "recommended_posts")
@@ -327,14 +334,21 @@ pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<En
         "get_post",
         json!({
             "post_address": post_address,
-        }).into()
+        })
+        .into(),
     )?;
 
-    hdk::debug(format!("********DEBUG******** BRIDGING RAW response from test-bridge {:?}", raw_json))?;
-     
-    let entry : Option<Entry> = raw_json.try_into()?;
+    hdk::debug(format!(
+        "********DEBUG******** BRIDGING RAW response from test-bridge {:?}",
+        raw_json
+    ))?;
 
-    hdk::debug(format!("********DEBUG******** BRIDGING ACTUAL response from hosting-bridge {:?}", entry))?;
+    let entry: Option<Entry> = raw_json.try_into()?;
+
+    hdk::debug(format!(
+        "********DEBUG******** BRIDGING ACTUAL response from hosting-bridge {:?}",
+        entry
+    ))?;
 
     Ok(entry)
 }

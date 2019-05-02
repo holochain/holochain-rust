@@ -1,4 +1,4 @@
-# Internal actors
+# Trace actors
 
 Actors are discussed in two contexts:
 

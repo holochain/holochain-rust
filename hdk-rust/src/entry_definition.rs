@@ -399,7 +399,7 @@ fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(
 ) -> ZomeApiResult<T> {
     match entry {
         Entry::App(_, entry_value) => T::try_from(entry_value.to_owned()).map_err(|_| {
-            ZomeApiError::Internal(
+            ZomeApiError::Trace(
                 vec![
                     "Could not convert Entry result to requested type : ".to_string(),
                     entry_value.to_string(),
@@ -407,7 +407,7 @@ fn convert_entry_validation_to_native<T: TryFrom<AppEntryValue> + Clone>(
                 .join(&String::new()),
             )
         }),
-        _ => Err(ZomeApiError::Internal(
+        _ => Err(ZomeApiError::Trace(
             "Entry did not return an app entry".to_string(),
         )),
     }

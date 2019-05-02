@@ -134,8 +134,9 @@ pub fn render(msg: LogMessage) {
         Some(color) => color,
     };
     let x = format!(
-        "{}:{}: {}",
+        "{} {:?}:{}: {}",
         msg.date.format("%Y-%m-%d %H:%M:%S"),
+        std::thread::current().id(),
         msg.id.color(id_color),
         msg.msg.color(msg_color)
     );

@@ -1,4 +1,5 @@
 use constants::*;
+use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
         json_protocol::{ConnectData, JsonProtocol},
@@ -7,33 +8,38 @@ use holochain_net::{
     },
     tweetlog::*,
 };
-use p2p_node::P2pNode;
+use p2p_node::test_node::TestNode;
+use std::time::SystemTime;
 
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
 pub fn setup_three_nodes(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    camille: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    camille: &mut TestNode,
+    dna_address: &Address,
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on all nodes
     // alex
-    alex.track_dna().expect("Failed sending TrackDna on alex");
+    alex.track_dna(dna_address, true)
+        .expect("Failed sending TrackDna on alex");
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     println!("self connected result 1: {:?}", connect_result_1);
     // billy
-    billy.track_dna().expect("Failed sending TrackDna on billy");
+    billy
+        .track_dna(dna_address, true)
+        .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     println!("self connected result 2: {:?}", connect_result_2);
     // camille
     camille
-        .track_dna()
+        .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on camille");
     let connect_result_3 = camille
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
@@ -162,14 +168,13 @@ pub fn setup_three_nodes(
 /// Reply with some data in hold_list
 #[cfg_attr(tarpaulin, skip)]
 pub fn hold_and_publish_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    camille: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    camille: &mut TestNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: hold_entry_list_test()");
-    setup_three_nodes(alex, billy, camille, can_connect)?;
+    setup_three_nodes(alex, billy, camille, &DNA_ADDRESS_A, can_connect)?;
 
     // Have alex hold some data
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, false)?;
@@ -248,6 +253,137 @@ pub fn hold_and_publish_test(
     assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_2.clone());
     assert_eq!(entry_data.entry_content, ENTRY_CONTENT_2.clone());
 
+    // Done
+    Ok(())
+}
+
+///
+#[cfg_attr(tarpaulin, skip)]
+pub fn publish_entry_stress_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    camille: &mut TestNode,
+    can_connect: bool,
+) -> NetResult<()> {
+    let time_start = SystemTime::now();
+
+    // Setup
+    setup_three_nodes(alex, billy, camille, &DNA_ADDRESS_A, can_connect)?;
+
+    let time_after_startup = SystemTime::now();
+
+    // Have each node publish lots of entries
+    for i in 0..100 {
+        // Construct entry
+        let (address, entry) = generate_entry(i);
+        // select node & publish entry
+        match i % 3 {
+            0 => {
+                alex.author_entry(&address, &entry, true)?;
+            }
+            1 => {
+                billy.author_entry(&address, &entry, true)?;
+            }
+            2 => {
+                camille.author_entry(&address, &entry, true)?;
+            }
+            _ => unreachable!(),
+        };
+    }
+    let time_after_authoring = SystemTime::now();
+
+    //
+    let (address_42, entry_42) = generate_entry(91);
+    let address_42_clone = address_42.clone();
+    // #fulldht
+    // wait for store entry request
+    let result = camille.wait_with_timeout(
+        Box::new(one_is_where!(JsonProtocol::HandleStoreEntry(entry_data), {
+            entry_data.entry_address == address_42_clone
+        })),
+        10000,
+    );
+    assert!(result.is_some());
+
+    log_i!("Requesting entry \n\n");
+    // Camille requests that entry
+    let fetch_entry = camille.request_entry(address_42.clone());
+    let req_id = fetch_entry.request_id.clone();
+    // Alex or Billy or Camille might receive HandleFetchEntry request as this moment
+    #[allow(unused_assignments)]
+    let mut has_received = false;
+    has_received = alex.wait_HandleFetchEntry_and_reply();
+    if !has_received {
+        has_received = billy.wait_HandleFetchEntry_and_reply();
+        if !has_received {
+            has_received = camille.wait_HandleFetchEntry_and_reply();
+        }
+    }
+    log_i!("has_received 'HandleFetchEntry': {}", has_received);
+    let time_after_handle_fetch = SystemTime::now();
+
+    // Camille should receive the data
+    log_i!("Waiting for fetch result...\n\n");
+
+    let mut result = camille.find_recv_msg(
+        0,
+        Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+            entry_data.request_id == req_id
+        })),
+    );
+    if result.is_none() {
+        result = camille.wait_with_timeout(
+            Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+                entry_data.request_id == fetch_entry.request_id
+            })),
+            10000,
+        )
+    }
+    let json = result.unwrap();
+    log_i!("got result 1: {:?}", json);
+    let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);
+    assert_eq!(entry_data.entry_address, address_42.clone());
+    assert_eq!(entry_data.entry_content, entry_42.clone());
+
+    let time_end = SystemTime::now();
+
+    // report
+    println!(
+        "Total : {}s",
+        time_end.duration_since(time_start).unwrap().as_millis() as f32 / 1000.0
+    );
+    println!(
+        "  - startup    : {:?}s",
+        time_after_startup
+            .duration_since(time_start)
+            .unwrap()
+            .as_millis() as f32
+            / 1000.0
+    );
+    println!(
+        "  - Authoring  : {:?}s",
+        time_after_authoring
+            .duration_since(time_after_startup)
+            .unwrap()
+            .as_millis() as f32
+            / 1000.0
+    );
+    println!(
+        "  - Handling   : {:?}s",
+        time_after_handle_fetch
+            .duration_since(time_after_authoring)
+            .unwrap()
+            .as_millis() as f32
+            / 1000.0
+    );
+    println!(
+        "  - Fetching   : {:?}s",
+        time_end
+            .duration_since(time_after_handle_fetch)
+            .unwrap()
+            .as_millis() as f32
+            / 1000.0
+    );
     // Done
     Ok(())
 }

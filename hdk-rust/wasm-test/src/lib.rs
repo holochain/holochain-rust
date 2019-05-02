@@ -125,7 +125,7 @@ fn handle_commit_validation_package_tester() -> ZomeApiResult<Address> {
     ))
 }
 
-fn handle_link_two_entries() -> ZomeApiResult<()> {
+fn handle_link_two_entries() -> ZomeApiResult<Address> {
     let entry_1 = Entry::App(
         "testEntryType".into(),
         EntryStruct {
@@ -610,7 +610,7 @@ define_zome! {
 
         link_two_entries: {
             inputs: | |,
-            outputs: |result: ZomeApiResult<()>|,
+            outputs: |result: ZomeApiResult<Address>|,
             handler: handle_link_two_entries
         }
 

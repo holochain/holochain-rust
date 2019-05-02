@@ -174,7 +174,6 @@ pub fn hold_and_publish_test(
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: hold_entry_list_test()");
     setup_three_nodes(alex, billy, camille, &DNA_ADDRESS_A, can_connect)?;
 
     // Have alex hold some data

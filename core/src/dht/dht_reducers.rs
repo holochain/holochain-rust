@@ -465,7 +465,7 @@ pub mod tests {
 
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
-        action = ActionWrapper::new(Action::RemoveLink(link.clone()));
+        action = ActionWrapper::new(Action::RemoveLink((link.clone(),entry.clone())));
 
         let _ = new_dht_store.meta_storage();
 

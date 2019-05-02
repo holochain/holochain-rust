@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- pin mozilla overlay to latest commit in nix [#1375](https://github.com/holochain/holochain-rust/pull/1375)
+
 ### Deprecated
 
 ### Removed
@@ -15,5 +17,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
-
-

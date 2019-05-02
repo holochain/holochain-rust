@@ -21,7 +21,7 @@ use hdk::{
 
 use memo::Memo;
 use post::Post;
-use std::{collections::BTreeMap, convert::TryFrom};
+use std::{collections::BTreeMap, convert::TryFrom, convert::TryInto};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -316,6 +316,27 @@ pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> Z
 
 pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&AGENT_ADDRESS, "recommended_posts")
+}
+
+pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<Entry>> {
+    // Obtains the post via bridge to another instance
+    let raw_json = hdk::call(
+        "test-bridge",
+        "blog",
+        Address::from(PUBLIC_TOKEN.to_string()),
+        "get_post",
+        json!({
+            "post_address": post_address,
+        }).into()
+    )?;
+
+    hdk::debug(format!("********DEBUG******** BRIDGING RAW response from test-bridge {:?}", raw_json))?;
+     
+    let entry : Option<Entry> = raw_json.try_into()?;
+
+    hdk::debug(format!("********DEBUG******** BRIDGING ACTUAL response from hosting-bridge {:?}", entry))?;
+
+    Ok(entry)
 }
 
 #[cfg(test)]

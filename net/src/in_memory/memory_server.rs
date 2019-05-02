@@ -241,7 +241,7 @@ impl InMemoryServer {
             return Ok(());
         };
         // Note: use same order as the enum
-        match maybe_json_msg.unwrap() {
+        match maybe_json_msg.as_ref().unwrap() {
             JsonProtocol::SuccessResult(msg) => {
                 // Check if agent is tracking the dna
                 let is_tracked =
@@ -367,7 +367,9 @@ impl InMemoryServer {
                 self.priv_serve_HandleGetHoldingMetaListResult(&msg);
             }
 
-            _ => (),
+            _ => {
+                self.log.w(&format!("unexpected {:?}", &maybe_json_msg));
+            },
         }
         Ok(())
     }

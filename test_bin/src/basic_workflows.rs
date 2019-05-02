@@ -4,8 +4,8 @@ use holochain_net::{
     connection::{
         json_protocol::{ConnectData, JsonProtocol},
         net_connection::NetSend,
-        NetResult,
         protocol::Protocol,
+        NetResult,
     },
     tweetlog::TWEETLOG,
 };

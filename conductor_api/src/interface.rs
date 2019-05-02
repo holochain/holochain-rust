@@ -21,7 +21,7 @@ use std::{
     thread,
 };
 
-use conductor::{ConductorAdmin, ConductorUiAdmin, CONDUCTOR};
+use conductor::{ConductorAdmin, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
@@ -477,14 +477,14 @@ impl ConductorApiBuilder {
                     None => None,
                 };
                 let properties = params_map.get("properties");
-                conductor_call!(|c| c.install_dna_from_file(
+                let dna_hash = conductor_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
                     id.to_string(),
                     copy,
                     expected_hash,
                     properties
                 ))?;
-                Ok(json!({"success": true}))
+                Ok(json!({ "success": true, "dna_hash": dna_hash }))
             });
 
         self.io.add_method("admin/dna/uninstall", move |params| {
@@ -868,6 +868,28 @@ impl ConductorApiBuilder {
 
             Ok(json!({ "signature": signature }))
         });
+        self
+    }
+
+    /// Adds extra functionality for running tests via the RPC interface
+    ///
+    /// - `test/agent/add`
+    ///     Adds a test agent. Test agents do not use the regular keystore and instead use
+    ///     the test_keystore_loader. This makes test running much faster
+    ///     Params:
+    ///         - id [String] Id to assign to the agent to refer to it in interfaces
+    ///         - name [String] Nickname for the agent. Can be the same as agent_id
+    ///     Returns: Json object containing the newly created agent address
+    pub fn with_test_admin_functions(mut self) -> Self {
+        self.io.add_method("test/agent/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            let name = Self::get_as_string("name", &params_map)?;
+
+            let agent_address = conductor_call!(|c| c.add_test_agent(id, name))?;
+            Ok(json!({ "agent_address": agent_address }))
+        });
+
         self
     }
 

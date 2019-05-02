@@ -1,7 +1,6 @@
 pub mod get;
 pub mod send;
 pub mod store;
-
 use crate::{
     context::Context,
     entry::CanPublish,
@@ -13,7 +12,7 @@ use crate::{
 use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net::connection::{
     json_protocol::{EntryListData, GetListData, JsonProtocol},
-    net_connection::NetHandler,
+    net_connection::{NetHandler, NetSend},
 };
 
 use std::{convert::TryFrom, sync::Arc};
@@ -261,5 +260,16 @@ fn handle_get_publishing_entries(context: &Arc<Context>, get_list_data: &GetList
         "debug/net/handle: handle_get_publishing_entries returning {:?}",
         entry_list_data
     ));
+    let network = context
+        .state()
+        .expect("state should be present")
+        .network()
+        .network
+        .clone();
     // Send the list back to the calling peer
+    let _ = network
+        .expect("network should be present")
+        .lock()
+        .expect("get network mutex")
+        .send(JsonProtocol::HandleGetPublishingEntryListResult(entry_list_data).into());
 }

@@ -20,6 +20,7 @@ pub mod predicate;
 pub mod basic_workflows;
 pub mod connection_workflows;
 pub mod constants;
+pub mod multidna_workflows;
 pub mod p2p_node;
 pub mod publish_hold_workflows;
 pub mod three_workflows;
@@ -65,6 +66,9 @@ lazy_static! {
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
         three_workflows::hold_and_publish_test,
         three_workflows::publish_entry_stress_test,
+        multidna_workflows::send_test,
+        multidna_workflows::dht_test,
+        multidna_workflows::meta_test,
     ];
     pub static ref MULTI_NODES_TEST_FNS: Vec<MultiNodesTestFn> = vec![
     ];

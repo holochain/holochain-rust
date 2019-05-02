@@ -236,7 +236,10 @@ impl Waiter {
                                 checker.add(num_instances, move |aw| {
                                     //println!("WAITER: Entry::LinkRemove -> Action::RemoveLink");
                                     *aw.action()
-                                        == Action::RemoveLink((link_remove.clone().link().clone(),committed_entry.clone()))
+                                        == Action::RemoveLink((
+                                            link_remove.clone().link().clone(),
+                                            committed_entry.clone(),
+                                        ))
                                 });
                             }
                             _ => (),

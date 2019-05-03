@@ -9,6 +9,8 @@ let
   hc-conductor-node-install
   hc init my_app
   cd my_app
+  echo $USER
+  export USER=$USER
   hc generate zomes/my_zome
   hc test
   '';

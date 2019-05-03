@@ -1,6 +1,10 @@
 let
+  pkgs = import ./nixpkgs/nixpkgs.nix;
+
   flush = import ./src/flush.nix;
   test = import ./src/test.nix;
+
+  release = import ./release/config.nix;
 in
 [
   # I forgot what these are for!
@@ -9,6 +13,7 @@ in
 
   flush
   test
+
 ]
 
 ++ import ./app-spec/build.nix

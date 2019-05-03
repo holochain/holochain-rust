@@ -199,7 +199,7 @@ pub mod tests {
 
         let entry = test_entry();
         context1
-            .block_on(author_entry(&entry, None, &context1))
+            .block_on(author_entry(&entry, None, &context1, &vec![]))
             .expect("Could not author entry");
 
         let agent1_state = context1.state().unwrap().agent();

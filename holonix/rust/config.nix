@@ -12,6 +12,9 @@ let
     # the target used by all linux when we don't have a specific target
     generic-linux-target = "x86_64-unknown-linux-gnu";
 
+    # the target used by all mac
+    generic-mac-target = "x86_64-apple-darwin";
+
     # set this to "info" to debug compiler cache misses due to fingerprinting
     # @see https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
     log = "warnings";

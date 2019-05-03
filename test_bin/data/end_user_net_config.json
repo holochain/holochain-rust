@@ -1,6 +1,6 @@
 {
   "network": {
-    "transientTransportId": true
+    "useTransientTransportId": true
   },
   "mdns": {
     "enabled": false

@@ -171,7 +171,7 @@ pub(crate) fn three_nodes_disconnect_test(
         .expect("Failed sending TrackDna on alex");
     log_i!("#### alex reborn ({})", alex.p2p_binding.clone());
 
-    let count = alex.listen(1000);
+    let count = alex.listen(3000);
     log_i!("#### alex got reconnecting: {}\n\n", count);
 
     // Make sure Peers are connected

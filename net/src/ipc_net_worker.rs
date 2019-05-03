@@ -140,19 +140,8 @@ impl NetWorker for IpcNetWorker {
         }
         // Tell sub-process to shutdown
         self.receive(Protocol::Shutdown)?;
-        // Wait for Terminated
-        let mut wait_ms = 0;
-        while wait_ms < 1000 {
-            let res = self.tick();
-            if let Ok(true) = res {
-                if self.last_known_state == "terminated" {
-                    return Ok(());
-                }
-            }
-            std::thread::sleep(std::time::Duration::from_millis(10));
-            wait_ms += 10;
-        }
-        // No Terminated received, close connection and kill process
+        let _ = self.tick();
+        // Close connection and kill process
         self.wss_socket.close_all()?;
         if let Some(done) = self.done {
             done();

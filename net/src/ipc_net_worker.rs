@@ -138,10 +138,27 @@ impl NetWorker for IpcNetWorker {
         if self.last_known_state == "terminated" {
             return Ok(());
         }
+        // Tell sub-process to shutdown
+        self.receive(Protocol::Shutdown)?;
+        // Wait for Terminated
+        let mut wait_ms = 0;
+        while wait_ms < 1000 {
+            let res = self.tick();
+            if let Ok(true) = res {
+                if self.last_known_state == "terminated" {
+                    return Ok(());
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+            wait_ms += 10;
+            println!("IpcNetWorker::stop() - wait_ms = {}", wait_ms);
+        }
+        // No Terminated received, close connection and kill process
         self.wss_socket.close_all()?;
         if let Some(done) = self.done {
             done();
         }
+        // Done
         Ok(())
     }
 
@@ -202,6 +219,7 @@ impl NetWorker for IpcNetWorker {
 
                     // on shutdown, close all connections
                     if msg == Protocol::Terminated {
+                        println!("IpcNetWorker::tick() - TERMINATED");
                         self.is_network_ready = false;
                         self.last_known_state = "terminated".to_string();
                         let res = self.wss_socket.close_all();

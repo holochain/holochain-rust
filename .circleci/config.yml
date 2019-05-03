@@ -70,20 +70,10 @@ jobs:
     - checkout
 
     - run:
-        name: install cli
-        command: nix-shell --run hc-cli-install
-
-    - run:
-        name: install node conductor
-        command: nix-shell --run hc-conductor-node-install
-
-    - run:
         name: scaffold tests
         command: |
-          hc init my_app
-          cd my_app
-          HC_SCAFFOLD_VERSION='branch="$TRAVIS_BRANCH"' hc generate zomes/my_zome
-          hc test
+          export HC_SCAFFOLD_VERSION='branch="$TRAVIS_BRANCH"'
+          nix-shell --run hc-scaffold-test
 
  app-spec-tests:
   docker:

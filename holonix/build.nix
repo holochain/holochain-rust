@@ -22,3 +22,4 @@ in
 ++ import ./qt/build.nix
 ++ import ./release/build.nix
 ++ import ./rust/build.nix
+++ import ./scaffold/build.nix

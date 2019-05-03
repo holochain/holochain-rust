@@ -151,7 +151,6 @@ impl NetWorker for IpcNetWorker {
             }
             std::thread::sleep(std::time::Duration::from_millis(10));
             wait_ms += 10;
-            println!("IpcNetWorker::stop() - wait_ms = {}", wait_ms);
         }
         // No Terminated received, close connection and kill process
         self.wss_socket.close_all()?;
@@ -219,7 +218,6 @@ impl NetWorker for IpcNetWorker {
 
                     // on shutdown, close all connections
                     if msg == Protocol::Terminated {
-                        println!("IpcNetWorker::tick() - TERMINATED");
                         self.is_network_ready = false;
                         self.last_known_state = "terminated".to_string();
                         let res = self.wss_socket.close_all();

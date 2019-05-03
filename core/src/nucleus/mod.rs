@@ -23,7 +23,7 @@ use snowflake;
 use std::sync::Arc;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 pub struct ZomeFnCall {
     id: snowflake::ProcessUniqueId,
     pub zome_name: String,

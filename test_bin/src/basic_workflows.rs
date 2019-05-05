@@ -604,6 +604,8 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
         true,
     )?;
 
+    billy.listen(200);
+
     // Billy asks for metadata on the network.
     let fetch_meta = billy.request_meta(ENTRY_ADDRESS_2.clone(), META_LINK_ATTRIBUTE.to_string());
 
@@ -612,7 +614,10 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
 
     // Billy should receive meta
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .wait(Box::new(one_is_where!(
+            JsonProtocol::FetchMetaResult(meta_data),
+            { meta_data.request_id == fetch_meta.request_id }
+        )))
         .unwrap();
 
     log_i!("got GetMetaResult: {:?}", result);

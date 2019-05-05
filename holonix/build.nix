@@ -7,9 +7,6 @@ let
   release = import ./release/config.nix;
 in
 [
-  # I forgot what these are for!
-  # Reinstate and organise them ᕙ༼*◕_◕*༽ᕤ
-  pkgs.coreutils
 
   flush
   test
@@ -28,3 +25,4 @@ in
 ++ import ./release/build.nix
 ++ import ./rust/build.nix
 ++ import ./scaffold/build.nix
+++ import ./sodium/build.nix

@@ -9,7 +9,7 @@ in
 [
   # I forgot what these are for!
   # Reinstate and organise them ᕙ༼*◕_◕*༽ᕤ
-  coreutils
+  pkgs.coreutils
 
   flush
   test

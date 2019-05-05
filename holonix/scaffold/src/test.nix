@@ -17,7 +17,7 @@ let
     && cd $app \
     && hc generate zomes/my_zome \
     && hc test \
-    && rm -rm "/tmp/$app"
+    && rm -rf "/tmp/$app"
   )
   '';
 in

@@ -35,6 +35,10 @@ with pkgs;
      export PATH=~/.cargo/bin:$PATH
      export HC_TARGET_PREFIX=~/nix-holochain/
      export NIX_LDFLAGS="${darwin.ld-flags}$NIX_LDFLAGS"
+
+     # workaround for some docker/CI bugs
+     # see https://github.com/holochain/holochain-rust/pull/1339
+     export USER=$USER
     '';
   };
 

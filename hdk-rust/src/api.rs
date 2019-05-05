@@ -1371,7 +1371,7 @@ pub fn query_result(
 ///
 ///    genesis: || { Ok(()) }
 ///
-///    receive: |payload| {
+///    receive: |from, payload| {
 ///        // if you want to serialize data as json to pass, use the json! serde macro
 ///        json!({
 ///            "key": "value"

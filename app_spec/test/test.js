@@ -157,7 +157,7 @@ scenario1.runTape('cross zome call', async (t, { alice }) => {
 scenario2.runTape('send ping', async (t, { alice, bob }) => {
   const params = { to_agent: bob.agentId, message: "hello" }
   const result = alice.call("blog", "ping", params)
-  t.deepEqual(result, { Ok: { msg_type:"response", body: "hello" } })
+    t.deepEqual(result, { Ok: { msg_type:"response", body: "got hello from HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui" } })
 })
 
 scenario1.runTape('hash_post', async (t, { alice }) => {

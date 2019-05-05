@@ -38,8 +38,8 @@ define_zome! {
         Ok(())
     }
 
-    receive: |msg_json| {
-        blog::handle_receive(JsonString::from_json(&msg_json))
+    receive: |from, msg_json| {
+        blog::handle_receive(from, JsonString::from_json(&msg_json))
     }
 
     functions: [

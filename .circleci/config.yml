@@ -86,6 +86,8 @@ jobs:
       name: scaffold tests
       command: |
        export HC_SCAFFOLD_VERSION="branch=\"$TRAVIS_BRANCH\""
+       curl https://nixos.org/nix/install | sh
+       . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-scaffold-test
 
  app-spec-tests:

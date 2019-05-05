@@ -62,7 +62,7 @@ jobs:
           exit 1
         fi
 
- scaffold-tests:
+ scaffold-tests-linux:
   docker:
    - image: holochain/holochain-rust:latest
   resource_class: xlarge
@@ -76,6 +76,17 @@ jobs:
           echo $USER
           export USER=$USER
           nix-shell --run hc-scaffold-test
+
+ scaffold-tests-mac:
+  macos:
+   xcode: "10.2.0"
+  steps:
+   - checkout
+   - run:
+      name: scaffold tests
+      command: |
+       export HC_SCAFFOLD_VERSION="branch=\"$TRAVIS_BRANCH\""
+       nix-shell --run hc-scaffold-test
 
  app-spec-tests:
   docker:
@@ -212,7 +223,8 @@ workflows:
    - fmt
    - app-spec-tests
    - cli-tests
-   - scaffold-tests
+   - scaffold-tests-linux
+   - scaffold-tests-mac
 
  cold.ubuntu:
   jobs:

@@ -7,8 +7,14 @@ let
   ''
   hc-cli-install
   hc-conductor-node-install
-  hc init /tmp/my_app
-  ( cd /tmp/my_app && hc generate zomes/my_zome && hc test )
+
+  ( \
+    cd /tmp \
+    && hc init my_app \
+    && cd my_app \
+    && hc generate zomes/my_zome \
+    && hc test \
+  )
   '';
 in
 script

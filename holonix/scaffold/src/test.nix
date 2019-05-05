@@ -7,12 +7,8 @@ let
   ''
   hc-cli-install
   hc-conductor-node-install
-  hc init my_app
-  cd my_app
-  echo $USER
-  export USER=$USER
-  hc generate zomes/my_zome
-  hc test
+  hc init /tmp/my_app
+  ( cd /tmp/my_app && hc generate zomes/my_zome && hc test )
   '';
 in
 script

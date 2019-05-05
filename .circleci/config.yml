@@ -73,6 +73,8 @@ jobs:
         name: scaffold tests
         command: |
           export HC_SCAFFOLD_VERSION='branch="$TRAVIS_BRANCH"'
+          echo $USER
+          export USER=$USER
           nix-shell --run hc-scaffold-test
 
  app-spec-tests:

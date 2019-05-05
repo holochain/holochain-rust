@@ -5,15 +5,19 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
+  # build fresh hc and holochain
   hc-cli-install
   hc-conductor-node-install
 
+  # init, test and cleanup a throwaway app
+  app=`uuidgen`
   ( \
     cd /tmp \
-    && hc init my_app \
-    && cd my_app \
+    && hc init $app \
+    && cd $app \
     && hc generate zomes/my_zome \
     && hc test \
+    && rm -rm "/tmp/$app"
   )
   '';
 in

@@ -59,7 +59,7 @@ pub mod tests {
     #[test]
     fn receive_fail() {
         let zome = "test_zome";
-        let netname = Some("not_implemented test");
+        let netname = Some("receive_fail test");
         let instance = test_callback_instance(
             zome,
             // anything other than Genesis is fine here

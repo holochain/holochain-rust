@@ -18,7 +18,6 @@ use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
     error::HolochainError,
     json::JsonString,
-    validation::EntryValidationData
 };
 
 // see https://developer.holochain.org/api/0.0.14-alpha1/hdk/ for info on using the hdk library

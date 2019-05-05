@@ -72,7 +72,7 @@ jobs:
     - run:
         name: scaffold tests
         command: |
-          export HC_SCAFFOLD_VERSION="branch=\"$TRAVIS_BRANCH\""
+          export HC_SCAFFOLD_VERSION="branch=\"$CIRCLE_BRANCH\""
           nix-shell --run hc-scaffold-test
 
  scaffold-tests-mac:
@@ -83,7 +83,7 @@ jobs:
    - run:
       name: scaffold tests
       command: |
-       export HC_SCAFFOLD_VERSION="branch=\"$TRAVIS_BRANCH\""
+       export HC_SCAFFOLD_VERSION="branch=\"$CIRCLE_BRANCH\""
        curl https://nixos.org/nix/install | sh
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-scaffold-test

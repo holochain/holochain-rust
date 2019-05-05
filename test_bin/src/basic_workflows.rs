@@ -4,6 +4,7 @@ use holochain_net::{
     connection::{
         json_protocol::{ConnectData, JsonProtocol},
         net_connection::NetSend,
+        protocol::Protocol,
         NetResult,
     },
     tweetlog::TWEETLOG,
@@ -620,6 +621,31 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
     assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
     assert_eq!(meta_data.content_list.len(), 1);
     assert_eq!(meta_data.content_list[0], META_LINK_CONTENT_2.clone());
+    // Done
+    Ok(())
+}
+
+/// Send Protocol::Shutdown
+pub fn shutdown_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    can_connect: bool,
+) -> NetResult<()> {
+    // Setup
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
+    assert_eq!(alex.is_network_ready(), true);
+
+    // Do something
+    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    let _ = billy.listen(200);
+
+    // kill alex manually
+    alex.send(Protocol::Shutdown.into())?;
+
+    // alex should receive 'Terminated' which should set `is_network_ready`  to false
+    let _ = alex.listen(200);
+    assert_eq!(alex.is_network_ready(), false);
+
     // Done
     Ok(())
 }

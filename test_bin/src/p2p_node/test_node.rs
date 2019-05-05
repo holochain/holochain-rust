@@ -706,6 +706,12 @@ impl TestNode {
                 self.is_network_ready = true;
                 bail!("received P2pReady");
             }
+            Protocol::Terminated => {
+                let dbg_msg = format!("<< ({}) recv ** Terminated **", self.agent_id);
+                self.logger.d(&dbg_msg);
+                self.is_network_ready = false;
+                bail!("received Terminated");
+            }
             _ => {
                 let dbg_msg = format!("<< ({}) recv <other>", self.agent_id);
                 self.logger.t(&dbg_msg);

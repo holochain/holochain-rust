@@ -23,6 +23,10 @@ pub enum Protocol {
     Pong(PongData),
     /// we have connected / configured the connection, ready for messages
     P2pReady,
+    /// Tell network module to shutdown
+    Shutdown,
+    /// Network module is notifying IPC connected peers of termination
+    Terminated,
 }
 
 /// provide utility for Protocol serialization
@@ -47,6 +51,14 @@ impl<'a> From<&'a Protocol> for NamedBinaryData {
             },
             Protocol::P2pReady => NamedBinaryData {
                 name: b"p2pReady".to_vec(),
+                data: Vec::new(),
+            },
+            Protocol::Shutdown => NamedBinaryData {
+                name: b"shutdown".to_vec(),
+                data: Vec::new(),
+            },
+            Protocol::Terminated => NamedBinaryData {
+                name: b"terminated".to_vec(),
                 data: Vec::new(),
             },
         }
@@ -79,6 +91,8 @@ impl<'a> From<&'a NamedBinaryData> for Protocol {
                 Protocol::Pong(sub)
             }
             b"p2pReady" => Protocol::P2pReady,
+            b"shutdown" => Protocol::Shutdown,
+            b"terminated" => Protocol::Terminated,
             _ => panic!("bad Protocol type: {}", String::from_utf8_lossy(&nb.name)),
         }
     }
@@ -266,5 +280,19 @@ mod tests {
         let res = simple_convert!(&Protocol::P2pReady);
 
         assert_eq!(Protocol::P2pReady, res);
+    }
+
+    #[test]
+    fn it_can_convert_shutdown() {
+        let res = simple_convert!(&Protocol::Shutdown);
+
+        assert_eq!(Protocol::Shutdown, res);
+    }
+
+    #[test]
+    fn it_can_convert_died() {
+        let res = simple_convert!(&Protocol::Terminated);
+
+        assert_eq!(Protocol::Terminated, res);
     }
 }

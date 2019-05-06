@@ -62,6 +62,10 @@ scenario2.runTape('secrets', async (t, { alice }) => {
     const VerificationResult1 = alice.call("converse", "verify_message", { message, provenance: provenance1 });
     t.deepEqual(VerificationResult1, { Ok: false });
 
+    const GetKeyResult = alice.call("converse", "get_pubkey", {src_id: "app_key:1" });
+    t.ok(GetKeyResult)
+    t.deepEqual(GetKeyResult,AddKeyResult)
+
 })
 
 scenario2.runTape('agentId', async (t, { alice, bob }) => {

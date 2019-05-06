@@ -52,7 +52,7 @@ If you have a nix friendly system, this is the fastest and most reliable way to 
 
 Once in a `nix-shell` the `hc-*` prefixed bash commands support tab completion.
 
-Note: The `hc-test-all` command builds and tests _everything_ in core.
+Note: The `hc-test` command builds and tests _everything_ in core.
 
 Note: The `hc-install-*` commands may write to the current user's home directory.
 Other commands that call `cargo` and `npm` may also write to the home directory.
@@ -73,13 +73,13 @@ our isolation script `./scripts/nix/pod.sh` to debug the command.
 For example:
 
 ```shell
-./scripts/nix/pod.sh 'hc-build-wasm && hc-test'
+./scripts/nix/pod.sh 'hc-rust-test'
 ```
 
 or even:
 
 ```shell
-./scripts/nix/pod.sh hc-test-all
+./scripts/nix/pod.sh hc-test
 ```
 
 #### Future deployments
@@ -158,7 +158,7 @@ make test
 or
 
 ``` shell
-nix-shell --run hc-test
+nix-shell --run hc-rust-test
 ```
 
 Note that there are also make commands for running the tests of just core, or the command-line line tools or app_spec separately:

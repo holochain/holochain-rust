@@ -19,12 +19,16 @@ use holochain_core_types::{
     },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
-    entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
+    entry::{
+        cap_entries::{CapabilityType, ReservedCapabilityId},
+        entry_type::EntryType,
+        Entry,
+    },
     error::{HcResult, HolochainError},
 };
 use holochain_net::p2p_config::P2pConfig;
+use jsonrpc_core::{self, IoHandler};
 use jsonrpc_lite::JsonRpc;
-use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{
@@ -54,7 +58,7 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: Arc<RwLock<IoHandler>>,
-    pub signal_tx: Option<SyncSender<Signal>>,
+    signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
 impl Context {
@@ -118,7 +122,7 @@ impl Context {
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: Option<SyncSender<ActionWrapper>>,
-        signal_tx: Option<SyncSender<Signal>>,
+        signal_tx: Option<crossbeam_channel::Sender<Signal>>,
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
@@ -207,10 +211,8 @@ impl Context {
             .expect("Action channel not initialized")
     }
 
-    pub fn signal_tx(&self) -> &SyncSender<Signal> {
-        self.signal_tx
-            .as_ref()
-            .expect("Signal channel not initialized")
+    pub fn signal_tx(&self) -> Option<&crossbeam_channel::Sender<Signal>> {
+        self.signal_tx.as_ref()
     }
 
     pub fn observer_channel(&self) -> &SyncSender<Observer> {
@@ -281,33 +283,31 @@ impl Context {
             .ok_or::<HolochainError>("No top chain header".into())?;
 
         // Get address of first Token Grant entry (return early if none)
-        let addr = state
+        let grants = state
             .agent()
             .chain_store()
-            .iter_type(&Some(top), &EntryType::CapTokenGrant)
-            .next()
-            .ok_or::<HolochainError>("No CapTokenGrant entry type in chain".into())?
-            .entry_address()
-            .to_owned();
+            .iter_type(&Some(top), &EntryType::CapTokenGrant);
 
         // Get CAS
         let cas = state.agent().chain_store().content_storage();
 
-        // Get according Token Grant entry from CAS
-        let entry = get_entry_from_cas(&cas, &addr)?
-            .ok_or::<HolochainError>("Can't get CapTokenGrant entry from CAS".into())?;
-
-        // Make sure entry is a public grant and return it
-        if let Entry::CapTokenGrant(grant) = entry {
-            match grant.cap_type() {
-                CapabilityType::Public => Ok(addr),
-                _ => Err(HolochainError::ErrorGeneric(
-                    "Got CapTokenGrant, but it was not public!".to_string(),
-                )),
+        for grant in grants {
+            let addr = grant.entry_address().to_owned();
+            let entry = get_entry_from_cas(&cas, &addr)?
+                .ok_or::<HolochainError>("Can't get CapTokenGrant entry from CAS".into())?;
+            // if entry is the public grant return it
+            if let Entry::CapTokenGrant(grant) = entry {
+                if grant.cap_type() == CapabilityType::Public
+                    && grant.id() == ReservedCapabilityId::Public.as_str()
+                {
+                    return Ok(addr);
+                }
             }
-        } else {
-            unreachable!()
         }
+
+        Err(HolochainError::ErrorGeneric(
+            "No public CapTokenGrant entry type in chain".into(),
+        ))
     }
 }
 

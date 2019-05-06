@@ -54,7 +54,7 @@ fn main() {
                     "Successfully loaded {} instance configurations",
                     conductor.instances().len()
                 );
-                println!("Starting all of them...");
+                println!("Starting instances...");
                 conductor
                     .start_all_instances()
                     .expect("Could not start instances!");
@@ -66,6 +66,8 @@ fn main() {
                     .start_all_static_servers()
                     .expect("Could not start UI servers!");
             }
+
+            // TODO wait for a SIGKILL or SIGINT instead here.
             loop {
                 sleep(Duration::from_secs(1))
             }
@@ -94,7 +96,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
         })
         .collect::<Result<Vec<()>, String>>()
         .map_err(|error| HolochainError::ConfigError(error))?;
-    conductor.boot_from_config(None)?;
+    conductor.boot_from_config()?;
     Ok(())
 }
 

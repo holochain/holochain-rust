@@ -231,12 +231,16 @@ impl Instance {
     /// Given an `Action` that is being processed, decide whether or not it should be
     /// emitted as a `Signal::Internal`, and if so, send it
     fn maybe_emit_action_signal(&self, context: &Arc<Context>, action: ActionWrapper) {
-        if let Some(ref tx) = context.signal_tx {
+        if let Some(tx) = context.signal_tx() {
             // @TODO: if needed for performance, could add a filter predicate here
             // to prevent emitting too many unneeded signals
             let signal = Signal::Internal(action);
-            tx.send(signal).unwrap_or(())
-            // @TODO: once logging is implemented, kick out a warning for SendErrors
+            tx.send(signal).unwrap_or_else(|e| {
+                context.log(format!(
+                    "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                    e
+                ));
+            })
         }
     }
 
@@ -349,6 +353,9 @@ pub mod tests {
 
     use test_utils::mock_signing::registered_test_agent;
 
+    use holochain_cas_implementations::{
+        cas::memory::MemoryStorage, eav::memory::EavMemoryStorage,
+    };
     use holochain_core_types::entry::Entry;
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
@@ -358,23 +365,17 @@ pub mod tests {
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = registered_test_agent(agent_name);
-        let content_file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-        let meta_file_storage = Arc::new(RwLock::new(
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
-        ));
+        let content_storage = Arc::new(RwLock::new(MemoryStorage::new()));
+        let meta_storage = Arc::new(RwLock::new(EavMemoryStorage::new()));
         let logger = test_logger();
         (
             Arc::new(Context::new(
                 agent,
                 logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new(
-                    content_file_storage.clone(),
-                ))),
-                content_file_storage.clone(),
-                content_file_storage.clone(),
-                meta_file_storage,
+                Arc::new(Mutex::new(SimplePersister::new(content_storage.clone()))),
+                content_storage.clone(),
+                content_storage.clone(),
+                meta_storage,
                 test_memory_network_config(network_name),
                 None,
                 None,
@@ -535,7 +536,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit((entry, _)) => {
+                Action::Commit((entry, _, _)) => {
                     assert!(
                         entry.entry_type() == EntryType::AgentId
                             || entry.entry_type() == EntryType::Dna
@@ -734,7 +735,7 @@ pub mod tests {
         let context = test_context("alex", netname);
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let dna_entry = Entry::Dna(Box::new(dna));
-        let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None)));
+        let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None, vec![])));
 
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
@@ -750,7 +751,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit((entry, _)) => {
+                Action::Commit((entry, _, _)) => {
                     assert_eq!(entry.entry_type(), EntryType::Dna);
                     assert_eq!(entry.content(), dna_entry.content());
                     true
@@ -766,7 +767,8 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex", netname);
         let agent_entry = Entry::AgentId(context.agent_id.clone());
-        let commit_agent_action = ActionWrapper::new(Action::Commit((agent_entry.clone(), None)));
+        let commit_agent_action =
+            ActionWrapper::new(Action::Commit((agent_entry.clone(), None, vec![])));
 
         // Set up instance and process the action
         let instance = Instance::new(context.clone());
@@ -782,7 +784,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit((entry, _)) => {
+                Action::Commit((entry, _, _)) => {
                     assert_eq!(entry.entry_type(), EntryType::AgentId);
                     assert_eq!(entry.content(), agent_entry.content());
                     true

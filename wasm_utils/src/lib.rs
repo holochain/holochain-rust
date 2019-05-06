@@ -17,11 +17,18 @@ pub mod api_serialization;
 pub mod macros;
 pub mod memory;
 
-pub fn wasm_target_dir(test_path: &str, wasm_path: &str) -> String {
+use std::path::PathBuf;
+
+pub fn wasm_target_dir(test_path: &PathBuf, wasm_path: &PathBuf) -> PathBuf {
     // this env var checker can't use holochain_common
     // crate because that uses `directories` crate which doesn't compile to WASM
-    match std::env::var("HC_TARGET_PREFIX") {
-        Ok(prefix) => format!("{}{}{}target", prefix, test_path, wasm_path),
-        Err(_) => format!("{}target", wasm_path),
+    let mut target_dir = PathBuf::new();
+    if let Ok(prefix) = std::env::var("HC_TARGET_PREFIX") {
+        target_dir.push(PathBuf::from(prefix));
+        target_dir.push(test_path);
     }
+    target_dir.push(wasm_path);
+    target_dir.push(PathBuf::from("target"));
+
+    target_dir
 }

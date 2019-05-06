@@ -29,6 +29,9 @@ impl Default for LogRules {
         rules
             .add_rule("^debug/dna", false, Some("white".to_string()))
             .expect("rule is valid");
+        rules
+            .add_rule("^trace/", true, None)
+            .expect("rule is valid");
         rules.add_rule(".*", false, None).expect("rule is valid");
         rules
     }
@@ -131,8 +134,9 @@ pub fn render(msg: LogMessage) {
         Some(color) => color,
     };
     let x = format!(
-        "{}:{}: {}",
+        "{} {:?}:{}: {}",
         msg.date.format("%Y-%m-%d %H:%M:%S"),
+        std::thread::current().id(),
         msg.id.color(id_color),
         msg.msg.color(msg_color)
     );
@@ -165,13 +169,6 @@ pub mod tests {
         assert_eq!(rules.run(id.clone(), "baz".to_string()), None);
         let m = rules.run(id.clone(), "xboy".to_string()).unwrap();
         assert_eq!(m.msg, "xboy");
-    }
-
-    #[test]
-    fn test_log_rules_default() {
-        let rules = LogRules::default();
-        assert_eq!(rules.rules.len(), 3);
-        assert_eq!(format!("{:?}",rules),"LogRules { rules: [LogRule { pattern: ^err/, exclude: false, color: Some(\"red\") }, LogRule { pattern: ^debug/dna, exclude: false, color: Some(\"white\") }, LogRule { pattern: .*, exclude: false, color: None }] }".to_string());
     }
 
     #[test]

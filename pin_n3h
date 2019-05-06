@@ -19,10 +19,14 @@ if (!process.argv[2]) {
 const TAG = process.argv[2]
 
 const OS_ARCH = [
-  'linux-aarch64.AppImage',
-  'linux-aarch64.tar.gz',
+  'linux-ia32.AppImage',
+  'linux-ia32.tar.gz',
   'linux-x64.AppImage',
   'linux-x64.tar.gz',
+  'linux-arm.AppImage',
+  'linux-arm.tar.gz',
+  'linux-arm64.AppImage',
+  'linux-arm64.tar.gz',
   'mac-x64.dmg',
   'win-x64.exe'
 ]

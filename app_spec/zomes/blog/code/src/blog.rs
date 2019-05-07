@@ -169,7 +169,7 @@ struct PostMessageBody {
     claim: Address,
     signature: Signature,
     args: CreatePostArgs,
-    source: Address, // temporary till receive gets "from"
+    source: Address, // TODO: temporary till receive gets "from"
 }
 
 fn check_claim_against_grant(claim: &Address, provenance: Provenance, payload: String) -> bool {

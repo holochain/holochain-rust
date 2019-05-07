@@ -194,17 +194,17 @@ fn check_claim_against_grant(claim: &Address, provenance: Provenance, payload: S
     };
     match result {
         QueryResult::Entries(entries) => {
-            let found = entries.iter().find(|(addr, entry)| {
-                claim == addr
-                    && match entry {
-                        Entry::CapTokenGrant(ref grant) => match grant.assignees() {
-                            Some(assignees) => assignees.contains(&provenance.source()),
-                            None => false,
-                        },
-                        _ => false,
-                    }
-            });
-            found.is_some()
+            entries
+                .iter()
+                .filter(|(addr, _)| claim == addr)
+                .find(|(_, entry)| match entry {
+                    Entry::CapTokenGrant(ref grant) => match grant.assignees() {
+                        Some(assignees) => assignees.contains(&provenance.source()),
+                        None => false,
+                    },
+                    _ => false,
+                })
+                .is_some()
         }
         _ => false,
     }

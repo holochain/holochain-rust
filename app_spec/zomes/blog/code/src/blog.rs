@@ -124,8 +124,9 @@ fn is_my_friend(addr: Address) -> bool {
 }
 
 pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
-    // if it worked for the nodejs conductor to make calls with different provenances
-    // we could get the caller we want from the CAPABILITY_REQ global like this:
+    // we may want to extend the testing conductor to be able to make calls with
+    // arbitrary provenances.  If so we could get the caller we want from the
+    // CAPABILITY_REQ global like this:
     //    let addr = CAPABILITY_REQ.provenance.source();
     // but it doesn't work yet so for this test we are hard-coding the "friend"" to bob
     let addr = Address::from(BOB_AGENT_ID);
@@ -264,6 +265,8 @@ pub fn handle_receive(json_msg: JsonString) -> String {
     .to_string()
 }
 
+// this simply returns the first claim which works for this test, thus the arguments are ignored.
+// The exercise of a "real" find_claim function, which we may add to the hdk later, is left to the reader
 fn find_claim(_identifier: &str, _grantor: &Address) -> Result<Address, HolochainError> {
     //   Ok(Address::from("Qmebh1y2kYgVG1RPhDDzDFTAskPcRWvz5YNhiNEi17vW9G"))
     let claim = hdk::query_result(

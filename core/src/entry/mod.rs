@@ -10,9 +10,7 @@ pub trait CanPublish {
 impl CanPublish for EntryType {
     fn can_publish(&self, context: &Context) -> bool {
         match self {
-            EntryType::Dna => return false,
-            EntryType::CapTokenGrant => return false,
-            EntryType::CapTokenClaim => return false,
+            EntryType::Dna | EntryType::CapTokenGrant | EntryType::CapTokenClaim => return false,
             _ => {
                 if self.is_sys() {
                     return true;

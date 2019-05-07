@@ -23,6 +23,7 @@ use holochain_core_types::{
 };
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
+use key_loaders::test_keystore;
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -669,18 +670,27 @@ impl Conductor {
             if let Some(true) = agent_config.holo_remote_key {
                 return Err("agent is holo_remote, no keystore".to_string());
             }
-            let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
-            let mut keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
-                &keystore_file_path,
-                self.passphrase_manager.clone(),
-                self.hash_config.clone(),
-            )
-            .map_err(|_| {
-                HolochainError::ConfigError(format!(
-                    "Could not load keystore \"{}\"",
-                    agent_config.keystore_file,
-                ))
-            })?;
+            let (keystore_file_path, mut keystore) = match agent_config.keystore_file {
+                Some(keystore_file) => {
+                    let keystore_file_path = PathBuf::from(keystore_file.clone());
+                    let keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
+                        &keystore_file_path,
+                        self.passphrase_manager.clone(),
+                        self.hash_config.clone(),
+                    )
+                    .map_err(|_| {
+                        HolochainError::ConfigError(format!(
+                            "Could not load keystore \"{}\"",
+                            keystore_file,
+                        ))
+                    })?;
+                    (keystore_file_path, keystore)
+                }
+                None => (
+                    PathBuf::from("(test keystore)"),
+                    test_keystore(&agent_config.name),
+                ),
+            };
             let keybundle = keystore
                 .get_keybundle(PRIMARY_KEYBUNDLE_ID)
                 .map_err(|err| format!("{}", err,))?;

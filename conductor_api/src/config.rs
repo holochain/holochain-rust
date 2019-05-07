@@ -358,7 +358,8 @@ pub struct AgentConfiguration {
     pub id: String,
     pub name: String,
     pub public_address: Base32,
-    pub keystore_file: String,
+    #[serde(default)]
+    pub keystore_file: Option<String>,
     /// If set to true conductor will ignore keystore_file and instead use the remote signer
     /// accessible through signing_service_uri to request signatures.
     pub holo_remote_key: Option<bool>,
@@ -613,7 +614,8 @@ pub mod tests {
                 .get(0)
                 .expect("expected at least 2 agents")
                 .clone()
-                .keystore_file,
+                .keystore_file
+                .unwrap(),
             "file/to/serialize"
         );
         assert_eq!(

@@ -444,7 +444,7 @@ impl ConductorAdmin for Conductor {
             id: id.clone(),
             name,
             public_address: public_address.clone(),
-            keystore_file: keystore_file,
+            keystore_file: Some(keystore_file),
             holo_remote_key: holo_remote_key.map(|_| true),
         };
 

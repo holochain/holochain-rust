@@ -109,7 +109,7 @@ fn agent_configuration() -> AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
         name: agent_id.nick,
         public_address: agent_id.pub_sign_key,
-        keystore_file: agent_name,
+        keystore_file: Some(agent_name),
         holo_remote_key: None,
     }
 }

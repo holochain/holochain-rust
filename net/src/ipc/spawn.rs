@@ -149,6 +149,19 @@ pub fn ipc_spawn(
 
     // Set shutdown function to kill the sub-process
     out.kill = Some(Box::new(move || {
+        let mut wait_ms = 0;
+        while wait_ms < 500 {
+            match child.try_wait() {
+                Ok(None) => {}
+                Ok(Some(_status)) => return,
+                Err(e) => {
+                    log_e!("error attempting to wait: {}", e);
+                    return;
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+            wait_ms += 10;
+        }
         if term_child(child.id()) {
             return;
         }

@@ -170,7 +170,6 @@ struct PostMessageBody {
     claim: Address,
     signature: Signature,
     args: CreatePostArgs,
-    source: Address, // TODO: temporary till receive gets "from"
 }
 
 fn check_claim_against_grant(claim: &Address, provenance: Provenance, payload: String) -> bool {
@@ -211,13 +210,13 @@ fn check_claim_against_grant(claim: &Address, provenance: Provenance, payload: S
 }
 
 // this is an example of a receive function that can handle a typed messaged
-pub fn handle_receive(json_msg: JsonString) -> String {
+pub fn handle_receive(from: Address, json_msg: JsonString) -> String {
     let maybe_message: Result<Message, HolochainError> = json_msg.try_into();
     let response = match maybe_message {
         Err(err) => format!("error: {}", err),
         Ok(message) => match message.msg_type.as_str() {
             // ping simply returns the body of the message
-            "ping" => message.body.to_string(),
+            "ping" => format!("got {} from {}", message.body.to_string(), from),
 
             // post calls the create_post zome function handler after checking the supplied signature
             "post" => {
@@ -229,7 +228,7 @@ pub fn handle_receive(json_msg: JsonString) -> String {
                         // check that the claim matches a grant and correctly signed the content
                         if !check_claim_against_grant(
                             &post_body.claim,
-                            Provenance::new(post_body.source, post_body.signature),
+                            Provenance::new(from, post_body.signature),
                             post_body.args.content.clone(),
                         ) {
                             "error: no matching grant for claim".to_string()
@@ -304,7 +303,6 @@ pub fn handle_create_post_with_claim(
             content,
             in_reply_to,
         },
-        source: Address::from(AGENT_ADDRESS.to_string()),
     };
 
     let message = Message {

@@ -32,6 +32,11 @@ pub fn handle_add_key(src_id: String, dst_id: String) -> ZomeApiResult<JsonStrin
     Ok(JsonString::from_json(&key_str))
 }
 
+pub fn handle_get_pubkey(src_id: String) -> ZomeApiResult<JsonString> {
+    let key_str = hdk::keystore_get_public_key(src_id)?;
+    Ok(JsonString::from_json(&key_str))
+}
+
 pub fn handle_add_seed(src_id: String, dst_id: String, index: u64) -> ZomeApiResult<()> {
     hdk::keystore_derive_seed(src_id, dst_id, "mycntext".to_string(), index)
 }
@@ -77,6 +82,12 @@ define_zome! {
             handler: handle_add_key
         }
 
+        get_pubkey: {
+            inputs: |src_id: String|,
+            outputs: |result: ZomeApiResult<JsonString>|,
+            handler: handle_get_pubkey
+        }
+
         list_secrets: {
             inputs: | |,
             outputs: |result: ZomeApiResult<Vec<String>>|,
@@ -86,6 +97,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [sign_message, verify_message, add_key, add_seed, list_secrets]
+        hc_public [sign_message, verify_message, add_key, add_seed, list_secrets, get_pubkey]
     }
 }

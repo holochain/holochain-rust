@@ -98,6 +98,10 @@ scenario2.runTape('secrets', async (t, { alice }) => {
     const VerificationResult1 = alice.call("converse", "verify_message", { message, provenance: provenance1 });
     t.deepEqual(VerificationResult1, { Ok: false });
 
+    const GetKeyResult = alice.call("converse", "get_pubkey", {src_id: "app_key:1" });
+    t.ok(GetKeyResult)
+    t.deepEqual(GetKeyResult,AddKeyResult)
+
 })
 
 scenario2.runTape('agentId', async (t, { alice, bob }) => {
@@ -151,7 +155,7 @@ scenario1.runTape('cross zome call', async (t, { alice }) => {
 scenario2.runTape('send ping', async (t, { alice, bob }) => {
   const params = { to_agent: bob.agentId, message: "hello" }
   const result = alice.call("blog", "ping", params)
-  t.deepEqual(result, { Ok: { msg_type:"response", body: "hello" } })
+    t.deepEqual(result, { Ok: { msg_type:"response", body: "got hello from HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui" } })
 })
 
 scenario1.runTape('hash_post', async (t, { alice }) => {

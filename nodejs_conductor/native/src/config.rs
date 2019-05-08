@@ -102,7 +102,7 @@ fn make_config(
                 id: agent_name.clone(),
                 name: agent_name.clone(),
                 public_address: keybundle.get_id(),
-                keystore_file: agent_name.clone(),
+                keystore_file: Some(agent_name.clone()),
                 holo_remote_key: None,
             };
             config

@@ -27,7 +27,7 @@ use config::{
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
 use holochain_dpki::utils::SeedContext;
-use keystore::{KeyType, Keystore};
+use keystore::{KeyType, Keystore, Secret};
 use serde_json::{self, map::Map};
 
 pub type InterfaceError = String;
@@ -1005,6 +1005,33 @@ impl ConductorApiBuilder {
 
             Ok(json!({ "signature": String::from(signature) }))
         });
+
+        let k = keystore.clone();
+        self.io
+            .add_method("agent/keystore/get_public_key", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let src_id = Self::get_as_string("src_id", &params_map)?;
+
+                let secret = k.lock().unwrap().get(&src_id).map_err(|err| {
+                    jsonrpc_core::Error::invalid_params(format!(
+                        r#"error getting "{}": {}"#,
+                        src_id, err
+                    ))
+                })?;
+
+                let pub_key = match *secret.lock().unwrap() {
+                    Secret::SigningKey(ref mut keypair) => keypair.public.to_owned(),
+                    Secret::EncryptingKey(ref mut keypair) => keypair.public.to_owned(),
+                    _ => {
+                        return Err(jsonrpc_core::Error::invalid_params(format!(
+                            r#""{}" must be a signing or encrypting key"#,
+                            src_id
+                        )));
+                    }
+                };
+
+                Ok(json!({ "pub_key": pub_key }))
+            });
 
         self
     }

@@ -42,7 +42,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
 /// Reduce state of Nucleus according to action.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
 pub fn reduce(
-    context: Arc<Context>,
     old_state: Arc<NucleusState>,
     action_wrapper: &ActionWrapper,
 ) -> Arc<NucleusState> {
@@ -50,7 +49,7 @@ pub fn reduce(
     match handler {
         Some(f) => {
             let mut new_state: NucleusState = (*old_state).clone();
-            f(context, &mut new_state, &action_wrapper);
+            f(&mut new_state, &action_wrapper);
             Arc::new(new_state)
         }
         None => old_state,

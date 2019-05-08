@@ -16,12 +16,11 @@ use holochain_core_types::{
 use std::{collections::BTreeSet, convert::TryFrom, str::FromStr, sync::Arc};
 
 // A function that might return a mutated DhtStore
-type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
+type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
 pub fn reduce(
-    context: Arc<Context>,
     old_store: Arc<DhtStore>,
     action_wrapper: &ActionWrapper,
 ) -> Arc<DhtStore> {
@@ -33,7 +32,7 @@ pub fn reduce(
     let reducer = maybe_reducer.unwrap();
     // Reduce
     let store = old_store.clone();
-    let maybe_new_store = reducer(context, &store, &action_wrapper);
+    let maybe_new_store = reducer(&store, &action_wrapper);
     match maybe_new_store {
         None => old_store,
         Some(new_store) => Arc::new(new_store),
@@ -54,12 +53,11 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
 }
 
 pub(crate) fn reduce_hold_entry(
-    context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     match action_wrapper.action().clone() {
-        Action::Commit((entry, _, _)) => reduce_store_entry_common(context, old_store, &entry),
+        Action::Commit((entry, _, _)) => reduce_store_entry_common(old_store, &entry),
         Action::Hold(EntryWithHeader { entry, header }) => {
             reduce_store_entry_common(context.clone(), old_store, &entry).and_then(|state| {
                 state.add_header_for_entry(&entry, &header).ok()?;
@@ -71,7 +69,6 @@ pub(crate) fn reduce_hold_entry(
 }
 
 fn reduce_store_entry_common(
-    context: Arc<Context>,
     old_store: &DhtStore,
     entry: &Entry,
 ) -> Option<DhtStore> {
@@ -109,7 +106,6 @@ fn reduce_store_entry_common(
 
 //
 pub(crate) fn reduce_add_link(
-    _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -147,7 +143,6 @@ pub(crate) fn reduce_add_link(
 }
 
 pub(crate) fn reduce_remove_link(
-    _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -185,7 +180,6 @@ pub(crate) fn reduce_remove_link(
 
 //
 pub(crate) fn reduce_update_entry(
-    _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -242,7 +236,6 @@ pub(crate) fn reduce_update_entry(
 }
 
 pub(crate) fn reduce_remove_entry(
-    context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -251,7 +244,7 @@ pub(crate) fn reduce_remove_entry(
     let (deleted_address, deletion_address) = unwrap_to!(action => Action::RemoveEntry);
     let mut new_store = (*old_store).clone();
     // Act
-    let res = reduce_remove_entry_inner(context, &mut new_store, deleted_address, deletion_address);
+    let res = reduce_remove_entry_inner(&mut new_store, deleted_address, deletion_address);
     // Done
     new_store.actions_mut().insert(action_wrapper.clone(), res);
     Some(new_store)
@@ -259,7 +252,6 @@ pub(crate) fn reduce_remove_entry(
 
 //
 fn reduce_remove_entry_inner(
-    _context: Arc<Context>,
     new_store: &mut DhtStore,
     latest_deleted_address: &Address,
     deletion_address: &Address,
@@ -328,7 +320,6 @@ fn reduce_remove_entry_inner(
 //
 #[allow(dead_code)]
 pub(crate) fn reduce_get_links(
-    _context: Arc<Context>,
     _old_store: &DhtStore,
     _action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {

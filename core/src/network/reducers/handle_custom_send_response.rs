@@ -3,7 +3,6 @@ use holochain_core_types::error::HolochainError;
 use std::sync::Arc;
 
 pub fn reduce_handle_custom_send_response(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

@@ -2,7 +2,6 @@ use crate::{action::ActionWrapper, context::Context, network::state::NetworkStat
 use std::sync::Arc;
 
 pub fn reduce_resolve_direct_connection(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

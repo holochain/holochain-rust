@@ -228,7 +228,7 @@ pub enum Action {
 pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
-pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
+pub type ReduceFn<S> = fn(&mut S, &ActionWrapper);
 
 /// The unique key that represents a GetLinks request, used to associate the eventual
 /// response with this GetLinks request

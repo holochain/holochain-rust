@@ -67,7 +67,6 @@ fn publish_update_delete_meta(
 
 /// Send to network a PublishMeta message holding a link metadata to `entry_with_header`
 fn publish_link_meta(
-    context: &Arc<Context>,
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
@@ -82,11 +81,6 @@ fn publish_link_meta(
         }
     };
     let link = link_type.link().clone();
-
-    context.log(format!(
-        "debug/reduce/link_meta: Publishing link meta for link: {:?}",
-        link
-    ));
 
     send(
         network_state,
@@ -104,13 +98,12 @@ fn publish_link_meta(
 }
 
 fn reduce_publish_inner(
-    context: &Arc<Context>,
     network_state: &mut NetworkState,
     address: &Address,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
-    let entry_with_header = fetch_entry_with_header(&address, &context)?;
+    let entry_with_header = fetch_entry_with_header(&address)?;
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
@@ -126,9 +119,9 @@ fn reduce_publish_inner(
             }
         }),
         EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
+            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
         EntryType::LinkRemove => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
+            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
         EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
             publish_update_delete_meta(
                 network_state,
@@ -144,14 +137,13 @@ fn reduce_publish_inner(
 }
 
 pub fn reduce_publish(
-    context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let address = unwrap_to!(action => crate::action::Action::Publish);
 
-    let result = reduce_publish_inner(&context, network_state, &address);
+    let result = reduce_publish_inner(network_state, &address);
     network_state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::Publish(match result {

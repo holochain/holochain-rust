@@ -12,7 +12,6 @@ use std::sync::Arc;
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 pub fn reduce_remove_pending_validation(
-    _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {

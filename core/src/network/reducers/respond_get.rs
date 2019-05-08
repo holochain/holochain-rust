@@ -35,7 +35,6 @@ fn reduce_respond_fetch_data_inner(
 }
 
 pub fn reduce_respond_fetch_data(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

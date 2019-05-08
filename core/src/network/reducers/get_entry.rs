@@ -25,7 +25,6 @@ fn reduce_fetch_entry_inner(
 }
 
 pub fn reduce_get_entry(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -43,7 +42,6 @@ pub fn reduce_get_entry(
 }
 
 pub fn reduce_get_entry_timeout(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

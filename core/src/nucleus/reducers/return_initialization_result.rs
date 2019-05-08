@@ -11,7 +11,6 @@ use std::sync::Arc;
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 pub fn reduce_return_initialization_result(
-    _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {

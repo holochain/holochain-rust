@@ -13,7 +13,6 @@ use holochain_net::{
 use std::sync::{Arc, Mutex};
 
 pub fn reduce_init(
-    context: Arc<Context>,
     state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

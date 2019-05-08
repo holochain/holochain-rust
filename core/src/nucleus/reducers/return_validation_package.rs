@@ -6,7 +6,6 @@ use crate::{
 use std::sync::Arc;
 
 pub fn reduce_return_validation_package(
-    _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {

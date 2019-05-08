@@ -26,7 +26,6 @@ fn reduce_get_links_inner(
 }
 
 pub fn reduce_get_links(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -42,7 +41,6 @@ pub fn reduce_get_links(
 }
 
 pub fn reduce_get_links_timeout(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

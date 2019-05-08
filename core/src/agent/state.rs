@@ -212,7 +212,6 @@ pub fn create_new_chain_header(
 /// @TODO Better error handling in the state persister section
 /// https://github.com/holochain/holochain-rust/issues/555
 fn reduce_commit_entry(
-    context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -251,7 +250,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
 
 /// Reduce Agent's state according to provided Action
 pub fn reduce(
-    context: Arc<Context>,
     old_state: Arc<AgentState>,
     action_wrapper: &ActionWrapper,
 ) -> Arc<AgentState> {
@@ -259,7 +257,7 @@ pub fn reduce(
     match handler {
         Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
-            f(context, &mut new_state, &action_wrapper);
+            f(&mut new_state, &action_wrapper);
             Arc::new(new_state)
         }
         None => old_state,

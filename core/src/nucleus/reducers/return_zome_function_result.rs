@@ -8,7 +8,6 @@ use std::sync::Arc;
 /// Reduce ReturnZomeFunctionResult Action.
 /// Simply drops function call into zome_calls state.
 pub fn reduce_return_zome_function_result(
-    _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {

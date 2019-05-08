@@ -105,25 +105,21 @@ impl State {
         }
     }
 
-    pub fn reduce(&self, context: Arc<Context>, action_wrapper: ActionWrapper) -> Self {
+    pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
         let mut new_state = State {
             nucleus: crate::nucleus::reduce(
-                Arc::clone(&context),
                 Arc::clone(&self.nucleus),
                 &action_wrapper,
             ),
             agent: crate::agent::state::reduce(
-                Arc::clone(&context),
                 Arc::clone(&self.agent),
                 &action_wrapper,
             ),
             dht: crate::dht::dht_reducers::reduce(
-                Arc::clone(&context),
                 Arc::clone(&self.dht),
                 &action_wrapper,
             ),
             network: crate::network::reducers::reduce(
-                Arc::clone(&context),
                 Arc::clone(&self.network),
                 &action_wrapper,
             ),

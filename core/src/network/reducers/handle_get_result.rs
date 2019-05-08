@@ -29,7 +29,6 @@ fn reduce_handle_get_result_inner(
 }
 
 pub fn reduce_handle_get_result(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

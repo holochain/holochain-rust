@@ -22,7 +22,6 @@ fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), H
 }
 
 pub fn reduce_get_validation_package(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

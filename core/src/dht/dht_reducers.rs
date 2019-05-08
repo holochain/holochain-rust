@@ -58,7 +58,7 @@ pub(crate) fn reduce_hold_entry(
     match action_wrapper.action().clone() {
         Action::Commit((entry, _, _)) => reduce_store_entry_common(old_store, &entry),
         Action::Hold(EntryWithHeader { entry, header }) => {
-            reduce_store_entry_common(context.clone(), old_store, &entry).and_then(|state| {
+            reduce_store_entry_common(old_store, &entry).and_then(|state| {
                 state.add_header_for_entry(&entry, &header).ok()?;
                 Some(state)
             })

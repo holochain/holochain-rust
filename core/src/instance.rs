@@ -198,7 +198,7 @@ impl Instance {
                     .expect("owners of the state RwLock shouldn't panic");
 
                 // Create new state by reducing the action on old state
-                new_state = state.reduce(context.clone(), action_wrapper.clone());
+                new_state = state.reduce(action_wrapper.clone());
             }
 
             // Get write lock

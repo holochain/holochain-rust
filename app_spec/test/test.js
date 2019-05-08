@@ -18,12 +18,6 @@ const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
 scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
-    /*
-      This is not a perfect test of requesting a grant because currently there
-      is no way in the test conductor to actually pass in the provenance of the
-      call.  That will be added when we convert the test framework to being built
-      on top of the rust conductor.
-    */
 
     // Ask for alice to grant a token for bob  (it's hard-coded for bob in re function for now)
     const result = alice.call("blog", "request_post_grant", {})

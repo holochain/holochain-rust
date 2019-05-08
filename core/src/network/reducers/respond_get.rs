@@ -1,13 +1,11 @@
 use crate::{
     action::ActionWrapper,
-    context::Context,
     network::{actions::ActionResponse, reducers::send, state::NetworkState},
 };
 use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError};
 use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, JsonProtocol,
 };
-use std::sync::Arc;
 
 /// Send back to network a HandleFetchEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.

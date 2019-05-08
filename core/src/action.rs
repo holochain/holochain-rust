@@ -1,6 +1,5 @@
 use crate::{
     agent::state::AgentState,
-    context::Context,
     network::{
         direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
     },
@@ -32,7 +31,6 @@ use holochain_net::{
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
-    sync::Arc,
     vec::Vec,
 };
 

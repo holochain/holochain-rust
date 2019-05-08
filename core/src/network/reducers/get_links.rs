@@ -1,11 +1,9 @@
 use crate::{
     action::{ActionWrapper, GetLinksKey},
-    context::Context,
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::{error::HolochainError, hash::HashString};
 use holochain_net::connection::json_protocol::{FetchMetaData, JsonProtocol};
-use std::sync::Arc;
 
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,

@@ -1,9 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
     nucleus::state::{NucleusState, NucleusStatus},
 };
-use std::sync::Arc;
 
 /// Reduce InitializeChain Action
 /// Switch status to failed if an initialization is tried for an

@@ -1,6 +1,5 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
     network::{handler::create_handler, state::NetworkState},
 };
 use holochain_net::{

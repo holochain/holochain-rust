@@ -1,5 +1,4 @@
-use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
-use std::sync::Arc;
+use crate::{action::ActionWrapper, network::state::NetworkState};
 
 pub fn reduce_handle_get_validation_package(
     network_state: &mut NetworkState,

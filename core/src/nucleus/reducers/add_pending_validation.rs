@@ -1,10 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
     nucleus::state::{NucleusState, PendingValidationKey},
 };
 use holochain_core_types::cas::content::AddressableContent;
-use std::sync::Arc;
 
 /// Reduce AddPendingValidation Action.
 /// Inserts boxed EntryWithHeader and dependencies into state, referenced with

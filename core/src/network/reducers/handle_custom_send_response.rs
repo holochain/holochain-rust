@@ -1,6 +1,5 @@
-use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
+use crate::{action::ActionWrapper, network::state::NetworkState};
 use holochain_core_types::error::HolochainError;
-use std::sync::Arc;
 
 pub fn reduce_handle_custom_send_response(
     network_state: &mut NetworkState,

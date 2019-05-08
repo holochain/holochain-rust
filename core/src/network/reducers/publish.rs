@@ -1,6 +1,5 @@
 use crate::{
     action::ActionWrapper,
-    context::Context,
     network::{
         actions::ActionResponse,
         entry_with_header::{fetch_entry_with_header, EntryWithHeader},
@@ -16,7 +15,6 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_net::connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
-use std::sync::Arc;
 
 /// Send to network a PublishDhtData message
 fn publish_entry(

@@ -1,9 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
     nucleus::state::NucleusState,
 };
-use std::sync::Arc;
 
 /// Reduce ReturnZomeFunctionResult Action.
 /// Simply drops function call into zome_calls state.

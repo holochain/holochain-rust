@@ -14,7 +14,6 @@ pub mod send_direct_message;
 
 use crate::{
     action::{Action, ActionWrapper, NetworkReduceFn},
-    context::Context,
     network::{
         direct_message::DirectMessage,
         reducers::{

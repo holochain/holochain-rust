@@ -1,11 +1,9 @@
 use crate::{
     action::{ActionWrapper, DirectMessageData},
-    context::Context,
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::error::HolochainError;
 use holochain_net::connection::json_protocol::{JsonProtocol, MessageData};
-use std::sync::Arc;
 
 fn inner(
     network_state: &mut NetworkState,

@@ -1,9 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
     nucleus::state::{NucleusState, NucleusStatus},
 };
-use std::sync::Arc;
 
 /// Reduce ReturnInitializationResult Action
 /// On initialization success, set Initialized status

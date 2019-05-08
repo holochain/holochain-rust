@@ -24,8 +24,8 @@ use holochain_wasm_utils::{
         },
         get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
         keystore::{
-            KeyType, KeystoreDeriveKeyArgs, KeystoreDeriveSeedArgs, KeystoreListResult,
-            KeystoreNewRandomArgs, KeystoreSignArgs,
+            KeyType, KeystoreDeriveKeyArgs, KeystoreDeriveSeedArgs, KeystoreGetPublicKeyArgs,
+            KeystoreListResult, KeystoreNewRandomArgs, KeystoreSignArgs,
         },
         link_entries::LinkEntriesArgs,
         send::{SendArgs, SendOptions},
@@ -164,6 +164,7 @@ def_api_fns! {
     hc_keystore_derive_seed, KeystoreDeriveSeed;
     hc_keystore_derive_key, KeystoreDeriveKey;
     hc_keystore_sign, KeystoreSign;
+    hc_keystore_get_public_key, KeystoreGetPublicKey;
     hc_commit_capability_grant, CommitCapabilityGrant;
     hc_commit_capability_claim, CommitCapabilityClaim;
 }
@@ -408,6 +409,8 @@ pub enum BundleOnClose {
 /// # pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]
 /// # pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]
@@ -510,6 +513,8 @@ pub enum BundleOnClose {
 /// # pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]
 /// # pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]
@@ -984,6 +989,15 @@ pub fn keystore_sign<S: Into<String>>(src_id: S, payload: S) -> ZomeApiResult<St
     })
 }
 
+/// Returns the public key of a key secret
+/// Accepts one argument: the keystore ID of the desired public key.
+/// Fails if the id is a Seed secret.
+pub fn keystore_get_public_key<S: Into<String>>(src_id: S) -> ZomeApiResult<String> {
+    Dispatch::KeystoreGetPublicKey.with_input(KeystoreGetPublicKeyArgs {
+        src_id: src_id.into(),
+    })
+}
+
 /// NOT YET AVAILABLE
 // Returns a DNA property, which are defined by the DNA developer.
 // They are custom values that are defined in the DNA file
@@ -1354,6 +1368,8 @@ pub fn query_result(
 /// # pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]
 /// # pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]

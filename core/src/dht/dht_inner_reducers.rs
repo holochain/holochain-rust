@@ -41,19 +41,18 @@ pub(crate) fn reduce_add_remove_link_inner(
     link: &Link,
     link_modification: LinkModification,
 ) -> HcResult<Address> {
-    match (*store.content_storage().read()?).contains(link.base())? {
-        true => {
-            let attr = match link_modification {
-                LinkModification::Add => Attribute::LinkTag(link.tag().to_string()),
-                LinkModification::Remove => Attribute::RemovedLink(link.tag().to_string()),
-            };
-            let eav = EntityAttributeValueIndex::new(link.base(), &attr, link.target())?;
-            store.meta_storage().write()?.add_eavi(&eav)?;
-            Ok(link.base().clone())
-        }
-        false => Err(HolochainError::ErrorGeneric(String::from(
+    if (*store.content_storage().read()?).contains(link.base())? {
+        let attr = match link_modification {
+            LinkModification::Add => Attribute::LinkTag(link.tag().to_string()),
+            LinkModification::Remove => Attribute::RemovedLink(link.tag().to_string()),
+        };
+        let eav = EntityAttributeValueIndex::new(link.base(), &attr, link.target())?;
+        store.meta_storage().write()?.add_eavi(&eav)?;
+        Ok(link.base().clone())
+    } else {
+        Err(HolochainError::ErrorGeneric(String::from(
             "Base for link not found",
-        ))),
+        )))
     }
 }
 

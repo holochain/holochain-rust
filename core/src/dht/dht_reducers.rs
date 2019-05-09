@@ -11,7 +11,7 @@ use holochain_core_types::{
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
     entry::Entry,
-    error::HolochainError,
+    error::{HcResult, HolochainError},
 };
 use std::{collections::BTreeSet, convert::TryFrom, str::FromStr, sync::Arc};
 
@@ -75,35 +75,41 @@ fn reduce_store_entry_common(
     old_store: &DhtStore,
     entry: &Entry,
 ) -> Option<DhtStore> {
-    // Add it to local storage
-    let new_store = (*old_store).clone();
-    let content_storage = &new_store.content_storage().clone();
-    let res = (*content_storage.write().unwrap()).add(entry).ok();
-    if res.is_some() {
-        let meta_storage = &new_store.meta_storage().clone();
-        create_crud_status_eav(&entry.address(), CrudStatus::Live)
+    let mut new_store = (*old_store).clone();
+
+    match reduce_store_entry_inner(&mut new_store, entry) {
+        Ok(()) => {
+            Some(new_store)
+        },
+        Err(e) => {
+            context.log(e);
+            None
+        }
+    }
+}
+
+fn reduce_store_entry_inner(
+    store: &mut DhtStore,
+    entry: &Entry,
+) -> HcResult<()> {
+    match (*store.content_storage().write()?).add(entry) {
+        Ok(()) => {
+            create_crud_status_eav(&entry.address(), CrudStatus::Live)
             .map(|status_eav| {
-                let meta_res = (*meta_storage.write().unwrap()).add_eavi(&status_eav);
-                meta_res
-                    .map(|_| Some(new_store))
-                    .map_err(|err| {
-                        context.log(format!(
-                            "err/dht: reduce_hold_entry: meta_storage write failed!: {:?}",
-                            err
-                        ));
-                        None::<DhtStore>
-                    })
-                    .ok()
-                    .unwrap_or(None)
-            })
-            .ok()
-            .unwrap_or(None)
-    } else {
-        context.log(format!(
-            "err/dht: dht::reduce_hold_entry() FAILED {:?}",
-            res
-        ));
-        None
+                (*store.meta_storage().write().unwrap()).add_eavi(&status_eav)
+                .map(|_| ())
+                .map_err(|e| {
+                    format!(
+                        "err/dht: dht::reduce_hold_entry() FAILED {:?}",
+                    e).into()
+                })
+            })?
+        },
+        Err(e) => {
+            Err(format!(
+                "err/dht: dht::reduce_hold_entry() FAILED {:?}",
+                e).into())
+        }
     }
 }
 

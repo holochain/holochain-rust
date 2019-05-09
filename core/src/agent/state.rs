@@ -207,10 +207,6 @@ pub fn create_new_chain_header(
 /// Intended for use inside the reducer, isolated for unit testing.
 /// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
 /// action reduction to hang
-/// @TODO is there a way to reduce that doesn't block indefinitely on callback fns?
-/// @see https://github.com/holochain/holochain-rust/issues/222
-/// @TODO Better error handling in the state persister section
-/// https://github.com/holochain/holochain-rust/issues/555
 fn reduce_commit_entry(
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,

@@ -194,16 +194,22 @@ fn reduce_update_entry_inner(
     // Update crud-status
 
     let new_status_eav = create_crud_status_eav(old_address, CrudStatus::Modified)?;
-    match (*store.meta_storage().write()?).add_eavi(&new_status_eav)? {
-        Some(_) => Ok(new_address.clone()),
-        None => {
-            let crud_link_eav = create_crud_link_eav(old_address, new_address)?;
-            match (*store.meta_storage().write()?).add_eavi(&crud_link_eav)? {
-                Some(_) => Ok(new_address.clone()),
-                None => Err("wtf".into())
-            }
-        }
-    }
+    (*store.meta_storage().write()?).add_eavi(&new_status_eav)??;
+
+    let crud_link_eav = create_crud_link_eav(old_address, new_address)?;
+    (*store.meta_storage().write()?).add_eavi(&crud_link_eav)??;
+
+    Ok(new_address.clone())
+
+    // match (*store.meta_storage().write()?).add_eavi(&new_status_eav)? {
+    //     Some(_) => Ok(new_address.clone()),
+    //     None => {
+    //         match (*store.meta_storage().write()?).add_eavi(&crud_link_eav)? {
+    //             Some(_) => Ok(new_address.clone()),
+    //             None => Err("wtf".into())
+    //         }
+    //     }
+    // }
 }
 
 pub(crate) fn reduce_update_entry(

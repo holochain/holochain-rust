@@ -1,6 +1,6 @@
 [package]
 name = "holochain_sodium"
-version = "0.0.14-alpha1"
+version = "0.0.15-alpha1"
 authors = ["neonphog <neonphog@gmail.com>","zo-el<zo@el.org>"]
 edition = "2018"
 
@@ -8,5 +8,5 @@ edition = "2018"
 lazy_static = "=1.2.0"
 libc = "=0.2.50"
 holochain_core_types = { path = "../core_types" }
-rust_sodium = { git = "https://github.com/Fraser999/rust_sodium", rev = "94745bc2648d6b8b9ed6d86e6f241cfd6b19a048" }
-rust_sodium-sys = { git = "https://github.com/Fraser999/rust_sodium", rev = "94745bc2648d6b8b9ed6d86e6f241cfd6b19a048" }
+rust_sodium = { git = "https://github.com/maidsafe/rust_sodium", rev = "34219d904f80702c57f28428bb2257b184829c87" }
+rust_sodium-sys = { git = "https://github.com/maidsafe/rust_sodium", rev = "34219d904f80702c57f28428bb2257b184829c87" }

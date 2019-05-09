@@ -27,6 +27,11 @@ impl NetWorker for InMemoryWorker {
     /// we got a message from holochain core
     /// forward to our in-memory server
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
+        // InMemoryWorker doesn't have to do anything on shutdown
+        if data == Protocol::Shutdown {
+            (self.handler)(Ok(Protocol::Terminated))?;
+            return Ok(());
+        }
         let server_map = MEMORY_SERVER_MAP.read().unwrap();
         let mut server = server_map
             .get(&self.server_name)

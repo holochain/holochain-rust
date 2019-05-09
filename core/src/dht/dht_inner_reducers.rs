@@ -79,19 +79,19 @@ pub(crate) fn reduce_remove_entry_inner(
     // pre-condition: Must already have entry in local content_storage
     let content_storage = &store.content_storage().clone();
 
-    let entry: Entry = content_storage.read()?.fetch(latest_deleted_address)?
-    .ok_or_else(|| {
-        HolochainError::ErrorGeneric("trying to remove a missing entry".into())
-    })?
-    .try_into()
-    .map_err(|_| {
-        HolochainError::ErrorGeneric("Stored content should be a valid entry".into())
-    })?;
+    let entry: Entry = content_storage
+        .read()?
+        .fetch(latest_deleted_address)?
+        .ok_or_else(|| HolochainError::ErrorGeneric("trying to remove a missing entry".into()))?
+        .try_into()
+        .map_err(|_| {
+            HolochainError::ErrorGeneric("Stored content should be a valid entry".into())
+        })?;
 
     // pre-condition: entry_type must not by sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {
         return Err(HolochainError::ErrorGeneric(
-            "trying to remove a system entry type".into()
+            "trying to remove a system entry type".into(),
         ));
     }
     // pre-condition: Current status must be Live
@@ -111,19 +111,15 @@ pub(crate) fn reduce_remove_entry_inner(
         .into_iter()
         .filter(|e| CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live))
         .collect::<BTreeSet<EntityAttributeValueIndex>>();
-        
+
     if !status_eavs.is_empty() {
         return Err(HolochainError::ErrorGeneric(
-            "entry_status != CrudStatus::Live".into()
+            "entry_status != CrudStatus::Live".into(),
         ));
     }
     // Update crud-status
     let new_status_eav = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted)
-    .map_err(|_| {
-        HolochainError::ErrorGeneric(
-            "Could not create eav".into()
-        )
-    })?;
+        .map_err(|_| HolochainError::ErrorGeneric("Could not create eav".into()))?;
     let meta_storage = &store.meta_storage().clone();
 
     (*meta_storage.write()?).add_eavi(&new_status_eav)?;

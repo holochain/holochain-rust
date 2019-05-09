@@ -186,6 +186,26 @@ fn reduce_add_remove_link_inner(
 }
 
 
+fn reduce_update_entry_inner(
+    store: &DhtStore,
+    old_address: &Address,
+    new_address: &Address,
+) -> HcResult<Address> {
+    // Update crud-status
+
+    let new_status_eav = create_crud_status_eav(old_address, CrudStatus::Modified)?;
+    match (*store.meta_storage().write()?).add_eavi(&new_status_eav)? {
+        Some(_) => Ok(new_address.clone()),
+        None => {
+            let crud_link_eav = create_crud_link_eav(old_address, new_address)?;
+            match (*store.meta_storage().write()?).add_eavi(&crud_link_eav)? {
+                Some(_) => Ok(new_address.clone()),
+                None => Err("wtf".into())
+            }
+        }
+    }
+}
+
 pub(crate) fn reduce_update_entry(
     _context: Arc<Context>,
     old_store: &DhtStore,
@@ -195,52 +215,11 @@ pub(crate) fn reduce_update_entry(
     let action = action_wrapper.action();
     let (old_address, new_address) = unwrap_to!(action => Action::UpdateEntry);
     let mut new_store = (*old_store).clone();
-    // Update crud-status
-    let latest_old_address = old_address;
-    let meta_storage = &new_store.meta_storage().clone();
-    let closure_store = new_store.clone();
-    let new_status_eav_option = create_crud_status_eav(latest_old_address, CrudStatus::Modified)
-        .map(|new_status_eav| {
-            let res = (*meta_storage.write().unwrap()).add_eavi(&new_status_eav);
-            res.map(|_| None)
-                .map_err(|err| {
-                    closure_store
-                        .clone()
-                        .actions_mut()
-                        .insert(action_wrapper.clone(), Err(err));
-                    Some(closure_store.clone())
-                })
-                .ok()
-                .unwrap_or(Some(closure_store.clone()))
-        })
-        .ok()
-        .unwrap_or(None);
-    if new_status_eav_option.is_some() {
-        new_status_eav_option
-    } else {
-        // Update crud-link
-        create_crud_link_eav(latest_old_address, new_address)
-            .map(|crud_link_eav| {
-                let res = (*meta_storage.write().unwrap()).add_eavi(&crud_link_eav);
-                let res_option = res.clone().ok();
-                res_option
-                    .and_then(|_| {
-                        new_store.actions_mut().insert(
-                            action_wrapper.clone(),
-                            res.clone().map(|_| new_address.clone()),
-                        );
-                        Some(new_store.clone())
-                    })
-                    .or_else(|| {
-                        new_store
-                            .actions_mut()
-                            .insert(action_wrapper.clone(), Err(res.err().unwrap()));
-                        Some(new_store.clone())
-                    })
-            })
-            .ok()
-            .unwrap_or(None)
-    }
+    // Act
+    let res = reduce_update_entry_inner(&mut new_store, old_address, new_address);
+    // Done
+    new_store.actions_mut().insert(action_wrapper.clone(), res);
+    Some(new_store)
 }
 
 pub(crate) fn reduce_remove_entry(

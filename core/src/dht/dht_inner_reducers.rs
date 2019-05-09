@@ -1,0 +1,126 @@
+use crate::dht::dht_store::DhtStore;
+use holochain_core_types::{
+    cas::content::{Address, AddressableContent},
+    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
+    entry::Entry,
+    error::{HcResult, HolochainError},
+    link::Link,
+};
+use std::{collections::BTreeSet, convert::TryFrom, str::FromStr};
+
+pub(crate) enum LinkModification {
+    Add,
+    Remove,
+}
+
+/// Used as the inner function for both commit and hold reducers
+pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
+    match (*store.content_storage().write()?).add(entry) {
+        Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
+            (*store.meta_storage().write()?)
+                .add_eavi(&status_eav)
+                .map(|_| ())
+                .map_err(|e| format!("err/dht: dht::reduce_hold_entry() FAILED {:?}", e).into())
+        })?,
+        Err(e) => Err(format!("err/dht: dht::reduce_hold_entry() FAILED {:?}", e).into()),
+    }
+}
+
+pub(crate) fn reduce_add_remove_link_inner(
+    store: &mut DhtStore,
+    link: &Link,
+    link_modification: LinkModification,
+) -> HcResult<Address> {
+    match (*store.content_storage().read()?).contains(link.base())? {
+        true => {
+            let attr = match link_modification {
+                LinkModification::Add => Attribute::LinkTag(link.tag().to_string()),
+                LinkModification::Remove => Attribute::RemovedLink(link.tag().to_string()),
+            };
+            let eav = EntityAttributeValueIndex::new(link.base(), &attr, link.target())?;
+            store.meta_storage().write()?.add_eavi(&eav)?;
+            Ok(link.base().clone())
+        }
+        false => Err(HolochainError::ErrorGeneric(String::from(
+            "Base for link not found",
+        ))),
+    }
+}
+
+pub(crate) fn reduce_update_entry_inner(
+    store: &DhtStore,
+    old_address: &Address,
+    new_address: &Address,
+) -> HcResult<Address> {
+    // Update crud-status
+    let new_status_eav = create_crud_status_eav(old_address, CrudStatus::Modified)?;
+    (*store.meta_storage().write()?).add_eavi(&new_status_eav)?;
+    // add link from old to new
+    let crud_link_eav = create_crud_link_eav(old_address, new_address)?;
+    (*store.meta_storage().write()?).add_eavi(&crud_link_eav)?;
+
+    Ok(new_address.clone())
+}
+
+pub(crate) fn reduce_remove_entry_inner(
+    store: &mut DhtStore,
+    latest_deleted_address: &Address,
+    deletion_address: &Address,
+) -> HcResult<Address> {
+    // pre-condition: Must already have entry in local content_storage
+    let content_storage = &store.content_storage().clone();
+
+    let maybe_json_entry = content_storage.read()?.fetch(latest_deleted_address)?;
+    let json_entry = maybe_json_entry.ok_or_else(|| {
+        HolochainError::ErrorGeneric(String::from("trying to remove a missing entry"))
+    })?;
+
+    let entry = Entry::try_from(json_entry).expect("Stored content should be a valid entry.");
+    // pre-condition: entry_type must not by sys type, since they cannot be deleted
+    if entry.entry_type().to_owned().is_sys() {
+        return Err(HolochainError::ErrorGeneric(String::from(
+            "trying to remove a system entry type",
+        )));
+    }
+    // pre-condition: Current status must be Live
+    // get current status
+    let meta_storage = &store.meta_storage().clone();
+    let status_eavs = meta_storage.read()?.fetch_eavi(&EaviQuery::new(
+        Some(latest_deleted_address.clone()).into(),
+        Some(Attribute::CrudStatus).into(),
+        None.into(),
+        IndexFilter::LatestByAttribute,
+    ))?;
+
+    //TODO clean up some of the early returns in this
+    // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
+    // For now checks if crud-status other than Live are present
+    let status_eavs = status_eavs
+        .into_iter()
+        .filter(|e| CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live))
+        .collect::<BTreeSet<EntityAttributeValueIndex>>();
+    if !status_eavs.is_empty() {
+        return Err(HolochainError::ErrorGeneric(String::from(
+            "entry_status != CrudStatus::Live",
+        )));
+    }
+    // Update crud-status
+    let result = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted);
+    if result.is_err() {
+        return Err(HolochainError::ErrorGeneric(String::from(
+            "Could not create eav",
+        )));
+    }
+    let new_status_eav = result.expect("should unwrap eav");
+    let meta_storage = &store.meta_storage().clone();
+
+    (*meta_storage.write()?).add_eavi(&new_status_eav)?;
+
+    // Update crud-link
+    let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
+        .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
+    (*meta_storage.write()?).add_eavi(&crud_link_eav)?;
+
+    Ok(latest_deleted_address.clone())
+}

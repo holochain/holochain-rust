@@ -1,3 +1,12 @@
+///
+/// Inner DHT reducers are not pure functions but rather functions designed to make the required
+/// mutations to a newly cloned DhtState object. Unlike the reducers they do not need a specific signature.
+/// The should have a signature similar to
+///
+/// `reduce_some_thing_inner(store: &mut DhtStore, <other required data>) -> HcResult<someReturnType>`
+///
+/// It is up to the calling reducer function whether the new state object should be kept and what to do with the return value
+///
 use crate::dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},

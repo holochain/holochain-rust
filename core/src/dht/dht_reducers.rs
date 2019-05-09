@@ -66,9 +66,7 @@ pub(crate) fn reduce_commit_entry(
     let (entry, _, _) = unwrap_to!(action_wrapper.action() => Action::Commit);
     let mut new_store = (*old_store).clone();
     match reduce_store_entry_inner(&mut new_store, entry) {
-        Ok(()) => {
-            Some(new_store)
-        },
+        Ok(()) => Some(new_store),
         Err(e) => {
             context.log(e);
             None
@@ -87,7 +85,7 @@ pub(crate) fn reduce_hold_entry(
         Ok(()) => {
             new_store.add_header_for_entry(&entry, &header).ok()?;
             Some(new_store)
-        },
+        }
         Err(e) => {
             context.log(e);
             None
@@ -96,31 +94,17 @@ pub(crate) fn reduce_hold_entry(
 }
 
 /// This is used as the inner function for both commit and hold reducers
-fn reduce_store_entry_inner(
-    store: &mut DhtStore,
-    entry: &Entry,
-) -> HcResult<()> {
+fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
     match (*store.content_storage().write()?).add(entry) {
-        Ok(()) => {
-            create_crud_status_eav(&entry.address(), CrudStatus::Live)
-            .map(|status_eav| {
-                (*store.meta_storage().write().unwrap()).add_eavi(&status_eav)
+        Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
+            (*store.meta_storage().write().unwrap())
+                .add_eavi(&status_eav)
                 .map(|_| ())
-                .map_err(|e| {
-                    format!(
-                        "err/dht: dht::reduce_hold_entry() FAILED {:?}",
-                    e).into()
-                })
-            })?
-        },
-        Err(e) => {
-            Err(format!(
-                "err/dht: dht::reduce_hold_entry() FAILED {:?}",
-                e).into())
-        }
+                .map_err(|e| format!("err/dht: dht::reduce_hold_entry() FAILED {:?}", e).into())
+        })?,
+        Err(e) => Err(format!("err/dht: dht::reduce_hold_entry() FAILED {:?}", e).into()),
     }
 }
-
 
 pub(crate) fn reduce_add_link(
     _context: Arc<Context>,
@@ -133,9 +117,7 @@ pub(crate) fn reduce_add_link(
 
     let res = reduce_add_remove_link_inner(&mut new_store, link, LinkModification::Add);
 
-    new_store
-        .actions_mut()
-        .insert(action_wrapper.clone(), res);
+    new_store.actions_mut().insert(action_wrapper.clone(), res);
 
     Some(new_store)
 }
@@ -151,9 +133,7 @@ pub(crate) fn reduce_remove_link(
 
     let res = reduce_add_remove_link_inner(&mut new_store, link, LinkModification::Remove);
 
-    new_store
-        .actions_mut()
-        .insert(action_wrapper.clone(), res);
+    new_store.actions_mut().insert(action_wrapper.clone(), res);
 
     Some(new_store)
 }
@@ -169,22 +149,15 @@ fn reduce_add_remove_link_inner(
                 LinkModification::Add => Attribute::LinkTag(link.tag().to_string()),
                 LinkModification::Remove => Attribute::RemovedLink(link.tag().to_string()),
             };
-            let eav = EntityAttributeValueIndex::new(
-                link.base(),
-                &attr,
-                link.target(),
-            )?;
+            let eav = EntityAttributeValueIndex::new(link.base(), &attr, link.target())?;
             store.meta_storage().write()?.add_eavi(&eav)?;
             Ok(link.base().clone())
-        },
-        false => {
-            Err(HolochainError::ErrorGeneric(String::from(
-                "Base for link not found",
-            )))
         }
+        false => Err(HolochainError::ErrorGeneric(String::from(
+            "Base for link not found",
+        ))),
     }
 }
-
 
 fn reduce_update_entry_inner(
     store: &DhtStore,

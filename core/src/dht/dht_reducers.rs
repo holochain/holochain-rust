@@ -12,11 +12,16 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
     entry::Entry,
     error::{HcResult, HolochainError},
+    link::Link,
 };
 use std::{collections::BTreeSet, convert::TryFrom, str::FromStr, sync::Arc};
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
+enum LinkModification {
+    Add,
+    Remove,
+}
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
@@ -43,7 +48,7 @@ pub fn reduce(
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
-        Action::Commit(_) => Some(reduce_hold_entry),
+        Action::Commit(_) => Some(reduce_commit_entry),
         Action::Hold(_) => Some(reduce_hold_entry),
         Action::UpdateEntry(_) => Some(reduce_update_entry),
         Action::RemoveEntry(_) => Some(reduce_remove_entry),
@@ -53,30 +58,13 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     }
 }
 
-pub(crate) fn reduce_hold_entry(
+pub(crate) fn reduce_commit_entry(
     context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    match action_wrapper.action().clone() {
-        Action::Commit((entry, _, _)) => reduce_store_entry_common(context, old_store, &entry),
-        Action::Hold(EntryWithHeader { entry, header }) => {
-            reduce_store_entry_common(context.clone(), old_store, &entry).and_then(|state| {
-                state.add_header_for_entry(&entry, &header).ok()?;
-                Some(state)
-            })
-        }
-        _ => unreachable!(),
-    }
-}
-
-fn reduce_store_entry_common(
-    context: Arc<Context>,
-    old_store: &DhtStore,
-    entry: &Entry,
-) -> Option<DhtStore> {
+    let (entry, _, _) = unwrap_to!(action_wrapper.action() => Action::Commit);
     let mut new_store = (*old_store).clone();
-
     match reduce_store_entry_inner(&mut new_store, entry) {
         Ok(()) => {
             Some(new_store)
@@ -88,6 +76,26 @@ fn reduce_store_entry_common(
     }
 }
 
+pub(crate) fn reduce_hold_entry(
+    context: Arc<Context>,
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    let EntryWithHeader { entry, header } = unwrap_to!(action_wrapper.action() => Action::Hold);
+    let mut new_store = (*old_store).clone();
+    match reduce_store_entry_inner(&mut new_store, entry) {
+        Ok(()) => {
+            new_store.add_header_for_entry(&entry, &header).ok()?;
+            Some(new_store)
+        },
+        Err(e) => {
+            context.log(e);
+            None
+        }
+    }
+}
+
+/// This is used as the inner function for both commit and hold reducers
 fn reduce_store_entry_inner(
     store: &mut DhtStore,
     entry: &Entry,
@@ -113,43 +121,23 @@ fn reduce_store_entry_inner(
     }
 }
 
-//
+
 pub(crate) fn reduce_add_link(
     _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     // Get Action's input data
-    let action = action_wrapper.action();
-    let link = unwrap_to!(action => Action::AddLink);
-
+    let link = unwrap_to!(action_wrapper.action() => Action::AddLink);
     let mut new_store = (*old_store).clone();
-    let storage = &old_store.content_storage().clone();
-    if !(*storage.read().unwrap()).contains(link.base()).unwrap() {
-        new_store.actions_mut().insert(
-            action_wrapper.clone(),
-            Err(HolochainError::ErrorGeneric(String::from(
-                "Base for link not found",
-            ))),
-        );
-        Some(new_store)
-    } else {
-        let eav = EntityAttributeValueIndex::new(
-            link.base(),
-            &Attribute::LinkTag(link.tag().to_owned()),
-            link.target(),
-        );
-        eav.map(|e| {
-            let storage = new_store.meta_storage();
-            let result = storage.write().unwrap().add_eavi(&e);
-            new_store
-                .actions_mut()
-                .insert(action_wrapper.clone(), result.map(|_| link.base().clone()));
-            Some(new_store)
-        })
-        .ok()
-        .unwrap_or(None)
-    }
+
+    let res = reduce_add_remove_link_inner(&mut new_store, link, LinkModification::Add);
+
+    new_store
+        .actions_mut()
+        .insert(action_wrapper.clone(), res);
+
+    Some(new_store)
 }
 
 pub(crate) fn reduce_remove_link(
@@ -158,38 +146,46 @@ pub(crate) fn reduce_remove_link(
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     // Get Action's input data
-    let action = action_wrapper.action();
-    let link = unwrap_to!(action => Action::RemoveLink);
+    let link = unwrap_to!(action_wrapper.action() => Action::RemoveLink);
     let mut new_store = (*old_store).clone();
-    let storage = &old_store.content_storage().clone();
-    if !(*storage.read().unwrap()).contains(link.base()).unwrap() {
-        new_store.actions_mut().insert(
-            action_wrapper.clone(),
+
+    let res = reduce_add_remove_link_inner(&mut new_store, link, LinkModification::Remove);
+
+    new_store
+        .actions_mut()
+        .insert(action_wrapper.clone(), res);
+
+    Some(new_store)
+}
+
+fn reduce_add_remove_link_inner(
+    store: &mut DhtStore,
+    link: &Link,
+    link_modification: LinkModification,
+) -> HcResult<Address> {
+    match (*store.content_storage().read()?).contains(link.base())? {
+        true => {
+            let attr = match link_modification {
+                LinkModification::Add => Attribute::LinkTag(link.tag().to_string()),
+                LinkModification::Remove => Attribute::RemovedLink(link.tag().to_string()),
+            };
+            let eav = EntityAttributeValueIndex::new(
+                link.base(),
+                &attr,
+                link.target(),
+            )?;
+            store.meta_storage().write()?.add_eavi(&eav)?;
+            Ok(link.base().clone())
+        },
+        false => {
             Err(HolochainError::ErrorGeneric(String::from(
-                "Base for link not found for remove",
-            ))),
-        );
-        Some(new_store)
-    } else {
-        let eav = EntityAttributeValueIndex::new(
-            link.base(),
-            &Attribute::RemovedLink(link.tag().to_string()),
-            link.target(),
-        );
-        eav.map(|e| {
-            let storage = new_store.meta_storage();
-            let result = storage.write().unwrap().add_eavi(&e);
-            new_store
-                .actions_mut()
-                .insert(action_wrapper.clone(), result.map(|_| link.base().clone()));
-            Some(new_store)
-        })
-        .ok()
-        .unwrap_or(None)
+                "Base for link not found",
+            )))
+        }
     }
 }
 
-//
+
 pub(crate) fn reduce_update_entry(
     _context: Arc<Context>,
     old_store: &DhtStore,
@@ -248,7 +244,7 @@ pub(crate) fn reduce_update_entry(
 }
 
 pub(crate) fn reduce_remove_entry(
-    context: Arc<Context>,
+    _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -257,7 +253,7 @@ pub(crate) fn reduce_remove_entry(
     let (deleted_address, deletion_address) = unwrap_to!(action => Action::RemoveEntry);
     let mut new_store = (*old_store).clone();
     // Act
-    let res = reduce_remove_entry_inner(context, &mut new_store, deleted_address, deletion_address);
+    let res = reduce_remove_entry_inner(&mut new_store, deleted_address, deletion_address);
     // Done
     new_store.actions_mut().insert(action_wrapper.clone(), res);
     Some(new_store)
@@ -265,11 +261,10 @@ pub(crate) fn reduce_remove_entry(
 
 //
 fn reduce_remove_entry_inner(
-    _context: Arc<Context>,
     new_store: &mut DhtStore,
     latest_deleted_address: &Address,
     deletion_address: &Address,
-) -> Result<Address, HolochainError> {
+) -> HcResult<Address> {
     // pre-condition: Must already have entry in local content_storage
     let content_storage = &new_store.content_storage().clone();
 

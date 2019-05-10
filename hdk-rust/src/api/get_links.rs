@@ -1,17 +1,11 @@
-use holochain_wasm_utils::api_serialization::get_links::{
-    GetLinksResult,
-    GetLinksArgs,
-    GetLinksOptions,
-};
-use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultType};
-use api::get_entry::get_entry_result;
-use holochain_core_types::hash::HashString;
-use holochain_core_types::entry::Entry;
-use error::{ZomeApiError, ZomeApiResult};
-use holochain_core_types::{
-    cas::content::Address,
-};
 use super::Dispatch;
+use api::get_entry::get_entry_result;
+use error::{ZomeApiError, ZomeApiResult};
+use holochain_core_types::{cas::content::Address, entry::Entry, hash::HashString};
+use holochain_wasm_utils::api_serialization::{
+    get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultType},
+    get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
+};
 
 /// Consumes three values; the address of an entry get get links from (the base), the tag of the links
 /// to be retrieved, and an options struct for selecting what meta data and crud status links to retrieve.

@@ -1,15 +1,9 @@
-use holochain_wasm_utils::api_serialization::commit_entry::{
-	CommitEntryArgs,
-	CommitEntryResult,
-	CommitEntryOptions,
-};
-use error::ZomeApiResult;
-use holochain_core_types::{
-	entry::Entry,
-	cas::content::Address,
-};
 use super::Dispatch;
-
+use error::ZomeApiResult;
+use holochain_core_types::{cas::content::Address, entry::Entry};
+use holochain_wasm_utils::api_serialization::commit_entry::{
+    CommitEntryArgs, CommitEntryOptions, CommitEntryResult,
+};
 
 /// Attempts to commit an entry to the local source chain. The entry
 /// will also be checked against the defined validation rules for that entry type.

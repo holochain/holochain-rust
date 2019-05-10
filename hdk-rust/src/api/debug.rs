@@ -1,6 +1,6 @@
+use super::Dispatch;
 use error::ZomeApiResult;
 use holochain_core_types::json::JsonString;
-use super::Dispatch;
 
 /// Prints a string through the stdout of the running Conductor, and also
 /// writes that string to the logger in the execution context

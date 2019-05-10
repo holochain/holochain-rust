@@ -1,10 +1,12 @@
-use holochain_core_types::{
-    entry::cap_entries::{CapabilityType, CapFunctions},
-    cas::content::Address,
-};
-use holochain_wasm_utils::api_serialization::capabilities::{CommitCapabilityGrantArgs, CommitCapabilityClaimArgs};
-use error::ZomeApiResult;
 use super::Dispatch;
+use error::ZomeApiResult;
+use holochain_core_types::{
+    cas::content::Address,
+    entry::cap_entries::{CapFunctions, CapabilityType},
+};
+use holochain_wasm_utils::api_serialization::capabilities::{
+    CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
+};
 
 /// Adds a capability grant to the local chain
 pub fn commit_capability_grant<S: Into<String>>(

@@ -1,7 +1,6 @@
-use holochain_core_types::entry::Entry;
-use error::ZomeApiResult;
-use holochain_core_types::cas::content::Address;
 use super::Dispatch;
+use error::ZomeApiResult;
+use holochain_core_types::{cas::content::Address, entry::Entry};
 /// Reconstructs an address of the given entry data.
 /// This is the same value that would be returned if `entry_type_name` and `entry_value` were passed
 /// to the [commit_entry](fn.commit_entry.html) function and by which it would be retrievable from the DHT using [get_entry](fn.get_entry.html).

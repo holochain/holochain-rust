@@ -1,10 +1,7 @@
-use holochain_core_types::{
-	cas::content::Address,
-	time::Timeout,
-};
-use error::ZomeApiResult;
-use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 use super::Dispatch;
+use error::ZomeApiResult;
+use holochain_core_types::{cas::content::Address, time::Timeout};
+use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 
 /// Sends a node-to-node message to the given agent, specified by their address.
 /// Addresses of agents can be accessed using [hdk::AGENT_ADDRESS](struct.AGENT_ADDRESS.html).

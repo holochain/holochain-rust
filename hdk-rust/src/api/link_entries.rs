@@ -1,9 +1,7 @@
-use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
-use error::ZomeApiError;
-use holochain_core_types::{
-	cas::content::Address,
-};
 use super::Dispatch;
+use error::ZomeApiError;
+use holochain_core_types::cas::content::Address;
+use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 
 /// Adds a named, directed link between two entries on the DHT.
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a

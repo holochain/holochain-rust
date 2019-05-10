@@ -1,4 +1,4 @@
-use error::{ZomeApiResult, ZomeApiError};
+use error::{ZomeApiError, ZomeApiResult};
 
 /// NOT YET AVAILABLE
 // Returns a DNA property, which are defined by the DNA developer.
@@ -8,4 +8,3 @@ use error::{ZomeApiResult, ZomeApiError};
 pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
-

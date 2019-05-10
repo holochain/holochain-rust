@@ -1,8 +1,7 @@
-use holochain_wasm_utils::api_serialization::UpdateEntryArgs;
-use holochain_core_types::entry::Entry;
-use error::{ZomeApiResult, ZomeApiError};
-use holochain_core_types::cas::content::Address;
 use super::Dispatch;
+use error::{ZomeApiError, ZomeApiResult};
+use holochain_core_types::{cas::content::Address, entry::Entry};
+use holochain_wasm_utils::api_serialization::UpdateEntryArgs;
 
 /// Commit an entry to your local source chain that "updates" a previous entry, meaning when getting
 /// the previous entry, the updated entry will be returned.

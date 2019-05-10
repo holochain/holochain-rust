@@ -9,9 +9,7 @@ use holochain_core_types::{
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
-    api_serialization::{
-        ZomeApiGlobals,
-    },
+    api_serialization::ZomeApiGlobals,
     holochain_core_types::{
         hash::HashString,
         json::{JsonString, RawString},
@@ -19,53 +17,47 @@ use holochain_wasm_utils::{
     memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
 };
 use init_globals::init_globals;
-use std::{
-    convert::{TryFrom, TryInto},
-};
+use std::convert::{TryFrom, TryInto};
 
-mod call;
-mod debug;
-mod commit_entry;
-mod get_entry;
-mod link_entries;
-mod remove_link;
-mod keystore;
-mod sign;
-mod get_links;
-mod send;
-mod capability;
-mod entry_address;
-mod update_remove;
-mod query;
 mod bundle;
-mod sleep;
+mod call;
+mod capability;
+mod commit_entry;
+mod debug;
+mod entry_address;
+mod get_entry;
+mod get_links;
+mod keystore;
+mod link_entries;
 mod property;
+mod query;
+mod remove_link;
+mod send;
+mod sign;
+mod sleep;
+mod update_remove;
 
 pub use self::{
+    bundle::{close_bundle, start_bundle},
     call::call,
-    debug::debug,
+    capability::{commit_capability_claim, commit_capability_grant},
     commit_entry::{commit_entry, commit_entry_result},
-    get_entry::{get_entry, get_entry_initial, get_entry_history, get_entry_result},
-    link_entries::link_entries,
-    remove_link::remove_link,
-    keystore::{
-        keystore_list,
-        keystore_new_random,
-        keystore_derive_seed,
-        keystore_derive_key,
-        keystore_sign,
-        keystore_get_public_key,
-    },
-    sign::{sign, sign_one_time, verify_signature},
-    get_links::{get_links, get_links_with_options, get_links_result, get_links_and_load},
-    send::send,
-    capability::{commit_capability_grant, commit_capability_claim},
+    debug::debug,
     entry_address::entry_address,
-    update_remove::{update_entry, remove_entry, update_agent},
-    query::{query, query_result},
-    bundle::{start_bundle, close_bundle},
-    sleep::sleep,
+    get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
+    get_links::{get_links, get_links_and_load, get_links_result, get_links_with_options},
+    keystore::{
+        keystore_derive_key, keystore_derive_seed, keystore_get_public_key, keystore_list,
+        keystore_new_random, keystore_sign,
+    },
+    link_entries::link_entries,
     property::property,
+    query::{query, query_result},
+    remove_link::remove_link,
+    send::send,
+    sign::{sign, sign_one_time, verify_signature},
+    sleep::sleep,
+    update_remove::{remove_entry, update_agent, update_entry},
 };
 
 macro_rules! def_api_fns {

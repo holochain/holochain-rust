@@ -1,10 +1,7 @@
-use error::ZomeApiResult;
-use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
-use holochain_core_types::{
-    cas::content::Address,
-    json::JsonString,
-};
 use super::Dispatch;
+use error::ZomeApiResult;
+use holochain_core_types::{cas::content::Address, json::JsonString};
+use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 
 /// Call an exposed function from another zome or another (bridged) instance running
 /// in the same conductor.

@@ -1,7 +1,7 @@
-use std::time::Duration;
+use super::Dispatch;
 use error::ZomeApiResult;
 use holochain_core_types::json::JsonString;
-use super::Dispatch;
+use std::time::Duration;
 /// Lets the DNA runtime sleep for the given duration.
 /// # Examples
 /// ```rust

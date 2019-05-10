@@ -1,14 +1,9 @@
-use holochain_wasm_utils::api_serialization::keystore::{
-    KeystoreListResult,
-    KeystoreNewRandomArgs,
-    KeystoreDeriveSeedArgs,
-    KeyType,
-    KeystoreDeriveKeyArgs,
-    KeystoreSignArgs,
-    KeystoreGetPublicKeyArgs,
-};
-use error::{ZomeApiResult};
 use super::Dispatch;
+use error::ZomeApiResult;
+use holochain_wasm_utils::api_serialization::keystore::{
+    KeyType, KeystoreDeriveKeyArgs, KeystoreDeriveSeedArgs, KeystoreGetPublicKeyArgs,
+    KeystoreListResult, KeystoreNewRandomArgs, KeystoreSignArgs,
+};
 
 // Returns a list of the named secrets stored in the keystore.
 pub fn keystore_list() -> ZomeApiResult<KeystoreListResult> {

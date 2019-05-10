@@ -40,6 +40,7 @@ use std::{
 };
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
+use crate::conductor_api::ConductorApi;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -57,7 +58,7 @@ pub struct Context {
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
-    pub conductor_api: Arc<RwLock<IoHandler>>,
+    pub conductor_api: ConductorApi,
     signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
@@ -113,7 +114,7 @@ impl Context {
             dht_storage,
             eav_storage: eav,
             p2p_config,
-            conductor_api: Self::test_check_conductor_api(conductor_api, agent_id),
+            conductor_api: ConductorApi::new(Self::test_check_conductor_api(conductor_api, agent_id)),
         }
     }
 
@@ -140,7 +141,7 @@ impl Context {
             dht_storage: cas,
             eav_storage: eav,
             p2p_config,
-            conductor_api: Self::test_check_conductor_api(None, agent_id),
+            conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
         })
     }
 
@@ -249,29 +250,7 @@ impl Context {
     }
 
     pub fn sign(&self, payload: String) -> Result<String, HolochainError> {
-        let handler = self.conductor_api.write().unwrap();
-        let request = format!(
-            r#"{{"jsonrpc": "2.0", "method": "agent/sign", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
-            payload, ProcessUniqueId::new()
-        );
-
-        let response = handler
-            .handle_request_sync(&request)
-            .ok_or("Conductor sign call failed".to_string())?;
-
-        let response = JsonRpc::parse(&response)?;
-
-        match response {
-            JsonRpc::Success(_) => Ok(String::from(
-                response.get_result().unwrap()["signature"]
-                    .as_str()
-                    .unwrap(),
-            )),
-            JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
-                serde_json::to_string(&response.get_error().unwrap()).unwrap(),
-            )),
-            _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
-        }
+        self.conductor_api.sign(payload)
     }
 
     /// returns the public capability token (if any)

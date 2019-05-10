@@ -26,6 +26,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 use jsonrpc_core::IoHandler;
+use crate::conductor_api::ConductorApi;
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
@@ -39,7 +40,7 @@ pub struct State {
     // @TODO eventually drop stale history
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub history: HashSet<ActionWrapper>,
-    pub conductor_api: Arc<RwLock<IoHandler>>,
+    pub conductor_api: ConductorApi,
 }
 
 impl State {
@@ -117,6 +118,7 @@ impl State {
             ),
             agent: crate::agent::state::reduce(
                 Arc::clone(&self.agent),
+                &self,
                 &action_wrapper,
             ),
             dht: crate::dht::dht_reducers::reduce(

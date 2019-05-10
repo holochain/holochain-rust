@@ -33,6 +33,7 @@ use std::{
     hash::{Hash, Hasher},
     vec::Vec,
 };
+use crate::state::State;
 
 /// Wrapper for actions that provides a unique ID
 /// The unique ID is needed for state tracking to ensure that we can differentiate between two
@@ -226,7 +227,7 @@ pub enum Action {
 pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
-pub type ReduceFn<S> = fn(&mut S, &ActionWrapper);
+pub type ReduceFn<S> = fn(&mut S, &State, &ActionWrapper);
 
 /// The unique key that represents a GetLinks request, used to associate the eventual
 /// response with this GetLinks request

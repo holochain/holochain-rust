@@ -5,17 +5,12 @@ use crate::error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{
     cas::content::Address,
     dna::capabilities::CapabilityRequest,
-    entry::{
-        Entry,
-    },
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
-    signature::Provenance,
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        verify_signature::VerifySignatureArgs,
-        QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeApiGlobals,
+        ZomeApiGlobals,
     },
     holochain_core_types::{
         hash::HashString,
@@ -24,10 +19,8 @@ use holochain_wasm_utils::{
     memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
 };
 use init_globals::init_globals;
-use serde_json;
 use std::{
     convert::{TryFrom, TryInto},
-    time::Duration,
 };
 
 mod call;
@@ -41,6 +34,12 @@ mod sign;
 mod get_links;
 mod send;
 mod capability;
+mod entry_address;
+mod update_remove;
+mod query;
+mod bundle;
+mod sleep;
+mod property;
 
 pub use self::{
     call::call,
@@ -57,10 +56,16 @@ pub use self::{
         keystore_sign,
         keystore_get_public_key,
     },
-    sign::{sign, sign_one_time},
+    sign::{sign, sign_one_time, verify_signature},
     get_links::{get_links, get_links_with_options, get_links_result, get_links_and_load},
     send::send,
     capability::{commit_capability_grant, commit_capability_claim},
+    entry_address::entry_address,
+    update_remove::{update_entry, remove_entry, update_agent},
+    query::{query, query_result},
+    bundle::{start_bundle, close_bundle},
+    sleep::sleep,
+    property::property,
 };
 
 macro_rules! def_api_fns {
@@ -352,250 +357,4 @@ impl Default for GetEntryMask {
 pub enum BundleOnClose {
     Commit,
     Discard,
-}
-
-//--------------------------------------------------------------------------------------------------
-// API FUNCTIONS
-//--------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-/// NOT YET AVAILABLE
-// Returns a DNA property, which are defined by the DNA developer.
-// They are custom values that are defined in the DNA file
-// that can be used in the zome code for defining configurable behaviors.
-// (e.g. Name, Language, Description, Author, etc.).
-pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// Reconstructs an address of the given entry data.
-/// This is the same value that would be returned if `entry_type_name` and `entry_value` were passed
-/// to the [commit_entry](fn.commit_entry.html) function and by which it would be retrievable from the DHT using [get_entry](fn.get_entry.html).
-/// This is often used to reconstruct an address of a `base` argument when calling [get_links](fn.get_links.html).
-/// # Examples
-/// ```rust
-/// # #![feature(try_from)]
-/// # extern crate hdk;
-/// # extern crate serde_json;
-/// # #[macro_use]
-/// # extern crate serde_derive;
-/// # extern crate holochain_core_types;
-/// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
-/// # use hdk::error::ZomeApiResult;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::AppEntryType;
-/// # use holochain_core_types::entry::AppEntryValue;
-/// # use holochain_core_types::entry::Entry;
-/// # use holochain_core_types::cas::content::Address;
-/// # fn main() {
-///
-/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
-/// pub struct Post {
-///     content: String,
-///     date_created: String,
-/// }
-///
-/// pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
-///     let post_entry = Entry::App("post".into(), Post {
-///         content,
-///         date_created: "now".into(),
-///     }.into());
-///
-///     hdk::entry_address(&post_entry)
-/// }
-///
-/// # }
-/// ```
-pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
-    Dispatch::EntryAddress.with_input(entry)
-}
-
-/// Verifies a provenance (public key, signature) against a payload
-/// # Examples
-/// ```rust
-/// # #![feature(try_from)]
-/// # extern crate hdk;
-/// # extern crate serde_json;
-/// # #[macro_use]
-/// # extern crate serde_derive;
-/// # extern crate holochain_core_types;
-/// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::signature::Provenance;
-/// # use hdk::error::ZomeApiResult;
-/// # fn main() {
-/// pub fn handle_verify_message(message: String, provenance: Provenance) -> ZomeApiResult<bool> {
-///     hdk::verify_signature(provenance, message)
-/// }
-/// # }
-/// ```
-pub fn verify_signature<S: Into<String>>(
-    provenance: Provenance,
-    payload: S,
-) -> ZomeApiResult<bool> {
-    Dispatch::VerifySignature.with_input(VerifySignatureArgs {
-        provenance,
-        payload: payload.into(),
-    })
-}
-
-/// Commit an entry to your local source chain that "updates" a previous entry, meaning when getting
-/// the previous entry, the updated entry will be returned.
-/// `update_entry` sets the previous entry's status metadata to `Modified` and adds the updated
-/// entry's address in the previous entry's metadata.
-/// The updated entry will hold the previous entry's address in its header,
-/// which will be used by validation routes.
-pub fn update_entry(new_entry: Entry, address: &Address) -> ZomeApiResult<Address> {
-    Dispatch::UpdateEntry.with_input(UpdateEntryArgs {
-        new_entry,
-        address: address.clone(),
-    })
-}
-
-/// NOT YET AVAILABLE
-pub fn update_agent() -> ZomeApiResult<Address> {
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// Commit a DeletionEntry to your local source chain that marks an entry as 'deleted' by setting
-/// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
-/// metadata, which will be used by validation routes.
-pub fn remove_entry(address: &Address) -> ZomeApiResult<Address> {
-    Dispatch::RemoveEntry.with_input(address.to_owned())
-}
-
-
-/// Returns a list of entries from your local source chain that match a given entry type name or names.
-///
-/// Each name may be a plain entry type name, or a `"glob"` pattern.  All names and patterns are
-/// merged into a single efficient Regular Expression for scanning.
-///
-/// You can select many names with patterns such as `"boo*"` (match all entry types starting with
-/// `"boo"`), or `"[!%]*e"` (all non-system non-name-spaced entry types ending in `"e"`).
-///
-/// You can organize your entry types using simple name-spaces, by including `"/"` in your entry type
-/// names.  For example, if you have several entry types related to fizzing a widget, you might
-/// create entry types `"fizz/bar"`, `"fizz/baz"`, `"fizz/qux/foo"` and `"fizz/qux/boo"`.  Query for
-/// `"fizz/**"` to match them all.
-///
-/// Use vec![], `""`, or `"**"` to match all names in all name-spaces.  Matching `"*"` will match only
-/// non-namespaced names.
-///
-/// entry_type_names: Specify type of entry(s) to retrieve, as a String or Vec<String> of 0 or more names, converted into the QueryArgNames type
-/// start: First entry in result list to retrieve
-/// limit: Max number of entries to retrieve
-/// # Examples
-/// ```rust
-/// # extern crate hdk;
-/// # extern crate holochain_core_types;
-/// # use hdk::error::ZomeApiResult;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::cas::content::Address;
-///
-/// # fn main() {
-/// pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
-///     hdk::query("post".into(), 0, 0)
-/// }
-/// pub fn all_system_plus_mine() -> ZomeApiResult<Vec<Address>> {
-///     hdk::query(vec!["[%]*","mine"].into(), 0, 0)
-/// }
-/// pub fn everything_including_namespaced_except_system() -> ZomeApiResult<Vec<Address>> {
-///     hdk::query("**/[!%]*".into(), 0, 0)
-/// }
-/// # }
-/// ```
-///
-/// With hdk::query_result, you can specify a package of QueryArgsOptions, and get a
-/// variety of return values, such a vector of Headers as a `Vec<ChainHeader>`:
-///
-/// ```
-/// // pub fn get_post_headers() -> ZomeApiResult<QueryResult> {
-/// //    hdk::query_result("post".into(), QueryArgsOptions{ headers: true, ..Default::default()})
-/// // }
-/// ```
-///
-/// The types of the results available depend on whether `headers` and/or `entries` is set:
-///
-/// ```
-/// //                                                     // headers  entries
-/// // pub enum QueryResult {                              // -------  -------
-/// //     Addresses(Vec<Address>),                        // false    false
-/// //     Headers(Vec<ChainHeader>),                      // true     false
-/// //     Entries(Vec<(Address, Entry)>),                 // false    true
-/// //     HeadersWithEntries(Vec<(ChainHeader, Entry)>),  // true     true
-/// // }
-/// ```
-pub fn query(
-    entry_type_names: QueryArgsNames,
-    start: usize,
-    limit: usize,
-) -> ZomeApiResult<Vec<Address>> {
-    // The hdk::query API always returns a simple Vec<Address>
-    query_result(
-        entry_type_names,
-        QueryArgsOptions {
-            start,
-            limit,
-            headers: false,
-            entries: false,
-        },
-    )
-    .and_then(|result| match result {
-        QueryResult::Addresses(addresses) => Ok(addresses),
-        _ => Err(ZomeApiError::FunctionNotImplemented), // should never occur
-    })
-}
-
-pub fn query_result(
-    entry_type_names: QueryArgsNames,
-    options: QueryArgsOptions,
-) -> ZomeApiResult<QueryResult> {
-    Dispatch::Query.with_input(QueryArgs {
-        entry_type_names,
-        options,
-    })
-}
-
-
-/// NOT YET AVAILABLE
-pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> ZomeApiResult<()> {
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// NOT YET AVAILABLE
-pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// Lets the DNA runtime sleep for the given duration.
-/// # Examples
-/// ```rust
-/// # #[macro_use]
-/// # extern crate hdk;
-/// # use hdk::error::ZomeApiResult;
-/// # use std::time::Duration;
-///
-/// # fn main() {
-/// pub fn handle_some_function(content: String) -> ZomeApiResult<()> {
-///     // ...
-///     hdk::sleep(Duration::from_millis(100));
-///     // ...
-///     Ok(())
-/// }
-///
-/// # }
-/// ```
-pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
-    let _: ZomeApiResult<()> = Dispatch::Sleep.with_input(JsonString::from(duration.as_nanos()));
-    // internally returns RibosomeEncodedValue::Success which is a zero length allocation
-    // return Ok(()) unconditionally instead of the "error" from success
-    Ok(())
 }

@@ -1,3 +1,4 @@
+use holochain_core_types::signature::Provenance;
 use error::ZomeApiResult;
 use holochain_wasm_utils::api_serialization::{
     sign::{
@@ -5,6 +6,7 @@ use holochain_wasm_utils::api_serialization::{
         SignOneTimeResult,
         OneTimeSignArgs,
     },
+    verify_signature::VerifySignatureArgs,
 };
 
 use super::Dispatch;
@@ -67,5 +69,36 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
     }
     Dispatch::SignOneTime.with_input(OneTimeSignArgs {
         payloads: converted_payloads,
+    })
+}
+
+/// Verifies a provenance (public key, signature) against a payload
+/// # Examples
+/// ```rust
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::signature::Provenance;
+/// # use hdk::error::ZomeApiResult;
+/// # fn main() {
+/// pub fn handle_verify_message(message: String, provenance: Provenance) -> ZomeApiResult<bool> {
+///     hdk::verify_signature(provenance, message)
+/// }
+/// # }
+/// ```
+pub fn verify_signature<S: Into<String>>(
+    provenance: Provenance,
+    payload: S,
+) -> ZomeApiResult<bool> {
+    Dispatch::VerifySignature.with_input(VerifySignatureArgs {
+        provenance,
+        payload: payload.into(),
     })
 }

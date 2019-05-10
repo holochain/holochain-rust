@@ -83,10 +83,10 @@ fn reduce_store_entry_common(
                 meta_res
                     .map(|_| Some(new_store))
                     .map_err(|err| {
-                        context.log(format!(
+                        println!(
                             "err/dht: reduce_hold_entry: meta_storage write failed!: {:?}",
                             err
-                        ));
+                        );
                         None::<DhtStore>
                     })
                     .ok()
@@ -95,10 +95,10 @@ fn reduce_store_entry_common(
             .ok()
             .unwrap_or(None)
     } else {
-        context.log(format!(
+        println!(
             "err/dht: dht::reduce_hold_entry() FAILED {:?}",
             res
-        ));
+        );
         None
     }
 }

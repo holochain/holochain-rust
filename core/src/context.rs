@@ -28,8 +28,6 @@ use holochain_core_types::{
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};
-use jsonrpc_lite::JsonRpc;
-use snowflake::ProcessUniqueId;
 use std::{
     sync::{
         mpsc::{channel, Receiver, SyncSender},

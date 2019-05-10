@@ -25,7 +25,6 @@ use std::{
     convert::TryInto,
     sync::{Arc, RwLock},
 };
-use jsonrpc_core::IoHandler;
 use crate::conductor_api::ConductorApi;
 
 /// The Store of the Holochain instance Object, according to Redux pattern.

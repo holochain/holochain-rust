@@ -34,6 +34,7 @@ use std::{
     vec::Vec,
 };
 use crate::state::State;
+use holochain_net::connection::net_connection::NetHandler;
 
 /// Wrapper for actions that provides a unique ID
 /// The unique ID is needed for state tracking to ensure that we can differentiate between two
@@ -287,6 +288,10 @@ pub struct NetworkSettings {
     /// The network module needs to know who we are.
     /// This is this agent's address.
     pub agent_id: String,
+
+    /// This is a closure of the code that gets called by the network
+    /// module to have us process incoming messages
+    pub handler: NetHandler,
 }
 
 #[cfg(test)]

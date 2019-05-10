@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
-    network::{handler::create_handler, state::NetworkState},
+    network::state::NetworkState,
 };
 use holochain_net::{
     connection::{
@@ -18,7 +18,7 @@ pub fn reduce_init(
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
     let mut network = P2pNetwork::new(
-        create_handler(&context, network_settings.dna_address.to_string()),
+        network_settings.handler,
         &network_settings.p2p_config,
     )
     .unwrap();

@@ -18,17 +18,10 @@ use holochain_wasm_utils::{
     api_serialization::{
         capabilities::{CommitCapabilityClaimArgs, CommitCapabilityGrantArgs},
         get_entry::{
-            EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
-            StatusRequestKind,
+            GetEntryOptions, GetEntryResult, GetEntryResultType,
         },
         get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
-        keystore::{
-            KeyType, KeystoreDeriveKeyArgs, KeystoreDeriveSeedArgs, KeystoreGetPublicKeyArgs,
-            KeystoreListResult, KeystoreNewRandomArgs, KeystoreSignArgs,
-        },
-        link_entries::LinkEntriesArgs,
         send::{SendArgs, SendOptions},
-        sign::{OneTimeSignArgs, SignArgs, SignOneTimeResult},
         verify_signature::VerifySignatureArgs,
         QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeApiGlobals,
     },
@@ -48,11 +41,28 @@ use std::{
 mod call;
 mod debug;
 mod commit_entry;
+mod get_entry;
+mod link_entries;
+mod remove_link;
+mod keystore;
+mod sign;
 
 pub use self::{
     call::call,
     debug::debug,
     commit_entry::{commit_entry, commit_entry_result},
+    get_entry::{get_entry, get_entry_initial, get_entry_history, get_entry_result},
+    link_entries::link_entries,
+    remove_link::remove_link,
+    keystore::{
+        keystore_list,
+        keystore_new_random,
+        keystore_derive_seed,
+        keystore_derive_key,
+        keystore_sign,
+        keystore_get_public_key,
+    },
+    sign::{sign, sign_one_time}
 };
 
 macro_rules! def_api_fns {
@@ -351,337 +361,9 @@ pub enum BundleOnClose {
 //--------------------------------------------------------------------------------------------------
 
 
-/// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
-/// the specified address.
-/// Returns None if no entry exists at the specified address or
-/// if the entry's status is DELETED.  Note that if the entry was updated, the value retrieved
-/// may be of the updated entry which will have a different hash value.  If you need
-/// to get the original value whatever the status, use [get_entry_initial](fn.get_entry_initial.html), or if you need to know
-/// the address of the updated entry use [get_entry_result](fn.get_entry_result.html)
-/// # Examples
-/// ```rust
-/// # extern crate hdk;
-/// # extern crate holochain_core_types;
-/// # use hdk::error::ZomeApiResult;
-/// # use holochain_core_types::entry::Entry;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::cas::content::Address;
-/// # fn main() {
-/// pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
-///     // get_entry returns a Result<Option<T>, ZomeApiError>
-///     // where T is the type that you used to commit the entry, in this case a Blog
-///     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
-///     // Otherwise its a Some(T) or a None
-///     hdk::get_entry(&post_address)
-/// }
-/// # }
-/// ```
-pub fn get_entry(address: &Address) -> ZomeApiResult<Option<Entry>> {
-    let entry_result = get_entry_result(address, GetEntryOptions::default())?;
 
-    let entry = if !entry_result.found() {
-        None
-    } else {
-        entry_result.latest()
-    };
 
-    Ok(entry)
-}
 
-/// Returns the Entry at the exact address specified, whatever its status.
-/// Returns None if no entry exists at the specified address.
-pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
-    let entry_result = get_entry_result(
-        address,
-        GetEntryOptions::new(StatusRequestKind::Initial, true, false, Default::default()),
-    )?;
-    Ok(entry_result.latest())
-}
-
-/// Return an EntryHistory filled with all the versions of the entry from the version at
-/// the specified address to the latest.
-/// Returns None if no entry exists at the specified address.
-pub fn get_entry_history(address: &Address) -> ZomeApiResult<Option<EntryHistory>> {
-    let entry_result = get_entry_result(
-        address,
-        GetEntryOptions::new(StatusRequestKind::All, true, false, Default::default()),
-    )?;
-    if !entry_result.found() {
-        return Ok(None);
-    }
-    match entry_result.result {
-        GetEntryResultType::All(history) => Ok(Some(history)),
-        _ => Err(ZomeApiError::from("shouldn't happen".to_string())),
-    }
-}
-
-/// Retrieves an entry and its metadata from the local chain or the DHT, by looking it up using
-/// the specified address.
-/// The data returned is configurable with the GetEntryOptions argument.
-pub fn get_entry_result(
-    address: &Address,
-    options: GetEntryOptions,
-) -> ZomeApiResult<GetEntryResult> {
-    Dispatch::GetEntry.with_input(GetEntryArgs {
-        address: address.clone(),
-        options,
-    })
-}
-
-/// Adds a named, directed link between two entries on the DHT.
-/// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
-/// relationship between them, called a `tag`. Later, lists of entries can be looked up by using [get_links](fn.get_links.html). Entries
-/// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
-/// # Examples
-/// ```rust
-/// # #![feature(try_from)]
-/// # extern crate hdk;
-/// # extern crate serde_json;
-/// # #[macro_use]
-/// # extern crate serde_derive;
-/// # extern crate holochain_core_types;
-/// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::AppEntryType;
-/// # use holochain_core_types::entry::Entry;
-/// # use holochain_core_types::cas::content::Address;
-/// # use hdk::AGENT_ADDRESS;
-/// # use hdk::error::ZomeApiResult;
-/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;
-/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::StatusRequestKind;
-/// # fn main() {
-///
-/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
-/// pub struct Post {
-///     content: String,
-///     date_created: String,
-/// }
-///
-/// pub fn handle_link_entries(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
-///
-///     let post_entry = Entry::App("post".into(), Post{
-///             content,
-///             date_created: "now".into(),
-///     }.into());
-///
-///     let address = hdk::commit_entry(&post_entry)?;
-///
-///     hdk::link_entries(
-///         &AGENT_ADDRESS,
-///         &address,
-///         "authored_posts",
-///     )?;
-///
-///     if let Some(in_reply_to_address) = in_reply_to {
-///         // return with Err if in_reply_to_address points to missing entry
-///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, headers: false, timeout: Default::default() })?;
-///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
-///     }
-///
-///     Ok(address)
-///
-/// }
-/// # }
-/// ```
-pub fn link_entries<S: Into<String>>(
-    base: &Address,
-    target: &Address,
-    tag: S,
-) -> Result<Address, ZomeApiError> {
-    Dispatch::LinkEntries.with_input(LinkEntriesArgs {
-        base: base.clone(),
-        target: target.clone(),
-        tag: tag.into(),
-    })
-}
-
-/// Commits a LinkRemove entry to your local source chain that marks a link as 'deleted' by setting
-/// its status metadata to `Deleted` which gets published to the DHT.
-/// Consumes three values, two of which are the addresses of entries, and one of which is a string that removes a
-/// relationship between them, called a `tag`. Later, lists of entries.
-/// # Examples
-/// ```rust
-/// # #![feature(try_from)]
-/// # extern crate hdk;
-/// # extern crate serde_json;
-/// # #[macro_use]
-/// # extern crate serde_derive;
-/// # extern crate holochain_core_types;
-/// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::AppEntryType;
-/// # use holochain_core_types::entry::Entry;
-/// # use holochain_core_types::cas::content::Address;
-/// # use hdk::AGENT_ADDRESS;
-/// # use hdk::error::ZomeApiResult;
-/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;
-/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::StatusRequestKind;
-/// # fn main() {
-///
-/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
-/// pub struct Post {
-///     content: String,
-///     date_created: String,
-/// }
-///
-/// pub fn handle_remove_link(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<()> {
-///
-///     let post_entry = Entry::App("post".into(), Post{
-///             content,
-///             date_created: "now".into(),
-///     }.into());
-///
-///     let address = hdk::commit_entry(&post_entry)?;
-///
-///     hdk::remove_link(
-///         &AGENT_ADDRESS,
-///         &address,
-///         "authored_posts",
-///     )?;
-///
-///
-///     Ok(())
-///
-/// }
-/// # }
-/// ```
-pub fn remove_link<S: Into<String>>(
-    base: &Address,
-    target: &Address,
-    tag: S,
-) -> Result<(), ZomeApiError> {
-    Dispatch::RemoveLink.with_input(LinkEntriesArgs {
-        base: base.clone(),
-        target: target.clone(),
-        tag: tag.into(),
-    })
-}
-
-/// Signs a string payload using the agent's private key.
-/// Returns the signature as a string.
-/// # Examples
-/// ```rust
-/// # #![feature(try_from)]
-/// # extern crate hdk;
-/// # extern crate serde_json;
-/// # #[macro_use]
-/// # extern crate serde_derive;
-/// # extern crate holochain_core_types;
-/// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::signature::{Provenance, Signature};
-/// # use hdk::error::ZomeApiResult;
-/// # fn main() {
-/// pub fn handle_sign_message(message: String) -> ZomeApiResult<Signature> {
-///    hdk::sign(message).map(Signature::from)
-/// }
-/// # }
-/// ```
-pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
-    Dispatch::Sign.with_input(SignArgs {
-        payload: payload.into(),
-    })
-}
-
-/// Signs a vector of payloads with a private key that is generated and shredded.
-/// Returns the signatures of the payloads and the public key that can be used to verify the signatures.
-/// # Examples
-/// ```rust
-/// # #![feature(try_from)]
-/// # extern crate hdk;
-/// # extern crate serde_json;
-/// # #[macro_use]
-/// # extern crate serde_derive;
-/// # extern crate holochain_core_types;
-/// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::signature::{Provenance, Signature};
-/// # use hdk::error::ZomeApiResult;
-/// # use hdk::holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignOneTimeResult};
-/// # fn main() {
-/// pub fn handle_one_time_sign(key_id: String, message: String) -> ZomeApiResult<Signature> {
-///    hdk::sign(message).map(Signature::from)
-/// }
-/// # }
-/// ```
-pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOneTimeResult> {
-    let mut converted_payloads = Vec::new();
-    for p in payloads {
-        converted_payloads.push(p.into());
-    }
-    Dispatch::SignOneTime.with_input(OneTimeSignArgs {
-        payloads: converted_payloads,
-    })
-}
-
-/// Returns a list of the named secrets stored in the keystore.
-pub fn keystore_list() -> ZomeApiResult<KeystoreListResult> {
-    Dispatch::KeystoreList.without_input()
-}
-
-/// Creates a new random "root" Seed secret in the keystore
-pub fn keystore_new_random<S: Into<String>>(dst_id: S, size: usize) -> ZomeApiResult<()> {
-    Dispatch::KeystoreNewRandom.with_input(KeystoreNewRandomArgs {
-        dst_id: dst_id.into(),
-        size,
-    })
-}
-
-/// Creates a new derived seed secret in the keystore, derived from a previously defined seed.
-/// Accepts two arguments: the keystore ID of the previously defined seed, and a keystore ID for the newly derived seed.
-pub fn keystore_derive_seed<S: Into<String>>(
-    src_id: S,
-    dst_id: S,
-    context: S,
-    index: u64,
-) -> ZomeApiResult<()> {
-    Dispatch::KeystoreDeriveSeed.with_input(KeystoreDeriveSeedArgs {
-        src_id: src_id.into(),
-        dst_id: dst_id.into(),
-        context: context.into(),
-        index,
-    })
-}
-
-/// Creates a new derived key secret in the keystore derived from on a previously defined seed.
-/// Accepts two arguments: the keystore ID of the previously defined seed, and a keystore ID for the newly derived key.
-pub fn keystore_derive_key<S: Into<String>>(
-    src_id: S,
-    dst_id: S,
-    key_type: KeyType,
-) -> ZomeApiResult<String> {
-    Dispatch::KeystoreDeriveKey.with_input(KeystoreDeriveKeyArgs {
-        src_id: src_id.into(),
-        dst_id: dst_id.into(),
-        key_type,
-    })
-}
-
-/// Signs a payload using a private key from the keystore.
-/// Accepts one argument: the keystore ID of the desired private key.
-pub fn keystore_sign<S: Into<String>>(src_id: S, payload: S) -> ZomeApiResult<String> {
-    Dispatch::KeystoreSign.with_input(KeystoreSignArgs {
-        src_id: src_id.into(),
-        payload: payload.into(),
-    })
-}
-
-/// Returns the public key of a key secret
-/// Accepts one argument: the keystore ID of the desired public key.
-/// Fails if the id is a Seed secret.
-pub fn keystore_get_public_key<S: Into<String>>(src_id: S) -> ZomeApiResult<String> {
-    Dispatch::KeystoreGetPublicKey.with_input(KeystoreGetPublicKeyArgs {
-        src_id: src_id.into(),
-    })
-}
 
 /// NOT YET AVAILABLE
 // Returns a DNA property, which are defined by the DNA developer.

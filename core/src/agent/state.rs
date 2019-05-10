@@ -161,19 +161,15 @@ pub enum ActionResponse {
 
 pub fn create_new_chain_header(
     entry: &Entry,
-    context: Arc<Context>,
+    agent_state: &AgentState,
+    root_state: &State,
     crud_link: &Option<Address>,
     provenances: &Vec<Provenance>,
 ) -> Result<ChainHeader, HolochainError> {
-    let agent_state = context
-        .state()
-        .expect("create_new_chain_header called without state")
-        .agent();
     let agent_address = agent_state
-        .get_agent_address()
-        .unwrap_or(context.agent_id.address());
+        .get_agent_address()?;
     let signature = Signature::from(
-        context.sign(entry.address().to_string())?,
+        root_state.conductor_api.sign(entry.address().to_string())?,
         // Temporarily replaced by error handling for Holo hack signing.
         // TODO: pull in the expect below after removing the Holo signing hack again
         //.expect("Must be able to create signatures!"),
@@ -208,7 +204,8 @@ pub fn create_new_chain_header(
 /// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
 /// action reduction to hang
 fn reduce_commit_entry(
-    state: &mut AgentState,
+    agent_state: &mut AgentState,
+    root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -216,22 +213,23 @@ fn reduce_commit_entry(
 
     let result = create_new_chain_header(
         &entry,
-        context.clone(),
+        agent_state,
+        root_state,
         &maybe_link_update_delete,
         provenances,
     )
     .and_then(|chain_header| {
-        let storage = &state.chain_store.content_storage().clone();
+        let storage = &agent_state.chain_store.content_storage().clone();
         storage.write().unwrap().add(entry)?;
         storage.write().unwrap().add(&chain_header)?;
         Ok((chain_header, entry.address()))
     })
     .and_then(|(chain_header, address)| {
-        state.top_chain_header = Some(chain_header);
+        agent_state.top_chain_header = Some(chain_header);
         Ok(address)
     });
 
-    state
+    agent_state
         .actions
         .insert(action_wrapper.clone(), ActionResponse::Commit(result));
 }
@@ -247,13 +245,14 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
 /// Reduce Agent's state according to provided Action
 pub fn reduce(
     old_state: Arc<AgentState>,
+    root_state: &State,
     action_wrapper: &ActionWrapper,
 ) -> Arc<AgentState> {
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
-            f(&mut new_state, &action_wrapper);
+            f(&mut new_state, root_state, &action_wrapper);
             Arc::new(new_state)
         }
         None => old_state,

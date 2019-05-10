@@ -6,7 +6,6 @@ use holochain_core_types::{
     cas::content::Address,
     dna::capabilities::CapabilityRequest,
     entry::{
-        cap_entries::{CapFunctions, CapabilityType},
         Entry,
     },
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
@@ -15,7 +14,6 @@ use holochain_core_types::{
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        capabilities::{CommitCapabilityClaimArgs, CommitCapabilityGrantArgs},
         verify_signature::VerifySignatureArgs,
         QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeApiGlobals,
     },
@@ -42,6 +40,7 @@ mod keystore;
 mod sign;
 mod get_links;
 mod send;
+mod capability;
 
 pub use self::{
     call::call,
@@ -61,6 +60,7 @@ pub use self::{
     sign::{sign, sign_one_time},
     get_links::{get_links, get_links_with_options, get_links_result, get_links_and_load},
     send::send,
+    capability::{commit_capability_grant, commit_capability_claim},
 };
 
 macro_rules! def_api_fns {
@@ -598,32 +598,4 @@ pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
     // internally returns RibosomeEncodedValue::Success which is a zero length allocation
     // return Ok(()) unconditionally instead of the "error" from success
     Ok(())
-}
-
-/// Adds a capability grant to the local chain
-pub fn commit_capability_grant<S: Into<String>>(
-    id: S,
-    cap_type: CapabilityType,
-    assignees: Option<Vec<Address>>,
-    functions: CapFunctions,
-) -> ZomeApiResult<Address> {
-    Dispatch::CommitCapabilityGrant.with_input(CommitCapabilityGrantArgs {
-        id: id.into(),
-        cap_type,
-        assignees,
-        functions,
-    })
-}
-
-/// Adds a capability claim to the local chain
-pub fn commit_capability_claim<S: Into<String>>(
-    id: S,
-    grantor: Address,
-    token: Address,
-) -> ZomeApiResult<Address> {
-    Dispatch::CommitCapabilityClaim.with_input(CommitCapabilityClaimArgs {
-        id: id.into(),
-        grantor,
-        token,
-    })
 }

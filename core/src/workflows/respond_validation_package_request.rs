@@ -4,14 +4,11 @@ use crate::{
     instance::dispatch_action,
     network::direct_message::DirectMessage,
     nucleus::actions::{
-        build_validation_package::build_validation_package,
-        get_entry::get_entry_from_agent_chain
+        build_validation_package::build_validation_package, get_entry::get_entry_from_agent_chain,
     },
 };
 
-use holochain_core_types::{
-    cas::content::Address, signature::Provenance,
-};
+use holochain_core_types::{cas::content::Address, signature::Provenance};
 use std::{sync::Arc, vec::Vec};
 
 pub async fn respond_validation_package_request(
@@ -21,14 +18,16 @@ pub async fn respond_validation_package_request(
     context: Arc<Context>,
     provenances: &Vec<Provenance>,
 ) {
-    let maybe_validation_package = match get_entry_from_agent_chain(&context, &requested_entry_address) {
-        Ok(Some(entry)) => await!(build_validation_package(
-            &entry,
-            context.clone(),
-            provenances
-        )).ok(),
-        _ => None,
-    };
+    let maybe_validation_package =
+        match get_entry_from_agent_chain(&context, &requested_entry_address) {
+            Ok(Some(entry)) => await!(build_validation_package(
+                &entry,
+                context.clone(),
+                provenances
+            ))
+            .ok(),
+            _ => None,
+        };
 
     if maybe_validation_package.is_some() {
         context.log(format!(

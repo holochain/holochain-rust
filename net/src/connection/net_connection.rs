@@ -1,7 +1,37 @@
 use super::{protocol::Protocol, NetResult};
+use std::sync::Arc;
+use std::fmt;
 
 /// closure for processing a Protocol message received from the network
-pub type NetHandler = Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send>;
+#[derive(Clone, Serialize)]
+pub struct NetHandler {
+    #[serde(skip)]
+    closure: Arc<Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send + Sync>>
+}
+
+impl NetHandler {
+    pub fn new(c: Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send + Sync>) -> NetHandler {
+        NetHandler { closure: Arc::new(c) }
+    }
+
+    pub fn handle(&mut self, message: NetResult<Protocol>) -> NetResult<()> {
+        (Arc::get_mut(&mut self.closure)
+            .ok_or(failure::err_msg("Could not get mutable reference to network handler"))?)
+            (message)
+    }
+}
+
+impl PartialEq for NetHandler {
+    fn eq(&self, _: &NetHandler) -> bool {
+        false
+    }
+}
+
+impl fmt::Debug for NetHandler {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[NetHandler]")
+    }
+}
 
 /// closure for doing any clean up at shutdown of a NetWorker
 pub type NetShutdown = Option<Box<::std::boxed::FnBox() + Send>>;

@@ -113,6 +113,7 @@ impl State {
         let mut new_state = State {
             nucleus: crate::nucleus::reduce(
                 Arc::clone(&self.nucleus),
+                &self,
                 &action_wrapper,
             ),
             agent: crate::agent::state::reduce(

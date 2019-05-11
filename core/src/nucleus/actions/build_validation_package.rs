@@ -77,7 +77,7 @@ pub async fn build_validation_package<'a>(
         let id = id.clone();
         let entry = entry.clone();
         let context = context.clone();
-        let maybe_entry_header = find_chain_header(&entry.clone(), &context);
+        let maybe_entry_header = find_chain_header(&entry.clone(), &context.state().unwrap());
         let entry_header = if maybe_entry_header.is_none() {
             // TODO: make sure that we don't run into race conditions with respect to the chain
             // We need the source chain header as part of the validation package.

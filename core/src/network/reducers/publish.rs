@@ -98,11 +98,12 @@ fn publish_link_meta(
 
 fn reduce_publish_inner(
     network_state: &mut NetworkState,
+    root_state: &State,
     address: &Address,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
-    let entry_with_header = fetch_entry_with_header(&address)?;
+    let entry_with_header = fetch_entry_with_header(&address, root_state)?;
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
@@ -137,13 +138,13 @@ fn reduce_publish_inner(
 
 pub fn reduce_publish(
     network_state: &mut NetworkState,
-    _root_state: &State,
+    root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let address = unwrap_to!(action => crate::action::Action::Publish);
 
-    let result = reduce_publish_inner(network_state, &address);
+    let result = reduce_publish_inner(network_state, root_state, &address);
     network_state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::Publish(match result {

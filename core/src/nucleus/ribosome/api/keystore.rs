@@ -20,7 +20,7 @@ fn conductor_callback<S: Into<String>>(
 ) -> HcResult<JsonString> {
     let conductor_api = context.conductor_api.clone();
 
-    let handler = conductor_api.write().unwrap();
+    let handler = conductor_api.get().write().unwrap();
 
     let method = method.into();
     let id = ProcessUniqueId::new();

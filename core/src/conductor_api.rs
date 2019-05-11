@@ -3,6 +3,7 @@ use jsonrpc_core::IoHandler;
 use holochain_core_types::error::HolochainError;
 use snowflake::ProcessUniqueId;
 use jsonrpc_lite::JsonRpc;
+use std::fmt;
 
 #[derive(Clone)]
 pub struct ConductorApi(Arc<RwLock<IoHandler>>);
@@ -36,5 +37,21 @@ impl ConductorApi {
             )),
             _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
         }
+    }
+
+    pub fn get(&self) -> &Arc<RwLock<IoHandler>> {
+        &self.0
+    }
+}
+
+impl PartialEq for ConductorApi {
+    fn eq(&self, _other: &ConductorApi) -> bool {
+        false
+    }
+}
+
+impl fmt::Debug for ConductorApi {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.0)
     }
 }

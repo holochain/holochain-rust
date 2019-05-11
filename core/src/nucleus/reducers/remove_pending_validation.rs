@@ -38,11 +38,13 @@ pub mod tests {
         cas::content::AddressableContent, chain_header::test_chain_header, entry::Entry,
         json::RawString,
     };
+    use std::sync::Arc;
 
     #[test]
     fn test_reduce_remove_pending_validation() {
         let context = test_context("jimmy", None);
-        let mut state = test_nucleus_state();
+        let mut nucleus_state = test_nucleus_state();
+        let state = context.state().unwrap().read();
 
         let entry = Entry::App("package_entry".into(), RawString::from("test value").into());
         let entry_with_header = EntryWithHeader {
@@ -58,9 +60,9 @@ pub mod tests {
             },
         )));
 
-        reduce_add_pending_validation(context.clone(), &mut state, &action_wrapper);
+        reduce_add_pending_validation(&mut nucleus_state, &state, &action_wrapper);
 
-        assert!(state
+        assert!(nucleus_state
             .pending_validations
             .contains_key(&PendingValidationKey::new(
                 entry.address(),
@@ -72,9 +74,9 @@ pub mod tests {
             ValidatingWorkflow::HoldEntry,
         )));
 
-        reduce_remove_pending_validation(context, &mut state, &action_wrapper);
+        reduce_remove_pending_validation(&mut nucleus_state, &state, &action_wrapper);
 
-        assert!(!state
+        assert!(!nucleus_state
             .pending_validations
             .contains_key(&PendingValidationKey::new(
                 entry.address(),

@@ -44,10 +44,12 @@ pub async fn initialize_network_with_spoofed_dna(
     context: &Arc<Context>,
 ) -> HcResult<()> {
     let (_, agent_id) = await!(get_dna_and_agent(context))?;
+    let handler = create_handler(&context, dna_address.to_string());
     let network_settings = NetworkSettings {
         p2p_config: context.p2p_config.clone(),
         dna_address,
         agent_id,
+        handler,
     };
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
     dispatch_action(context.action_channel(), action_wrapper.clone());

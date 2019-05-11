@@ -310,13 +310,9 @@ pub mod tests {
         let netname = Some("test_reduce_commit_entry");
         let context = test_context("bob", netname);
         let state = State::new_with_agent(context, agent_state.clone());
-        let mut context = test_context("bob", netname);
-        Arc::get_mut(&mut context)
-            .unwrap()
-            .set_state(Arc::new(RwLock::new(state)));
         let action_wrapper = test_action_wrapper_commit();
 
-        reduce_commit_entry(context, &mut agent_state, &action_wrapper);
+        reduce_commit_entry(&mut agent_state, &state, &action_wrapper);
 
         assert_eq!(
             agent_state.actions().get(&action_wrapper),
@@ -406,13 +402,9 @@ pub mod tests {
         let netname = Some("test_create_new_chain_header");
         let context = test_context("bob", netname);
         let state = State::new_with_agent(context, agent_state.clone());
-        let mut context = test_context("bob", netname);
-        Arc::get_mut(&mut context)
-            .unwrap()
-            .set_state(Arc::new(RwLock::new(state)));
 
         let header =
-            create_new_chain_header(&test_entry(), context.clone(), &None, &vec![]).unwrap();
+            create_new_chain_header(&test_entry(), &agent_state, &state,&None, &vec![]).unwrap();
         println!("{:?}", header);
         assert_eq!(
             header,
@@ -420,10 +412,10 @@ pub mod tests {
                 &test_entry().entry_type(),
                 &test_entry().address(),
                 &[Provenance::new(
-                    context.agent_id.address(),
+                    agent_state.agent_id.address(),
                     Signature::from(mock_signer(
                         test_entry().address().to_string(),
-                        &context.agent_id
+                        &agent_state.agent_id
                     ))
                 )]
                 .to_vec(),

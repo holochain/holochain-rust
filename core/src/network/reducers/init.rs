@@ -54,7 +54,7 @@ pub fn reduce_init(
 pub mod test {
     use self::tempfile::tempdir;
     use super::*;
-    use crate::{logger::test_logger, persister::SimplePersister, state::State};
+    use crate::{context::Context, logger::test_logger, persister::SimplePersister, state::State};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{agent::AgentId, cas::content::Address};
     use holochain_net::p2p_config::P2pConfig;

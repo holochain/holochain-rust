@@ -4,6 +4,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_net::connection::json_protocol::{FetchEntryData, JsonProtocol};
+use crate::state::State;
 
 fn reduce_fetch_entry_inner(
     network_state: &mut NetworkState,
@@ -24,6 +25,7 @@ fn reduce_fetch_entry_inner(
 
 pub fn reduce_get_entry(
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -41,6 +43,7 @@ pub fn reduce_get_entry(
 
 pub fn reduce_get_entry_timeout(
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

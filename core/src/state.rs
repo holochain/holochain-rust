@@ -126,6 +126,7 @@ impl State {
             ),
             network: crate::network::reducers::reduce(
                 Arc::clone(&self.network),
+                &self,
                 &action_wrapper,
             ),
             history: self.history.clone(),

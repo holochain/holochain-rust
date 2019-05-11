@@ -41,6 +41,7 @@ use holochain_net::connection::{
 };
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
+use crate::state::State;
 
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
@@ -67,13 +68,14 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
 
 pub fn reduce(
     old_state: Arc<NetworkState>,
+    root_state: &State,
     action_wrapper: &ActionWrapper,
 ) -> Arc<NetworkState> {
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
             let mut new_state: NetworkState = (*old_state).clone();
-            f(&mut new_state, &action_wrapper);
+            f(&mut new_state, &root_state, &action_wrapper);
             Arc::new(new_state)
         }
         None => old_state,

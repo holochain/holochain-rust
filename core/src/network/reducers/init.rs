@@ -10,9 +10,11 @@ use holochain_net::{
     p2p_network::P2pNetwork,
 };
 use std::sync::{Arc, Mutex};
+use crate::state::State;
 
 pub fn reduce_init(
     state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

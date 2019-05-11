@@ -1,8 +1,10 @@
 use crate::{action::ActionWrapper, network::state::NetworkState};
 use holochain_core_types::error::HolochainError;
+use crate::state::State;
 
 pub fn reduce_handle_custom_send_response(
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

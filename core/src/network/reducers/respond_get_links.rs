@@ -4,6 +4,7 @@ use crate::{
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net::connection::json_protocol::{FetchMetaData, FetchMetaResultData, JsonProtocol};
+use crate::state::State;
 
 /// Send back to network a HandleFetchMetaResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
@@ -32,6 +33,7 @@ fn reduce_respond_get_links_inner(
 
 pub fn reduce_respond_get_links(
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

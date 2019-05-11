@@ -15,6 +15,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_net::connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
+use crate::state::State;
 
 /// Send to network a PublishDhtData message
 fn publish_entry(
@@ -136,6 +137,7 @@ fn reduce_publish_inner(
 
 pub fn reduce_publish(
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

@@ -4,6 +4,7 @@ use crate::{
 };
 use holochain_core_types::{error::HolochainError, hash::HashString};
 use holochain_net::connection::json_protocol::{FetchMetaData, JsonProtocol};
+use crate::state::State;
 
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
@@ -25,6 +26,7 @@ fn reduce_get_links_inner(
 
 pub fn reduce_get_links(
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -40,6 +42,7 @@ pub fn reduce_get_links(
 
 pub fn reduce_get_links_timeout(
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

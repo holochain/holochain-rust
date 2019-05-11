@@ -1,7 +1,9 @@
 use crate::{action::ActionWrapper, network::state::NetworkState};
+use crate::state::State;
 
 pub fn reduce_resolve_direct_connection(
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

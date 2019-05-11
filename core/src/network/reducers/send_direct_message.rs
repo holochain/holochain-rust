@@ -4,6 +4,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_net::connection::json_protocol::{JsonProtocol, MessageData};
+use crate::state::State;
 
 fn inner(
     network_state: &mut NetworkState,
@@ -36,6 +37,7 @@ fn inner(
 
 pub fn reduce_send_direct_message(
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -50,6 +52,7 @@ pub fn reduce_send_direct_message(
 
 pub fn reduce_send_direct_message_timeout(
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

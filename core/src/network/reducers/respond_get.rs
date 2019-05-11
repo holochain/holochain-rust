@@ -6,6 +6,7 @@ use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError}
 use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, JsonProtocol,
 };
+use crate::state::State;
 
 /// Send back to network a HandleFetchEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
@@ -34,6 +35,7 @@ fn reduce_respond_fetch_data_inner(
 
 pub fn reduce_respond_fetch_data(
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

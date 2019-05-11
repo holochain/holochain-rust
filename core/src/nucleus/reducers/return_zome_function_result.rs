@@ -2,11 +2,13 @@ use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::NucleusState,
 };
+use crate::state::State;
 
 /// Reduce ReturnZomeFunctionResult Action.
 /// Simply drops function call into zome_calls state.
 pub fn reduce_return_zome_function_result(
     state: &mut NucleusState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

@@ -23,6 +23,7 @@ use crate::{
 };
 
 use std::sync::Arc;
+use crate::state::State;
 
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
@@ -42,13 +43,14 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
 pub fn reduce(
     old_state: Arc<NucleusState>,
+    root_state: &State,
     action_wrapper: &ActionWrapper,
 ) -> Arc<NucleusState> {
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
             let mut new_state: NucleusState = (*old_state).clone();
-            f(&mut new_state, &action_wrapper);
+            f(&mut new_state, root_state, &action_wrapper);
             Arc::new(new_state)
         }
         None => old_state,

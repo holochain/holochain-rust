@@ -2,6 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::{NucleusState, NucleusStatus},
 };
+use crate::state::State;
 
 /// Reduce InitializeChain Action
 /// Switch status to failed if an initialization is tried for an
@@ -10,6 +11,7 @@ use crate::{
 #[allow(needless_pass_by_value)]
 pub fn reduce_initialize_chain(
     state: &mut NucleusState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     match state.status() {

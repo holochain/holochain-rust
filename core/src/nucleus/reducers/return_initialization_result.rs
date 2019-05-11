@@ -2,6 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::{NucleusState, NucleusStatus},
 };
+use crate::state::State;
 
 /// Reduce ReturnInitializationResult Action
 /// On initialization success, set Initialized status
@@ -10,6 +11,7 @@ use crate::{
 #[allow(needless_pass_by_value)]
 pub fn reduce_return_initialization_result(
     state: &mut NucleusState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     if state.status() != NucleusStatus::Initializing {

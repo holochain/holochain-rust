@@ -3,6 +3,7 @@ use crate::{
     nucleus::state::{NucleusState, PendingValidationKey},
 };
 use holochain_core_types::cas::content::AddressableContent;
+use crate::state::State;
 
 /// Reduce AddPendingValidation Action.
 /// Inserts boxed EntryWithHeader and dependencies into state, referenced with
@@ -11,6 +12,7 @@ use holochain_core_types::cas::content::AddressableContent;
 #[allow(needless_pass_by_value)]
 pub fn reduce_add_pending_validation(
     state: &mut NucleusState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

@@ -2,6 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::{NucleusState, PendingValidationKey},
 };
+use crate::state::State;
 
 /// Reduce RemovePendingValidation Action.
 /// Removes boxed EntryWithHeader and dependencies from state, referenced with
@@ -11,6 +12,7 @@ use crate::{
 #[allow(needless_pass_by_value)]
 pub fn reduce_remove_pending_validation(
     state: &mut NucleusState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

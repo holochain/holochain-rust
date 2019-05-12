@@ -787,12 +787,13 @@ pub fn get_entry_result(
 ///         &AGENT_ADDRESS,
 ///         &address,
 ///         "authored_posts",
+///         "authored_posts",
 ///     )?;
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
 ///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, headers: false, timeout: Default::default() })?;
-///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+///         hdk::link_entries(&in_reply_to_address, &address, "comments", "comments")?;
 ///     }
 ///
 ///     Ok(address)
@@ -800,15 +801,17 @@ pub fn get_entry_result(
 /// }
 /// # }
 /// ```
-pub fn link_entries<S: Into<String>>(
+pub fn link_entries<S: Into<String>, TS: Into<String>>(
     base: &Address,
     target: &Address,
     tag: S,
+    r#type: TS,
 ) -> Result<Address, ZomeApiError> {
     Dispatch::LinkEntries.with_input(LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
         tag: tag.into(),
+        r#type: r#type.into(),
     })
 }
 
@@ -856,6 +859,7 @@ pub fn link_entries<S: Into<String>>(
 ///         &AGENT_ADDRESS,
 ///         &address,
 ///         "authored_posts",
+///         "authored_posts",
 ///     )?;
 ///
 ///
@@ -864,15 +868,17 @@ pub fn link_entries<S: Into<String>>(
 /// }
 /// # }
 /// ```
-pub fn remove_link<S: Into<String>>(
+pub fn remove_link<S: Into<String>, TS: Into<String>>(
     base: &Address,
     target: &Address,
     tag: S,
+    r#type: TS,
 ) -> Result<(), ZomeApiError> {
     Dispatch::RemoveLink.with_input(LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
         tag: tag.into(),
+        r#type: r#type.into(),
     })
 }
 

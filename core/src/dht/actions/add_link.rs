@@ -74,7 +74,7 @@ mod tests {
         nucleus::actions::tests::commit(base.clone(), &context);
 
         let target = base.clone();
-        let link = Link::new(&base.address(), &target.address(), "test-tag");
+        let link = Link::new(&base.address(), &target.address(), "test-tag", "test-type");
 
         let result = context.block_on(add_link(&link, &context.clone()));
 
@@ -87,7 +87,7 @@ mod tests {
 
         let base = test_entry();
         let target = base.clone();
-        let link = Link::new(&base.address(), &target.address(), "test-tag");
+        let link = Link::new(&base.address(), &target.address(), "test-tag", "test-type");
 
         let result = context.block_on(add_link(&link, &context.clone()));
 

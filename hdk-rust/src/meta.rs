@@ -164,7 +164,8 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
             })
             .and_then(|entry_type| {
                 entry_type.links.into_iter().find(|ref link_definition| {
-                    link_definition.tag == input.tag && link_definition.link_type == input.direction
+                    (link_definition.tag == input.tag) | (link_definition.r#type == input.r#type)
+                        && link_definition.link_type == input.direction
                 })
             })
             .and_then(|mut link_definition| {
@@ -208,7 +209,8 @@ pub extern "C" fn __hdk_validate_link(
                     .links
                     .into_iter()
                     .find(|link_definition| {
-                        link_definition.tag == *input.link.tag()
+                        (link_definition.tag == *input.link.tag())
+                            | (link_definition.r#type == *input.link.r#type())
                             && link_definition.link_type == input.direction
                     })
             })

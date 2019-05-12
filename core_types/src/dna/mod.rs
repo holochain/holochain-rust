@@ -305,7 +305,8 @@ pub mod tests {
                                 "links_to": [
                                     {
                                         "target_type": "test",
-                                        "tag": "test"
+                                        "tag": "test",
+                                        "type": "test"
                                     }
                                 ],
                                 "linked_from": []
@@ -480,7 +481,8 @@ pub mod tests {
                                 "links_to": [
                                     {
                                         "target_type": "test",
-                                        "tag": "test"
+                                        "tag": "test",
+                                        "type": "test"
                                     }
                                 ],
                                 "linked_from": []

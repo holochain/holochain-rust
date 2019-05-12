@@ -145,7 +145,7 @@ fn handle_link_two_entries() -> ZomeApiResult<Address> {
 
     hdk::commit_entry(&entry_2)?;
 
-    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag", "test-type")
 }
 
 fn handle_remove_link() -> ZomeApiResult<()> {
@@ -167,8 +167,8 @@ fn handle_remove_link() -> ZomeApiResult<()> {
     );
 
     hdk::commit_entry(&entry_2)?;
-    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")?;
-    hdk::remove_link(&entry_1.address(), &entry_2.address(), "test-tag")
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag", "test-type")?;
+    hdk::remove_link(&entry_1.address(), &entry_2.address(), "test-tag", "test-type")
 
 }
 
@@ -204,8 +204,8 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     );
     hdk::commit_entry(&entry_3)?;
 
-    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")?;
-    hdk::link_entries(&entry_1.address(), &entry_3.address(), "test-tag")?;
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag", "test-type")?;
+    hdk::link_entries(&entry_1.address(), &entry_3.address(), "test-tag", "test-type")?;
     Ok(entry_1.address())
 }
 
@@ -420,6 +420,7 @@ fn handle_link_validation(stuff1: String, stuff2: String) -> JsonString {
         &entry1.address(),
         &entry2.address(),
         "longer",
+        "longer",
     ))
 }
 
@@ -475,6 +476,7 @@ define_zome! {
                 to!(
                     "testEntryType",
                     tag: "test-tag",
+                    r#type: "test-type",
                     validation_package: || {
                         hdk::ValidationPackageDefinition::ChainFull
                     },
@@ -524,6 +526,7 @@ define_zome! {
                 to!(
                     "link_validator",
                     tag: "longer",
+                    r#type: "longer",
                     validation_package: || {
                         hdk::ValidationPackageDefinition::Entry
                     },

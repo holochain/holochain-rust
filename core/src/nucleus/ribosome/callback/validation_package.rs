@@ -56,6 +56,7 @@ pub fn get_validation_package_definition(
             let link_definition_path = links_utils::find_link_definition_in_dna(
                 &base.entry_type(),
                 link_add.link().tag(),
+                link_add.link().r#type(),
                 &target.entry_type(),
                 &context,
             )?;
@@ -63,6 +64,7 @@ pub fn get_validation_package_definition(
             let params = LinkValidationPackageArgs {
                 entry_type: link_definition_path.entry_type_name,
                 tag: link_definition_path.tag,
+                r#type: link_definition_path.r#type,
                 direction: link_definition_path.direction,
             };
 
@@ -91,6 +93,7 @@ pub fn get_validation_package_definition(
             let link_definition_path = links_utils::find_link_definition_in_dna(
                 &base.entry_type(),
                 link_remove.link().tag(),
+                link_remove.link().r#type(),
                 &target.entry_type(),
                 &context,
             )?;
@@ -98,6 +101,7 @@ pub fn get_validation_package_definition(
             let params = LinkValidationPackageArgs {
                 entry_type: link_definition_path.entry_type_name,
                 tag: link_definition_path.tag,
+                r#type: link_definition_path.r#type,
                 direction: link_definition_path.direction,
             };
 

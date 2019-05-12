@@ -87,8 +87,18 @@ pub mod tests {
             entry_addresses.push(address);
         }
 
-        let link1 = Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag");
-        let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag");
+        let link1 = Link::new(
+            &entry_addresses[0],
+            &entry_addresses[1],
+            "test-tag",
+            "test-type",
+        );
+        let link2 = Link::new(
+            &entry_addresses[0],
+            &entry_addresses[2],
+            "test-tag",
+            "test-type",
+        );
 
         assert!(initialized_context
             .block_on(add_link(&link1, &initialized_context))

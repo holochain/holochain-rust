@@ -21,6 +21,7 @@ pub enum LinkDirection {
 pub struct LinkValidationPackageArgs {
     pub entry_type: String,
     pub tag: String,
+    pub r#type: String,
     pub direction: LinkDirection,
 }
 

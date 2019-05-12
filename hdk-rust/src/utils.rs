@@ -64,25 +64,28 @@ pub fn get_as_type<R: TryFrom<AppEntryValue>>(address: Address) -> ZomeApiResult
 
 /// Creates two links:
 /// From A to B, and from B to A, with given tags.
-pub fn link_entries_bidir<S: Into<String>>(
+pub fn link_entries_bidir<S: Into<String>, TS: Into<String>>(
     a: &Address,
     b: &Address,
     tag_a_b: S,
     tag_b_a: S,
+    type_a_b: TS,
+    type_b_a: TS,
 ) -> ZomeApiResult<()> {
-    hdk::link_entries(a, b, tag_a_b)?;
-    hdk::link_entries(b, a, tag_b_a)?;
+    hdk::link_entries(a, b, tag_a_b, type_a_b)?;
+    hdk::link_entries(b, a, tag_b_a, type_b_a)?;
     Ok(())
 }
 
 /// Commits the given entry and links it from the base
 /// with the given tag.
-pub fn commit_and_link<S: Into<String>>(
+pub fn commit_and_link<S: Into<String>, TS: Into<String>>(
     entry: &Entry,
     base: &Address,
     tag: S,
+    r#type: TS,
 ) -> ZomeApiResult<Address> {
     let entry_addr = hdk::commit_entry(entry)?;
-    hdk::link_entries(base, &entry_addr, tag)?;
+    hdk::link_entries(base, &entry_addr, tag, r#type)?;
     Ok(entry_addr)
 }

@@ -40,6 +40,7 @@ pub async fn validate_link_entry(
     let link_definition_path = links_utils::find_link_definition_in_dna(
         &base.entry_type(),
         link.tag(),
+        link.r#type(),
         &target.entry_type(),
         context,
     )

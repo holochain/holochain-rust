@@ -44,6 +44,9 @@ pub struct LinksTo {
     /// The tag of this links_to entry
     #[serde(default)]
     pub tag: String,
+
+    #[serde(default)]
+    pub r#type: String,
 }
 
 impl Default for LinksTo {
@@ -52,6 +55,7 @@ impl Default for LinksTo {
         LinksTo {
             target_type: String::new(),
             tag: String::new(),
+            r#type: String::new(),
         }
     }
 }
@@ -74,6 +78,9 @@ pub struct LinkedFrom {
     /// The tag of this links_to entry
     #[serde(default)]
     pub tag: String,
+
+    #[serde(default)]
+    pub r#type: String,
 }
 
 impl Default for LinkedFrom {
@@ -82,6 +89,7 @@ impl Default for LinkedFrom {
         LinkedFrom {
             base_type: String::new(),
             tag: String::new(),
+            r#type: String::new(),
         }
     }
 }
@@ -167,13 +175,15 @@ mod tests {
                 "links_to": [
                     {
                         "target_type": "test",
-                        "tag": "test"
+                        "tag": "test",
+                        "type": "test"
                     }
                 ],
                 "linked_from": [
                     {
                         "base_type": "HcSysAgentKeyHash",
-                        "tag": "authored_posts"
+                        "tag": "authored_posts",
+                        "type": "authored_posts_type"
                     }
                 ]
             }"#,
@@ -187,11 +197,13 @@ mod tests {
         let mut link = LinksTo::new();
         link.target_type = String::from("test");
         link.tag = String::from("test");
+        link.r#type = String::from("test");
         entry.links_to.push(link);
 
         let mut linked = LinkedFrom::new();
         linked.base_type = String::from("HcSysAgentKeyHash");
         linked.tag = String::from("authored_posts");
+        linked.r#type = String::from("authored_posts_type");
         entry.linked_from.push(linked);
 
         assert_eq!(fixture, entry);

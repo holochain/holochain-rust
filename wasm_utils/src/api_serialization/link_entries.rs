@@ -5,10 +5,11 @@ pub struct LinkEntriesArgs {
     pub base: Address,
     pub target: Address,
     pub tag: String,
+    pub r#type: String,
 }
 
 impl LinkEntriesArgs {
     pub fn to_link(&self) -> Link {
-        Link::new(&self.base, &self.target, &self.tag)
+        Link::new(&self.base, &self.target, &self.tag, &self.r#type)
     }
 }

@@ -71,20 +71,21 @@ pub mod tests {
     }
 
     /// dummy link_entries args from standard test entry
-    pub fn test_link_args_bytes(tag: String) -> Vec<u8> {
+    pub fn test_link_args_bytes(tag: String, r#type: String) -> Vec<u8> {
         let entry = test_entry();
 
         let args = LinkEntriesArgs {
             base: entry.address(),
             target: entry.address(),
             tag,
+            r#type,
         };
         serde_json::to_string(&args)
             .expect("args should serialize")
             .into_bytes()
     }
 
-    pub fn test_link_2_args_bytes(tag: String) -> Vec<u8> {
+    pub fn test_link_2_args_bytes(tag: String, r#type: String) -> Vec<u8> {
         let base = test_entry();
         let target = test_entry_b();
 
@@ -92,6 +93,7 @@ pub mod tests {
             base: base.address(),
             target: target.address(),
             tag,
+            r#type,
         };
         serde_json::to_string(&args)
             .expect("args should serialize")
@@ -143,11 +145,11 @@ pub mod tests {
 
         let call_result = test_zome_api_function_call(
             context.clone(),
-            test_link_args_bytes(String::from("test-tag")),
+            test_link_args_bytes(String::from("test-tag"), String::from("test-type")),
         );
 
         let no_entry: Option<Address> = Some(HashString::from(
-            "QmWXM2r3iujqGvka8XMKU2wLdz5N14bEhvDp7Rx3R3oaEP",
+            "QmeLY55YdjqJJbVKuQjrvCWSkSBJYnXVWNSjMDezowSMuW",
         ));
         let result = ZomeApiInternalResult::success(no_entry);
         assert_eq!(
@@ -166,7 +168,7 @@ pub mod tests {
 
         let call_result = test_zome_api_function_call(
             context.clone(),
-            test_link_args_bytes(String::from("wrong-tag")),
+            test_link_args_bytes(String::from("wrong-tag"), String::from("wrong-type")),
         );
 
         let result = ZomeApiInternalResult::try_from(call_result)
@@ -190,11 +192,11 @@ pub mod tests {
 
         let call_result = test_zome_api_function_call(
             context.clone(),
-            test_link_2_args_bytes(String::from("test-tag")),
+            test_link_2_args_bytes(String::from("test-tag"), String::from("test-type")),
         );
 
         let no_entry: Option<Address> = Some(HashString::from(
-            "QmcmcrbAfoaqJMZun74Xs1TsCUndXAohJNrKu7xZyr68P8",
+            "QmTLKV2DVQMaLpXau7DJGVTXhx7iac8Skv7oB8xRc2G2ts",
         ));
         let result = ZomeApiInternalResult::success(no_entry);
 

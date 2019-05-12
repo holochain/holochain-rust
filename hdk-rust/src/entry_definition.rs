@@ -55,6 +55,7 @@ pub struct ValidatingLinkDefinition {
     pub other_entry_type: String,
     /// Tag (i.e. name) of this type of links
     pub tag: String,
+    pub r#type: String,
     /// Callback that returns a validation package definition that Holochain reads in order
     /// to create the right validation package to pass in to the validator callback on validation.
     pub package_creator: PackageCreator,
@@ -145,6 +146,7 @@ pub struct ValidatingLinkDefinition {
 ///             to!(
 ///                 "post",
 ///                 tag: "comments",
+///                 r#type: "comments",
 ///
 ///                 validation_package: || {
 ///                     hdk::ValidationPackageDefinition::ChainFull
@@ -193,6 +195,7 @@ macro_rules! entry {
                             $crate::holochain_core_types::dna::entry_types::LinksTo{
                                 target_type: $link_expr.other_entry_type,
                                 tag: $link_expr.tag,
+                                r#type: $link_expr.r#type,
                             }
                         );
                     },
@@ -201,6 +204,7 @@ macro_rules! entry {
                             $crate::holochain_core_types::dna::entry_types::LinkedFrom{
                                 base_type: $link_expr.other_entry_type,
                                 tag: $link_expr.tag,
+                                r#type: $link_expr.r#type,
                             }
                         );
                     }
@@ -274,6 +278,7 @@ macro_rules! link {
         direction: $direction:expr,
         other_type: $other_type:expr,
         tag: $tag:expr,
+        r#type: $r#type:expr,
 
         validation_package: || $package_creator:expr,
         validation: | $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
@@ -294,6 +299,7 @@ macro_rules! link {
                 link_type: $direction,
                 other_entry_type: String::from($other_type),
                 tag: String::from($tag),
+                r#type: String::from($r#type),
                 package_creator,
                 validator,
             }
@@ -310,6 +316,7 @@ macro_rules! to {
     (
         $other_type:expr,
         tag: $tag:expr,
+        r#type: $r#type:expr,
 
         validation_package: || $package_creator:expr,
         validation: | $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
@@ -318,6 +325,7 @@ macro_rules! to {
             direction: $crate::LinkDirection::To,
             other_type: $other_type,
             tag: $tag,
+            r#type: $r#type,
 
             validation_package: || $package_creator,
             validation: | $validation_data : hdk::LinkValidationData | $link_validation
@@ -334,6 +342,7 @@ macro_rules! from {
     (
         $other_type:expr,
         tag: $tag:expr,
+        r#type: $r#type:expr,
 
         validation_package: || $package_creator:expr,
         validation: |  $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
@@ -342,6 +351,7 @@ macro_rules! from {
             direction: $crate::LinkDirection::From,
             other_type: $other_type,
             tag: $tag,
+            r#type: $r#type,
 
             validation_package: || $package_creator,
             validation: |  $validation_data : hdk::LinkValidationData | $link_validation

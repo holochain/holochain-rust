@@ -14,7 +14,12 @@ use holochain_core_types::{
     time::Iso8601,
 };
 use serde_json;
-use std::{collections::HashMap, convert::{TryFrom, TryInto}, sync::Arc, time::SystemTime};
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+    sync::Arc,
+    time::SystemTime,
+};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -285,7 +290,7 @@ pub mod tests {
         AgentState::new(
             test_chain_store(),
             maybe_initial_agent_address
-                .or_else(||{ Some(AgentId::generate_fake("test agent").address()) })
+                .or_else(|| Some(AgentId::generate_fake("test agent").address()))
                 .unwrap(),
         )
     }

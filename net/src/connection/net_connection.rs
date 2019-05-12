@@ -17,9 +17,7 @@ impl NetHandler {
     }
 
     pub fn handle(&mut self, message: NetResult<Protocol>) -> NetResult<()> {
-        (Arc::get_mut(&mut self.closure).ok_or(failure::err_msg(
         let mut lock = self.closure.write();
-        ))?)(message)
         (&mut *lock)(message)
     }
 }

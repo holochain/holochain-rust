@@ -80,6 +80,7 @@ pub fn definition() -> ValidatingEntryType {
             from!(
                 "%agent_id",
                 tag: "authored_posts",
+                r#type: "authored_posts",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
@@ -90,6 +91,18 @@ pub fn definition() -> ValidatingEntryType {
             from!(
                 "%agent_id",
                 tag: "recommended_posts",
+                r#type: "recommended_posts",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::ChainFull
+                },
+                validation: | _validation_data: hdk::LinkValidationData | {
+                    Ok(())
+                }
+            ),
+            from!(
+                "time",
+                tag: "*",
+                r#type: "time_index",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
@@ -144,10 +157,17 @@ mod tests {
                 LinkedFrom {
                     base_type: "%agent_id".to_string(),
                     tag: "authored_posts".to_string(),
+                    r#type: "authored_posts".to_string(),
                 },
                 LinkedFrom {
                     base_type: "%agent_id".to_string(),
                     tag: "recommended_posts".to_string(),
+                    r#type: "recommended_posts".to_string(),
+                },
+                LinkedFrom { 
+                    base_type: "time".to_string(),
+                    tag: "*".to_string(),
+                    r#type: "time_index".to_string(), 
                 },
             ],
             links_to: Vec::new(),
@@ -215,5 +235,9 @@ mod tests {
 
         let expected_link_tag = "authored_posts";
         assert_eq!(post_definition_link.tag.to_owned(), expected_link_tag,);
+
+        //assert expected post type
+        let expected_link_type = "authored_posts";
+        assert_eq!(post_definition_link.r#type.to_owned(), expected_link_type,)
     }
 }

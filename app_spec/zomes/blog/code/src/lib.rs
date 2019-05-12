@@ -5,14 +5,18 @@ extern crate hdk;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
+#[macro_use] 
+extern crate maplit;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
+extern crate itertools;
 
 pub mod blog;
 pub mod memo;
 pub mod post;
+pub mod time;
 
 use blog::Env;
 use hdk::{
@@ -31,7 +35,8 @@ define_zome! {
 
     entries: [
         post::definition(),
-        memo::definition()
+        memo::definition(),
+        time::definition()
     ]
 
     genesis: || {
@@ -182,6 +187,18 @@ define_zome! {
             handler : blog::handle_get_history_post
         }
 
+        get_timestamp_address: {
+            inputs: |timestamp: String, time_type: time::TimeType|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_get_timestamp_address
+        }
+
+        query_posts: {
+            inputs: |base: Address, query_string: String|,
+            outputs: |result: ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>>|,
+            handler: blog::handle_query_posts
+        }
+
         my_posts: {
             inputs: | |,
             outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
@@ -239,6 +256,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [show_env, check_sum, ping, get_sources, post_address, create_post, create_post_countersigned, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, memo_address, get_memo, my_memos, create_memo, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post, get_history_post, get_post_with_options, get_post_with_options_latest, authored_posts_with_sources, create_post_with_agent, request_post_grant, get_grants, commit_post_claim, create_post_with_claim, get_post_bridged]
+        hc_public [show_env, check_sum, ping, get_sources, post_address, create_post, create_post_countersigned, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, memo_address, get_memo, my_memos, create_memo, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post, get_history_post, get_post_with_options, get_post_with_options_latest, authored_posts_with_sources, create_post_with_agent, request_post_grant, get_grants, commit_post_claim, create_post_with_claim, get_post_bridged, query_posts, get_timestamp_address]
     }
 }

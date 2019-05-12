@@ -8,6 +8,7 @@ use hdk::{
         error::HolochainError,
         json::JsonString,
         signature::{Provenance, Signature},
+        hash::HashString,
     },
     holochain_wasm_utils::api_serialization::{
         get_entry::{
@@ -22,10 +23,15 @@ use hdk::{
 
 use memo::Memo;
 use post::Post;
+use time::{
+    Time,
+    TimeType,
+};
 use std::{
     collections::BTreeMap,
     convert::{TryFrom, TryInto},
 };
+use itertools::Itertools;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -319,15 +325,84 @@ pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&memo_entry(content))
 }
 
+pub fn handle_get_timestamp_address(timestamp: String, time_type: TimeType) -> ZomeApiResult<Address> {
+    let entry_address = hdk::entry_address(&Entry::App("time".into(), Time{time: timestamp, time_type: time_type}.into()))?;
+    Ok(entry_address)
+}
+
+pub fn handle_create_timestamps(iso_timestamp: &String) -> ZomeApiResult<Vec<Address>> {
+    let timestamps = vec![Entry::App("time".into(), Time{time: iso_timestamp[0..4].to_string(), time_type: TimeType::Year}.into()),
+                          Entry::App("time".into(), Time{time: iso_timestamp[5..7].to_string(), time_type: TimeType::Month}.into()),
+                          Entry::App("time".into(), Time{time: iso_timestamp[8..10].to_string(), time_type: TimeType::Day}.into()),
+                          Entry::App("time".into(), Time{time: iso_timestamp[11..13].to_string(), time_type: TimeType::Hour}.into())];
+    let mut timestamp_address = vec![];
+
+    for timestamp in timestamps{
+        let entry_address = hdk::entry_address(&timestamp)?;
+        match hdk::get_entry(&entry_address)? {
+            Some(_entry) => {
+                timestamp_address.push(entry_address);
+            },
+            None => {
+                hdk::commit_entry(&timestamp)?;
+                timestamp_address.push(entry_address);
+            }
+        };
+    };
+
+    Ok(timestamp_address)
+}
+
+pub fn handle_create_time_index(entry_address: &Address) -> ZomeApiResult<String> {
+    let iso_timestamp;
+    match hdk::get_entry_result(entry_address, GetEntryOptions {headers: true, ..Default::default()},)?.result {
+        GetEntryResultType::Single(result) => {
+            iso_timestamp = serde_json::to_string(&result.headers[0]).map_err(|err| ZomeApiError::from(err.to_string()))?;
+            hdk::debug(iso_timestamp.clone())?;
+        },  
+        GetEntryResultType::All(_entry_history) => {
+            return Err(ZomeApiError::from("EntryResultType not of enum variant Single".to_string()))
+        }
+    };
+    let timestamps = handle_create_timestamps(&iso_timestamp)?;
+
+    let mut indexs = vec![];
+    indexs.push(hashmap!{"type".to_string() => "Time:Y".to_string(), "value".to_string() => iso_timestamp[0..4].to_string(), "address".to_string() => timestamps[0].to_string()}); //add year slice to query params
+    indexs.push(hashmap!{"type".to_string() => "Time:M".to_string(), "value".to_string() => iso_timestamp[5..7].to_string(), "address".to_string() => timestamps[1].to_string()}); //add month slice to query params
+    indexs.push(hashmap!{"type".to_string() => "Time:D".to_string(), "value".to_string() => iso_timestamp[8..10].to_string(), "address".to_string() => timestamps[2].to_string()}); //add day slice to query params
+    indexs.push(hashmap!{"type".to_string() => "Time:H".to_string(), "value".to_string() => iso_timestamp[11..13].to_string(), "address".to_string() => timestamps[3].to_string()}); //add hour slice to query params
+    indexs.sort_by(|a, b| b["value"].cmp(&a["value"])); //Order vector in reverse alphabetical order
+
+    let mut link_combinations = vec![]; //Vector for link combinations on expression
+
+    for (i, _) in indexs.iter().enumerate(){
+        let combinations = indexs.iter().combinations(i);
+        for c in combinations.into_iter(){
+            link_combinations.push(c);
+        };
+    };
+    link_combinations.push(indexs.iter().collect());
+    link_combinations = link_combinations[1..link_combinations.len()].to_vec();
+
+    for link in link_combinations{ //Create link combinations for expression indexing
+        let start = link[0];
+        let link_strings: Vec<String> = link.iter().map(|link_value| format!("{}<{}>", link_value["value"].to_lowercase(), link_value["type"].to_lowercase(),) ).collect();
+        let link_string = link_strings.join(":");
+        hdk::link_entries(&HashString::from(start["address"].clone()), entry_address, link_string, "time_index")?;
+    };
+    Ok(iso_timestamp)
+}
+
 pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;
-
-    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
-
+    hdk::debug("Posted entry")?;
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts", "authored_posts")?;
+    hdk::debug("Completed post and basic link")?;
+    handle_create_time_index(&address)?;
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
-        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments", "comments")?;
     }
 
     Ok(address)
@@ -342,12 +417,12 @@ pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Add
 
     let address = hdk::commit_entry_result(&entry, options).unwrap().address();
 
-    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts", "authored_posts")?;
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
-        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments", "comments")?;
     }
 
     Ok(address)
@@ -361,12 +436,12 @@ pub fn handle_create_post_with_agent(
 ) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;
 
-    hdk::link_entries(&agent_id, &address, "authored_posts")?;
+    hdk::link_entries(&agent_id, &address, "authored_posts", "authored_posts")?;
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
-        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments", "comments")?;
     }
 
     Ok(address)
@@ -380,7 +455,7 @@ pub fn handle_create_memo(content: String) -> ZomeApiResult<Address> {
 
 pub fn handle_delete_post(content: String) -> ZomeApiResult<Address> {
     let address = hdk::entry_address(&post_entry(content))?;
-    hdk::remove_link(&AGENT_ADDRESS, &address.clone(), "authored_posts")?;
+    hdk::remove_link(&AGENT_ADDRESS, &address.clone(), "authored_posts", "authored_posts")?;
     Ok(address)
 }
 
@@ -421,6 +496,12 @@ pub fn handle_my_posts_get_my_sources(agent: Address) -> ZomeApiResult<GetLinksR
             ..Default::default()
         },
     )
+}
+
+pub fn handle_query_posts(base: Address, query_string: String) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
+    hdk::debug("Query string")?;
+    hdk::debug(query_string.clone())?;
+    hdk::get_links_result(&base, query_string, GetLinksOptions::default(), GetEntryOptions::default())
 }
 
 pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
@@ -494,7 +575,7 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
 pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<Address> {
     hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
     hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
-    hdk::link_entries(&agent_address, &post_address, "recommended_posts")
+    hdk::link_entries(&agent_address, &post_address, "recommended_posts", "recommended_posts")
 }
 
 pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {

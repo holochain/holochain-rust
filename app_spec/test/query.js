@@ -31,6 +31,6 @@ scenario.runTape('query posts based using time index', async (t, {alice}) => {
     t.ok(query)
 
     //Query to return all posts posted in given month and year
-    const query = await alice.callSync("blog", "query_posts", {base: timestamp_base_hash_month.Ok, query_string: year+"<Time:Y>"})
-    t.ok(query)
+    const query2 = await alice.callSync("blog", "query_posts", {base: timestamp_base_hash_month.Ok, query_string: year+"<Time:Y>"})
+    t.ok(query2)
   })

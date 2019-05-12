@@ -1,24 +1,26 @@
 use super::{protocol::Protocol, NetResult};
+use parking_lot::RwLock;
 use std::{fmt, sync::Arc};
 
 /// closure for processing a Protocol message received from the network
 #[derive(Clone, Serialize)]
 pub struct NetHandler {
     #[serde(skip)]
-    closure: Arc<Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send + Sync>>,
+    closure: Arc<RwLock<Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send + Sync>>>,
 }
 
 impl NetHandler {
     pub fn new(c: Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send + Sync>) -> NetHandler {
         NetHandler {
-            closure: Arc::new(c),
+            closure: Arc::new(RwLock::new(c)),
         }
     }
 
     pub fn handle(&mut self, message: NetResult<Protocol>) -> NetResult<()> {
         (Arc::get_mut(&mut self.closure).ok_or(failure::err_msg(
-            "Could not get mutable reference to network handler",
+        let mut lock = self.closure.write();
         ))?)(message)
+        (&mut *lock)(message)
     }
 }
 

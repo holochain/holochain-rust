@@ -29,26 +29,30 @@ pub struct AgentState {
     actions: HashMap<ActionWrapper, ActionResponse>,
     chain_store: ChainStore,
     top_chain_header: Option<ChainHeader>,
+    initial_agent_address: Address,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain_store: ChainStore) -> AgentState {
+    pub fn new(chain_store: ChainStore, initial_agent_address: Address) -> AgentState {
         AgentState {
             actions: HashMap::new(),
             chain_store,
             top_chain_header: None,
+            initial_agent_address,
         }
     }
 
     pub fn new_with_top_chain_header(
         chain_store: ChainStore,
         chain_header: Option<ChainHeader>,
+        initial_agent_address: Address,
     ) -> AgentState {
         AgentState {
             actions: HashMap::new(),
             chain_store,
             top_chain_header: chain_header,
+            initial_agent_address,
         }
     }
 
@@ -75,6 +79,7 @@ impl AgentState {
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
             .nth(0)
             .and_then(|chain_header| Some(chain_header.entry_address().clone()))
+            .or_else(|| Some(self.initial_agent_address.clone()))
             .ok_or(HolochainError::ErrorGeneric(
                 "Agent entry not found".to_string(),
             ))
@@ -279,7 +284,10 @@ pub mod tests {
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
-        AgentState::new(test_chain_store())
+        AgentState::new(
+            test_chain_store(),
+            AgentId::generate_fake("test agent").address(),
+        )
     }
 
     /// dummy action response for a successful commit as test_entry()

@@ -52,7 +52,10 @@ impl State {
         let eav = context.eav_storage.clone();
         State {
             nucleus: Arc::new(NucleusState::new()),
-            agent: Arc::new(AgentState::new(ChainStore::new(chain_cas.clone()))),
+            agent: Arc::new(AgentState::new(
+                ChainStore::new(chain_cas.clone()),
+                context.agent_id.address(),
+            )),
             dht: Arc::new(DhtStore::new(dht_cas.clone(), eav)),
             network: Arc::new(NetworkState::new()),
             history: HashSet::new(),
@@ -151,6 +154,7 @@ impl State {
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(context.dht_storage.clone()),
             agent_snapshot.top_chain_header().map(|h| h.to_owned()),
+            context.agent_id.address(),
         );
         let nucleus_state = NucleusState::from(nucleus_snapshot);
         Ok(State::new_with_agent_and_nucleus(

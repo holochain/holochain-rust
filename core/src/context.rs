@@ -296,8 +296,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
         .state()
         .ok_or("Network::start() could not get application state".to_string())?;
     let agent_state = state.agent();
-
-    let agent = await!(agent_state.get_agent(&context))?;
+    let agent = agent_state.get_agent()?;
     let agent_id = agent.pub_sign_key;
 
     let dna = state

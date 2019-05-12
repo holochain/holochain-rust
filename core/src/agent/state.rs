@@ -1,9 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
     agent::chain_store::{ChainStore, ChainStoreIterator},
-    context::Context,
     state::State,
-    workflows::get_entry_result::get_entry_result_workflow,
 };
 use holochain_core_types::{
     agent::AgentId,
@@ -15,9 +13,8 @@ use holochain_core_types::{
     signature::{Provenance, Signature},
     time::Iso8601,
 };
-use holochain_wasm_utils::api_serialization::get_entry::*;
 use serde_json;
-use std::{collections::HashMap, convert::TryFrom, sync::Arc, time::SystemTime};
+use std::{collections::HashMap, convert::{TryFrom, TryInto}, sync::Arc, time::SystemTime};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -85,19 +82,20 @@ impl AgentState {
             ))
     }
 
-    pub async fn get_agent<'a>(&'a self, context: &'a Arc<Context>) -> HcResult<AgentId> {
+    pub fn get_agent(&self) -> HcResult<AgentId> {
         let agent_entry_address = self.get_agent_address()?;
-        let entry_args = GetEntryArgs {
-            address: agent_entry_address,
-            options: Default::default(),
-        };
-        let agent_entry_result = await!(get_entry_result_workflow(context, &entry_args))?;
-        let agent_entry = agent_entry_result.latest();
+        let maybe_agent_entry_json = self
+            .chain_store()
+            .content_storage()
+            .read()?
+            .fetch(&agent_entry_address)?;
+        let agent_entry_json = maybe_agent_entry_json.ok_or(HolochainError::ErrorGeneric(
+            "Agent entry not found".to_string(),
+        ))?;
+
+        let agent_entry: Entry = agent_entry_json.try_into()?;
         match agent_entry {
-            None => Err(HolochainError::ErrorGeneric(
-                "Agent entry not found".to_string(),
-            )),
-            Some(Entry::AgentId(agent_id)) => Ok(agent_id),
+            Entry::AgentId(agent_id) => Ok(agent_id),
             _ => unreachable!(),
         }
     }
@@ -409,7 +407,7 @@ pub mod tests {
 
         let header =
             create_new_chain_header(&test_entry(), &agent_state, &state, &None, &vec![]).unwrap();
-        let agent_id = context.block_on(agent_state.get_agent(&context)).unwrap();
+        let agent_id = agent_state.get_agent().unwrap();
         assert_eq!(
             header,
             ChainHeader::new(

@@ -56,9 +56,8 @@ pub mod test {
     use super::*;
     use crate::{context::Context, logger::test_logger, persister::SimplePersister, state::State};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::{agent::AgentId, cas::content::Address};
+    use holochain_core_types::agent::AgentId;
     use holochain_net::p2p_config::P2pConfig;
-    use holochain_wasm_utils::holochain_core_types::cas::content::AddressableContent;
     use std::sync::{Mutex, RwLock};
     use tempfile;
     use crate::state::test_store;
@@ -92,8 +91,8 @@ pub mod test {
     #[test]
     pub fn should_wait_for_protocol_p2p_ready() {
         let context: Arc<Context> = test_context();
-        let dna_address: Address = context.agent_id.address();
-        let agent_id = context.agent_id.content().to_string();
+        //let dna_address: Address = context.agent_id.address();
+        //let agent_id = context.agent_id.content().to_string();
         let (dna_address, agent_id) = context.block_on(get_dna_and_agent(&context)).unwrap();
         let handler = create_handler(&context, dna_address.to_string());
         let network_settings = crate::action::NetworkSettings {

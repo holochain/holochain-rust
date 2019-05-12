@@ -78,16 +78,15 @@ mod tests {
         state::test_store,
     };
     use holochain_core_types::{cas::content::Address, error::HolochainError};
-    use crate::context::get_dna_and_agent;
     use crate::network::handler::create_handler;
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {
         let netname = Some("reduce_send_direct_message_timeout_test");
-        let mut context = test_context("alice", netname);
+        let context = test_context("alice", netname);
         let mut store = test_store(context.clone());
 
-        let (dna_address, agent_id) = context.block_on(get_dna_and_agent(&context)).unwrap();
+        let dna_address: Address = "reduce_send_direct_message_timeout_test".into();
         let handler = create_handler(&context, dna_address.to_string());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {

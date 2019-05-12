@@ -1,9 +1,9 @@
 use crate::{
     action::ActionWrapper,
     network::{direct_message::DirectMessage, reducers::send_message, state::NetworkState},
+    state::State,
 };
 use holochain_core_types::{chain_header::ChainHeader, error::HolochainError};
-use crate::state::State;
 
 fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), HolochainError> {
     network_state.initialized()?;

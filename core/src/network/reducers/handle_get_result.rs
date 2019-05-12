@@ -1,12 +1,12 @@
 use crate::{
     action::{ActionWrapper, GetEntryKey},
     network::state::NetworkState,
+    state::State,
 };
 use holochain_core_types::{
     cas::content::Address, entry::EntryWithMetaAndHeader, error::HolochainError,
 };
 use holochain_net::connection::json_protocol::FetchEntryResultData;
-use crate::state::State;
 
 fn reduce_handle_get_result_inner(
     network_state: &mut NetworkState,

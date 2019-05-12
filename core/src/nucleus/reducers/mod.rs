@@ -22,8 +22,8 @@ use crate::{
     },
 };
 
-use std::sync::Arc;
 use crate::state::State;
+use std::sync::Arc;
 
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {

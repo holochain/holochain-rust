@@ -1,8 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::NucleusState,
+    state::State,
 };
-use crate::state::State;
 
 pub fn reduce_return_validation_package(
     state: &mut NucleusState,

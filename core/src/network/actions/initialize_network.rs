@@ -2,10 +2,7 @@ use crate::{
     action::{Action, ActionWrapper, NetworkSettings},
     context::{get_dna_and_agent, Context},
     instance::dispatch_action,
-    network::{
-        actions::publish::publish,
-        handler::create_handler,
-    },
+    network::{actions::publish::publish, handler::create_handler},
 };
 use futures::{
     task::{LocalWaker, Poll},

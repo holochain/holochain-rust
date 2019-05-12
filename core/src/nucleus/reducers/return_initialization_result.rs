@@ -1,8 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::{NucleusState, NucleusStatus},
+    state::State,
 };
-use crate::state::State;
 
 /// Reduce ReturnInitializationResult Action
 /// On initialization success, set Initialized status
@@ -39,10 +39,10 @@ pub mod tests {
             reduce,
             state::{NucleusState, NucleusStatus},
         },
+        state::test_store,
     };
     use holochain_core_types::dna::Dna;
     use std::sync::{mpsc::sync_channel, Arc};
-    use crate::state::test_store;
 
     #[test]
     /// test that we can initialize and send/receive result values from a nucleus

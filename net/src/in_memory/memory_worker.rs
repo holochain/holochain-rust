@@ -166,8 +166,8 @@ mod tests {
     use crate::p2p_config::P2pConfig;
 
     use crate::connection::json_protocol::{JsonProtocol, TrackDnaData};
-    use holochain_core_types::cas::content::Address;
     use crossbeam_channel::unbounded;
+    use holochain_core_types::cas::content::Address;
 
     fn example_dna_address() -> Address {
         "blabladnaAddress".into()

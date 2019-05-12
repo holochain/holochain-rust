@@ -1,15 +1,17 @@
-use std::sync::{Arc, RwLock};
-use jsonrpc_core::IoHandler;
 use holochain_core_types::error::HolochainError;
-use snowflake::ProcessUniqueId;
+use jsonrpc_core::IoHandler;
 use jsonrpc_lite::JsonRpc;
-use std::fmt;
+use snowflake::ProcessUniqueId;
+use std::{
+    fmt,
+    sync::{Arc, RwLock},
+};
 
 #[derive(Clone)]
 pub struct ConductorApi(Arc<RwLock<IoHandler>>);
 
 impl ConductorApi {
-    pub fn new(conductor_api: Arc<RwLock<IoHandler>>) -> ConductorApi{
+    pub fn new(conductor_api: Arc<RwLock<IoHandler>>) -> ConductorApi {
         ConductorApi(conductor_api)
     }
 

@@ -1,5 +1,4 @@
-use crate::{action::ActionWrapper, network::state::NetworkState};
-use crate::state::State;
+use crate::{action::ActionWrapper, network::state::NetworkState, state::State};
 
 pub fn reduce_handle_get_validation_package(
     network_state: &mut NetworkState,

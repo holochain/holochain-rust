@@ -13,8 +13,8 @@ extern crate lazy_static;
 #[macro_use]
 extern crate unwrap_to;
 extern crate backtrace;
-extern crate multihash;
 extern crate crossbeam_channel;
+extern crate multihash;
 
 #[macro_use]
 pub mod predicate;

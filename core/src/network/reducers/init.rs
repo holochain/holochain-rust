@@ -1,6 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     network::state::NetworkState,
+    state::State,
 };
 use holochain_net::{
     connection::{
@@ -10,13 +11,8 @@ use holochain_net::{
     p2p_network::P2pNetwork,
 };
 use std::sync::{Arc, Mutex};
-use crate::state::State;
 
-pub fn reduce_init(
-    state: &mut NetworkState,
-    _root_state: &State,
-    action_wrapper: &ActionWrapper,
-) {
+pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
     let mut network = P2pNetwork::new(
@@ -54,15 +50,18 @@ pub fn reduce_init(
 pub mod test {
     use self::tempfile::tempdir;
     use super::*;
-    use crate::{context::Context, logger::test_logger, persister::SimplePersister, state::State};
+    use crate::{
+        context::{get_dna_and_agent, Context},
+        logger::test_logger,
+        network::handler::create_handler,
+        persister::SimplePersister,
+        state::{test_store, State},
+    };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;
     use holochain_net::p2p_config::P2pConfig;
     use std::sync::{Mutex, RwLock};
     use tempfile;
-    use crate::state::test_store;
-    use crate::context::get_dna_and_agent;
-    use crate::network::handler::create_handler;
 
     fn test_context() -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(

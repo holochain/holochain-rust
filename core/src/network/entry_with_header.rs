@@ -1,9 +1,8 @@
-use crate::agent::find_chain_header;
+use crate::{agent::find_chain_header, state::State};
 use holochain_core_types::{
     cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
 };
 use std::convert::TryInto;
-use crate::state::State;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct EntryWithHeader {
@@ -17,10 +16,7 @@ impl EntryWithHeader {
     }
 }
 
-fn fetch_entry_from_cas(
-    address: &Address,
-    state: &State,
-) -> Result<Entry, HolochainError> {
+fn fetch_entry_from_cas(address: &Address, state: &State) -> Result<Entry, HolochainError> {
     let json = state
         .agent()
         .chain_store()
@@ -38,8 +34,7 @@ pub fn fetch_entry_with_header(
 ) -> Result<EntryWithHeader, HolochainError> {
     let entry = fetch_entry_from_cas(address, state)?;
 
-    let header =
-        find_chain_header(&entry, state).ok_or("No header found for entry".to_string())?;
+    let header = find_chain_header(&entry, state).ok_or("No header found for entry".to_string())?;
 
     Ok(EntryWithHeader::new(entry, header))
 }

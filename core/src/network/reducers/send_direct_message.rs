@@ -1,10 +1,10 @@
 use crate::{
     action::{ActionWrapper, DirectMessageData},
     network::{reducers::send, state::NetworkState},
+    state::State,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_net::connection::json_protocol::{JsonProtocol, MessageData};
-use crate::state::State;
 
 fn inner(
     network_state: &mut NetworkState,
@@ -43,10 +43,7 @@ pub fn reduce_send_direct_message(
     let action = action_wrapper.action();
     let dm_data = unwrap_to!(action => crate::action::Action::SendDirectMessage);
     if let Err(error) = inner(network_state, dm_data) {
-        println!(
-            "err/net: Error sending direct message: {:?}",
-            error
-        );
+        println!("err/net: Error sending direct message: {:?}", error);
     }
 }
 
@@ -74,11 +71,13 @@ mod tests {
         action::{Action, ActionWrapper, DirectMessageData, NetworkSettings},
         context::test_memory_network_config,
         instance::tests::test_context,
-        network::direct_message::{CustomDirectMessage, DirectMessage},
+        network::{
+            direct_message::{CustomDirectMessage, DirectMessage},
+            handler::create_handler,
+        },
         state::test_store,
     };
     use holochain_core_types::{cas::content::Address, error::HolochainError};
-    use crate::network::handler::create_handler;
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {

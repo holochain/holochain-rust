@@ -1,8 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::NucleusState,
+    state::State,
 };
-use crate::state::State;
 
 /// Reduce ReturnZomeFunctionResult Action.
 /// Simply drops function call into zome_calls state.
@@ -23,9 +23,8 @@ pub mod tests {
     use super::*;
     use crate::{
         action::tests::test_action_wrapper_rzfr, instance::tests::test_context,
-        nucleus::state::tests::test_nucleus_state,
+        nucleus::state::tests::test_nucleus_state, state::test_store,
     };
-    use crate::state::test_store;
 
     #[test]
     /// test for returning zome function result actions

@@ -1,10 +1,10 @@
 use crate::{
     action::{ActionWrapper, GetEntryKey},
     network::{reducers::send, state::NetworkState},
+    state::State,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_net::connection::json_protocol::{FetchEntryData, JsonProtocol};
-use crate::state::State;
 
 fn reduce_fetch_entry_inner(
     network_state: &mut NetworkState,

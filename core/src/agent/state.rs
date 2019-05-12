@@ -166,8 +166,7 @@ pub fn create_new_chain_header(
     crud_link: &Option<Address>,
     provenances: &Vec<Provenance>,
 ) -> Result<ChainHeader, HolochainError> {
-    let agent_address = agent_state
-        .get_agent_address()?;
+    let agent_address = agent_state.get_agent_address()?;
     let signature = Signature::from(
         root_state.conductor_api.sign(entry.address().to_string())?,
         // Temporarily replaced by error handling for Holo hack signing.
@@ -275,9 +274,7 @@ pub mod tests {
         signature::Signature,
     };
     use serde_json;
-    use std::{
-        collections::HashMap,
-    };
+    use std::collections::HashMap;
     use test_utils::mock_signing::mock_signer;
 
     /// dummy agent state
@@ -403,7 +400,7 @@ pub mod tests {
         let state = State::new_with_agent(context.clone(), agent_state.clone());
 
         let header =
-            create_new_chain_header(&test_entry(), &agent_state, &state,&None, &vec![]).unwrap();
+            create_new_chain_header(&test_entry(), &agent_state, &state, &None, &vec![]).unwrap();
         let agent_id = context.block_on(agent_state.get_agent(&context)).unwrap();
         assert_eq!(
             header,
@@ -412,10 +409,7 @@ pub mod tests {
                 &test_entry().address(),
                 &[Provenance::new(
                     agent_id.address(),
-                    Signature::from(mock_signer(
-                        test_entry().address().to_string(),
-                        &agent_id
-                    ))
+                    Signature::from(mock_signer(test_entry().address().to_string(), &agent_id))
                 )]
                 .to_vec(),
                 &None,

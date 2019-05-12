@@ -1,10 +1,10 @@
 use crate::{
     action::{ActionWrapper, GetLinksKey},
     network::state::NetworkState,
+    state::State,
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net::connection::json_protocol::FetchMetaResultData;
-use crate::state::State;
 
 fn reduce_handle_get_links_result_inner(
     network_state: &mut NetworkState,

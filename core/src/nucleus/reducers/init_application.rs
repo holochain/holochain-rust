@@ -1,8 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::{NucleusState, NucleusStatus},
+    state::State,
 };
-use crate::state::State;
 
 /// Reduce InitializeChain Action
 /// Switch status to failed if an initialization is tried for an
@@ -44,10 +44,10 @@ pub mod tests {
             reduce,
             state::{NucleusState, NucleusStatus},
         },
+        state::test_store,
     };
     use holochain_core_types::dna::Dna;
     use std::sync::{mpsc::sync_channel, Arc};
-    use crate::state::test_store;
 
     #[test]
     /// smoke test the init of a nucleus reduction

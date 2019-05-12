@@ -1,9 +1,9 @@
 use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::{NucleusState, PendingValidationKey},
+    state::State,
 };
 use holochain_core_types::cas::content::AddressableContent;
-use crate::state::State;
 
 /// Reduce AddPendingValidation Action.
 /// Inserts boxed EntryWithHeader and dependencies into state, referenced with
@@ -33,10 +33,10 @@ pub mod tests {
         network::entry_with_header::EntryWithHeader,
         nucleus::state::{tests::test_nucleus_state, PendingValidationKey},
         scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
+        state::test_store,
     };
     use holochain_core_types::{chain_header::test_chain_header, entry::Entry, json::RawString};
     use std::sync::Arc;
-    use crate::state::test_store;
 
     #[test]
     fn test_reduce_add_pending_validation() {

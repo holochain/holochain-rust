@@ -1,5 +1,6 @@
 use crate::{
     action::ActionWrapper,
+    conductor_api::ConductorApi,
     instance::Observer,
     logger::Logger,
     nucleus::actions::get_entry::get_entry_from_cas,
@@ -38,7 +39,6 @@ use std::{
 };
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
-use crate::conductor_api::ConductorApi;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -112,7 +112,10 @@ impl Context {
             dht_storage,
             eav_storage: eav,
             p2p_config,
-            conductor_api: ConductorApi::new(Self::test_check_conductor_api(conductor_api, agent_id)),
+            conductor_api: ConductorApi::new(Self::test_check_conductor_api(
+                conductor_api,
+                agent_id,
+            )),
         }
     }
 

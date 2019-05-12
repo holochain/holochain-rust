@@ -1,8 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::{NucleusState, PendingValidationKey},
+    state::State,
 };
-use crate::state::State;
 
 /// Reduce RemovePendingValidation Action.
 /// Removes boxed EntryWithHeader and dependencies from state, referenced with
@@ -33,13 +33,13 @@ pub mod tests {
             state::tests::test_nucleus_state,
         },
         scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
+        state::test_store,
     };
     use holochain_core_types::{
         cas::content::AddressableContent, chain_header::test_chain_header, entry::Entry,
         json::RawString,
     };
     use std::sync::Arc;
-    use crate::state::test_store;
 
     #[test]
     fn test_reduce_remove_pending_validation() {

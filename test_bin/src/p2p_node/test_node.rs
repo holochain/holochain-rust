@@ -23,8 +23,8 @@ use std::{
 };
 
 use super::{dna_store::DnaStore, ipc_config::create_ipc_config};
-use holochain_net::connection::net_connection::NetHandler;
 use crossbeam_channel::{unbounded, Receiver};
+use holochain_net::connection::net_connection::NetHandler;
 
 static TIMEOUT_MS: usize = 5000;
 

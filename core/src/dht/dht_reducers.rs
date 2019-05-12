@@ -19,10 +19,7 @@ type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
-pub fn reduce(
-    old_store: Arc<DhtStore>,
-    action_wrapper: &ActionWrapper,
-) -> Arc<DhtStore> {
+pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<DhtStore> {
     // Get reducer
     let maybe_reducer = resolve_reducer(action_wrapper);
     if maybe_reducer.is_none() {
@@ -67,10 +64,7 @@ pub(crate) fn reduce_hold_entry(
     }
 }
 
-fn reduce_store_entry_common(
-    old_store: &DhtStore,
-    entry: &Entry,
-) -> Option<DhtStore> {
+fn reduce_store_entry_common(old_store: &DhtStore, entry: &Entry) -> Option<DhtStore> {
     // Add it to local storage
     let new_store = (*old_store).clone();
     let content_storage = &new_store.content_storage().clone();
@@ -95,10 +89,7 @@ fn reduce_store_entry_common(
             .ok()
             .unwrap_or(None)
     } else {
-        println!(
-            "err/dht: dht::reduce_hold_entry() FAILED {:?}",
-            res
-        );
+        println!("err/dht: dht::reduce_hold_entry() FAILED {:?}", res);
         None
     }
 }
@@ -359,11 +350,9 @@ pub mod tests {
             header: test_chain_header(),
         };
 
-        let new_dht_store = reduce_hold_entry(
-            &store.dht(),
-            &ActionWrapper::new(Action::Hold(entry_wh)),
-        )
-        .expect("there should be a new store for committing a sys entry");
+        let new_dht_store =
+            reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
+                .expect("there should be a new store for committing a sys entry");
 
         assert_eq!(
             Some(sys_entry.clone()),

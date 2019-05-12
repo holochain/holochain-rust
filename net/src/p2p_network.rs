@@ -14,12 +14,9 @@ use crate::{
     p2p_config::*,
     tweetlog::*,
 };
-use holochain_core_types::json::JsonString;
-use std::{
-    convert::TryFrom,
-    time::Duration,
-};
 use crossbeam_channel;
+use holochain_core_types::json::JsonString;
+use std::{convert::TryFrom, time::Duration};
 
 const P2P_READY_TIMEOUT_MS: u64 = 5000;
 
@@ -63,7 +60,7 @@ impl P2pNetwork {
 
         let (t, rx) = crossbeam_channel::unbounded();
         let tx = t.clone();
-        let wrapped_handler= NetHandler::new(Box::new(move |message| {
+        let wrapped_handler = NetHandler::new(Box::new(move |message| {
             let unwrapped = message.unwrap();
             let message = unwrapped.clone();
             match Protocol::try_from(unwrapped.clone()) {

@@ -4,6 +4,7 @@ use crate::{
         chain_store::ChainStore,
         state::{AgentState, AgentStateSnapshot},
     },
+    conductor_api::ConductorApi,
     context::Context,
     dht::dht_store::DhtStore,
     network::state::NetworkState,
@@ -25,7 +26,6 @@ use std::{
     convert::TryInto,
     sync::{Arc, RwLock},
 };
-use crate::conductor_api::ConductorApi;
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
@@ -111,20 +111,9 @@ impl State {
 
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
         let mut new_state = State {
-            nucleus: crate::nucleus::reduce(
-                Arc::clone(&self.nucleus),
-                &self,
-                &action_wrapper,
-            ),
-            agent: crate::agent::state::reduce(
-                Arc::clone(&self.agent),
-                &self,
-                &action_wrapper,
-            ),
-            dht: crate::dht::dht_reducers::reduce(
-                Arc::clone(&self.dht),
-                &action_wrapper,
-            ),
+            nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),
+            agent: crate::agent::state::reduce(Arc::clone(&self.agent), &self, &action_wrapper),
+            dht: crate::dht::dht_reducers::reduce(Arc::clone(&self.dht), &action_wrapper),
             network: crate::network::reducers::reduce(
                 Arc::clone(&self.network),
                 &self,

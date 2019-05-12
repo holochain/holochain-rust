@@ -10,6 +10,7 @@ use crate::{
         ZomeFnCall,
     },
     scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
+    state::State,
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -23,8 +24,9 @@ use holochain_core_types::{
     validation::ValidationPackage,
 };
 use holochain_net::{
-    connection::json_protocol::{
-        FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
+    connection::{
+        json_protocol::{FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData},
+        net_connection::NetHandler,
     },
     p2p_config::P2pConfig,
 };
@@ -33,8 +35,6 @@ use std::{
     hash::{Hash, Hasher},
     vec::Vec,
 };
-use crate::state::State;
-use holochain_net::connection::net_connection::NetHandler;
 
 /// Wrapper for actions that provides a unique ID
 /// The unique ID is needed for state tracking to ensure that we can differentiate between two

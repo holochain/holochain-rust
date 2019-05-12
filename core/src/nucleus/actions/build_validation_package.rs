@@ -92,7 +92,13 @@ pub async fn build_validation_package<'a>(
             // If it was a problem, we would have to make sure that the whole commit process
             // (including validtion) is atomic.
             let state = &context.state()?;
-            agent::state::create_new_chain_header(&entry, &state.agent(), &*state, &None, provenances)?
+            agent::state::create_new_chain_header(
+                &entry,
+                &state.agent(),
+                &*state,
+                &None,
+                provenances,
+            )?
         } else {
             maybe_entry_header.unwrap()
         };

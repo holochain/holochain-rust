@@ -281,10 +281,12 @@ pub mod tests {
     use test_utils::mock_signing::mock_signer;
 
     /// dummy agent state
-    pub fn test_agent_state() -> AgentState {
+    pub fn test_agent_state(maybe_initial_agent_address: Option<Address>) -> AgentState {
         AgentState::new(
             test_chain_store(),
-            AgentId::generate_fake("test agent").address(),
+            maybe_initial_agent_address
+                .or_else(||{ Some(AgentId::generate_fake("test agent").address()) })
+                .unwrap(),
         )
     }
 
@@ -296,21 +298,21 @@ pub mod tests {
     #[test]
     /// smoke test for building a new AgentState
     fn agent_state_new() {
-        test_agent_state();
+        test_agent_state(None);
     }
 
     #[test]
     /// test for the agent state actions getter
     fn agent_state_actions() {
-        assert_eq!(HashMap::new(), test_agent_state().actions());
+        assert_eq!(HashMap::new(), test_agent_state(None).actions());
     }
 
     #[test]
     /// test for reducing commit entry
     fn test_reduce_commit_entry() {
-        let mut agent_state = test_agent_state();
         let netname = Some("test_reduce_commit_entry");
         let context = test_context("bob", netname);
+        let mut agent_state = test_agent_state(Some(context.agent_id.address()));
         let state = State::new_with_agent(context, agent_state.clone());
         let action_wrapper = test_action_wrapper_commit();
 
@@ -400,14 +402,14 @@ pub mod tests {
 
     #[test]
     fn test_create_new_chain_header() {
-        let agent_state = test_agent_state();
         let netname = Some("test_create_new_chain_header");
         let context = test_context("bob", netname);
+        let agent_state = test_agent_state(Some(context.agent_id.address()));
         let state = State::new_with_agent(context.clone(), agent_state.clone());
 
         let header =
             create_new_chain_header(&test_entry(), &agent_state, &state, &None, &vec![]).unwrap();
-        let agent_id = agent_state.get_agent().unwrap();
+        let agent_id = context.agent_id.clone();
         assert_eq!(
             header,
             ChainHeader::new(

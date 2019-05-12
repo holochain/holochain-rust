@@ -39,12 +39,13 @@ pub mod tests {
         json::RawString,
     };
     use std::sync::Arc;
+    use crate::state::test_store;
 
     #[test]
     fn test_reduce_remove_pending_validation() {
         let context = test_context("jimmy", None);
         let mut nucleus_state = test_nucleus_state();
-        let state = context.state().unwrap().read();
+        let state = test_store(context);
 
         let entry = Entry::App("package_entry".into(), RawString::from("test value").into());
         let entry_with_header = EntryWithHeader {

@@ -90,7 +90,7 @@ mod tests {
         };
         let action_wrapper = ActionWrapper::new(Action::FetchEntry(key.clone()));
 
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = store.reduce(action_wrapper);
         let maybe_get_entry_result = store
             .network()
             .get_entry_with_meta_results

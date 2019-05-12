@@ -25,12 +25,14 @@ pub mod tests {
         action::tests::test_action_wrapper_rzfr, instance::tests::test_context,
         nucleus::state::tests::test_nucleus_state,
     };
+    use crate::state::test_store;
 
     #[test]
     /// test for returning zome function result actions
     fn test_reduce_return_zome_function_result() {
         let context = test_context("jimmy", None);
         let mut state = test_nucleus_state();
+        let root_state = test_store(context);
         let action_wrapper = test_action_wrapper_rzfr();
 
         // @TODO don't juggle action wrappers to get at action in state
@@ -38,7 +40,7 @@ pub mod tests {
         let action = action_wrapper.action();
         let fr = unwrap_to!(action => Action::ReturnZomeFunctionResult);
 
-        reduce_return_zome_function_result(context, &mut state, &action_wrapper);
+        reduce_return_zome_function_result(&mut state, &root_state, &action_wrapper);
 
         assert!(state.zome_calls.contains_key(&fr.call()));
     }

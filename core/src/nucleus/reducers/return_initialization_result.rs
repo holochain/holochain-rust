@@ -42,6 +42,7 @@ pub mod tests {
     };
     use holochain_core_types::dna::Dna;
     use std::sync::{mpsc::sync_channel, Arc};
+    use crate::state::test_store;
 
     #[test]
     /// test that we can initialize and send/receive result values from a nucleus
@@ -52,9 +53,10 @@ pub mod tests {
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
         let context = test_context_with_channels("jimmy", &sender, &tx_observer, None).clone();
+        let root_state = test_store(context);
 
         // Reduce Init action
-        let initializing_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
+        let initializing_nucleus = reduce(nucleus.clone(), &root_state, &action_wrapper);
 
         assert_eq!(initializing_nucleus.has_initialized(), false);
         assert_eq!(initializing_nucleus.has_initialization_failed(), false);
@@ -66,8 +68,8 @@ pub mod tests {
             "init failed".to_string(),
         )));
         let reduced_nucleus = reduce(
-            context.clone(),
             initializing_nucleus.clone(),
+            &root_state,
             &return_action_wrapper,
         );
 
@@ -80,7 +82,7 @@ pub mod tests {
         );
 
         // Reduce Init action
-        let reduced_nucleus = reduce(context.clone(), reduced_nucleus.clone(), &action_wrapper);
+        let reduced_nucleus = reduce(reduced_nucleus.clone(), &root_state, &action_wrapper);
 
         assert_eq!(reduced_nucleus.status(), NucleusStatus::Initializing);
 
@@ -89,8 +91,8 @@ pub mod tests {
             Initialization::new(),
         )));
         let reduced_nucleus = reduce(
-            context.clone(),
             initializing_nucleus.clone(),
+            &root_state,
             &return_action_wrapper,
         );
 

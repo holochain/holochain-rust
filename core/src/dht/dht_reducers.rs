@@ -354,7 +354,7 @@ pub mod tests {
     #[test]
     fn reduce_hold_entry_test() {
         let context = test_context("bob", None);
-        let store = test_store(context.clone());
+        let store = test_store(context);
 
         // test_entry is not sys so should do nothing
         let storage = &store.dht().content_storage().clone();
@@ -366,7 +366,6 @@ pub mod tests {
         };
 
         let new_dht_store = reduce_hold_entry(
-            Arc::clone(&context),
             &store.dht(),
             &ActionWrapper::new(Action::Hold(entry_wh)),
         )
@@ -393,26 +392,17 @@ pub mod tests {
     #[test]
     fn can_add_links() {
         let context = test_context("bob", None);
-        let store = test_store(context.clone());
+        let mut store = test_store(context.clone());
         let entry = test_entry();
 
-        let locked_state = Arc::new(RwLock::new(store));
-
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
-        let storage = context.dht_storage.clone();
+        let storage = store.dht().content_storage();
         let _ = (storage.write().unwrap()).add(&entry);
-        let context = Arc::new(context);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
-        let new_dht_store: DhtStore;
-        {
-            let state = locked_state.read().unwrap();
+        let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
-            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
-        }
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
@@ -451,7 +441,7 @@ pub mod tests {
         {
             let state = locked_state.read().unwrap();
 
-            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+            new_dht_store = (*reduce(state.dht(), &action)).clone();
         }
         action = ActionWrapper::new(Action::RemoveLink(link.clone()));
 
@@ -461,7 +451,7 @@ pub mod tests {
         {
             let state = locked_state.read().unwrap();
 
-            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+            new_dht_store = (*reduce(state.dht(), &action)).clone();
         }
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
@@ -505,7 +495,7 @@ pub mod tests {
         {
             let state = locked_state.read().unwrap();
 
-            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+            new_dht_store = (*reduce(state.dht(), &action)).clone();
         }
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
@@ -536,7 +526,7 @@ pub mod tests {
         };
         let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
 
-        store.reduce(context.clone(), action_wrapper);
+        store.reduce(action_wrapper);
 
         let cas = context.dht_storage.read().unwrap();
 

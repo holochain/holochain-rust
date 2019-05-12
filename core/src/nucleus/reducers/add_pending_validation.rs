@@ -36,11 +36,13 @@ pub mod tests {
     };
     use holochain_core_types::{chain_header::test_chain_header, entry::Entry, json::RawString};
     use std::sync::Arc;
+    use crate::state::test_store;
 
     #[test]
     fn test_reduce_add_pending_validation() {
         let context = test_context("jimmy", None);
         let mut state = test_nucleus_state();
+        let root_state = test_store(context);
 
         let entry = Entry::App("package_entry".into(), RawString::from("test value").into());
         let entry_with_header = EntryWithHeader {
@@ -56,7 +58,7 @@ pub mod tests {
             },
         )));
 
-        reduce_add_pending_validation(context, &mut state, &action_wrapper);
+        reduce_add_pending_validation(&mut state, &root_state, &action_wrapper);
 
         assert!(state
             .pending_validations

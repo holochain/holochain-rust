@@ -61,6 +61,9 @@ pub mod test {
     use holochain_wasm_utils::holochain_core_types::cas::content::AddressableContent;
     use std::sync::{Mutex, RwLock};
     use tempfile;
+    use crate::state::test_store;
+    use crate::context::get_dna_and_agent;
+    use crate::network::handler::create_handler;
 
     fn test_context() -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
@@ -91,16 +94,19 @@ pub mod test {
         let context: Arc<Context> = test_context();
         let dna_address: Address = context.agent_id.address();
         let agent_id = context.agent_id.content().to_string();
-
+        let (dna_address, agent_id) = context.block_on(get_dna_and_agent(&context)).unwrap();
+        let handler = create_handler(&context, dna_address.to_string());
         let network_settings = crate::action::NetworkSettings {
             p2p_config: context.p2p_config.clone(),
             dna_address,
             agent_id,
+            handler,
         };
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
 
         let mut network_state = NetworkState::new();
-        let result = reduce_init(context, &mut network_state, &action_wrapper);
+        let root_state = test_store(context.clone());
+        let result = reduce_init(&mut network_state, &root_state, &action_wrapper);
 
         assert_eq!(result, ());
     }

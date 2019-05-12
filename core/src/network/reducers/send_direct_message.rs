@@ -78,27 +78,26 @@ mod tests {
         state::test_store,
     };
     use holochain_core_types::{cas::content::Address, error::HolochainError};
-    use std::sync::{Arc, RwLock};
+    use crate::context::get_dna_and_agent;
+    use crate::network::handler::create_handler;
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {
         let netname = Some("reduce_send_direct_message_timeout_test");
         let mut context = test_context("alice", netname);
-        let store = test_store(context.clone());
-        let store = Arc::new(RwLock::new(store));
+        let mut store = test_store(context.clone());
 
-        Arc::get_mut(&mut context).unwrap().set_state(store.clone());
+        let (dna_address, agent_id) = context.block_on(get_dna_and_agent(&context)).unwrap();
+        let handler = create_handler(&context, dna_address.to_string());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             p2p_config: test_memory_network_config(netname),
             dna_address: "reduce_send_direct_message_timeout_test".into(),
             agent_id: String::from("alice"),
+            handler,
         }));
 
-        {
-            let mut new_store = store.write().unwrap();
-            *new_store = new_store.reduce(context.clone(), action_wrapper);
-        }
+        store = store.reduce(action_wrapper);
 
         let custom_direct_message = DirectMessage::Custom(CustomDirectMessage {
             zome: String::from("test"),
@@ -113,13 +112,9 @@ mod tests {
         };
         let action_wrapper = ActionWrapper::new(Action::SendDirectMessage(direct_message_data));
 
-        {
-            let mut new_store = store.write().unwrap();
-            *new_store = new_store.reduce(context.clone(), action_wrapper);
-        }
+        store = store.reduce(action_wrapper);
+
         let maybe_reply = store
-            .read()
-            .unwrap()
             .network()
             .custom_direct_message_replys
             .get(&msg_id)
@@ -127,17 +122,14 @@ mod tests {
         assert_eq!(maybe_reply, None);
 
         let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(msg_id.clone()));
-        {
-            let mut new_store = store.write().unwrap();
-            *new_store = new_store.reduce(context.clone(), action_wrapper);
-        }
+        store = store.reduce(action_wrapper);
+
         let maybe_reply = store
-            .read()
-            .unwrap()
             .network()
             .custom_direct_message_replys
             .get(&msg_id.clone())
             .cloned();
+
         assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout)));
     }
 }

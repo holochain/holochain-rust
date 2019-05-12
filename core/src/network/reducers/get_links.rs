@@ -84,7 +84,7 @@ mod tests {
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = store.reduce(action_wrapper);
         let maybe_get_links_result = store
             .network()
             .get_links_results
@@ -115,7 +115,7 @@ mod tests {
             dna_address: "reduce_get_links_test".into(),
             agent_id: String::from("alice"),
         }));
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = store.reduce(action_wrapper);
 
         let entry = test_entry();
         let tag = String::from("test-tag");
@@ -126,7 +126,7 @@ mod tests {
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = store.reduce(action_wrapper);
         let maybe_get_entry_result = store.network().get_links_results.get(&key).cloned();
 
         assert_eq!(maybe_get_entry_result, Some(None));

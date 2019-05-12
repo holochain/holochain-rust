@@ -277,7 +277,6 @@ pub mod tests {
     use serde_json;
     use std::{
         collections::HashMap,
-        sync::{Arc, RwLock},
     };
     use test_utils::mock_signing::mock_signer;
 
@@ -401,21 +400,21 @@ pub mod tests {
         let agent_state = test_agent_state();
         let netname = Some("test_create_new_chain_header");
         let context = test_context("bob", netname);
-        let state = State::new_with_agent(context, agent_state.clone());
+        let state = State::new_with_agent(context.clone(), agent_state.clone());
 
         let header =
             create_new_chain_header(&test_entry(), &agent_state, &state,&None, &vec![]).unwrap();
-        println!("{:?}", header);
+        let agent_id = context.block_on(agent_state.get_agent(&context)).unwrap();
         assert_eq!(
             header,
             ChainHeader::new(
                 &test_entry().entry_type(),
                 &test_entry().address(),
                 &[Provenance::new(
-                    agent_state.agent_id.address(),
+                    agent_id.address(),
                     Signature::from(mock_signer(
                         test_entry().address().to_string(),
-                        &agent_state.agent_id
+                        &agent_id
                     ))
                 )]
                 .to_vec(),

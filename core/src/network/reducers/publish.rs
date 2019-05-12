@@ -172,7 +172,7 @@ mod tests {
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::Publish(entry.address()));
 
-        store.reduce(context.clone(), action_wrapper);
+        store.reduce(action_wrapper);
     }
 
 }

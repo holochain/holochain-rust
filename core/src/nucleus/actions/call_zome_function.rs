@@ -27,7 +27,7 @@ use futures::{
 };
 use std::{pin::Pin, sync::Arc, thread};
 
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {
     call: ZomeFnCall,
     result: ZomeFnResult,

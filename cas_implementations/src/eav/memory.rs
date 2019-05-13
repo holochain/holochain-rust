@@ -117,4 +117,12 @@ pub mod tests {
         );
     }
 
+    #[test]
+
+    fn memory_tombstone()
+    {
+        let eav_storage = EavMemoryStorage::new();
+        EavTestSuite::test_tombstone::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
+    }
+
 }

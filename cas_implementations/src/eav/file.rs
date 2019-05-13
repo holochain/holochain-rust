@@ -220,6 +220,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 Default::default(),
                 Default::default(),
                 query.index().clone(),
+                None
             );
             let it = eavis.iter().map(|e| {
                 e.clone()

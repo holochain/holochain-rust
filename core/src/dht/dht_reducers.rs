@@ -293,6 +293,7 @@ fn reduce_remove_entry_inner(
         Some(Attribute::CrudStatus).into(),
         None.into(),
         IndexFilter::LatestByAttribute,
+        None
     ))?;
 
     //TODO clean up some of the early returns in this
@@ -431,6 +432,7 @@ pub mod tests {
             None.into(),
             None.into(),
             IndexFilter::LatestByAttribute,
+            None
         ));
 
         assert!(fetched.is_ok());
@@ -484,6 +486,7 @@ pub mod tests {
             }),
             None.into(),
             IndexFilter::LatestByAttribute,
+            None
         ));
 
         assert!(fetched.is_ok());
@@ -525,6 +528,7 @@ pub mod tests {
             None.into(),
             None.into(),
             IndexFilter::LatestByAttribute,
+            None
         ));
 
         assert!(fetched.is_ok());

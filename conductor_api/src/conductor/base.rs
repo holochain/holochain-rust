@@ -608,32 +608,32 @@ impl Conductor {
                     ))
                 })?;
 
-                // This is where we are checking the consistency between DNA: for now we compare
+                // This is where we are checking the consistency between DNAs: for now we compare
                 // the hash provided in the TOML Conductor config file with the computed hash of
                 // the loaded dna.
                 {
-                    // let dna_conf_hash = dna_config.hash.clone().unwrap_or("".to_string());
                     let dna_hash_from_conductor_config =
                         HashString::from(dna_config.hash.clone().unwrap_or("".to_string()))
                             .to_owned();
-                    // dbg!(dna_conf_hash);
                     let dna_hash_computed = &dna.address();
-                    // dbg!(loaded_dna_hash);
-                    Conductor::check_dna_consistency(
+
+                    match Conductor::check_dna_consistency(
                         &dna_hash_from_conductor_config,
-                        &dna_hash_computed,
-                    )
-                    // .map_err(|_| {
-                    .unwrap_or({
-                        let msg = format!(
-                            "\n#####################\n\n\
-                            warn/Conductor: DNA hashes mismatch: from conductor config != Conductor instance\n\
-                            {} != {}\
-                            \n\n#####################",
-                            &dna_hash_from_conductor_config,
-                            &dna_hash_computed);
-                        context.log(msg);
-                    });
+                        &dna_hash_computed) {
+                        Ok(_) => (),
+                        Err(_e) => {
+                            let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'conductor config' != 'Conductor instance': \
+                                '{}' != '{}'",
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed);
+                            context.log(msg);
+
+                            // Do we want to return an error when there is a discrepancy between DNA hashes
+                            // or just warn the user here?
+                            // return Err(_e);
+                        }
+                    }
                 }
 
                 let context = Arc::new(context);
@@ -683,20 +683,18 @@ impl Conductor {
         Ok(())
     }
 
-    /// Check
-    /// We need some context here to provide the user with good logging messages if detect some
-    /// decrepencies between DNA hashes.
+    /// This is where we check for DNA's hashes consistency.
+    /// Only a simple equality check between DNA hashes is currently performed.
     fn check_dna_consistency(
         dna_hash_from_conductor_config: &HashString,
         dna_hash_computed: &HashString,
-        // hc: &holochain
     ) -> Result<(), String> {
-        if dna_hash_from_conductor_config == dna_hash_computed {
+        if *dna_hash_from_conductor_config == *dna_hash_computed {
             Ok(())
         } else {
-            // Here we provide more information to user about the cause of the error using
+            // Here we provide more information to the user about the cause of the error using
             // the holochain logging capability
-            let msg = String::from("DNA hash consistency fail:\
+            let msg = String::from("DNA hash consistency fail: \
                              There is a discrepancy between the DNA hash provided in the \
                              Conductor configuration file and the hash computed from the \
                              loaded instance of the Conductor. Please check the logs for additional information");
@@ -1111,17 +1109,17 @@ pub mod tests {
     [[dnas]]
     id = "test-dna"
     file = "app_spec.dna.json"
-    hash = "Qm328wyq38924y"
+    hash = "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
 
     [[dnas]]
     id = "bridge-callee"
     file = "bridge/callee.dna"
-    hash = "Qm328wyq38924y"
+    hash = "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
 
     [[dnas]]
     id = "bridge-caller"
     file = "bridge/caller.dna"
-    hash = "Qm328wyq38924y"
+    hash = "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
 
     [[instances]]
     id = "test-instance-1"
@@ -1308,12 +1306,12 @@ pub mod tests {
         [[dnas]]
         id = "test-dna"
         file = "app_spec.dna.json"
-        hash = "QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR"
+        hash = "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
 
         [[dnas]]
         id = "bridge-callee"
         file = "bridge/callee.dna"
-        hash = "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
+        hash = "QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR"
 
         [[dnas]]
         id = "bridge-caller"
@@ -1357,87 +1355,103 @@ pub mod tests {
             Ok(()),
             "Conductor failed to boot from config"
         );
+        let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        let b = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        assert_eq!(
+            Conductor::check_dna_consistency(&a, &b),
+            Ok(()),
+            "DNA consistency check Fail.")
     }
 
-    // #[test]
-    // /// This is supposed to fail to show if we are properly bailing when there is
-    // /// a decrepency btween DNA hashes.
-    // fn _test_check_dna_consistency_err() {
-    //     let toml = format!(
-    //         r#"
-    //     [[agents]]
-    //     id = "test-agent-1"
-    //     name = "Holo Tester 1"
-    //     public_address = "{}"
-    //     keystore_file = "holo_tester1.key"
-    //
-    //     [[agents]]
-    //     id = "test-agent-2"
-    //     name = "Holo Tester 2"
-    //     public_address = "{}"
-    //     keystore_file = "holo_tester2.key"
-    //
-    //     [[agents]]
-    //     id = "test-agent-3"
-    //     name = "Holo Tester 3"
-    //     public_address = "{}"
-    //     keystore_file = "holo_tester3.key"
-    //
-    //     [[dnas]]
-    //     id = "test-dna"
-    //     file = "app_spec.dna.json"
-    //     hash = "Qm328wyq38924y"
-    //
-    //     [[dnas]]
-    //     id = "bridge-callee"
-    //     file = "bridge/callee.dna"
-    //     hash = "Qm328wyq38924y"
-    //
-    //     [[dnas]]
-    //     id = "bridge-caller"
-    //     file = "bridge/caller.dna"
-    //     hash = "Qm328wyq38924y"
-    //
-    //     [[instances]]
-    //     id = "test-instance-1"
-    //     dna = "bridge-callee"
-    //     agent = "test-agent-1"
-    //
-    //         [instances.storage]
-    //         type = "memory"
-    //
-    //     [[instances]]
-    //     id = "test-instance-2"
-    //     dna = "test-dna"
-    //     agent = "test-agent-2"
-    //
-    //         [instances.storage]
-    //         type = "memory"
-    //
-    //     [[instances]]
-    //     id = "bridge-caller"
-    //     dna = "bridge-caller"
-    //     agent = "test-agent-3"
-    //
-    //         [instances.storage]
-    //         type = "memory"
-    //     "#,
-    //         test_keybundle(1).get_id(),
-    //         test_keybundle(2).get_id(),
-    //         test_keybundle(3).get_id(),
-    //     );
-    //     let config = load_configuration::<Configuration>(&toml).unwrap();
-    //     let mut conductor = Conductor::from_config(config.clone());
-    //     conductor.dna_loader = test_dna_loader();
-    //     conductor.key_loader = test_key_loader();
-    //     assert_eq!(
-    //         conductor.boot_from_config(),
-    //         Err(String::from("DNA hash consistency fail:\
-    //                          There is a discrepancy between the DNA hash provided in the \
-    //                          Conductor configuration file and the hash computed from the \
-    //                          loaded instance of the Conductor. Please check the logs for additional information")),
-    //         "Conductor failed to boot from config");
-    // }
+    #[test]
+    /// This is supposed to fail to show if we are properly bailing when there is
+    /// a decrepency btween DNA hashes.
+    fn test_check_dna_consistency_err() {
+        let _toml = format!(
+            r#"
+        [[agents]]
+        id = "test-agent-1"
+        name = "Holo Tester 1"
+        public_address = "{}"
+        keystore_file = "holo_tester1.key"
+
+        [[agents]]
+        id = "test-agent-2"
+        name = "Holo Tester 2"
+        public_address = "{}"
+        keystore_file = "holo_tester2.key"
+
+        [[agents]]
+        id = "test-agent-3"
+        name = "Holo Tester 3"
+        public_address = "{}"
+        keystore_file = "holo_tester3.key"
+
+        [[dnas]]
+        id = "test-dna"
+        file = "app_spec.dna.json"
+        hash = "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
+
+        [[dnas]]
+        id = "bridge-callee"
+        file = "bridge/callee.dna"
+        # This should fail
+        # hash = "QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR"
+        hash = "QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh"
+
+        [[dnas]]
+        id = "bridge-caller"
+        file = "bridge/caller.dna"
+        hash = "QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh"
+
+        [[instances]]
+        id = "test-instance-1"
+        dna = "bridge-callee"
+        agent = "test-agent-1"
+
+            [instances.storage]
+            type = "memory"
+
+        [[instances]]
+        id = "test-instance-2"
+        dna = "test-dna"
+        agent = "test-agent-2"
+
+            [instances.storage]
+            type = "memory"
+
+        [[instances]]
+        id = "bridge-caller"
+        dna = "bridge-caller"
+        agent = "test-agent-3"
+
+            [instances.storage]
+            type = "memory"
+        "#,
+            test_keybundle(1).get_id(),
+            test_keybundle(2).get_id(),
+            test_keybundle(3).get_id(),
+        );
+        // let config = load_configuration::<Configuration>(&_toml).unwrap();
+        // let mut conductor = Conductor::from_config(config.clone());
+        // conductor.dna_loader = test_dna_loader();
+        // conductor.key_loader = test_key_loader();
+        // assert_eq!(
+        //     conductor.boot_from_config(),
+        //     Err(String::from("Error while trying to create instance \"test-instance-1\": DNA hash consistency fail: \
+        //                      There is a discrepancy between the DNA hash provided in the \
+        //                      Conductor configuration file and the hash computed from the \
+        //                      loaded instance of the Conductor. Please check the logs for additional information")),
+        //     "Conductor failed to boot from config"
+        // );
+
+        let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        let b = HashString::from("QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR");
+        assert_eq!(
+            Conductor::check_dna_consistency(&a, &b).map_err(|_| {}),
+            Err(()),
+            "DNA consistency check Fail.")
+    }
 
     //#[test]
     // Default config path ~/.holochain/conductor/conductor-config.toml won't work in CI
@@ -1678,14 +1692,14 @@ pub mod tests {
                 [[dnas]]
                 id = "test-dna"
                 file = "app_spec.dna.json"
-                hash = "Qm328wyq38924y"
+                hash = "QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR"
 
                 [[instances]]
                 id = "test-instance-1"
                 dna = "test-dna"
                 agent = "test-agent-1"
-                [instances.storage]
-                type = "memory"
+                    [instances.storage]
+                    type = "memory"
                 "#
         ).unwrap();
         let mut conductor = Conductor::from_config(config.clone());

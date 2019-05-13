@@ -59,13 +59,13 @@ impl DhtStore {
     pub fn get_links(
         &self,
         address: Address,
-        tag: String,
+        link_type: String,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
             Some(address).into(),
             EavFilter::multiple(vec![
-                Attribute::LinkTag(tag.clone()),
-                Attribute::RemovedLink(tag),
+                Attribute::LinkTag(link_type.clone()),
+                Attribute::RemovedLink(link_type),
             ]),
             None.into(),
             IndexFilter::LatestByAttribute,

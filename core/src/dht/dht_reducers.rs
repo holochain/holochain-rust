@@ -130,7 +130,7 @@ pub(crate) fn reduce_add_link(
     } else {
         let eav = EntityAttributeValueIndex::new(
             link.base(),
-            &Attribute::LinkTag(link.tag().to_owned()),
+            &Attribute::LinkTag(link.link_type().to_owned()),
             link.target(),
         );
         eav.map(|e| {
@@ -167,7 +167,7 @@ pub(crate) fn reduce_remove_link(
     } else {
         let eav = EntityAttributeValueIndex::new(
             link.base(),
-            &Attribute::RemovedLink(link.tag().to_string()),
+            &Attribute::RemovedLink(link.link_type().to_string()),
             link.target(),
         );
         eav.map(|e| {
@@ -414,7 +414,7 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
         let context = Arc::new(context);
 
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let link = Link::new(&entry.address(), &entry.address(), "test-link");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
         let new_dht_store: DhtStore;
@@ -437,7 +437,7 @@ pub mod tests {
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), *link.target());
-        assert_eq!(eav.attribute(), Attribute::LinkTag(link.tag().to_owned()));
+        assert_eq!(eav.attribute(), Attribute::LinkTag(link.link_type().to_owned()));
     }
 
     #[test]
@@ -454,7 +454,7 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
         let context = Arc::new(context);
 
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let link = Link::new(&entry.address(), &entry.address(), "test-link_type");
         let mut action = ActionWrapper::new(Action::AddLink(link.clone()));
 
         let new_dht_store: DhtStore;
@@ -492,7 +492,7 @@ pub mod tests {
         assert_eq!(eav.value(), *link.target());
         assert_eq!(
             eav.attribute(),
-            Attribute::RemovedLink(link.tag().to_string())
+            Attribute::RemovedLink(link.link_type().to_string())
         );
     }
 
@@ -508,7 +508,7 @@ pub mod tests {
         context.set_state(locked_state.clone());
         let context = Arc::new(context);
 
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let link = Link::new(&entry.address(), &entry.address(), "test-link_type");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
         let new_dht_store: DhtStore;

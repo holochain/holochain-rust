@@ -17,12 +17,12 @@ use std::{pin::Pin, sync::Arc, thread};
 pub async fn get_links(
     context: Arc<Context>,
     address: Address,
-    tag: String,
+    link_type: String,
     timeout: Timeout,
 ) -> HcResult<Vec<Address>> {
     let key = GetLinksKey {
         base_address: address.clone(),
-        tag: tag.clone(),
+        link_type: link_type.clone(),
         id: ProcessUniqueId::new().to_string(),
     };
     let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));

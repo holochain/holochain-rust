@@ -20,7 +20,7 @@ fn reduce_get_links_inner(
             request_id: key.id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             entry_address: HashString::from(key.base_address.clone()),
-            attribute: format!("link__{}", key.tag),
+            attribute: format!("link__{}", key.link_type),
         }),
     )
 }
@@ -77,10 +77,10 @@ mod tests {
         let store = test_store(context.clone());
 
         let entry = test_entry();
-        let tag = String::from("test-tag");
+        let link_type = String::from("test-link");
         let key = GetLinksKey {
             base_address: entry.address(),
-            tag: tag.clone(),
+            link_type: link_type.clone(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
@@ -119,10 +119,10 @@ mod tests {
         let store = store.reduce(context.clone(), action_wrapper);
 
         let entry = test_entry();
-        let tag = String::from("test-tag");
+        let link_type = String::from("test-link");
         let key = GetLinksKey {
             base_address: entry.address(),
-            tag: tag.clone(),
+            link_type: link_type.clone(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
@@ -158,10 +158,10 @@ mod tests {
         }
 
         let entry = test_entry();
-        let tag = String::from("test-tag");
+        let link_type = String::from("test-link");
         let key = GetLinksKey {
             base_address: entry.address(),
-            tag: tag.clone(),
+            link_type: link_type.clone(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));

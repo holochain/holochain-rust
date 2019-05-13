@@ -325,7 +325,7 @@ fn start_holochain_instance<T: Into<String>>(
             .unwrap();
         test_entry_type.links_to.push(LinksTo {
             target_type: String::from("testEntryType"),
-            tag: String::from("test-tag"),
+            link_type: String::from("test"),
         });
     }
 
@@ -334,7 +334,7 @@ fn start_holochain_instance<T: Into<String>>(
         let mut link_validator = EntryTypeDef::new();
         link_validator.links_to.push(LinksTo {
             target_type: String::from("link_validator"),
-            tag: String::from("longer"),
+            link_type: String::from("longer"),
         });
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
@@ -582,7 +582,7 @@ fn can_link_entries() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+        JsonString::from_json(r#"{"Ok":"QmVB8zcfXUetoYRqScagNs4mbtfCrVYv2UswtS2NbqCFwP"}"#)
     );
 }
 
@@ -594,7 +594,7 @@ fn can_remove_link() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+        JsonString::from_json(r#"{"Ok":"QmVB8zcfXUetoYRqScagNs4mbtfCrVYv2UswtS2NbqCFwP"}"#)
     );
 }
 

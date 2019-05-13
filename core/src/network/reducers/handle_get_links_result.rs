@@ -33,7 +33,7 @@ pub fn reduce_handle_get_links_result(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (dht_meta_data, tag) = unwrap_to!(action => crate::action::Action::HandleGetLinksResult);
+    let (dht_meta_data, link_type) = unwrap_to!(action => crate::action::Action::HandleGetLinksResult);
 
     context.log(format!(
         "debug/reduce/handle_get_links_result: Got response from {}: {:?}",
@@ -43,7 +43,7 @@ pub fn reduce_handle_get_links_result(
     let result = reduce_handle_get_links_result_inner(network_state, dht_meta_data);
     let key = GetLinksKey {
         base_address: Address::from(dht_meta_data.entry_address.clone()),
-        tag: tag.clone(),
+        link_type: link_type.clone(),
         id: dht_meta_data.request_id.clone(),
     };
 

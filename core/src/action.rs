@@ -238,7 +238,7 @@ pub struct GetLinksKey {
     pub base_address: Address,
 
     /// The link tag
-    pub tag: String,
+    pub link_type: String,
 
     /// A unique ID that is used to pair the eventual result to this request
     pub id: String,

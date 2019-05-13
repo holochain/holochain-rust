@@ -803,12 +803,12 @@ pub fn get_entry_result(
 pub fn link_entries<S: Into<String>>(
     base: &Address,
     target: &Address,
-    tag: S,
+    link_type: S,
 ) -> Result<Address, ZomeApiError> {
     Dispatch::LinkEntries.with_input(LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
-        tag: tag.into(),
+        link_type: link_type.into(),
     })
 }
 
@@ -867,12 +867,12 @@ pub fn link_entries<S: Into<String>>(
 pub fn remove_link<S: Into<String>>(
     base: &Address,
     target: &Address,
-    tag: S,
+    link_type: S,
 ) -> Result<(), ZomeApiError> {
     Dispatch::RemoveLink.with_input(LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
-        tag: tag.into(),
+        link_type: link_type.into(),
     })
 }
 

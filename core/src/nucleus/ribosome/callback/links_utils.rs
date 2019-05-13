@@ -57,7 +57,7 @@ pub struct LinkDefinitionPath {
     pub zome_name: String,
     pub entry_type_name: String,
     pub direction: LinkDirection,
-    pub tag: String,
+    pub link_type: String,
 }
 
 /// This function tries to find the link definition for a link given by base type,
@@ -72,7 +72,7 @@ pub struct LinkDefinitionPath {
 /// Returns a LinkDefinitionPath to uniquely reference the link definition in the DNA.
 pub fn find_link_definition_in_dna(
     base_type: &EntryType,
-    tag: &String,
+    link_type: &String,
     target_type: &EntryType,
     context: &Arc<Context>,
 ) -> Result<LinkDefinitionPath, HolochainError> {
@@ -86,14 +86,14 @@ pub fn find_link_definition_in_dna(
             .links_to
             .iter()
             .find(|&link_def| {
-                link_def.target_type == String::from(target_type.clone()) && &link_def.tag == tag
+                link_def.target_type == String::from(target_type.clone()) && &link_def.link_type == link_type
             })
             .and_then(|link_def| {
                 Some(LinkDefinitionPath {
                     zome_name: dna.get_zome_name_for_app_entry_type(app_entry_type)?,
                     entry_type_name: app_entry_type.to_string(),
                     direction: LinkDirection::To,
-                    tag: link_def.tag.clone(),
+                    link_type: link_def.link_type.clone(),
                 })
             }),
         _ => None,
@@ -107,14 +107,14 @@ pub fn find_link_definition_in_dna(
             .linked_from
             .iter()
             .find(|&link_def| {
-                link_def.base_type == String::from(base_type.clone()) && &link_def.tag == tag
+                link_def.base_type == String::from(base_type.clone()) && &link_def.link_type == link_type
             })
             .and_then(|link_def| {
                 Some(LinkDefinitionPath {
                     zome_name: dna.get_zome_name_for_app_entry_type(app_entry_type)?,
                     entry_type_name: app_entry_type.to_string(),
                     direction: LinkDirection::From,
-                    tag: link_def.tag.clone(),
+                    link_type: link_def.link_type.clone(),
                 })
             }),
         _ => None,

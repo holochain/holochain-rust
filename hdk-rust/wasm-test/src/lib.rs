@@ -561,7 +561,7 @@ define_zome! {
 
     genesis: || { Ok(()) }
 
-    receive: |payload| {
+    receive: |_from, payload| {
         {
             let entry = Entry::App(
                 "testEntryType".into(),

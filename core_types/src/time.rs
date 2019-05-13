@@ -577,7 +577,8 @@ impl fmt::Display for Iso8601 {
 /// straight RFC 3339 timestamps, then parsing will be quick, otherwise we'll employ a regular
 /// expression to parse a more flexible subset of the ISO 8601 standard from your supplied
 /// timestamp, and then use the RFC 3339 parser again.  We only do this validation once; at the
-/// creation of an Iso8601 from a String/&str.
+/// creation of an Iso8601 from a String/&str.  There are some years that can be encoded as a
+/// DateTime but not parsed, such as negative (BC/BCE) years.
 impl TryFrom<String> for Iso8601 {
     type Error = HolochainError;
     fn try_from(s: String) -> Result<Self, Self::Error> {
@@ -601,6 +602,7 @@ impl FromStr for Iso8601 {
                 r"(?x)         # whitespace-mode
                 ^
                 \s*
+                (?P<neg>-?)    # RFC 3339 rendering supports -'ve years, but parsing doesn't...
                 (?P<Y>\d{4})
                 (?:            # Always require 4-digit year and double-digit mon/day YYYY[[-]MM[[-]DD]]
                   -?
@@ -673,8 +675,8 @@ impl FromStr for Iso8601 {
                                 format!("Failed to find ISO 3339 or RFC 8601 timestamp in {:?}", s))),
                             |cap| {
                                 let timestamp = &format!(
-                                    "{:0>4}-{:0>2}-{:0>2}T{:0>2}:{:0>2}:{:0>2}{}{}",
-                                    &cap["Y"],
+                                    "{}{:0>4}-{:0>2}-{:0>2}T{:0>2}:{:0>2}:{:0>2}{}{}",
+                                    &cap["neg"], &cap["Y"],
                                     cap.name("M").map_or( "1", |m| m.as_str()),
                                     cap.name("D").map_or( "1", |m| m.as_str()),
                                     cap.name("h").map_or( "0", |m| m.as_str()),
@@ -894,6 +896,29 @@ pub mod tests {
                 + Period::try_from("1000000y").unwrap(),
             Err(HolochainError::ErrorGeneric(
                 "Overflow computing 2019-05-05T00:00:00+00:00 + 1000000y".to_string()
+            ))
+        );
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap()
+                - Period::try_from("1234567y").unwrap(),
+            Err(HolochainError::ErrorGeneric(
+                "Overflow computing 2019-05-05T00:00:00+00:00 - 1234567y".to_string()
+            ))
+        );
+        // Negative DateTimes are possible -- they are, however, not parseable as ISO 8601
+        assert_eq!(
+            DateTime::<FixedOffset>::from(
+                (Iso8601::try_from("2019-05-05 00:00:00").unwrap()
+                    - Period::try_from("10000y").unwrap())
+                .unwrap()
+            )
+            .to_rfc3339(),
+            "-7981-02-19T00:00:00+00:00"
+        );
+        assert_eq!(
+            Iso8601::try_from("-7981-02-19T00:00:00+00:00"),
+            Err(HolochainError::ErrorGeneric(
+                "Attempting to convert RFC 3339 timestamp \"-7981-02-19T00:00:00+00:00\" from ISO 8601 \"-7981-02-19T00:00:00+00:00\" to a DateTime".to_string()
             ))
         );
 

@@ -1132,12 +1132,12 @@ pub fn remove_entry(address: &Address) -> ZomeApiResult<Address> {
 /// ```
 pub fn get_links_with_options<S: Into<String>>(
     base: &Address,
-    tag: S,
+    link_type: S,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
     Dispatch::GetLinks.with_input(GetLinksArgs {
         entry_address: base.clone(),
-        tag: tag.into(),
+        link_type: link_type.into(),
         options,
     })
 }

@@ -53,10 +53,10 @@ pub mod tests {
     use serde_json;
 
     /// dummy link_entries args from standard test entry
-    pub fn test_get_links_args_bytes(base: &Address, tag: &str) -> Vec<u8> {
+    pub fn test_get_links_args_bytes(base: &Address, link_type: &str) -> Vec<u8> {
         let args = GetLinksArgs {
             entry_address: base.clone(),
-            tag: String::from(tag),
+            link_type: String::from(link_type),
             options: Default::default(),
         };
         serde_json::to_string(&args)

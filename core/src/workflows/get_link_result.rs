@@ -26,7 +26,7 @@ pub async fn get_link_result_workflow<'a>(
     let links = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
-        link_args.tag.clone(),
+        link_args.link_type.clone(),
         link_args.options.timeout.clone()
     ))?;
 

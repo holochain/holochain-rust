@@ -144,7 +144,7 @@ pub struct ValidatingLinkDefinition {
 ///         links: [
 ///             to!(
 ///                 "post",
-///                 tag: "comments",
+///                 link_type: "comments",
 ///
 ///                 validation_package: || {
 ///                     hdk::ValidationPackageDefinition::ChainFull
@@ -257,7 +257,7 @@ macro_rules! entry {
 ///     or `hdk::LinkDirection::From`.
 /// 2. other_type: `other_type` is the entry type this link connects to. If direction is `to` this
 ///     would be the link target, if direction is `from` this defines the link's base type.
-/// 3. tag: `tag` is the name of this association and thus the handle by which it can be retrieved
+/// 3. link_type: `link_type` is the name of this association and thus the handle by which it can be retrieved
 ///     if given to [get_links()](fn.get_links.html) in conjunction with the base address.
 /// 4. validation_package: Similar to entries, links have to be validated.
 ///        `validation_package` is a special identifier, which declares which data is required from peers

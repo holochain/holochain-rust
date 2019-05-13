@@ -14,6 +14,7 @@ pub fn test(
     tests_folder: &str,
     testfile: &str,
     skip_build: bool,
+    show_npm_output: bool
 ) -> DefaultResult<()> {
     // First, check whether they have `node` installed
     match Command::new("node")
@@ -70,7 +71,10 @@ pub fn test(
         util::run_cmd(
             tests_path.clone(),
             "npm".to_string(),
-            &["install", "--silent"],
+            match show_npm_output {
+                true => &["install"],
+                false => &["install", "--silent"],
+            }
         )?;
     }
 

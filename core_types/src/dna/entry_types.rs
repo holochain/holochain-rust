@@ -41,7 +41,7 @@ pub struct LinksTo {
     #[serde(default)]
     pub target_type: String,
 
-    /// The tag of this links_to entry
+    /// The type of this links_to entry
     #[serde(default)]
     pub link_type: String,
 }

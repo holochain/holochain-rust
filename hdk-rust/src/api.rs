@@ -745,7 +745,7 @@ pub fn get_entry_result(
 
 /// Adds a named, directed link between two entries on the DHT.
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
-/// relationship between them, called a `tag`. Later, lists of entries can be looked up by using [get_links](fn.get_links.html). Entries
+/// relationship between them, called a the `link type`. Later, lists of entries can be looked up by using [get_links](fn.get_links.html). Entries
 /// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
 /// # Examples
 /// ```rust
@@ -815,7 +815,7 @@ pub fn link_entries<S: Into<String>>(
 /// Commits a LinkRemove entry to your local source chain that marks a link as 'deleted' by setting
 /// its status metadata to `Deleted` which gets published to the DHT.
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that removes a
-/// relationship between them, called a `tag`. Later, lists of entries.
+/// relationship between them, called its `type`. Later, lists of entries.
 /// # Examples
 /// ```rust
 /// # #![feature(try_from)]
@@ -1107,10 +1107,10 @@ pub fn remove_entry(address: &Address) -> ZomeApiResult<Address> {
     Dispatch::RemoveEntry.with_input(address.to_owned())
 }
 
-/// Consumes three values; the address of an entry get get links from (the base), the tag of the links
+/// Consumes three values; the address of an entry get get links from (the base), the type of the links
 /// to be retrieved, and an options struct for selecting what meta data and crud status links to retrieve.
-/// Note: the tag is intended to describe the relationship between the `base` and other entries you wish to lookup.
-/// This function returns a list of addresses of other entries which matched as being linked by the given `tag`.
+/// Note: the type is intended to describe the relationship between the `base` and other entries you wish to lookup.
+/// This function returns a list of addresses of other entries which matched as being linked by the given `type`.
 /// Links are created using the Zome API function [link_entries](fn.link_entries.html).
 /// If you also need the content of the entry consider using one of the helper functions:
 /// [get_links_result](fn.get_links_result) or [get_links_and_load](fn._get_links_and_load)
@@ -1143,11 +1143,11 @@ pub fn get_links_with_options<S: Into<String>>(
 }
 
 /// Helper function for get_links. Returns a vector with the default return results.
-pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLinksResult> {
-    get_links_with_options(base, tag, GetLinksOptions::default())
+pub fn get_links<S: Into<String>>(base: &Address, link_type: S) -> ZomeApiResult<GetLinksResult> {
+    get_links_with_options(base, link_type, GetLinksOptions::default())
 }
 
-/// Retrieves data about entries linked to a base address with a given tag. This is the most general version of the various get_links
+/// Retrieves data about entries linked to a base address with a given type. This is the most general version of the various get_links
 /// helpers (such as get_links_and_load) and can return the linked addresses, entries, headers and sources. Also supports CRUD status_request.
 /// The data returned is configurable with the GetLinksOptions to specify links options and GetEntryOptions argument wto specify options when loading the entries.
 /// # Examples
@@ -1163,17 +1163,17 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 ///
 /// # fn main() {
 /// fn hangle_get_links_result(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
-///    hdk::get_links_result(&address, "test-tag", GetLinksOptions::default(), GetEntryOptions::default())
+///    hdk::get_links_result(&address, "test-link", GetLinksOptions::default(), GetEntryOptions::default())
 /// }
 /// # }
 /// ```
 pub fn get_links_result<S: Into<String>>(
     base: &Address,
-    tag: S,
+    link_type: S,
     options: GetLinksOptions,
     get_entry_options: GetEntryOptions,
 ) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
-    let get_links_result = get_links_with_options(base, tag, options)?;
+    let get_links_result = get_links_with_options(base, link_type, options)?;
     let result = get_links_result
         .addresses()
         .iter()
@@ -1185,11 +1185,11 @@ pub fn get_links_result<S: Into<String>>(
 /// Helper function for get_links. Returns a vector of the entries themselves
 pub fn get_links_and_load<S: Into<String>>(
     base: &HashString,
-    tag: S,
+    link_type: S,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
     let get_links_result = get_links_result(
         base,
-        tag,
+        link_type,
         GetLinksOptions::default(),
         GetEntryOptions::default(),
     )?;

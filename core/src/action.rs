@@ -146,7 +146,7 @@ pub enum Action {
     ///
     GetEntryTimeout(GetEntryKey),
 
-    /// get links from entry address and tag name
+    /// get links from entry address and link_type name
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
@@ -237,7 +237,7 @@ pub struct GetLinksKey {
     /// The address of the Link base
     pub base_address: Address,
 
-    /// The link tag
+    /// The link type
     pub link_type: String,
 
     /// A unique ID that is used to pair the eventual result to this request

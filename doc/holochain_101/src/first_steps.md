@@ -158,7 +158,7 @@ define_zome! {
             links: [
                 to!(
                     "listItem",
-                    tag: "items",
+                    link_type: "items",
                     validation_package: || hdk::ValidationPackageDefinition::Entry,
                     validation: |_validation_data: hdk::LinkValidationData| {
                         Ok(())
@@ -205,7 +205,7 @@ fn handle_create_list(list: List) -> ZomeApiResult<Address> {
 
 The `hdk::commit_entry` function is how a zome can interact with holochain core to add entries to the DHT or local chain. This will trigger the validation function for the entry and if successful will store the entry and return its hash/address.
 
-The `add_item` function requires the use of holochain links to associate two entries. In holochain-proto this required the use of a commit with a special Links entry but it can now be done using the HDK function `link_entries(address1, address2, tag)`. The add item handler accepts a `ListItem` and an address of a list, commits the `ListItem`, then links it to the list address:
+The `add_item` function requires the use of holochain links to associate two entries. In holochain-proto this required the use of a commit with a special Links entry but it can now be done using the HDK function `link_entries(address1, address2, link_type)`. The add item handler accepts a `ListItem` and an address of a list, commits the `ListItem`, then links it to the list address:
 
 ```rust
 fn handle_add_item(list_item: ListItem, list_addr: HashString) -> ZomeApiResult<Address> {
@@ -223,7 +223,7 @@ fn handle_add_item(list_item: ListItem, list_addr: HashString) -> ZomeApiResult<
 
 At the moment there is no validation done on the link entries. This will be added soon with an additional validation callback.
 
-Finally, `get_list` requires us to use the HDK function `get_links(base_address, tag)`. As you may have guessed, this will return the addresses of all the entries that are linked to the `base_address` with a given tag. As this only returns the addresses, we must then map over each of then and load the required entry.
+Finally, `get_list` requires us to use the HDK function `get_links(base_address, link_type)`. As you may have guessed, this will return the addresses of all the entries that are linked to the `base_address` with a given link_type. As this only returns the addresses, we must then map over each of then and load the required entry.
 
 ```rust
 fn handle_get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
@@ -316,7 +316,7 @@ define_zome! {
             links: [
                 to!(
                     "listItem",
-                    tag: "items",
+                    link_type: "items",
                     validation_package: || hdk::ValidationPackageDefinition::Entry,
                     validation: |_validation_data: hdk::LinkValidationData| {
                         Ok(())

@@ -15,9 +15,9 @@ use std::convert::TryFrom;
 ///
 pub fn get_links_and_load_type<S: Into<String>, R: TryFrom<AppEntryValue>>(
     base: &Address,
-    tag: S,
+    link_type: S,
 ) -> ZomeApiResult<Vec<R>> {
-    let link_load_results = hdk::get_links_and_load(base, tag)?;
+    let link_load_results = hdk::get_links_and_load(base, link_type)?;
 
     Ok(link_load_results
         .iter()
@@ -63,26 +63,26 @@ pub fn get_as_type<R: TryFrom<AppEntryValue>>(address: Address) -> ZomeApiResult
 }
 
 /// Creates two links:
-/// From A to B, and from B to A, with given tags.
+/// From A to B, and from B to A, with given link_types.
 pub fn link_entries_bidir<S: Into<String>>(
     a: &Address,
     b: &Address,
-    tag_a_b: S,
-    tag_b_a: S,
+    link_type_a_b: S,
+    link_type_b_a: S,
 ) -> ZomeApiResult<()> {
-    hdk::link_entries(a, b, tag_a_b)?;
-    hdk::link_entries(b, a, tag_b_a)?;
+    hdk::link_entries(a, b, link_type_a_b)?;
+    hdk::link_entries(b, a, link_type_b_a)?;
     Ok(())
 }
 
 /// Commits the given entry and links it from the base
-/// with the given tag.
+/// with the given link_type.
 pub fn commit_and_link<S: Into<String>>(
     entry: &Entry,
     base: &Address,
-    tag: S,
+    link_type: S,
 ) -> ZomeApiResult<Address> {
     let entry_addr = hdk::commit_entry(entry)?;
-    hdk::link_entries(base, &entry_addr, tag)?;
+    hdk::link_entries(base, &entry_addr, link_type)?;
     Ok(entry_addr)
 }

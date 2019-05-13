@@ -50,7 +50,7 @@ pub fn get_link_entries(
 /// zome
 ///  |_ entry type
 ///      |_ direction (links_to / linked_from)
-///          |_ tag
+///          |_ link_type
 ///
 /// Needed for link validation to call the right callback
 pub struct LinkDefinitionPath {
@@ -61,10 +61,10 @@ pub struct LinkDefinitionPath {
 }
 
 /// This function tries to find the link definition for a link given by base type,
-/// tag and target type.
+/// link type and target type.
 ///
 /// It first looks at all "links_to" definitions in the base entry type and checks
-/// for matching tag and target type.
+/// for matching link type and target type.
 ///
 /// If nothing could be found there it iterates over all "linked_form" definitions in
 /// the target entry type.

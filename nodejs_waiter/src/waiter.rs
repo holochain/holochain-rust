@@ -594,7 +594,7 @@ mod tests {
         let link_add = LinkData::new_add(
             &"base".to_string().into(),
             &"target".to_string().into(),
-            "tag",
+            "link-type",
         );
         let entry = Entry::LinkAdd(link_add.clone());
         let entry_wh = mk_entry_wh(entry.clone());

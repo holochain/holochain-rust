@@ -87,8 +87,8 @@ pub mod tests {
             entry_addresses.push(address);
         }
 
-        let link1 = Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag");
-        let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag");
+        let link1 = Link::new(&entry_addresses[0], &entry_addresses[1], "test-link");
+        let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-link");
 
         assert!(initialized_context
             .block_on(add_link(&link1, &initialized_context))
@@ -99,7 +99,7 @@ pub mod tests {
 
         let call_result = test_zome_api_function_call(
             initialized_context.clone(),
-            test_get_links_args_bytes(&entry_addresses[0], "test-tag"),
+            test_get_links_args_bytes(&entry_addresses[0], "test-link"),
         );
 
         let expected_1 = JsonString::from_json(

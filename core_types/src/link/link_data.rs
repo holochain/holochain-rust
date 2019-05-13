@@ -16,17 +16,17 @@ pub struct LinkData {
 }
 
 impl LinkData {
-    pub fn new_add(base: &Address, target: &Address, tag: &str) -> Self {
+    pub fn new_add(base: &Address, target: &Address, link_type: &str) -> Self {
         LinkData {
             action_kind: LinkActionKind::ADD,
-            link: Link::new(base, target, tag),
+            link: Link::new(base, target, link_type),
         }
     }
 
-    pub fn new_delete(base: &Address, target: &Address, tag: &str) -> Self {
+    pub fn new_delete(base: &Address, target: &Address, link_type: &str) -> Self {
         LinkData {
             action_kind: LinkActionKind::REMOVE,
-            link: Link::new(base, target, tag),
+            link: Link::new(base, target, link_type),
         }
     }
 
@@ -93,7 +93,7 @@ pub mod tests {
     }
 
     #[test]
-    fn link_tag_test() {
+    fn link_type_test() {
         assert_eq!(&example_link_type(), example_link().link_type(),);
     }
 

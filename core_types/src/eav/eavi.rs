@@ -72,8 +72,8 @@ impl fmt::Display for Attribute {
             Attribute::EntryHeader => write!(f, "entry-header"),
             Attribute::Link => write!(f, "link"),
             Attribute::LinkRemove => write!(f, "link_remove"),
-            Attribute::LinkTag(tag) => write!(f, "link__{}", tag),
-            Attribute::RemovedLink(tag) => write!(f, "removed_link__{}", tag),
+            Attribute::LinkTag(link_type) => write!(f, "link__{}", link_type),
+            Attribute::RemovedLink(link_type) => write!(f, "removed_link__{}", link_type),
             Attribute::PendingEntry => write!(f, "pending-entry"),
         }
     }
@@ -91,11 +91,11 @@ impl TryFrom<&str> for Attribute {
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         use self::Attribute::*;
         if LINK_REGEX.is_match(s) {
-            let tag = LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
-            Ok(LinkTag(tag))
+            let link_type = LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
+            Ok(LinkTag(link_type))
         } else if REMOVED_LINK_REGEX.is_match(s) {
-            let tag = REMOVED_LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
-            Ok(RemovedLink(tag))
+            let link_type = REMOVED_LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
+            Ok(RemovedLink(link_type))
         } else {
             match s {
                 "crud-status" => Ok(CrudStatus),

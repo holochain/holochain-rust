@@ -86,7 +86,8 @@ pub fn find_link_definition_in_dna(
             .links_to
             .iter()
             .find(|&link_def| {
-                link_def.target_type == String::from(target_type.clone()) && &link_def.link_type == link_type
+                link_def.target_type == String::from(target_type.clone())
+                    && &link_def.link_type == link_type
             })
             .and_then(|link_def| {
                 Some(LinkDefinitionPath {
@@ -107,7 +108,8 @@ pub fn find_link_definition_in_dna(
             .linked_from
             .iter()
             .find(|&link_def| {
-                link_def.base_type == String::from(base_type.clone()) && &link_def.link_type == link_type
+                link_def.base_type == String::from(base_type.clone())
+                    && &link_def.link_type == link_type
             })
             .and_then(|link_def| {
                 Some(LinkDefinitionPath {

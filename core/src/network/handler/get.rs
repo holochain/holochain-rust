@@ -81,7 +81,8 @@ pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) 
 /// The network comes back with a result to our previous GET META request.
 pub fn handle_fetch_meta_result(dht_meta_data: FetchMetaResultData, context: Arc<Context>) {
     if let Ok(Attribute::LinkTag(link_type)) = dht_meta_data.attribute.as_str().try_into() {
-        let action_wrapper = ActionWrapper::new(Action::HandleGetLinksResult((dht_meta_data, link_type)));
+        let action_wrapper =
+            ActionWrapper::new(Action::HandleGetLinksResult((dht_meta_data, link_type)));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     }
 }

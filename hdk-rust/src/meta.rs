@@ -164,7 +164,8 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
             })
             .and_then(|entry_type| {
                 entry_type.links.into_iter().find(|ref link_definition| {
-                    link_definition.link_type == input.link_type && link_definition.direction == input.direction
+                    link_definition.link_type == input.link_type
+                        && link_definition.direction == input.direction
                 })
             })
             .and_then(|mut link_definition| {

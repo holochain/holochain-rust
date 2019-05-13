@@ -414,7 +414,7 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
         let context = Arc::new(context);
 
-        let link = Link::new(&entry.address(), &entry.address(), "test-link");
+        let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
         let new_dht_store: DhtStore;
@@ -457,7 +457,7 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
         let context = Arc::new(context);
 
-        let link = Link::new(&entry.address(), &entry.address(), "test-link_type");
+        let link = Link::new(&entry.address(), &entry.address(), "test-link_type", "test-tag");
         let mut action = ActionWrapper::new(Action::AddLink(link.clone()));
 
         let new_dht_store: DhtStore;
@@ -511,7 +511,7 @@ pub mod tests {
         context.set_state(locked_state.clone());
         let context = Arc::new(context);
 
-        let link = Link::new(&entry.address(), &entry.address(), "test-link_type");
+        let link = Link::new(&entry.address(), &entry.address(), "test-link_type", "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
         let new_dht_store: DhtStore;

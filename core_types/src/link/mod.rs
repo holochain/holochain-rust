@@ -8,20 +8,24 @@ pub mod link_list;
 use crate::{cas::content::Address, error::HolochainError, json::JsonString};
 
 type LinkType = String;
+type LinkTag = String;
+
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, DefaultJson)]
 pub struct Link {
     base: Address,
     target: Address,
     link_type: LinkType,
+    tag: LinkTag,
 }
 
 impl Link {
-    pub fn new(base: &Address, target: &Address, link_type: &str) -> Self {
+    pub fn new(base: &Address, target: &Address, link_type: &str, tag: &str) -> Self {
         Link {
             base: base.to_owned(),
             target: target.to_owned(),
             link_type: link_type.to_owned(),
+            tag: tag.to_owned(),
         }
     }
 
@@ -36,6 +40,10 @@ impl Link {
 
     pub fn link_type(&self) -> &LinkType {
         &self.link_type
+    }
+
+    pub fn tag(&self) -> &LinkTag {
+        &self.tag
     }
 }
 
@@ -52,11 +60,15 @@ pub mod tests {
     use crate::{
         cas::content::AddressableContent,
         entry::{test_entry_a, test_entry_b},
-        link::{Link, LinkActionKind, LinkType},
+        link::{Link, LinkActionKind, LinkType, LinkTag},
     };
 
     pub fn example_link_type() -> LinkType {
         LinkType::from("foo-link-type")
+    }
+
+    pub fn example_link_tag() -> LinkType {
+        LinkTag::from("foo-link-tag")
     }
 
     pub fn example_link() -> Link {
@@ -64,6 +76,7 @@ pub mod tests {
             &test_entry_a().address(),
             &test_entry_b().address(),
             &example_link_type(),
+            &example_link_tag(),
         )
     }
 

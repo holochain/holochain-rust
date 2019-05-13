@@ -809,6 +809,7 @@ pub fn link_entries<S: Into<String>>(
         base: base.clone(),
         target: target.clone(),
         link_type: link_type.into(),
+        tag: "".to_string(),
     })
 }
 
@@ -873,6 +874,7 @@ pub fn remove_link<S: Into<String>>(
         base: base.clone(),
         target: target.clone(),
         link_type: link_type.into(),
+        tag: "".to_string(),
     })
 }
 

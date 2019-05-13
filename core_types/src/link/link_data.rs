@@ -16,17 +16,17 @@ pub struct LinkData {
 }
 
 impl LinkData {
-    pub fn new_add(base: &Address, target: &Address, link_type: &str) -> Self {
+    pub fn new_add(base: &Address, target: &Address, link_type: &str, tag: &str) -> Self {
         LinkData {
             action_kind: LinkActionKind::ADD,
-            link: Link::new(base, target, link_type),
+            link: Link::new(base, target, link_type, tag),
         }
     }
 
-    pub fn new_delete(base: &Address, target: &Address, link_type: &str) -> Self {
+    pub fn new_delete(base: &Address, target: &Address, link_type: &str, tag: &str) -> Self {
         LinkData {
             action_kind: LinkActionKind::REMOVE,
-            link: Link::new(base, target, link_type),
+            link: Link::new(base, target, link_type, tag),
         }
     }
 
@@ -62,7 +62,7 @@ pub mod tests {
 
     pub fn example_link_add() -> LinkData {
         let link = example_link();
-        LinkData::new_add(link.base(), link.target(), link.link_type())
+        LinkData::new_add(link.base(), link.target(), link.link_type(), link.tag())
     }
 
     pub fn test_link_entry() -> Entry {
@@ -71,7 +71,7 @@ pub mod tests {
 
     pub fn test_link_entry_json_string() -> JsonString {
         JsonString::from_json(&format!(
-            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\"}}}}}}",
+            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}}}}}}",
             test_entry_a().address(),
             test_entry_b().address(),
         ))

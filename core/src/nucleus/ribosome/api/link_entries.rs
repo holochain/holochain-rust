@@ -206,4 +206,30 @@ pub mod tests {
         );
     }
 
+    #[test]
+    fn test_different_tags_produces_different_hashes() {
+        let (_, context) = create_test_instance();
+
+        context
+            .block_on(commit_entry(test_entry(), None, &context))
+            .expect("Could not commit entry for testing");
+
+        let call_result1 = test_zome_api_function_call(
+            context.clone(),
+            test_link_args_bytes("test-link".into(), "test-tag1".into()),
+        );
+        let call_result2 = test_zome_api_function_call(
+            context.clone(),
+            test_link_args_bytes("test-link".into(), "test-tag2".into()),
+        );
+
+        let result1: JsonString = ZomeApiInternalResult::success(call_result1).into();
+        let result2: JsonString = ZomeApiInternalResult::success(call_result2).into();
+
+        assert_ne!(
+            result1, 
+            result2
+        );        
+    }
+
 }

@@ -167,6 +167,7 @@ pub(crate) fn reduce_remove_link(
         );
         Some(new_store)
     } else {
+        
         let eav = EntityAttributeValueIndex::new(
             link.base(),
             &Attribute::RemovedLink(link.tag().to_string()),
@@ -458,7 +459,8 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
         let context = Arc::new(context);
 
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let test_tag = String::from("test-tag");
+        let link = Link::new(&entry.address(), &entry.address(), &test_tag.clone());
         let mut action = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
 
         let new_dht_store: DhtStore;
@@ -480,13 +482,10 @@ pub mod tests {
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
-            EavFilter::predicate(|a| match a {
-                Attribute::LinkTag(_) | Attribute::RemovedLink(_) => true,
-                _ => false,
-            }),
+            EavFilter::multiple(vec![Attribute::LinkTag(test_tag.clone()),Attribute::RemovedLink(test_tag.clone())]),
             None.into(),
             IndexFilter::LatestByAttribute,
-            None,
+            Some(EavFilter::single(Attribute::RemovedLink(test_tag.clone()))),
         ));
 
         assert!(fetched.is_ok());

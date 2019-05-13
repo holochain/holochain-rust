@@ -503,7 +503,7 @@ impl<D: Into<Duration>> Sub<D> for Iso8601 {
             })?)
             .ok_or_else(|| {
                 HolochainError::ErrorGeneric(format!(
-                    "Overflow computing {} + {}",
+                    "Overflow computing {} - {}",
                     &self,
                     Period::from(dur)
                 ))

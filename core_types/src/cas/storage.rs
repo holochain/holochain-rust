@@ -264,7 +264,7 @@ impl EavTestSuite {
                 Some(attribute.clone()).into(),
                 Some(value_content.address()).into(),
                 IndexFilter::LatestByAttribute,
-                None
+                None,
             );
             assert_eq!(
                 BTreeSet::new(),
@@ -529,7 +529,7 @@ impl EavTestSuite {
             attributes.into(),
             EavFilter::default(),
             IndexFilter::LatestByAttribute,
-            None
+            None,
         );
 
         // get only last value in set of prefix query
@@ -606,7 +606,7 @@ impl EavTestSuite {
             EavFilter::single(attribute.clone()),
             EavFilter::single(one.address()),
             IndexFilter::LatestByAttribute,
-            None
+            None,
         );
         // show the many referencing one
         assert_eq!(
@@ -627,7 +627,7 @@ impl EavTestSuite {
                     Some(attribute.clone()).into(),
                     None.into(),
                     IndexFilter::LatestByAttribute,
-                    None
+                    None,
                 ))
                 .expect("could not fetch eav");
             assert_eq!(fetch_set.clone().len(), expected_one.clone().len());
@@ -644,7 +644,6 @@ impl EavTestSuite {
         A: AddressableContent + Clone,
         S: EntityAttributeValueStorage,
     {
-      
         let foo_content = Content::from(RawString::from("foo"));
         let bar_content = Content::from(RawString::from("bar"));
 
@@ -655,25 +654,23 @@ impl EavTestSuite {
         let attribute = Attribute::LinkTag("c".into());
         let mut expected_tombstone = BTreeSet::new();
         let mut expected_tombstone_not_found = BTreeSet::new();
-       
-        vec!["a","b","c","d","e"].iter().for_each(|s| {
-            let eav =
-                EntityAttributeValueIndex::new(&one.address(), &Attribute::LinkTag(String::from(s.clone())), &two.address())
-                    .expect("could not create EAV");
+
+        vec!["a", "b", "c", "d", "e"].iter().for_each(|s| {
+            let eav = EntityAttributeValueIndex::new(
+                &one.address(),
+                &Attribute::LinkTag(String::from(s.clone())),
+                &two.address(),
+            )
+            .expect("could not create EAV");
             let expected_eav = eav_storage
                 .add_eavi(&eav)
                 .expect("could not add eav")
                 .expect("Could not get eavi option");
-            if *s=="c"
-            {
+            if *s == "c" {
                 expected_tombstone.insert(expected_eav);
-            }
-            else if *s=="e"
-            {
+            } else if *s == "e" {
                 expected_tombstone_not_found.insert(expected_eav);
-            }
-            else 
-            {
+            } else {
                 ()
             }
         });
@@ -692,8 +689,6 @@ impl EavTestSuite {
                 .unwrap()
         );
 
-        
-
         let expected_last_attribute = Some(Attribute::LinkTag("e".into()));
         assert_eq!(
             expected_tombstone_not_found,
@@ -707,9 +702,6 @@ impl EavTestSuite {
                 ))
                 .unwrap()
         );
-
-        
-       
     }
 }
 

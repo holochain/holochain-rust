@@ -65,10 +65,11 @@ impl DhtStore {
             Some(address).into(),
             EavFilter::multiple(vec![
                 Attribute::LinkTag(tag.clone()),
-                Attribute::RemovedLink(tag.clone())]),
+                Attribute::RemovedLink(tag.clone()),
+            ]),
             None.into(),
             IndexFilter::LatestByAttribute,
-            Some(EavFilter::single(Attribute::RemovedLink(tag.clone())))
+            Some(EavFilter::single(Attribute::RemovedLink(tag.clone()))),
         ))?;
 
         Ok(filtered
@@ -92,7 +93,7 @@ impl DhtStore {
                 Some(Attribute::EntryHeader).into(),
                 None.into(),
                 IndexFilter::LatestByAttribute,
-                None
+                None,
             ))?
             .into_iter()
             // get the header addresses

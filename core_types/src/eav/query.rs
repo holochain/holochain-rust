@@ -6,7 +6,7 @@ pub struct EaviQuery<'a> {
     pub entity: EntityFilter<'a>,
     pub attribute: AttributeFilter<'a>,
     pub value: ValueFilter<'a>,
-    pub tombstone : Option<AttributeFilter<'a>>,
+    pub tombstone: Option<AttributeFilter<'a>>,
     pub index: IndexFilter,
 }
 
@@ -21,7 +21,7 @@ impl<'a> Default for EaviQuery<'a> {
             Default::default(),
             Default::default(),
             IndexFilter::LatestByAttribute,
-            None
+            None,
         )
     }
 }
@@ -32,7 +32,7 @@ impl<'a> EaviQuery<'a> {
         attribute: AttributeFilter<'a>,
         value: ValueFilter<'a>,
         index: IndexFilter,
-        tombstone : Option<AttributeFilter<'a>>
+        tombstone: Option<AttributeFilter<'a>>,
     ) -> Self {
         Self {
             entity,
@@ -55,37 +55,46 @@ impl<'a> EaviQuery<'a> {
         match self.index {
             IndexFilter::LatestByAttribute => filtered
                 .filter_map(|eavi| {
-                   
-                    let value = iter2
-                    .clone()
-                    .fold((None,false),|eavi_option,eavi_fold|{
-                        if eavi_option.1
-                        {
+                    let value = iter2.clone().fold((None, false), |eavi_option, eavi_fold| {
+                        if eavi_option.1 {
                             eavi_option
-                        }
-                        else 
-                        {
-                            let fold_query = EaviQuery::new(Some(eavi.entity()).into(),Some(eavi.attribute()).into(),Some(eavi.value()).into(),IndexFilter::LatestByAttribute, None);
-                            if EaviQuery::eav_check(&eavi_fold, &fold_query.entity, &self.attribute, &fold_query.value)
-                            {
-                                if *&self.tombstone().as_ref().map(|s| s.check(eavi_fold.attribute())).unwrap_or(true).clone()
+                        } else {
+                            let fold_query = EaviQuery::new(
+                                Some(eavi.entity()).into(),
+                                Some(eavi.attribute()).into(),
+                                Some(eavi.value()).into(),
+                                IndexFilter::LatestByAttribute,
+                                None,
+                            );
+                            if EaviQuery::eav_check(
+                                &eavi_fold,
+                                &fold_query.entity,
+                                &self.attribute,
+                                &fold_query.value,
+                            ) {
+                                if *&self
+                                    .tombstone()
+                                    .as_ref()
+                                    .map(|s| s.check(eavi_fold.attribute()))
+                                    .unwrap_or(true)
+                                    .clone()
                                 {
-                                    (Some(eavi_fold),*&self.tombstone().as_ref().map(|_|true).unwrap_or(false).clone())
+                                    (
+                                        Some(eavi_fold),
+                                        *&self
+                                            .tombstone()
+                                            .as_ref()
+                                            .map(|_| true)
+                                            .unwrap_or(false)
+                                            .clone(),
+                                    )
+                                } else {
+                                    (Some(eavi_fold), false)
                                 }
-                                else
-                                {
-                                    (Some(eavi_fold),false)
-                                }
-                            
-                            }
-                            else 
-                            {
-                        
+                            } else {
                                 eavi_option
                             }
                         }
-
-                        
                     });
                     value.0
                 })
@@ -96,7 +105,6 @@ impl<'a> EaviQuery<'a> {
                         && end.map(|hi| eavi.index() <= hi).unwrap_or(true)
                 })
                 .collect(),
-            
         }
     }
 
@@ -121,8 +129,7 @@ impl<'a> EaviQuery<'a> {
     pub fn index(&self) -> &IndexFilter {
         &self.index
     }
-    pub fn tombstone(&self) -> &Option<AttributeFilter<'a>>
-    {
+    pub fn tombstone(&self) -> &Option<AttributeFilter<'a>> {
         &self.tombstone
     }
 }

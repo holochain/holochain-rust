@@ -1360,7 +1360,8 @@ pub mod tests {
         assert_eq!(
             Conductor::check_dna_consistency(&a, &b),
             Ok(()),
-            "DNA consistency check Fail.")
+            "DNA consistency check Fail."
+        )
     }
 
     #[test]
@@ -1450,7 +1451,8 @@ pub mod tests {
         assert_eq!(
             Conductor::check_dna_consistency(&a, &b).map_err(|_| {}),
             Err(()),
-            "DNA consistency check Fail.")
+            "DNA consistency check Fail."
+        )
     }
 
     //#[test]

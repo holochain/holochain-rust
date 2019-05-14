@@ -68,7 +68,7 @@ pub enum Entry {
     AgentId(AgentId),
     Deletion(DeletionEntry),
     LinkAdd(LinkData),
-    LinkRemove(LinkData),
+    LinkRemove((LinkData,Vec<Address>)),
     LinkList(LinkList),
     ChainHeader(ChainHeader),
     ChainMigrate(ChainMigrate),

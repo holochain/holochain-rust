@@ -1,6 +1,7 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
+    workflows::{get_link_result::get_link_result_workflow,get_entry_result::get_entry_result_workflow},
 };
 
 use holochain_core_types::{
@@ -8,7 +9,7 @@ use holochain_core_types::{
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
 };
-use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
+use holochain_wasm_utils::api_serialization::{link_entries::LinkEntriesArgs,get_links::{GetLinksArgs,GetLinksOptions},get_entry::{GetEntryArgs,GetEntryResultType,GetEntryOptions}};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -34,7 +35,44 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
 
     let link = input.to_link();
     let link_remove = LinkData::from_link(&link, LinkActionKind::REMOVE);
-    let entry = Entry::LinkRemove(link_remove);
+    let input = GetLinksArgs{
+        entry_address : link.base().clone(),
+        tag : link.tag().clone(),
+        options : GetLinksOptions::default()
+    };
+    let links_result = context.block_on(get_link_result_workflow(&context, &input));
+    if links_result.is_err()
+    {
+        context.log("err/zome : Could not get links for remove_link method");
+        return ribosome_error_code!(ArgumentDeserializationFailed);
+    }
+
+    let links = links_result.expect("This is supposed to not fail").addresses();
+    let filtered_links = links.into_iter().filter(|link_address|{
+        context.block_on(get_entry_result_workflow(&context,&GetEntryArgs{
+            address : link_address.clone().clone(),
+            options : GetEntryOptions::default()
+        })).map(|get_entry_result|{
+            match get_entry_result.result
+            {
+                GetEntryResultType::Single(single_item) =>
+                {
+                   single_item.entry.map(|entry|{
+                        match entry
+                        {
+                            Entry::LinkAdd(link_data) => {
+                                link_data.link().target() == link.target()
+                            },
+                            _ => false
+                        }
+                    }).unwrap_or(false)
+                },
+                _ => false
+            }
+        }).unwrap_or(false)
+    }).collect::<Vec<_>>();
+
+    let entry = Entry::LinkRemove((link_remove,filtered_links));
 
     // Wait for future to be resolved
     let result: Result<(), HolochainError> = context
@@ -43,3 +81,5 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
 
     runtime.store_result(result)
 }
+
+

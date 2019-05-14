@@ -74,7 +74,7 @@ pub fn test(
             match show_npm_output {
                 true => &["install"],
                 false => &["install", "--silent"],
-            }
+            },
         )?;
     }
 

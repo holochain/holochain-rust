@@ -815,7 +815,7 @@ pub fn link_entries<S: Into<String>>(
 /// Commits a LinkRemove entry to your local source chain that marks a link as 'deleted' by setting
 /// its status metadata to `Deleted` which gets published to the DHT.
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that removes a
-/// relationship between them, called its `type`. Later, lists of entries.
+/// relationship between them, called its `link_type`. Later, lists of entries.
 /// # Examples
 /// ```rust
 /// # #![feature(try_from)]

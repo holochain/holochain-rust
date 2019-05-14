@@ -240,7 +240,7 @@ pub struct GetLinksKey {
     /// The link type
     pub link_type: String,
 
-    /// The link tag
+    /// The link tag, None means get all the tags for a given type
     pub tag: Option<String>,
 
     /// A unique ID that is used to pair the eventual result to this request

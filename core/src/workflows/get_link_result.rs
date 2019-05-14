@@ -50,7 +50,7 @@ pub async fn get_link_result_workflow<'a>(
                                         Ok(LinksResult {
                                             address: link.clone(),
                                             headers,
-                                            tag: "?".into(),
+                                            tag: link_args.clone().tag.unwrap_or("*".to_string()).into(), // this is wrong because it is the tag of the request not the response!
                                         })
                                     })
                                 })

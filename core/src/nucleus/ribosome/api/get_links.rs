@@ -131,14 +131,14 @@ pub mod tests {
         let call_result = get_links(initialized_context.clone(), &entry_addresses[0], "test-type", Some("test-tag".into()));
         let expected_1 = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
-                entry_addresses[1], entry_addresses[2]
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                entry_addresses[1], "?", entry_addresses[2], "?",
             ) + "\u{0}"),
         );
         let expected_2 = JsonString::from_json(
             &(format!(
-               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
-                entry_addresses[2], entry_addresses[1]
+               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                entry_addresses[2], "?", entry_addresses[1], "?",
             ) + "\u{0}"),
         );
         assert!(

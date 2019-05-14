@@ -688,17 +688,16 @@ impl Conductor {
     fn check_dna_consistency(
         dna_hash_from_conductor_config: &HashString,
         dna_hash_computed: &HashString,
-    ) -> Result<(), String> {
+    ) -> Result<(), HolochainInstanceError> {
         if *dna_hash_from_conductor_config == *dna_hash_computed {
             Ok(())
         } else {
-            // Here we provide more information to the user about the cause of the error using
-            // the holochain logging capability
-            let msg = String::from("DNA hash consistency fail: \
-                             There is a discrepancy between the DNA hash provided in the \
-                             Conductor configuration file and the hash computed from the \
-                             loaded instance of the Conductor. Please check the logs for additional information");
-            Err(msg)
+            Err(HolochainInstanceError::InternalFailure(
+                HolochainError::DnaHashMismatch(
+                    dna_hash_from_conductor_config.clone(),
+                    dna_hash_computed.clone(),
+                ),
+            ))
         }
     }
 
@@ -1449,10 +1448,12 @@ pub mod tests {
         let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
         let b = HashString::from("QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR");
 
-        // We don't care about the error message here, we just expect it to fail
         assert_eq!(
-            Conductor::check_dna_consistency(&a, &b).map_err(|_| {}),
-            Err(()),
+            Conductor::check_dna_consistency(&a, &b),
+            Err(HolochainInstanceError::InternalFailure(
+                HolochainError::DnaHashMismatch(a, b)
+            )),
+            // Err(HolochainError::DnaHashMismatch(a, b)),
             "DNA consistency check Fail."
         )
     }

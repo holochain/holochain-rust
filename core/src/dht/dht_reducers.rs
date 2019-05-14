@@ -130,7 +130,7 @@ pub(crate) fn reduce_add_link(
     } else {
         let eav = EntityAttributeValueIndex::new(
             link.base(),
-            &Attribute::LinkTag(link.link_type().to_owned()),
+            &Attribute::LinkTag(link.link_type().to_owned(), link.tag().to_owned()),
             link.target(),
         );
         eav.map(|e| {
@@ -167,7 +167,7 @@ pub(crate) fn reduce_remove_link(
     } else {
         let eav = EntityAttributeValueIndex::new(
             link.base(),
-            &Attribute::RemovedLink(link.link_type().to_string()),
+            &Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_owned()),
             link.target(),
         );
         eav.map(|e| {
@@ -439,7 +439,7 @@ pub mod tests {
         assert_eq!(eav.value(), *link.target());
         assert_eq!(
             eav.attribute(),
-            Attribute::LinkTag(link.link_type().to_owned())
+            Attribute::LinkTag(link.link_type().to_owned(), link.tag().to_owned())
         );
     }
 
@@ -480,7 +480,7 @@ pub mod tests {
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
             EavFilter::predicate(|a| match a {
-                Attribute::LinkTag(_) | Attribute::RemovedLink(_) => true,
+                Attribute::LinkTag(_, _) | Attribute::RemovedLink(_, _) => true,
                 _ => false,
             }),
             None.into(),
@@ -495,7 +495,7 @@ pub mod tests {
         assert_eq!(eav.value(), *link.target());
         assert_eq!(
             eav.attribute(),
-            Attribute::RemovedLink(link.link_type().to_string())
+            Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
         );
     }
 

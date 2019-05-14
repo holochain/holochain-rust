@@ -273,6 +273,7 @@ pub mod tests {
             context2.clone(),
             entry_addresses[0].clone(),
             String::from("test-link"),
+            String::from("test-tag"),
             Default::default(),
         ));
 

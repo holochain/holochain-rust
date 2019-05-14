@@ -151,7 +151,7 @@ pub enum Action {
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
     RespondGetLinks((FetchMetaData, Vec<Address>)),
-    HandleGetLinksResult((FetchMetaResultData, String)),
+    HandleGetLinksResult((FetchMetaResultData, String, String)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -239,6 +239,9 @@ pub struct GetLinksKey {
 
     /// The link type
     pub link_type: String,
+
+    /// The link tag
+    pub tag: String,
 
     /// A unique ID that is used to pair the eventual result to this request
     pub id: String,

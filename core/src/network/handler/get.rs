@@ -60,7 +60,7 @@ pub fn handle_fetch_entry_result(dht_data: FetchEntryResultData, context: Arc<Co
 }
 
 pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) {
-    if let Ok(Attribute::LinkTag(link_type)) = fetch_meta_data.attribute.as_str().try_into() {
+    if let Ok(Attribute::LinkTag(link_type, tag)) = fetch_meta_data.attribute.as_str().try_into() {
         let links = context
             .state()
             .unwrap()
@@ -68,6 +68,7 @@ pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) 
             .get_links(
                 Address::from(fetch_meta_data.entry_address.clone()),
                 link_type.clone(),
+                tag.clone(),
             )
             .unwrap_or(BTreeSet::new())
             .into_iter()
@@ -80,9 +81,9 @@ pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) 
 
 /// The network comes back with a result to our previous GET META request.
 pub fn handle_fetch_meta_result(dht_meta_data: FetchMetaResultData, context: Arc<Context>) {
-    if let Ok(Attribute::LinkTag(link_type)) = dht_meta_data.attribute.as_str().try_into() {
+    if let Ok(Attribute::LinkTag(link_type, tag)) = dht_meta_data.attribute.as_str().try_into() {
         let action_wrapper =
-            ActionWrapper::new(Action::HandleGetLinksResult((dht_meta_data, link_type)));
+            ActionWrapper::new(Action::HandleGetLinksResult((dht_meta_data, link_type, tag)));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     }
 }

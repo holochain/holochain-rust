@@ -33,7 +33,7 @@ pub fn reduce_handle_get_links_result(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (dht_meta_data, link_type) =
+    let (dht_meta_data, link_type, tag) =
         unwrap_to!(action => crate::action::Action::HandleGetLinksResult);
 
     context.log(format!(
@@ -45,6 +45,7 @@ pub fn reduce_handle_get_links_result(
     let key = GetLinksKey {
         base_address: Address::from(dht_meta_data.entry_address.clone()),
         link_type: link_type.clone(),
+        tag: tag.clone(),
         id: dht_meta_data.request_id.clone(),
     };
 

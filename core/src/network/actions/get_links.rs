@@ -18,11 +18,13 @@ pub async fn get_links(
     context: Arc<Context>,
     address: Address,
     link_type: String,
+    tag: String,
     timeout: Timeout,
 ) -> HcResult<Vec<Address>> {
     let key = GetLinksKey {
         base_address: address.clone(),
         link_type: link_type.clone(),
+        tag: tag.clone(),
         id: ProcessUniqueId::new().to_string(),
     };
     let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));

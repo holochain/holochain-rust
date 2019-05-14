@@ -157,7 +157,7 @@ pub mod tests {
     fn test_with_same_target_and_tag_dedup() {
         let initialized_context = initialize_context();
         let entry_addresses = add_test_entries(initialized_context.clone());
-        // links have same meta, same base and same tag
+        // links have same meta, same base and same tag. Are the same
         let links = vec![
             Link::new(&entry_addresses[0], &entry_addresses[1], "test-type", "test-meta1"),
             Link::new(&entry_addresses[0], &entry_addresses[1], "test-type", "test-meta1"),

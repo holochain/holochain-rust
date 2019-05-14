@@ -1,8 +1,8 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    network::actions::get_links::get_links,
     workflows::{
-        author_entry::author_entry, get_entry_result::get_entry_result_workflow,
-        get_link_result::get_link_result_workflow,
+        author_entry::author_entry, get_entry_result::get_entry_result_workflow
     },
 };
 
@@ -13,7 +13,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResultType},
-    get_links::{GetLinksArgs, GetLinksOptions},
+    get_links::{GetLinksOptions},
     link_entries::LinkEntriesArgs,
 };
 use std::convert::TryFrom;
@@ -41,20 +41,19 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
 
     let link = input.to_link();
     let link_remove = LinkData::from_link(&link, LinkActionKind::REMOVE);
-    let input = GetLinksArgs {
-        entry_address: link.base().clone(),
-        tag: link.tag().clone(),
-        options: GetLinksOptions::default(),
-    };
-    let links_result = context.block_on(get_link_result_workflow(&context, &input));
+    let links_result = context.block_on(get_links(
+        context.clone(),
+        link.base().clone(),
+        link.tag().clone(),
+        GetLinksOptions::default().timeout.clone()
+    ));
     if links_result.is_err() {
         context.log("err/zome : Could not get links for remove_link method");
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
 
     let links = links_result
-        .expect("This is supposed to not fail")
-        .addresses();
+        .expect("This is supposed to not fail");
     let filtered_links = links
         .into_iter()
         .filter(|link_address| {

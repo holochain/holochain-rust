@@ -1110,7 +1110,7 @@ pub fn remove_entry(address: &Address) -> ZomeApiResult<Address> {
 /// Consumes three values; the address of an entry get get links from (the base), the type of the links
 /// to be retrieved, and an options struct for selecting what meta data and crud status links to retrieve.
 /// Note: the type is intended to describe the relationship between the `base` and other entries you wish to lookup.
-/// This function returns a list of addresses of other entries which matched as being linked by the given `type`.
+/// This function returns a list of addresses of other entries which matched as being linked by the given `link_type`.
 /// Links are created using the Zome API function [link_entries](fn.link_entries.html).
 /// If you also need the content of the entry consider using one of the helper functions:
 /// [get_links_result](fn.get_links_result) or [get_links_and_load](fn._get_links_and_load)

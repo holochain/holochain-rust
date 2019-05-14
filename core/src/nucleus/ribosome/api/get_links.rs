@@ -132,13 +132,13 @@ pub mod tests {
         let expected_1 = JsonString::from_json(
             &(format!(
                 r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
-                entry_addresses[1], "?", entry_addresses[2], "?",
+                entry_addresses[1], "test-tag", entry_addresses[2], "test-tag",
             ) + "\u{0}"),
         );
         let expected_2 = JsonString::from_json(
             &(format!(
                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
-                entry_addresses[2], "?", entry_addresses[1], "?",
+                entry_addresses[2], "test-tag", entry_addresses[1], "test-tag",
             ) + "\u{0}"),
         );
         assert!(
@@ -184,7 +184,7 @@ pub mod tests {
         let expected = JsonString::from_json(
             &(format!(
                 r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
-                entry_addresses[1], "?",
+                entry_addresses[1], "test-tag",
             ) + "\u{0}"),
         );
         assert_eq!(
@@ -207,7 +207,7 @@ pub mod tests {
         let expected = JsonString::from_json(
             &(format!(
                 r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
-                entry_addresses[1], "?", entry_addresses[1], "?",
+                entry_addresses[1], "test-tag1", entry_addresses[1], "test-tag2",
             ) + "\u{0}"),
         );
         assert_eq!(

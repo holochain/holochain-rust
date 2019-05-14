@@ -50,6 +50,7 @@ pub async fn get_link_result_workflow<'a>(
                                         Ok(LinksResult {
                                             address: link.clone(),
                                             headers,
+                                            tag: "?".into(),
                                         })
                                     })
                                 })

@@ -6,7 +6,7 @@ use holochain_core_types::{
 pub struct GetLinksArgs {
     pub entry_address: Address,
     pub link_type: String,
-    pub tag: String,
+    pub tag: Option<String>,
     pub options: GetLinksOptions,
 }
 
@@ -42,6 +42,7 @@ impl Default for GetLinksOptions {
 pub struct LinksResult {
     pub address: Address,
     pub headers: Vec<ChainHeader>,
+    pub tag: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]

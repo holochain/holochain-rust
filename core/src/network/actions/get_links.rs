@@ -18,9 +18,10 @@ pub async fn get_links(
     context: Arc<Context>,
     address: Address,
     link_type: String,
-    tag: String,
+    tag: Option<String>,
     timeout: Timeout,
 ) -> HcResult<Vec<Address>> {
+    let tag = tag.unwrap_or("*".to_string());
     let key = GetLinksKey {
         base_address: address.clone(),
         link_type: link_type.clone(),

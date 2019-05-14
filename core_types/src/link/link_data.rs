@@ -11,8 +11,8 @@ use crate::{
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct LinkData {
-    action_kind: LinkActionKind,
-    link: Link,
+    pub action_kind: LinkActionKind,
+    pub link: Link,
 }
 
 impl LinkData {

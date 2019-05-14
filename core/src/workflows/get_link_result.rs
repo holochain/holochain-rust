@@ -27,7 +27,7 @@ pub async fn get_link_result_workflow<'a>(
         context.clone(),
         link_args.entry_address.clone(),
         link_args.link_type.clone(),
-        "".into(),
+        link_args.tag.clone(),
         link_args.options.timeout.clone()
     ))?;
 

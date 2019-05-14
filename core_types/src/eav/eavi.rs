@@ -83,7 +83,7 @@ lazy_static! {
     static ref LINK_REGEX: Regex =
         Regex::new(r"^link__(.*)__(.*)$").expect("This string literal is a valid regex");
     static ref REMOVED_LINK_REGEX: Regex =
-        Regex::new(r"^removed_link__(.*)$").expect("This string literal is a valid regex");
+        Regex::new(r"^removed_link__(.*)__(.*)$").expect("This string literal is a valid regex");
 }
 
 impl TryFrom<&str> for Attribute {
@@ -424,8 +424,8 @@ pub mod tests {
     fn attribute_try_from_string() {
         assert_eq!("crud-status".try_into(), Ok(Attribute::CrudStatus));
         assert_eq!(
-            "link__tagalog".try_into(),
-            Ok(Attribute::LinkTag("tagalog".into(), "".into()))
+            "link__sometype__tagalog".try_into(),
+            Ok(Attribute::LinkTag("sometype".into(), "tagalog".into()))
         );
         assert!(
             (r"unknown \\and// invalid / attribute".try_into() as Result<Attribute, _>).is_err(),

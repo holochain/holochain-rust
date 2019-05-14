@@ -6,6 +6,7 @@ use holochain_core_types::{
 pub struct GetLinksArgs {
     pub entry_address: Address,
     pub link_type: String,
+    pub tag: String,
     pub options: GetLinksOptions,
 }
 

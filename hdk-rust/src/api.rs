@@ -1140,6 +1140,7 @@ pub fn get_links_with_options<S: Into<String>>(
     Dispatch::GetLinks.with_input(GetLinksArgs {
         entry_address: base.clone(),
         link_type: link_type.into(),
+        tag: "".into(), // TODO: Expose actual parameter
         options,
     })
 }

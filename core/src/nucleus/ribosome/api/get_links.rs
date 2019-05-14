@@ -183,8 +183,8 @@ pub mod tests {
         let call_result = get_links(initialized_context.clone(), &entry_addresses[0], "test-type", Some("test-tag".into()));
         let expected = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
-                entry_addresses[1],
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                entry_addresses[1], "?",
             ) + "\u{0}"),
         );
         assert_eq!(
@@ -197,17 +197,17 @@ pub mod tests {
     fn test_with_same_target_different_tag_dont_dedup() {
         let initialized_context = initialize_context();
         let entry_addresses = add_test_entries(initialized_context.clone());
-        // same target, different tag
+        // same target and type, different tag
         let links = vec![
             Link::new(&entry_addresses[0], &entry_addresses[1], "test-type", "test-tag1"),
             Link::new(&entry_addresses[0], &entry_addresses[1], "test-type", "test-tag2"),
         ];
         add_links(initialized_context.clone(), links);
-        let call_result = get_links(initialized_context.clone(), &entry_addresses[0], "test-type", None); // This times out because the GetLinksKey doesn't match because the tag is different
+        let call_result = get_links(initialized_context.clone(), &entry_addresses[0], "test-type", None);
         let expected = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
-                entry_addresses[1], entry_addresses[1]
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                entry_addresses[1], "?", entry_addresses[1], "?",
             ) + "\u{0}"),
         );
         assert_eq!(

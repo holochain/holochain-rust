@@ -241,7 +241,7 @@ pub struct GetLinksKey {
     pub link_type: String,
 
     /// The link tag
-    pub tag: String, // this makes it tricky to retrieve all links
+    pub tag: Option<String>,
 
     /// A unique ID that is used to pair the eventual result to this request
     pub id: String,

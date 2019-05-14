@@ -15,9 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated linked [n3h](https://github.com/holochain/n3h) version to v0.0.12-alpha [#1369](https://github.com/holochain/holochain-rust/pull/1369)
-- pin mozilla overlay to latest commit in nix [#1375](https://github.com/holochain/holochain-rust/pull/1375)
-
 ### Deprecated
 
 ### Removed
@@ -25,3 +22,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+

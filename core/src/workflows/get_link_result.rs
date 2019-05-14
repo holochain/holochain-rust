@@ -31,7 +31,7 @@ pub async fn get_link_result_workflow<'a>(
             //we should probably replace this with get_entry_result_workflow, it does all the work needed
             context
                 .block_on(
-                    get_entry_with_meta_workflow(&context, &link, &link_args.options.timeout).map(
+                    get_entry_with_meta_workflow(&context, &link.0, &link_args.options.timeout).map(
                         |link_entry_result| {
                             link_entry_result
                                 .map(|link_entry_option| {
@@ -42,7 +42,7 @@ pub async fn get_link_result_workflow<'a>(
                                             Vec::new()
                                         };
                                         Ok(LinksResult {
-                                            address: link.clone().clone(),
+                                            address: link.1.clone().clone(),
                                             headers,
                                         })
                                     })
@@ -71,7 +71,7 @@ pub async fn get_link_result_workflow<'a>(
 async fn get_link_caches<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
-) -> Result<Vec<Address>, HolochainError> {
+) -> Result<Vec<(Address,Address)>, HolochainError> {
     let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
@@ -90,7 +90,7 @@ async fn get_link_caches<'a>(
             entry_with_header
                 .map(|link_entry_result| {
                     link_entry_result.map(|link_entry| match link_entry.entry_with_meta.entry {
-                        Entry::LinkAdd(link) => Ok(link.link().target().clone()),
+                        Entry::LinkAdd(link) => Ok((s.clone(),link.link().target().clone())),
                         _ => Err(HolochainError::ErrorGeneric(
                             "expected entry of type link".to_string(),
                         )),

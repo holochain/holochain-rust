@@ -41,3 +41,8 @@ pub struct KeystoreSignArgs {
     pub src_id: String,
     pub payload: String,
 }
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Hash, Debug, Serialize, DefaultJson)]
+pub struct KeystoreGetPublicKeyArgs {
+    pub src_id: String,
+}

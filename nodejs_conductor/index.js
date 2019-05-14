@@ -26,6 +26,10 @@ const Config = {
     agent: name => ({ name }),
     dna: (path, name = `${path}`) => ({ path, name }),
     instance: (agent, dna, name = `${agent.name}`) => ({ agent, dna, name }),
+    dpki: (instance, initParams) => ({
+        instance_id: instance.name,
+        init_params: initParams,
+    }),
     bridge: (handle, caller, callee) => ({
         handle,
         caller_id: caller.name,

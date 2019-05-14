@@ -20,33 +20,32 @@ pub mod predicate;
 pub mod basic_workflows;
 pub mod connection_workflows;
 pub mod constants;
+pub mod multidna_workflows;
 pub mod p2p_node;
 pub mod publish_hold_workflows;
 pub mod three_workflows;
 
 use constants::*;
 use holochain_net::{connection::NetResult, tweetlog::*};
-use p2p_node::P2pNode;
+use p2p_node::test_node::TestNode;
 use std::{collections::HashMap, fs::File};
 
 pub(crate) type TwoNodesTestFn =
-    fn(alex: &mut P2pNode, billy: &mut P2pNode, can_test_connect: bool) -> NetResult<()>;
+    fn(alex: &mut TestNode, billy: &mut TestNode, can_test_connect: bool) -> NetResult<()>;
 
 type ThreeNodesTestFn = fn(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    camille: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    camille: &mut TestNode,
     can_test_connect: bool,
 ) -> NetResult<()>;
 
-type MultiNodesTestFn = fn(nodes: &mut Vec<P2pNode>, can_test_connect: bool) -> NetResult<()>;
+type MultiNodesTestFn = fn(nodes: &mut Vec<TestNode>, can_test_connect: bool) -> NetResult<()>;
 
 lazy_static! {
     // List of tests
     pub static ref TWO_NODES_BASIC_TEST_FNS: Vec<TwoNodesTestFn> = vec![
-        basic_workflows::setup_one_node,
         basic_workflows::no_setup_test,
-        basic_workflows::setup_two_nodes,
         basic_workflows::send_test,
         basic_workflows::untrack_alex_test,
         basic_workflows::untrack_billy_test,
@@ -54,6 +53,7 @@ lazy_static! {
         basic_workflows::dht_test,
         basic_workflows::meta_test,
         basic_workflows::no_meta_test,
+        basic_workflows::shutdown_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,
@@ -65,9 +65,11 @@ lazy_static! {
         publish_hold_workflows::many_meta_test,
     ];
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
-        three_workflows::setup_three_nodes,
         three_workflows::hold_and_publish_test,
         three_workflows::publish_entry_stress_test,
+        multidna_workflows::send_test,
+        multidna_workflows::dht_test,
+        multidna_workflows::meta_test,
     ];
     pub static ref MULTI_NODES_TEST_FNS: Vec<MultiNodesTestFn> = vec![
     ];
@@ -171,7 +173,12 @@ fn main() {
             .unwrap();
         }
         if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-            launch_two_nodes_test("test_bin/data/network_config.json", None, test_fn).unwrap();
+            launch_two_nodes_test(
+                "test_bin/data/network_config.json",
+                Some("test_bin/data/end_user_net_config.json".to_string()),
+                test_fn,
+            )
+            .unwrap();
         }
     }
 
@@ -190,8 +197,12 @@ fn main() {
                 .unwrap();
             }
             if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-                launch_three_nodes_test("test_bin/data/network_config.json", None, test_fn)
-                    .unwrap();
+                launch_three_nodes_test(
+                    "test_bin/data/network_config.json",
+                    Some("test_bin/data/end_user_net_config.json".to_string()),
+                    test_fn,
+                )
+                .unwrap();
             }
         }
     }
@@ -202,14 +213,14 @@ fn main() {
     {
         connection_workflows::two_nodes_disconnect_test(
             "test_bin/data/network_config.json",
-            None,
+            Some("test_bin/data/end_user_net_config.json".to_string()),
             basic_workflows::dht_test,
         )
         .unwrap();
 
         connection_workflows::three_nodes_disconnect_test(
             "test_bin/data/network_config.json",
-            None,
+            Some("test_bin/data/end_user_net_config.json".to_string()),
             three_workflows::hold_and_publish_test,
         )
         .unwrap();
@@ -229,14 +240,8 @@ fn main() {
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResult<()> {
-    let mut alex =
-        P2pNode::new_with_unique_memory_network(ALEX_AGENT_ID.to_string(), DNA_ADDRESS.clone());
-    let mut billy = P2pNode::new_with_config(
-        BILLY_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
-        &alex.config,
-        None,
-    );
+    let mut alex = TestNode::new_with_unique_memory_network(ALEX_AGENT_ID.to_string());
+    let mut billy = TestNode::new_with_config(BILLY_AGENT_ID.to_string(), &alex.config, None);
 
     log_i!("");
     print_two_nodes_test_name("IN-MEMORY TWO NODE TEST: ", test_fn);
@@ -259,19 +264,15 @@ fn launch_two_nodes_test_with_ipc_mock(
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
-    let mut alex = P2pNode::new_with_spawn_ipc_network(
+    let mut alex = TestNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
-    let mut billy = P2pNode::new_with_uri_ipc_network(
-        BILLY_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
-        &alex.endpoint(),
-    );
+    let mut billy =
+        TestNode::new_with_uri_ipc_network(BILLY_AGENT_ID.to_string(), &alex.endpoint());
 
     log_i!("");
     print_two_nodes_test_name("IPC-MOCK TWO NODE TEST: ", test_fn);
@@ -294,17 +295,15 @@ fn launch_two_nodes_test(
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
-    let mut alex = P2pNode::new_with_spawn_ipc_network(
+    let mut alex = TestNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
-    let mut billy = P2pNode::new_with_spawn_ipc_network(
+    let mut billy = TestNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -332,20 +331,9 @@ fn launch_two_nodes_test(
 #[cfg_attr(tarpaulin, skip)]
 fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> NetResult<()> {
     // Create nodes
-    let mut alex =
-        P2pNode::new_with_unique_memory_network(ALEX_AGENT_ID.to_string(), DNA_ADDRESS.clone());
-    let mut billy = P2pNode::new_with_config(
-        BILLY_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
-        &alex.config,
-        None,
-    );
-    let mut camille = P2pNode::new_with_config(
-        CAMILLE_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
-        &alex.config,
-        None,
-    );
+    let mut alex = TestNode::new_with_unique_memory_network(ALEX_AGENT_ID.to_string());
+    let mut billy = TestNode::new_with_config(BILLY_AGENT_ID.to_string(), &alex.config, None);
+    let mut camille = TestNode::new_with_config(CAMILLE_AGENT_ID.to_string(), &alex.config, None);
 
     // Launch test
     log_i!("");
@@ -372,24 +360,17 @@ fn launch_three_nodes_test_with_ipc_mock(
     test_fn: ThreeNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
-    let mut alex = P2pNode::new_with_spawn_ipc_network(
+    let mut alex = TestNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
-    let mut billy = P2pNode::new_with_uri_ipc_network(
-        BILLY_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
-        &alex.endpoint(),
-    );
-    let mut camille = P2pNode::new_with_uri_ipc_network(
-        CAMILLE_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
-        &alex.endpoint(),
-    );
+    let mut billy =
+        TestNode::new_with_uri_ipc_network(BILLY_AGENT_ID.to_string(), &alex.endpoint());
+    let mut camille =
+        TestNode::new_with_uri_ipc_network(CAMILLE_AGENT_ID.to_string(), &alex.endpoint());
 
     log_i!("");
     print_three_nodes_test_name("IPC-MOCK THREE NODE TEST: ", test_fn);
@@ -413,25 +394,22 @@ fn launch_three_nodes_test(
     test_fn: ThreeNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
-    let mut alex = P2pNode::new_with_spawn_ipc_network(
+    let mut alex = TestNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
-    let mut billy = P2pNode::new_with_spawn_ipc_network(
+    let mut billy = TestNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
-    let mut camille = P2pNode::new_with_spawn_ipc_network(
+    let mut camille = TestNode::new_with_spawn_ipc_network(
         CAMILLE_AGENT_ID.to_string(),
-        DNA_ADDRESS.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],

@@ -11,6 +11,10 @@ use crate::{cas::content::Address, error::HolochainError, json::JsonString};
 pub struct Provenance(pub Address, pub Signature);
 
 impl Provenance {
+    /// Creates a new provenance instance with source typically
+    /// being an agent address (public key) and the signature
+    /// some signed data using the private key associated with
+    /// the public key.
     pub fn new(source: Address, signature: Signature) -> Self {
         Provenance(source, signature)
     }

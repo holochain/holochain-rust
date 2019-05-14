@@ -177,7 +177,7 @@ pub mod tests {
     //     // links have same tag, same base and same tag. Are the same
     //     let links = vec![
     //         Link::new(&entry_addresses[0], &entry_addresses[1], "test-type", "test-tag"),
-    //         // Link::new(&entry_addresses[0], &entry_addresses[1], "test-type", "test-tag"),
+    //         Link::new(&entry_addresses[0], &entry_addresses[1], "test-type", "test-tag"),
     //     ];
     //     add_links(initialized_context.clone(), links);
     //     let call_result = get_links(initialized_context.clone(), &entry_addresses[0], "test-type", "test-tag");

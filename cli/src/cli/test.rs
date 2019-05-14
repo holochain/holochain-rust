@@ -14,7 +14,7 @@ pub fn test(
     tests_folder: &str,
     testfile: &str,
     skip_build: bool,
-    show_npm_output: bool
+    show_npm_output: bool,
 ) -> DefaultResult<()> {
     // First, check whether they have `node` installed
     match Command::new("node")

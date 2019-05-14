@@ -1448,6 +1448,8 @@ pub mod tests {
 
         let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
         let b = HashString::from("QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR");
+
+        // We don't care about the error message here, we just expect it to fail
         assert_eq!(
             Conductor::check_dna_consistency(&a, &b).map_err(|_| {}),
             Err(()),

@@ -144,3 +144,22 @@ test('config construction, single argument version, with bridges and logger', t 
     ])
     t.end()
 })
+
+test('config construction with dpki', t => {
+    const agent1 = C.agent('alessia')
+    const agent2 = C.agent('bartolini')
+    const agentDpki = C.agent('dpki')
+    const dnaApp = C.dna('path/to/dna/app')
+    const dnaDpki = C.dna('path/to/dna/dpki')
+    const instance1 = C.instance(agent1, dnaApp)
+    const instance2 = C.instance(agent2, dnaApp)
+    const instanceDpki = C.instance(agentDpki, dnaDpki, 'dpki-instance')
+    const config = C.conductor({
+        instances: [instance1, instance2],
+        dpki: C.dpki(instanceDpki, JSON.stringify({foo: 'bar'}))
+    })
+    t.deepEqual(config.dpki, {
+      instance_id: 'dpki-instance',
+      init_params: '{"foo":"bar"}' })
+    t.end()
+})

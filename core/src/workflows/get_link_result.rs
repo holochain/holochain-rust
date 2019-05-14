@@ -31,8 +31,8 @@ pub async fn get_link_result_workflow<'a>(
             //we should probably replace this with get_entry_result_workflow, it does all the work needed
             context
                 .block_on(
-                    get_entry_with_meta_workflow(&context, &link.0, &link_args.options.timeout).map(
-                        |link_entry_result| {
+                    get_entry_with_meta_workflow(&context, &link.0, &link_args.options.timeout)
+                        .map(|link_entry_result| {
                             link_entry_result
                                 .map(|link_entry_option| {
                                     link_entry_option.map(|link_entry| {
@@ -48,8 +48,7 @@ pub async fn get_link_result_workflow<'a>(
                                     })
                                 })
                                 .unwrap_or(None)
-                        },
-                    ),
+                        }),
                 )
                 .unwrap_or(Err(HolochainError::ErrorGeneric(
                     "Could not get links".to_string(),
@@ -71,7 +70,7 @@ pub async fn get_link_result_workflow<'a>(
 async fn get_link_caches<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
-) -> Result<Vec<(Address,Address)>, HolochainError> {
+) -> Result<Vec<(Address, Address)>, HolochainError> {
     let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
@@ -90,7 +89,7 @@ async fn get_link_caches<'a>(
             entry_with_header
                 .map(|link_entry_result| {
                     link_entry_result.map(|link_entry| match link_entry.entry_with_meta.entry {
-                        Entry::LinkAdd(link) => Ok((s.clone(),link.link().target().clone())),
+                        Entry::LinkAdd(link) => Ok((s.clone(), link.link().target().clone())),
                         _ => Err(HolochainError::ErrorGeneric(
                             "expected entry of type link".to_string(),
                         )),

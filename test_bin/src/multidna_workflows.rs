@@ -220,7 +220,16 @@ pub fn meta_test(
     let result =
         camille.wait_with_timeout(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))), 1000);
     log_i!("got GetMetaResult: {:?}", result);
-    assert!(result.is_none());
+
+    // XXX - currently in-memory and mock return none here
+    //       and realmode returns a result with no meta items.
+    if !result.is_none() {
+        let result = result.unwrap();
+        let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+        assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_3.clone());
+        assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
+        assert_eq!(meta_data.content_list.len(), 0);
+    }
 
     // Done
     Ok(())

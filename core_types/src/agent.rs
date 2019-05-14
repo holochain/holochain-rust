@@ -40,7 +40,7 @@ impl AgentId {
 
     /// initialize an Agent struct with `nick` and `key` that will be encoded with HCID.
     pub fn new_with_raw_key(nick: &str, key: &str) -> HcResult<Self> {
-        let codec = with_hcs0()?;
+        let codec = HcidEncoding::with_kind("hcs0")?;
         let key_b32 = codec.encode(key.as_bytes())?;
         Ok(AgentId::new(nick, key_b32))
     }
@@ -55,7 +55,7 @@ impl AgentId {
 
     /// Get the key decoded with HCID
     pub fn decoded_key(&self) -> HcResult<String> {
-        let codec = with_hcs0()?;
+        let codec = HcidEncoding::with_kind("hcs0")?;
         let key_b32 = codec.decode(&self.pub_sign_key)?;
         Ok(str::from_utf8(&key_b32).unwrap().to_owned())
     }

@@ -135,8 +135,12 @@ enum Cli {
         testfile: String,
         #[structopt(long = "skip-package", short = "s", help = "Skip packaging DNA")]
         skip_build: bool,
-        #[structopt(long = "show-npm-output", short = "n", help = "Show NPM output when installing test dependencies")]
-        show_npm_output: bool
+        #[structopt(
+            long = "show-npm-output",
+            short = "n",
+            help = "Show NPM output when installing test dependencies"
+        )]
+        show_npm_output: bool,
     },
     #[structopt(
         name = "keygen",

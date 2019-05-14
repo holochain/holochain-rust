@@ -21,7 +21,7 @@ pub async fn remove_link_workflow<'a>(
     let EntryWithHeader { entry, header } = &entry_with_header;
 
     let link_remove = match entry {
-        Entry::LinkRemove((link_remove,_)) => link_remove,
+        Entry::LinkRemove((link_remove, _)) => link_remove,
         _ => Err(HolochainError::ErrorGeneric(
             "remove_link_workflow expects entry to be an Entry::LinkRemove".to_string(),
         ))?,

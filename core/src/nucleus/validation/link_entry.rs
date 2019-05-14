@@ -23,7 +23,7 @@ pub async fn validate_link_entry(
     let address = entry.address().clone();
     let link = match entry.clone() {
         Entry::LinkAdd(link_add) => link_add.clone(),
-        Entry::LinkRemove((link_remove,_)) => link_remove,
+        Entry::LinkRemove((link_remove, _)) => link_remove,
         _ => {
             return Err(ValidationError::Error(
                 "Could not extract link_add from entry".into(),
@@ -50,7 +50,7 @@ pub async fn validate_link_entry(
             link,
             validation_data,
         }),
-        Entry::LinkRemove((link,_)) => Ok(LinkValidationData::LinkRemove {
+        Entry::LinkRemove((link, _)) => Ok(LinkValidationData::LinkRemove {
             link,
             validation_data,
         }),

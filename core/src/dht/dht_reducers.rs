@@ -167,33 +167,30 @@ pub(crate) fn reduce_remove_link(
         );
         Some(new_store)
     } else {
-
-        let links_to_remove = match entry
-        {
-            Entry::LinkRemove((_,links)) => links.clone(),
-            _ => Vec::new()
+        let links_to_remove = match entry {
+            Entry::LinkRemove((_, links)) => links.clone(),
+            _ => Vec::new(),
         };
-        links_to_remove.iter().fold(None,|_storage_option,link_address|{
+        links_to_remove
+            .iter()
+            .fold(None, |_storage_option, link_address| {
                 let eav = EntityAttributeValueIndex::new(
-                link.base(),
-                &Attribute::RemovedLink(link.tag().to_string()),
-                &link_address,
-            );
-            eav.map(|e| {
-                let mut new_store = (*old_store).clone();
-                let storage = new_store.meta_storage();
-                let result = storage.write().unwrap().add_eavi(&e);
-                new_store
-                    .actions_mut()
-                    .insert(action_wrapper.clone(), result.map(|_| link.base().clone()));
-                Some(new_store)
+                    link.base(),
+                    &Attribute::RemovedLink(link.tag().to_string()),
+                    &link_address,
+                );
+                eav.map(|e| {
+                    let mut new_store = (*old_store).clone();
+                    let storage = new_store.meta_storage();
+                    let result = storage.write().unwrap().add_eavi(&e);
+                    new_store
+                        .actions_mut()
+                        .insert(action_wrapper.clone(), result.map(|_| link.base().clone()));
+                    Some(new_store)
+                })
+                .ok()
+                .unwrap_or(None)
             })
-            .ok()
-            .unwrap_or(None)
-
-        })
-        
-       
     }
 }
 
@@ -369,7 +366,7 @@ pub mod tests {
         chain_header::test_chain_header,
         eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
-        link::{Link,link_data::LinkData}
+        link::{link_data::LinkData, Link},
     };
     use std::{
         convert::TryFrom,
@@ -480,8 +477,14 @@ pub mod tests {
 
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
-        let entry_link_remove = Entry::LinkRemove((LinkData::new_add(link.base(),link.target(),link.tag()),vec![entry.clone().address()]));
-        action = ActionWrapper::new(Action::RemoveLink((link.clone(), entry_link_remove.clone())));
+        let entry_link_remove = Entry::LinkRemove((
+            LinkData::new_add(link.base(), link.target(), link.tag()),
+            vec![entry.clone().address()],
+        ));
+        action = ActionWrapper::new(Action::RemoveLink((
+            link.clone(),
+            entry_link_remove.clone(),
+        )));
 
         let _ = new_dht_store.meta_storage();
 
@@ -494,7 +497,10 @@ pub mod tests {
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
-            EavFilter::multiple(vec![Attribute::LinkTag(test_tag.clone()),Attribute::RemovedLink(test_tag.clone())]),
+            EavFilter::multiple(vec![
+                Attribute::LinkTag(test_tag.clone()),
+                Attribute::RemovedLink(test_tag.clone()),
+            ]),
             None.into(),
             IndexFilter::LatestByAttribute,
             Some(EavFilter::single(Attribute::RemovedLink(test_tag.clone()))),

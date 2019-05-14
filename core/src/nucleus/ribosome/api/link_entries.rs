@@ -226,10 +226,7 @@ pub mod tests {
         let result1: JsonString = ZomeApiInternalResult::success(call_result1).into();
         let result2: JsonString = ZomeApiInternalResult::success(call_result2).into();
 
-        assert_ne!(
-            result1, 
-            result2
-        );        
+        assert_ne!(result1, result2);
     }
 
 }

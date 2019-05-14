@@ -73,7 +73,9 @@ impl fmt::Display for Attribute {
             Attribute::Link => write!(f, "link"),
             Attribute::LinkRemove => write!(f, "link_remove"),
             Attribute::LinkTag(link_type, tag) => write!(f, "link__{}__{}", link_type, tag),
-            Attribute::RemovedLink(link_type, tag) => write!(f, "removed_link__{}__{}", link_type, tag),
+            Attribute::RemovedLink(link_type, tag) => {
+                write!(f, "removed_link__{}__{}", link_type, tag)
+            }
             Attribute::PendingEntry => write!(f, "pending-entry"),
         }
     }

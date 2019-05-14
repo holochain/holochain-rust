@@ -10,7 +10,6 @@ use crate::{cas::content::Address, error::HolochainError, json::JsonString};
 type LinkType = String;
 type LinkTag = String;
 
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, DefaultJson)]
 pub struct Link {
     base: Address,
@@ -60,7 +59,7 @@ pub mod tests {
     use crate::{
         cas::content::AddressableContent,
         entry::{test_entry_a, test_entry_b},
-        link::{Link, LinkActionKind, LinkType, LinkTag},
+        link::{Link, LinkActionKind, LinkTag, LinkType},
     };
 
     pub fn example_link_type() -> LinkType {

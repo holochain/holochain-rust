@@ -226,7 +226,7 @@ fn run() -> HolochainResult<()> {
             dir,
             testfile,
             skip_build,
-            show_npm_output
+            show_npm_output,
         } => {
             let current_path = std::env::current_dir()
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;

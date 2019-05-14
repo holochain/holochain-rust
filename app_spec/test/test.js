@@ -312,6 +312,12 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
+
+  const bob_agent_expect_one = await alice.callSync("blog", "create_post",{ "content": "Posty", "in_reply_to": "" });
+
+  t.ok(bob_agent_expect_one.Ok)
+  t.equal(bob_agent_expect_one.Ok.links.length, 1);
+
 })
 
 scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {

@@ -232,7 +232,7 @@ impl Waiter {
                                         ))
                                 });
                             }
-                            Entry::LinkRemove(link_remove) => {
+                            Entry::LinkRemove((link_remove,_)) => {
                                 checker.add(num_instances, move |aw| {
                                     //println!("WAITER: Entry::LinkRemove -> Action::RemoveLink");
                                     *aw.action()

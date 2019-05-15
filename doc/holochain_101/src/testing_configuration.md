@@ -71,18 +71,21 @@ console.log(dnaConfig)
 Takes an agent config object and a dna confid object, and optionally a unique name, and returns a full configuration object
 for a DNA instance.
 ___
+
 **Name** agentConfig
 
 **Type** `object`
 
 **Description** A config object with a `name` property, as produced by `Config.agent`
 ___
+
 **Name** dnaConfig
 
 **Type** `object`
 
 **Description** A config object with a `name` and `path` property, as produced by `Config.dna`
 ___
+
 **Name** name *Optional*
 
 **Type** `string`
@@ -159,6 +162,30 @@ console.log(bridgeConfig)
   callee_id: 'bob' }
 */
 ```
+
+
+## DPKI
+
+### `Config.dpki(instanceConfig, initParams)` => `object`
+
+Takes two arguments: an instance object, as specified by `Config.instance`, and an object which gets passed into the `init_params` conductor config object.
+
+___
+
+**Name** instanceConfig
+
+**Type** `object`
+
+**Description** A config object with a `name` property, as produced by `Config.instance`
+
+___
+
+**Name** initParams
+
+**Type** `object`
+
+**Description** A config object which will be passed directly through to the conductor config (as `dpki.init_params`)
+
 
 ## Full Conductor Configuration
 

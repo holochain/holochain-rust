@@ -192,33 +192,27 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 // Just republish everything when a new person comes on-line!!
                 republish_all_public_chain_entries(&context);
             }
-            JsonProtocol::HandleGetHoldingEntryList(entries) => {
-                context.log(format!("HandleGetHoldingEntryList: {:?}", entries))
-            }
-            JsonProtocol::HandleGetHoldingEntryListResult(entries) => {
-                context.log(format!("HandleGetHoldingEntryListResult: {:?}", entries))
+            JsonProtocol::HandleGetHoldingEntryList(get_list_data) => {
+                handle_get_holding_entry_list(&context, &get_list_data)
+                    .expect("handle_get_holding_entry_list: failed")
+             }
+            JsonProtocol::HandleGetHoldingMetaList(get_list_data) => {
+                handle_get_holding_meta_list(&context, &get_list_data)
+                    .expect("handle_get_holding_meta_list: failed")
             }
             JsonProtocol::HandleGetPublishingEntryList(get_list_data) => {
-                context.log(format!("HandleGetPublishingEntryList: {:?}", get_list_data));
-                handle_get_publishing_entries(&context, &get_list_data)
+                handle_get_publishing_entry_list(&context, &get_list_data)
                     .expect("handle_get_publish_entries: failed");
             }
-            JsonProtocol::HandleGetPublishingEntryListResult(entries) => {
-                context.log(format!("HandleGetPublishingEntryListResult: {:?}", entries))
+            JsonProtocol::HandleGetPublishingMetaList(get_list_data) => {
+                handle_get_publishing_meta_list(&context, &get_list_data)
+                    .expect("handle_get_publishing_meta_list: failed");
             }
-            JsonProtocol::HandleGetPublishingMetaList(meta) => {
-                handle_get_publishing_meta_list(&context, &meta)
-                    .expect("handle_get_publish_meta_list: failed");
-            }
-            JsonProtocol::HandleGetPublishingMetaListResult(meta) => {
-                context.log(format!("HandleGetPublishingMetaListResult: {:?}", meta))
-            }
-            JsonProtocol::HandleGetHoldingMetaList(meta) => {
-                context.log(format!("HandleGetHoldingMetaList: {:?}", meta))
-            }
-            JsonProtocol::HandleGetHoldingMetaListResult(meta) => {
-                context.log(format!("HandleGetHoldingMetaListResult: {:?}", meta))
-            }
+            // these protocol events should be handled on the lib3h side.
+            JsonProtocol::HandleGetPublishingEntryListResult(_) |
+               JsonProtocol::HandleGetHoldingEntryListResult(_) |
+                JsonProtocol::HandleGetPublishingMetaListResult(_) |
+                JsonProtocol::HandleGetHoldingMetaListResult(_) => (),
             _ => {}
         }
         Ok(())
@@ -266,18 +260,21 @@ fn handle_get_publishing_meta_list(
                 })
                 .collect();
 
-            send_result(
-                &context,
-                JsonProtocol::HandleGetPublishingMetaListResult(MetaListData {
+            let meta_list_data =
+                MetaListData {
                     dna_address: get_list_data.dna_address.clone(),
                     request_id: get_list_data.request_id.clone(),
-                    meta_list: meta_list.clone(),
-                }),
+                    meta_list
+                };
+
+            send_result(
+                &context,
+                JsonProtocol::HandleGetPublishingMetaListResult(meta_list_data)
             )
         })
 }
 
-fn handle_get_publishing_entries(
+fn handle_get_publishing_entry_list(
     context: &Arc<Context>,
     get_list_data: &GetListData,
 ) -> Result<(), HolochainError> {
@@ -297,14 +294,23 @@ fn handle_get_publishing_entries(
         entry_address_list: entry_address_list,
     };
 
-    context.log(format!(
-        "debug/net/handle: handle_get_publishing_entries returning {:?}",
-        entry_list_data
-    ));
     send_result(
         &context,
         JsonProtocol::HandleGetPublishingEntryListResult(entry_list_data),
     )
+}
+fn handle_get_holding_entry_list(
+    context: &Arc<Context>,
+    get_list_data: &GetListData,
+) -> Result<(), HolochainError> {
+    Ok(())
+}
+
+fn handle_get_holding_meta_list(
+    context: &Arc<Context>,
+    get_list_data: &GetListData,
+) -> Result<(), HolochainError> {
+    Ok(())
 }
 
 fn send_result(context: &Arc<Context>, json_protocol: JsonProtocol) -> Result<(), HolochainError> {
@@ -326,3 +332,5 @@ fn send_result(context: &Arc<Context>, json_protocol: JsonProtocol) -> Result<()
         .send(json_protocol.into())
         .map_err(|err: failure::Error| HolochainError::new(err.to_string().as_str()))
 }
+
+

@@ -95,8 +95,7 @@ jobs:
        name: run conductor
        background: true
        command: |
-         nix-shell --run hc-install-conductor
-         nix-shell --run hc-test-conductor-serve
+         nix-shell --run hc-app-spec-serve
 
    - run:
       name: wait for conductor to boot

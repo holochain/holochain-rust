@@ -80,7 +80,16 @@ impl DhtStore {
             .collect())
     }
 
-    /// Get all headers for an entry by first looking in the DHT meta store
+    pub fn get_meta(&self) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+        self.meta_storage()
+            .read()
+            .unwrap()
+            // fetch all EAV references to chain headers for this entry
+            .fetch_eavi(&EaviQuery::default())
+            .map(|eavi| eavi.into_iter().collect())
+    }
+
+     /// Get all headers for an entry by first looking in the DHT meta store
     /// for header addresses, then resolving them with the DHT CAS
     pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {
         self.meta_storage()

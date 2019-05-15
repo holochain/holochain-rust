@@ -51,9 +51,9 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         let entry_with_header: EntryWithHeader = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be EntryWithHeader"),
         )
-        .expect("dht_meta_data should be EntryWithHader");
+        .expect("dht_meta_data should be EntryWithHeader");
         thread::spawn(move || {
             if let Err(error) =
                 context.block_on(remove_link_workflow(&entry_with_header, &context.clone()))
@@ -70,9 +70,9 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         let entry_with_header: EntryWithHeader = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be EntryWithHeader"),
         )
-        .expect("dht_meta_data should be EntryWithHader");
+        .expect("dht_meta_data should be EntryWithHeader");
         thread::spawn(move || {
             if let Err(error) =
                 context.block_on(hold_remove_workflow(entry_with_header, context.clone()))
@@ -88,9 +88,9 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         let entry_with_header: EntryWithHeader = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be EntryWithHeader"),
         )
-        .expect("dht_meta_data should be EntryWithHader");
+        .expect("dht_meta_data should be EntryWithHeader");
         thread::spawn(move || {
             if let Err(error) =
                 context.block_on(hold_update_workflow(entry_with_header, context.clone()))

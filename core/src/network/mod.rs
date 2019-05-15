@@ -44,7 +44,6 @@ pub mod tests {
 
         // Create Entry & metadata
         let entry = test_entry();
-
         // Store it on the network
         let result = context1.block_on(commit_entry(entry.clone(), None, &context1));
         assert!(result.is_ok(), "commit_entry() result = {:?}", result);

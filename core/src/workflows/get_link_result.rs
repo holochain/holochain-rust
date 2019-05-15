@@ -89,7 +89,7 @@ async fn get_link_caches<'a>(
             entry_with_header
                 .map(|link_entry_result| {
                     link_entry_result.map(|link_entry| match link_entry.entry_with_meta.entry {
-                        Entry::LinkAdd(link) => Ok((s.clone(), link.link().target().clone())),
+                        Entry::LinkAdd(link) => Ok((link.link().base().clone(), link.link().target().clone())),
                         _ => Err(HolochainError::ErrorGeneric(
                             "expected entry of type link".to_string(),
                         )),

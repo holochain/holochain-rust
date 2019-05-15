@@ -195,7 +195,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             JsonProtocol::HandleGetHoldingEntryList(get_list_data) => {
                 handle_get_holding_entry_list(&context, &get_list_data)
                     .expect("handle_get_holding_entry_list: failed")
-             }
+            }
             JsonProtocol::HandleGetHoldingMetaList(get_list_data) => {
                 handle_get_holding_meta_list(&context, &get_list_data)
                     .expect("handle_get_holding_meta_list: failed")
@@ -209,10 +209,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     .expect("handle_get_publishing_meta_list: failed");
             }
             // these protocol events should be handled on the lib3h side.
-            JsonProtocol::HandleGetPublishingEntryListResult(_) |
-               JsonProtocol::HandleGetHoldingEntryListResult(_) |
-                JsonProtocol::HandleGetPublishingMetaListResult(_) |
-                JsonProtocol::HandleGetHoldingMetaListResult(_) => (),
+            JsonProtocol::HandleGetPublishingEntryListResult(_)
+            | JsonProtocol::HandleGetHoldingEntryListResult(_)
+            | JsonProtocol::HandleGetPublishingMetaListResult(_)
+            | JsonProtocol::HandleGetHoldingMetaListResult(_) => (),
             _ => {}
         }
         Ok(())
@@ -260,16 +260,15 @@ fn handle_get_publishing_meta_list(
                 })
                 .collect();
 
-            let meta_list_data =
-                MetaListData {
-                    dna_address: get_list_data.dna_address.clone(),
-                    request_id: get_list_data.request_id.clone(),
-                    meta_list
-                };
+            let meta_list_data = MetaListData {
+                dna_address: get_list_data.dna_address.clone(),
+                request_id: get_list_data.request_id.clone(),
+                meta_list,
+            };
 
             send_result(
                 &context,
-                JsonProtocol::HandleGetPublishingMetaListResult(meta_list_data)
+                JsonProtocol::HandleGetPublishingMetaListResult(meta_list_data),
             )
         })
 }
@@ -332,5 +331,3 @@ fn send_result(context: &Arc<Context>, json_protocol: JsonProtocol) -> Result<()
         .send(json_protocol.into())
         .map_err(|err: failure::Error| HolochainError::new(err.to_string().as_str()))
 }
-
-

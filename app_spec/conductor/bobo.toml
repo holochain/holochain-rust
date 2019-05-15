@@ -1,0 +1,21 @@
+[[agents]]
+id = "bobo"
+name = "Bobo"
+public_address = "HcSCI93Md88NZ44QMsddam8emGQ7967irPFZ8OguHdn366q95cHGCNCs9Ivjg8i"
+keystore_file = "./app_spec/conductor/bobo.key"
+holo_remote_key = true
+
+dnas = []
+
+instances = []
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+instances = []
+[interfaces.driver]
+type = "websocket"
+port = 8080
+
+[logger]
+type = "debug"

@@ -1,0 +1,21 @@
+[[agents]]
+id = "alise"
+name = "Alise"
+public_address = "HcScj379C4j3V6wbisM77eKkzJeSu4asb4icF7szm38on3baqYiQr54eEVo4xqr"
+keystore_file = "./app_spec/conductor/alise.key"
+holo_remote_key = true
+
+dnas = []
+
+instances = []
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+instances = []
+[interfaces.driver]
+type = "websocket"
+port = 35174
+
+[logger]
+type = "debug"

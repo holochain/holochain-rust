@@ -1,0 +1,21 @@
+[[agents]]
+id = "carol"
+name = "Carol"
+public_address = "HcSCi6jB43Hnkyw3tfqFsN6rpyoq38piiWPMjhzPNcwr5z4jmfMDXfKGtdwrgzz"
+keystore_file = "./app_spec/conductor/carol.key"
+holo_remote_key = true
+
+dnas = []
+
+instances = []
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+instances = []
+[interfaces.driver]
+type = "websocket"
+port = 7070
+
+[logger]
+type = "debug"

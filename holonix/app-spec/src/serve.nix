@@ -6,7 +6,7 @@ let
   script = pkgs.writeShellScriptBin name
   ''
    hc-conductor-rust-install
-   holochain -c ./app_spec/container-config.toml
+   holochain -c ./app_spec/conductor/''$1.toml
   '';
 in
 script

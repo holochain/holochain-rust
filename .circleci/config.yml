@@ -95,11 +95,31 @@ jobs:
        name: run conductor
        background: true
        command: |
-         nix-shell --run hc-app-spec-serve
+         nix-shell --run hc-app-spec-serve alise
 
    - run:
-      name: wait for conductor to boot
-      command: nix-shell -p curl --run 'until $(curl -o /dev/null -sI http://127.0.0.1:3000); do printf '.'; sleep 5; done;'
+      name: wait for alise to boot
+      command: nix-shell -p curl --run 'until $(curl -o /dev/null -sI http://127.0.0.1:35174); do printf '.'; sleep 5; done;'
+
+   - run:
+       name: run conductor
+       background: true
+       command: |
+         nix-shell --run hc-app-spec-serve bobo
+
+   - run:
+      name: wait for bobo to boot
+      command: nix-shell -p curl --run 'until $(curl -o /dev/null -sI http://127.0.0.1:8080); do printf '.'; sleep 5; done;'
+
+   - run:
+       name: run conductor
+       background: true
+       command: |
+         nix-shell --run hc-app-spec-serve carol
+
+   - run:
+      name: wait for bobo to boot
+      command: nix-shell -p curl --run 'until $(curl -o /dev/null -sI http://127.0.0.1:7070); do printf '.'; sleep 5; done;'
 
  cli-tests:
   docker:

@@ -5,8 +5,6 @@ use crate::{
     link::{Link, LinkActionKind},
 };
 
-use chrono::offset::Utc;
-
 //-------------------------------------------------------------------------------------------------
 // LinkData
 //-------------------------------------------------------------------------------------------------
@@ -15,7 +13,6 @@ use chrono::offset::Utc;
 pub struct LinkData {
     action_kind: LinkActionKind,
     link: Link,
-    timestamp: i64,
 }
 
 impl LinkData {
@@ -23,7 +20,6 @@ impl LinkData {
         LinkData {
             action_kind: LinkActionKind::ADD,
             link: Link::new(base, target, tag),
-            timestamp: Utc::now().timestamp_nanos(),
         }
     }
 
@@ -31,7 +27,6 @@ impl LinkData {
         LinkData {
             action_kind: LinkActionKind::REMOVE,
             link: Link::new(base, target, tag),
-            timestamp: Utc::now().timestamp_nanos(),
         }
     }
 
@@ -47,7 +42,6 @@ impl LinkData {
         LinkData {
             action_kind,
             link: link.clone(),
-            timestamp: Utc::now().timestamp_nanos(),
         }
     }
 }

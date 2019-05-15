@@ -147,7 +147,7 @@ pub mod tests {
         );
 
         let no_entry: Option<Address> = Some(HashString::from(
-            "QmVfsKrtoAKjZdbGjHgai2waUp2CsMUjFHs1kthNDVCZw7",
+            "QmWXM2r3iujqGvka8XMKU2wLdz5N14bEhvDp7Rx3R3oaEP",
         ));
         let result = ZomeApiInternalResult::success(no_entry);
         assert_eq!(
@@ -194,7 +194,7 @@ pub mod tests {
         );
 
         let no_entry: Option<Address> = Some(HashString::from(
-            "QmVHqtVRa5qpFakdneMkyfS728tY3WN24H5Fg6GLcmXdDc",
+            "QmcmcrbAfoaqJMZun74Xs1TsCUndXAohJNrKu7xZyr68P8",
         ));
         let result = ZomeApiInternalResult::success(no_entry);
 

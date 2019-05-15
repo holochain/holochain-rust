@@ -85,7 +85,7 @@ jobs:
        name: nodejs conductor tests
        command: nix-shell --run hc-conductor-node-test
 
- conductor-smoke:
+ conductor.smoke:
   docker:
    - image: holochain/holochain-rust:latest
   steps:
@@ -214,6 +214,7 @@ workflows:
    - fmt
    - app-spec-tests
    - cli-tests
+   - conductor.smoke
 
  cold.ubuntu:
   jobs:

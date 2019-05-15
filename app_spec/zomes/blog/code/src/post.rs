@@ -96,6 +96,16 @@ pub fn definition() -> ValidatingEntryType {
                 validation: | _validation_data: hdk::LinkValidationData | {
                     Ok(())
                 }
+            ),
+            from!(
+                "topic",
+                link_type: "topic_index",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::ChainFull
+                },
+                validation: | _validation_data: hdk::LinkValidationData| {
+                    Ok(())
+                }
             )
         ]
     )
@@ -149,6 +159,10 @@ mod tests {
                     base_type: "%agent_id".to_string(),
                     link_type: "recommended_posts".to_string(),
                 },
+                LinkedFrom {
+                    base_type: "topic".to_string(),
+                    link_type: "topic_index".to_string(),
+                }
             ],
             links_to: Vec::new(),
             sharing: Sharing::Public,

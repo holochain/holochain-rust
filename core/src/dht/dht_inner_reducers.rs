@@ -30,7 +30,7 @@ pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> H
             (*store.meta_storage().write()?)
                 .add_eavi(&status_eav)
                 .map(|_| ())
-                .map_err(|e| format!("err/dht: dht::reduce_hold_entry() FAILED {:?}", e).into())
+                .map_err(|e| format!("err/dht: dht::reduce_store_entry_inner() FAILED {:?}", e).into())
         })?,
         Err(e) => Err(format!("err/dht: dht::reduce_hold_entry() FAILED {:?}", e).into()),
     }

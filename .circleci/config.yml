@@ -62,6 +62,16 @@ jobs:
           exit 1
         fi
 
+ coverage:
+  docker:
+   - image: holochain/holochain-rust:latest
+  steps:
+   - checkout
+
+   - run:
+       name: codecov
+       command: nix-shell --run hc-rust-coverage-codecov
+
  app-spec-tests:
   docker:
    - image: holochain/holochain-rust:latest
@@ -197,6 +207,7 @@ workflows:
    - fmt
    - app-spec-tests
    - cli-tests
+   - coverage
 
  cold.ubuntu:
   jobs:

@@ -813,7 +813,7 @@ pub fn link_entries<S: Into<String>>(
         link_type: link_type.into(),
         tag: match tag {
             Some(s) => s.into(),
-            None => "*".to_string()
+            None => "*".to_string(),
         },
     })
 }
@@ -1146,16 +1146,20 @@ pub fn get_links_with_options<S: Into<String>>(
     Dispatch::GetLinks.with_input(GetLinksArgs {
         entry_address: base.clone(),
         link_type: link_type.into(),
-        tag: match tag{
+        tag: match tag {
             Some(t) => Some(t.into()),
-            None => None
+            None => None,
         },
         options,
     })
 }
 
 /// Helper function for get_links. Returns a vector with the default return results.
-pub fn get_links<S: Into<String>>(base: &Address, link_type: S, tag: Option<S>) -> ZomeApiResult<GetLinksResult> {
+pub fn get_links<S: Into<String>>(
+    base: &Address,
+    link_type: S,
+    tag: Option<S>,
+) -> ZomeApiResult<GetLinksResult> {
     get_links_with_options(base, link_type, tag, GetLinksOptions::default())
 }
 

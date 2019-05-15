@@ -71,7 +71,7 @@ pub fn link_entries_bidir<S: Into<String>>(
     link_type_a_b: S,
     link_type_b_a: S,
     link_tag_a_b: Option<S>,
-    link_tag_b_a: Option<S>
+    link_tag_b_a: Option<S>,
 ) -> ZomeApiResult<()> {
     hdk::link_entries(a, b, link_type_a_b, link_tag_a_b)?;
     hdk::link_entries(b, a, link_type_b_a, link_tag_b_a)?;

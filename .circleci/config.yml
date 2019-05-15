@@ -115,11 +115,11 @@ jobs:
        name: run conductor
        background: true
        command: |
-         nix-shell --run 'hc-app-spec-serve carol'
+         nix-shell --run 'hc-app-spec-serve lola'
 
    - run:
-      name: wait for bobo to boot
-      command: nix-shell -p curl --run 'until $(curl -o /dev/null -sI http://127.0.0.1:7070); do printf '.'; sleep 5; done;'
+      name: wait for lola to boot
+      command: nix-shell -p curl --run 'until $(curl -o /dev/null -sI http://127.0.0.1:4707); do printf '.'; sleep 5; done;'
 
  cli-tests:
   docker:

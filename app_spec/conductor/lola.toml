@@ -1,8 +1,8 @@
 [[agents]]
-id = "carol"
-name = "Carol"
+id = "lola"
+name = "Lola"
 public_address = "HcSCi6jB43Hnkyw3tfqFsN6rpyoq38piiWPMjhzPNcwr5z4jmfMDXfKGtdwrgzz"
-keystore_file = "./app_spec/conductor/carol.key"
+keystore_file = "./app_spec/conductor/lola.key"
 holo_remote_key = true
 
 dnas = []
@@ -15,7 +15,7 @@ id = "websocket interface"
 instances = []
 [interfaces.driver]
 type = "websocket"
-port = 7070
+port = 4707
 
 [logger]
 type = "debug"

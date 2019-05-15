@@ -6,6 +6,12 @@ use hdk::holochain_core_types::{
 };
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+pub enum QueryType {
+    And,
+    Or
+}
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Topic {
     pub topic: String
 }

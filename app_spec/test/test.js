@@ -22,23 +22,30 @@ scenario1.runTape('query capability using link tags', async (t, {alice}) => {
   const result = await alice.callSync("blog", "create_post", params)
   t.equal(result.Ok, 'QmVdNzdFJnMyKJd6L3k1rNZqptUgwbzJoh78HEQ33z36qm')
 
-  const query_result1 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["Holochain"]})
-  t.ok(query_result1)
-  const query_result2 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["Holo"]})
-  t.ok(query_result2)
-  const query_result3 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["distributed"]})
-  t.ok(query_result3)
+  const query_result1 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["Holochain"], query_type: "And"})
+  t.ok(query_result1.Ok)
+  const query_result2 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["Holo"], query_type: "And"})
+  t.ok(query_result2.Ok)
+  const query_result3 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["distributed"], query_type: "And"})
+  t.ok(query_result3.Ok)
 
-  const query_result4 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["Holochain", "holo"]})
-  t.ok(query_result4)
-  const query_result5 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["distributed", "Holochain"]})
-  t.ok(query_result5)
+  const query_result4 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["Holochain", "holo"], query_type: "And"})
+  t.ok(query_result4.Ok)
+  const query_result5 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["distributed", "Holochain"], query_type: "And"})
+  t.ok(query_result5.Ok)
 
-  const query_result6 = await alice.callSync("blog", "get_posts_by_topic", {base_topic: ["holo", "distributed"]})
-  t.ok(query_result6)
+  const query_result6 = await alice.callSync("blog", "get_posts_by_topic", {base_topic: ["holo", "distributed"], query_type: "And"})
+  t.ok(query_result6.Ok)
 
-  const query_result7 = await alice.callSync("blog", "get_posts_by_topic", {base_topic: ["Holochain", "holo", "distributed"]})
-  t.ok(query_result7)
+  const query_result7 = await alice.callSync("blog", "get_posts_by_topic", {base_topic: ["Holochain", "holo", "distributed"], query_type: "And"})
+  t.ok(query_result7.Ok)
+
+  const params2 = {content: "Queryable Blog Post 2 w/Topics", in_reply_to: null, topics: ["holochain", "distributed", "holo"]}
+  const result2 = await alice.callSync("blog", "create_post", params2)
+  t.equal(result2.Ok, 'Qmf4m4nmTAXNgJ2bu3WCFdBoArNeDPMxujDGKqoGT3fnP3')
+
+  const query_result8 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["Holochain" , "distributed", "holo"], query_type: "Or"})
+  t.ok(query_result8.Ok) //should return first post and second post as query_type is or for a topic they both belong to
 })
 
 scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {

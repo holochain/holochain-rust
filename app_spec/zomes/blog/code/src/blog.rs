@@ -22,7 +22,9 @@ use hdk::{
 
 use memo::Memo;
 use post::Post;
-use topic::Topic;
+use topic::{
+    Topic, QueryType,
+};
 use std::{
     collections::BTreeMap,
     convert::{TryFrom, TryInto},
@@ -324,8 +326,6 @@ pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
 pub fn create_topics(topics: &Vec<String>) -> ZomeApiResult<Vec<Address>> {
     let mut topic_addresses = vec![];
     for topic in topics{
-        hdk::debug("creating topic")?;
-        hdk::debug(topic.clone())?;
         let entry = Entry::App("topic".into(), Topic{topic: topic.to_string()}.into());
         let topic_entry_address = hdk::entry_address(&entry)?;
         match hdk::get_entry(&topic_entry_address)? {
@@ -380,12 +380,24 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>, topics:
     Ok(address)
 }
 
-pub fn handle_get_post_by_topics(mut topics: Vec<String>) -> ZomeApiResult<Vec<Post>> {
+pub fn handle_get_post_by_topics(mut topics: Vec<String>, query_type: QueryType) -> ZomeApiResult<Vec<Post>> {
     topics = topics.iter().map(|topic| topic.to_lowercase()).collect();
-    topics.sort_by(|a, b| b.cmp(&a)); //make sure topics are in the correct decending alphabetical order as they were saved
-    let base_topic_address = hdk::entry_address(&Entry::App("topic".into(), Topic{topic: topics[0].clone()}.into()))?; 
-    let entries = hdk::utils::get_links_and_load_type::<String, Post>(&base_topic_address, "topic_index".to_string(), Some(topics.join(":")))?;
-    Ok(entries)
+    match query_type{
+        QueryType::And => {
+            topics.sort_by(|a, b| b.cmp(&a)); //make sure topics are in the correct decending alphabetical order as they were saved
+            let base_topic_address = hdk::entry_address(&Entry::App("topic".into(), Topic{topic: topics[0].clone()}.into()))?; 
+            let entries = hdk::utils::get_links_and_load_type::<String, Post>(&base_topic_address, "topic_index".to_string(), Some(topics.join(":")))?;
+            Ok(entries)
+        }, 
+        QueryType::Or => {
+            let mut entries = vec![];
+            for topic in topics{
+                let topic_hash = hdk::entry_address(&Entry::App("topic".into(), Topic{topic: topic.clone()}.into()))?; 
+                entries.append(&mut hdk::utils::get_links_and_load_type::<String, Post>(&topic_hash, "topic_index".to_string(), Some(topic))?);
+            };
+            Ok(entries)
+        }
+    }
 }
 
 pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Address>,

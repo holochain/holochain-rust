@@ -90,7 +90,7 @@ define_zome! {
         }
 
         get_posts_by_topic: {
-            inputs: |topics: Vec<String>|,
+            inputs: |topics: Vec<String>, query_type: topic::QueryType|,
             outputs: |result: ZomeApiResult<Vec<post::Post>>|,
             handler: blog::handle_get_post_by_topics
         }

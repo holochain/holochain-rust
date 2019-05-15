@@ -7,6 +7,7 @@ let
   # @see https://github.com/xd009642/tarpaulin/issues/190
   script = pkgs.writeShellScriptBin name
   ''
+  cargo tarpaulin -V
   cargo tarpaulin \
     --ignore-tests \
     --timeout 600 \

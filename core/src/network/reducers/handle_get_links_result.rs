@@ -33,6 +33,12 @@ pub fn reduce_handle_get_links_result(
 ) {
     let action = action_wrapper.action();
     let (dht_meta_data, tag) = unwrap_to!(action => crate::action::Action::HandleGetLinksResult);
+
+    println!(
+        "debug/reduce/handle_get_links_result: Got response from {}: {:?}",
+        dht_meta_data.provider_agent_id, dht_meta_data.content_list,
+    );
+
     let result = reduce_handle_get_links_result_inner(network_state, dht_meta_data);
     let key = GetLinksKey {
         base_address: Address::from(dht_meta_data.entry_address.clone()),

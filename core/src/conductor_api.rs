@@ -29,14 +29,10 @@ impl ConductorApi {
         let response = JsonRpc::parse(&response)?;
 
         match response {
-            JsonRpc::Success(_) => Ok(String::from(
-                response.get_result().unwrap()["signature"]
-                    .as_str()
-                    .unwrap(),
-            )),
-            JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
-                serde_json::to_string(&response.get_error().unwrap()).unwrap(),
-            )),
+            JsonRpc::Success(_) => Ok(String::from(response.get_result()?["signature"].as_str()?)),
+            JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(serde_json::to_string(
+                &response.get_error()?,
+            )?)),
             _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
         }
     }

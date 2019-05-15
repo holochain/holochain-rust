@@ -88,7 +88,7 @@ pub(crate) fn reduce_remove_entry_inner(
             HolochainError::ErrorGeneric("Stored content should be a valid entry".into())
         })?;
 
-    // pre-condition: entry_type must not by sys type, since they cannot be deleted
+    // pre-condition: entry_type must not be sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {
         return Err(HolochainError::ErrorGeneric(
             "trying to remove a system entry type".into(),

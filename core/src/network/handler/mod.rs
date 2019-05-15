@@ -300,15 +300,15 @@ fn handle_get_publishing_entry_list(
     )
 }
 fn handle_get_holding_entry_list(
-    context: &Arc<Context>,
-    get_list_data: &GetListData,
+    _context: &Arc<Context>,
+    _get_list_data: &GetListData,
 ) -> Result<(), HolochainError> {
     Ok(())
 }
 
 fn handle_get_holding_meta_list(
-    context: &Arc<Context>,
-    get_list_data: &GetListData,
+    _context: &Arc<Context>,
+    _get_list_data: &GetListData,
 ) -> Result<(), HolochainError> {
     Ok(())
 }

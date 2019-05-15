@@ -85,6 +85,23 @@ jobs:
        name: nodejs conductor tests
        command: nix-shell --run hc-conductor-node-test
 
+ conductor-smoke:
+  docker:
+   - image: holochain/holochain-rust:latest
+  steps:
+   - checkout
+
+   - run:
+       name: run conductor
+       background: true
+       command: |
+         nix-shell --run hc-install-conductor
+         nix-shell --run hc-test-conductor-serve
+
+   - run:
+      name: wait for conductor to boot
+      command: nix-shell -p curl --run 'until $(curl -o /dev/null -sI http://127.0.0.1:3000); do printf '.'; sleep 5; done;'
+
  cli-tests:
   docker:
    - image: holochain/holochain-rust:latest

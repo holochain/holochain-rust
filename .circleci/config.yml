@@ -95,7 +95,7 @@ jobs:
        name: run conductor
        background: true
        command: |
-         nix-shell --run hc-app-spec-serve alise
+         nix-shell --run 'hc-app-spec-serve alise'
 
    - run:
       name: wait for alise to boot
@@ -105,7 +105,7 @@ jobs:
        name: run conductor
        background: true
        command: |
-         nix-shell --run hc-app-spec-serve bobo
+         nix-shell --run 'hc-app-spec-serve bobo'
 
    - run:
       name: wait for bobo to boot
@@ -115,7 +115,7 @@ jobs:
        name: run conductor
        background: true
        command: |
-         nix-shell --run hc-app-spec-serve carol
+         nix-shell --run 'hc-app-spec-serve carol'
 
    - run:
       name: wait for bobo to boot

@@ -9,10 +9,11 @@ use crate::{
         handler::{get::*, send::*, store::*},
     },
 };
-use holochain_core_types::{eav::EntityAttributeValueIndex, error::HolochainError,
-    cas::content::Address, hash::HashString};
+use holochain_core_types::{
+    cas::content::Address, eav::EntityAttributeValueIndex, error::HolochainError, hash::HashString,
+};
 use holochain_net::connection::{
-    json_protocol::{MetaListData, MetaTuple, EntryListData, GetListData, JsonProtocol},
+    json_protocol::{EntryListData, GetListData, JsonProtocol, MetaListData, MetaTuple},
     net_connection::{NetHandler, NetSend},
 };
 
@@ -242,42 +243,44 @@ fn republish_all_public_chain_entries(context: &Arc<Context>) {
         });
 }
 
-fn handle_get_publishing_meta_list(context: &Arc<Context>, get_list_data: &GetListData) -> Result<(), HolochainError> {
+fn handle_get_publishing_meta_list(
+    context: &Arc<Context>,
+    get_list_data: &GetListData,
+) -> Result<(), HolochainError> {
     context
         .state()
         .expect("State missing from context.")
         .dht()
         .get_meta()
-        .and_then(
-            |meta_map|
-             {
-                let meta_list : Vec<MetaTuple> =
-                        meta_map
-                        .into_iter()
-                        .map(|eavi: EntityAttributeValueIndex|
-                             {
-                                 let content_hash : Address = eavi.value();
-                                 let meta_tuple : MetaTuple =
-                                     (eavi.entity(),
-                                      eavi.attribute().to_string(),
-                                      serde_json::value::Value::String
-                                        (content_hash.into()));
-                                  meta_tuple
-                             })
-                        .collect();
+        .and_then(|meta_map| {
+            let meta_list: Vec<MetaTuple> = meta_map
+                .into_iter()
+                .map(|eavi: EntityAttributeValueIndex| {
+                    let content_hash: Address = eavi.value();
+                    let meta_tuple: MetaTuple = (
+                        eavi.entity(),
+                        eavi.attribute().to_string(),
+                        serde_json::value::Value::String(content_hash.into()),
+                    );
+                    meta_tuple
+                })
+                .collect();
 
-                send_result(&context,
-                            JsonProtocol::HandleGetPublishingMetaListResult
-                            (MetaListData {
-                                dna_address: get_list_data.dna_address.clone(),
-                                request_id: get_list_data.request_id.clone(),
-                                meta_list: meta_list.clone()
-                            }))
-             })
+            send_result(
+                &context,
+                JsonProtocol::HandleGetPublishingMetaListResult(MetaListData {
+                    dna_address: get_list_data.dna_address.clone(),
+                    request_id: get_list_data.request_id.clone(),
+                    meta_list: meta_list.clone(),
+                }),
+            )
+        })
 }
 
-fn handle_get_publishing_entries(context: &Arc<Context>, get_list_data: &GetListData)
-    -> Result<(), HolochainError> {
+fn handle_get_publishing_entries(
+    context: &Arc<Context>,
+    get_list_data: &GetListData,
+) -> Result<(), HolochainError> {
     let chain = context.state().unwrap().agent().chain_store();
     let top_header = context.state().unwrap().agent().top_chain_header();
     let entry_address_list = chain
@@ -298,12 +301,13 @@ fn handle_get_publishing_entries(context: &Arc<Context>, get_list_data: &GetList
         "debug/net/handle: handle_get_publishing_entries returning {:?}",
         entry_list_data
     ));
-    send_result(&context,
-        JsonProtocol::HandleGetPublishingEntryListResult(entry_list_data))
+    send_result(
+        &context,
+        JsonProtocol::HandleGetPublishingEntryListResult(entry_list_data),
+    )
 }
 
-fn send_result(context:&Arc<Context>,
-               json_protocol: JsonProtocol) -> Result<(), HolochainError> {
+fn send_result(context: &Arc<Context>, json_protocol: JsonProtocol) -> Result<(), HolochainError> {
     context.log(format!(
         "debug/net/handle: sending result over network: {:?}",
         json_protocol
@@ -320,7 +324,5 @@ fn send_result(context:&Arc<Context>,
         .lock()
         .expect("get network mutex")
         .send(json_protocol.into())
-        .map_err(|err: failure::Error|
-                 HolochainError::new(err.to_string().as_str()))
-
+        .map_err(|err: failure::Error| HolochainError::new(err.to_string().as_str()))
 }

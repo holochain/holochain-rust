@@ -722,7 +722,7 @@ pub mod tests {
     use std::convert::TryInto;
 
     #[test]
-    fn test_time_period_basic() {
+    fn test_period_basic() {
         assert_eq!(format!("{}", Period(Duration::from_millis(0))), "0s");
         assert_eq!(format!("{}", Period(Duration::from_millis(123))), "123ms");
         assert_eq!(format!("{}", Period(Duration::from_nanos(120000))), "120us");
@@ -873,7 +873,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_time_period_timeout() {
+    fn test_period_timeout() {
         let period = Period::try_from("1w1.23s").unwrap();
 
         // We can specify timeouts in human-readable Periods
@@ -1011,7 +1011,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_time_iso_8601_basic() {
+    fn test_iso_8601_basic() {
         // A public Iso8601::new API is available, for nanosecond-precision times
         assert_eq!(
             Iso8601::new(1234567890, 123456789),
@@ -1206,7 +1206,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_time_iso_8601_sorting() {
+    fn test_iso_8601_sorting() {
         // Different ways of specifying UTC "Zulu".  A bare timestamp will be defaulted to "Zulu".
         let mut v: Vec<Iso8601> = vec![
             "2018-10-11T03:23:39-08:00".try_into().unwrap(),

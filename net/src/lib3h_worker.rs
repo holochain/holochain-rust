@@ -35,6 +35,8 @@ struct Lib3hMain {
     config: serde_json::Value,
     /// Sender to the Worker
     tx: mpsc::Sender<Protocol>,
+    /// identifier
+    name: String,
 }
 
 impl Lib3hMain {
@@ -42,9 +44,33 @@ impl Lib3hMain {
         Ok(Lib3hMain {
             config,
             tx,
+            name: "FIXME",
         })
     }
+    /// Received message from p2p network.
+    /// -> Process it or forward to local client
+    fn receive(&mut self, data: Protocol) -> NetResult<()> {
+        self.log
+            .d(&format!("<<<< '{}' p2p recv: {:?}", self.name.clone(), data));
+        // serve only JsonProtocol
+        let maybe_json_msg = JsonProtocol::try_from(&data);
+        if maybe_json_msg.is_err() {
+            return Ok(());
+        };
+        // Note: use same order as the enum
+        match maybe_json_msg.as_ref().unwrap() {
+            JsonProtocol::SendMessageResult(msg) => {
+                // FIXME
+                self.tx.send(data)?;
+            }
+            _ => {
+            panic ! ("unexpected {:?}", & maybe_json_msg);
+            }
+        }
+        Ok(())
+    }
 }
+
 impl NetworkModule for Lib3hMain {
     fn run(&mut self) -> NetResult<()> {
         // FIXME

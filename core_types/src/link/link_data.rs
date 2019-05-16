@@ -19,21 +19,22 @@ pub struct LinkData {
 }
 
 impl LinkData {
-    pub fn new_add(base: &Address, target: &Address, tag: &str) -> Self {
+    pub fn new_add(base: &Address, target: &Address, tag: &str, timestamp: i64) -> Self {
         LinkData {
             action_kind: LinkActionKind::ADD,
             link: Link::new(base, target, tag),
-            timestamp: Utc::now().timestamp_nanos(),
+            timestamp
         }
     }
 
-    pub fn new_delete(base: &Address, target: &Address, tag: &str) -> Self {
+    pub fn new_delete(base: &Address, target: &Address, tag: &str,timestamp: i64) -> Self {
         LinkData {
             action_kind: LinkActionKind::REMOVE,
             link: Link::new(base, target, tag),
-            timestamp: Utc::now().timestamp_nanos(),
+            timestamp
         }
     }
+
 
     pub fn action_kind(&self) -> &LinkActionKind {
         &self.action_kind
@@ -43,11 +44,11 @@ impl LinkData {
         &self.link
     }
 
-    pub fn from_link(link: &Link, action_kind: LinkActionKind) -> Self {
+    pub fn from_link(link: &Link, action_kind: LinkActionKind,timestamp: i64) -> Self {
         LinkData {
             action_kind,
             link: link.clone(),
-            timestamp: Utc::now().timestamp_nanos(),
+            timestamp
         }
     }
 }

@@ -25,6 +25,7 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
+    utc_dispatch::{UTCDispatch,UTCMock}
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};
@@ -58,6 +59,7 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: Arc<RwLock<IoHandler>>,
+    pub utc_dispatch : Box<&'static UTCDispatch>,
     signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
@@ -99,7 +101,7 @@ impl Context {
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
-        signal_tx: Option<SignalSender>,
+        signal_tx: Option<SignalSender>
     ) -> Self {
         Context {
             agent_id: agent_id.clone(),
@@ -114,6 +116,8 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: Self::test_check_conductor_api(conductor_api, agent_id),
+            utc_dispatch : Box::new(&UTCMock{})
+            
         }
     }
 
@@ -141,6 +145,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: Self::test_check_conductor_api(None, agent_id),
+            utc_dispatch : Box::new(&UTCMock{})
         })
     }
 
@@ -193,6 +198,7 @@ impl Context {
         dna
     }
 
+  
     pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
         let dna = self.get_dna().expect("Callback called without DNA set!");
         dna.get_wasm_from_zome_name(zome)
@@ -273,6 +279,8 @@ impl Context {
             _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
         }
     }
+
+   
 
     /// returns the public capability token (if any)
     pub fn get_public_token(&self) -> Result<Address, HolochainError> {

@@ -1,17 +1,19 @@
 //! provides worker that makes use of lib3h
 
 use crate::connection::{
-    json_protocol::JsonProtocol,
     net_connection::{NetHandler, NetWorker},
-    protocol::Protocol,
+    protocol::Protocol, protocol::PingData,
     NetResult,
 };
-use holochain_core_types::{cas::content::Address, json::JsonString};
-use std::{
-    collections::{hash_map::Entry, HashMap},
-    convert::TryFrom,
-    sync::{mpsc, Mutex},
+use holochain_core_types::json::JsonString;
+use std::sync::mpsc;
+
+use holochain_lib3h::{
+ mock_engine::MockEngine,
+    network_engine::NetworkEngine,
 };
+
+use holochain_lib3h_protocol::protocol::Lib3hProtocol;
 
 /// A worker that makes use of lib3h / NetworkModule.
 /// It adapts the Worker interface with Lib3h's NetworkModule's interface.
@@ -19,9 +21,9 @@ use std::{
 #[allow(non_snake_case)]
 pub struct Lib3hWorker {
     handler: NetHandler,
-    rx: mpsc::Receiver<Protocol>,
+    rx: mpsc::Receiver<Lib3hProtocol>,
     can_send_P2pReady: bool,
-    net_module: Lib3hMain,
+    net_module: MockEngine,
 }
 
 /// Constructors
@@ -34,7 +36,7 @@ impl Lib3hWorker {
             handler,
             rx,
             can_send_P2pReady: true,
-            net_module: Lib3hMain::new(config, tx)?,
+            net_module: MockEngine::new(config, tx)?,
         })
     }
 }
@@ -49,8 +51,11 @@ impl NetWorker for Lib3hWorker {
             (self.handler)(Ok(Protocol::Terminated))?;
             return Ok(());
         }
+        // FIXME do translation
         // Serve data message
-        self.net_module.serve(data.clone())?;
+        if let Protocol::Lib3h(msg) = data {
+            self.net_module.serve(msg.clone())?;
+        }
         // Done
         Ok(())
     }
@@ -64,9 +69,11 @@ impl NetWorker for Lib3hWorker {
         }
         // check for messages from our NetworkModule
         let mut did_something = false;
-        if let Ok(data) = receiver.try_recv() {
+        if let Ok(_lib3h_msg) = self.rx.try_recv() {
             did_something = true;
-            (self.handler)(Ok(data))?;
+            // FIXME translate Lib3hProtocol to Protocol
+            (self.handler)(Ok(Protocol::Ping(PingData { sent: 4.2
+            })))?;
         }
         Ok(did_something)
     }

@@ -1,0 +1,8 @@
+{
+  "backend_kind": "LIB3H",
+  "backend_config": {
+    "socketType": "ws",
+    "mode": "MOCK",
+    "logLevel": "t"
+  }
+}

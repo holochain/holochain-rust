@@ -1,14 +1,14 @@
 {
   "modes": {
-    "IN_MEMORY": true,
-    "IPC_MOCK": true,
-    "N3H": true,
-    "LIB3H": false
+    "IN_MEMORY": false,
+    "IPC_MOCK": false,
+    "N3H": false,
+    "LIB3H": true
   },
   "suites": {
     "BASIC_WORKFLOWS": true,
-    "LIST_WORKFLOWS": true,
-    "THREE_WORKFLOWS": true,
+    "LIST_WORKFLOWS": false,
+    "THREE_WORKFLOWS": false,
     "CONNECTION_WORKFLOWS": false
   },
   "log": {

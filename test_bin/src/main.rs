@@ -174,7 +174,7 @@ fn main() {
         }
         if config["modes"]["N3H"].as_bool().unwrap() {
             launch_two_nodes_test(
-                "test_bin/data/network_config.json",
+                "test_bin/data/n3h_config.json",
                 Some("test_bin/data/end_user_net_config.json".to_string()),
                 test_fn,
             )
@@ -182,7 +182,7 @@ fn main() {
         }
         if config["modes"]["LIB3H"].as_bool().unwrap() {
             launch_two_nodes_test_with_lib3h(
-                "test_bin/data/network_config.json",
+                "test_bin/data/lib3h_config.json",
                 Some("test_bin/data/end_user_net_config.json".to_string()),
                 test_fn,
             )
@@ -206,7 +206,7 @@ fn main() {
             }
             if config["modes"]["N3H"].as_bool().unwrap() {
                 launch_three_nodes_test(
-                    "test_bin/data/network_config.json",
+                    "test_bin/data/n3h_config.json",
                     Some("test_bin/data/end_user_net_config.json".to_string()),
                     test_fn,
                 )
@@ -214,7 +214,7 @@ fn main() {
             }
             if config["modes"]["LIB3H"].as_bool().unwrap() {
                 launch_three_nodes_test_with_lib3h(
-                    "test_bin/data/network_config.json",
+                    "test_bin/data/lib3h_config.json",
                     Some("test_bin/data/end_user_net_config.json".to_string()),
                     test_fn,
                 )
@@ -227,14 +227,14 @@ fn main() {
     if config["suites"]["CONNECTION_WORKFLOWS"].as_bool().unwrap() {
         if config["modes"]["N3H"].as_bool().unwrap() {
             connection_workflows::two_nodes_disconnect_test(
-                "test_bin/data/network_config.json",
+                "test_bin/data/n3h_config.json",
                 Some("test_bin/data/end_user_net_config.json".to_string()),
                 basic_workflows::dht_test,
             )
             .unwrap();
 
             connection_workflows::three_nodes_disconnect_test(
-                "test_bin/data/network_config.json",
+                "test_bin/data/n3h_config.json",
                 Some("test_bin/data/end_user_net_config.json".to_string()),
                 three_workflows::hold_and_publish_test,
             )

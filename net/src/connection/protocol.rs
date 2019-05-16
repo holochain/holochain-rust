@@ -5,6 +5,7 @@
 use serde_bytes;
 
 use holochain_core_types::json::JsonString;
+use holochain_lib3h_protocol::protocol::Lib3hProtocol;
 
 /// Low-level interface spec for communicating with the p2p abstraction
 /// notice this is not Serializable or Deserializable
@@ -17,6 +18,8 @@ pub enum Protocol {
     NamedBinary(NamedBinaryData),
     /// send/recv generic json as utf8 strings
     Json(JsonString),
+    /// send/recv Lib3hProtocol message
+    Lib3h(Lib3hProtocol),
     /// send/recv a Ping message (ipc protocol spec)
     Ping(PingData),
     /// send/recv a Pong message (ipc protocol spec)
@@ -40,6 +43,10 @@ impl<'a> From<&'a Protocol> for NamedBinaryData {
             Protocol::Json(j) => NamedBinaryData {
                 name: b"json".to_vec(),
                 data: String::from(j).into_bytes(),
+            },
+            Protocol::Lib3h(_h) => NamedBinaryData {
+                name: b"lib3h".to_vec(),
+                data: String::new().into_bytes(), // FIXME
             },
             Protocol::Ping(p) => NamedBinaryData {
                 name: b"ping".to_vec(),
@@ -82,6 +89,11 @@ impl<'a> From<&'a NamedBinaryData> for Protocol {
             b"json" => Protocol::Json(JsonString::from_json(
                 &String::from_utf8_lossy(&nb.data).to_string(),
             )),
+            b"lib3h" => {
+                // FIXME
+                let sub: PingData = rmp_serde::from_slice(&nb.data).unwrap();
+                Protocol::Ping(sub)
+            }
             b"ping" => {
                 let sub: PingData = rmp_serde::from_slice(&nb.data).unwrap();
                 Protocol::Ping(sub)

@@ -89,6 +89,35 @@ impl TryFrom<JsonString> for Option<Entry> {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
+pub enum StorageRole {
+    Publisher,
+    Holder,
+}
+
+impl From<StorageRole> for String {
+    fn from(x: StorageRole) -> String {
+        match x {
+            StorageRole::Publisher => String::from("publisher"),
+            StorageRole::Holder => String::from("holder"),
+        }
+    }
+}
+
+impl StorageRole {
+    pub fn create_eav(
+        address: &Address,
+        role: &StorageRole,
+    ) -> HcResult<crate::eav::EntityAttributeValueIndex> {
+        crate::eav::EntityAttributeValueIndex::new(
+            address,
+            &crate::eav::Attribute::StorageRole,
+            // TODO this mimics crud, but it's not a hash string so seems wrong!
+            &crate::hash::HashString::from(String::from(role.clone())),
+        )
+    }
+}
+
 impl Entry {
     pub fn entry_type(&self) -> EntryType {
         match &self {

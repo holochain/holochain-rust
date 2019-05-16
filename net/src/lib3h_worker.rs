@@ -28,15 +28,17 @@ pub trait NetworkModule {
     fn advertise(&self) -> String;
 }
 
-/// 'Real mode' implementation of Lib3h as a NetworkModule
+/// Lib3h's 'Real mode' as a NetworkModule
 /// TODO: move to lib3h crate
 struct Lib3hMain {
+    /// End-user's network config
     config: serde_json::Value,
-    tx: mpsc::Receiver<Protocol>,
+    /// Sender to the Worker
+    tx: mpsc::Sender<Protocol>,
 }
 
 impl Lib3hMain {
-    pub fn new(config: serde_json::Value, tx: mpsc::Receiver<Protocol>) -> NetResult<Self> {
+    pub fn new(config: serde_json::Value, tx: mpsc::Sender<Protocol>) -> NetResult<Self> {
         Ok(Lib3hMain {
             config,
             tx,
@@ -45,12 +47,15 @@ impl Lib3hMain {
 }
 impl NetworkModule for Lib3hMain {
     fn run(&mut self) -> NetResult<()> {
+        // FIXME
         Ok(())
     }
     fn stop(&mut self) -> NetResult<()> {
+        // FIXME
         Ok(())
     }
     fn terminate(&mut self) -> NetResult<()> {
+        // FIXME
         Ok(())
     }
     fn advertise(&self) -> String {
@@ -121,7 +126,7 @@ impl NetworkModule for Lib3hMain {
                 // FIXME
             }
             _ => {
-                panic!("unexpected {:?}", &maybe_json_msg));
+                panic!("unexpected {:?}", &maybe_json_msg);
             }
         }
         Ok(())
@@ -153,9 +158,10 @@ impl Lib3hWorker {
 }
 
 impl NetWorker for Lib3hWorker {
-    /// we got a message from holochain core
-    /// forward to NetworkModule
+    /// We got a message from holochain core
+    /// -> forward it to the NetworkModule
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
+        // Handle 'Shutdown' directly
         if data == Protocol::Shutdown {
             self.net_module.terminate()?;
             (self.handler)(Ok(Protocol::Terminated))?;
@@ -167,9 +173,9 @@ impl NetWorker for Lib3hWorker {
         Ok(())
     }
 
-    /// check for messages from our NetworkModule
+    /// Check for messages from our NetworkModule
     fn tick(&mut self) -> NetResult<bool> {
-        // Send p2pready on first tick
+        // Send p2pReady on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
             (self.handler)(Ok(Protocol::P2pReady))?;
@@ -183,12 +189,12 @@ impl NetWorker for Lib3hWorker {
         Ok(did_something)
     }
 
-    /// stop the net worker
+    /// Stop the NetworkModule
     fn stop(self: Box<Self>) -> NetResult<()> {
         self.net_module.stop()
     }
 
-    /// Set server's name as worker's endpoint
+    /// Set the advertise as worker's endpoint
     fn endpoint(&self) -> Option<String> {
         Some(self.net_module.advertise())
     }

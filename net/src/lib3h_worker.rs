@@ -2,16 +2,13 @@
 
 use crate::connection::{
     net_connection::{NetHandler, NetWorker},
-    protocol::Protocol, protocol::PingData,
+    protocol::{PingData, Protocol},
     NetResult,
 };
 use holochain_core_types::json::JsonString;
 use std::sync::mpsc;
 
-use holochain_lib3h::{
- mock_engine::MockEngine,
-    network_engine::NetworkEngine,
-};
+use holochain_lib3h::{mock_engine::MockEngine, network_engine::NetworkEngine};
 
 use holochain_lib3h_protocol::protocol::Lib3hProtocol;
 
@@ -72,8 +69,7 @@ impl NetWorker for Lib3hWorker {
         if let Ok(_lib3h_msg) = self.rx.try_recv() {
             did_something = true;
             // FIXME translate Lib3hProtocol to Protocol
-            (self.handler)(Ok(Protocol::Ping(PingData { sent: 4.2
-            })))?;
+            (self.handler)(Ok(Protocol::Ping(PingData { sent: 4.2 })))?;
         }
         Ok(did_something)
     }

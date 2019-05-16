@@ -13,153 +13,9 @@ use std::{
     sync::{mpsc, Mutex},
 };
 
-/// Common interface for all types of network modules used by the Lib3hWorker
-/// TODO: move to lib3h crate
-pub trait NetworkModule {
-    /// Start network communications
-    fn run(&mut self) -> NetResult<()>;
-    /// Stop network communications
-    fn stop(&mut self) -> NetResult<()>;
-    /// Terminate module. Perform some cleanup.
-    fn terminate(&self) -> NetResult<()>;
-    /// Handle some data message sent by the local Client
-    fn serve(&mut self, data: Protocol) -> NetResult<()>;
-    /// Get qualified transport address
-    fn advertise(&self) -> String;
-}
-
-/// Lib3h's 'Real mode' as a NetworkModule
-/// TODO: move to lib3h crate
-struct Lib3hMain {
-    /// End-user's network config
-    config: serde_json::Value,
-    /// Sender to the Worker
-    tx: mpsc::Sender<Protocol>,
-    /// identifier
-    name: String,
-}
-
-impl Lib3hMain {
-    pub fn new(config: serde_json::Value, tx: mpsc::Sender<Protocol>) -> NetResult<Self> {
-        Ok(Lib3hMain {
-            config,
-            tx,
-            name: "FIXME",
-        })
-    }
-    /// Received message from p2p network.
-    /// -> Process it or forward to local client
-    fn receive(&mut self, data: Protocol) -> NetResult<()> {
-        self.log
-            .d(&format!("<<<< '{}' p2p recv: {:?}", self.name.clone(), data));
-        // serve only JsonProtocol
-        let maybe_json_msg = JsonProtocol::try_from(&data);
-        if maybe_json_msg.is_err() {
-            return Ok(());
-        };
-        // Note: use same order as the enum
-        match maybe_json_msg.as_ref().unwrap() {
-            JsonProtocol::SendMessageResult(msg) => {
-                // FIXME
-                self.tx.send(data)?;
-            }
-            _ => {
-            panic ! ("unexpected {:?}", & maybe_json_msg);
-            }
-        }
-        Ok(())
-    }
-}
-
-impl NetworkModule for Lib3hMain {
-    fn run(&mut self) -> NetResult<()> {
-        // FIXME
-        Ok(())
-    }
-    fn stop(&mut self) -> NetResult<()> {
-        // FIXME
-        Ok(())
-    }
-    fn terminate(&mut self) -> NetResult<()> {
-        // FIXME
-        Ok(())
-    }
-    fn advertise(&self) -> String {
-        "FIXME"
-    }
-
-    /// process a message sent by our local Client
-    fn serve(&mut self, data: Protocol) -> NetResult<()> {
-        self.log
-            .d(&format!(">>>> '{}' recv: {:?}", self.name.clone(), data));
-        // serve only JsonProtocol
-        let maybe_json_msg = JsonProtocol::try_from(&data);
-        if maybe_json_msg.is_err() {
-            return Ok(());
-        };
-        // Note: use same order as the enum
-        match maybe_json_msg.as_ref().unwrap() {
-            JsonProtocol::SuccessResult(msg) => {
-                // FIXME
-            }
-            JsonProtocol::FailureResult(msg) => {
-                // FIXME
-            }
-            JsonProtocol::TrackDna(msg) => {
-                // FIXME
-            }
-            JsonProtocol::UntrackDna(msg) => {
-                // FIXME
-            }
-            JsonProtocol::SendMessage(msg) => {
-                // FIXME
-            }
-            JsonProtocol::HandleSendMessageResult(msg) => {
-                // FIXME
-            }
-            JsonProtocol::FetchEntry(msg) => {
-                // FIXME
-            }
-            JsonProtocol::HandleFetchEntryResult(msg) => {
-                // FIXME
-            }
-            JsonProtocol::PublishEntry(msg) => {
-                // FIXME
-            }
-            JsonProtocol::FetchMeta(msg) => {
-                // FIXME
-            }
-            JsonProtocol::HandleFetchMetaResult(msg) => {
-                // FIXME
-            }
-            JsonProtocol::PublishMeta(msg) => {
-                // FIXME
-            }
-            // Our request for the publish_list has returned
-            JsonProtocol::HandleGetPublishingEntryListResult(msg) => {
-                // FIXME
-            }
-            // Our request for the hold_list has returned
-            JsonProtocol::HandleGetHoldingEntryListResult(msg) => {
-                // FIXME
-            }
-            // Our request for the publish_meta_list has returned
-            JsonProtocol::HandleGetPublishingMetaListResult(msg) => {
-                // FIXME
-            }
-            // Our request for the hold_meta_list has returned
-            JsonProtocol::HandleGetHoldingMetaListResult(msg) => {
-                // FIXME
-            }
-            _ => {
-                panic!("unexpected {:?}", &maybe_json_msg);
-            }
-        }
-        Ok(())
-    }
-}
-
-/// A worker that makes use of lib3h / NetworkModule
+/// A worker that makes use of lib3h / NetworkModule.
+/// It adapts the Worker interface with Lib3h's NetworkModule's interface.
+/// Handles `Protocol` and translates `JsonProtocol` to `Lib3hProtocol`.
 #[allow(non_snake_case)]
 pub struct Lib3hWorker {
     handler: NetHandler,
@@ -226,7 +82,6 @@ impl NetWorker for Lib3hWorker {
     }
 }
 
-
 /// Terminate on Drop
 impl Drop for Lib3hWorker {
     fn drop(&mut self) {
@@ -236,5 +91,5 @@ impl Drop for Lib3hWorker {
 
 #[cfg(test)]
 mod tests {
-    /// FIXME
+    // FIXME
 }

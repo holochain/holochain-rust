@@ -23,7 +23,10 @@ use std::{
     sync::mpsc,
 };
 
-use super::{dna_store::DnaStore, ipc_config::create_ipc_config};
+use super::{
+    create_config::{create_ipc_config, create_lib3h_config},
+    dna_store::DnaStore,
+};
 
 static TIMEOUT_MS: usize = 5000;
 
@@ -662,6 +665,24 @@ impl TestNode {
     pub fn new_with_uri_ipc_network(agent_id: String, ipc_binding: &str) -> Self {
         let p2p_config = P2pConfig::default_ipc_uri(Some(ipc_binding));
         return TestNode::new_with_config(agent_id, &p2p_config, None);
+    }
+
+    /// Constructor for an IPC node that uses an existing n3h process and a temp folder
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn new_with_lib3h(
+        agent_id: String,
+        maybe_config_filepath: Option<&str>,
+        maybe_end_user_config_filepath: Option<String>,
+        bootstrap_nodes: Vec<String>,
+        maybe_dir_path: Option<String>,
+    ) -> Self {
+        let (p2p_config, _maybe_temp_dir) = create_lib3h_config(
+            maybe_config_filepath,
+            maybe_end_user_config_filepath,
+            bootstrap_nodes,
+            maybe_dir_path,
+        );
+        return TestNode::new_with_config(agent_id, &p2p_config, _maybe_temp_dir);
     }
 
     /// Constructor for an IPC node that spawns and uses a n3h process and a temp folder

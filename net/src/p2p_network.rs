@@ -11,6 +11,7 @@ use crate::{
     },
     in_memory::memory_worker::InMemoryWorker,
     ipc_net_worker::IpcNetWorker,
+    lib3h_worker::Lib3hWorker,
     p2p_config::*,
     tweetlog::*,
 };
@@ -34,7 +35,7 @@ pub struct P2pNetwork {
 impl P2pNetwork {
     /// Constructor
     /// `config` is the configuration of the p2p module
-    /// `handler` is the closure for handling Protocol messages received from the network.
+    /// `handler` is the closure for handling Protocol messages received from the network module.
     pub fn new(mut handler: NetHandler, p2p_config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
         let backend_config = JsonString::from_json(&p2p_config.backend_config.to_string());
@@ -55,6 +56,10 @@ impl P2pNetwork {
                     )
                 })
             }
+            // Create an InMemoryWorker
+            P2pBackendKind::LIB3H => Box::new(move |h| {
+                Ok(Box::new(Lib3hWorker::new(h, &backend_config)?) as Box<NetWorker>)
+            }),
             // Create an InMemoryWorker
             P2pBackendKind::MEMORY => Box::new(move |h| {
                 Ok(Box::new(InMemoryWorker::new(h, &backend_config)?) as Box<NetWorker>)

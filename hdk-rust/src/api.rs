@@ -805,7 +805,7 @@ pub fn link_entries<S: Into<String>>(
     base: &Address,
     target: &Address,
     link_type: S,
-    tag: Option<S>,
+    tag: S,
 ) -> Result<Address, ZomeApiError> {
     Dispatch::LinkEntries.with_input(LinkEntriesArgs {
         base: base.clone(),

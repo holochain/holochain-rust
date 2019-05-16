@@ -34,3 +34,4 @@ tmp-test-conductor-config.toml
 tmp-*-conductor-config.toml
 
 Cargo.lock
+dist/**

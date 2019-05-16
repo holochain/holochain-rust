@@ -26,7 +26,7 @@ pub trait ConductorAdmin {
         copy: bool,
         expected_hash: Option<HashString>,
         properties: Option<&serde_json::Value>,
-    ) -> Result<(), HolochainError>;
+    ) -> Result<HashString, HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_instance(
         &mut self,
@@ -81,7 +81,7 @@ impl ConductorAdmin for Conductor {
         copy: bool,
         expected_hash: Option<HashString>,
         properties: Option<&serde_json::Value>,
-    ) -> Result<(), HolochainError> {
+    ) -> Result<HashString, HolochainError> {
         let path_string = path
             .to_str()
             .ok_or(HolochainError::ConfigError("invalid path".into()))?;
@@ -94,9 +94,10 @@ impl ConductorAdmin for Conductor {
                 ))
             })?;
 
-        if let Some(hash) = expected_hash {
-            if dna.address() != hash {
-                return Err(HolochainError::DnaHashMismatch(dna.address(), hash));
+        if let Some(provided_hash) = expected_hash {
+            let actual_hash = dna.address();
+            if actual_hash != provided_hash {
+                return Err(HolochainError::DnaHashMismatch(provided_hash, actual_hash));
             }
         }
 
@@ -129,7 +130,7 @@ impl ConductorAdmin for Conductor {
         self.config = new_config;
         self.save_config()?;
         notify(format!("Installed DNA from {} as \"{}\"", path_string, id));
-        Ok(())
+        Ok(dna.address())
     }
 
     /// Removes the DNA given by id from the config.
@@ -752,16 +753,15 @@ pattern = '.*'"#
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
 
-        assert_eq!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 false,
                 None,
                 None
-            ),
-            Ok(()),
-        );
+            )
+            .is_ok());
 
         let new_dna =
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
@@ -821,16 +821,15 @@ id = 'new-dna'"#,
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
 
-        assert_eq!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 true,
                 None,
                 None
-            ),
-            Ok(()),
-        );
+            )
+            .is_ok());
 
         let new_dna =
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
@@ -873,16 +872,15 @@ id = 'new-dna'"#,
         new_dna_path.push("new-dna.dna.json");
         let dna = Arc::get_mut(&mut conductor.dna_loader).unwrap()(&new_dna_path).unwrap();
 
-        assert_eq!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 false,
                 Some(dna.address()),
                 None
-            ),
-            Ok(()),
-        );
+            )
+            .is_ok());
 
         assert_eq!(
             conductor.install_dna_from_file(
@@ -893,8 +891,8 @@ id = 'new-dna'"#,
                 None
             ),
             Err(HolochainError::DnaHashMismatch(
+                "wrong-address".into(),
                 dna.address(),
-                "wrong-address".into()
             )),
         );
     }
@@ -921,16 +919,15 @@ id = 'new-dna'"#,
             )),
         );
 
-        assert_eq!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna-with-props"),
                 true,
                 None,
                 Some(&new_props)
-            ),
-            Ok(()),
-        );
+            )
+            .is_ok());
 
         let mut new_dna =
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))

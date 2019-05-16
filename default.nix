@@ -31,7 +31,7 @@ with pkgs;
     OPENSSL_STATIC = openssl.static;
 
     shellHook = ''
-     # or this...
+     # cargo should install binaries into this repo rather than globally
      # https://github.com/rust-lang/rustup.rs/issues/994
      export CARGO_HOME=`pwd`/.cargo
      export CARGO_INSTALL_ROOT=`pwd`/.cargo

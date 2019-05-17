@@ -12,7 +12,10 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
     entry::Entry,
     error::HolochainError,
-    link::{link_data::LinkData, LinkActionKind},
+    link::{
+        LinkActionKind,
+        link_data::LinkData,
+    },
 };
 use std::{collections::BTreeSet, convert::TryFrom, str::FromStr, sync::Arc};
 
@@ -129,24 +132,36 @@ pub(crate) fn reduce_add_link(
         );
         Some(new_store)
     } else {
-        // store the link entry (not DRY yet)
+
+        // store the link entry (not DRY for now)
         let link_entry = Entry::LinkAdd(LinkData::from_link(link, LinkActionKind::ADD));
         let res = (*storage.write().unwrap()).add(&link_entry).ok();
         if res.is_some() {
             let meta_storage = &new_store.meta_storage().clone();
             create_crud_status_eav(&link_entry.address(), CrudStatus::Live)
                 .map(|status_eav| {
-                    (*meta_storage.write().unwrap())
-                        .add_eavi(&status_eav)
-                        .expect("err/dht: Couldn't write meta")
+                    let meta_res = (*meta_storage.write().unwrap()).add_eavi(&status_eav);
+                    meta_res
+                        .map(|_| Some(new_store.clone()))
+                        .map_err(|err| {
+                            context.log(format!(
+                                "err/dht: reduce_hold_entry: meta_storage write failed!: {:?}",
+                                err
+                            ));
+                            None::<DhtStore>
+                        })
+                        .ok()
+                        .unwrap_or(None)
                 })
-                .expect("err/dht: Couldn't write meta");
+                .ok()
+                .unwrap_or(None);
         } else {
             context.log(format!(
                 "err/dht: dht::reduce_hold_entry() FAILED {:?}",
                 res
             ));
         }
+
 
         let eav = EntityAttributeValueIndex::new(
             link.base(),
@@ -185,8 +200,7 @@ pub(crate) fn reduce_remove_link(
         );
         Some(new_store)
     } else {
-        let link_entry_addr =
-            Entry::LinkAdd(LinkData::from_link(link, LinkActionKind::ADD)).address();
+        let link_entry_addr = Entry::LinkAdd(LinkData::from_link(link, LinkActionKind::ADD)).address();
         let eav = EntityAttributeValueIndex::new(
             link.base(),
             &Attribute::RemovedLink(link.tag().to_string()),
@@ -376,7 +390,7 @@ pub mod tests {
         chain_header::test_chain_header,
         eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
-        link::{link_data::LinkData, Link, LinkActionKind},
+        link::{Link, link_data::LinkData, LinkActionKind},
     };
     use std::{
         convert::TryFrom,

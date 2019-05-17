@@ -246,8 +246,8 @@ pub mod tests {
             entry_addresses.push(address);
         }
 
-        let link1 = LinkData::new_add(&entry_addresses[0], &entry_addresses[1], "test-tag",0);
-        let link2 = LinkData::new_add(&entry_addresses[0], &entry_addresses[2], "test-tag",0);
+        let link1 = LinkData::new_add(&entry_addresses[0], &entry_addresses[1], "test-tag", 0);
+        let link2 = LinkData::new_add(&entry_addresses[0], &entry_addresses[2], "test-tag", 0);
 
         // Store link1 on the network
         println!("\n add_link(link1) ...");

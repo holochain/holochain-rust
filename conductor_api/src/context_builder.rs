@@ -10,9 +10,11 @@ use holochain_core::{
     signal::SignalSender,
 };
 use holochain_core_types::{
-    agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
+    agent::AgentId,
+    cas::storage::ContentAddressableStorage,
+    eav::EntityAttributeValueStorage,
     error::HolochainError,
-    utc_dispatch::{UTCDispatch,UTCMock}
+    utc_dispatch::{UTCDispatch, UTCMock},
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::IoHandler;
@@ -42,7 +44,7 @@ pub struct ContextBuilder {
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
-    utc : Option<&'static UTCDispatch>
+    utc: Option<&'static UTCDispatch>,
 }
 
 impl ContextBuilder {
@@ -56,7 +58,7 @@ impl ContextBuilder {
             p2p_config: None,
             conductor_api: None,
             signal_tx: None,
-            utc : None
+            utc: None,
         }
     }
 
@@ -66,8 +68,7 @@ impl ContextBuilder {
         self
     }
 
-    pub fn with_utc_dispatcher(mut self, utc : &'static UTCDispatch) -> Self 
-    {
+    pub fn with_utc_dispatcher(mut self, utc: &'static UTCDispatch) -> Self {
         self.utc = Some(utc);
         self
     }
@@ -165,7 +166,7 @@ impl ContextBuilder {
                 .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
-            self.utc.unwrap_or(&UTCMock{})
+            self.utc.unwrap_or(&UTCMock {}),
         )
     }
 }

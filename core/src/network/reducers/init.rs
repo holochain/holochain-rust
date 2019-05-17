@@ -56,7 +56,7 @@ pub mod test {
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::{agent::AgentId, cas::content::Address,utc_dispatch::UTCMock};
+    use holochain_core_types::{agent::AgentId, cas::content::Address, utc_dispatch::UTCMock};
     use holochain_net::p2p_config::P2pConfig;
     use holochain_wasm_utils::holochain_core_types::cas::content::AddressableContent;
     use std::sync::{Mutex, RwLock};
@@ -79,7 +79,7 @@ pub mod test {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
-            &UTCMock{}
+            &UTCMock {},
         );
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

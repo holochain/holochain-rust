@@ -23,18 +23,17 @@ impl LinkData {
         LinkData {
             action_kind: LinkActionKind::ADD,
             link: Link::new(base, target, tag),
-            timestamp
+            timestamp,
         }
     }
 
-    pub fn new_delete(base: &Address, target: &Address, tag: &str,timestamp: i64) -> Self {
+    pub fn new_delete(base: &Address, target: &Address, tag: &str, timestamp: i64) -> Self {
         LinkData {
             action_kind: LinkActionKind::REMOVE,
             link: Link::new(base, target, tag),
-            timestamp
+            timestamp,
         }
     }
-
 
     pub fn action_kind(&self) -> &LinkActionKind {
         &self.action_kind
@@ -44,11 +43,11 @@ impl LinkData {
         &self.link
     }
 
-    pub fn from_link(link: &Link, action_kind: LinkActionKind,timestamp: i64) -> Self {
+    pub fn from_link(link: &Link, action_kind: LinkActionKind, timestamp: i64) -> Self {
         LinkData {
             action_kind,
             link: link.clone(),
-            timestamp
+            timestamp,
         }
     }
 }
@@ -69,7 +68,7 @@ pub mod tests {
 
     pub fn example_link_add() -> LinkData {
         let link = example_link();
-        LinkData::new_add(link.base(), link.target(), link.tag(),0)
+        LinkData::new_add(link.base(), link.target(), link.tag(), 0)
     }
 
     pub fn test_link_entry() -> Entry {

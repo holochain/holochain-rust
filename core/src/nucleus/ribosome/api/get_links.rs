@@ -93,7 +93,7 @@ pub mod tests {
             &entry_addresses[0],
             &entry_addresses[1].clone(),
             "test-tag",
-            0
+            0,
         ));
         initialized_context
             .block_on(commit_entry(
@@ -106,7 +106,7 @@ pub mod tests {
             &entry_addresses[0],
             &entry_addresses[2].clone(),
             "test-tag",
-            0
+            0,
         ));
         initialized_context
             .block_on(commit_entry(

@@ -478,7 +478,7 @@ pub mod tests {
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
         let entry_link_remove = Entry::LinkRemove((
-            LinkData::new_add(link.base(), link.target(), link.tag(),0),
+            LinkData::new_add(link.base(), link.target(), link.tag(), 0),
             vec![entry.clone().address()],
         ));
         action = ActionWrapper::new(Action::RemoveLink((

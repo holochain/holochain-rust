@@ -141,7 +141,7 @@ pub mod tests {
             .block_on(author_entry(&entry, None, &context1))
             .unwrap();
 
-        let link_add = LinkData::new_add(&entry_address, &entry_address, "test-tag",0);
+        let link_add = LinkData::new_add(&entry_address, &entry_address, "test-tag", 0);
         let link_entry = Entry::LinkAdd(link_add);
 
         let _ = context1

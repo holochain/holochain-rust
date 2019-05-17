@@ -4,7 +4,7 @@ use crate::{
 };
 
 use futures_util::future::FutureExt;
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError};
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
 };
@@ -34,31 +34,30 @@ pub async fn get_link_result_workflow<'a>(
         .iter()
         .map(|link| {
             //we should probably replace this with get_entry_result_workflow, it does all the work needed
-            context
-                .block_on(
-                    get_entry_with_meta_workflow(&context, &link, &link_args.options.timeout).map(
-                        |link_entry_result| {
-                            link_entry_result
-                                .map(|link_entry_option| {
-                                    link_entry_option.map(|link_entry| {
-                                        let headers = if link_args.options.headers {
-                                            link_entry.headers
-                                        } else {
-                                            Vec::new()
-                                        };
-                                        Ok(LinksResult {
-                                            address: link.clone(),
-                                            headers,
-                                        })
-                                    })
-                                })
-                                .unwrap_or(None)
-                        },
-                    ),
-                )
-                .unwrap_or(Err(HolochainError::ErrorGeneric(
-                    "Could not get links".to_string(),
-                )))
+            context.block_on(
+                get_entry_with_meta_workflow(&context, &link, &link_args.options.timeout).map(
+                    |link_entry_result| {
+                        if let Ok(Some(EntryWithMetaAndHeader {
+                            entry_with_meta: _,
+                            headers,
+                        })) = link_entry_result
+                        {
+                            let headers = match link_args.options.headers {
+                                true => headers,
+                                false => Vec::new(),
+                            };
+                            Ok(LinksResult {
+                                address: link.clone(),
+                                headers,
+                            })
+                        } else {
+                            Err(HolochainError::ErrorGeneric(
+                                "Could not get links".to_string(),
+                            ))
+                        }
+                    },
+                ),
+            )
         })
         .partition(Result::is_ok);
 

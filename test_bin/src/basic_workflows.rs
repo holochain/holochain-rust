@@ -629,6 +629,24 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
     // Done
     Ok(())
 }
+/*
+// this is all debug code, no need to track code test coverage
+fn handle_get_entry_list_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool,
+                              storage_role:&StorageRole) -> NetResult<()> {
+    // Setup
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
+
+    // Alex publish data on the network
+    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+
+    // Check if both nodes are asked to store it
+    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    // #fulldht
+    assert!(result_a.is_some());
+    log_i!("got HandleStoreEntry on node A: {:?}", result_a);
+}
+*/
+
 
 /// Send Protocol::Shutdown
 pub fn shutdown_test(

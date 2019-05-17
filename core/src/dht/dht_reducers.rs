@@ -91,11 +91,22 @@ fn reduce_store_entry_common(
     let content_storage = &new_store.content_storage().clone();
     let res = (*content_storage.write().unwrap()).add(entry).ok();
     if res.is_some() {
-        create_crud_status_eav(&entry.address(), CrudStatus::Live)
-            .and_then(|status_eav| write_meta_store(&status_eav, &new_store))
+        context.log(format!(
+            "debug/dht: dht::reduce_hold_entry() res is some: {:?}",
+            res
+        ));
+         create_crud_status_eav(&entry.address(), CrudStatus::Live)
+            .and_then(|status_eav|
+                      {
+                          context.log(format!("debug/dht: writing crud status eav: {:?}", status_eav));
+                          write_meta_store(&status_eav, &new_store)
+                      })
             .and_then(|new_store| {
                 StorageRole::create_eav(&entry.address(), &storage_role)
-                    .and_then(|storage_role_eav| write_meta_store(&storage_role_eav, &new_store))
+                    .and_then(|storage_role_eav| {
+                        context.log(format!("debug/dht: writing storage role eav: {:?}", storage_role_eav));
+                        write_meta_store(&storage_role_eav, &new_store)
+                    })
             })
     } else {
         context.log(format!(

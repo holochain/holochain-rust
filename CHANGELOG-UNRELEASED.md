@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Adds scaffolding/skeleton for a future WASM conductor [#894](https://github.com/holochain/holochain-rust/pull/894)
+
 ### Changed
 
 ### Deprecated
@@ -15,5 +17,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
-
-

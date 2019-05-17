@@ -101,7 +101,8 @@ impl Context {
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
-        signal_tx: Option<SignalSender>
+        signal_tx: Option<SignalSender>,
+        utc : &'static UTCDispatch
     ) -> Self {
         Context {
             agent_id: agent_id.clone(),
@@ -116,7 +117,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: Self::test_check_conductor_api(conductor_api, agent_id),
-            utc_dispatch : Box::new(&UTCMock{})
+            utc_dispatch : Box::new(utc)
             
         }
     }
@@ -131,6 +132,7 @@ impl Context {
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         p2p_config: P2pConfig,
+        utc : &'static UTCDispatch
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id: agent_id.clone(),
@@ -145,7 +147,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: Self::test_check_conductor_api(None, agent_id),
-            utc_dispatch : Box::new(&UTCMock{})
+            utc_dispatch : Box::new(utc)
         })
     }
 
@@ -354,7 +356,7 @@ pub mod tests {
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::agent::AgentId;
+    use holochain_core_types::{agent::AgentId,utc_dispatch::UTCMock};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 
@@ -381,6 +383,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            &UTCMock
         );
 
         assert!(maybe_context.state().is_none());

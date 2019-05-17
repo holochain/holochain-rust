@@ -20,6 +20,7 @@ use holochain_core::{
 use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
+    utc_dispatch::{UTCDispatch,UTCConcrete}
 };
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -547,6 +548,8 @@ impl Conductor {
                         ChannelLogger::new(instance_config.id.clone(), self.logger.get_sender()),
                     )));
                 }
+
+                context_builder = context_builder.with_utc_dispatcher(&UTCConcrete{});
 
                 // Conductor API
                 let mut api_builder = ConductorApiBuilder::new();

@@ -602,6 +602,7 @@ mod tests {
             &"base".to_string().into(),
             &"target".to_string().into(),
             "tag",
+            0
         );
         let entry = Entry::LinkAdd(link_add.clone());
         let entry_wh = mk_entry_wh(entry.clone());

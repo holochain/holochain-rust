@@ -25,7 +25,7 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
-    utc_dispatch::{UTCDispatch, UTCMock},
+    utc_dispatch::UTCDispatch,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};

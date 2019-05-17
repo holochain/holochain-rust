@@ -23,7 +23,7 @@ use holochain_core_types::{
     dna::Dna,
     error::HolochainError,
     json::JsonString,
-    utc_dispatch::{UTCConcrete, UTCDispatch},
+    utc_dispatch::UTCConcrete,
 };
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;

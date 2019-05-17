@@ -4,7 +4,10 @@ use crate::{
 };
 
 use futures_util::future::FutureExt;
-use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError};
+use holochain_core_types::{
+    entry::{Entry, EntryWithMeta, EntryWithMetaAndHeader},
+    error::HolochainError,
+};
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
 };
@@ -37,23 +40,35 @@ pub async fn get_link_result_workflow<'a>(
             context.block_on(
                 get_entry_with_meta_workflow(&context, &link, &link_args.options.timeout).map(
                     |link_entry_result| {
-                        if let Ok(Some(EntryWithMetaAndHeader {
-                            entry_with_meta: _,
-                            headers,
-                        })) = link_entry_result
-                        {
-                            let headers = match link_args.options.headers {
-                                true => headers,
-                                false => Vec::new(),
-                            };
-                            Ok(LinksResult {
-                                address: link.clone(),
+                        match link_entry_result {
+                            Ok(Some(EntryWithMetaAndHeader {
+                                entry_with_meta: EntryWithMeta{entry: Entry::LinkAdd(link_data), ..},
                                 headers,
-                            })
-                        } else {
-                            Err(HolochainError::ErrorGeneric(
-                                "Could not get links".to_string(),
-                            ))
+                            })) => {
+                                let headers = match link_args.options.headers {
+                                    true => headers,
+                                    false => Vec::new(),
+                                };
+                                Ok(LinksResult {
+                                    address: link_data.link().target().clone(),
+                                    headers,
+                                })
+                            },
+                            Ok(None) => {
+                                Err(HolochainError::ErrorGeneric(
+                                    format!("Could not get link entry for address stored in the EAV entry {}", link),
+                                ))
+                            }
+                            Err(e) => {
+                                Err(HolochainError::ErrorGeneric(
+                                    format!("Error retrieveing link: {:?}", e),
+                                ))
+                            },
+                            _ => {
+                                Err(HolochainError::ErrorGeneric(
+                                    format!("Unknown Error retrieveing link. Most likely EAV entry points to non-link entry type"),
+                                ))
+                            }
                         }
                     },
                 ),
@@ -66,8 +81,9 @@ pub async fn get_link_result_workflow<'a>(
             link_results.into_iter().map(|s| s.unwrap()).collect(),
         ))
     } else {
-        Err(HolochainError::ErrorGeneric(
-            "Could not get links".to_string(),
-        ))
+        Err(HolochainError::ErrorGeneric(format!(
+            "Could not get links: {:?}",
+            errors
+        )))
     }
 }

@@ -12,6 +12,7 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
     entry::Entry,
     error::HolochainError,
+    link::{link_data::LinkData, LinkActionKind},
 };
 use std::{collections::BTreeSet, convert::TryFrom, str::FromStr, sync::Arc};
 
@@ -109,7 +110,7 @@ fn reduce_store_entry_common(
 
 //
 pub(crate) fn reduce_add_link(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -128,10 +129,29 @@ pub(crate) fn reduce_add_link(
         );
         Some(new_store)
     } else {
+        // store the link entry (not DRY yet)
+        let link_entry = Entry::LinkAdd(LinkData::from_link(link, LinkActionKind::ADD));
+        let res = (*storage.write().unwrap()).add(&link_entry).ok();
+        if res.is_some() {
+            let meta_storage = &new_store.meta_storage().clone();
+            create_crud_status_eav(&link_entry.address(), CrudStatus::Live)
+                .map(|status_eav| {
+                    (*meta_storage.write().unwrap())
+                        .add_eavi(&status_eav)
+                        .expect("err/dht: Couldn't write meta")
+                })
+                .expect("err/dht: Couldn't write meta");
+        } else {
+            context.log(format!(
+                "err/dht: dht::reduce_hold_entry() FAILED {:?}",
+                res
+            ));
+        }
+
         let eav = EntityAttributeValueIndex::new(
             link.base(),
             &Attribute::LinkTag(link.tag().to_owned()),
-            link.target(),
+            &link_entry.address(),
         );
         eav.map(|e| {
             let storage = new_store.meta_storage();
@@ -165,10 +185,12 @@ pub(crate) fn reduce_remove_link(
         );
         Some(new_store)
     } else {
+        let link_entry_addr =
+            Entry::LinkAdd(LinkData::from_link(link, LinkActionKind::ADD)).address();
         let eav = EntityAttributeValueIndex::new(
             link.base(),
             &Attribute::RemovedLink(link.tag().to_string()),
-            link.target(),
+            &link_entry_addr,
         );
         eav.map(|e| {
             let storage = new_store.meta_storage();
@@ -354,7 +376,7 @@ pub mod tests {
         chain_header::test_chain_header,
         eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
-        link::Link,
+        link::{link_data::LinkData, Link, LinkActionKind},
     };
     use std::{
         convert::TryFrom,
@@ -416,6 +438,7 @@ pub mod tests {
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
+        let link_entry = Entry::LinkAdd(LinkData::from_link(&link.clone(), LinkActionKind::ADD));
 
         let new_dht_store: DhtStore;
         {
@@ -436,7 +459,7 @@ pub mod tests {
         assert_eq!(hash_set.len(), 1);
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        assert_eq!(eav.value(), *link.target());
+        assert_eq!(eav.value(), link_entry.address());
         assert_eq!(eav.attribute(), Attribute::LinkTag(link.tag().to_owned()));
     }
 
@@ -455,7 +478,8 @@ pub mod tests {
         let context = Arc::new(context);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
-        let mut action = ActionWrapper::new(Action::AddLink(link.clone()));
+        let action = ActionWrapper::new(Action::AddLink(link.clone()));
+        let link_entry = Entry::LinkAdd(LinkData::from_link(&link.clone(), LinkActionKind::ADD));
 
         let new_dht_store: DhtStore;
         {
@@ -463,7 +487,7 @@ pub mod tests {
 
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
-        action = ActionWrapper::new(Action::RemoveLink(link.clone()));
+        let action = ActionWrapper::new(Action::RemoveLink(link.clone()));
 
         let _ = new_dht_store.meta_storage();
 
@@ -489,7 +513,7 @@ pub mod tests {
         assert_eq!(hash_set.len(), 1);
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        assert_eq!(eav.value(), *link.target());
+        assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
             eav.attribute(),
             Attribute::RemovedLink(link.tag().to_string())

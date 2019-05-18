@@ -74,10 +74,17 @@ pub(crate) fn reduce_hold_entry(
     }
 }
 
-fn write_meta_store(eavi: &EntityAttributeValueIndex, store: &DhtStore) -> HcResult<DhtStore> {
-    let meta_storage = &store.meta_storage().clone();
-    let meta_res = (*meta_storage.write().unwrap()).add_eavi(&eavi);
-    meta_res.map(|_| store.clone())
+fn write_meta_store(context:Arc<Context>, eavis: Vec<EntityAttributeValueIndex>, store: DhtStore) ->
+    HcResult<DhtStore> {
+
+    let locked_meta_storage = store.meta_storage();
+    let mut meta_storage = locked_meta_storage.write().unwrap();
+
+    eavis.into_iter().try_fold(None, |res, eavi| {
+        context.log(format!("write_meta_store: res={:?} eav={:?}", res, eavi));
+        meta_storage.add_eavi(&eavi)
+    })
+    .map(|_| store)
 }
 
 fn reduce_store_entry_common(
@@ -98,23 +105,21 @@ fn reduce_store_entry_common(
          create_crud_status_eav(&entry.address(), CrudStatus::Live)
             .and_then(|status_eav|
                       {
-                          context.log(format!("debug/dht: writing crud status eav: {:?}", status_eav));
-                          write_meta_store(&status_eav, &new_store)
+                          context.log(format!("debug/dht: created crud status eav: {:?}", status_eav));
+                          StorageRole::create_eav(&entry.address(), &storage_role)
+                              .and_then(|storage_role_eav| {
+                                  context.log(format!("debug/dht: created storage role eav: {:?}", storage_role_eav));
+                                  write_meta_store(context, vec![status_eav], new_store)
+//                                  write_meta_store(context, vec![status_eav, storage_role_eav], new_store)
+                              })
                       })
-            .and_then(|new_store| {
-                StorageRole::create_eav(&entry.address(), &storage_role)
-                    .and_then(|storage_role_eav| {
-                        context.log(format!("debug/dht: writing storage role eav: {:?}", storage_role_eav));
-                        write_meta_store(&storage_role_eav, &new_store)
-                    })
-            })
     } else {
         context.log(format!(
             "err/dht: dht::reduce_hold_entry() FAILED {:?}",
             res
         ));
         Err(HolochainError::ErrorGeneric(String::from(
-            "reduce_holde_entry(): FAILED",
+            "reduce_hold_entry(): FAILED",
         )))
     }
 }

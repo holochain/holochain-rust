@@ -113,12 +113,12 @@ impl DhtStore {
                 Some(Address::from(String::from(storage_role.clone()))).into(),
                 IndexFilter::LatestByAttribute,
             ))
-            .and_then(|eavi| {
+            .and_then(|eavis| {
                 self.meta_storage()
                     .read()
                     .unwrap()
                     .fetch_eavi(&EaviQuery::new(
-                        Vec::from_iter(eavi.into_iter().map(|e| e.entity()).into_iter()).into(),
+                        Vec::from_iter(eavis.into_iter().map(|e| e.entity()).into_iter()).into(),
                         EavFilter::predicate(|attr: Attribute| !attr.is_private()),
                         Default::default(),
                         IndexFilter::LatestByAttribute,

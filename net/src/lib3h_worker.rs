@@ -2,7 +2,7 @@
 
 use crate::connection::{
     net_connection::{NetHandler, NetWorker},
-    protocol::{PingData, Protocol},
+    protocol::Protocol,
     NetResult,
 };
 use holochain_core_types::json::JsonString;
@@ -11,8 +11,8 @@ use holochain_lib3h::real_engine::{RealEngine, RealEngineConfig};
 
 use holochain_lib3h_protocol::network_engine::NetworkEngine;
 
-/// A worker that makes use of lib3h / NetworkModule.
-/// It adapts the Worker interface with Lib3h's NetworkModule's interface.
+/// A worker that makes use of lib3h / NetworkEngine.
+/// It adapts the Worker interface with Lib3h's NetworkEngine's interface.
 /// Handles `Protocol` and translates `JsonProtocol` to `Lib3hProtocol`.
 #[allow(non_snake_case)]
 pub struct Lib3hWorker {
@@ -96,25 +96,24 @@ impl NetWorker for Lib3hWorker {
         Ok(())
     }
 
-    /// Check for messages from our NetworkModule
+    /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
         // Send p2pReady on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
             (self.handler)(Ok(Protocol::P2pReady))?;
         }
-        // check for messages from our NetworkModule
+        // Tick the NetworkEngine and check for incoming protocol messages.
         let (did_something, output) = self.net_engine.process()?;
         if did_something {
-            for _msg in output {
-                // FIXME translate Lib3hProtocol to Protocol
-                (self.handler)(Ok(Protocol::Ping(PingData { sent: 4.2 })))?;
+            for msg in output {
+                (self.handler)(Ok(Protocol::Lib3h(msg)))?;
             }
         }
         Ok(did_something)
     }
 
-    /// Stop the NetworkModule
+    /// Stop the NetworkEngine
     fn stop(self: Box<Self>) -> NetResult<()> {
         self.net_engine.stop()
     }

@@ -89,11 +89,6 @@ impl<'a> From<&'a NamedBinaryData> for Protocol {
             b"json" => Protocol::Json(JsonString::from_json(
                 &String::from_utf8_lossy(&nb.data).to_string(),
             )),
-            b"lib3h" => {
-                // FIXME
-                let sub: PingData = rmp_serde::from_slice(&nb.data).unwrap();
-                Protocol::Ping(sub)
-            }
             b"ping" => {
                 let sub: PingData = rmp_serde::from_slice(&nb.data).unwrap();
                 Protocol::Ping(sub)

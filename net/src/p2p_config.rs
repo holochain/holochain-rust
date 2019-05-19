@@ -221,7 +221,8 @@ impl P2pConfig {
     {
       "backend_kind": "LIB3H",
       "backend_config": {
-        "socketType": "ws"
+        "socketType": "ws",
+        "logLevel": "i"
       }
     }"#;
 

@@ -25,6 +25,7 @@ pub struct Lib3hWorker {
 impl Lib3hWorker {
     /// Create a new worker connected to the lib3h NetworkEngine
     pub fn new(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
+        println!("RealEngineConfig: {:?}", real_config.clone());
         Ok(Lib3hWorker {
             handler,
             can_send_P2pReady: true,

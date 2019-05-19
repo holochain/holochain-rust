@@ -13,14 +13,17 @@ use std::{str::FromStr, sync::Arc, thread};
 
 /// The network requests us to store (i.e. hold) the given entry.
 pub fn handle_store_entry(dht_data: EntryData, context: Arc<Context>) {
-    let entry_with_header: EntryWithHeader =
-        serde_json::from_str(&serde_json::to_string(&dht_data.entry_content).unwrap()).unwrap();
-    thread::spawn(move || {
+     context.log(format!("debug/net/handle: handle_store_entry: entry data={:?}", dht_data));
+     let context2 = context.clone();
+     serde_json::from_str(&serde_json::to_string(&dht_data.entry_content)
+                          .expect("expected json in dht entry content"))
+     .map(|entry_with_header| {
+         thread::spawn(move || {
         match context.block_on(hold_entry_workflow(&entry_with_header, context.clone())) {
             Err(error) => context.log(format!("err/net/dht: {}", error)),
             _ => (),
         }
-    });
+    })}).map_err(|err| { context2.log(format!("err/net/dht: skipping err: {:?}", err))}).ok();
 }
 
 /// The network requests us to store meta information (links/CRUD/etc) for an
@@ -51,9 +54,9 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         let entry_with_header: EntryWithHeader = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be EntryWithHeader"),
         )
-        .expect("dht_meta_data should be EntryWithHader");
+        .expect("dht_meta_data should be EntryWithHeader");
         thread::spawn(move || {
             if let Err(error) =
                 context.block_on(remove_link_workflow(&entry_with_header, &context.clone()))
@@ -70,9 +73,9 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         let entry_with_header: EntryWithHeader = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be EntryWithHeader"),
         )
-        .expect("dht_meta_data should be EntryWithHader");
+        .expect("dht_meta_data should be EntryWithHeader");
         thread::spawn(move || {
             if let Err(error) =
                 context.block_on(hold_remove_workflow(entry_with_header, context.clone()))
@@ -88,9 +91,9 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         let entry_with_header: EntryWithHeader = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be EntryWithHeader"),
         )
-        .expect("dht_meta_data should be EntryWithHader");
+        .expect("dht_meta_data should be EntryWithHeader");
         thread::spawn(move || {
             if let Err(error) =
                 context.block_on(hold_update_workflow(entry_with_header, context.clone()))

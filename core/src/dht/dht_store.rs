@@ -9,12 +9,13 @@ use holochain_core_types::{
         Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
         IndexFilter,
     },
-    entry::Entry,
+    entry::{Entry, StorageRole},
     error::HolochainError,
 };
 
 use std::{
     collections::{BTreeSet, HashMap},
+    iter::FromIterator,
     sync::{Arc, RwLock},
 };
 
@@ -78,6 +79,52 @@ impl DhtStore {
                 _ => false,
             })
             .collect())
+    }
+
+    // TODO decide where to put this code
+    pub fn get_entries_by_storage_role(
+        &self,
+        storage_role: &StorageRole,
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+        self.meta_storage()
+            .read()
+            .unwrap()
+            .fetch_eavi(&EaviQuery::new(
+                Default::default(),
+                Some(Attribute::StorageRole).into(),
+                Some(Address::from(String::from(storage_role.clone()))).into(),
+                IndexFilter::LatestByAttribute,
+            ))
+            .map(|eavi| eavi.into_iter().collect())
+    }
+
+    // TODO decide where to put this code
+    pub fn get_meta_by_storage_role(
+        &self,
+        storage_role: &StorageRole,
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+        self.meta_storage()
+            .read()
+            .unwrap()
+            .fetch_eavi(&EaviQuery::new(
+                Default::default(),
+                Some(Attribute::StorageRole).into(),
+                // TODO figure out whether we store string value or actual address
+                Some(Address::from(String::from(storage_role.clone()))).into(),
+                IndexFilter::LatestByAttribute,
+            ))
+            .and_then(|eavis| {
+                self.meta_storage()
+                    .read()
+                    .unwrap()
+                    .fetch_eavi(&EaviQuery::new(
+                        Vec::from_iter(eavis.into_iter().map(|e| e.entity()).into_iter()).into(),
+                        EavFilter::predicate(|attr: Attribute| !attr.is_private()),
+                        Default::default(),
+                        IndexFilter::LatestByAttribute,
+                    ))
+            })
+            .map(|eavi| eavi.into_iter().collect())
     }
 
     /// Get all headers for an entry by first looking in the DHT meta store

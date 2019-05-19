@@ -4,6 +4,7 @@ use holochain_net::{
     connection::{
         json_protocol::{ConnectData, JsonProtocol},
         net_connection::NetSend,
+        protocol::Protocol,
         NetResult,
     },
     tweetlog::TWEETLOG,
@@ -603,6 +604,8 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
         true,
     )?;
 
+    billy.listen(200);
+
     // Billy asks for metadata on the network.
     let fetch_meta = billy.request_meta(ENTRY_ADDRESS_2.clone(), META_LINK_ATTRIBUTE.to_string());
 
@@ -611,7 +614,10 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
 
     // Billy should receive meta
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .wait(Box::new(one_is_where!(
+            JsonProtocol::FetchMetaResult(meta_data),
+            { meta_data.request_id == fetch_meta.request_id }
+        )))
         .unwrap();
 
     log_i!("got GetMetaResult: {:?}", result);
@@ -620,6 +626,49 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
     assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
     assert_eq!(meta_data.content_list.len(), 1);
     assert_eq!(meta_data.content_list[0], META_LINK_CONTENT_2.clone());
+    // Done
+    Ok(())
+}
+/*
+// this is all debug code, no need to track code test coverage
+fn handle_get_entry_list_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool,
+                              storage_role:&StorageRole) -> NetResult<()> {
+    // Setup
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
+
+    // Alex publish data on the network
+    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+
+    // Check if both nodes are asked to store it
+    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    // #fulldht
+    assert!(result_a.is_some());
+    log_i!("got HandleStoreEntry on node A: {:?}", result_a);
+}
+*/
+
+
+/// Send Protocol::Shutdown
+pub fn shutdown_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    can_connect: bool,
+) -> NetResult<()> {
+    // Setup
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
+    assert_eq!(alex.is_network_ready(), true);
+
+    // Do something
+    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    let _ = billy.listen(200);
+
+    // kill alex manually
+    alex.send(Protocol::Shutdown.into())?;
+
+    // alex should receive 'Terminated' which should set `is_network_ready`  to false
+    let _ = alex.listen(200);
+    assert_eq!(alex.is_network_ready(), false);
+
     // Done
     Ok(())
 }

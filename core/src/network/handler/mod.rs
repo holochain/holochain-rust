@@ -1,7 +1,6 @@
 pub mod get;
 pub mod send;
 pub mod store;
-
 use crate::{
     context::Context,
     entry::CanPublish,
@@ -10,10 +9,13 @@ use crate::{
         handler::{get::*, send::*, store::*},
     },
 };
-use holochain_core_types::{cas::content::Address, hash::HashString};
+use holochain_core_types::{
+    cas::content::Address, eav::EntityAttributeValueIndex, entry::StorageRole,
+    error::HolochainError, hash::HashString,
+};
 use holochain_net::connection::{
-    json_protocol::{EntryListData, GetListData, JsonProtocol},
-    net_connection::NetHandler,
+    json_protocol::{EntryListData, GetListData, JsonProtocol, MetaListData, MetaTuple},
+    net_connection::{NetHandler, NetSend},
 };
 
 use std::{convert::TryFrom, sync::Arc};
@@ -191,31 +193,27 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 // Just republish everything when a new person comes on-line!!
                 republish_all_public_chain_entries(&context);
             }
-            JsonProtocol::HandleGetHoldingEntryList(entries) => {
-                context.log(format!("HandleGetHoldingEntryList: {:?}", entries))
+            JsonProtocol::HandleGetHoldingEntryList(get_list_data) => {
+                handle_get_entry_list(&context, &get_list_data, &StorageRole::Holder)
+                    .expect("handle_get_holding_entry_list: failed")
             }
-            JsonProtocol::HandleGetHoldingEntryListResult(entries) => {
-                context.log(format!("HandleGetHoldingEntryListResult: {:?}", entries))
+            JsonProtocol::HandleGetHoldingMetaList(get_list_data) => {
+                handle_get_meta_list(&context, &get_list_data, &StorageRole::Holder)
+                    .expect("handle_get_holding_meta_list: failed")
             }
             JsonProtocol::HandleGetPublishingEntryList(get_list_data) => {
-                context.log(format!("HandleGetPublishingEntryList: {:?}", get_list_data));
-                handle_get_publishing_entries(&context, &get_list_data);
+                handle_get_entry_list(&context, &get_list_data, &StorageRole::Publisher)
+                    .expect("handle_get_publish_entries: failed");
             }
-            JsonProtocol::HandleGetPublishingEntryListResult(entries) => {
-                context.log(format!("HandleGetPublishingEntryListResult: {:?}", entries))
+            JsonProtocol::HandleGetPublishingMetaList(get_list_data) => {
+                handle_get_meta_list(&context, &get_list_data, &StorageRole::Publisher)
+                    .expect("handle_get_publishing_meta_list: failed");
             }
-            JsonProtocol::HandleGetPublishingMetaList(meta) => {
-                context.log(format!("HandleGetPublishingMetaList: {:?}", meta))
-            }
-            JsonProtocol::HandleGetPublishingMetaListResult(meta) => {
-                context.log(format!("HandleGetPublishingMetaListResult: {:?}", meta))
-            }
-            JsonProtocol::HandleGetHoldingMetaList(meta) => {
-                context.log(format!("HandleGetHoldingMetaList: {:?}", meta))
-            }
-            JsonProtocol::HandleGetHoldingMetaListResult(meta) => {
-                context.log(format!("HandleGetHoldingMetaListResult: {:?}", meta))
-            }
+            // these protocol events should be handled on the lib3h side.
+            JsonProtocol::HandleGetPublishingEntryListResult(_)
+            | JsonProtocol::HandleGetHoldingEntryListResult(_)
+            | JsonProtocol::HandleGetPublishingMetaListResult(_)
+            | JsonProtocol::HandleGetHoldingMetaListResult(_) => (),
             _ => {}
         }
         Ok(())
@@ -240,26 +238,102 @@ fn republish_all_public_chain_entries(context: &Arc<Context>) {
         });
 }
 
-fn handle_get_publishing_entries(context: &Arc<Context>, get_list_data: &GetListData) {
-    let chain = context.state().unwrap().agent().chain_store();
-    let top_header = context.state().unwrap().agent().top_chain_header();
-    let entry_address_list = chain
-        .iter(&top_header)
-        .filter(|ref chain_header| chain_header.entry_type().can_publish(context))
-        .map(|chain_header| {
-            let address: &Address = chain_header.entry_address();
-            address.clone()
-        })
-        .collect();
-    let entry_list_data = EntryListData {
-        dna_address: get_list_data.dna_address.clone(),
-        request_id: get_list_data.request_id.clone(),
-        entry_address_list: entry_address_list,
-    };
+fn handle_get_entry_list(
+    context: &Arc<Context>,
+    get_list_data: &GetListData,
+    storage_role: &StorageRole,
+) -> Result<(), HolochainError> {
+    context
+        .state()
+        .expect("State missing from context.")
+        .dht()
+        .get_entries_by_storage_role(storage_role)
+        .and_then(|entry_map| {
+            let entry_address_list: Vec<Address> = entry_map
+                .into_iter()
+                .map(|eavi: EntityAttributeValueIndex| eavi.entity())
+                .collect();
 
+            let entry_list_data = EntryListData {
+                dna_address: get_list_data.dna_address.clone(),
+                request_id: get_list_data.request_id.clone(),
+                entry_address_list,
+            };
+
+            send_result(
+                &context,
+                match storage_role {
+                    StorageRole::Publisher => {
+                        JsonProtocol::HandleGetPublishingEntryListResult(entry_list_data)
+                    }
+                    StorageRole::Holder => {
+                        JsonProtocol::HandleGetHoldingEntryListResult(entry_list_data)
+                    }
+                },
+            )
+        })
+}
+
+fn handle_get_meta_list(
+    context: &Arc<Context>,
+    get_list_data: &GetListData,
+    storage_role: &StorageRole,
+) -> Result<(), HolochainError> {
+    context
+        .state()
+        .expect("State missing from context.")
+        .dht()
+        .get_meta_by_storage_role(storage_role)
+        .and_then(|meta_map| {
+            let meta_list: Vec<MetaTuple> = meta_map
+                .into_iter()
+                .map(|eavi: EntityAttributeValueIndex| {
+                    let content_hash: Address = eavi.value();
+                    let meta_tuple: MetaTuple = (
+                        eavi.entity(),
+                        eavi.attribute().to_string(),
+                        serde_json::value::Value::String(content_hash.into()),
+                    );
+                    meta_tuple
+                })
+                .collect();
+
+            let meta_list_data = MetaListData {
+                dna_address: get_list_data.dna_address.clone(),
+                request_id: get_list_data.request_id.clone(),
+                meta_list,
+            };
+
+            send_result(
+                &context,
+                match storage_role {
+                    StorageRole::Publisher => {
+                        JsonProtocol::HandleGetPublishingMetaListResult(meta_list_data)
+                    }
+                    StorageRole::Holder => {
+                        JsonProtocol::HandleGetHoldingMetaListResult(meta_list_data)
+                    }
+                },
+            )
+        })
+}
+
+fn send_result(context: &Arc<Context>, json_protocol: JsonProtocol) -> Result<(), HolochainError> {
     context.log(format!(
-        "debug/net/handle: handle_get_publishing_entries returning {:?}",
-        entry_list_data
+        "debug/net/handle: sending result over network: {:?}",
+        json_protocol
     ));
+    let network = context
+        .state()
+        .expect("state should be present")
+        .network()
+        .network
+        .clone();
     // Send the list back to the calling peer
+    network
+        .expect("network should be present")
+        .lock()
+        .expect("get network mutex")
+        .send(json_protocol.into())
+        .map_err(|err: failure::Error| HolochainError::new(err.to_string().as_str()))
 }

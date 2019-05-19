@@ -2,6 +2,43 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.16-alpha1] - 2019-05-16
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.15-alpha1] - 2019-05-09
+
+### Added
+
+- Adds new RPC method to conductor `test/agent/add` which adds an agent but does not save the config or generate a keystore. This is added to enable tests that run against the Rust conductor [PR#1359](https://github.com/holochain/holochain-rust/pull/1359)
+- Adds `from` argument to the `receive` callback. [#1382](https://github.com/holochain/holochain-rust/pull/1382)
+- Adds a new hdk::keystore_get_public_key function which returns the public key of a key secret from the keystore.  [#1383](https://github.com/holochain/holochain-rust/pull/1383)
+- Adds hdk::commit_capability_grant() for zome functions to be able to create [capability grant](doc/architecture/decisions/0017-capabilities.md)  [#1285](https://github.com/holochain/holochain-rust/pull/1285)
+- Adds hdk::commit_entry_result() which features: optional argument to include additional provenances. [#1320](https://github.com/holochain/holochain-rust/pull/1320)
+
+### Changed
+
+- Updated linked [n3h](https://github.com/holochain/n3h) version to v0.0.12-alpha [#1369](https://github.com/holochain/holochain-rust/pull/1369)
+- pin mozilla overlay to latest commit in nix [#1375](https://github.com/holochain/holochain-rust/pull/1375)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [0.0.14-alpha1] - 2019-05-02
 
 ### Added
@@ -39,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Fixed
-- Windows-only: Spawned `node.exe` process used by network module now closes properly on holochain termination [#1293](https://github.com/holochain/holochain-rust/pull/1293)   
+- Windows-only: Spawned `node.exe` process used by network module now closes properly on holochain termination [#1293](https://github.com/holochain/holochain-rust/pull/1293)
 
 ### Security
 
@@ -51,7 +88,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Config.bridge` added to Scenario API, allowing bridges to be configured [#1259]()https://github.com/holochain/holochain-rust/pull/1259
 
 - Adds CAPABILITY_REQ global for access from a zome function call to the capability request that was used to make the call. This is important for doing validation of provenance for a zome call that wants to create a [capability grant](doc/architecture/decisions/0017-capabilities.md). [#1273](https://github.com/holochain/holochain-rust/pull/1273)
-
 
 ### Changed
 
@@ -66,6 +102,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Fixed
+
+- Windows-only: Spawned `node.exe` process used by network module now closes properly on holochain termination [#1293](https://github.com/holochain/holochain-rust/pull/1293)
 
 - Don't publish private zome entries [#1233](https://github.com/holochain/holochain-rust/pull/1233)
 

@@ -39,6 +39,14 @@ pub enum Attribute {
     LinkTag(String),
     RemovedLink(String),
     PendingEntry,
+    StorageRole,
+}
+
+impl Attribute {
+    /// Returns true if the attribute is private and should not be dissimated to other nodes
+    pub fn is_private(&self) -> bool {
+        *self == Attribute::StorageRole
+    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -75,6 +83,7 @@ impl fmt::Display for Attribute {
             Attribute::LinkTag(tag) => write!(f, "link__{}", tag),
             Attribute::RemovedLink(tag) => write!(f, "removed_link__{}", tag),
             Attribute::PendingEntry => write!(f, "pending-entry"),
+            Attribute::StorageRole => write!(f, "storage-role"),
         }
     }
 }
@@ -104,6 +113,7 @@ impl TryFrom<&str> for Attribute {
                 "link" => Ok(Link),
                 "link_remove" => Ok(LinkRemove),
                 "pending-entry" => Ok(PendingEntry),
+                "storage-role" => Ok(StorageRole),
                 a => Err(AttributeError::Unrecognized(a.to_string())),
             }
         }

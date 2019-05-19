@@ -47,7 +47,7 @@ impl MetaStore {
             self.store.insert(meta_key, map);
         } else {
             if let Some(map) = self.store.get_mut(&meta_key) {
-                assert!(map.get(&hash).is_none());
+                //assert!(map.get(&hash).is_none());
                 log_tt!(
                     "metastore",
                     "MetaStore: adding content for '{:?}' = {} | {}",

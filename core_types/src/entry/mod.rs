@@ -8,7 +8,7 @@ pub mod deletion_entry;
 pub mod entry_type;
 
 use self::{
-    cap_entries::{CapToken, CapTokenGrant},
+    cap_entries::{CapTokenClaim, CapTokenGrant},
     deletion_entry::DeletionEntry,
 };
 use agent::{test_agent_id, AgentId};
@@ -72,7 +72,7 @@ pub enum Entry {
     LinkList(LinkList),
     ChainHeader(ChainHeader),
     ChainMigrate(ChainMigrate),
-    CapToken(CapToken),
+    CapTokenClaim(CapTokenClaim),
     CapTokenGrant(CapTokenGrant),
 }
 
@@ -89,6 +89,35 @@ impl TryFrom<JsonString> for Option<Entry> {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
+pub enum StorageRole {
+    Publisher,
+    Holder,
+}
+
+impl From<StorageRole> for String {
+    fn from(x: StorageRole) -> String {
+        match x {
+            StorageRole::Publisher => String::from("publisher"),
+            StorageRole::Holder => String::from("holder"),
+        }
+    }
+}
+
+impl StorageRole {
+    pub fn create_eav(
+        address: &Address,
+        role: &StorageRole,
+    ) -> HcResult<crate::eav::EntityAttributeValueIndex> {
+        crate::eav::EntityAttributeValueIndex::new(
+            address,
+            &crate::eav::Attribute::StorageRole,
+            // TODO this mimics crud, but it's not a hash string so seems wrong!
+            &crate::hash::HashString::from(String::from(role.clone())),
+        )
+    }
+}
+
 impl Entry {
     pub fn entry_type(&self) -> EntryType {
         match &self {
@@ -101,7 +130,7 @@ impl Entry {
             Entry::LinkList(_) => EntryType::LinkList,
             Entry::ChainHeader(_) => EntryType::ChainHeader,
             Entry::ChainMigrate(_) => EntryType::ChainMigrate,
-            Entry::CapToken(_) => EntryType::CapToken,
+            Entry::CapTokenClaim(_) => EntryType::CapTokenClaim,
             Entry::CapTokenGrant(_) => EntryType::CapTokenGrant,
         }
     }

@@ -1,6 +1,6 @@
 [package]
 name = "holochain_dpki"
-version = "0.0.14-alpha1"
+version = "0.0.16-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -12,5 +12,5 @@ holochain_sodium = { path = "../sodium" }
 serde = "=1.0.89"
 serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
-hcid = "=0.0.3-alpha"
+hcid = "=0.0.6"
 bip39 = "=0.6.0-beta.1"

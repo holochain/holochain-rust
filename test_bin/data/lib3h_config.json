@@ -4,6 +4,6 @@
     "socketType": "ws",
     "logLevel": "t",
     "workDir": "./",
-    "bootstrapNodes:": ["192.168.0.1:4242", "192.168.0.2:4242"]
+    "bootstrapNodes": ["192.168.0.1:4242", "192.168.0.2:4242"]
   }
 }

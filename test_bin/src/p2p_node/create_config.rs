@@ -111,8 +111,8 @@ pub(crate) fn create_lib3h_config(
             "backend_config":
             {
                 "socketType": p2p_config.backend_config["socketType"],
-                "bootstrapNodes": bootstrap_nodes,
-                "workDir": dir.clone(),
+                "bootstrapNodes": p2p_config.backend_config["bootstrapNodes"],
+                "workDir": p2p_config.backend_config["workDir"],
                 "logLevel": p2p_config.backend_config["logLevel"],
             }}))
             .expect("Failled making valid LIB3H P2pConfig")

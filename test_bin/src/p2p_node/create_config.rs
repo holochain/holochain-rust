@@ -113,7 +113,6 @@ pub(crate) fn create_lib3h_config(
                 "socketType": p2p_config.backend_config["socketType"],
                 "bootstrapNodes": bootstrap_nodes,
                 "workDir": dir.clone(),
-                "mode": p2p_config.backend_config["mode"],
                 "logLevel": p2p_config.backend_config["logLevel"],
             }}))
             .expect("Failled making valid LIB3H P2pConfig")
@@ -127,7 +126,6 @@ pub(crate) fn create_lib3h_config(
                 "socketType": "ws",
                 "bootstrapNodes": bootstrap_nodes,
                 "workDir": dir.clone(),
-                "mode": "MOCK",
                 "logLevel": "t"
             },
             }))

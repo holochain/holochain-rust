@@ -99,6 +99,16 @@ jobs:
       name: test cli
       command: nix-shell --run hc-cli-test
 
+ wasm-conductor-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  steps:
+   - checkout
+
+   - run:
+       name: wasm conductor tests
+       command: nix-shell --run hc-conductor-wasm-test
+
  # https://circleci.com/docs/2.0/building-docker-images/
  docker.start:
   machine: true
@@ -197,6 +207,7 @@ workflows:
    - fmt
    - app-spec-tests
    - cli-tests
+   - wasm-conductor-tests
 
  cold.ubuntu:
   jobs:

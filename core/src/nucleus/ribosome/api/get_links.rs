@@ -126,54 +126,54 @@ pub mod tests {
         )
     }
 
-    // #[test]
-    // fn returns_list_of_links() {
-    //     // setup the instance and links
-    //     let initialized_context = initialize_context();
-    //     let entry_addresses = add_test_entries(initialized_context.clone());
-    //     let links = vec![
-    //         Link::new(
-    //             &entry_addresses[0],
-    //             &entry_addresses[1],
-    //             "test-type",
-    //             "test-tag",
-    //         ),
-    //         Link::new(
-    //             &entry_addresses[0],
-    //             &entry_addresses[2],
-    //             "test-type",
-    //             "test-tag",
-    //         ),
-    //     ];
-    //     add_links(initialized_context.clone(), links);
+    #[test]
+    fn returns_list_of_links() {
+        // setup the instance and links
+        let initialized_context = initialize_context();
+        let entry_addresses = add_test_entries(initialized_context.clone());
+        let links = vec![
+            Link::new(
+                &entry_addresses[0],
+                &entry_addresses[1],
+                "test-type",
+                "test-tag",
+            ),
+            Link::new(
+                &entry_addresses[0],
+                &entry_addresses[2],
+                "test-type",
+                "test-tag",
+            ),
+        ];
+        add_links(initialized_context.clone(), links);
 
-    //     // calling get_links returns both links in some order
-    //     let call_result = get_links(
-    //         initialized_context.clone(),
-    //         &entry_addresses[0],
-    //         "test-type",
-    //         Some("test-tag".into()),
-    //     );
-    //     let expected_1 = JsonString::from_json(
-    //         &(format!(
-    //             r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
-    //             entry_addresses[1], "test-tag", entry_addresses[2], "test-tag",
-    //         ) + "\u{0}"),
-    //     );
-    //     let expected_2 = JsonString::from_json(
-    //         &(format!(
-    //            r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
-    //             entry_addresses[2], "test-tag", entry_addresses[1], "test-tag",
-    //         ) + "\u{0}"),
-    //     );
-    //     assert!(
-    //         call_result == expected_1 || call_result == expected_2,
-    //         "\n call_result = '{:?}'\n   ordering1 = '{:?}'\n   ordering2 = '{:?}'",
-    //         call_result,
-    //         expected_1,
-    //         expected_2,
-    //     );
-    // }
+        // calling get_links returns both links in some order
+        let call_result = get_links(
+            initialized_context.clone(),
+            &entry_addresses[0],
+            "test-type",
+            Some("test-tag".into()),
+        );
+        let expected_1 = JsonString::from_json(
+            &(format!(
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                entry_addresses[1], "test-tag", entry_addresses[2], "test-tag",
+            ) + "\u{0}"),
+        );
+        let expected_2 = JsonString::from_json(
+            &(format!(
+               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                entry_addresses[2], "test-tag", entry_addresses[1], "test-tag",
+            ) + "\u{0}"),
+        );
+        assert!(
+            call_result == expected_1 || call_result == expected_2,
+            "\n call_result = '{:?}'\n   ordering1 = '{:?}'\n   ordering2 = '{:?}'",
+            call_result,
+            expected_1,
+            expected_2,
+        );
+    }
 
     // #[test]
     // fn get_links_with_non_existent_type_returns_nothing() {
@@ -247,73 +247,73 @@ pub mod tests {
     //     );
     // }
 
-    #[test]
-    fn test_with_same_target_and_tag_dedup() {
-        let initialized_context = initialize_context();
-        let entry_addresses = add_test_entries(initialized_context.clone());
-        // links have same tag, same base and same tag. Are the same
-        let links = vec![
-            Link::new(
-                &entry_addresses[0],
-                &entry_addresses[1],
-                "test-type",
-                "test-tag",
-            ),
-            Link::new(
-                &entry_addresses[0],
-                &entry_addresses[1],
-                "test-type",
-                "test-tag",
-            ),
-        ];
-        add_links(initialized_context.clone(), links);
-        let call_result = get_links(
-            initialized_context.clone(),
-            &entry_addresses[0],
-            "test-type",
-            Some("test-tag".into()),
-        );
-        let expected = JsonString::from_json(
-            &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
-                entry_addresses[1], "test-tag",
-            ) + "\u{0}"),
-        );
-        assert_eq!(call_result, expected,);
-    }
+    // #[test]
+    // fn test_with_same_target_and_tag_dedup() {
+    //     let initialized_context = initialize_context();
+    //     let entry_addresses = add_test_entries(initialized_context.clone());
+    //     // links have same tag, same base and same tag. Are the same
+    //     let links = vec![
+    //         Link::new(
+    //             &entry_addresses[0],
+    //             &entry_addresses[1],
+    //             "test-type",
+    //             "test-tag",
+    //         ),
+    //         Link::new(
+    //             &entry_addresses[0],
+    //             &entry_addresses[1],
+    //             "test-type",
+    //             "test-tag",
+    //         ),
+    //     ];
+    //     add_links(initialized_context.clone(), links);
+    //     let call_result = get_links(
+    //         initialized_context.clone(),
+    //         &entry_addresses[0],
+    //         "test-type",
+    //         Some("test-tag".into()),
+    //     );
+    //     let expected = JsonString::from_json(
+    //         &(format!(
+    //             r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+    //             entry_addresses[1], "test-tag",
+    //         ) + "\u{0}"),
+    //     );
+    //     assert_eq!(call_result, expected,);
+    // }
 
-    #[test]
-    fn test_with_same_target_different_tag_dont_dedup() {
-        let initialized_context = initialize_context();
-        let entry_addresses = add_test_entries(initialized_context.clone());
-        // same target and type, different tag
-        let links = vec![
-            Link::new(
-                &entry_addresses[0],
-                &entry_addresses[1],
-                "test-type",
-                "test-tag1",
-            ),
-            Link::new(
-                &entry_addresses[0],
-                &entry_addresses[1],
-                "test-type",
-                "test-tag2",
-            ),
-        ];
-        add_links(initialized_context.clone(), links);
-        let call_result = get_links(
-            initialized_context.clone(),
-            &entry_addresses[0],
-            "test-type",
-            None,
-        );
-        let expected = JsonString::from_json(
-            &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
-                entry_addresses[1], "test-tag1", entry_addresses[1], "test-tag2",
-            ) + "\u{0}"),
-        );
-        assert_eq!(call_result, expected,);
-    }
+    // #[test]
+    // fn test_with_same_target_different_tag_dont_dedup() {
+    //     let initialized_context = initialize_context();
+    //     let entry_addresses = add_test_entries(initialized_context.clone());
+    //     // same target and type, different tag
+    //     let links = vec![
+    //         Link::new(
+    //             &entry_addresses[0],
+    //             &entry_addresses[1],
+    //             "test-type",
+    //             "test-tag1",
+    //         ),
+    //         Link::new(
+    //             &entry_addresses[0],
+    //             &entry_addresses[1],
+    //             "test-type",
+    //             "test-tag2",
+    //         ),
+    //     ];
+    //     add_links(initialized_context.clone(), links);
+    //     let call_result = get_links(
+    //         initialized_context.clone(),
+    //         &entry_addresses[0],
+    //         "test-type",
+    //         None,
+    //     );
+    //     let expected = JsonString::from_json(
+    //         &(format!(
+    //             r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+    //             entry_addresses[1], "test-tag1", entry_addresses[1], "test-tag2",
+    //         ) + "\u{0}"),
+    //     );
+    //     assert_eq!(call_result, expected,);
+    // }
 }

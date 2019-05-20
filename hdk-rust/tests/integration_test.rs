@@ -582,7 +582,7 @@ fn can_link_entries() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmdueAs48JQHvbNjzz8Dhaid93RdCJubgxQXejL5QehJUR"}"#)
+        JsonString::from_json(r#"{"Ok":"QmdQvKn8yNojRHSxr9yK3HhEGAcAzfGgC6f8XT4joZdwTp"}"#)
     );
 }
 
@@ -594,7 +594,7 @@ fn can_remove_link() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmdueAs48JQHvbNjzz8Dhaid93RdCJubgxQXejL5QehJUR"}"#)
+        JsonString::from_json(r#"{"Ok":"QmdQvKn8yNojRHSxr9yK3HhEGAcAzfGgC6f8XT4joZdwTp"}"#)
     );
 }
 
@@ -630,12 +630,12 @@ fn can_roundtrip_links() {
         LinksResult {
             address: entry_address_2.clone(),
             headers: Vec::new(),
-            tag: "".into(),
+            tag: "test-tag".into(),
         },
         LinksResult {
             address: entry_address_3.clone(),
             headers: Vec::new(),
-            tag: "".into(),
+            tag: "test-tag".into(),
         },
     ]));
     let expected_links = JsonString::from(expected_links);

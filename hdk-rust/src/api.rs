@@ -787,13 +787,13 @@ pub fn get_entry_result(
 ///         &AGENT_ADDRESS,
 ///         &address,
 ///         "authored_posts",
-///         None //not using a tag on this link - type will do fine
+///         ""
 ///     )?;
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
 ///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, headers: false, timeout: Default::default() })?;
-///         hdk::link_entries(&in_reply_to_address, &address, "comments", None)?;
+///         hdk::link_entries(&in_reply_to_address, &address, "comments", "")?;
 ///     }
 ///
 ///     Ok(address)
@@ -859,6 +859,7 @@ pub fn link_entries<S: Into<String>>(
 ///         &AGENT_ADDRESS,
 ///         &address,
 ///         "authored_posts",
+///         "test-tag"
 ///     )?;
 ///
 ///
@@ -1144,10 +1145,7 @@ pub fn get_links_with_options<S: Into<String>>(
     Dispatch::GetLinks.with_input(GetLinksArgs {
         entry_address: base.clone(),
         link_type: link_type.into(),
-        tag: match tag {
-            Some(t) => Some(t.into()),
-            None => None,
-        },
+        tag: tag.map(|t| t.into()),
         options,
     })
 }

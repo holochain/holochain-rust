@@ -22,14 +22,10 @@ use hdk::{
 
 use memo::Memo;
 use post::Post;
-use topic::{
-    Topic, QueryType,
-};
 use std::{
     collections::BTreeMap,
     convert::{TryFrom, TryInto},
 };
-use itertools::Itertools;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -243,7 +239,7 @@ pub fn handle_receive(from: Address, json_msg: JsonString) -> String {
                             };
                             let _ =
                                 hdk::debug("For some reason this link_entries statement fails!?!?");
-                            //                            let _ = hdk::link_entries(&AGENT_ADDRESS, &Address::from(x.clone()), "authored_posts", None);
+                            //                            let _ = hdk::link_entries(&AGENT_ADDRESS, &Address::from(x.clone()), "authored_posts");
 
                             x
 
@@ -323,81 +319,24 @@ pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&memo_entry(content))
 }
 
-pub fn create_topics(topics: &Vec<String>) -> ZomeApiResult<Vec<Address>> {
-    let mut topic_addresses = vec![];
-    for topic in topics{
-        let entry = Entry::App("topic".into(), Topic{topic: topic.to_string()}.into());
-        let topic_entry_address = hdk::entry_address(&entry)?;
-        match hdk::get_entry(&topic_entry_address)? {
-            Some(_entry) => {
-                topic_addresses.push(topic_entry_address);
-            },
-            None => {
-                let address = hdk::commit_entry(&entry)?;
-                topic_addresses.push(address);
-            }
-        }
-    };
-    Ok(topic_addresses)
-}
-
-pub fn create_topic_indexs(post: &Address, mut topics: Vec<String>) -> ZomeApiResult<String> {
-    let mut link_combinations = vec![]; //Vector for link combinations on post
-    topics = topics.iter().map(|topic| topic.to_lowercase()).collect(); //put topics to lowercase
-    topics.sort_by(|a, b| b.cmp(&a)); //sort topics to be in decending alphabetical order - allows less links to be made
-
-    for (i, _) in topics.iter().enumerate(){ //Iterate over topics and get all permutations of topics
-        let combinations = topics.iter().combinations(i);
-        for c in combinations.into_iter(){
-            link_combinations.push(c);
-        };
-    };
-    link_combinations.push(topics.iter().collect());
-    link_combinations = link_combinations[1..link_combinations.len()].to_vec();
-    hdk::debug(format!("Topic combination links to be made: {:?}", link_combinations))?;
-    for link in link_combinations{ //Create link combinations for expression indexing
-        let link_strings: Vec<String> = link.iter().map(|link_value| format!("{}", link_value,) ).collect(); //Create link string for each set of topic combinations
-        let link_string = link_strings.join(":");
-        let start_address = hdk::entry_address(&Entry::App("topic".into(), Topic{topic: link[0].to_string()}.into()))?;
-        hdk::link_entries(&start_address, post, "topic_index".to_string(), Some(link_string))?; //create link with type: topic_index and generate link_string
-    };
-    Ok("Link indexs created".to_string())
-}
-
-pub fn handle_create_post(content: String, in_reply_to: Option<Address>, topics: Vec<String>) -> ZomeApiResult<Address> {
+pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;
-    create_topics(&topics)?;
-    create_topic_indexs(&address, topics)?;
 
-    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts", None)?;
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts", "")?;
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
-        hdk::link_entries(&in_reply_to_address, &address, "comments", None)?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments", "")?;
     }
 
     Ok(address)
 }
 
-pub fn handle_get_post_by_topics(mut topics: Vec<String>, query_type: QueryType) -> ZomeApiResult<Vec<Post>> {
-    topics = topics.iter().map(|topic| topic.to_lowercase()).collect();
-    match query_type{
-        QueryType::And => {
-            topics.sort_by(|a, b| b.cmp(&a)); //make sure topics are in the correct decending alphabetical order as they were saved
-            let base_topic_address = hdk::entry_address(&Entry::App("topic".into(), Topic{topic: topics[0].clone()}.into()))?; 
-            let entries = hdk::utils::get_links_and_load_type::<String, Post>(&base_topic_address, "topic_index".to_string(), Some(topics.join(":")))?;
-            Ok(entries)
-        }, 
-        QueryType::Or => {
-            let mut entries = vec![];
-            for topic in topics{
-                let topic_hash = hdk::entry_address(&Entry::App("topic".into(), Topic{topic: topic.clone()}.into()))?; 
-                entries.append(&mut hdk::utils::get_links_and_load_type::<String, Post>(&topic_hash, "topic_index".to_string(), Some(topic))?);
-            };
-            Ok(entries)
-        }
-    }
+pub fn handle_create_tagged_post(content: String, tag: String) -> ZomeApiResult<Address> {
+    let address = hdk::commit_entry(&post_entry(content))?;
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts", tag.as_ref())?;
+    Ok(address)
 }
 
 pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Address>,
@@ -409,12 +348,12 @@ pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Add
 
     let address = hdk::commit_entry_result(&entry, options).unwrap().address();
 
-    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts", None)?;
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts", "")?;
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
-        hdk::link_entries(&in_reply_to_address, &address, "comments", None)?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments", "")?;
     }
 
     Ok(address)
@@ -428,12 +367,12 @@ pub fn handle_create_post_with_agent(
 ) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;
 
-    hdk::link_entries(&agent_id, &address, "authored_posts", None)?;
+    hdk::link_entries(&agent_id, &address, "authored_posts", "")?;
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
-        hdk::link_entries(&in_reply_to_address, &address, "comments", None)?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments", "")?;
     }
 
     Ok(address)
@@ -447,7 +386,7 @@ pub fn handle_create_memo(content: String) -> ZomeApiResult<Address> {
 
 pub fn handle_delete_post(content: String) -> ZomeApiResult<Address> {
     let address = hdk::entry_address(&post_entry(content))?;
-    hdk::remove_link(&AGENT_ADDRESS, &address.clone(), "authored_posts")?;
+    hdk::remove_link(&AGENT_ADDRESS, &address.clone(), "authored_posts", "")?;
     Ok(address)
 }
 
@@ -563,7 +502,7 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
 pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<Address> {
     hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
     hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
-    hdk::link_entries(&agent_address, &post_address, "recommended_posts", None)
+    hdk::link_entries(&agent_address, &post_address, "recommended_posts", "")
 }
 
 pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {

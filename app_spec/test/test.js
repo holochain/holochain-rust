@@ -17,37 +17,6 @@ const scenario1 = new Scenario([instanceAlice], { debugLog:true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
-scenario1.runTape('query capability using link tags', async (t, {alice}) => {
-  const params = {content: "Queryable Blog Post w/Topics", in_reply_to: null, topics: ["holochain", "distributed", "holo"]}
-  const result = await alice.callSync("blog", "create_post", params)
-  t.equal(result.Ok, 'QmVdNzdFJnMyKJd6L3k1rNZqptUgwbzJoh78HEQ33z36qm')
-
-  const query_result1 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["Holochain"], query_type: "And"})
-  t.ok(query_result1.Ok)
-  const query_result2 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["Holo"], query_type: "And"})
-  t.ok(query_result2.Ok)
-  const query_result3 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["distributed"], query_type: "And"})
-  t.ok(query_result3.Ok)
-
-  const query_result4 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["Holochain", "holo"], query_type: "And"})
-  t.ok(query_result4.Ok)
-  const query_result5 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["distributed", "Holochain"], query_type: "And"})
-  t.ok(query_result5.Ok)
-
-  const query_result6 = await alice.callSync("blog", "get_posts_by_topic", {base_topic: ["holo", "distributed"], query_type: "And"})
-  t.ok(query_result6.Ok)
-
-  const query_result7 = await alice.callSync("blog", "get_posts_by_topic", {base_topic: ["Holochain", "holo", "distributed"], query_type: "And"})
-  t.ok(query_result7.Ok)
-
-  const params2 = {content: "Queryable Blog Post 2 w/Topics", in_reply_to: null, topics: ["holochain", "distributed", "holo"]}
-  const result2 = await alice.callSync("blog", "create_post", params2)
-  t.equal(result2.Ok, 'Qmf4m4nmTAXNgJ2bu3WCFdBoArNeDPMxujDGKqoGT3fnP3')
-
-  const query_result8 = await alice.callSync("blog", "get_posts_by_topic", {topics: ["Holochain" , "distributed", "holo"], query_type: "Or"})
-  t.ok(query_result8.Ok) //should return first post and second post as query_type is or for a topic they both belong to
-})
-
 scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
 
     // Ask for alice to grant a token for bob  (it's hard-coded for bob in re function for now)
@@ -155,7 +124,7 @@ scenario1.runTape('show_env', async (t, { alice }) => {
 })
 
 scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {
-  const params = { content: 'whatever', in_reply_to: null, topics: []}
+  const params = { content: 'whatever', in_reply_to: null }
   const address = await alice.callSync('blog', 'create_post', params).then(x => x.Ok)
   const address1 = await alice.callSync('blog', 'create_post', params).then(x => x.Ok)
   const address2 = await bob.callSync('blog', 'create_post', params).then(x => x.Ok)
@@ -209,13 +178,32 @@ scenario1.runTape('create_post', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = null
-  const topics = [];
-  const params = { content, in_reply_to, topics}
+  const params = { content, in_reply_to }
   const result = alice.call("blog", "create_post", params)
 
   t.ok(result.Ok)
   t.notOk(result.Err)
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+})
+
+scenario1.runTape('create_tagged_post and retrieve all tags', async (t, { alice }) => {
+  const result1 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Tutorial on amazing Holochain design patterns",
+    tag: "work"
+  })
+  t.ok(result1.Ok)
+  
+  const result2 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Fly tying, is it for you?",
+    tag: "fishing"
+  })
+  t.ok(result2.Ok)
+
+  const getResult = await alice.callSync("blog", "my_posts", {})
+  t.equal(getResult.Ok.links.length, 2)
+  let tags = getResult.Ok.links.map(l => l.tag)
+  t.ok(tags.includes("work"))
+  t.ok(tags.includes("fishing"))
 })
 
 scenario2.runTape('create_post_countersigned', async (t, { alice, bob }) => {
@@ -326,7 +314,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   //create post
   const alice_create_post_result = await alice.callSync("blog", "create_post",
-    { "content": "Posty", "in_reply_to": "", "topics": [] }
+    { "content": "Posty", "in_reply_to": "" }
   )
 
   const bob_create_post_result = await bob.callSync("blog", "posts_by_agent",
@@ -386,8 +374,7 @@ scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
 
   const content = "Hello Holo world 321"
   const in_reply_to = null
-  const topics = []
-  const params = { content, in_reply_to, topics}
+  const params = { content, in_reply_to }
 
   //commit create_post
   const createResult = await alice.callSync("blog", "create_post", params)
@@ -404,8 +391,7 @@ scenario2.runTape('update_entry_validation', async (t, { alice, bob }) => {
 scenario2.runTape('update_post', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
   const in_reply_to = null
-  const topics = []
-  const params = { content, in_reply_to, topics }
+  const params = { content, in_reply_to }
 
   //commit version 1
   const createResult = await alice.callSync("blog", "create_post", params)
@@ -520,8 +506,7 @@ scenario2.runTape('update_post', async (t, { alice, bob }) => {
 scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
   const content = "Hello Holo world 123"
   const in_reply_to = null
-  const topics = []
-  const params = { content, in_reply_to, topics }
+  const params = { content, in_reply_to }
 
   //commit version 1
   const createResult = await alice.callSync("blog", "create_post", params)
@@ -549,8 +534,7 @@ scenario2.runTape('remove_update_modifed_entry', async (t, { alice, bob }) => {
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
   const content = "Holo world"
   const in_reply_to = "bad"
-  const topics = []
-  const params = { content, in_reply_to, topics }
+  const params = { content, in_reply_to }
   const result = alice.call("blog", "create_post", params)
 
   // bad in_reply_to is an error condition
@@ -581,8 +565,7 @@ scenario1.runTape('post max content size 280 characters', async (t, { alice }) =
 
   const content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
   const in_reply_to = null
-  const topics = []
-  const params = { content, in_reply_to, topics }
+  const params = { content, in_reply_to }
   const result = alice.call("blog", "create_post", params)
 
   // result should be an error
@@ -609,11 +592,11 @@ scenario1.runTape('posts_by_agent', async (t, { alice }) => {
 scenario1.runTape('my_posts', async (t, { alice }) => {
 
   await alice.callSync("blog", "create_post",
-    { "content": "Holo world", "in_reply_to": "", "topics": "[]" }
+    { "content": "Holo world", "in_reply_to": "" }
   )
 
   await alice.callSync("blog", "create_post",
-    { "content": "Another post", "in_reply_to": "", "topics": "[]" }
+    { "content": "Another post", "in_reply_to": "" }
   )
 
   const result = alice.call("blog", "my_posts", {})
@@ -625,7 +608,7 @@ scenario1.runTape('my_posts', async (t, { alice }) => {
 scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
 
   alice.call("blog", "create_post",
-    { "content": "Holo world", "in_reply_to": "", "topics": "[]" }
+    { "content": "Holo world", "in_reply_to": "" }
   )
 
   const result = alice.call("blog", "my_posts_immediate_timeout", {})
@@ -638,11 +621,11 @@ scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
 scenario2.runTape('get_sources_from_link', async (t, { alice, bob }) => {
 
   await alice.callSync("blog", "create_post",
-    { "content": "Holo world", "in_reply_to": null, "topics": [] }
+    { "content": "Holo world", "in_reply_to": null }
   );
 
   await bob.callSync("blog", "create_post",
-  { "content": "Another one", "in_reply_to": null, "topics": [] }
+  { "content": "Another one", "in_reply_to": null }
 );
   const alice_posts = bob.call("blog","authored_posts_with_sources",
   {
@@ -688,8 +671,7 @@ scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = null
-  const topics = []
-  const params = { content, in_reply_to, topics }
+  const params = { content, in_reply_to }
   const create_post_result = alice.call("blog", "create_post", params)
   const post_address = create_post_result.Ok
 
@@ -719,10 +701,10 @@ scenario1.runTape('get_post with non-existant address returns null', async (t, {
 scenario2.runTape('scenario test create & publish post -> get from other instance', async (t, { alice, bob }) => {
 
   const initialContent = "Holo world"
-  const params = { content: initialContent, in_reply_to: null, topics: [] }
+  const params = { content: initialContent, in_reply_to: null }
   const create_result = await alice.callSync("blog", "create_post", params)
 
-  const params2 = { content: "post 2", in_reply_to: null, topics: [] }
+  const params2 = { content: "post 2", in_reply_to: null }
   const create_result2 = await bob.callSync("blog", "create_post", params2)
 
   t.equal(create_result.Ok.length, 46)
@@ -739,7 +721,7 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
 scenarioBridge.runTape('scenario test create & publish -> getting post via bridge', async (t, {alice, bob}) => {
 
   const initialContent = "Holo world"
-  const params = { content: initialContent, in_reply_to: null, topics: [] }
+  const params = { content: initialContent, in_reply_to: null }
   const create_result = await bob.callSync("blog", "create_post", params)
 
   t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")

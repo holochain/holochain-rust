@@ -96,7 +96,7 @@ pub enum Action {
     // ----------------
     /// Writes an entry to the source chain.
     /// Does not validate, assumes entry is valid.
-    Commit((Entry, Option<Address>, Vec<Provenance>)),
+    Commit(CommitKey),
 
     // -------------
     // DHT actions:
@@ -229,6 +229,8 @@ pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
+
+pub type CommitKey = (Entry, Option<Address>, Vec<Provenance>);
 
 /// The unique key that represents a GetLinks request, used to associate the eventual
 /// response with this GetLinks request

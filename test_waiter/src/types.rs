@@ -1,5 +1,5 @@
 use holochain_core::action::Action;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub type NodeId = String;
 
@@ -12,14 +12,14 @@ pub struct Observation {
 #[derive(Clone)]
 pub struct EffectAbstract {
     pub description: String,
-    pub predicate: Rc<Box<Fn(&Action) -> bool>>,
+    pub predicate: Arc<Box<Fn(&Action) -> bool + Send + Sync>>,
     pub group: EffectGroup,
 }
 
 #[derive(Clone)]
 pub struct EffectConcrete {
     pub description: String,
-    pub predicate: Rc<Box<Fn(&Action) -> bool>>,
+    pub predicate: Arc<Box<Fn(&Action) -> bool + Send + Sync>>,
     pub source_node: NodeId,
     pub target_node: NodeId,
 }

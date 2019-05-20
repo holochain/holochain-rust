@@ -3,11 +3,15 @@ use crate::{
     config::AgentConfiguration,
     key_loaders::test_keystore,
     keystore::PRIMARY_KEYBUNDLE_ID,
+    std::sync::{Arc, RwLock},
 };
 use holochain_core_types::error::HolochainError;
+use holochain_test_waiter::FullSyncWaiter;
 
 pub trait ConductorTestAdmin {
     fn add_test_agent(&mut self, id: String, name: String) -> Result<String, HolochainError>;
+    fn new_waiter(&mut self) -> Result<(), HolochainError>;
+    fn scenario_api(&mut self) -> Result<(), HolochainError>;
 }
 
 impl ConductorTestAdmin for Conductor {
@@ -38,6 +42,16 @@ impl ConductorTestAdmin for Conductor {
         // self.save_config()?; we don't actually want to save it for tests
         notify(format!("Added agent \"{}\"", id));
         Ok(public_address)
+    }
+
+    fn new_waiter(&mut self) -> Result<(), HolochainError> {
+        let instance_ids = self.instances.keys().cloned().collect();
+        self.waiter = Some(Arc::new(RwLock::new(FullSyncWaiter::new(instance_ids))));
+        Ok(())
+    }
+
+    fn scenario_api(&mut self) -> Result<(), HolochainError> {
+        unimplemented!()
     }
 }
 

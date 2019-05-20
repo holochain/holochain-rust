@@ -884,6 +884,12 @@ impl ConductorApiBuilder {
             Ok(json!({ "agent_address": agent_address }))
         });
 
+        self.io
+            .add_method("test/scenario/new_waiter", move |params| Ok(json!({})));
+
+        self.io
+            .add_method("test/scenario/api", move |params| Ok(json!({})));
+
         self
     }
 

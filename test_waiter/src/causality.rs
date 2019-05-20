@@ -7,9 +7,9 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::Entry,
 };
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
-fn effect1<P: 'static + Fn(&Action) -> bool>(
+fn effect1<P: 'static + Send + Sync + Fn(&Action) -> bool>(
     description: String,
     group: EffectGroup,
     predicate: P,
@@ -17,7 +17,7 @@ fn effect1<P: 'static + Fn(&Action) -> bool>(
     vec![EffectAbstract {
         description,
         group,
-        predicate: Rc::new(Box::new(predicate)),
+        predicate: Arc::new(Box::new(predicate)),
     }]
 }
 
@@ -65,6 +65,7 @@ impl CausalityModel {
                     fx.append(&mut publish_effects);
                     fx
                 } else {
+                    // TODO: use Result
                     panic!(
                         "Attempted to Publish entry before committing {}",
                         address.to_string()

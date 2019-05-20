@@ -6,3 +6,5 @@ pub mod causality;
 pub mod network;
 pub mod types;
 pub mod waiter;
+
+pub use waiter::FullSyncWaiter;

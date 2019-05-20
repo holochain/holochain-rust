@@ -22,6 +22,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
+use holochain_test_waiter::FullSyncWaiter;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     clone::Clone,
@@ -96,6 +97,7 @@ pub struct Conductor {
     network_spawn: Option<SpawnResult>,
     pub passphrase_manager: Arc<PassphraseManager>,
     pub hash_config: Option<PwHashConfig>, // currently this has to be pub for testing.  would like to remove
+    pub(in crate::conductor) waiter: Option<Arc<RwLock<FullSyncWaiter>>>,
 }
 
 impl Drop for Conductor {
@@ -154,6 +156,7 @@ impl Conductor {
                 PassphraseServiceCmd {},
             )))),
             hash_config: None,
+            waiter: None,
         }
     }
 
@@ -189,6 +192,7 @@ impl Conductor {
         let broadcasters = self.interface_broadcasters.clone();
         let instance_signal_receivers = self.instance_signal_receivers.clone();
         let signal_tx = self.signal_tx.clone();
+        let waiter = self.waiter.clone();
         let config = self.config.clone();
         let (kill_switch_tx, kill_switch_rx) = unbounded();
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
@@ -222,6 +226,15 @@ impl Conductor {
                                 })
                                 .collect(),
                         };
+
+                        if let (Signal::Internal(aw), Some(waiter)) =
+                            (signal.clone(), waiter.clone())
+                        {
+                            waiter
+                                .write()
+                                .expect("Couldn't get write lock on Waiter")
+                                .record_observation(instance_id.to_string(), aw.action().clone());
+                        }
 
                         for interface in interfaces_with_instance {
                             broadcasters.get(&interface.id).map(|broadcaster| {

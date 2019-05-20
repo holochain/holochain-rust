@@ -98,6 +98,7 @@ extern crate holochain_core_types_derive;
 extern crate holochain_dpki;
 extern crate holochain_net;
 extern crate holochain_sodium;
+extern crate holochain_test_waiter;
 
 extern crate chrono;
 extern crate crossbeam_channel;

@@ -2,6 +2,7 @@ use crate::{
     network::{FullSyncNetworkModel, NetworkModel},
     types::{EffectConcrete, NodeId, Observation},
 };
+use holochain_core::action::Action;
 
 pub struct Waiter<N: NetworkModel> {
     network_model: N,
@@ -28,7 +29,11 @@ impl Waiter<FullSyncNetworkModel> {
         self.pending_effects.is_empty()
     }
 
-    pub fn reduce_observation(&mut self, o: &Observation) {
+    pub fn record_observation(&mut self, instance_id: NodeId, action: Action) {
+        let o = &Observation {
+            action,
+            node: instance_id,
+        };
         let mut fx = self.network_model.determine_effects(o);
         // println!(
         //     "{:?} -> {:?}",
@@ -84,37 +89,22 @@ mod tests {
         let entry_wh = mk_entry_wh(entry.clone());
         let commit_key = (entry.clone(), None, Vec::new());
 
-        waiter.reduce_observation(&Observation {
-            node: "alise".into(),
-            action: Commit(commit_key),
-        });
+        waiter.record_observation("alise".into(), Commit(commit_key));
         assert_eq!(waiter.pending_effects.len(), 0);
 
-        waiter.reduce_observation(&Observation {
-            node: "alise".into(),
-            action: Publish(entry.address()),
-        });
+        waiter.record_observation("alise".into(), Publish(entry.address()));
         assert_eq!(waiter.pending_effects.len(), 3);
 
         let hold = Hold(entry_wh.clone());
 
-        waiter.reduce_observation(&Observation {
-            node: "alise".into(),
-            action: hold.clone(),
-        });
+        waiter.record_observation("alise".into(), hold.clone());
         assert_eq!(waiter.pending_effects.len(), 2);
 
-        waiter.reduce_observation(&Observation {
-            node: "bobo".into(),
-            action: hold.clone(),
-        });
+        waiter.record_observation("bobo".into(), hold.clone());
         assert_eq!(waiter.pending_effects.len(), 1);
         assert!(waiter.is_consistent(&"bobo".to_string()));
 
-        waiter.reduce_observation(&Observation {
-            node: "lola".into(),
-            action: hold.clone(),
-        });
+        waiter.record_observation("lola".into(), hold.clone());
         assert_eq!(waiter.pending_effects.len(), 0);
 
         assert!(waiter.is_consistent_all());

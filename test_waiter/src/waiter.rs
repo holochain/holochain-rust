@@ -102,35 +102,6 @@ impl CallFxChecker {
     }
 }
 
-/// A simple Task that blocks until it receives `ControlMsg::Stop`.
-/// This is used to trigger a JS Promise resolution when a ZomeFnCall's
-/// side effects have all completed.
-pub struct CallBlockingTask {
-    pub rx: ControlReceiver,
-}
-
-impl Task for CallBlockingTask {
-    type Output = ();
-    type Error = String;
-    type JsEvent = JsUndefined;
-
-    fn perform(&self) -> Result<(), String> {
-        while let Ok(sig) = self.rx.recv() {
-            match sig {
-                ControlMsg::Stop => break,
-            }
-        }
-        Ok(())
-    }
-
-    fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsUndefined> {
-        result.map(|_| cx.undefined()).or_else(|e| {
-            let error_string = cx.string(format!("unable to initialize habitat: {}", e));
-            cx.throw(error_string)
-        })
-    }
-}
-
 /// A singleton which runs in a Task and is the receiver for the Signal channel.
 /// - handles incoming `ZomeFnCall`s, attaching and activating a new `CallFxChecker`
 /// - handles incoming Signals, running all `CallFxChecker` closures
@@ -302,66 +273,6 @@ impl Waiter {
 
     fn deactivate_current(&mut self) {
         self.current = None;
-    }
-}
-
-/// This Task is started with the TestConductor and is stopped with the TestConductor.
-/// It runs in a Node worker thread, receiving Signals and running them through
-/// the Waiter. Each TestConductor spawns its own MainBackgroundTask.
-pub struct MainBackgroundTask {
-    /// The Receiver<Signal> for the Conductor
-    signal_rx: SignalReceiver,
-    /// The Waiter is in a RefCell because perform() uses an immutable &self reference
-    waiter: RefCell<Waiter>,
-    /// This Mutex is flipped from true to false from within the TestConductor
-    is_running: Arc<Mutex<bool>>,
-}
-
-impl MainBackgroundTask {
-    pub fn new(
-        signal_rx: SignalReceiver,
-        sender_rx: Receiver<ControlSender>,
-        is_running: Arc<Mutex<bool>>,
-        num_instances: usize,
-    ) -> Self {
-        let this = Self {
-            signal_rx,
-            waiter: RefCell::new(Waiter::new(sender_rx, num_instances)),
-            is_running,
-        };
-        this
-    }
-}
-
-impl Task for MainBackgroundTask {
-    type Output = ();
-    type Error = String;
-    type JsEvent = JsUndefined;
-
-    fn perform(&self) -> Result<(), String> {
-        while *self.is_running.lock().unwrap() {
-            // TODO: could use channels more intelligently to stop immediately
-            // rather than waiting for timeout, but it's more complicated and probably
-            // involves adding some kind of control variant to the Signal enum
-            match self.signal_rx.recv_timeout(Duration::from_millis(250)) {
-                Ok(sig) => self.waiter.borrow_mut().process_signal(sig),
-                Err(crossbeam_channel::RecvTimeoutError::Timeout) => continue,
-                Err(err) => return Err(err.to_string()),
-            }
-        }
-
-        for (_, checker) in self.waiter.borrow_mut().checkers.iter_mut() {
-            checker.shutdown();
-        }
-        Ok(())
-    }
-
-    fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsUndefined> {
-        result.or_else(|e| {
-            let error_string = cx.string(format!("unable to shut down background task: {}", e));
-            cx.throw(error_string)
-        })?;
-        Ok(cx.undefined())
     }
 }
 

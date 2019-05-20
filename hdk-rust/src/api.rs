@@ -811,10 +811,7 @@ pub fn link_entries<S: Into<String>>(
         base: base.clone(),
         target: target.clone(),
         link_type: link_type.into(),
-        tag: match tag {
-            Some(s) => s.into(),
-            None => "*".to_string(),
-        },
+        tag: tag.into(),
     })
 }
 
@@ -874,12 +871,13 @@ pub fn remove_link<S: Into<String>>(
     base: &Address,
     target: &Address,
     link_type: S,
+    tag: S,
 ) -> Result<(), ZomeApiError> {
     Dispatch::RemoveLink.with_input(LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
         link_type: link_type.into(),
-        tag: "".to_string(),
+        tag: tag.into(),
     })
 }
 

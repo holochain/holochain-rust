@@ -106,6 +106,9 @@ pub mod tests {
     fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
         links.iter().for_each(|link| {
             assert!(initialized_context
+                .block_on(commit_entry(link.add_entry(), None, &initialized_context))
+                .is_ok());
+            assert!(initialized_context
                 .block_on(add_link(&link, &initialized_context))
                 .is_ok());
         });

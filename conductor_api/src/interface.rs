@@ -929,10 +929,11 @@ impl ConductorApiBuilder {
                 let params_map = Self::unwrap_params_map(params)?;
                 let id = Self::get_as_string("dst_id", &params_map)?;
                 let size = Self::get_as_int("size", &params_map)? as usize;
-                k.lock()
-                    .unwrap()
-                    .add_random_seed(&id, size)
-                    .map_err(|_| jsonrpc_core::Error::internal_error())?;
+                k.lock().unwrap().add_random_seed(&id, size).map_err(|e| {
+                    let mut err = jsonrpc_core::Error::internal_error();
+                    err.message = e.to_string();
+                    err
+                })?;
 
                 Ok(json!({"success": true}))
             });

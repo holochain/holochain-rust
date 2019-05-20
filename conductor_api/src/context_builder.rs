@@ -58,7 +58,7 @@ impl ContextBuilder {
             p2p_config: None,
             conductor_api: None,
             signal_tx: None,
-            utc: None
+            utc: None,
         }
     }
 
@@ -166,7 +166,7 @@ impl ContextBuilder {
                 .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
-            self.utc.unwrap_or(Arc::new(UTCMock::default()))
+            self.utc.unwrap_or(Arc::new(UTCMock::default())),
         )
     }
 }

@@ -4,14 +4,10 @@ use chrono::offset::Utc;
 pub struct UTCMock(i64);
 pub struct UTCConcrete;
 
-impl UTCMock
-{
-    pub fn new(index:i64) -> UTCMock
-    {
+impl UTCMock {
+    pub fn new(index: i64) -> UTCMock {
         UTCMock(index)
     }
-
-
 }
 
 pub trait UTCDispatch: Send + Sync {

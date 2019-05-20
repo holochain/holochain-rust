@@ -468,7 +468,7 @@ pub mod tests {
             test_memory_network_config(network_name),
             None,
             None,
-            Arc::new(UTCMock::default())
+            Arc::new(UTCMock::default()),
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();

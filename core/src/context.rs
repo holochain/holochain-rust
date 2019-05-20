@@ -117,7 +117,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: Self::test_check_conductor_api(conductor_api, agent_id),
-            utc_dispatch
+            utc_dispatch,
         }
     }
 
@@ -146,7 +146,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: Self::test_check_conductor_api(None, agent_id),
-            utc_dispatch
+            utc_dispatch,
         })
     }
 

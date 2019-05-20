@@ -16,7 +16,7 @@ mod link_entry;
 mod provenances;
 mod remove_entry;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 /// A failed validation.
 pub enum ValidationError {
     /// `Fail` means the validation function did run successfully and recognized the entry

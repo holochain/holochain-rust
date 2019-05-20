@@ -33,7 +33,7 @@ define_zome! {
 
 ### Grant Capabilities
 
-You can use the `grant_capability` HDK function to create a custom capability grant.  For example, imaging a blogging use-case where you want to grant friends the ability to call the `create_post` function in a `blog` zome.  Assuming the function `is_my_friend(addr)` correctly examines the provenance in CAPABILITY_REQ global which always holds the capability request of the current zome call, then the following code is an example of how you might call `hdk::grant_capability`:
+You can use the `commit_capability_grant` HDK function to create a custom capability grant.  For example, imaging a blogging use-case where you want to grant friends the ability to call the `create_post` function in a `blog` zome.  Assuming the function `is_my_friend(addr)` correctly examines the provenance in CAPABILITY_REQ global which always holds the capability request of the current zome call, then the following code is an example of how you might call `hdk::commit_capability_grant`:
 
 ``` rust
 pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
@@ -41,7 +41,7 @@ pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
     if is_my_friend(addr.clone()) {
         let mut functions = BTreeMap::new();
         functions.insert("blog".to_string(), vec!["create_post".to_string()]);
-        Ok(Some(hdk::grant_capability(
+        Ok(Some(hdk::commit_capability_grant(
             "can_post",
             CapabilityType::Assigned,
             Some(vec![addr]),

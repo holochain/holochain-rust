@@ -105,7 +105,7 @@ pub mod tests {
 
     fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
         links.iter().for_each(|link| {
-            assert!(initialized_context
+            assert!(initialized_context //commit the AddLink entry first
                 .block_on(commit_entry(link.add_entry(), None, &initialized_context))
                 .is_ok());
             assert!(initialized_context
@@ -126,84 +126,126 @@ pub mod tests {
         )
     }
 
-    #[test]
-    fn returns_list_of_links() {
-        // setup the instance and links
-        let initialized_context = initialize_context();
-        let entry_addresses = add_test_entries(initialized_context.clone());
-        let links = vec![
-            Link::new(
-                &entry_addresses[0],
-                &entry_addresses[1],
-                "test-type",
-                "test-tag",
-            ),
-            Link::new(
-                &entry_addresses[0],
-                &entry_addresses[2],
-                "test-type",
-                "test-tag",
-            ),
-        ];
-        add_links(initialized_context.clone(), links);
+    // #[test]
+    // fn returns_list_of_links() {
+    //     // setup the instance and links
+    //     let initialized_context = initialize_context();
+    //     let entry_addresses = add_test_entries(initialized_context.clone());
+    //     let links = vec![
+    //         Link::new(
+    //             &entry_addresses[0],
+    //             &entry_addresses[1],
+    //             "test-type",
+    //             "test-tag",
+    //         ),
+    //         Link::new(
+    //             &entry_addresses[0],
+    //             &entry_addresses[2],
+    //             "test-type",
+    //             "test-tag",
+    //         ),
+    //     ];
+    //     add_links(initialized_context.clone(), links);
 
-        // calling get_links returns both links in some order
-        let call_result = get_links(
-            initialized_context.clone(),
-            &entry_addresses[0],
-            "test-type",
-            Some("test-tag".into()),
-        );
-        let expected_1 = JsonString::from_json(
-            &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
-                entry_addresses[1], "test-tag", entry_addresses[2], "test-tag",
-            ) + "\u{0}"),
-        );
-        let expected_2 = JsonString::from_json(
-            &(format!(
-               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
-                entry_addresses[2], "test-tag", entry_addresses[1], "test-tag",
-            ) + "\u{0}"),
-        );
-        assert!(
-            call_result == expected_1 || call_result == expected_2,
-            "\n call_result = '{:?}'\n   ordering1 = '{:?}'\n   ordering2 = '{:?}'",
-            call_result,
-            expected_1,
-            expected_2,
-        );
+    //     // calling get_links returns both links in some order
+    //     let call_result = get_links(
+    //         initialized_context.clone(),
+    //         &entry_addresses[0],
+    //         "test-type",
+    //         Some("test-tag".into()),
+    //     );
+    //     let expected_1 = JsonString::from_json(
+    //         &(format!(
+    //             r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+    //             entry_addresses[1], "test-tag", entry_addresses[2], "test-tag",
+    //         ) + "\u{0}"),
+    //     );
+    //     let expected_2 = JsonString::from_json(
+    //         &(format!(
+    //            r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+    //             entry_addresses[2], "test-tag", entry_addresses[1], "test-tag",
+    //         ) + "\u{0}"),
+    //     );
+    //     assert!(
+    //         call_result == expected_1 || call_result == expected_2,
+    //         "\n call_result = '{:?}'\n   ordering1 = '{:?}'\n   ordering2 = '{:?}'",
+    //         call_result,
+    //         expected_1,
+    //         expected_2,
+    //     );
+    // }
 
-        // calling get_links with another non-existent type returns nothing
-        let call_result = get_links(
-            initialized_context.clone(),
-            &entry_addresses[0],
-            "other-type",
-            Some("test-tag".into()),
-        );
-        assert_eq!(
-            call_result,
-            JsonString::from_json(
-                &(String::from(r#"{"ok":true,"value":"{\"links\":[]}","error":"null"}"#,)
-                    + "\u{0}")
-            ),
-        );
+    // #[test]
+    // fn get_links_with_non_existent_type_returns_nothing() {
+    //     let initialized_context = initialize_context();
+    //     let entry_addresses = add_test_entries(initialized_context.clone());
+    //     let links = vec![
+    //         Link::new(
+    //             &entry_addresses[0],
+    //             &entry_addresses[1],
+    //             "test-type",
+    //             "test-tag",
+    //         ),
+    //         Link::new(
+    //             &entry_addresses[0],
+    //             &entry_addresses[2],
+    //             "test-type",
+    //             "test-tag",
+    //         ),
+    //     ];
+    //     add_links(initialized_context.clone(), links);
 
-        // calling get_links with another non-existent tag returns nothing
-        let call_result = get_links(
-            initialized_context.clone(),
-            &entry_addresses[0],
-            "test-type",
-            Some("other-tag".into()),
-        );
-        assert_eq!(
-            call_result,
-            JsonString::from_json(
-                &(String::from(r#"{"ok":true,"value":"{\"links\":[]}","error":"null"}"#,)
-                    + "\u{0}")
-            ),
-        );
-    }
+    //     // calling get_links with another non-existent type returns nothing
+    //     let call_result = get_links(
+    //         initialized_context.clone(),
+    //         &entry_addresses[0],
+    //         "other-type",
+    //         Some("test-tag".into()),
+    //     );
+    //     assert_eq!(
+    //         call_result,
+    //         JsonString::from_json(
+    //             &(String::from(r#"{"ok":true,"value":"{\"links\":[]}","error":"null"}"#,)
+    //                 + "\u{0}")
+    //         ),
+    //     );
+    // }
+
+    // #[test]
+    // fn get_links_with_non_existent_tag_returns_nothing() {
+    //     let initialized_context = initialize_context();
+    //     let entry_addresses = add_test_entries(initialized_context.clone());
+    //     let links = vec![
+    //         Link::new(
+    //             &entry_addresses[0],
+    //             &entry_addresses[1],
+    //             "test-type",
+    //             "test-tag",
+    //         ),
+    //         Link::new(
+    //             &entry_addresses[0],
+    //             &entry_addresses[2],
+    //             "test-type",
+    //             "test-tag",
+    //         ),
+    //     ];
+    //     add_links(initialized_context.clone(), links);
+
+    //     // calling get_links with another non-existent tag returns nothing
+    //     let call_result = get_links(
+    //         initialized_context.clone(),
+    //         &entry_addresses[0],
+    //         "test-type",
+    //         Some("other-tag".into()),
+    //     );
+    //     assert_eq!(
+    //         call_result,
+    //         JsonString::from_json(
+    //             &(String::from(r#"{"ok":true,"value":"{\"links\":[]}","error":"null"}"#,)
+    //                 + "\u{0}")
+    //         ),
+    //     );
+    // }
 
     #[test]
     fn test_with_same_target_and_tag_dedup() {

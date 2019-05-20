@@ -53,7 +53,7 @@ pub async fn get_link_result_workflow<'a>(
                                 Ok(LinksResult {
                                     address: link_data.link().target().clone(),
                                     headers,
-                                    tag: link_data.link().tag(),
+                                    tag: link_data.link().tag().to_string(),
                                 })
                             },
                             Ok(None) => {

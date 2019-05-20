@@ -177,7 +177,8 @@ pub mod tests {
 
     #[test]
     fn get_links_with_non_existent_type_returns_nothing() {
-        let initialized_context = initialize_context("get_links_with_non_existent_type_returns_nothing");
+        let initialized_context =
+            initialize_context("get_links_with_non_existent_type_returns_nothing");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
             Link::new(
@@ -213,7 +214,8 @@ pub mod tests {
 
     #[test]
     fn get_links_with_non_existent_tag_returns_nothing() {
-        let initialized_context = initialize_context("get_links_with_non_existent_tag_returns_nothing");
+        let initialized_context =
+            initialize_context("get_links_with_non_existent_tag_returns_nothing");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
             Link::new(
@@ -284,7 +286,8 @@ pub mod tests {
 
     #[test]
     fn test_with_same_target_different_tag_dont_dedup() {
-        let initialized_context = initialize_context("test_with_same_target_different_tag_dont_dedup");
+        let initialized_context =
+            initialize_context("test_with_same_target_different_tag_dont_dedup");
         let entry_addresses = add_test_entries(initialized_context.clone());
         // same target and type, different tag
         let links = vec![

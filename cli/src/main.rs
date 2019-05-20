@@ -135,6 +135,12 @@ enum Cli {
         testfile: String,
         #[structopt(long = "skip-package", short = "s", help = "Skip packaging DNA")]
         skip_build: bool,
+        #[structopt(
+            long = "show-npm-output",
+            short = "n",
+            help = "Show NPM output when installing test dependencies"
+        )]
+        show_npm_output: bool,
     },
     #[structopt(
         name = "keygen",
@@ -224,10 +230,11 @@ fn run() -> HolochainResult<()> {
             dir,
             testfile,
             skip_build,
+            show_npm_output,
         } => {
             let current_path = std::env::current_dir()
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
-            cli::test(&current_path, &dir, &testfile, skip_build)
+            cli::test(&current_path, &dir, &testfile, skip_build, show_npm_output)
         }
         .map_err(HolochainError::Default)?,
 

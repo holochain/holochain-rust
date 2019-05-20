@@ -74,24 +74,21 @@ pub(crate) fn reduce_hold_entry(
     }
 }
 
-fn write_meta_store(context:Arc<Context>, eavis: Vec<EntityAttributeValueIndex>, store: DhtStore) ->
-    HcResult<DhtStore> {
-
+fn write_meta_store(
+    context: Arc<Context>,
+    eavis: Vec<EntityAttributeValueIndex>,
+    store: DhtStore,
+) -> HcResult<DhtStore> {
     let locked_meta_storage = store.meta_storage();
     let mut meta_storage = locked_meta_storage.write().unwrap();
 
-    eavis.into_iter().try_fold(None, |res, eavi| {
-        context.log(format!("write_meta_store: res={:?} eav={:?}", res, eavi));
-        match eavi.attribute() {
-            Attribute::StorageRole =>
-            {
-                context.log("NOT skipping storage role attribute");
-                meta_storage.add_eavi(&eavi)
-            }
-            _ => meta_storage.add_eavi(&eavi)
-        }
-    })
-    .map(|_| store)
+    eavis
+        .into_iter()
+        .try_fold(None, |res, eavi| {
+            context.log(format!("write_meta_store: res={:?} eav={:?}", res, eavi));
+            meta_storage.add_eavi(&eavi)
+        })
+        .map(|_| store)
 }
 
 fn reduce_store_entry_common(
@@ -109,17 +106,20 @@ fn reduce_store_entry_common(
             "debug/dht: dht::reduce_hold_entry() res is some: {:?}",
             res
         ));
-         create_crud_status_eav(&entry.address(), CrudStatus::Live)
-            .and_then(|status_eav|
-                      {
-                          context.log(format!("debug/dht: created crud status eav: {:?}", status_eav));
-                          StorageRole::create_eav(&entry.address(), &storage_role)
-                              .and_then(|storage_role_eav| {
-                                  context.log(format!("debug/dht: created storage role eav: {:?}", storage_role_eav));
-//                                  write_meta_store(context, vec![status_eav], new_store)
-                                  write_meta_store(context, vec![status_eav, storage_role_eav], new_store)
-                              })
-                      })
+        create_crud_status_eav(&entry.address(), CrudStatus::Live).and_then(|status_eav| {
+            context.log(format!(
+                "debug/dht: created crud status eav: {:?}",
+                status_eav
+            ));
+            StorageRole::create_eav(&entry.address(), &storage_role).and_then(|storage_role_eav| {
+                context.log(format!(
+                    "debug/dht: created storage role eav: {:?}",
+                    storage_role_eav
+                ));
+                //                                  write_meta_store(context, vec![status_eav], new_store)
+                write_meta_store(context, vec![status_eav, storage_role_eav], new_store)
+            })
+        })
     } else {
         context.log(format!(
             "err/dht: dht::reduce_hold_entry() FAILED {:?}",

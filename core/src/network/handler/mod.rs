@@ -61,6 +61,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "warning/net/handle: FailureResult: {:?}",
                     failure_data
                 ));
+                Ok(())
                 // TODO: Handle the reception of a FailureResult
             }
             JsonProtocol::HandleStoreEntry(dht_entry_data) => {
@@ -71,7 +72,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "debug/net/handle: HandleStoreEntry: {:?}",
                     dht_entry_data
                 ));
-                handle_store_entry(dht_entry_data, context.clone())
+                Ok(handle_store_entry(dht_entry_data, context.clone()))
             }
             JsonProtocol::HandleStoreMeta(dht_meta_data) => {
                 if !is_my_dna(&my_dna_address, &dht_meta_data.dna_address.to_string()) {
@@ -81,7 +82,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "debug/net/handle: HandleStoreMeta: {:?}",
                     dht_meta_data
                 ));
-                handle_store_meta(dht_meta_data, context.clone())
+                Ok(handle_store_meta(dht_meta_data, context.clone()))
             }
             JsonProtocol::HandleFetchEntry(fetch_entry_data) => {
                 if !is_my_dna(&my_dna_address, &fetch_entry_data.dna_address.to_string()) {
@@ -91,7 +92,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "debug/net/handle: HandleFetchEntry: {:?}",
                     fetch_entry_data
                 ));
-                handle_fetch_entry(fetch_entry_data, context.clone())
+                Ok(handle_fetch_entry(fetch_entry_data, context.clone()))
             }
             JsonProtocol::FetchEntryResult(fetch_result_data) => {
                 if !is_my_dna(&my_dna_address, &fetch_result_data.dna_address.to_string()) {
@@ -105,7 +106,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "debug/net/handle: FetchEntryResult: {:?}",
                     fetch_result_data
                 ));
-                handle_fetch_entry_result(fetch_result_data, context.clone())
+                Ok(handle_fetch_entry_result(
+                    fetch_result_data,
+                    context.clone(),
+                ))
             }
             JsonProtocol::HandleFetchMeta(fetch_meta_data) => {
                 if !is_my_dna(&my_dna_address, &fetch_meta_data.dna_address.to_string()) {
@@ -115,7 +119,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "debug/net/handle: HandleFetchMeta: {:?}",
                     fetch_meta_data
                 ));
-                handle_fetch_meta(fetch_meta_data, context.clone())
+                Ok(handle_fetch_meta(fetch_meta_data, context.clone()))
             }
             JsonProtocol::FetchMetaResult(fetch_meta_result_data) => {
                 if !is_my_dna(
@@ -151,7 +155,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "debug/net/handle: FetchMetaResult: {:?}",
                     fetch_meta_result_data
                 ));
-                handle_fetch_meta_result(fetch_meta_result_data, context.clone())
+                Ok(handle_fetch_meta_result(
+                    fetch_meta_result_data,
+                    context.clone(),
+                ))
                 //}
             }
             JsonProtocol::HandleSendMessage(message_data) => {
@@ -166,7 +173,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "debug/net/handle: HandleSendMessage: {:?}",
                     message_data
                 ));
-                handle_send_message(message_data, context.clone())
+                Ok(handle_send_message(message_data, context.clone()))
             }
             JsonProtocol::SendMessageResult(message_data) => {
                 if !is_my_dna(&my_dna_address, &message_data.dna_address.to_string()) {
@@ -180,7 +187,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "debug/net/handle: SendMessageResult: {:?}",
                     message_data
                 ));
-                handle_send_message_result(message_data, context.clone())
+                Ok(handle_send_message_result(message_data, context.clone()))
             }
             JsonProtocol::PeerConnected(peer_data) => {
                 // ignore peer connection of myself
@@ -191,32 +198,31 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 context.log(format!("debug/net/handle: PeerConnected: {:?}", peer_data));
                 // Total hack in lieu of a world-model.
                 // Just republish everything when a new person comes on-line!!
-                republish_all_public_chain_entries(&context);
+                Ok(republish_all_public_chain_entries(&context))
             }
             JsonProtocol::HandleGetHoldingEntryList(get_list_data) => {
                 handle_get_entry_list(&context, &get_list_data, &StorageRole::Holder)
-                    .expect("handle_get_holding_entry_list: failed")
+                //.expect("handle_get_holding_entry_list: failed")
             }
             JsonProtocol::HandleGetHoldingMetaList(get_list_data) => {
                 handle_get_meta_list(&context, &get_list_data, &StorageRole::Holder)
-                    .expect("handle_get_holding_meta_list: failed")
+                //.expect("handle_get_holding_meta_list: failed")
             }
             JsonProtocol::HandleGetPublishingEntryList(get_list_data) => {
                 handle_get_entry_list(&context, &get_list_data, &StorageRole::Publisher)
-                    .expect("handle_get_publish_entries: failed");
+                //.expect("handle_get_publish_entries: failed");
             }
             JsonProtocol::HandleGetPublishingMetaList(get_list_data) => {
                 handle_get_meta_list(&context, &get_list_data, &StorageRole::Publisher)
-                    .expect("handle_get_publishing_meta_list: failed");
+                //.expect("handle_get_publishing_meta_list: failed");
             }
             // these protocol events should be handled on the lib3h side.
             JsonProtocol::HandleGetPublishingEntryListResult(_)
             | JsonProtocol::HandleGetHoldingEntryListResult(_)
             | JsonProtocol::HandleGetPublishingMetaListResult(_)
-            | JsonProtocol::HandleGetHoldingMetaListResult(_) => (),
-            _ => {}
+            | JsonProtocol::HandleGetHoldingMetaListResult(_) => Ok(()),
+            _ => Ok(()),
         }
-        Ok(())
     })
 }
 
@@ -242,8 +248,8 @@ fn handle_get_entry_list(
     context: &Arc<Context>,
     get_list_data: &GetListData,
     storage_role: &StorageRole,
-) -> Result<(), HolochainError> {
-    context
+) -> Result<(), failure::Error> {
+    let result = context
         .state()
         .expect("State missing from context.")
         .dht()
@@ -271,15 +277,19 @@ fn handle_get_entry_list(
                     }
                 },
             )
-        })
+        });
+    match result {
+        Ok(x) => Ok(x),
+        Err(y) => Err(failure::err_msg(y)),
+    }
 }
 
 fn handle_get_meta_list(
     context: &Arc<Context>,
     get_list_data: &GetListData,
     storage_role: &StorageRole,
-) -> Result<(), HolochainError> {
-    context
+) -> Result<(), failure::Error> {
+    let result = context
         .state()
         .expect("State missing from context.")
         .dht()
@@ -315,7 +325,12 @@ fn handle_get_meta_list(
                     }
                 },
             )
-        })
+        });
+
+    match result {
+        Ok(x) => Ok(x),
+        Err(y) => Err(failure::err_msg(y)),
+    }
 }
 
 fn send_result(context: &Arc<Context>, json_protocol: JsonProtocol) -> Result<(), HolochainError> {
@@ -331,9 +346,96 @@ fn send_result(context: &Arc<Context>, json_protocol: JsonProtocol) -> Result<()
         .clone();
     // Send the list back to the calling peer
     network
-        .expect("network should be present")
-        .lock()
-        .expect("get network mutex")
-        .send(json_protocol.into())
-        .map_err(|err: failure::Error| HolochainError::new(err.to_string().as_str()))
+        .ok_or(HolochainError::new(
+            "No network present to send protocol responses back over.",
+        ))
+        .and_then(|network| {
+            network
+                .lock()
+                .expect("get network mutex")
+                .send(json_protocol.into())
+                .map_err(|err: failure::Error| HolochainError::new(err.to_string().as_str()))
+        })
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use crate::{instance::tests::test_context, state::test_store};
+    use holochain_core_types::cas::content::AddressableContent;
+
+    #[test]
+    fn handle_holding_entry_list_test() {
+        handle_entry_list_test(StorageRole::Holder);
+    }
+
+    #[test]
+    fn handle_publish_entry_list_test() {
+        handle_entry_list_test(StorageRole::Publisher);
+    }
+
+    fn handle_entry_list_test(storage_role: StorageRole) {
+        let context = test_context("bob", None);
+        let store = test_store(context.clone());
+        // test_entry is not sys so should do nothing
+        let _storage = &store.dht().content_storage().clone();
+
+        let dna_address = context.get_dna().expect("dna to be present").address();
+
+        let mut net_handler = create_handler(&context, dna_address.to_string());
+
+        let get_list_data = GetListData {
+            dna_address,
+            request_id: String::from("123"),
+        };
+        let result = match storage_role {
+            StorageRole::Holder => net_handler(Ok(JsonProtocol::HandleGetHoldingEntryList(
+                get_list_data,
+            )
+            .into())),
+            StorageRole::Publisher => net_handler(Ok(JsonProtocol::HandleGetPublishingEntryList(
+                get_list_data,
+            )
+            .into())),
+        };
+        assert!(result.is_ok())
+    }
+
+    #[test]
+    fn handle_holding_meta_list_test() {
+        handle_meta_list_test(StorageRole::Holder);
+    }
+
+    #[test]
+    fn handle_publish_meta_list_test() {
+        handle_meta_list_test(StorageRole::Publisher);
+    }
+
+    fn handle_meta_list_test(storage_role: StorageRole) {
+        let context = test_context("bob", None);
+        let store = test_store(context.clone());
+        // test_entry is not sys so should do nothing
+        let _storage = &store.dht().content_storage().clone();
+
+        let dna_address = context.get_dna().expect("dna to be present").address();
+
+        let mut net_handler = create_handler(&context, dna_address.to_string());
+
+        let get_list_data = GetListData {
+            dna_address,
+            request_id: String::from("123"),
+        };
+        let result = match storage_role {
+            StorageRole::Holder => net_handler(Ok(JsonProtocol::HandleGetHoldingMetaList(
+                get_list_data,
+            )
+            .into())),
+            StorageRole::Publisher => net_handler(Ok(JsonProtocol::HandleGetPublishingMetaList(
+                get_list_data,
+            )
+            .into())),
+        };
+        assert!(result.is_ok())
+    }
+
 }

@@ -743,10 +743,18 @@ pub fn get_entry_result(
     })
 }
 
-/// Adds a named, directed link between two entries on the DHT.
-/// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
-/// relationship between them, called a the `link type`. Later, lists of entries can be looked up by using [get_links](fn.get_links.html). Entries
+/// Adds a named, tagged, directed link between two entries on the DHT.
+/// Consumes four values, two of which are the addresses of entries, and two of which are strings used to describe the link.
+///
+/// The first is the `link_type`. This is analogous to the entry_type and determines which validation callback will be run. The link type must match
+/// a type already defined in the DNA using the link!, to! or from! macros.
+///
+/// The second is the `tag`. This can be any arbitrary string. This will be passed to the validation callback allowing the hApp developer to control what constitutes a valid tag.
+///
+/// Later, lists of entries can be looked up by using [get_links](fn.get_links.html). Entries
 /// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
+/// It is possible to retrieve links that exactly match a particular tag and type or return all links for a given type (along with their tag string).
+
 /// # Examples
 /// ```rust
 /// # #![feature(try_from)]
@@ -817,8 +825,8 @@ pub fn link_entries<S: Into<String>>(
 
 /// Commits a LinkRemove entry to your local source chain that marks a link as 'deleted' by setting
 /// its status metadata to `Deleted` which gets published to the DHT.
-/// Consumes three values, two of which are the addresses of entries, and one of which is a string that removes a
-/// relationship between them, called its `type`. Later, lists of entries.
+/// Consumes four values, two of which are the addresses of entries, and two of which are strings that describe the link
+/// type and its tag. Both must match exactly to remove a link.
 /// # Examples
 /// ```rust
 /// # #![feature(try_from)]
@@ -1113,10 +1121,12 @@ pub fn remove_entry(address: &Address) -> ZomeApiResult<Address> {
     Dispatch::RemoveEntry.with_input(address.to_owned())
 }
 
-/// Consumes three values; the address of an entry get get links from (the base), the type of the links
-/// to be retrieved, and an options struct for selecting what meta data and crud status links to retrieve.
+/// Consumes four values; the address of an entry get get links from (the base), the type of the links
+/// to be retrieved, an optional tag to match, and an options struct for selecting what meta data and crud status links to retrieve.
 /// Note: the type is intended to describe the relationship between the `base` and other entries you wish to lookup.
-/// This function returns a list of addresses of other entries which matched as being linked by the given `type`.
+/// This function returns a list of addresses of other entries which matched as being linked by the given `type`. If the `tag` is not None
+/// it will return only links that match the tag exactly. If the tag parameter is None it will return all links of the given type
+/// regardless of their tag.
 /// Links are created using the Zome API function [link_entries](fn.link_entries.html).
 /// If you also need the content of the entry consider using one of the helper functions:
 /// [get_links_result](fn.get_links_result) or [get_links_and_load](fn._get_links_and_load)

@@ -83,8 +83,17 @@ pub fn definition() -> ValidatingEntryType {
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
-                validation: | _validation_data: hdk::LinkValidationData | {
-                    Ok(())
+                validation: | validation_data: hdk::LinkValidationData | {
+                    // test validation of links based on their tag
+                    if let hdk::LinkValidationData::LinkAdd{link, ..} = validation_data {
+                        if link.link.tag() == "muffins" {
+                            Err("This is the one tag that is not allowed!".into())
+                        } else {
+                            Ok(())
+                        }
+                    } else {
+                        Ok(())
+                    }
                 }
             ),
             from!(

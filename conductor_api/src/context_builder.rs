@@ -44,7 +44,7 @@ pub struct ContextBuilder {
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
-    utc: Option<&'static UTCDispatch>,
+    utc: Option<Arc<UTCDispatch>>,
 }
 
 impl ContextBuilder {
@@ -58,7 +58,7 @@ impl ContextBuilder {
             p2p_config: None,
             conductor_api: None,
             signal_tx: None,
-            utc: None,
+            utc: None
         }
     }
 
@@ -68,7 +68,7 @@ impl ContextBuilder {
         self
     }
 
-    pub fn with_utc_dispatcher(mut self, utc: &'static UTCDispatch) -> Self {
+    pub fn with_utc_dispatcher(mut self, utc: Arc<UTCDispatch>) -> Self {
         self.utc = Some(utc);
         self
     }
@@ -166,7 +166,7 @@ impl ContextBuilder {
                 .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
-            self.utc.unwrap_or(&UTCMock {}),
+            self.utc.unwrap_or(Arc::new(UTCMock::default()))
         )
     }
 }

@@ -59,7 +59,7 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: Arc<RwLock<IoHandler>>,
-    pub utc_dispatch: Box<&'static UTCDispatch>,
+    pub utc_dispatch: Arc<UTCDispatch>,
     signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
@@ -102,7 +102,7 @@ impl Context {
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
-        utc: &'static UTCDispatch,
+        utc_dispatch: Arc<UTCDispatch>,
     ) -> Self {
         Context {
             agent_id: agent_id.clone(),
@@ -117,7 +117,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: Self::test_check_conductor_api(conductor_api, agent_id),
-            utc_dispatch: Box::new(utc),
+            utc_dispatch
         }
     }
 
@@ -131,7 +131,7 @@ impl Context {
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         p2p_config: P2pConfig,
-        utc: &'static UTCDispatch,
+        utc_dispatch: Arc<UTCDispatch>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id: agent_id.clone(),
@@ -146,7 +146,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: Self::test_check_conductor_api(None, agent_id),
-            utc_dispatch: Box::new(utc),
+            utc_dispatch
         })
     }
 
@@ -379,7 +379,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
-            &UTCMock,
+            Arc::new(UTCMock::default()),
         );
 
         assert!(maybe_context.state().is_none());

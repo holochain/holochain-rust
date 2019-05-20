@@ -379,7 +379,7 @@ pub mod tests {
                 test_memory_network_config(network_name),
                 None,
                 None,
-                &UTCMock,
+                Arc::new(UTCMock::default()),
             )),
             logger,
         )
@@ -419,7 +419,7 @@ pub mod tests {
                         .unwrap(),
                 )),
                 test_memory_network_config(network_name),
-                &UTCMock,
+                Arc::new(UTCMock::default()),
             )
             .unwrap(),
         )
@@ -443,7 +443,7 @@ pub mod tests {
             test_memory_network_config(network_name),
             None,
             None,
-            &UTCMock,
+            Arc::new(UTCMock::default()),
         );
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -468,7 +468,7 @@ pub mod tests {
             test_memory_network_config(network_name),
             None,
             None,
-            &UTCMock {},
+            Arc::new(UTCMock::default())
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();

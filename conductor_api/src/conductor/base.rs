@@ -552,7 +552,7 @@ impl Conductor {
                     )));
                 }
 
-                context_builder = context_builder.with_utc_dispatcher(&UTCConcrete {});
+                context_builder = context_builder.with_utc_dispatcher(Arc::new(UTCConcrete{}));
 
                 // Conductor API
                 let mut api_builder = ConductorApiBuilder::new();

@@ -12,9 +12,6 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
     entry::Entry,
     error::HolochainError,
-    link::{
-        link_data::LinkData,
-    },
 };
 use std::{collections::BTreeSet, convert::TryFrom, str::FromStr, sync::Arc};
 

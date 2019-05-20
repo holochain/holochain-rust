@@ -787,12 +787,13 @@ pub fn get_entry_result(
 ///         &AGENT_ADDRESS,
 ///         &address,
 ///         "authored_posts",
+///         None //not using a tag on this link - type will do fine
 ///     )?;
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
 ///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, headers: false, timeout: Default::default() })?;
-///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+///         hdk::link_entries(&in_reply_to_address, &address, "comments", None)?;
 ///     }
 ///
 ///     Ok(address)
@@ -804,12 +805,16 @@ pub fn link_entries<S: Into<String>>(
     base: &Address,
     target: &Address,
     link_type: S,
+    tag: S,
 ) -> Result<Address, ZomeApiError> {
     Dispatch::LinkEntries.with_input(LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
         link_type: link_type.into(),
-        tag: "".to_string(),
+        tag: match tag {
+            Some(s) => s.into(),
+            None => "*".to_string(),
+        },
     })
 }
 
@@ -1128,26 +1133,34 @@ pub fn remove_entry(address: &Address) -> ZomeApiResult<Address> {
 ///
 /// # fn main() {
 /// pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
-///     hdk::get_links_with_options(&agent, "authored_posts", GetLinksOptions::default())
+///     hdk::get_links_with_options(&agent, "authored_posts", None, GetLinksOptions::default())
 /// }
 /// # }
 /// ```
 pub fn get_links_with_options<S: Into<String>>(
     base: &Address,
     link_type: S,
+    tag: Option<S>,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
     Dispatch::GetLinks.with_input(GetLinksArgs {
         entry_address: base.clone(),
         link_type: link_type.into(),
-        tag: Some("".into()), // TODO: Expose actual parameter
+        tag: match tag {
+            Some(t) => Some(t.into()),
+            None => None,
+        },
         options,
     })
 }
 
 /// Helper function for get_links. Returns a vector with the default return results.
-pub fn get_links<S: Into<String>>(base: &Address, link_type: S) -> ZomeApiResult<GetLinksResult> {
-    get_links_with_options(base, link_type, GetLinksOptions::default())
+pub fn get_links<S: Into<String>>(
+    base: &Address,
+    link_type: S,
+    tag: Option<S>,
+) -> ZomeApiResult<GetLinksResult> {
+    get_links_with_options(base, link_type, tag, GetLinksOptions::default())
 }
 
 /// Retrieves data about entries linked to a base address with a given type. This is the most general version of the various get_links
@@ -1166,17 +1179,18 @@ pub fn get_links<S: Into<String>>(base: &Address, link_type: S) -> ZomeApiResult
 ///
 /// # fn main() {
 /// fn hangle_get_links_result(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
-///    hdk::get_links_result(&address, "test-link", GetLinksOptions::default(), GetEntryOptions::default())
+///    hdk::get_links_result(&address, "test-link", None, GetLinksOptions::default(), GetEntryOptions::default())
 /// }
 /// # }
 /// ```
 pub fn get_links_result<S: Into<String>>(
     base: &Address,
     link_type: S,
+    tag: Option<S>,
     options: GetLinksOptions,
     get_entry_options: GetEntryOptions,
 ) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
-    let get_links_result = get_links_with_options(base, link_type, options)?;
+    let get_links_result = get_links_with_options(base, link_type, tag, options)?;
     let result = get_links_result
         .addresses()
         .iter()
@@ -1189,10 +1203,12 @@ pub fn get_links_result<S: Into<String>>(
 pub fn get_links_and_load<S: Into<String>>(
     base: &HashString,
     link_type: S,
+    tag: Option<S>,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
     let get_links_result = get_links_result(
         base,
         link_type,
+        tag,
         GetLinksOptions::default(),
         GetEntryOptions::default(),
     )?;

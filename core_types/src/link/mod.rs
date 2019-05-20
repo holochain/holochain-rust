@@ -5,9 +5,9 @@
 pub mod link_data;
 pub mod link_list;
 
+use crate::{cas::content::Address, error::HolochainError, json::JsonString};
 use entry::Entry;
 use link::link_data::LinkData;
-use crate::{cas::content::Address, error::HolochainError, json::JsonString};
 
 type LinkTag = String;
 

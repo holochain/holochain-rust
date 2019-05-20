@@ -354,7 +354,7 @@ pub mod tests {
         chain_header::test_chain_header,
         eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
-        link::{Link, link_data::LinkData, LinkActionKind},
+        link::{link_data::LinkData, Link, LinkActionKind},
     };
     use std::{
         convert::TryFrom,

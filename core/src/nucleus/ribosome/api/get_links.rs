@@ -61,10 +61,7 @@ pub mod tests {
     use serde_json;
 
     /// dummy link_entries args from standard test entry
-    pub fn test_get_links_args_bytes(
-        base: &Address,
-        tag: &str,
-    ) -> Vec<u8> {
+    pub fn test_get_links_args_bytes(base: &Address, tag: &str) -> Vec<u8> {
         let args = GetLinksArgs {
             entry_address: base.clone(),
             tag: tag.into(),
@@ -105,20 +102,14 @@ pub mod tests {
         links.iter().for_each(|link| {
             assert!(initialized_context
                 .block_on(commit_entry(link.add_entry(), None, &initialized_context))
-                .is_ok()
-            );
+                .is_ok());
             assert!(initialized_context
                 .block_on(add_link(&link, &initialized_context))
-                .is_ok()
-            );
+                .is_ok());
         });
     }
 
-    fn get_links(
-        initialized_context: Arc<Context>,
-        base: &Address,
-        tag: &str,
-    ) -> JsonString {
+    fn get_links(initialized_context: Arc<Context>, base: &Address, tag: &str) -> JsonString {
         test_zome_api_function_call(
             initialized_context.clone(),
             test_get_links_args_bytes(&base, tag),
@@ -131,25 +122,13 @@ pub mod tests {
         let initialized_context = initialize_context();
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
-            Link::new(
-                &entry_addresses[0],
-                &entry_addresses[1],
-                "test-tag",
-            ),
-            Link::new(
-                &entry_addresses[0],
-                &entry_addresses[2],
-                "test-tag",
-            ),
+            Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag"),
+            Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag"),
         ];
         add_links(initialized_context.clone(), links);
 
         // calling get_links returns both links in some order
-        let call_result = get_links(
-            initialized_context.clone(),
-            &entry_addresses[0],
-            "test-tag",
-        );
+        let call_result = get_links(initialized_context.clone(), &entry_addresses[0], "test-tag");
         let expected_1 = JsonString::from_json(
             &(format!(
                 r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,

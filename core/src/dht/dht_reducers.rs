@@ -439,7 +439,7 @@ pub mod tests {
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
-            eav.attribute(),             
+            eav.attribute(),
             Attribute::LinkTag(link.link_type().to_owned(), link.tag().to_owned())
         );
     }

@@ -11,14 +11,13 @@ members = [
   "dna_c_binding",
   "hdk-rust",
   "net",
-  "nodejs_waiter",
   "sodium",
   "dpki",
   "test_bin",
+  "test_waiter",
   "benchmarks"
 ]
 exclude = [
   "test_utils",
   "app_spec",
-  "nodejs_conductor/native",
 ]

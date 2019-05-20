@@ -10,6 +10,7 @@ use self::HolochainError::*;
 use crate::json::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use hash::HashString;
+use holochain_lib3h_protocol::error::Lib3hError;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -87,6 +88,7 @@ impl fmt::Display for CoreError {
 )]
 pub enum HolochainError {
     ErrorGeneric(String),
+    Lib3hError(Lib3hError),
     NotImplemented(String),
     LoggingError,
     DnaMissing,
@@ -117,6 +119,7 @@ impl fmt::Display for HolochainError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ErrorGeneric(err_msg) => write!(f, "{}", err_msg),
+            Lib3hError(lib3h_error) => write!(f, "{}", lib3h_error),
             NotImplemented(description) => write!(f, "not implemented: {}", description),
             LoggingError => write!(f, "logging failed"),
             DnaMissing => write!(f, "DNA is missing"),
@@ -160,6 +163,12 @@ impl From<String> for HolochainError {
 impl From<&'static str> for HolochainError {
     fn from(error: &str) -> Self {
         HolochainError::new(error)
+    }
+}
+
+impl From<Lib3hError> for HolochainError {
+    fn from(error: Lib3hError) -> Self {
+        HolochainError::Lib3hError(error)
     }
 }
 

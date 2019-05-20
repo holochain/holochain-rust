@@ -56,7 +56,7 @@ impl P2pNetwork {
                     )
                 })
             }
-            // Create an InMemoryWorker
+            // Create a Lib3hWorker
             P2pBackendKind::LIB3H => Box::new(move |h| {
                 Ok(
                     Box::new(Lib3hWorker::new_with_json_config(h, &backend_config)?)

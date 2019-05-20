@@ -104,8 +104,13 @@ pub mod tests {
     fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
         links.iter().for_each(|link| {
             assert!(initialized_context
+                .block_on(commit_entry(link.add_entry(), None, &initialized_context))
+                .is_ok()
+            );
+            assert!(initialized_context
                 .block_on(add_link(&link, &initialized_context))
-                .is_ok());
+                .is_ok()
+            );
         });
     }
 
@@ -165,25 +170,11 @@ pub mod tests {
             expected_2,
         );
 
-        // calling get_links with another non-existent type returns nothing
-        let call_result = get_links(
-            initialized_context.clone(),
-            &entry_addresses[0],
-            "test-tag".into(),
-        );
-        assert_eq!(
-            call_result,
-            JsonString::from_json(
-                &(String::from(r#"{"ok":true,"value":"{\"links\":[]}","error":"null"}"#,)
-                    + "\u{0}")
-            ),
-        );
-
         // calling get_links with another non-existent tag returns nothing
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            "other-tag".into(),
+            "wrong-tag".into(),
         );
         assert_eq!(
             call_result,

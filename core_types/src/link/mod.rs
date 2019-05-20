@@ -5,6 +5,8 @@
 pub mod link_data;
 pub mod link_list;
 
+use entry::Entry;
+use link::link_data::LinkData;
 use crate::{cas::content::Address, error::HolochainError, json::JsonString};
 
 type LinkTag = String;
@@ -36,6 +38,14 @@ impl Link {
 
     pub fn tag(&self) -> &LinkTag {
         &self.tag
+    }
+
+    pub fn add_entry(&self) -> Entry {
+        Entry::LinkAdd(LinkData::add_from_link(self))
+    }
+
+    pub fn remove_entry(&self) -> Entry {
+        Entry::LinkAdd(LinkData::remove_from_link(self))
     }
 }
 

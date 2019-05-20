@@ -13,7 +13,6 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     link::{
-        LinkActionKind,
         link_data::LinkData,
     },
 };
@@ -113,7 +112,7 @@ fn reduce_store_entry_common(
 
 //
 pub(crate) fn reduce_add_link(
-    context: Arc<Context>,
+    _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -132,41 +131,10 @@ pub(crate) fn reduce_add_link(
         );
         Some(new_store)
     } else {
-
-        // store the link entry (not DRY for now)
-        let link_entry = Entry::LinkAdd(LinkData::from_link(link, LinkActionKind::ADD));
-        let res = (*storage.write().unwrap()).add(&link_entry).ok();
-        if res.is_some() {
-            let meta_storage = &new_store.meta_storage().clone();
-            create_crud_status_eav(&link_entry.address(), CrudStatus::Live)
-                .map(|status_eav| {
-                    let meta_res = (*meta_storage.write().unwrap()).add_eavi(&status_eav);
-                    meta_res
-                        .map(|_| Some(new_store.clone()))
-                        .map_err(|err| {
-                            context.log(format!(
-                                "err/dht: reduce_hold_entry: meta_storage write failed!: {:?}",
-                                err
-                            ));
-                            None::<DhtStore>
-                        })
-                        .ok()
-                        .unwrap_or(None)
-                })
-                .ok()
-                .unwrap_or(None);
-        } else {
-            context.log(format!(
-                "err/dht: dht::reduce_hold_entry() FAILED {:?}",
-                res
-            ));
-        }
-
-
         let eav = EntityAttributeValueIndex::new(
             link.base(),
             &Attribute::LinkTag(link.tag().to_owned()),
-            &link_entry.address(),
+            &link.add_entry().address(),
         );
         eav.map(|e| {
             let storage = new_store.meta_storage();
@@ -200,11 +168,10 @@ pub(crate) fn reduce_remove_link(
         );
         Some(new_store)
     } else {
-        let link_entry_addr = Entry::LinkAdd(LinkData::from_link(link, LinkActionKind::ADD)).address();
         let eav = EntityAttributeValueIndex::new(
             link.base(),
             &Attribute::RemovedLink(link.tag().to_string()),
-            &link_entry_addr,
+            &link.remove_entry().address(),
         );
         eav.map(|e| {
             let storage = new_store.meta_storage();

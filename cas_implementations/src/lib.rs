@@ -9,4 +9,3 @@
 
 pub mod cas;
 pub mod eav;
-pub mod path;

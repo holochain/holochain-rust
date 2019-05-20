@@ -6,7 +6,7 @@ in rec
 
  path = "dist";
 
- version = "0.0.15-alpha1";
+ version = "0.0.16-alpha1";
 
  normalize-artifact-target = target:
   builtins.replaceStrings

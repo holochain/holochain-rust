@@ -98,9 +98,9 @@ pub mod tests {
 
     pub fn test_link_entry_json_string() -> JsonString {
         JsonString::from_json(&format!(
-            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"tag\":\"foo-tag\"}}}}}}",
+            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"tag\":\"foo-tag\",\"timestamp\":0,\"agent_id\":{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}}",
             test_entry_a().address(),
-            test_entry_b().address(),
+            test_entry_b().address()
         ))
     }
 

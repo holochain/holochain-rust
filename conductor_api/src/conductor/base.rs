@@ -78,7 +78,6 @@ pub fn mount_conductor_from_config(config: Configuration) {
 /// In order to not bind this code to the assumption that there is a filesystem
 /// and also enable easier testing, a DnaLoader ()which is a closure that returns a
 /// Dna object for a given path string) has to be injected on creation.
-//#[derive(Debug)]
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
     instance_signal_receivers: Arc<RwLock<HashMap<String, Receiver<Signal>>>>,

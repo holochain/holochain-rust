@@ -413,7 +413,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
-            Arc::new(UTCMock::default())
+            Arc::new(UTCMock::default()),
         );
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

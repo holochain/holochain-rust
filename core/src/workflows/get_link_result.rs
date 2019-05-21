@@ -4,7 +4,10 @@ use crate::{
 };
 
 use futures_util::future::FutureExt;
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{
+    entry::{Entry, EntryWithMeta, EntryWithMetaAndHeader},
+    error::HolochainError,
+};
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
 };
@@ -34,31 +37,42 @@ pub async fn get_link_result_workflow<'a>(
         .iter()
         .map(|link| {
             //we should probably replace this with get_entry_result_workflow, it does all the work needed
-            context
-                .block_on(
-                    get_entry_with_meta_workflow(&context, &link, &link_args.options.timeout).map(
-                        |link_entry_result| {
-                            link_entry_result
-                                .map(|link_entry_option| {
-                                    link_entry_option.map(|link_entry| {
-                                        let headers = if link_args.options.headers {
-                                            link_entry.headers
-                                        } else {
-                                            Vec::new()
-                                        };
-                                        Ok(LinksResult {
-                                            address: link.clone(),
-                                            headers,
-                                        })
-                                    })
+            context.block_on(
+                get_entry_with_meta_workflow(&context, &link, &link_args.options.timeout).map(
+                    |link_entry_result| {
+                        match link_entry_result {
+                            Ok(Some(EntryWithMetaAndHeader {
+                                entry_with_meta: EntryWithMeta{entry: Entry::LinkAdd(link_data), ..},
+                                headers,
+                            })) => {
+                                let headers = match link_args.options.headers {
+                                    true => headers,
+                                    false => Vec::new(),
+                                };
+                                Ok(LinksResult {
+                                    address: link_data.link().target().clone(),
+                                    headers,
                                 })
-                                .unwrap_or(None)
-                        },
-                    ),
-                )
-                .unwrap_or(Err(HolochainError::ErrorGeneric(
-                    "Could not get links".to_string(),
-                )))
+                            },
+                            Ok(None) => {
+                                Err(HolochainError::ErrorGeneric(
+                                    format!("Could not get link entry for address stored in the EAV entry {}", link),
+                                ))
+                            }
+                            Err(e) => {
+                                Err(HolochainError::ErrorGeneric(
+                                    format!("Error retrieveing link: {:?}", e),
+                                ))
+                            },
+                            _ => {
+                                Err(HolochainError::ErrorGeneric(
+                                    format!("Unknown Error retrieveing link. Most likely EAV entry points to non-link entry type"),
+                                ))
+                            }
+                        }
+                    },
+                ),
+            )
         })
         .partition(Result::is_ok);
 
@@ -67,8 +81,9 @@ pub async fn get_link_result_workflow<'a>(
             link_results.into_iter().map(|s| s.unwrap()).collect(),
         ))
     } else {
-        Err(HolochainError::ErrorGeneric(
-            "Could not get links".to_string(),
-        ))
+        Err(HolochainError::ErrorGeneric(format!(
+            "Could not get links: {:?}",
+            errors
+        )))
     }
 }

@@ -8,7 +8,6 @@ edition = "2018"
 tempfile = "=3.0.7"
 
 [dependencies]
-directories = "=1.0.2"
 failure = "=0.1.5"
 holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }

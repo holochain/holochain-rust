@@ -55,7 +55,7 @@ pub fn get_links(
     get_links_with_options(base, link_type, tag, GetLinksOptions::default())
 }
 
-/// Retrieves data about entries linked to a base address with a given type. This is the most general version of the various get_links
+/// Retrieves data about entries linked to a base address with a given type and tag. This is the most general version of the various get_links
 /// helpers (such as get_links_and_load) and can return the linked addresses, entries, headers and sources. Also supports CRUD status_request.
 /// The data returned is configurable with the GetLinksOptions to specify links options and GetEntryOptions argument wto specify options when loading the entries.
 /// # Examples

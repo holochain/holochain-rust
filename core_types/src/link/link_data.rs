@@ -1,9 +1,9 @@
 use crate::{
+    agent::AgentId,
     cas::content::Address,
     error::HolochainError,
     json::JsonString,
     link::{Link, LinkActionKind},
-    agent::AgentId
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -15,25 +15,37 @@ pub struct LinkData {
     action_kind: LinkActionKind,
     link: Link,
     timestamp: i64,
-    agent_id : AgentId
+    agent_id: AgentId,
 }
 
 impl LinkData {
-    pub fn new_add(base: &Address, target: &Address, tag: &str, timestamp: i64, agent_id : AgentId) -> Self {
+    pub fn new_add(
+        base: &Address,
+        target: &Address,
+        tag: &str,
+        timestamp: i64,
+        agent_id: AgentId,
+    ) -> Self {
         LinkData {
             action_kind: LinkActionKind::ADD,
             link: Link::new(base, target, tag),
             timestamp,
-            agent_id
+            agent_id,
         }
     }
 
-    pub fn new_delete(base: &Address, target: &Address, tag: &str, timestamp: i64,agent_id : AgentId) -> Self {
+    pub fn new_delete(
+        base: &Address,
+        target: &Address,
+        tag: &str,
+        timestamp: i64,
+        agent_id: AgentId,
+    ) -> Self {
         LinkData {
             action_kind: LinkActionKind::REMOVE,
             link: Link::new(base, target, tag),
             timestamp,
-            agent_id
+            agent_id,
         }
     }
 
@@ -45,12 +57,17 @@ impl LinkData {
         &self.link
     }
 
-    pub fn from_link(link: &Link, action_kind: LinkActionKind, timestamp: i64,agent_id : AgentId) -> Self {
+    pub fn from_link(
+        link: &Link,
+        action_kind: LinkActionKind,
+        timestamp: i64,
+        agent_id: AgentId,
+    ) -> Self {
         LinkData {
             action_kind,
             link: link.clone(),
             timestamp,
-            agent_id
+            agent_id,
         }
     }
 }
@@ -59,6 +76,7 @@ impl LinkData {
 pub mod tests {
 
     use crate::{
+        agent::test_agent_id,
         cas::content::AddressableContent,
         entry::{test_entry_a, test_entry_b, Entry},
         json::JsonString,
@@ -66,13 +84,12 @@ pub mod tests {
             link_data::LinkData,
             tests::{example_link, example_link_action_kind, example_link_tag},
         },
-        agent::test_agent_id
     };
     use std::convert::TryFrom;
 
     pub fn example_link_add() -> LinkData {
         let link = example_link();
-        LinkData::new_add(link.base(), link.target(), link.tag(), 0,test_agent_id())
+        LinkData::new_add(link.base(), link.target(), link.tag(), 0, test_agent_id())
     }
 
     pub fn test_link_entry() -> Entry {

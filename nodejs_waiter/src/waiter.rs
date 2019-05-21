@@ -377,10 +377,9 @@ mod tests {
     use super::{Action::*, *};
     use holochain_core::nucleus::actions::call_zome_function::ExecuteZomeFnResponse;
     use holochain_core_types::{
-        cas::content::Address, chain_header::test_chain_header,
+        agent::test_agent_id, cas::content::Address, chain_header::test_chain_header,
         dna::capabilities::CapabilityRequest, entry::Entry, json::JsonString,
         link::link_data::LinkData, signature::Signature,
-        agent::test_agent_id
     };
     use std::sync::mpsc::sync_channel;
 
@@ -604,7 +603,7 @@ mod tests {
             &"target".to_string().into(),
             "tag",
             0,
-            test_agent_id()
+            test_agent_id(),
         );
         let entry = Entry::LinkAdd(link_add.clone());
         let entry_wh = mk_entry_wh(entry.clone());

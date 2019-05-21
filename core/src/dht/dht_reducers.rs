@@ -362,12 +362,12 @@ pub mod tests {
         state::test_store,
     };
     use holochain_core_types::{
+        agent::test_agent_id,
         cas::content::AddressableContent,
         chain_header::test_chain_header,
         eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link},
-        agent::test_agent_id
     };
     use std::{
         convert::TryFrom,
@@ -479,7 +479,7 @@ pub mod tests {
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
         let entry_link_remove = Entry::LinkRemove((
-            LinkData::new_add(link.base(), link.target(), link.tag(), 0,test_agent_id()),
+            LinkData::new_add(link.base(), link.target(), link.tag(), 0, test_agent_id()),
             vec![entry.clone().address()],
         ));
         action = ActionWrapper::new(Action::RemoveLink((

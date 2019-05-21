@@ -22,12 +22,12 @@ pub mod tests {
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
+        agent::test_agent_id,
         cas::content::{Address, AddressableContent},
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
         json::JsonString,
         link::link_data::LinkData,
-        agent::test_agent_id
     };
     use test_utils::*;
 
@@ -247,8 +247,20 @@ pub mod tests {
             entry_addresses.push(address);
         }
 
-        let link1 = LinkData::new_add(&entry_addresses[0], &entry_addresses[1], "test-tag", 0,test_agent_id());
-        let link2 = LinkData::new_add(&entry_addresses[0], &entry_addresses[2], "test-tag", 0,test_agent_id());
+        let link1 = LinkData::new_add(
+            &entry_addresses[0],
+            &entry_addresses[1],
+            "test-tag",
+            0,
+            test_agent_id(),
+        );
+        let link2 = LinkData::new_add(
+            &entry_addresses[0],
+            &entry_addresses[2],
+            "test-tag",
+            0,
+            test_agent_id(),
+        );
 
         // Store link1 on the network
         println!("\n add_link(link1) ...");

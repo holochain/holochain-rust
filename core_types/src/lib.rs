@@ -27,7 +27,7 @@ extern crate serde_derive;
 extern crate snowflake;
 #[macro_use]
 extern crate holochain_core_types_derive;
-extern crate holochain_lib3h_protocol;
+extern crate lib3h_crypto_api;
 extern crate regex;
 #[cfg(test)]
 #[macro_use]

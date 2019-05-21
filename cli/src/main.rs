@@ -5,7 +5,7 @@ extern crate holochain_common;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_sodium;
+extern crate lib3h_sodium;
 extern crate holochain_wasm_utils;
 extern crate structopt;
 #[macro_use]
@@ -171,7 +171,7 @@ enum Cli {
 }
 
 fn main() {
-    holochain_sodium::check_init();
+    lib3h_sodium::check_init();
     run().unwrap_or_else(|err| {
         eprintln!("{}", err);
 

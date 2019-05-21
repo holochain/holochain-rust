@@ -12,7 +12,7 @@
 //! extern crate holochain_net;
 //! extern crate holochain_cas_implementations;
 //! extern crate holochain_dpki;
-//! extern crate holochain_sodium;
+//! extern crate lib3h_sodium;
 //! extern crate tempfile;
 //! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
@@ -24,7 +24,7 @@
 //!     signature::Signature,
 //! };
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
-//! use holochain_sodium::secbuf::SecBuf;
+//! use lib3h_sodium::secbuf::SecBuf;
 //! use test_utils;
 //!
 //! use std::sync::{Arc, Mutex};

@@ -1,6 +1,6 @@
 [package]
 name = "hc"
-version = "0.0.15-alpha1"
+version = "0.0.16-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -24,7 +24,6 @@ colored = "=1.7.0"
 ignore = "=0.4.6"
 rpassword = "=2.1.0"
 rustyline = "=3.0.0"
-directories = "=1.0.2"
 
 [dev-dependencies]
 tempfile = "=3.0.7"

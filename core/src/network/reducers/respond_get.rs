@@ -1,13 +1,12 @@
 use crate::{
     action::ActionWrapper,
-    context::Context,
     network::{actions::ActionResponse, reducers::send, state::NetworkState},
+    state::State,
 };
 use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError};
 use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, JsonProtocol,
 };
-use std::sync::Arc;
 
 /// Send back to network a HandleFetchEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
@@ -35,8 +34,8 @@ fn reduce_respond_fetch_data_inner(
 }
 
 pub fn reduce_respond_fetch_data(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

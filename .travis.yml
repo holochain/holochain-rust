@@ -26,17 +26,17 @@ _cargo_cache_template: &_cargo_cache_template
     - cd $TRAVIS_BUILD_DIR && . scripts/travis_cache_clean.sh
     - rm -rf $HOME/.cargo/registry/index
 
-_windows_template: &_windows_template
-  os: windows
-  language: rust
-  rust: nightly-2019-01-24-x86_64-pc-windows-msvc
-  before_install:
-  - choco install nodist
-  - PATH="/c/Program Files (x86)/Nodist/bin:$PATH"
-  - nodist add $TRAVIS_NODE_VERSION
-  - nodist $TRAVIS_NODE_VERSION
-  - NODE_PATH="/c/Program Files (x86)\Nodist\bin\node_modules;$NODE_PATH"
-  - PATH="$PATH:/c/Program Files (x86)/Nodist/bin"
+# _windows_template: &_windows_template
+#   os: windows
+#   language: rust
+#   rust: nightly-2019-01-24-x86_64-pc-windows-msvc
+#   before_install:
+#   - choco install nodist
+#   - PATH="/c/Program Files (x86)/Nodist/bin:$PATH"
+#   - nodist add $TRAVIS_NODE_VERSION
+#   - nodist $TRAVIS_NODE_VERSION
+#   - NODE_PATH="/c/Program Files (x86)\Nodist\bin\node_modules;$NODE_PATH"
+#   - PATH="$PATH:/c/Program Files (x86)/Nodist/bin"
 
 _unix_nodejs_conductor_template: &_unix_nodejs_conductor_template
   install:
@@ -113,15 +113,15 @@ _nodejs_deploy_template: &_nodejs_deploy_template
           condition: $PERFORM_NODE_DEPLOY = 1
       name: $TRAVIS_TAG
 
-_windows_nodejs_conductor_template: &_windows_nodejs_conductor_template
-  install:
-    - choco upgrade yarn
-    - export PATH="/c/Program Files (x86)/Yarn/bin:$PATH"
-    # deps for neon, found at https://guides.neon-bindings.com/getting-started/
-    - npm install --scripts-prepend-node-path=true --global --vs2015 --production windows-build-tools
-    - yarn config set python python2.7
-    - npm config set msvs_version 2015
-    - yarn config set msvs_version 2015 --global
+# _windows_nodejs_conductor_template: &_windows_nodejs_conductor_template
+#   install:
+#     - choco upgrade yarn
+#     - export PATH="/c/Program Files (x86)/Yarn/bin:$PATH"
+#     # deps for neon, found at https://guides.neon-bindings.com/getting-started/
+#     - npm install --scripts-prepend-node-path=true --global --vs2015 --production windows-build-tools
+#     - yarn config set python python2.7
+#     - npm config set msvs_version 2015
+#     - yarn config set msvs_version 2015 --global
 # nodejs specific deployment templates stop here
 
 # holochain-cli deploy template
@@ -191,21 +191,21 @@ jobs:
         - TARGET=x86_64-apple-darwin
         - CRATE_NAME=hc
       os: osx
-    - name: "CLI DEPLOY - 64 bit Windows MSVC"
-      <<: *_cli_deploy_template
-      os: windows
-      rust: nightly-2019-01-24-x86_64-pc-windows-msvc
-      env:
-        - TARGET=x86_64-pc-windows-msvc
-        - CRATE_NAME=hc
+    # - name: "CLI DEPLOY - 64 bit Windows MSVC"
+    #   <<: *_cli_deploy_template
+    #   os: windows
+    #   rust: nightly-2019-01-24-x86_64-pc-windows-msvc
+    #   env:
+    #     - TARGET=x86_64-pc-windows-msvc
+    #     - CRATE_NAME=hc
 
-    - name: "CLI DEPLOY - 64 bit Windows GNU"
-      <<: *_cli_deploy_template
-      os: windows
-      rust: nightly-2019-01-24-x86_64-pc-windows-gnu
-      env:
-        - TARGET=x86_64-pc-windows-gnu
-        - CRATE_NAME=hc
+    # - name: "CLI DEPLOY - 64 bit Windows GNU"
+    #   <<: *_cli_deploy_template
+    #   os: windows
+    #   rust: nightly-2019-01-24-x86_64-pc-windows-gnu
+    #   env:
+    #     - TARGET=x86_64-pc-windows-gnu
+    #     - CRATE_NAME=hc
 
 # holochain-conductor releases section
     - name: "CONDUCTOR DEPLOY - 64 bit Linux"
@@ -221,21 +221,21 @@ jobs:
         - TARGET=x86_64-apple-darwin
         - CRATE_NAME=conductor
       os: osx
-    - name: "CONDUCTOR DEPLOY - 64 bit Windows MSVC"
-      <<: *_conductor_deploy_template
-      os: windows
-      rust: nightly-2019-01-24-x86_64-pc-windows-msvc
-      env:
-        - TARGET=x86_64-pc-windows-msvc
-        - CRATE_NAME=conductor
+    # - name: "CONDUCTOR DEPLOY - 64 bit Windows MSVC"
+    #   <<: *_conductor_deploy_template
+    #   os: windows
+    #   rust: nightly-2019-01-24-x86_64-pc-windows-msvc
+    #   env:
+    #     - TARGET=x86_64-pc-windows-msvc
+    #     - CRATE_NAME=conductor
 
-    - name: "CONDUCTOR DEPLOY - 64 bit Windows GNU"
-      <<: *_conductor_deploy_template
-      os: windows
-      rust: nightly-2019-01-24-x86_64-pc-windows-gnu
-      env:
-        - TARGET=x86_64-pc-windows-gnu
-        - CRATE_NAME=conductor
+    # - name: "CONDUCTOR DEPLOY - 64 bit Windows GNU"
+    #   <<: *_conductor_deploy_template
+    #   os: windows
+    #   rust: nightly-2019-01-24-x86_64-pc-windows-gnu
+    #   env:
+    #     - TARGET=x86_64-pc-windows-gnu
+    #     - CRATE_NAME=conductor
 
     # holochain-nodejs releases section
     - name: "Linux - Node 8"
@@ -276,46 +276,46 @@ jobs:
       <<: *_nodejs_deploy_template
       <<: *_unix_nodejs_conductor_template
 
-    - name: "Windows - Node 8"
-      <<: *_windows_template
-      <<: *_to_deploy_template
-      <<: *_nodejs_deploy_template
-      <<: *_windows_nodejs_conductor_template
-      env:
-        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
-        - NODIST_X64=1
-        - TRAVIS_NODE_VERSION="8"
-        - PERFORM_NODE_DEPLOY=1
+    # - name: "Windows - Node 8"
+    #   <<: *_windows_template
+    #   <<: *_to_deploy_template
+    #   <<: *_nodejs_deploy_template
+    #   <<: *_windows_nodejs_conductor_template
+    #   env:
+    #     - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+    #     - NODIST_X64=1
+    #     - TRAVIS_NODE_VERSION="8"
+    #     - PERFORM_NODE_DEPLOY=1
 
-    - name: "Windows - Node 10"
-      <<: *_windows_template
-      <<: *_to_deploy_template
-      <<: *_nodejs_deploy_template
-      <<: *_windows_nodejs_conductor_template
-      env:
-        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
-        - NODIST_X64=1
-        - TRAVIS_NODE_VERSION="10"
-        - PERFORM_NODE_DEPLOY=1
+    # - name: "Windows - Node 10"
+    #   <<: *_windows_template
+    #   <<: *_to_deploy_template
+    #   <<: *_nodejs_deploy_template
+    #   <<: *_windows_nodejs_conductor_template
+    #   env:
+    #     - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+    #     - NODIST_X64=1
+    #     - TRAVIS_NODE_VERSION="10"
+    #     - PERFORM_NODE_DEPLOY=1
 
-    - name: "Windows - Node 11"
-      <<: *_windows_template
-      <<: *_to_deploy_template
-      <<: *_nodejs_deploy_template
-      <<: *_windows_nodejs_conductor_template
-      env:
-        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
-        - NODIST_X64=1
-        - TRAVIS_NODE_VERSION="11"
-        - PERFORM_NODE_DEPLOY=1
+    # - name: "Windows - Node 11"
+    #   <<: *_windows_template
+    #   <<: *_to_deploy_template
+    #   <<: *_nodejs_deploy_template
+    #   <<: *_windows_nodejs_conductor_template
+    #   env:
+    #     - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+    #     - NODIST_X64=1
+    #     - TRAVIS_NODE_VERSION="11"
+    #     - PERFORM_NODE_DEPLOY=1
 
-    - name: "Windows - Node 11 - DRY RUN"
-      <<: *_windows_template
-      <<: *_nodejs_deploy_template
-      <<: *_windows_nodejs_conductor_template
-      if: (branch = develop) AND NOT (type = pull_request)
-      env:
-       - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
-       - NODIST_X64=1
-       - TRAVIS_NODE_VERSION="11"
-       - PERFORM_NODE_DEPLOY=0
+    # - name: "Windows - Node 11 - DRY RUN"
+    #   <<: *_windows_template
+    #   <<: *_nodejs_deploy_template
+    #   <<: *_windows_nodejs_conductor_template
+    #   if: (branch = develop) AND NOT (type = pull_request)
+    #   env:
+    #    - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+    #    - NODIST_X64=1
+    #    - TRAVIS_NODE_VERSION="11"
+    #    - PERFORM_NODE_DEPLOY=0

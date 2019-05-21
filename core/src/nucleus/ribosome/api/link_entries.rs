@@ -36,6 +36,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         &link,
         LinkActionKind::ADD,
         context.utc_dispatch.now_dispatch(),
+        context.agent_id.clone()
     );
     let entry = Entry::LinkAdd(link_add);
     // Wait for future to be resolved

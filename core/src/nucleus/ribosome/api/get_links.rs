@@ -48,6 +48,7 @@ pub mod tests {
         entry::{entry_type::test_app_entry_type, Entry},
         json::{JsonString, RawString},
         link::{link_data::LinkData, Link},
+        agent::test_agent_id
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use serde_json;
@@ -94,6 +95,7 @@ pub mod tests {
             &entry_addresses[1].clone(),
             "test-tag",
             0,
+            test_agent_id()
         ));
         initialized_context
             .block_on(commit_entry(
@@ -107,6 +109,7 @@ pub mod tests {
             &entry_addresses[2].clone(),
             "test-tag",
             0,
+            test_agent_id()
         ));
         initialized_context
             .block_on(commit_entry(

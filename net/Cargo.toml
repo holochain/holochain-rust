@@ -8,7 +8,6 @@ edition = "2018"
 tempfile = "=3.0.7"
 
 [dependencies]
-directories = "=1.0.2"
 failure = "=0.1.5"
 holochain_lib3h = { path = "../../lib3h/lib3h" }
 holochain_lib3h_protocol = { path = "../../lib3h/lib3h_protocol" }

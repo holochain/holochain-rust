@@ -17,7 +17,7 @@ use hdk::{
         get_links::{GetLinksOptions, GetLinksResult},
         QueryArgsOptions, QueryResult,
     },
-    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
+    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN, PROPERTIES,
 };
 
 use memo::Memo;
@@ -40,6 +40,7 @@ pub struct Env {
     agent_id: String,
     agent_address: String,
     cap_request: CapabilityRequest,
+    properties: JsonString,
 }
 
 /// This handler shows how you can access the globals that are always available
@@ -54,6 +55,7 @@ pub fn handle_show_env() -> ZomeApiResult<Env> {
         agent_id: AGENT_ID_STR.to_string(),
         agent_address: AGENT_ADDRESS.to_string(),
         cap_request: CAPABILITY_REQ.clone(),
+        properties: PROPERTIES.clone(),
     })
 }
 

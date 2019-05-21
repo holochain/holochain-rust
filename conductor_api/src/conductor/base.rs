@@ -955,8 +955,8 @@ pub mod tests {
     };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
-    use lib3h_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
+    use lib3h_sodium::secbuf::SecBuf;
     use std::{
         fs::{File, OpenOptions},
         io::Write,

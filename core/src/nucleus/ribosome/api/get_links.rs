@@ -250,6 +250,42 @@ pub mod tests {
     }
 
     #[test]
+    fn get_links_with_exact_tag_match_returns_only_that_link() {
+        let initialized_context =
+            initialize_context("get_links_with_exact_tag_match_returns_only_that");
+        let entry_addresses = add_test_entries(initialized_context.clone());
+        let links = vec![
+            Link::new(
+                &entry_addresses[0],
+                &entry_addresses[1],
+                "test-type",
+                "test-tag1",
+            ),
+            Link::new(
+                &entry_addresses[0],
+                &entry_addresses[1],
+                "test-type",
+                "test-tag2",
+            ),
+        ];
+        add_links(initialized_context.clone(), links);
+
+        let call_result = get_links(
+            initialized_context.clone(),
+            &entry_addresses[0],
+            "test-type",
+            Some("test-tag1".into()),
+        );
+        let expected = JsonString::from_json(
+            &(format!(
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                entry_addresses[1], "test-tag1",
+            ) + "\u{0}"),
+        );
+        assert_eq!(call_result, expected,);
+    }
+
+    #[test]
     fn test_with_same_target_and_tag_dedup() {
         let initialized_context = initialize_context("test_with_same_target_and_tag_dedup");
         let entry_addresses = add_test_entries(initialized_context.clone());

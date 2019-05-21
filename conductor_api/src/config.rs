@@ -134,6 +134,14 @@ impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.
     pub fn check_consistency<'a>(&'a self) -> Result<(), String> {
+        // TODO: rework consistency check and/or instance instantiation.
+        // Currently it is impossible to add multiple instances and a bridge between them
+        // through the admin API. This is because the instance is immediately initialized,
+        // and the bridge registration happens at the same time. So, the bridges must exist
+        // at the time of instance instantiation. However, the bridge dependency integrity check
+        // makes this tricky, because only one instance can be added at a time through the admin API
+        //
+
         detect_dupes("agent", self.agents.iter().map(|c| &c.id))?;
         detect_dupes("dna", self.dnas.iter().map(|c| &c.id))?;
         detect_dupes("instance", self.instances.iter().map(|c| &c.id))?;

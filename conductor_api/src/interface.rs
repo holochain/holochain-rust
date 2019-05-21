@@ -129,10 +129,11 @@ impl ConductorApiBuilder {
         self.io.add_method("call", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let public_id_str = Self::get_as_string("instance_id", &params_map)?;
+            let instance_identifier = PublicInstanceIdentifier::from(public_id_str);
             let id = instance_ids_map
-                .get(&PublicInstanceIdentifier::from(public_id_str))
+                .get(&instance_identifier)
                 .ok_or(jsonrpc_core::Error::invalid_params(
-                    "instance identifier invalid",
+                    format!("instance identifier invalid: {}", instance_identifier.0),
                 ))?;
             let instance = instances
                 .get(id)
@@ -345,6 +346,8 @@ impl ConductorApiBuilder {
     ///     * `id`: [string] internal handle/name of the newly created DNA config
     ///     * `path`: [string] local file path to DNA file
     ///     * `expected_hash`: [string] (optional) the hash of this DNA. If this does not match the actual hash, installation will fail.
+    ///     * `properties`: [object] (optional) extra data to include in the "properties" section of the DNA
+    ///     * `copy`: [bool] (optional) copy DNA file to storage directory
     ///
     ///  * `admin/dna/uninstall`
     ///     Uninstalls a DNA from the conductor config. Recursively also removes (and stops)

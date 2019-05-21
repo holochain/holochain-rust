@@ -7,6 +7,6 @@
     "tape": "^4.9.1"
   },
   "scripts": {
-    "test": "./run.sh"
+    "test": "node index.js"
   }
 }

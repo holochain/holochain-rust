@@ -52,8 +52,9 @@ pub struct NetworkState {
     pub get_entry_with_meta_results: HashMap<GetEntryKey, GetEntryWithMetaResult>,
 
     /// Here we store the results of GET links processes.
-    /// The key of this map is the base address and the link_type name for which the links
-    /// are requested.
+    /// The key of this map contains the base address, link_type and link tag for the link being requested.
+    /// the tag and link_type fields of the key are Options, None means they are waiting to retrieve all 
+    /// links of any tag/type
     /// None means that we are still waiting for a result from the network.
     pub get_links_results: HashMap<GetLinksKey, GetLinksResult>,
 

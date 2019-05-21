@@ -65,13 +65,17 @@ pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) 
             "*" => None,
             _ => Some(tag),
         };
+        let unwrapped_link_type: Option<String> = match link_type.as_ref() {
+            "*" => None,
+            _ => Some(link_type),
+        };
         let links = context
             .state()
             .unwrap()
             .dht()
             .get_links(
                 Address::from(fetch_meta_data.entry_address.clone()),
-                link_type.clone(),
+                unwrapped_link_type.clone(),
                 unwrapped_tag.clone(),
             )
             .unwrap_or(BTreeSet::new())

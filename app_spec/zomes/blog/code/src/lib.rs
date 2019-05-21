@@ -189,7 +189,7 @@ define_zome! {
         }
 
         my_posts: {
-            inputs: | |,
+            inputs: |tag: Option<String>|,
             outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
             handler: blog::handle_my_posts
         }

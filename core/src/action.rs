@@ -238,7 +238,7 @@ pub struct GetLinksKey {
     pub base_address: Address,
 
     /// The link type
-    pub link_type: String,
+    pub link_type: Option<String>,
 
     /// The link tag, None means get all the tags for a given type
     pub tag: Option<String>,

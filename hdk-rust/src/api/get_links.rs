@@ -28,29 +28,29 @@ use holochain_wasm_utils::api_serialization::{
 ///
 /// # fn main() {
 /// pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
-///     hdk::get_links_with_options(&agent, "authored_posts", None, GetLinksOptions::default())
+///     hdk::get_links_with_options(&agent, Some("authored_posts".into()), None, GetLinksOptions::default())
 /// }
 /// # }
 /// ```
-pub fn get_links_with_options<S: Into<String>>(
+pub fn get_links_with_options(
     base: &Address,
-    link_type: S,
-    tag: Option<S>,
+    link_type: Option<String>,
+    tag: Option<String>,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
     Dispatch::GetLinks.with_input(GetLinksArgs {
         entry_address: base.clone(),
         link_type: link_type.into(),
-        tag: tag.map(|t| t.into()),
+        tag: tag,
         options,
     })
 }
 
 /// Helper function for get_links. Returns a vector with the default return results.
-pub fn get_links<S: Into<String>>(
+pub fn get_links(
     base: &Address,
-    link_type: S,
-    tag: Option<S>,
+    link_type: Option<String>,
+    tag: Option<String>,
 ) -> ZomeApiResult<GetLinksResult> {
     get_links_with_options(base, link_type, tag, GetLinksOptions::default())
 }
@@ -71,14 +71,14 @@ pub fn get_links<S: Into<String>>(
 ///
 /// # fn main() {
 /// fn hangle_get_links_result(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
-///    hdk::get_links_result(&address, "test-link", None, GetLinksOptions::default(), GetEntryOptions::default())
+///    hdk::get_links_result(&address, Some("test-link".into()), None, GetLinksOptions::default(), GetEntryOptions::default())
 /// }
 /// # }
 /// ```
-pub fn get_links_result<S: Into<String>>(
+pub fn get_links_result(
     base: &Address,
-    link_type: S,
-    tag: Option<S>,
+    link_type: Option<String>,
+    tag: Option<String>,
     options: GetLinksOptions,
     get_entry_options: GetEntryOptions,
 ) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
@@ -92,10 +92,10 @@ pub fn get_links_result<S: Into<String>>(
 }
 
 /// Helper function for get_links. Returns a vector of the entries themselves
-pub fn get_links_and_load<S: Into<String>>(
+pub fn get_links_and_load(
     base: &HashString,
-    link_type: S,
-    tag: Option<S>,
+    link_type: Option<String>,
+    tag: Option<String>,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
     let get_links_result = get_links_result(
         base,

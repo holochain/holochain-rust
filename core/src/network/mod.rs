@@ -282,7 +282,7 @@ pub mod tests {
         let maybe_links = context2.block_on(get_links(
             context2.clone(),
             entry_addresses[0].clone(),
-            String::from("test-link"),
+            Some("test-link".into()),
             Some("test-tag".into()),
             Default::default(),
         ));

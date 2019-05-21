@@ -210,13 +210,13 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
 }
 
 fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&address, "test", Some("test-tag"))
+    hdk::get_links(&address, Some("test".into()), Some("test-tag".into()))
 }
 
 fn handle_links_roundtrip_get_and_load(
     address: Address,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
-    hdk::get_links_and_load(&address, "test", Some("test-tag"))
+    hdk::get_links_and_load(&address, Some("test".into()), Some("test-tag".into()))
 }
 
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {

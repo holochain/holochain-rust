@@ -12,7 +12,8 @@ fn reduce_get_links_inner(
     key: &GetLinksKey,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let tag = key.tag.clone().unwrap_or("*".to_string()); // map from None to "*"
+    let link_type = key.link_type.clone().unwrap_or("*".to_string()); // map from None to "*"
+    let tag = key.tag.clone().unwrap_or("*".to_string());
     send(
         network_state,
         JsonProtocol::FetchMeta(FetchMetaData {
@@ -20,7 +21,7 @@ fn reduce_get_links_inner(
             request_id: key.id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             entry_address: HashString::from(key.base_address.clone()),
-            attribute: format!("link__{}__{}", key.link_type, tag),
+            attribute: format!("link__{}__{}", link_type, tag),
         }),
     )
 }
@@ -80,7 +81,7 @@ mod tests {
         let link_type = String::from("test-link");
         let key = GetLinksKey {
             base_address: entry.address(),
-            link_type: link_type.clone(),
+            link_type: Some(link_type.clone()),
             tag: Some("link-tag".into()),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };

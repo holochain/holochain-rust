@@ -13,10 +13,10 @@ use std::convert::TryFrom;
 /// of a get_links_and_load for a given type. Any entries that either fail to
 /// load or cannot be converted to the type will be dropped.
 ///
-pub fn get_links_and_load_type<S: Into<String>, R: TryFrom<AppEntryValue>>(
+pub fn get_links_and_load_type<R: TryFrom<AppEntryValue>>(
     base: &Address,
-    link_type: S,
-    tag: Option<S>,
+    link_type: Option<String>,
+    tag: Option<String>,
 ) -> ZomeApiResult<Vec<R>> {
     let link_load_results = hdk::get_links_and_load(base, link_type, tag)?;
 

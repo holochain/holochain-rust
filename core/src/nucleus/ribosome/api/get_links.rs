@@ -63,13 +63,13 @@ pub mod tests {
     /// dummy link_entries args from standard test entry
     pub fn test_get_links_args_bytes(
         base: &Address,
-        link_type: &str,
+        link_type: Option<String>,
         tag: Option<String>,
     ) -> Vec<u8> {
         let args = GetLinksArgs {
             entry_address: base.clone(),
-            link_type: String::from(link_type),
-            tag: tag.into(),
+            link_type,
+            tag,
             options: Default::default(),
         };
         serde_json::to_string(&args)
@@ -117,7 +117,7 @@ pub mod tests {
     fn get_links(
         initialized_context: Arc<Context>,
         base: &Address,
-        link_type: &str,
+        link_type: Option<String>,
         tag: Option<String>,
     ) -> JsonString {
         test_zome_api_function_call(
@@ -151,7 +151,7 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            "test-type",
+            Some("test-type".into()),
             Some("test-tag".into()),
         );
         let expected_1 = JsonString::from_json(
@@ -200,7 +200,7 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            "other-type",
+            Some("other-type".into()),
             Some("test-tag".into()),
         );
         assert_eq!(
@@ -237,7 +237,7 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            "test-type",
+            Some("test-type".into()),
             Some("other-tag".into()),
         );
         assert_eq!(
@@ -246,6 +246,49 @@ pub mod tests {
                 &(String::from(r#"{"ok":true,"value":"{\"links\":[]}","error":"null"}"#,)
                     + "\u{0}")
             ),
+        );
+    }
+
+    #[test]
+    fn can_get_all_links_of_any_tag_or_type() {
+        // setup the instance and links
+        let initialized_context = initialize_context("can_get_all_links_of_any_tag_or_type");
+        let entry_addresses = add_test_entries(initialized_context.clone());
+        let links = vec![
+            Link::new(
+                &entry_addresses[0],
+                &entry_addresses[1],
+                "test-type1",
+                "test-tag1",
+            ),
+            Link::new(
+                &entry_addresses[0],
+                &entry_addresses[2],
+                "test-type2",
+                "test-tag2",
+            ),
+        ];
+        add_links(initialized_context.clone(), links);
+
+        let call_result = get_links(initialized_context.clone(), &entry_addresses[0], None, None);
+        let expected_1 = JsonString::from_json(
+            &(format!(
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                entry_addresses[1], "test-tag1", entry_addresses[2], "test-tag2",
+            ) + "\u{0}"),
+        );
+        let expected_2 = JsonString::from_json(
+            &(format!(
+               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                entry_addresses[2], "test-tag2", entry_addresses[1], "test-tag1",
+            ) + "\u{0}"),
+        );
+        assert!(
+            call_result == expected_1 || call_result == expected_2,
+            "\n call_result = '{:?}'\n   ordering1 = '{:?}'\n   ordering2 = '{:?}'",
+            call_result,
+            expected_1,
+            expected_2,
         );
     }
 
@@ -273,7 +316,7 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            "test-type",
+            Some("test-type".into()),
             Some("test-tag1".into()),
         );
         let expected = JsonString::from_json(
@@ -308,7 +351,7 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            "test-type",
+            Some("test-type".into()),
             Some("test-tag".into()),
         );
         let expected = JsonString::from_json(
@@ -344,7 +387,7 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            "test-type",
+            Some("test-type".into()),
             None,
         );
         let expected = JsonString::from_json(

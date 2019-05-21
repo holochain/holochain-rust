@@ -47,6 +47,10 @@ pub fn reduce_handle_get_links_result(
         "*" => None,
         _ => Some(tag.to_string()),
     };
+    let link_type = match link_type.as_ref() {
+        "*" => None,
+        _ => Some(link_type.to_string()),
+    };
     let key = GetLinksKey {
         base_address: Address::from(dht_meta_data.entry_address.clone()),
         link_type: link_type.clone(),

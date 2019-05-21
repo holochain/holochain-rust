@@ -59,20 +59,21 @@ impl DhtStore {
     pub fn get_links(
         &self,
         address: Address,
-        link_type: String,
+        link_type: Option<String>,
         tag: Option<String>,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
             Some(address).into(),
             EavFilter::predicate(move |attr| match attr {
                 Attribute::LinkTag(query_link_type, query_tag)
-                | Attribute::RemovedLink(query_link_type, query_tag) => {
-                    if let Some(tag) = &tag {
-                        link_type == query_link_type && tag == &query_tag
-                    } else {
-                        link_type == query_link_type
+                | Attribute::RemovedLink(query_link_type, query_tag) => match (&link_type, &tag) {
+                    (Some(link_type), Some(tag)) => {
+                        link_type == &query_link_type && tag == &query_tag
                     }
-                }
+                    (Some(link_type), None) => link_type == &query_link_type,
+                    (None, Some(tag)) => tag == &query_tag,
+                    (None, None) => true,
+                },
                 _ => false,
             }),
             None.into(),

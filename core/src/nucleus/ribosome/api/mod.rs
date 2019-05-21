@@ -219,7 +219,7 @@ pub mod tests {
         )
     )
 
-    (memory 2)
+    (memory 1)
     (export "memory" (memory 0))
 
     (func

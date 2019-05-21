@@ -17,7 +17,7 @@ use std::{pin::Pin, sync::Arc, thread};
 pub async fn get_links(
     context: Arc<Context>,
     address: Address,
-    link_type: String,
+    link_type: Option<String>,
     tag: Option<String>,
     timeout: Timeout,
 ) -> HcResult<Vec<Address>> {

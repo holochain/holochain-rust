@@ -646,8 +646,8 @@ scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
     "agent" : alice.agentId
   });
 
-  t.equal(bob.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
-  t.equal(alice.agentId,alice_posts.Ok.links[0].headers[1].provenances[0][0]);
+  t.equal(alice.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
+  t.equal(bob.agentId,alice_posts.Ok.links[0].headers[1].provenances[0][0]);
   t.equal(bob.agentId,bob_posts.Ok.links[0].headers[1].provenances[0][0]);
   t.equal(alice.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
 

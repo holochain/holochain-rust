@@ -1,7 +1,7 @@
 {
   "devDependencies": {},
   "dependencies": {
-    "@holochain/playbook": "git://github.com/holochain/hc-playbook.git",
+    "@holochain/playbook": "github:holochain/hc-playbook",
     "faucet": "0.0.1",
     "json3": "*",
     "sleep": "^5.2.3",

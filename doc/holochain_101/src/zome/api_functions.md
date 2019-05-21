@@ -147,7 +147,7 @@ Caller can request additional metadata on the entry such as type or sources
 
 Canonical name: `get_links`
 
-Consumes two values, the first of which is the address of an entry, base, and the second of which is a string, link_type, used to describe the relationship between the base and other entries you wish to lookup. Returns a list of addresses of other entries which matched as being linked by the given link type. Links are created in the first place using the Zome API function [link_entries](#link-entries). Once you have the addresses, there is a good likelihood that you will wish to call [get_entry](#get-entry) for each of them.
+Consumes three values, the first of which is the address of an entry, base, the remaing two are Optional types for the `link_type` and `tag`. Passing `Some("string")` will return only links that match the type/tag exactly. Passing `None` for either of those params will return all links regardless of the type/tag. Returns a list of addresses of other entries which matched as being linked by the given link type. Links are created in the first place using the Zome API function [link_entries](#link-entries). Once you have the addresses, there is a good likelihood that you will wish to call [get_entry](#get-entry) for each of them.
 
 - [View get_links in the Rust HDK](https://developer.holochain.org/api/0.0.7-alpha/hdk/api/fn.get_links.html)
 - [View get_links_and_load in the Rust HDK](https://developer.holochain.org/api/0.0.7-alpha/hdk/api/fn.get_links_and_load.html)
@@ -159,7 +159,7 @@ Consumes two values, the first of which is the address of an entry, base, and th
 
 Canonical name: `link_entries`
 
-Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a relationship between them, called a `link_type`. Later, lists of entries can be looked up by using `get_links`. Entries can only be looked up in the direction from the `base`, which is the first argument, to the `target`, which is the second. This function returns a hash for the LinkAdd entry on completion.
+Consumes four values, two of which are the addresses of entries, and two of which are strings that determine which `link_type` to use and a `tag` string that should be added to the link. The `link_type` must exactly match a type defined in an `entry!` macro. The tag can be any arbitrary string. Later, lists of entries can be looked up by using `get_links` and optionally filtered based on their type or tag. Entries can only be looked up in the direction from the `base`, which is the first argument, to the `target`, which is the second. This function returns a hash for the LinkAdd entry on completion.
 
 [View it in the Rust HDK](https://developer.holochain.org/api/0.0.7-alpha/hdk/api/fn.link_entries.html)
 

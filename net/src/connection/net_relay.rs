@@ -46,8 +46,7 @@ impl NetConnectionRelay {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use std::sync::mpsc;
+    use crossbeam_channel::unbounded;
 
     struct DefWorker;
 
@@ -56,7 +55,7 @@ mod tests {
     #[test]
     fn it_can_defaults() {
         let mut con = NetConnectionRelay::new(
-            Box::new(move |_r| Ok(())),
+            NetHandler::new(Box::new(move |_r| Ok(()))),
             Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
             None,
         )
@@ -73,24 +72,24 @@ mod tests {
 
     impl NetWorker for SimpleWorker {
         fn tick(&mut self) -> NetResult<bool> {
-            (self.handler)(Ok("tick".into()))?;
+            self.handler.handle(Ok("tick".into()))?;
             Ok(true)
         }
 
         fn receive(&mut self, data: Protocol) -> NetResult<()> {
-            (self.handler)(Ok(data))
+            self.handler.handle(Ok(data))
         }
     }
 
     #[test]
     fn it_invokes_connection_relay() {
-        let (sender, receiver) = mpsc::channel();
+        let (sender, receiver) = unbounded();
 
         let mut con = NetConnectionRelay::new(
-            Box::new(move |r| {
+            NetHandler::new(Box::new(move |r| {
                 sender.send(r?)?;
                 Ok(())
-            }),
+            })),
             Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )
@@ -107,13 +106,13 @@ mod tests {
 
     #[test]
     fn it_can_tick() {
-        let (sender, receiver) = mpsc::channel();
+        let (sender, receiver) = unbounded();
 
         let mut con = NetConnectionRelay::new(
-            Box::new(move |r| {
+            NetHandler::new(Box::new(move |r| {
                 sender.send(r?)?;
                 Ok(())
-            }),
+            })),
             Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )

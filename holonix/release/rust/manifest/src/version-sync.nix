@@ -11,7 +11,6 @@ let
     -name "Cargo.toml" \
     -not -path "**/.git/**" \
     -not -path "**/.cargo/**" \
-    -not -path "./nodejs_conductor*" \
     | xargs -I {} \
     sed -i 's/^\s*version\s*=\s*"${release.core.version.previous}"\s*$/version = "${release.core.version.current}"/g' {}
 

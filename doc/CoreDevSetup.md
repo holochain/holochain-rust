@@ -167,7 +167,6 @@ Note that there are also make commands for running the tests of just core, or th
 make test_cli
 make test_holochain
 make test_app_spec
-make build_nodejs_conductor
 ```
 
 ### Building for Android

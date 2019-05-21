@@ -75,15 +75,11 @@ jobs:
 
    - run:
        name: install node conductor
-       command: nix-shell --run hc-conductor-node-install
+       command: nix-shell --run hc-conductor-rust-install
 
    - run:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test
-
-   - run:
-       name: nodejs conductor tests
-       command: nix-shell --run hc-conductor-node-test
 
  cli-tests:
   docker:

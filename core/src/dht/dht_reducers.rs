@@ -458,11 +458,6 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let locked_state = Arc::new(RwLock::new(store));
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
-        let context = Arc::new(context);
-
         let link = Link::new(
             &entry.address(),
             &entry.address(),

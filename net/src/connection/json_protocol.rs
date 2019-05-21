@@ -301,7 +301,7 @@ pub enum JsonProtocol {
     FetchEntry(FetchEntryData),
     /// The network's reponse from `FetchEntry`
     FetchEntryResult(FetchEntryResultData),
-    /// The network module is requesting it's Core to respond to a `FetchEntry`
+    /// The network module is requesting its Core to respond to a `FetchEntry`
     HandleFetchEntry(FetchEntryData),
     /// Successful response for a `FetchEntry` request from Core
     HandleFetchEntryResult(FetchEntryResultData),

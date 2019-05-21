@@ -319,7 +319,7 @@ pub enum JsonProtocol {
     FetchMeta(FetchMetaData),
     /// The network's reponse from `FetchMeta`
     FetchMetaResult(FetchMetaResultData),
-    /// The network module is requesting it's Core to respond to a `FetchMeta`
+    /// The network module is requesting its Core to respond to a `FetchMeta`
     HandleFetchMeta(FetchMetaData),
     /// Successful response for a `HandleFetchMeta` request from Core
     HandleFetchMetaResult(FetchMetaResultData),

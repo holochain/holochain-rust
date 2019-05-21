@@ -76,7 +76,7 @@ pub mod tests {
         LinkType::from("foo-link-type")
     }
 
-    pub fn example_link_tag() -> LinkType {
+    pub fn example_link_tag() -> LinkTag {
         LinkTag::from("foo-link-tag")
     }
 

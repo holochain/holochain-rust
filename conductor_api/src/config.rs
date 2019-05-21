@@ -80,10 +80,7 @@ pub struct Configuration {
 }
 
 pub fn default_persistence_dir() -> PathBuf {
-    dirs::home_dir()
-        .expect("No persistence_dir given in config file and no HOME dir defined. Don't know where to store config file!")
-        .join(".holochain")
-        .join("conductor")
+    holochain_common::paths::config_root().join("conductor")
 }
 
 /// There might be different kinds of loggers in the future.

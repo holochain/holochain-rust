@@ -633,7 +633,7 @@ scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
   await bob.callSync("blog", "create_post_with_agent",
     { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
   );
-  await alice.callSync("blog", "create_post_with_agent",
+  await bob.callSync("blog", "create_post_with_agent",
   { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
   );
 

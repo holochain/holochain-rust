@@ -4,7 +4,7 @@ use crate::{
     context::Context,
     instance::dispatch_action_and_wait,
     nucleus::{
-        ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
+        ribosome::callback::{init::init, CallbackParams, CallbackResult},
         state::NucleusStatus,
     },
 };
@@ -54,7 +54,7 @@ const INITIALIZATION_TIMEOUT: u64 = 60;
 /// instance. It creates both InitializeChain and ReturnInitializationResult actions asynchronously.
 ///
 /// Returns a future that resolves to an Ok(NucleusStatus) or an Err(String) which carries either
-/// the Dna error or errors from the genesis callback.
+/// the Dna error or errors from the init callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
 pub async fn initialize_chain(
@@ -168,11 +168,11 @@ pub async fn initialize_chain(
         None
     };
 
-    // map genesis across every zome
+    // map init across every zome
     let results: Vec<_> = dna
         .zomes
         .keys()
-        .map(|zome_name| genesis(context_clone.clone(), zome_name, &CallbackParams::Genesis))
+        .map(|zome_name| init(context_clone.clone(), zome_name, &CallbackParams::Init))
         .collect();
 
     // if there was an error report that as the result

@@ -42,7 +42,7 @@ macro_rules! load_string {
 /// macro in the main library file in their Zome.
 /// The `define_zome` macro has 4 component parts:
 /// 1. entries: an array of [ValidatingEntryType](entry_definition/struct.ValidatingEntryType.html) as returned by using the [entry](macro.entry.html) macro
-/// 2. genesis: `genesis` is a callback called by Holochain to every Zome implemented within a DNA.
+/// 2. init: `init` is a callback called by Holochain to every Zome implemented within a DNA.
 ///     It gets called when a new agent is initializing an instance of the DNA for the first time, and
 ///     should return `Ok` or an `Err`, depending on whether the agent can join the network or not.
 /// 3. receive (optional): `receive` is a callback called by Holochain when another agent on a hApp has initiated a node-to-node direct message.
@@ -175,7 +175,7 @@ macro_rules! load_string {
 ///         )
 ///     ]
 ///
-///     genesis: || {
+///     init: || {
 ///         Ok(())
 ///     }
 ///
@@ -211,8 +211,8 @@ macro_rules! define_zome {
             $( $entry_expr:expr ),*
         ]
 
-        genesis : || {
-            $genesis_expr:expr
+        init : || {
+            $init_expr:expr
         }
 
         $(
@@ -250,7 +250,7 @@ macro_rules! define_zome {
         }
 
         #[no_mangle]
-        pub extern "C" fn genesis(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
+        pub extern "C" fn init(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
             let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
             let allocation = match maybe_allocation {
                 Ok(allocation) => allocation,
@@ -264,7 +264,7 @@ macro_rules! define_zome {
             }
 
             fn execute() -> Result<(), String> {
-                $genesis_expr
+                $init_expr
             }
 
             match execute() {

@@ -11,7 +11,7 @@ pub fn init(
     // we ignore params for init
     params: &CallbackParams,
 ) -> CallbackResult {
-    call(context, zome, &Callback::Init, params)
+    call(context, zome, &Callback::init, params)
 }
 
 #[cfg(test)]
@@ -30,11 +30,11 @@ pub mod tests {
     fn pass() {
         let zome = "test_zome";
         let netname = Some("init::pass");
-        let instance = test_callback_instance(zome, Callback::Init.as_str(), 0, netname)
+        let instance = test_callback_instance(zome, Callback::init.as_str(), 0, netname)
             .expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test", netname));
 
-        let result = init(context, zome, &CallbackParams::Init);
+        let result = init(context, zome, &CallbackParams::init);
 
         assert_eq!(CallbackResult::Pass, result);
     }
@@ -45,7 +45,7 @@ pub mod tests {
         let netname = Some("init::not_implemented");
         let instance = test_callback_instance(
             zome,
-            // anything other than Init is fine here
+            // anything other than init is fine here
             Callback::Receive.as_str(),
             0,
             netname,
@@ -54,7 +54,7 @@ pub mod tests {
 
         let context = instance.initialize_context(test_context("test", netname));
 
-        let result = init(context, zome, &CallbackParams::Init);
+        let result = init(context, zome, &CallbackParams::init);
 
         if let CallbackResult::NotImplemented(_) = result {
             ()
@@ -67,7 +67,7 @@ pub mod tests {
     fn fail() {
         let zome = "test_zome";
         let netname = Some("init::fail");
-        let instance = test_callback_instance(zome, Callback::Init.as_str(), 1, netname);
+        let instance = test_callback_instance(zome, Callback::init.as_str(), 1, netname);
         assert!(instance.is_err());
         let error = instance.err().unwrap();
         assert_eq!("\"".to_string(), error);

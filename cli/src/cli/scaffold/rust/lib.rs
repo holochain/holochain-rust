@@ -61,7 +61,7 @@ define_zome! {
        definition()
     ]
 
-    genesis: || { Ok(()) }
+    init: || { Ok(()) }
 
     functions: [
         create_my_entry: {

@@ -163,8 +163,8 @@ impl Context {
     }
 
     pub fn get_dna(&self) -> Option<Dna> {
-        // In the case of genesis we encounter race conditions with regards to setting the DNA.
-        // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
+        // In the case of init we encounter race conditions with regards to setting the DNA.
+        // Init gets called asynchronously right after dispatching an action that sets the DNA in
         // the state, which can result in this code being executed first.
         // But we can't run anything if there is no DNA which holds the WASM, so we have to wait here.
         // TODO: use a future here

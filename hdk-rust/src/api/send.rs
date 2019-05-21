@@ -90,7 +90,7 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// define_zome! {
 ///    entries: []
 ///
-///    genesis: || { Ok(()) }
+///    init: || { Ok(()) }
 ///
 ///    receive: |from, payload| {
 ///        // if you want to serialize data as json to pass, use the json! serde macro

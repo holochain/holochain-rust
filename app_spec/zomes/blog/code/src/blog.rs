@@ -59,6 +59,10 @@ pub fn handle_show_env() -> ZomeApiResult<Env> {
     })
 }
 
+pub fn handle_get_test_properties() -> ZomeApiResult<JsonString> {
+    hdk::property("test_property")
+}
+
 pub fn handle_get_sources(address: Address) -> ZomeApiResult<Vec<Address>> {
     if let GetEntryResultType::Single(result) = hdk::get_entry_result(
         &address,

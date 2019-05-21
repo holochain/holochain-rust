@@ -9,10 +9,14 @@ mod call;
 ///
 /// For the case of HDK-rust we can use the exact same types by
 /// importing this module.
+pub mod capabilities;
+pub mod commit_entry;
 pub mod get_entry;
 pub mod get_links;
+pub mod keystore;
 pub mod link_entries;
 pub mod query;
+pub mod receive;
 pub mod send;
 pub mod sign;
 mod update_entry;

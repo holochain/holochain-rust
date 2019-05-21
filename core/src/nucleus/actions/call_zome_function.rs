@@ -3,13 +3,13 @@ use crate::{
     context::Context,
     nucleus::{
         actions::get_entry::get_entry_from_agent_chain,
-        ribosome::{self, capabilities::CapabilityRequest, WasmCallData},
+        ribosome::{self, WasmCallData},
         ZomeFnCall, ZomeFnResult,
     },
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    dna::wasm::DnaWasm,
+    dna::{capabilities::CapabilityRequest, wasm::DnaWasm},
     entry::{
         cap_entries::{CapTokenGrant, CapabilityType},
         Entry,
@@ -27,7 +27,7 @@ use futures::{
 };
 use std::{pin::Pin, sync::Arc, thread};
 
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {
     call: ZomeFnCall,
     result: ZomeFnResult,
@@ -72,7 +72,7 @@ pub async fn call_zome_function(
     ));
 
     // 1. Validate the call (a number of things could go wrong)
-    let (dna_name, wasm) = validate_call(context.clone(), &zome_call)?;
+    validate_call(context.clone(), &zome_call)?;
 
     context.log(format!(
         "debug/actions/call_zome_fn: executing call: {:?}",
@@ -94,24 +94,28 @@ pub async fn call_zome_function(
     let _ = thread::spawn(move || {
         // Have Ribosome spin up DNA and call the zome function
         let call_result = ribosome::run_dna(
-            wasm.code,
-            Some(zome_call_clone.clone().parameters.into_bytes()),
-            WasmCallData::new_zome_call(
-                context_clone.clone(),
-                dna_name.clone(),
-                zome_call_clone.clone(),
-            ),
+            Some(zome_call_clone.clone().parameters.to_bytes()),
+            WasmCallData::new_zome_call(context_clone.clone(), zome_call_clone.clone()),
         );
+        context_clone.log("debug/actions/call_zome_fn: got call_result from ribosome::run_dna.");
         // Construct response
         let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);
         // Send ReturnZomeFunctionResult Action
+        context_clone.log("debug/actions/call_zome_fn: sending ReturnZomeFunctionResult action.");
         context_clone
             .action_channel()
             .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
                 response,
             )))
             .expect("action channel to be open in reducer");
+        context_clone.log("debug/actions/call_zome_fn: sent ReturnZomeFunctionResult action.");
     });
+
+    context.log(format!(
+        "debug/actions/call_zome_fn: awaiting for \
+         future call result of {:?}",
+        zome_call
+    ));
 
     await!(CallResultFuture {
         context: context.clone(),
@@ -311,11 +315,12 @@ pub mod tests {
     use crate::{
         context::Context,
         instance::tests::*,
-        nucleus::{actions::tests::test_dna, ribosome::capabilities::CapabilityRequest, tests::*},
+        nucleus::{actions::tests::test_dna, tests::*},
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
+        dna::capabilities::CapabilityRequest,
         entry::{
             cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
             Entry,
@@ -381,12 +386,13 @@ pub mod tests {
 
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
-        let grant =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+        let grant = CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions)
+            .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant.clone());
         let grant_addr = context
-            .block_on(author_entry(&grant_entry, None, &context))
-            .unwrap();
+            .block_on(author_entry(&grant_entry, None, &context, &vec![]))
+            .unwrap()
+            .address();
         let maybe_grant = get_grant(&context, &grant_addr);
         assert_eq!(maybe_grant, Some(grant));
     }
@@ -416,7 +422,8 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
 
-        let grant = CapTokenGrant::create(CapabilityType::Public, None, cap_functions).unwrap();
+        let grant =
+            CapTokenGrant::create("foo", CapabilityType::Public, None, cap_functions).unwrap();
         let token = grant.token();
         assert!(verify_grant(
             context.clone(),
@@ -432,7 +439,8 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("other_fn")]);
         let grant_for_other_fn =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+            CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions)
+                .unwrap();
         assert!(!verify_grant(
             context.clone(),
             &grant_for_other_fn,
@@ -441,8 +449,8 @@ pub mod tests {
 
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
-        let grant =
-            CapTokenGrant::create(CapabilityType::Transferable, None, cap_functions).unwrap();
+        let grant = CapTokenGrant::create("foo", CapabilityType::Transferable, None, cap_functions)
+            .unwrap();
 
         let token = grant.token();
         assert!(!verify_grant(
@@ -479,6 +487,7 @@ pub mod tests {
         let mut cap_functions = CapFunctions::new();
         cap_functions.insert("test_zome".to_string(), vec![String::from("test")]);
         let grant = CapTokenGrant::create(
+            "foo",
             CapabilityType::Assigned,
             Some(vec![test_address1.clone()]),
             cap_functions,

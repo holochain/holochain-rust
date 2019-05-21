@@ -4,20 +4,13 @@ branches:
   only:
     - master
     - develop
-    - /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
-    - /^release-(test-)*v\d+\.\d+\.\d+-alpha/
-    - /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
+    - /^(holochain-nodejs-|release-)?v\d+\.\d+\.\d+-alpha\d+$/
 
 _trusty_nodejs: &_trusty_nodejs
   dist: trusty
   language: node_js
   node_js:
     - "8"
-
-_trusty_bash: &_trusty_bash
-  dist: trusty
-  # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-  language: bash
 
 _cargo_cache_template: &_cargo_cache_template
   # manually cache as we manually install rustup
@@ -68,17 +61,17 @@ _linux_nodejs_template: &_linux_nodejs_template
   language: rust
   rust: nightly-2019-01-24
   before_install:
-    - . ./scripts/install/auto.sh
+    - ./scripts/install/auto.sh
 
 _macosx_nodejs_template: &_macosx_nodejs_template
   os: osx
   language: rust
   rust: nightly-2019-01-24
   before_install:
-    - . ./scripts/install/auto.sh
+    - ./scripts/install/auto.sh
 
 _to_deploy_template: &_to_deploy_template
-  if: tag =~ /^holochain-nodejs-(test-\d+-)*v\d+\.\d+\.\d+-alpha/
+  if: tag =~ /^holochain-nodejs-v\d+\.\d+\.\d+-alpha\d+/
 
 _env_node_8_deploy_template: &_env_node_8_deploy_template
   env:
@@ -136,9 +129,9 @@ _cli_deploy_template: &_cli_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
-  if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
+  if: tag =~ /^v\d+\.\d+\.\d+-alpha\d+/
   before_script:
-    - . ./scripts/install/auto.sh
+    - ./scripts/install/auto.sh
   script:
     - cargo rustc --manifest-path cli/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir cli-$TRAVIS_TAG-$TARGET
@@ -160,9 +153,9 @@ _conductor_deploy_template: &_conductor_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
-  if: tag =~ /^(test-\d+-)*v\d+\.\d+\.\d+-alpha/
+  if: tag =~ /^v\d+\.\d+\.\d+-alpha\d+/
   before_script:
-    - . ./scripts/install/auto.sh
+    - ./scripts/install/auto.sh
   script:
     - cargo rustc --manifest-path conductor/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir conductor-$TRAVIS_TAG-$TARGET
@@ -179,125 +172,10 @@ _conductor_deploy_template: &_conductor_deploy_template
         tags: true
     name: $TRAVIS_TAG
 
-_windows_template_lite: &_windows_template_lite
-  os: windows
-  language: rust
-  rust: nightly-2019-01-24-x86_64-pc-windows-msvc
-  before_install:
-   - CARGO_INCREMENTAL=1
-   - RUSTFLAGS="-Z thinlto -C codegen-units=16"
-  cache:
-   timeout: 1000
-   directories:
-    # only keep target directories
-    # as we don't keep .cargo everything will be redownloaded every time
-    # as travis downloads the cache every time, this doesn't make much
-    # difference, actually it can be a bit faster or slightly slower to pull
-    # the crates down vs. loading the cache - seems to be an overall benefit
-    # as we do CARGO_INCREMENTAL and keep the targets, the newly downloaded
-    # crates don't recompile, so we save *a lot* of time there
-    - target
-    - ${HC_TARGET_PREFIX}${TEST_PATH}target
-    - ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH}target
-    - ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH_2}target
-  install:
-    # "none" is a hack here to avoid "" ending up in the cache, potentially
-    # caching everything in the repo (we never want to accidentally do that)
-    - if [ ! -z "$WASM_PATH" ]; then rustup target add wasm32-unknown-unknown; fi;
-    - if [ ! -z "$WASM_PATH" ]; then cargo build --manifest-path ${TEST_PATH}${WASM_PATH}Cargo.toml --release --target wasm32-unknown-unknown --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH}target; fi;
-    - if [ ! -z "$WASM_PATH_2" ]; then cargo build --manifest-path ${TEST_PATH}${WASM_PATH_2}Cargo.toml --release --target wasm32-unknown-unknown --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH_2}target; fi;
-
-  script:
-    - cargo test -p $TEST_P --release --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}target
-
 jobs:
   # test builds are ordered from slowest to quickest
   # this allows us to keep walltimes down
   include:
-    - name: "windows hdk"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=hdk
-       - TEST_PATH=hdk-rust/
-       - WASM_PATH=wasm-test/
-
-    - name: "windows wasm_utils"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_wasm_utils
-       - TEST_PATH=wasm_utils/
-       - WASM_PATH=wasm-test/integration-test/
-
-    - name: "windows conductor_api"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_conductor_api
-       - TEST_PATH=conductor_api/
-       - WASM_PATH=wasm-test/
-       - WASM_PATH_2=test-bridge-caller/
-
-    - name: "windows core"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core
-       - TEST_PATH=core/
-       - WASM_PATH=src/nucleus/actions/wasm-test/
-
-    - name: "windows holochain_cas_implementations"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_cas_implementations
-       - TEST_PATH=cas_implementations/
-
-    - name: "windows dna_c_binding"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_dna_c_binding
-       - TEST_PATH=dna_c_binding/
-
-    - name: "windows holochain_sodium"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_sodium
-       - TEST_PATH=sodium/
-
-    - name: "windows hc"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=hc
-       - TEST_PATH=cli/
-
-    - name: "windows core_types"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core_types
-       - TEST_PATH=core_types/
-
-    - name: "windows holochain_net"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_net
-       - TEST_PATH=net/
-
-    - name: "C binding tests"
-      <<: *_trusty_bash
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          # faster to build this than manage a cache for the target
-          # - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-      script:
-        - make test_c_ci
-      before_cache:
-        - rm -rf $HOME/.cargo/registry/index
 
     # holochain-cli releases section
     - name: "CLI DEPLOY - 64 bit Linux"
@@ -435,6 +313,7 @@ jobs:
       <<: *_windows_template
       <<: *_nodejs_deploy_template
       <<: *_windows_nodejs_conductor_template
+      if: (branch = develop) AND NOT (type = pull_request)
       env:
        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
        - NODIST_X64=1

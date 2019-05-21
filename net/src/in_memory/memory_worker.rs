@@ -27,6 +27,11 @@ impl NetWorker for InMemoryWorker {
     /// we got a message from holochain core
     /// forward to our in-memory server
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
+        // InMemoryWorker doesn't have to do anything on shutdown
+        if data == Protocol::Shutdown {
+            (self.handler)(Ok(Protocol::Terminated))?;
+            return Ok(());
+        }
         let server_map = MEMORY_SERVER_MAP.read().unwrap();
         let mut server = server_map
             .get(&self.server_name)
@@ -173,7 +178,7 @@ mod tests {
     #[cfg_attr(tarpaulin, skip)]
     fn can_memory_worker_double_track() {
         // setup client 1
-        let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_string());
+        let memory_config = &JsonString::from_json(&P2pConfig::unique_memory_backend_string());
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
 
         let mut memory_worker_1 = Box::new(

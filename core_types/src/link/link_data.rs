@@ -44,6 +44,14 @@ impl LinkData {
             link: link.clone(),
         }
     }
+
+    pub fn add_from_link(link: &Link) -> Self {
+        Self::from_link(link, LinkActionKind::ADD)
+    }
+
+    pub fn remove_from_link(link: &Link) -> Self {
+        Self::from_link(link, LinkActionKind::REMOVE)
+    }
 }
 
 #[cfg(test)]
@@ -70,7 +78,7 @@ pub mod tests {
     }
 
     pub fn test_link_entry_json_string() -> JsonString {
-        JsonString::from(format!(
+        JsonString::from_json(&format!(
             "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"tag\":\"foo-tag\"}}}}}}",
             test_entry_a().address(),
             test_entry_b().address(),

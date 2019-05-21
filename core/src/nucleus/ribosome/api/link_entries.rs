@@ -3,6 +3,7 @@ use crate::{
     workflows::author_entry::author_entry,
 };
 use holochain_core_types::{
+    cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
@@ -34,9 +35,10 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let link_add = LinkData::from_link(&link, LinkActionKind::ADD);
     let entry = Entry::LinkAdd(link_add);
     // Wait for future to be resolved
-    let result: Result<(), HolochainError> = context
-        .block_on(author_entry(&entry, None, &context))
-        .map(|_| ());
+    // This is where the link entry actually gets created.
+    let result: Result<Address, HolochainError> = context
+        .block_on(author_entry(&entry, None, &context, &vec![]))
+        .map(|_| entry.address().clone());
 
     runtime.store_result(result)
 }
@@ -55,9 +57,10 @@ pub mod tests {
         },
     };
     use holochain_core_types::{
-        cas::content::AddressableContent,
+        cas::content::{Address, AddressableContent},
         entry::{test_entry, Entry},
         error::{CoreError, ZomeApiInternalResult},
+        hash::HashString,
         json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::link_entries::*;
@@ -98,9 +101,15 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        JsonString::from(test_entry()).into_bytes()
+        JsonString::from(test_entry()).to_bytes()
     }
 
+    fn create_test_instance_with_name(netname: Option<&str>) -> (Instance, Arc<Context>) {
+        let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
+
+        test_instance_and_context(dna, netname).expect("Could not create test instance")
+    }
     fn create_test_instance() -> (Instance, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
@@ -127,41 +136,37 @@ pub mod tests {
 
     #[test]
     fn returns_ok_if_base_is_present() {
-        let (instance, context) = create_test_instance();
+        let (_, context) = create_test_instance_with_name(Some("returns_ok_if_base_present"));
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
             .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
-            &context.get_dna().unwrap().name.to_string(),
             context.clone(),
-            &instance,
-            &context.get_wasm(&test_zome_name()).unwrap().code,
             test_link_args_bytes(String::from("test-tag")),
         );
 
+        let no_entry: Option<Address> = Some(HashString::from(
+            "QmWXM2r3iujqGvka8XMKU2wLdz5N14bEhvDp7Rx3R3oaEP",
+        ));
+        let result = ZomeApiInternalResult::success(no_entry);
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
-            ),
+            JsonString::from_json(&(String::from(JsonString::from(result)) + "\u{0}")),
         );
     }
 
     #[test]
     fn errors_with_wrong_tag() {
-        let (instance, context) = create_test_instance();
+        let (_, context) = create_test_instance();
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
             .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
-            &context.get_dna().unwrap().name.to_string(),
             context.clone(),
-            &instance,
-            &context.get_wasm(&test_zome_name()).unwrap().code,
             test_link_args_bytes(String::from("wrong-tag")),
         );
 
@@ -174,7 +179,7 @@ pub mod tests {
 
     #[test]
     fn works_with_linked_from_defined_link() {
-        let (instance, context) = create_test_instance();
+        let (_, context) = create_test_instance();
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
@@ -185,18 +190,18 @@ pub mod tests {
             .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
-            &context.get_dna().unwrap().name.to_string(),
             context.clone(),
-            &instance,
-            &context.get_wasm(&test_zome_name()).unwrap().code,
             test_link_2_args_bytes(String::from("test-tag")),
         );
 
+        let no_entry: Option<Address> = Some(HashString::from(
+            "QmcmcrbAfoaqJMZun74Xs1TsCUndXAohJNrKu7xZyr68P8",
+        ));
+        let result = ZomeApiInternalResult::success(no_entry);
+
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
-            ),
+            JsonString::from_json(&(String::from(JsonString::from(result)) + "\u{0}")),
         );
     }
 

@@ -15,6 +15,7 @@ use holochain_core_types::{
         ZomeApiInternalResult,
     },
     json::{JsonString, RawString},
+    signature::Provenance
 };
 use holochain_wasm_utils::memory::{
     ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
@@ -109,7 +110,7 @@ pub extern "C" fn debug_stacked_hello(
     let fish = mem_stack.write_json(TestStruct {
         value: "fish".to_string(),
     });
-    hdk_debug(&mut mem_stack, &JsonString::from("disruptive debug log"));
+    hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("disruptive debug log")));
     return_code_for_allocation_result(fish).into()
 }
 
@@ -126,14 +127,20 @@ extern "C" {
 fn hdk_commit(
     mem_stack: &mut WasmStack,
     entry_type_name: &str,
-    entry_value: &str,
+    entry_value: &'static str,
+    provenance: &Vec<Provenance>
 ) -> Result<Address, String> {
     // Put args in struct and serialize into memory
     let entry = Entry::App(
         entry_type_name.to_owned().into(),
-        entry_value.to_owned().into(),
+        RawString::from(entry_value).into(),
     );
-    let allocation_of_input = mem_stack.write_json(entry)?;
+
+    let args = holochain_wasm_utils::api_serialization::commit_entry::CommitEntryArgs {
+        entry,
+        options:holochain_wasm_utils::api_serialization::commit_entry::CommitEntryOptions::new(provenance.to_vec())
+    };
+    let allocation_of_input = mem_stack.write_json(args)?;
 
     // Call WASMI-able commit
     let encoded_allocation_of_result =
@@ -146,7 +153,7 @@ fn hdk_commit(
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    match JsonString::from(result.value).try_into() {
+    match JsonString::from_json(&result.value).try_into() {
         Ok(address) => Ok(address),
         Err(hc_err) => Err(hc_err.into()),
     }
@@ -174,7 +181,7 @@ fn hdk_commit_fail(mem_stack: &mut WasmStack) -> Result<Address, String> {
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    let address = JsonString::from(result.value).try_into()?;
+    let address = JsonString::from_json(&result.value).try_into()?;
 
     Ok(address)
 }
@@ -220,7 +227,7 @@ pub extern "C" fn commit_test(
         Err(code) => return code.into(),
     };
 
-    let result = hdk_commit(&mut mem_stack, "testEntryType", "hello");
+    let result = hdk_commit(&mut mem_stack, "testEntryType", "hello", &vec![]);
 
     return_code_for_allocation_result(mem_stack.write_json(result)).into()
 }

@@ -19,13 +19,14 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    dna::wasm::DnaWasm,
     entry::Entry,
     error::{HolochainError, RibosomeEncodedValue},
     json::{default_to_json, JsonString},
     validation::ValidationPackageDefinition,
 };
-use holochain_wasm_utils::memory::allocation::WasmAllocation;
+use holochain_wasm_utils::{
+    api_serialization::receive::ReceiveParams, memory::allocation::WasmAllocation,
+};
 use num_traits::FromPrimitive;
 use serde_json;
 use std::{convert::TryFrom, str::FromStr, sync::Arc};
@@ -43,7 +44,7 @@ pub enum Callback {
     /// genesis() -> bool
     Genesis,
 
-    /// receive(from: String, message: String) -> String
+    /// receive(from: Address, message: String) -> String
     Receive,
 }
 
@@ -107,7 +108,7 @@ impl Defn for Callback {
 pub enum CallbackParams {
     Genesis,
     ValidateCommit(Entry),
-    Receive(String),
+    Receive(ReceiveParams),
 }
 
 impl ToString for CallbackParams {
@@ -117,7 +118,7 @@ impl ToString for CallbackParams {
             CallbackParams::ValidateCommit(serialized_entry) => {
                 String::from(JsonString::from(serialized_entry.to_owned()))
             }
-            CallbackParams::Receive(payload) => payload.clone(),
+            CallbackParams::Receive(params) => JsonString::from(params).to_string(),
         }
     }
 }
@@ -165,16 +166,10 @@ impl From<RibosomeEncodedValue> for CallbackResult {
     }
 }
 
-pub(crate) fn run_callback(
-    context: Arc<Context>,
-    call: CallbackFnCall,
-    wasm: &DnaWasm,
-    dna_name: String,
-) -> CallbackResult {
+pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> CallbackResult {
     match ribosome::run_dna(
-        wasm.code.clone(),
-        Some(call.clone().parameters.into_bytes()),
-        WasmCallData::new_callback_call(context, dna_name, call),
+        Some(call.clone().parameters.to_bytes()),
+        WasmCallData::new_callback_call(context, call),
     ) {
         Ok(call_result) => {
             if call_result.is_null() {
@@ -194,16 +189,14 @@ pub fn call(
     params: &CallbackParams,
 ) -> CallbackResult {
     let call = CallbackFnCall::new(zome, &function.as_str().to_string(), params.clone());
-
     let dna = context.get_dna().expect("Callback called without DNA set!");
-
     match dna.get_wasm_from_zome_name(zome) {
         None => CallbackResult::NotImplemented("call/1".into()),
         Some(wasm) => {
             if wasm.code.is_empty() {
                 CallbackResult::NotImplemented("call/2".into())
             } else {
-                run_callback(context.clone(), call, wasm, dna.name.clone())
+                run_callback(context.clone(), call)
             }
         }
     }

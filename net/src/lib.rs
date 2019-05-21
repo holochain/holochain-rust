@@ -1,6 +1,7 @@
 #![feature(fnbox)]
 #![feature(try_from)]
 #![feature(vec_remove_item)]
+#![allow(clippy::all)] // As per the request of the networking subteam
 
 //! holochain_net is a library that defines an abstract networking layer for
 //! different network transports, providing a configurable interface
@@ -8,10 +9,14 @@
 
 #[macro_use]
 extern crate failure;
+extern crate holochain_common;
 #[macro_use]
 pub extern crate holochain_core_types_derive;
 #[macro_use]
 extern crate lazy_static;
+extern crate libc;
+extern crate reqwest;
+extern crate sha2;
 // macros used in tests
 #[allow(unused_imports)]
 #[macro_use]

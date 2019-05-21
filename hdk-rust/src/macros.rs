@@ -104,6 +104,8 @@ macro_rules! load_string {
 /// # #[no_mangle]
 /// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -111,6 +113,21 @@ macro_rules! load_string {
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_keystore_list(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_keystore_new_random(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_keystore_derive_seed(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+///
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
@@ -144,8 +161,8 @@ macro_rules! load_string {
 ///              {
 ///              EntryValidationData::Create{entry:test_entry,validation_data:_} =>
 ///              {
-///                        
-///                        
+///
+///
 ///                        (test_entry.content != "FAIL")
 ///                        .ok_or_else(|| "FAIL content is not allowed".to_string())
 ///                }
@@ -162,9 +179,9 @@ macro_rules! load_string {
 ///         Ok(())
 ///     }
 ///
-///     receive: |payload| {
+///     receive: |from, payload| {
 ///       // just return what was received, but modified
-///       format!("Received: {}", payload)
+///       format!("Received: {} from {}", payload, from)
 ///     }
 ///
 ///     functions: [
@@ -199,7 +216,7 @@ macro_rules! define_zome {
         }
 
         $(
-            receive : |$receive_param:ident| {
+            receive : |$receive_from:ident, $receive_param:ident| {
                 $receive_expr:expr
             }
         )*
@@ -276,16 +293,17 @@ macro_rules! define_zome {
                 }
 
                 // Deserialize input
-                let input = load_string!(encoded_allocation_of_input);
+                let input = load_json!(encoded_allocation_of_input);
 
-                fn execute(payload: String) -> String {
-                    let $receive_param = payload;
+                fn execute(input: $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams ) -> String {
+                    let $receive_param = input.payload;
+                    let $receive_from = input.from;
                     $receive_expr
                 }
 
                 $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
                     $crate::global_fns::write_json(
-                        execute(input)
+                        JsonString::from_json(&execute(input))
                     )
                 ).into()
             }

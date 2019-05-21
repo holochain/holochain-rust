@@ -140,7 +140,7 @@ pub fn encrypt_with_passphrase_buf(
 
 /// unencode base64 and decrypt a passphrase encrypted blob
 pub fn decrypt_with_passphrase_buf(
-    blob: &String,
+    blob: &str,
     passphrase: &mut SecBuf,
     config: Option<PwHashConfig>,
     size: usize,
@@ -167,7 +167,6 @@ pub fn decrypt_with_passphrase_buf(
 mod tests {
     use super::*;
     use crate::SIGNATURE_SIZE;
-    use hcid::with_hcs0;
     use holochain_sodium::{secbuf::SecBuf, sign};
 
     #[test]
@@ -175,7 +174,7 @@ mod tests {
         let mut pub_sec_buf = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         pub_sec_buf.randomize();
 
-        let codec = with_hcs0().expect("HCID failed miserably with_hcs0");
+        let codec = HcidEncoding::with_kind("hcs0").expect("HCID failed miserably with_hcs0");
         let pub_key_b32 = encode_pub_key(&mut pub_sec_buf, &codec).unwrap();
 
         let mut roundtrip = decode_pub_key(pub_key_b32, &codec)
@@ -186,7 +185,7 @@ mod tests {
 
     #[test]
     fn it_should_verify_bufs() {
-        let codec = with_hcs0().expect("HCID failed miserably with_hcs0");
+        let codec = HcidEncoding::with_kind("hcs0").expect("HCID failed miserably with_hcs0");
         // Create random seed
         let mut seed = SecBuf::with_insecure(SEED_SIZE);
         seed.randomize();

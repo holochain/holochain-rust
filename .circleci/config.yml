@@ -9,27 +9,57 @@ jobs:
   resource_class: large
   steps:
    - checkout
-   - run: nix-shell --run hc-test
+   - run: nix-shell --run hc-rust-test
 
  fmt:
   docker:
    - image: holochain/holochain-rust:latest
   steps:
    - checkout
-   - run: nix-shell --run hc-fmt-check
+   - run: nix-shell --run hc-rust-fmt-check
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
       command: |
         # temporary avoid build fails due to greps
         set +eo pipefail
-        export UNPINNED=`nix-shell --run hc-cargo-toml-grep-unpinned`
+        export UNPINNED=`nix-shell --run hc-rust-manifest-list-unpinned`
         set -eo pipefail
         if [[ $UNPINNED ]]
         then
          echo "unpinned deps must be empty:"
          echo "$UNPINNED"
          exit 1
+        fi
+   # don't allow changelog root items with no PR reference
+   - run:
+      name: no changelogs without PR references
+      command: |
+        # temporary avoid build fails due to greps
+        set +eo pipefail
+        export UNREFERENCED=`nix-shell --run hc-release-docs-changelog-list-missing-references`
+        set -eo pipefail
+        if [[ $UNREFERENCED ]]
+        then
+          echo "all root level changelog items need a PR reference:"
+          echo "$UNREFERENCED"
+          exit 1
+        fi
+
+   # flag any references to a nightly version in a readme other than the
+   # ${date} in nix-shell
+   - run:
+      name: no readmes with bad rust nightly versions
+      command: |
+        # temporary avoid build fails due to greps
+        set +eo pipefail
+        export BAD_NIGHTLY=`nix-shell --run hc-release-docs-readme-list-stale-nightlies`
+        set -eo pipefail
+        if [[ $BAD_NIGHTLY ]]
+        then
+          echo "there is an incorrect nightly version in a readme file:"
+          echo $BAD_NIGHTLY
+          exit 1
         fi
 
  app-spec-tests:
@@ -41,19 +71,19 @@ jobs:
 
    - run:
        name: install cli
-       command: nix-shell --run hc-install-cli
+       command: nix-shell --run hc-cli-install
 
    - run:
        name: install node conductor
-       command: nix-shell --run hc-install-node-conductor
+       command: nix-shell --run hc-conductor-node-install
 
    - run:
        name: app spec tests
-       command: nix-shell --run hc-test-app-spec
+       command: nix-shell --run hc-app-spec-test
 
    - run:
        name: nodejs conductor tests
-       command: nix-shell --run hc-test-node-conductor
+       command: nix-shell --run hc-conductor-node-test
 
  cli-tests:
   docker:
@@ -63,11 +93,21 @@ jobs:
 
    - run:
        name: install cli
-       command: nix-shell --run hc-install-cli
+       command: nix-shell --run hc-cli-install
 
    - run:
       name: test cli
-      command: nix-shell --run hc-test-cli
+      command: nix-shell --run hc-cli-test
+
+ wasm-conductor-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  steps:
+   - checkout
+
+   - run:
+       name: wasm conductor tests
+       command: nix-shell --run hc-conductor-wasm-test
 
  # https://circleci.com/docs/2.0/building-docker-images/
  docker.start:
@@ -118,23 +158,8 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
-
- # https://github.com/NixOS/nix/issues/1559
- # cold.ubuntu.bionic.nix:
- #  docker:
- #   - image: ubuntu:bionic
- #  resource_class: xlarge
- #  steps:
- #   - checkout
- #   - run:
- #      name: Install and run all tests via nix
- #      command: |
- #       export USER=`whoami`
- #       apt-get update && apt-get install -y curl bzip2 sudo
- #       curl https://nixos.org/nix/install | sh
- #       nix-shell --run hc-test-all
 
  cold.ubuntu.xenial.auto:
   docker:
@@ -142,23 +167,8 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
-
- # https://github.com/NixOS/nix/issues/1559
- # cold.ubuntu.xenial.nix:
- #  docker:
- #   - image: ubuntu:xenial
- #  resource_class: xlarge
- #  steps:
- #   - checkout
- #   - run:
- #      name: Install and run all tests via nix
- #      command: |
- #       export USER=`whoami`
- #       apt-get update && apt-get install -y curl bzip2 sudo
- #       curl https://nixos.org/nix/install | sh
- #       nix-shell --run hc-test-all
 
  cold.debian.stable.auto:
   docker:
@@ -166,30 +176,15 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
-
- # https://github.com/NixOS/nix/issues/1559
- # cold.debian.stable.nix:
- #  docker:
- #   - image: debian:stable
- #  resource_class: xlarge
- #  steps:
- #   - checkout
- #   - run:
- #      name: Install and run all tests via nix
- #      command: |
- #       export USER=`whoami`
- #       apt-get update && apt-get install -y curl bzip2 sudo
- #       curl https://nixos.org/nix/install | sh
- #       nix-shell --run hc-test-all
 
  cold.mac.10.auto:
   macos:
    xcode: "10.2.0"
   steps:
    - checkout
-   - run: . ./scripts/install/auto.sh
+   - run: ./scripts/install/auto.sh
    - run: make test
 
  cold.mac.10.nix:
@@ -202,7 +197,7 @@ jobs:
       command: |
        curl https://nixos.org/nix/install | sh
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
-       nix-shell --run hc-test-all
+       nix-shell --run hc-test
 
 workflows:
  version: 2
@@ -212,6 +207,7 @@ workflows:
    - fmt
    - app-spec-tests
    - cli-tests
+   - wasm-conductor-tests
 
  cold.ubuntu:
   jobs:
@@ -250,7 +246,6 @@ workflows:
        branches:
         only:
          - develop
-
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow
   triggers:

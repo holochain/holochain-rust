@@ -105,7 +105,7 @@ impl FromStr for RibosomeEncodedValue {
     type Err = HolochainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.as_ref() {
+        Ok(match s {
             "Success" => RibosomeEncodedValue::Success,
             _ => RibosomeEncodedValue::Failure(s.parse()?),
         })
@@ -114,7 +114,7 @@ impl FromStr for RibosomeEncodedValue {
 
 impl From<RibosomeEncodedValue> for JsonString {
     fn from(ribosome_return_code: RibosomeEncodedValue) -> JsonString {
-        JsonString::from(ribosome_return_code.to_string())
+        JsonString::from_json(&ribosome_return_code.to_string())
     }
 }
 
@@ -154,7 +154,8 @@ pub enum RibosomeErrorCode {
     ZeroSizedAllocation             = 9 << 32,
     UnknownEntryType                = 10 << 32,
     MismatchWasmCallDataType        = 11 << 32,
-    EntryNotFound                   = 12 << 32
+    EntryNotFound                   = 12 << 32,
+    WorkflowFailed                  = 13 << 32,
 }
 
 #[rustfmt::skip]
@@ -172,7 +173,8 @@ impl RibosomeErrorCode {
             ZeroSizedAllocation             => "Zero-sized allocation",
             UnknownEntryType                => "Unknown entry type",
             MismatchWasmCallDataType        => "Mismatched WasmCallData type",
-            EntryNotFound                   => "Entry Could Not Be Found"
+            EntryNotFound                   => "Entry Could Not Be Found",
+            WorkflowFailed                  => "Workflow failed",
         }
     }
 }
@@ -230,6 +232,7 @@ impl RibosomeErrorCode {
             9 => ZeroSizedAllocation,
             10 => UnknownEntryType,
             12 => EntryNotFound,
+            13 => WorkflowFailed,
             1 | _ => Unspecified,
         }
     }
@@ -284,6 +287,7 @@ impl FromStr for RibosomeErrorCode {
             "Zero-sized allocation" => Ok(RibosomeErrorCode::ZeroSizedAllocation),
             "Unknown entry type" => Ok(RibosomeErrorCode::UnknownEntryType),
             "Entry Could Not Be Found" => Ok(EntryNotFound),
+            "Workflow failed" => Ok(WorkflowFailed),
             _ => Err(HolochainError::ErrorGeneric(String::from(
                 "Unknown RibosomeErrorCode",
             ))),
@@ -306,7 +310,9 @@ pub mod tests {
 
     #[test]
     fn error_conversion() {
-        for code in 1..=10 {
+        // TODO could use strum crate to iteratively
+        // gather all known codes.
+        for code in 1..=13 {
             let mut err = RibosomeErrorCode::from_code_int(code);
 
             let err_str = err.as_str().to_owned();

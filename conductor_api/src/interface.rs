@@ -1,33 +1,34 @@
 use crate::holo_signing_service::request_signing_service;
 use base64;
-use holochain_core::{
-    nucleus::{
-        actions::call_zome_function::make_cap_request_for_call,
-        ribosome::capabilities::CapabilityRequest,
-    },
-    state::State,
-};
+use conductor::broadcaster::Broadcaster;
+use crossbeam_channel::Receiver;
+use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
 
-use holochain_core_types::{agent::AgentId, cas::content::Address, signature::Provenance};
+use holochain_core_types::{
+    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityRequest, json::JsonString,
+    signature::Provenance,
+};
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_sodium::secbuf::SecBuf;
 use Holochain;
 
-use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
-use serde_json;
+use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use std::{
     collections::HashMap,
     convert::TryFrom,
     path::PathBuf,
-    sync::{mpsc::Receiver, Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, RwLock},
+    thread,
 };
 
-use conductor::{ConductorAdmin, ConductorUiAdmin, CONDUCTOR};
+use conductor::{ConductorAdmin, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
-use serde_json::map::Map;
+use holochain_dpki::utils::SeedContext;
+use keystore::{KeyType, Keystore, Secret};
+use serde_json::{self, map::Map};
 
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
@@ -121,6 +122,10 @@ impl ConductorApiBuilder {
     fn setup_call_api(&mut self) {
         let instances = self.instances.clone();
         let instance_ids_map = self.instance_ids_map.clone();
+
+        // We need to place this one here in order to avoid compiler lifetime issue
+        let default_call_args = json!({});
+
         self.io.add_method("call", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let public_id_str = Self::get_as_string("instance_id", &params_map)?;
@@ -135,8 +140,24 @@ impl ConductorApiBuilder {
             let hc_lock = instance.clone();
             let hc_lock_inner = hc_lock.clone();
             let mut hc = hc_lock_inner.write().unwrap();
-            let call_params = params_map.get("params");
-            let params_string = serde_json::to_string(&call_params)
+
+
+            // Getting the arguments of the call contained in the json-rpc 'params'
+            let mut call_args = params_map.get("args").or_else(|| {
+                // TODO: Remove this fall back to the previous impl of inner 'params'
+                // as soon as its deprecation life cycle is over <17-04-19, dymayday> //
+                hc.context()
+                    .log("warn/interface: DEPRECATION WARNING: Using 'params' for a Zome function call is now deprecated.\
+                    Please switch to 'args' instead, as 'params' will soon be phased out.");
+                params_map.get("params")
+            });
+
+            // For a consistent error behavior, we check if the passed value is 'null',
+            // which triggers an error, and fallback as if an empty object was passed instead '{}'
+            if json!(null) == *call_args.unwrap_or(&default_call_args) {
+                call_args = Some(&default_call_args);
+            }
+            let args_string = serde_json::to_string(&call_args)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
             let zome_name = Self::get_as_string("zome", &params_map)?;
             let func_name = Self::get_as_string("function", &params_map)?;
@@ -146,8 +167,11 @@ impl ConductorApiBuilder {
                 // Get the token from the parameters.  If not there assume public token.
                 let maybe_token = Self::get_as_string("token", &params_map);
                 let token = match maybe_token {
-                    Err(_err) => context.get_public_token().ok_or_else(|| {
-                        jsonrpc_core::Error::invalid_params("public token not found")
+                    Err(_err) => context.get_public_token().map_err(|err| {
+                        jsonrpc_core::Error::invalid_params(format!(
+                            "Public token not found: {}",
+                            err.to_string()
+                        ))
                     })?,
                     Ok(token) => Address::from(token),
                 };
@@ -158,7 +182,7 @@ impl ConductorApiBuilder {
                         context.clone(),
                         token,
                         &func_name,
-                        params_string.clone(),
+                        JsonString::from_json(&args_string.clone()),
                     ),
                     Some(json_provenance) => {
                         let provenance: Provenance =
@@ -174,7 +198,7 @@ impl ConductorApiBuilder {
             };
 
             let response = hc
-                .call(&zome_name, cap_request, &func_name, &params_string)
+                .call(&zome_name, cap_request, &func_name, &args_string)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
             Ok(Value::String(response.to_string()))
         });
@@ -237,49 +261,6 @@ impl ConductorApiBuilder {
         instance_name: String,
         instance: Arc<RwLock<Holochain>>,
     ) -> Self {
-        let hc_lock = instance.clone();
-        let hc = hc_lock.read().unwrap();
-        let state: State = hc.state().unwrap();
-        let nucleus = state.nucleus();
-        let dna = nucleus.dna();
-        match dna {
-            Some(dna) => {
-                for (zome_name, zome) in dna.zomes {
-                    for fn_decl in zome.fn_declarations {
-                        let func_name = String::from(fn_decl.name);
-                        let zome_name = zome_name.clone();
-                        let method_name = format!("{}/{}/{}", instance_name, zome_name, func_name);
-                        let hc_lock_inner = hc_lock.clone();
-                        self.io.add_method(&method_name, move |params| {
-                            let mut hc = hc_lock_inner.write().unwrap();
-                            let params_string = serde_json::to_string(&params)
-                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                            println!("ZOME CALLING USING instance/zome/function ROUTE HAS BEEN DEPRECATED.  USE call INSTEAD");
-                            let cap_request = {
-                                // TODO: get the token from the parameters.  If not there assume public token.
-                                // currently we are always getting the public token and signing it ourself
-                                let context = hc.context();
-                                let token = context.get_public_token().ok_or(
-                                    jsonrpc_core::Error::invalid_params("public token not found"),
-                                )?;
-                                make_cap_request_for_call(
-                                    context.clone(),
-                                    token,
-                                    &func_name,
-                                    params_string.clone(),
-                                )
-                            };
-
-                            let response = hc
-                                .call(&zome_name, cap_request, &func_name, &params_string)
-                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                            Ok(Value::String(response.to_string()))
-                        })
-                    }
-                }
-            }
-            None => unreachable!(),
-        };
         self.instances
             .insert(instance_name.clone(), instance.clone());
         self.instance_ids_map.insert(
@@ -492,14 +473,14 @@ impl ConductorApiBuilder {
                     None => None,
                 };
                 let properties = params_map.get("properties");
-                conductor_call!(|c| c.install_dna_from_file(
+                let dna_hash = conductor_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
                     id.to_string(),
                     copy,
                     expected_hash,
                     properties
                 ))?;
-                Ok(json!({"success": true}))
+                Ok(json!({ "success": true, "dna_hash": dna_hash }))
             });
 
         self.io.add_method("admin/dna/uninstall", move |params| {
@@ -664,21 +645,17 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             let name = Self::get_as_string("name", &params_map)?;
-            let public_address = Self::get_as_string("public_address", &params_map)?;
-            let keystore_file = Self::get_as_string("keystore_file", &params_map)?;
+
             let holo_remote_key = params_map
                 .get("holo_remote_key")
-                .map(|k| k.as_bool())
-                .unwrap_or_default();
+                .map(|k| {
+                    k.as_str()
+                        .ok_or("holo_remote_key must be a string")
+                        .map_err(|e| jsonrpc_core::Error::invalid_params(e))
+                }) // Option<Result<_, _>>
+                .transpose()?; // Result<Option<_>, _>
 
-            let agent = AgentConfiguration {
-                id,
-                name,
-                public_address,
-                keystore_file,
-                holo_remote_key,
-            };
-            conductor_call!(|c| c.add_agent(agent))?;
+            conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;
             Ok(json!({"success": true}))
         });
 
@@ -883,8 +860,30 @@ impl ConductorApiBuilder {
             // Return as base64 encoded string
             let signature = base64::encode(&**message_signature);
 
-            Ok(json!({"payload": payload, "signature": signature}))
+            Ok(json!({ "signature": signature }))
         });
+        self
+    }
+
+    /// Adds extra functionality for running tests via the RPC interface
+    ///
+    /// - `test/agent/add`
+    ///     Adds a test agent. Test agents do not use the regular keystore and instead use
+    ///     the test_keystore_loader. This makes test running much faster
+    ///     Params:
+    ///         - id [String] Id to assign to the agent to refer to it in interfaces
+    ///         - name [String] Nickname for the agent. Can be the same as agent_id
+    ///     Returns: Json object containing the newly created agent address
+    pub fn with_test_admin_functions(mut self) -> Self {
+        self.io.add_method("test/agent/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            let name = Self::get_as_string("name", &params_map)?;
+
+            let agent_address = conductor_call!(|c| c.add_test_agent(id, name))?;
+            Ok(json!({ "agent_address": agent_address }))
+        });
+
         self
     }
 
@@ -906,14 +905,147 @@ impl ConductorApiBuilder {
                     jsonrpc_core::Error::internal_error()
                 })?;
 
-            Ok(json!({"payload": payload, "signature": signature}))
+            Ok(json!({ "signature": signature }))
         });
+        self
+    }
+
+    pub fn with_agent_keystore_functions(mut self, keystore: Arc<Mutex<Keystore>>) -> Self {
+        let k = keystore.clone();
+        self.io.add_method("agent/keystore/list", move |_params| {
+            Ok(serde_json::Value::Array(
+                k.lock()
+                    .unwrap()
+                    .list()
+                    .iter()
+                    .map(|secret_name| json!(secret_name))
+                    .collect(),
+            ))
+        });
+
+        let k = keystore.clone();
+        self.io
+            .add_method("agent/keystore/add_random_seed", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("dst_id", &params_map)?;
+                let size = Self::get_as_int("size", &params_map)? as usize;
+                k.lock()
+                    .unwrap()
+                    .add_random_seed(&id, size)
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?;
+
+                Ok(json!({"success": true}))
+            });
+
+        let k = keystore.clone();
+        self.io
+            .add_method("agent/keystore/add_seed_from_seed", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let src_id = Self::get_as_string("src_id", &params_map)?;
+                let dst_id = Self::get_as_string("dst_id", &params_map)?;
+                let context = Self::get_as_string("context", &params_map)?;
+                let index = Self::get_as_int("index", &params_map)? as u64;
+
+                let context_bytes = context.as_bytes();
+                if context_bytes.len() != 8 {
+                    return Err(jsonrpc_core::Error::invalid_params(String::from(
+                        "`context` has to be 8 bytes",
+                    )));
+                }
+
+                let mut context_bytes_array: [u8; 8] = Default::default();
+                context_bytes_array.copy_from_slice(context_bytes);
+
+                let seed_context = SeedContext::new(context_bytes_array);
+
+                k.lock()
+                    .unwrap()
+                    .add_seed_from_seed(&src_id, &dst_id, &seed_context, index)
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?;
+
+                Ok(json!({"success": true}))
+            });
+
+        let k = keystore.clone();
+        self.io
+            .add_method("agent/keystore/add_key_from_seed", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let src_id = Self::get_as_string("src_id", &params_map)?;
+                let dst_id = Self::get_as_string("dst_id", &params_map)?;
+                let key_type_string = Self::get_as_string("key_type", &params_map)?;
+                let key_type = match key_type_string.to_lowercase().as_str() {
+                    "signing" => KeyType::Signing,
+                    "encrypting" => KeyType::Encrypting,
+                    _ => {
+                        return Err(jsonrpc_core::Error::invalid_params(format!(
+                            "`key_type` has to be one of 'signing' or 'encrypting'. params were: {:?}",params_map
+                        )));
+                    }
+                };
+
+                let pub_key = k.lock()
+                    .unwrap()
+                    .add_key_from_seed(&src_id, &dst_id, key_type)
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?;
+
+                Ok(json!({"pub_key": pub_key}))
+            });
+
+        let k = keystore.clone();
+        self.io.add_method("agent/keystore/sign", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let src_id = Self::get_as_string("src_id", &params_map)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+
+            let signature = k
+                .lock()
+                .unwrap()
+                .sign(&src_id, payload.clone())
+                .map_err(|_| jsonrpc_core::Error::internal_error())?;
+
+            Ok(json!({ "signature": String::from(signature) }))
+        });
+
+        let k = keystore.clone();
+        self.io
+            .add_method("agent/keystore/get_public_key", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let src_id = Self::get_as_string("src_id", &params_map)?;
+
+                let secret = k.lock().unwrap().get(&src_id).map_err(|err| {
+                    jsonrpc_core::Error::invalid_params(format!(
+                        r#"error getting "{}": {}"#,
+                        src_id, err
+                    ))
+                })?;
+
+                let pub_key = match *secret.lock().unwrap() {
+                    Secret::SigningKey(ref mut keypair) => keypair.public.to_owned(),
+                    Secret::EncryptingKey(ref mut keypair) => keypair.public.to_owned(),
+                    _ => {
+                        return Err(jsonrpc_core::Error::invalid_params(format!(
+                            r#""{}" must be a signing or encrypting key"#,
+                            src_id
+                        )));
+                    }
+                };
+
+                Ok(json!({ "pub_key": pub_key }))
+            });
+
         self
     }
 }
 
+/// A Broadcaster is something that knows how to send a Signal back to a client.
+/// Each Interface implementation's `run` method must return a Broadcaster, even if it's just the No-op.
+/// Then, if the Conductor is set up for it, it will start a new thread which continually consumes the signal channel and sends each signal over every interface via its Broadcaster.
 pub trait Interface {
-    fn run(&self, handler: IoHandler, kill_switch: Receiver<()>) -> Result<(), String>;
+    fn run(
+        &self,
+        handler: IoHandler,
+        kill_switch: Receiver<()>,
+    ) -> Result<(Broadcaster, thread::JoinHandle<()>), String>;
 }
 
 #[cfg(test)]
@@ -922,7 +1054,7 @@ pub mod tests {
     use crate::{conductor::tests::test_conductor, config::Configuration};
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
-        let conductor = test_conductor();
+        let conductor = test_conductor(7777, 7778);
         let holochain = conductor
             .instances()
             .get("test-instance-1")
@@ -955,7 +1087,6 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""test-instance-1/greeter/hello""#));
         assert!(!result.contains(r#""test-instance-2//test""#));
     }
 
@@ -975,7 +1106,6 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""happ-store/greeter/hello""#));
         assert!(!result.contains(r#""test-instance-1//test""#));
     }
 

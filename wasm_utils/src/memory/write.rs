@@ -15,7 +15,7 @@ impl WasmStack {
         let ptr = MemoryInt::from(self.allocate(next_allocation)?) as *mut c_char;
         let ptr_safe = unsafe { slice::from_raw_parts_mut(ptr, usize::from(length)) };
         for (i, byte) in bytes.iter().enumerate() {
-            ptr_safe[i] = *byte as i8;
+            ptr_safe[i] = *byte as c_char;
         }
 
         WasmAllocation::new((ptr as MemoryInt).into(), length)
@@ -38,7 +38,7 @@ impl WasmStack {
             .try_into()
             .map_err(|_| AllocationError::Serialization)?;
 
-        let json_bytes = j.into_bytes();
+        let json_bytes = j.to_bytes();
         let json_bytes_len = json_bytes.len() as MemoryInt;
         if MemoryBits::from(json_bytes_len) > WasmStack::max() {
             return Err(AllocationError::OutOfBounds);

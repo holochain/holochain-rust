@@ -42,7 +42,7 @@ use hdk::global_fns::init_global_memory;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedValue;
 use std::convert::TryFrom;
 use std::time::Duration;
-use hdk::globals::G_MEM_STACK;
+use hdk::api::G_MEM_STACK;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 struct TestEntryType {
@@ -125,7 +125,7 @@ fn handle_commit_validation_package_tester() -> ZomeApiResult<Address> {
     ))
 }
 
-fn handle_link_two_entries() -> ZomeApiResult<()> {
+fn handle_link_two_entries() -> ZomeApiResult<Address> {
     let entry_1 = Entry::App(
         "testEntryType".into(),
         EntryStruct {
@@ -460,15 +460,15 @@ define_zome! {
             validation: |valida: hdk::EntryValidationData<TestEntryType>| {
                 match valida
                 {
-                    EntryValidationData::Create{entry:test_entry,validation_data:_} => 
+                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                     {
                         (test_entry.stuff != "FAIL").ok_or_else(|| "FAIL content is not allowed".to_string())
-                   
+
                     },
                     _=> Ok(()),
 
                 }
-                
+
             },
 
             links: [
@@ -494,16 +494,16 @@ define_zome! {
             },
 
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
-                match validation_data 
+                match validation_data
                 {
-                    EntryValidationData::Create{entry:test_entry,validation_data:_} => 
+                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                     {
-                        
+
                         Err(serde_json::to_string(&test_entry).unwrap())
-                   
+
                     },
                 _ => Ok(())
-                }                
+                }
             }
         ),
 
@@ -561,7 +561,7 @@ define_zome! {
 
     genesis: || { Ok(()) }
 
-    receive: |payload| {
+    receive: |_from, payload| {
         {
             let entry = Entry::App(
                 "testEntryType".into(),
@@ -610,7 +610,7 @@ define_zome! {
 
         link_two_entries: {
             inputs: | |,
-            outputs: |result: ZomeApiResult<()>|,
+            outputs: |result: ZomeApiResult<Address>|,
             handler: handle_link_two_entries
         }
 

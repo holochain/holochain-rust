@@ -17,9 +17,10 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     dna::Dna,
-    entry::{Entry, EntryWithMeta},
+    entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
     link::Link,
+    signature::Provenance,
     validation::ValidationPackage,
 };
 use holochain_net::{
@@ -32,6 +33,7 @@ use snowflake;
 use std::{
     hash::{Hash, Hasher},
     sync::Arc,
+    vec::Vec,
 };
 
 /// Wrapper for actions that provides a unique ID
@@ -40,7 +42,7 @@ use std::{
 /// The standard approach is to drop the ActionWrapper into the key of a state history HashMap and
 /// use the convenience unwrap_to! macro to extract the action data in a reducer.
 /// All reducer functions must accept an ActionWrapper so all dispatchers take an ActionWrapper.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ActionWrapper {
     action: Action,
     id: snowflake::ProcessUniqueId,
@@ -86,14 +88,15 @@ impl Hash for ActionWrapper {
 }
 
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize)]
+#[serde(tag = "action_type", content = "data")]
 pub enum Action {
     // ----------------
     // Agent actions:
     // ----------------
     /// Writes an entry to the source chain.
     /// Does not validate, assumes entry is valid.
-    Commit((Entry, Option<Address>)),
+    Commit((Entry, Option<Address>, Vec<Provenance>)),
 
     // -------------
     // DHT actions:
@@ -130,7 +133,7 @@ pub enum Action {
     /// Lets the network module respond to a FETCH request.
     /// Triggered from the corresponding workflow after retrieving the
     /// requested entry from our local DHT shard.
-    RespondFetch((FetchEntryData, Option<EntryWithMeta>)),
+    RespondFetch((FetchEntryData, Option<EntryWithMetaAndHeader>)),
 
     /// We got a response for our FETCH request which needs to be added to the state.
     /// Triggered from the network handler.
@@ -229,7 +232,7 @@ pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 
 /// The unique key that represents a GetLinks request, used to associate the eventual
 /// response with this GetLinks request
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Serialize)]
 pub struct GetLinksKey {
     /// The address of the Link base
     pub base_address: Address,
@@ -243,7 +246,7 @@ pub struct GetLinksKey {
 
 /// The unique key that represents a Get request, used to associate the eventual
 /// response with this Get request
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Serialize)]
 pub struct GetEntryKey {
     /// The address of the entry to get
     pub address: Address,
@@ -254,7 +257,7 @@ pub struct GetEntryKey {
 
 /// Everything the network module needs to know in order to send a
 /// direct message.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize)]
 pub struct DirectMessageData {
     /// The address of the node to send a message to
     pub address: Address,
@@ -272,7 +275,7 @@ pub struct DirectMessageData {
 }
 
 /// Everything the network needs to initialize
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize)]
 pub struct NetworkSettings {
     /// P2pConfig that gets passed to [P2pNetwork](struct.P2pNetwork.html)
     /// determines how to connect to the network module.
@@ -312,7 +315,7 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit((test_entry(), None)))
+        ActionWrapper::new(Action::Commit((test_entry(), None, vec![])))
     }
 
     /// dummy action for a get of test_hash()

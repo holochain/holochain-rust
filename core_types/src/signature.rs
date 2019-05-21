@@ -2,7 +2,7 @@
 //! a way of providing cryptographically verifiable proof of a given agent
 //! as having been the author of a given data entry.
 
-use crate::{cas::content::Address, error::error::HolochainError, json::JsonString};
+use crate::{cas::content::Address, error::HolochainError, json::JsonString};
 
 /// Provenance is a tuple of initiating agent public key and signature of some item being signed
 /// this type is used in headers and in capability requests where the item being signed
@@ -11,11 +11,15 @@ use crate::{cas::content::Address, error::error::HolochainError, json::JsonStrin
 pub struct Provenance(pub Address, pub Signature);
 
 impl Provenance {
+    /// Creates a new provenance instance with source typically
+    /// being an agent address (public key) and the signature
+    /// some signed data using the private key associated with
+    /// the public key.
     pub fn new(source: Address, signature: Signature) -> Self {
         Provenance(source, signature)
     }
     pub fn source(&self) -> Address {
-        Address::from(self.0.clone())
+        self.0.clone()
     }
     pub fn signature(&self) -> Signature {
         self.1.clone()

@@ -23,6 +23,10 @@ pub enum Protocol {
     Pong(PongData),
     /// we have connected / configured the connection, ready for messages
     P2pReady,
+    /// Tell network module to shutdown
+    Shutdown,
+    /// Network module is notifying IPC connected peers of termination
+    Terminated,
 }
 
 /// provide utility for Protocol serialization
@@ -49,6 +53,14 @@ impl<'a> From<&'a Protocol> for NamedBinaryData {
                 name: b"p2pReady".to_vec(),
                 data: Vec::new(),
             },
+            Protocol::Shutdown => NamedBinaryData {
+                name: b"shutdown".to_vec(),
+                data: Vec::new(),
+            },
+            Protocol::Terminated => NamedBinaryData {
+                name: b"terminated".to_vec(),
+                data: Vec::new(),
+            },
         }
     }
 }
@@ -67,7 +79,9 @@ impl<'a> From<&'a NamedBinaryData> for Protocol {
                 let sub: NamedBinaryData = rmp_serde::from_slice(&nb.data).unwrap();
                 Protocol::NamedBinary(sub)
             }
-            b"json" => Protocol::Json(String::from_utf8_lossy(&nb.data).to_string().into()),
+            b"json" => Protocol::Json(JsonString::from_json(
+                &String::from_utf8_lossy(&nb.data).to_string(),
+            )),
             b"ping" => {
                 let sub: PingData = rmp_serde::from_slice(&nb.data).unwrap();
                 Protocol::Ping(sub)
@@ -77,6 +91,8 @@ impl<'a> From<&'a NamedBinaryData> for Protocol {
                 Protocol::Pong(sub)
             }
             b"p2pReady" => Protocol::P2pReady,
+            b"shutdown" => Protocol::Shutdown,
+            b"terminated" => Protocol::Terminated,
             _ => panic!("bad Protocol type: {}", String::from_utf8_lossy(&nb.name)),
         }
     }
@@ -90,7 +106,7 @@ impl From<NamedBinaryData> for Protocol {
 
 impl<'a> From<&'a str> for Protocol {
     fn from(s: &'a str) -> Self {
-        Protocol::Json(s.to_string().into())
+        Protocol::Json(JsonString::from_json(&s.to_string()))
     }
 }
 
@@ -135,7 +151,7 @@ impl Protocol {
     /// get a json string straight out of the Protocol enum
     pub fn as_json_string(&self) -> JsonString {
         if let Protocol::Json(data) = self {
-            String::from(data).into()
+            JsonString::from_json(&String::from(data))
         } else {
             panic!("as_json_string called with bad type");
         }
@@ -264,5 +280,19 @@ mod tests {
         let res = simple_convert!(&Protocol::P2pReady);
 
         assert_eq!(Protocol::P2pReady, res);
+    }
+
+    #[test]
+    fn it_can_convert_shutdown() {
+        let res = simple_convert!(&Protocol::Shutdown);
+
+        assert_eq!(Protocol::Shutdown, res);
+    }
+
+    #[test]
+    fn it_can_convert_died() {
+        let res = simple_convert!(&Protocol::Terminated);
+
+        assert_eq!(Protocol::Terminated, res);
     }
 }

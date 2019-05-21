@@ -1,9 +1,10 @@
 #![warn(unused_extern_crates)]
+#![feature(try_from)]
+extern crate holochain_cas_implementations;
 extern crate holochain_common;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_dpki;
 extern crate holochain_sodium;
 extern crate holochain_wasm_utils;
 extern crate structopt;
@@ -98,6 +99,8 @@ enum Cli {
             help = "Automatically package project before running"
         )]
         package: bool,
+        #[structopt(long, help = "Produce logging output")]
+        logging: bool,
         #[structopt(long, help = "Save generated data to file system")]
         persist: bool,
         #[structopt(long, help = "Use real networking")]
@@ -132,6 +135,12 @@ enum Cli {
         testfile: String,
         #[structopt(long = "skip-package", short = "s", help = "Skip packaging DNA")]
         skip_build: bool,
+        #[structopt(
+            long = "show-npm-output",
+            short = "n",
+            help = "Show NPM output when installing test dependencies"
+        )]
+        show_npm_output: bool,
     },
     #[structopt(
         name = "keygen",
@@ -139,8 +148,25 @@ enum Cli {
         about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\\Users\\Alice\\AppData\\Roaming\\holochain\\holochain\\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)"
     )]
     KeyGen {
+        #[structopt(long, short, help = "Specify path of file")]
+        path: Option<PathBuf>,
+        #[structopt(
+            long,
+            short,
+            help = "Only print machine-readable output; intended for use by programs and scripts"
+        )]
+        quiet: bool,
         #[structopt(long, short, help = "Don't ask for passphrase")]
-        silent: bool,
+        nullpass: bool,
+    },
+    #[structopt(name = "chain", about = "View the contents of a source chain")]
+    ChainLog {
+        #[structopt(name = "INSTANCE", help = "Instance ID to view")]
+        instance_id: Option<String>,
+        #[structopt(long, short, help = "Location of chain storage")]
+        path: Option<PathBuf>,
+        #[structopt(long, short, help = "List available instances")]
+        list: bool,
     },
 }
 
@@ -167,46 +193,80 @@ fn run() -> HolochainResult<()> {
             };
             cli::package(strip_meta, output).map_err(HolochainError::Default)?
         }
+
         Cli::Unpack { path, to } => cli::unpack(&path, &to).map_err(HolochainError::Default)?,
+
         Cli::Init { path } => cli::init(&path).map_err(HolochainError::Default)?,
+
         Cli::Generate { zome, language } => {
             cli::generate(&zome, &language).map_err(HolochainError::Default)?
         }
+
         Cli::Run {
             package,
             port,
             persist,
             networked,
             interface,
+            logging,
         } => {
             let dna_path =
                 util::std_package_path(&project_path).map_err(HolochainError::Default)?;
             let interface_type = cli::get_interface_type_string(interface);
-            let conductor_config =
-                cli::hc_run_configuration(&dna_path, port, persist, networked, &interface_type)
-                    .map_err(HolochainError::Default)?;
+            let conductor_config = cli::hc_run_configuration(
+                &dna_path,
+                port,
+                persist,
+                networked,
+                &interface_type,
+                logging,
+            )
+            .map_err(HolochainError::Default)?;
             cli::run(dna_path, package, port, interface_type, conductor_config)
                 .map_err(HolochainError::Default)?
         }
+
         Cli::Test {
             dir,
             testfile,
             skip_build,
+            show_npm_output,
         } => {
             let current_path = std::env::current_dir()
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
-            cli::test(&current_path, &dir, &testfile, skip_build)
+            cli::test(&current_path, &dir, &testfile, skip_build, show_npm_output)
         }
         .map_err(HolochainError::Default)?,
-        Cli::KeyGen { silent } => {
-            let passphrase = if silent {
+
+        Cli::KeyGen {
+            path,
+            quiet,
+            nullpass,
+        } => {
+            let passphrase = if nullpass {
                 Some(String::from(holochain_common::DEFAULT_PASSPHRASE))
             } else {
                 None
             };
-            cli::keygen(None, passphrase)
+            cli::keygen(path, passphrase, quiet)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
+
+        Cli::ChainLog {
+            instance_id,
+            list,
+            path,
+        } => match (list, instance_id) {
+            (true, _) => cli::chain_list(path),
+            (false, None) => {
+                Cli::clap().print_help().expect("Couldn't print help!");
+                println!("\n\nTry `hc help chain` for more info");
+            }
+            (false, Some(instance_id)) => {
+                cli::chain_log(path, instance_id)
+                    .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
+            }
+        },
     }
 
     Ok(())

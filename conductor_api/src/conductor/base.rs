@@ -1,14 +1,17 @@
 use crate::{
+    conductor::broadcaster::Broadcaster,
     config::{
         serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
         StorageConfiguration,
     },
     context_builder::ContextBuilder,
+    dpki_instance::DpkiInstance,
     error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     logger::DebugLogger,
     Holochain,
 };
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;
 use holochain_core::{
     logger::{ChannelLogger, Logger},
@@ -18,7 +21,7 @@ use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::key_bundle::KeyBundle;
+use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     clone::Clone,
@@ -28,11 +31,9 @@ use std::{
     io::prelude::*,
     option::NoneError,
     path::PathBuf,
-    sync::{
-        mpsc::{channel, Sender, SyncSender},
-        Arc, Mutex, RwLock,
-    },
+    sync::{Arc, Mutex, RwLock},
     thread,
+    time::Duration,
 };
 
 use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
@@ -41,6 +42,7 @@ use holochain_net::{
     p2p_config::P2pConfig,
 };
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
+use signal_wrapper::SignalWrapper;
 use static_file_server::StaticServer;
 
 lazy_static! {
@@ -78,10 +80,13 @@ pub fn mount_conductor_from_config(config: Configuration) {
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
+    instance_signal_receivers: Arc<RwLock<HashMap<String, Receiver<Signal>>>>,
     agent_keys: HashMap<String, Arc<Mutex<Keystore>>>,
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
+    pub(in crate::conductor) interface_broadcasters: Arc<RwLock<HashMap<String, Broadcaster>>>,
+    signal_multiplexer_kill_switch: Option<Sender<()>>,
     pub key_loader: KeyLoader,
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
@@ -89,7 +94,8 @@ pub struct Conductor {
     logger: DebugLogger,
     p2p_config: Option<P2pConfig>,
     network_spawn: Option<SpawnResult>,
-    passphrase_manager: Arc<PassphraseManager>,
+    pub passphrase_manager: Arc<PassphraseManager>,
+    pub hash_config: Option<PwHashConfig>, // currently this has to be pub for testing.  would like to remove
 }
 
 impl Drop for Conductor {
@@ -99,12 +105,21 @@ impl Drop for Conductor {
                 kill();
             }
         }
+        self.shutdown();
     }
 }
 
-type SignalSender = SyncSender<Signal>;
+type SignalSender = Sender<Signal>;
 pub type KeyLoader = Arc<
-    Box<FnMut(&PathBuf, Arc<PassphraseManager>) -> Result<Keystore, HolochainError> + Send + Sync>,
+    Box<
+        FnMut(
+                &PathBuf,
+                Arc<PassphraseManager>,
+                Option<PwHashConfig>,
+            ) -> Result<Keystore, HolochainError>
+            + Send
+            + Sync,
+    >,
 >;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
@@ -121,9 +136,12 @@ impl Conductor {
         holochain_sodium::check_init();
         Conductor {
             instances: HashMap::new(),
+            instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
             agent_keys: HashMap::new(),
             interface_threads: HashMap::new(),
             static_servers: HashMap::new(),
+            interface_broadcasters: Arc::new(RwLock::new(HashMap::new())),
+            signal_multiplexer_kill_switch: None,
             config,
             key_loader: Arc::new(Box::new(Self::load_key)),
             dna_loader: Arc::new(Box::new(Self::load_dna)),
@@ -135,12 +153,21 @@ impl Conductor {
             passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
                 PassphraseServiceCmd {},
             )))),
+            hash_config: None,
         }
     }
 
-    pub fn with_signal_channel(mut self, signal_tx: SyncSender<Signal>) -> Self {
+    pub fn add_agent_keystore(&mut self, agent_id: String, keystore: Keystore) {
+        self.agent_keys
+            .insert(agent_id, Arc::new(Mutex::new(keystore)));
+    }
+
+    pub fn with_signal_channel(mut self, signal_tx: Sender<Signal>) -> Self {
+        // TODO: clean up the conductor creation process to prevent loading config before proper setup,
+        // especially regarding the signal handler.
+        // (see https://github.com/holochain/holochain-rust/issues/739)
         if !self.instances.is_empty() {
-            panic!("Cannot set a signal channel after having run load_config()");
+            panic!("Cannot set a signal channel after having run from_config()");
         }
         self.signal_tx = Some(signal_tx);
         self
@@ -154,6 +181,66 @@ impl Conductor {
 
     pub fn config(&self) -> Configuration {
         self.config.clone()
+    }
+
+    /// Starts a new thread which monitors each instance's signal channel and pushes signals out
+    /// all interfaces the according instance is part of.
+    pub fn start_signal_multiplexer(&mut self) -> thread::JoinHandle<()> {
+        let broadcasters = self.interface_broadcasters.clone();
+        let instance_signal_receivers = self.instance_signal_receivers.clone();
+        let signal_tx = self.signal_tx.clone();
+        let config = self.config.clone();
+        let (kill_switch_tx, kill_switch_rx) = unbounded();
+        self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
+
+        self.log("starting signal loop".into());
+        thread::spawn(move || loop {
+            {
+                for (instance_id, receiver) in instance_signal_receivers.read().unwrap().iter() {
+                    if let Ok(signal) = receiver.try_recv() {
+                        signal_tx.clone().map(|s| s.send(signal.clone()));
+                        let broadcasters = broadcasters.read().unwrap();
+                        let interfaces_with_instance: Vec<&InterfaceConfiguration> = match signal {
+                            // Send internal signals only to admin interfaces:
+                            Signal::Internal(_) => config
+                                .interfaces
+                                .iter()
+                                .filter(|interface_config| interface_config.admin)
+                                .collect(),
+
+                            // Pass through user-defined  signals to the according interfaces
+                            // in which the source instance is exposed:
+                            Signal::User(_) => config
+                                .interfaces
+                                .iter()
+                                .filter(|interface_config| {
+                                    interface_config
+                                        .instances
+                                        .iter()
+                                        .find(|instance| instance.id == *instance_id)
+                                        .is_some()
+                                })
+                                .collect(),
+                        };
+
+                        for interface in interfaces_with_instance {
+                            broadcasters.get(&interface.id).map(|broadcaster| {
+                                if let Err(error) = broadcaster.send(SignalWrapper {
+                                    signal: signal.clone(),
+                                    instance_id: instance_id.clone(),
+                                }) {
+                                    notify(error.to_string());
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+            if kill_switch_rx.try_recv().is_ok() {
+                break;
+            }
+            thread::sleep(Duration::from_millis(1));
+        })
     }
 
     pub fn start_all_interfaces(&mut self) {
@@ -231,7 +318,14 @@ impl Conductor {
             .iter_mut()
             .map(|(id, hc)| {
                 notify(format!("Stopping instance \"{}\"...", id));
-                hc.write().unwrap().stop()
+                hc.write()
+                    .map(|mut lock| {
+                        let _ = lock.stop();
+                    })
+                    .map_err(|_| {
+                        notify(format!("Error stopping instance \"{}\": could not get a lock. Will ignore and proceed shutting down other instances...", id));
+                        HolochainInstanceError::InternalFailure(HolochainError::new("Could not get lock on shutdown"))
+                    })
             })
             .collect::<Result<Vec<()>, _>>()
             .map(|_| ())
@@ -242,11 +336,15 @@ impl Conductor {
     }
 
     /// Stop and clear all instances
+    /// @QUESTION: why don't we care about errors on shutdown?
     pub fn shutdown(&mut self) {
         let _ = self
             .stop_all_instances()
             .map_err(|error| notify(format!("Error during shutdown: {}", error)));
         self.stop_all_interfaces();
+        self.signal_multiplexer_kill_switch
+            .as_ref()
+            .map(|sender| sender.send(()));
         self.instances = HashMap::new();
     }
 
@@ -264,11 +362,6 @@ impl Conductor {
             network_config.n3h_persistence_path
         );
         let spawn_result = ipc_spawn(
-            "node".to_string(),
-            vec![format!(
-                "{}/packages/n3h/bin/n3h",
-                network_config.n3h_path.clone()
-            )],
             network_config.n3h_persistence_path.clone(),
             P2pConfig::load_end_user_config(network_config.networking_config_file).to_string(),
             hashmap! {
@@ -306,16 +399,20 @@ impl Conductor {
         if self.config.network.is_none() {
             return P2pConfig::new_with_unique_memory_backend();
         }
-        // if there is a config then either we need to spawn a process and get the
-        // ipc_uri for it and save it for future calls to `load_config`
-        // or we use that uri value that was created from previous calls!
+        // if there is a config then either we need to spawn a process and get
+        // the ipc_uri for it and save it for future calls to `load_config` or
+        // we use a (non-empty) uri value that was created from previous calls!
         let net_config = self.config.network.clone().unwrap();
-        let uri = net_config.n3h_ipc_uri.clone().or_else(|| {
-            self.network_spawn = self.spawn_network().ok();
-            self.network_spawn
-                .as_ref()
-                .map(|spawn| spawn.ipc_binding.clone())
-        });
+        let uri = net_config
+            .n3h_ipc_uri
+            .clone()
+            .and_then(|v| if v == "" { None } else { Some(v) })
+            .or_else(|| {
+                self.network_spawn = self.spawn_network().ok();
+                self.network_spawn
+                    .as_ref()
+                    .map(|spawn| spawn.ipc_binding.clone())
+            });
 
         P2pConfig::new_ipc_uri(
             uri,
@@ -328,14 +425,7 @@ impl Conductor {
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
     /// The first time we call this, we also initialize the conductor-wide config
     /// for use with all instances
-    ///
-    /// @TODO: clean up the conductor creation process to prevent loading config before proper setup,
-    ///        especially regarding the signal handler.
-    ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config_with_signal(
-        &mut self,
-        signal_tx: Option<SignalSender>,
-    ) -> Result<(), String> {
+    pub fn boot_from_config(&mut self) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
 
         if self.p2p_config.is_none() {
@@ -345,9 +435,11 @@ impl Conductor {
         let config = self.config.clone();
         self.shutdown();
 
+        self.start_signal_multiplexer();
+
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
             let instance = self
-                .instantiate_from_config(&id, &config, signal_tx.clone())
+                .instantiate_from_config(&id, &config)
                 .map_err(|error| {
                     format!(
                         "Error while trying to create instance \"{}\": {}",
@@ -383,11 +475,9 @@ impl Conductor {
             );
         }
 
-        Ok(())
-    }
+        self.dpki_bootstrap()?;
 
-    pub fn load_config(&mut self) -> Result<(), String> {
-        self.load_config_with_signal(None)
+        Ok(())
     }
 
     /// Creates one specific Holochain instance from a given Configuration,
@@ -396,7 +486,6 @@ impl Conductor {
         &mut self,
         id: &String,
         config: &Configuration,
-        signal_tx: Option<SignalSender>,
     ) -> Result<Holochain, String> {
         let _ = config.check_consistency()?;
 
@@ -425,9 +514,12 @@ impl Conductor {
                 context_builder = context_builder.with_p2p_config(self.get_p2p_config());
 
                 // Signal config:
-                if let Some(tx) = signal_tx {
-                    context_builder = context_builder.with_signals(tx)
-                };
+                let (sender, receiver) = unbounded();
+                self.instance_signal_receivers
+                    .write()
+                    .unwrap()
+                    .insert(instance_config.id.clone(), receiver);
+                context_builder = context_builder.with_signals(sender);
 
                 // Storage:
                 match instance_config.storage {
@@ -439,6 +531,14 @@ impl Conductor {
                     }
                     StorageConfiguration::Memory => {
                         context_builder = context_builder.with_memory_storage()
+                    }
+                    StorageConfiguration::Pickle { path } => {
+                        context_builder =
+                            context_builder
+                                .with_pickle_storage(path)
+                                .map_err(|hc_err| {
+                                    format!("Error creating context: {}", hc_err.to_string())
+                                })?
                     }
                 }
 
@@ -466,6 +566,11 @@ impl Conductor {
                     api_builder = api_builder.with_agent_signature_callback(
                         self.get_keybundle_for_agent(&instance_config.agent)?,
                     );
+
+                    let keystore = self
+                        .get_keystore_for_agent(&instance_config.agent)
+                        .map_err(|err| format!("{}", err))?;
+                    api_builder = api_builder.with_agent_keystore_functions(keystore);
                 }
 
                 // Bridges:
@@ -488,9 +593,6 @@ impl Conductor {
                         .with_named_instance_config(bridge.handle.clone(), callee_config);
                 }
                 context_builder = context_builder.with_conductor_api(api_builder.spawn());
-                if let Some(signal_tx) = self.signal_tx.clone() {
-                    context_builder = context_builder.with_signals(signal_tx);
-                }
 
                 // Spawn context
                 let context = context_builder.spawn();
@@ -555,7 +657,7 @@ impl Conductor {
     /// Get reference to keystore for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
-    fn get_keystore_for_agent(
+    pub fn get_keystore_for_agent(
         &mut self,
         agent_id: &String,
     ) -> Result<Arc<Mutex<Keystore>>, String> {
@@ -564,10 +666,14 @@ impl Conductor {
                 .config
                 .agent_by_id(agent_id)
                 .ok_or(format!("Agent '{}' not found", agent_id))?;
+            if let Some(true) = agent_config.holo_remote_key {
+                return Err("agent is holo_remote, no keystore".to_string());
+            }
             let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
             let mut keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
                 &keystore_file_path,
                 self.passphrase_manager.clone(),
+                self.hash_config.clone(),
             )
             .map_err(|_| {
                 HolochainError::ConfigError(format!(
@@ -598,7 +704,7 @@ impl Conductor {
     /// Get reference to the keybundle stored in the keystore for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
-    fn get_keybundle_for_agent(
+    pub fn get_keybundle_for_agent(
         &mut self,
         agent_id: &String,
     ) -> Result<Arc<Mutex<KeyBundle>>, String> {
@@ -628,17 +734,18 @@ impl Conductor {
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from(contents))
+        Dna::try_from(JsonString::from_json(&contents))
     }
 
     /// Default KeyLoader that actually reads files from the filesystem
     fn load_key(
         file: &PathBuf,
         passphrase_manager: Arc<PassphraseManager>,
+        hash_config: Option<PwHashConfig>,
     ) -> Result<Keystore, HolochainError> {
         notify(format!("Reading keystore from {}", file.display()));
 
-        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager, None)?;
+        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager, hash_config)?;
         Ok(keystore)
     }
 
@@ -675,8 +782,10 @@ impl Conductor {
             .with_instance_configs(self.config.instances.clone());
 
         if interface_config.admin {
-            conductor_api_builder = conductor_api_builder.with_admin_dna_functions();
-            conductor_api_builder = conductor_api_builder.with_admin_ui_functions();
+            conductor_api_builder = conductor_api_builder
+                .with_admin_dna_functions()
+                .with_admin_ui_functions()
+                .with_test_admin_functions();
         }
 
         conductor_api_builder.spawn()
@@ -684,23 +793,40 @@ impl Conductor {
 
     fn spawn_interface_thread(&self, interface_config: InterfaceConfiguration) -> Sender<()> {
         let dispatcher = self.make_interface_handler(&interface_config);
-        let log_sender = self.logger.get_sender();
-        let (tx, rx) = channel();
-        thread::Builder::new()
-            .name(format!("conductor-interface: {}", interface_config.id))
-            .spawn(move || {
-                let iface = make_interface(&interface_config);
-                iface.run(dispatcher, rx).map_err(|error| {
-                    let message = format!(
-                        "err/conductor: Error running interface '{}': {}",
-                        interface_config.id, error
-                    );
-                    let _ = log_sender.send((String::from("conductor"), message));
-                    error
-                })
+        // The "kill switch" is the channel which allows the interface to be stopped from outside its thread
+        let (kill_switch_tx, kill_switch_rx) = unbounded();
+
+        let iface = make_interface(&interface_config);
+        let (broadcaster, _handle) = iface
+            .run(dispatcher, kill_switch_rx)
+            .map_err(|error| {
+                self.log(format!(
+                    "err/conductor: Error running interface '{}': {}",
+                    interface_config.id, error
+                ));
+                error
             })
-            .expect("Could not spawn thread for interface");
-        tx
+            .unwrap();
+        self.log(format!(
+            "debug/conductor: adding broadcaster to map {:?}",
+            broadcaster
+        ));
+
+        {
+            self.interface_broadcasters
+                .write()
+                .unwrap()
+                .insert(interface_config.id.clone(), broadcaster);
+        }
+
+        kill_switch_tx
+    }
+
+    fn log(&self, msg: String) {
+        self.logger
+            .get_sender()
+            .send(("conductor".to_string(), msg))
+            .unwrap()
     }
 
     pub fn dna_dir_path(&self) -> PathBuf {
@@ -760,6 +886,42 @@ impl Conductor {
         serde_json::to_writer_pretty(&file, dna.into())?;
         Ok(path)
     }
+
+    /// check for determining if the conductor is using dpki to manage instance keys
+    pub fn using_dpki(&self) -> bool {
+        self.config.dpki.is_some()
+    }
+
+    /// returns the instance_id of the dpki app if it is configured
+    pub fn dpki_instance_id(&self) -> Option<String> {
+        match self.config.dpki {
+            Some(ref dpki) => Some(dpki.instance_id.clone()),
+            None => None,
+        }
+    }
+
+    /// returns the init_params for the dpki app if it is configured
+    pub fn dpki_init_params(&self) -> Option<String> {
+        match self.config.dpki {
+            Some(ref dpki) => Some(dpki.init_params.clone()),
+            None => None,
+        }
+    }
+
+    /// bootstraps the dpki app if configured
+    pub fn dpki_bootstrap(&mut self) -> Result<(), HolochainError> {
+        if self.using_dpki() {
+            let dpki_instance_id = self.dpki_instance_id().unwrap();
+            let instance = self.instances.get(&dpki_instance_id)?;
+            let hc_lock = instance.clone();
+            let hc_lock_inner = hc_lock.clone();
+            let mut hc = hc_lock_inner.write().unwrap();
+            if !hc.dpki_is_initialized()? {
+                hc.dpki_init(self.dpki_init_params().unwrap())?;
+            }
+        }
+        Ok(())
+    }
 }
 
 /// This can eventually be dependency injected for third party Interface definitions
@@ -792,23 +954,29 @@ pub mod tests {
         signal::signal_channel,
     };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
-    use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
+    use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
     use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
         fs::{File, OpenOptions},
         io::Write,
+        path::PathBuf,
     };
 
     use self::tempfile::tempdir;
     use test_utils::*;
+
+    //    commented while test_signals_through_admin_websocket is broken
+    //    extern crate ws;
+    //    use self::ws::{connect, Message};
+    //    extern crate parking_lot;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|path: &PathBuf| {
             Ok(match path.to_str().unwrap().as_ref() {
                 "bridge/callee.dna" => callee_dna(),
                 "bridge/caller.dna" => caller_dna(),
-                _ => Dna::try_from(JsonString::from(example_dna_string())).unwrap(),
+                _ => Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap(),
             })
         })
             as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
@@ -816,19 +984,25 @@ pub mod tests {
     }
 
     pub fn test_key_loader() -> KeyLoader {
-        let loader = Box::new(|path: &PathBuf, _pm: Arc<PassphraseManager>| {
-            match path.to_str().unwrap().as_ref() {
-                "holo_tester1.key" => Ok(test_keystore(1)),
-                "holo_tester2.key" => Ok(test_keystore(2)),
-                "holo_tester3.key" => Ok(test_keystore(3)),
-                unknown => Err(HolochainError::ErrorGeneric(format!(
-                    "No test keystore for {}",
-                    unknown
-                ))),
-            }
-        })
+        let loader = Box::new(
+            |path: &PathBuf, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
+                match path.to_str().unwrap().as_ref() {
+                    "holo_tester1.key" => Ok(test_keystore(1)),
+                    "holo_tester2.key" => Ok(test_keystore(2)),
+                    "holo_tester3.key" => Ok(test_keystore(3)),
+                    unknown => Err(HolochainError::ErrorGeneric(format!(
+                        "No test keystore for {}",
+                        unknown
+                    ))),
+                }
+            },
+        )
             as Box<
-                FnMut(&PathBuf, Arc<PassphraseManager>) -> Result<Keystore, HolochainError>
+                FnMut(
+                        &PathBuf,
+                        Arc<PassphraseManager>,
+                        Option<PwHashConfig>,
+                    ) -> Result<Keystore, HolochainError>
                     + Send
                     + Sync,
             >;
@@ -863,7 +1037,7 @@ pub mod tests {
         keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID).unwrap()
     }
 
-    pub fn test_toml() -> String {
+    pub fn test_toml(websocket_port: u16, http_port: u16) -> String {
         format!(
             r#"
     [[agents]]
@@ -925,7 +1099,7 @@ pub mod tests {
     admin = true
     [interfaces.driver]
     type = "websocket"
-    port = 8888
+    port = {}
     [[interfaces.instances]]
     id = "test-instance-1"
     [[interfaces.instances]]
@@ -935,7 +1109,7 @@ pub mod tests {
     id = "test-interface-2"
     [interfaces.driver]
     type = "http"
-    port = 4000
+    port = {}
     [[interfaces.instances]]
     id = "test-instance-1"
     [[interfaces.instances]]
@@ -958,25 +1132,28 @@ pub mod tests {
     "#,
             test_keybundle(1).get_id(),
             test_keybundle(2).get_id(),
-            test_keybundle(3).get_id()
+            test_keybundle(3).get_id(),
+            websocket_port,
+            http_port,
         )
     }
 
-    pub fn test_conductor() -> Conductor {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+    pub fn test_conductor(websocket_port: u16, http_port: u16) -> Conductor {
+        let config =
+            load_configuration::<Configuration>(&test_toml(websocket_port, http_port)).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config().unwrap();
+        conductor.boot_from_config().unwrap();
         conductor
     }
 
     fn test_conductor_with_signals(signal_tx: SignalSender) -> Conductor {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml(8888, 8889)).unwrap();
         let mut conductor = Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config().unwrap();
+        conductor.boot_from_config().unwrap();
         conductor
     }
 
@@ -1044,8 +1221,8 @@ pub mod tests {
     }
 
     #[test]
-    fn test_conductor_load_config() {
-        let mut conductor = test_conductor();
+    fn test_conductor_boot_from_config() {
+        let mut conductor = test_conductor(10001, 10002);
         assert_eq!(conductor.instances.len(), 3);
 
         conductor.start_all_instances().unwrap();
@@ -1056,7 +1233,7 @@ pub mod tests {
     //#[test]
     // Default config path ~/.holochain/conductor/conductor-config.toml won't work in CI
     fn _test_conductor_save_and_load_config_default_location() {
-        let conductor = test_conductor();
+        let conductor = test_conductor(10011, 10012);
         assert_eq!(conductor.save_config(), Ok(()));
 
         let mut toml = String::new();
@@ -1224,10 +1401,22 @@ pub mod tests {
     }
 
     fn caller_dna() -> Dna {
-        let wasm = create_wasm_from_file(&format!(
-            "{}/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
-            wasm_target_dir("conductor_api/", "test-bridge-caller/"),
+        let mut path = PathBuf::new();
+
+        path.push(wasm_target_dir(
+            &String::from("conductor_api").into(),
+            &String::from("test-bridge-caller").into(),
         ));
+        let wasm_path_component: PathBuf = [
+            String::from("wasm32-unknown-unknown"),
+            String::from("release"),
+            String::from("test_bridge_caller.wasm"),
+        ]
+        .iter()
+        .collect();
+        path.push(wasm_path_component);
+
+        let wasm = create_wasm_from_file(&path);
         let defs = create_test_defs_with_fn_name("call_bridge");
         let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         dna.uuid = String::from("basic_bridge_call");
@@ -1236,11 +1425,13 @@ pub mod tests {
 
     #[test]
     fn basic_bridge_call_roundtrip() {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml(10021, 10022)).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
-        conductor.load_config().expect("Test config must be sane");
+        conductor
+            .boot_from_config()
+            .expect("Test config must be sane");
         conductor
             .start_all_instances()
             .expect("Instances must be spawnable");
@@ -1253,7 +1444,7 @@ pub mod tests {
                 context.clone(),
                 Address::from(context.clone().agent_id.address()),
                 "call_bridge",
-                "{}".to_string(),
+                JsonString::empty_object(),
             )
         };
         let result = instance
@@ -1292,9 +1483,77 @@ pub mod tests {
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         assert_eq!(
-            conductor.load_config(),
+            conductor.boot_from_config(),
             Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
                 .to_string()),
         );
+    }
+
+    #[test]
+    // flaky test
+    // signal ordering is not deterministic nor is timing
+    // test should poll and allow signals in different orders
+    // OR
+    // test should be totally removed because this is really an integration test
+    #[cfg(feature = "broken-tests")]
+    fn test_signals_through_admin_websocket() {
+        let mut conductor = test_conductor(10031, 10032);
+        let _ = conductor.start_all_instances();
+        conductor.start_all_interfaces();
+        thread::sleep(Duration::from_secs(2));
+        // parking_lot::Mutex is an alternative Mutex that does not get poisoned if one of the
+        // threads panic. Here it helps getting the causing assertion panic to be printed
+        // instead of masking that with a panic of the thread below which makes it hard to see
+        // why this test fails, if it fails.
+        let signals: Arc<parking_lot::Mutex<Vec<String>>> =
+            Arc::new(parking_lot::Mutex::new(Vec::new()));
+        let signals_clone = signals.clone();
+        let websocket_thread = thread::spawn(|| {
+            connect("ws://127.0.0.1:10031", move |_| {
+                let s = signals_clone.clone();
+                move |msg: Message| {
+                    s.lock().push(msg.to_string());
+                    Ok(())
+                }
+            })
+            .unwrap();
+        });
+
+        let result = {
+            let lock = conductor.instances.get("bridge-caller").unwrap();
+            let mut bridge_caller = lock.write().unwrap();
+            let cap_call = {
+                let context = bridge_caller.context();
+                make_cap_request_for_call(
+                    context.clone(),
+                    Address::from(context.clone().agent_id.address()),
+                    "call_bridge",
+                    JsonString::empty_object(),
+                )
+            };
+            bridge_caller.call(
+                "test_zome",
+                cap_call,
+                "call_bridge",
+                &JsonString::empty_object().to_string(),
+            )
+        };
+
+        assert!(result.is_ok());
+        thread::sleep(Duration::from_secs(2));
+        conductor.stop_all_interfaces();
+        websocket_thread
+            .join()
+            .expect("Could not join websocket thread");
+        let received_signals = signals.lock().clone();
+
+        assert!(received_signals.len() >= 3);
+        assert!(received_signals[0]
+            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+        assert!(received_signals[1]
+            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+        assert!(received_signals[2].starts_with(
+            "{\"signal\":{\"Internal\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
+        ));
     }
 }

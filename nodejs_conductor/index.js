@@ -26,6 +26,15 @@ const Config = {
     agent: name => ({ name }),
     dna: (path, name = `${path}`) => ({ path, name }),
     instance: (agent, dna, name = `${agent.name}`) => ({ agent, dna, name }),
+    dpki: (instance, initParams) => ({
+        instance_id: instance.name,
+        init_params: initParams,
+    }),
+    bridge: (handle, caller, callee) => ({
+        handle,
+        caller_id: caller.name,
+        callee_id: callee.name
+    }),
     conductor: (instances, opts = defaultOpts) => makeConfig(instances, opts)
 }
 
@@ -69,17 +78,12 @@ Conductor.prototype.stop = function () {
  */
 Conductor.run = function (config, fn) {
     const conductor = new Conductor(config)
-    return new Promise((fulfill, reject) => {
+    return new Promise(async (fulfill, reject) => {
         try {
             conductor._start(callbackFromPromise(fulfill, reject))
-            const promise = fn(() => conductor._stop(), conductor)
-            if (promise && promise.catch) {
-                // If the function returned a promise, pass on its potential rejection
-                // to the outer promise
-                promise.catch(reject)
-            }
-            // Otherwise, it should have thrown a normal Exception, which will be caught here
+            await fn(() => conductor._stop(), conductor)
         } catch (e) {
+            conductor._stop()
             reject(e)
         }
     })
@@ -179,14 +183,21 @@ class Scenario {
 
     runTape(description, fn) {
         if (!Scenario._tape) {
-            throw new Error("must call `scenario.setTape(require('tape'))` before running tape-based tests!")
+            throw new Error("must call `Scenario.setTape(require('tape'))` before running tape-based tests!")
         }
-        Scenario._tape(description, t => {
-            this.run((stop, instances) => {
-                return fn(t, instances).then(() => stop())
+        return new Promise(resolve => {
+            Scenario._tape(description, async t => {
+                try {
+                    await this.run((stop, instances) => (
+                        fn(t, instances).then(() => stop())
+                    ))
+                } catch (e) {
+                    t.fail(e)
+                } finally {
+                    t.end()
+                    resolve()
+                }
             })
-                .catch(e => t.fail(e))
-                .then(t.end)
         })
     }
 }

@@ -91,7 +91,7 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 /// Not thread-safe CAS implementation with a HashMap
 pub struct ExampleContentAddressableStorageContent {
     storage: HashMap<Address, Content>,
@@ -99,9 +99,7 @@ pub struct ExampleContentAddressableStorageContent {
 
 impl ExampleContentAddressableStorageContent {
     pub fn new() -> ExampleContentAddressableStorageContent {
-        ExampleContentAddressableStorageContent {
-            storage: HashMap::new(),
-        }
+        Default::default()
     }
 
     fn unthreadable_add(
@@ -361,8 +359,6 @@ impl EavTestSuite {
             expected.insert(eavi);
         }
 
-        println!("expected {:?}", expected.clone());
-
         // show the many results for one
         assert_eq!(
             expected,
@@ -596,8 +592,6 @@ impl EavTestSuite {
                 .expect("could not add eav");
             expected.insert(eavi);
         }
-
-        println!("expected {:?}", expected.clone());
 
         let query = EaviQuery::new(
             EavFilter::default(),

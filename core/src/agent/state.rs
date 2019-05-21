@@ -163,6 +163,7 @@ pub fn create_new_chain_header(
     entry: &Entry,
     context: Arc<Context>,
     crud_link: &Option<Address>,
+    provenances: &Vec<Provenance>,
 ) -> Result<ChainHeader, HolochainError> {
     let agent_state = context
         .state()
@@ -180,10 +181,14 @@ pub fn create_new_chain_header(
     let duration_since_epoch = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("System time must not be before UNIX EPOCH");
+
+    let mut provenances: Vec<Provenance> = provenances.to_vec();
+    provenances.push(Provenance::new(agent_address, signature));
+
     Ok(ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
-        &vec![Provenance::new(agent_address, signature)],
+        &provenances,
         &agent_state
             .top_chain_header
             .clone()
@@ -212,19 +217,24 @@ fn reduce_commit_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (entry, maybe_link_update_delete) = unwrap_to!(action => Action::Commit);
+    let (entry, maybe_link_update_delete, provenances) = unwrap_to!(action => Action::Commit);
 
-    let result = create_new_chain_header(&entry, context.clone(), &maybe_link_update_delete)
-        .and_then(|chain_header| {
-            let storage = &state.chain_store.content_storage().clone();
-            storage.write().unwrap().add(entry)?;
-            storage.write().unwrap().add(&chain_header)?;
-            Ok((chain_header, entry.address()))
-        })
-        .and_then(|(chain_header, address)| {
-            state.top_chain_header = Some(chain_header);
-            Ok(address)
-        });
+    let result = create_new_chain_header(
+        &entry,
+        context.clone(),
+        &maybe_link_update_delete,
+        provenances,
+    )
+    .and_then(|chain_header| {
+        let storage = &state.chain_store.content_storage().clone();
+        storage.write().unwrap().add(entry)?;
+        storage.write().unwrap().add(&chain_header)?;
+        Ok((chain_header, entry.address()))
+    })
+    .and_then(|(chain_header, address)| {
+        state.top_chain_header = Some(chain_header);
+        Ok(address)
+    });
 
     state
         .actions
@@ -325,14 +335,14 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            JsonString::from(format!(
+            JsonString::from_json(&format!(
                 "{{\"Commit\":{{\"Ok\":\"{}\"}}}}",
                 expected_entry_address()
             )),
             JsonString::from(ActionResponse::Commit(Ok(expected_entry_address()))),
         );
         assert_eq!(
-            JsonString::from("{\"Commit\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
+            JsonString::from_json("{\"Commit\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
             JsonString::from(ActionResponse::Commit(Err(HolochainError::new(
                 "some error"
             ))))
@@ -342,7 +352,7 @@ pub mod tests {
     #[test]
     fn test_get_response_to_json() {
         assert_eq!(
-            JsonString::from(
+            JsonString::from_json(
                 "{\"FetchEntry\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}"
             ),
             JsonString::from(ActionResponse::FetchEntry(Some(Entry::from(
@@ -350,7 +360,7 @@ pub mod tests {
             ))))
         );
         assert_eq!(
-            JsonString::from("{\"FetchEntry\":null}"),
+            JsonString::from_json("{\"FetchEntry\":null}"),
             JsonString::from(ActionResponse::FetchEntry(None)),
         )
     }
@@ -358,14 +368,14 @@ pub mod tests {
     #[test]
     fn test_get_links_response_to_json() {
         assert_eq!(
-            JsonString::from(format!(
+            JsonString::from_json(&format!(
                 "{{\"GetLinks\":{{\"Ok\":[\"{}\"]}}}}",
                 expected_entry_address()
             )),
             JsonString::from(ActionResponse::GetLinks(Ok(vec![test_entry().address()]))),
         );
         assert_eq!(
-            JsonString::from("{\"GetLinks\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
+            JsonString::from_json("{\"GetLinks\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
             JsonString::from(ActionResponse::GetLinks(Err(HolochainError::new(
                 "some error"
             )))),
@@ -384,13 +394,13 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            JsonString::from("{\"LinkEntries\":{\"Ok\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}}"),
+            JsonString::from_json("{\"LinkEntries\":{\"Ok\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}}"),
             JsonString::from(ActionResponse::LinkEntries(Ok(Entry::from(
                 test_entry(),
             )))),
         );
         assert_eq!(
-            JsonString::from("{\"LinkEntries\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
+            JsonString::from_json("{\"LinkEntries\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
             JsonString::from(ActionResponse::LinkEntries(Err(HolochainError::new(
                 "some error"
             )))),
@@ -408,7 +418,8 @@ pub mod tests {
             .unwrap()
             .set_state(Arc::new(RwLock::new(state)));
 
-        let header = create_new_chain_header(&test_entry(), context.clone(), &None).unwrap();
+        let header =
+            create_new_chain_header(&test_entry(), context.clone(), &None, &vec![]).unwrap();
         println!("{:?}", header);
         assert_eq!(
             header,

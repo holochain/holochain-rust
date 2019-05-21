@@ -1,3 +1,16 @@
-Please check one of the following, relating to the [CHANGELOG](https://github.com/holochain/holochain-rust/blob/develop/CHANGELOG.md), which should be updated if relevant
-- [ ] my changes to the code affect some exposed aspect of the developer experience, and I have added an item to relevant 'Added, Fixed, Changed, Removed, Deprecated, or Security' heading under the 'Unreleased' heading of the CHANGELOG, with the format `- summary of change [PR#1234](https://github.com/holochain/holochain-rust/pull/1234)`
-- [ ] my changes to the code do not affect any exposed aspect of the developer experience
+## PR summary
+
+## testing/benchmarking notes
+
+( if any manual testing or benchmarking was/should be done, add notes and/or screenshots here )
+
+## followups
+
+( any new tickets/concerns that were discovered or created during this work but aren't in scope for review here )
+
+## changelog
+
+Please check one of the following, relating to the [CHANGELOG-UNRELEASED.md](https://github.com/holochain/holochain-rust/blob/develop/CHANGELOG-UNRELEASED.md)
+
+- [ ] this is a code change that effects some consumer (e.g. zome developers) of holochain core so it is added to the CHANGELOG-UNRELEASED.md (linked above), with the format `- summary of change [PR#1234](https://github.com/holochain/holochain-rust/pull/1234)`
+- [ ] this is not a code change, or doesn't effect anyone outside holochain core development

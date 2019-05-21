@@ -23,34 +23,22 @@ pub fn receive(
     parameters: &CallbackParams,
 ) -> CallbackResult {
     let params = match parameters {
-        CallbackParams::Receive(payload) => payload,
+        CallbackParams::Receive(params) => params,
         _ => return CallbackResult::NotImplemented("receive/1".into()),
     };
 
     let call = CallbackFnCall::new(
         zome,
         &Callback::Receive.as_str().to_string(),
-        params.clone(),
+        JsonString::from(params),
     );
 
-    let dna = context.get_dna().expect("Callback called without DNA set!");
-
-    let maybe_wasm = dna.get_wasm_from_zome_name(zome);
-    if maybe_wasm.is_none() {
-        return CallbackResult::NotImplemented("receive/2".into());
-    }
-    let wasm = maybe_wasm.unwrap();
-    if wasm.code.is_empty() {
-        return CallbackResult::NotImplemented("receive/3".into());
-    }
-
     match ribosome::run_dna(
-        wasm.code.clone(),
-        Some(call.clone().parameters.into_bytes()),
-        WasmCallData::new_callback_call(context, dna.name, call),
+        Some(call.clone().parameters.to_bytes()),
+        WasmCallData::new_callback_call(context, call),
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),
-        Err(_) => CallbackResult::NotImplemented("receive/4".into()),
+        Err(err) => CallbackResult::Fail(err.to_string()),
     }
 }
 
@@ -65,11 +53,13 @@ pub mod tests {
             Defn,
         },
     };
+    use holochain_core_types::cas::content::Address;
+    use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
 
     #[test]
-    fn not_implemented() {
+    fn receive_fail() {
         let zome = "test_zome";
-        let netname = Some("not_implemented test");
+        let netname = Some("receive_fail test");
         let instance = test_callback_instance(
             zome,
             // anything other than Genesis is fine here
@@ -80,9 +70,14 @@ pub mod tests {
         .expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test", netname));
 
-        if let CallbackResult::NotImplemented(_) =
-            receive(context, zome, &CallbackParams::Receive(String::from("")))
-        {
+        if let CallbackResult::Fail(_) = receive(
+            context,
+            zome,
+            &CallbackParams::Receive(ReceiveParams {
+                from: Address::from(""),
+                payload: String::from(""),
+            }),
+        ) {
             ()
         } else {
             panic!("unexpected result");
@@ -97,7 +92,14 @@ pub mod tests {
             .expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test", netname));
 
-        let result = receive(context, zome, &CallbackParams::Receive(String::from("")));
+        let result = receive(
+            context,
+            zome,
+            &CallbackParams::Receive(ReceiveParams {
+                from: Address::from(""),
+                payload: String::from(""),
+            }),
+        );
 
         assert_eq!(CallbackResult::ReceiveResult(String::from("null")), result);
     }

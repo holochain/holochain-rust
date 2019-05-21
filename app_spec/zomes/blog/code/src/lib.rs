@@ -11,31 +11,35 @@ extern crate serde_json;
 extern crate holochain_core_types_derive;
 
 pub mod blog;
+pub mod memo;
 pub mod post;
 
+use blog::Env;
 use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
         cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
+        signature::Provenance
     },
-    holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}}
+    holochain_wasm_utils::api_serialization::{
+        get_entry::{EntryHistory, GetEntryResult},
+        get_links::GetLinksResult,
+    },
 };
-use blog::Env;
 
 define_zome! {
 
     entries: [
-        post::definition()
+        post::definition(),
+        memo::definition()
     ]
 
     genesis: || {
         Ok(())
     }
 
-    receive: |message| {
-        json!({
-            "message": message
-        }).to_string()
+    receive: |from, msg_json| {
+        blog::handle_receive(from, JsonString::from_json(&msg_json))
     }
 
     functions: [
@@ -58,10 +62,10 @@ define_zome! {
             handler: blog::handle_check_sum
         }
 
-        check_send: {
+        ping: {
             inputs: |to_agent: Address, message: String|,
-            outputs: |response: ZomeApiResult<String>|,
-            handler: blog::handle_check_send
+            outputs: |response: ZomeApiResult<JsonString>|,
+            handler: blog::handle_ping
         }
 
         post_address: {
@@ -70,10 +74,58 @@ define_zome! {
             handler: blog::handle_post_address
         }
 
+        memo_address: {
+            inputs: |content: String|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_memo_address
+        }
+
         create_post: {
             inputs: |content: String, in_reply_to: Option<Address>|,
             outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_create_post
+        }
+
+        create_post_with_agent: {
+            inputs: |agent_id:Address, content: String, in_reply_to: Option<Address>|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_create_post_with_agent
+        }
+
+        create_post_countersigned: {
+            inputs: |content: String, in_reply_to: Option<Address>, counter_signature:Provenance|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_create_post_countersigned
+        }
+
+        request_post_grant: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Option<Address>>|,
+            handler: blog::handle_request_post_grant
+        }
+
+        get_grants: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Vec<Address>>|,
+            handler: blog::handle_get_grants
+        }
+
+        commit_post_claim: {
+            inputs: |grantor: Address, claim: Address|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_commit_post_claim
+        }
+
+        create_post_with_claim: {
+            inputs: |grantor: Address, content: String, in_reply_to: Option<Address>|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_create_post_with_claim
+        }
+
+        create_memo: {
+            inputs: |content: String|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_create_memo
         }
 
         delete_post: {
@@ -84,7 +136,7 @@ define_zome! {
 
         delete_entry_post: {
             inputs: |post_address: Address|,
-            outputs: |result: ZomeApiResult<()>|,
+            outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_delete_entry_post
         }
 
@@ -100,10 +152,22 @@ define_zome! {
             handler: blog::handle_posts_by_agent
         }
 
+        authored_posts_with_sources : {
+            inputs : |agent : Address|,
+            outputs : | post_hashes : ZomeApiResult<GetLinksResult>|,
+            handler : blog::handle_my_posts_get_my_sources
+        }
+
         get_post: {
             inputs: |post_address: Address|,
             outputs: |post: ZomeApiResult<Option<Entry>>|,
             handler: blog::handle_get_post
+        }
+
+        get_memo: {
+            inputs: |memo_address: Address|,
+            outputs: |post: ZomeApiResult<Option<Entry>>|,
+            handler: blog::handle_get_memo
         }
 
         get_initial_post: {
@@ -124,6 +188,12 @@ define_zome! {
             handler: blog::handle_my_posts
         }
 
+        my_memos: {
+            inputs: | |,
+            outputs: |memo_hashes: ZomeApiResult<Vec<Address>>|,
+            handler: blog::handle_my_memos
+        }
+
         get_post_with_options_latest :{
             inputs: |post_address: Address|,
             outputs: |post: ZomeApiResult<Entry>|,
@@ -134,6 +204,12 @@ define_zome! {
             inputs: |post_address: Address|,
             outputs: |post: ZomeApiResult<GetEntryResult>|,
             handler:  blog::handle_my_post_with_options
+        }
+
+        get_post_bridged: {
+            inputs: |post_address: Address|,
+            outputs: |post: ZomeApiResult<Option<Entry>>|,
+            handler: blog::handle_get_post_bridged
         }
 
         my_posts_immediate_timeout: {
@@ -151,7 +227,7 @@ define_zome! {
 
         recommend_post: {
             inputs: |post_address: Address, agent_address: Address|,
-            outputs: |result: ZomeApiResult<()>|,
+            outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_recommend_post
         }
 
@@ -163,6 +239,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [show_env, check_sum, check_send, get_sources, post_address, create_post, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post,get_history_post,get_post_with_options,get_post_with_options_latest]
+        hc_public [show_env, check_sum, ping, get_sources, post_address, create_post, create_post_countersigned, delete_post, delete_entry_post, update_post, posts_by_agent, get_post, my_posts, memo_address, get_memo, my_memos, create_memo, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,get_initial_post, get_history_post, get_post_with_options, get_post_with_options_latest, authored_posts_with_sources, create_post_with_agent, request_post_grant, get_grants, commit_post_claim, create_post_with_claim, get_post_bridged]
     }
 }

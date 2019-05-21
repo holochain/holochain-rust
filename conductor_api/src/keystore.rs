@@ -1,17 +1,16 @@
 use holochain_core_types::{
     agent::Base32,
-    cas::content::Address,
     error::{HcResult, HolochainError},
     signature::Signature,
 };
 use holochain_dpki::{
     key_blob::{BlobType, Blobbable, KeyBlob},
     key_bundle::KeyBundle,
-    keypair::{generate_random_sign_keypair, EncryptingKeyPair, KeyPair, SigningKeyPair},
+    keypair::{EncryptingKeyPair, KeyPair, SigningKeyPair},
     seed::Seed,
     utils::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
-        generate_random_buf, verify as signingkey_verify, SeedContext,
+        generate_random_buf, SeedContext,
     },
     SEED_SIZE,
 };
@@ -38,6 +37,7 @@ const PCHECK_SIZE: usize = PCHECK_RANDOM_SIZE + PCHECK_HEADER_SIZE;
 const KEYBUNDLE_SIGNKEY_SUFFIX: &str = ":sign_key";
 const KEYBUNDLE_ENCKEY_SUFFIX: &str = ":enc_key";
 pub const PRIMARY_KEYBUNDLE_ID: &str = "primary_keybundle";
+pub const STANDALONE_ROOT_SEED: &str = "root_seed";
 
 pub enum Secret {
     SigningKey(SigningKeyPair),
@@ -45,7 +45,7 @@ pub enum Secret {
     Seed(SecBuf),
 }
 
-enum KeyType {
+pub enum KeyType {
     Signing,
     Encrypting,
 }
@@ -132,6 +132,18 @@ impl Keystore {
         })
     }
 
+    /// Create a new keystore for "standalone" use, i.e. not initialized by a DPKI instance
+    pub fn new_standalone(
+        passphrase_manager: Arc<PassphraseManager>,
+        hash_config: Option<PwHashConfig>,
+    ) -> HcResult<(Self, Base32)> {
+        let mut keystore = Keystore::new(passphrase_manager, hash_config)?;
+        keystore.add_random_seed(STANDALONE_ROOT_SEED, SEED_SIZE)?;
+        let (pub_key, _) =
+            keystore.add_keybundle_from_seed(STANDALONE_ROOT_SEED, PRIMARY_KEYBUNDLE_ID)?;
+        Ok((keystore, pub_key))
+    }
+
     /// Load a keystore from file.
     /// This won't ask for a passphrase until a secret is used via the other functions.
     /// Secrets will get loaded to memory instantly but stay encrypted until requested.
@@ -179,15 +191,15 @@ impl Keystore {
         Ok(())
     }
 
-    /// This function expects the named secret in `secrets`, decrypts it and stores the decrypted
-    /// representation in `cache`.
-    fn decrypt(&mut self, id_str: &String) -> HcResult<()> {
-        let blob = self
-            .secrets
-            .get(id_str)
-            .ok_or(HolochainError::new("Secret not found"))?;
-        let mut passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
-        let secret = match blob.blob_type {
+    /// Actually runs the decryption of the given KeyBlob with the given passphrase.
+    /// Called by decrypt().
+    /// Calls the matching from_blob function depending on the type of the KeyBlob.
+    fn inner_decrypt(
+        &self,
+        blob: &KeyBlob,
+        mut passphrase: SecBuf,
+    ) -> Result<Secret, HolochainError> {
+        Ok(match blob.blob_type {
             BlobType::Seed => {
                 Secret::Seed(Seed::from_blob(blob, &mut passphrase, self.hash_config.clone())?.buf)
             }
@@ -202,12 +214,35 @@ impl Keystore {
                 self.hash_config.clone(),
             )?),
             _ => {
-                return Err(HolochainError::ErrorGeneric(format!(
-                    "Tried to decrypt unsupported BlobType in Keystore: {}",
-                    id_str
-                )));
+                return Err(HolochainError::ErrorGeneric(
+                    "Tried to decrypt unsupported BlobType in Keystore: {}".to_string(),
+                ));
             }
+        })
+    }
+
+    /// This function expects the named secret in `secrets`, decrypts it and stores the decrypted
+    /// representation in `cache`.
+    fn decrypt(&mut self, id_str: &String) -> HcResult<()> {
+        let blob = self
+            .secrets
+            .get(id_str)
+            .ok_or(HolochainError::new("Secret not found"))?;
+
+        let mut default_passphrase =
+            SecBuf::with_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
+
+        let maybe_secret = if Ok(true) == self.check_passphrase(&mut default_passphrase) {
+            self.inner_decrypt(blob, default_passphrase)
+        } else {
+            let passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
+            self.inner_decrypt(blob, passphrase)
         };
+
+        let secret = maybe_secret.map_err(|err| {
+            HolochainError::ErrorGeneric(format!("Could not decrypt '{}': {:?}", id_str, err))
+        })?;
+
         self.cache
             .insert(id_str.clone(), Arc::new(Mutex::new(secret)));
         Ok(())
@@ -341,7 +376,7 @@ impl Keystore {
 
     /// adds a keypair into the keystore based on a seed already in the keystore
     /// returns the public key
-    fn add_key_from_seed(
+    pub fn add_key_from_seed(
         &mut self,
         src_id_str: &str,
         dst_id_str: &str,
@@ -421,6 +456,25 @@ impl Keystore {
         Ok((sign_pub_key, enc_pub_key))
     }
 
+    /// adds a keybundle into the keystore based on an actual keybundle object by
+    /// adding two keypair secrets (signing and encrypting) under the named prefix
+    pub fn add_keybundle(
+        &mut self,
+        dst_id_prefix_str: &str,
+        keybundle: &mut KeyBundle,
+    ) -> HcResult<()> {
+        let dst_sign_id_str = [dst_id_prefix_str, KEYBUNDLE_SIGNKEY_SUFFIX].join("");
+        let dst_enc_id_str = [dst_id_prefix_str, KEYBUNDLE_ENCKEY_SUFFIX].join("");
+
+        let sign_keypair = keybundle.sign_keys.new_from_self()?;
+        let enc_keypair = keybundle.enc_keys.new_from_self()?;
+        let sign_secret = Arc::new(Mutex::new(Secret::SigningKey(sign_keypair)));
+        let enc_secret = Arc::new(Mutex::new(Secret::EncryptingKey(enc_keypair)));
+        self.add(&dst_sign_id_str, sign_secret)?;
+        self.add(&dst_enc_id_str, enc_secret)?;
+        Ok(())
+    }
+
     /// adds a keybundle into the keystore based on a seed already in the keystore by
     /// adding two keypair secrets (signing and encrypting) under the named prefix
     /// returns the public keys of the secrets
@@ -431,13 +485,7 @@ impl Keystore {
         let sign_secret = self.get(&src_sign_id_str)?;
         let mut sign_secret = sign_secret.lock().unwrap();
         let sign_key = match *sign_secret {
-            Secret::SigningKey(ref mut key_pair) => {
-                let mut buf = SecBuf::with_secure(key_pair.private().len());
-                let pub_key = key_pair.public();
-                let lock = key_pair.private().read_lock();
-                buf.write(0, &**lock)?;
-                SigningKeyPair::new(pub_key, buf)
-            }
+            Secret::SigningKey(ref mut key_pair) => key_pair.new_from_self()?,
             _ => {
                 return Err(HolochainError::ErrorGeneric(
                     "source secret is not a signing key".to_string(),
@@ -448,13 +496,7 @@ impl Keystore {
         let enc_secret = self.get(&src_enc_id_str)?;
         let mut enc_secret = enc_secret.lock().unwrap();
         let enc_key = match *enc_secret {
-            Secret::EncryptingKey(ref mut key_pair) => {
-                let mut buf = SecBuf::with_secure(key_pair.private().len());
-                let pub_key = key_pair.public();
-                let lock = key_pair.private().read_lock();
-                buf.write(0, &**lock)?;
-                EncryptingKeyPair::new(pub_key, buf)
-            }
+            Secret::EncryptingKey(ref mut key_pair) => key_pair.new_from_self()?,
             _ => {
                 return Err(HolochainError::ErrorGeneric(
                     "source secret is not an encrypting key".to_string(),
@@ -489,23 +531,6 @@ impl Keystore {
     }
 }
 
-/// verifies data and signature against a public key
-pub fn verify(public_key: Base32, data: String, signature: Signature) -> HcResult<bool> {
-    signingkey_verify(Address::from(public_key), data, signature)
-}
-
-/// creates a one-time private key and sign data returning the signature and the public key
-pub fn sign_one_time(data: String) -> HcResult<(Base32, Signature)> {
-    let mut data_buf = SecBuf::with_insecure_from_string(data);
-    let mut sign_keys = generate_random_sign_keypair()?;
-
-    let mut signature_buf = sign_keys.sign(&mut data_buf)?;
-    let buf = signature_buf.read_lock();
-    // Return as base64 encoded string
-    let signature_str = base64::encode(&**buf);
-    Ok((sign_keys.public, Signature::from(signature_str)))
-}
-
 pub fn test_hash_config() -> Option<PwHashConfig> {
     Some(PwHashConfig(
         OPSLIMIT_INTERACTIVE,
@@ -519,6 +544,7 @@ pub mod tests {
     use super::*;
     use base64;
     use conductor::passphrase_manager::PassphraseServiceMock;
+    use holochain_core_types::cas::content::Address;
     use holochain_dpki::utils;
 
     fn mock_passphrase_manager(passphrase: String) -> Arc<PassphraseManager> {
@@ -710,7 +736,7 @@ pub mod tests {
         let signature = result.unwrap();
         assert_eq!(String::from(signature.clone()).len(), 88); //88 is the size of a base64ized signature buf
 
-        let result = verify(public_key, data.clone(), signature);
+        let result = utils::verify(Address::from(public_key), data.clone(), signature);
         assert!(!result.is_err());
         assert!(result.unwrap());
 
@@ -723,21 +749,6 @@ pub mod tests {
                 "source secret is not a signing key".to_string()
             ))
         );
-    }
-
-    #[test]
-    fn test_keystore_sign_one_time() {
-        let data = base64::encode("the data to sign");
-        let result = sign_one_time(data.clone());
-        assert!(!result.is_err());
-
-        let (public_key, signature) = result.unwrap();
-
-        assert_eq!(String::from(signature.clone()).len(), 88); //88 is the size of a base64ized signature buf
-
-        let result = verify(public_key, data, signature);
-        assert!(!result.is_err());
-        assert!(result.unwrap());
     }
 
     #[test]
@@ -767,10 +778,66 @@ pub mod tests {
 
         let result = keystore.get_keybundle("my_keybundle");
         assert!(!result.is_err());
-        let key_bundle = result.unwrap();
+        let mut key_bundle = result.unwrap();
 
         assert_eq!(key_bundle.sign_keys.public(), sign_pubkey);
         assert_eq!(key_bundle.enc_keys.public(), enc_pubkey);
+
+        let result = keystore.add_keybundle("copy_of_keybundle", &mut key_bundle);
+        assert!(!result.is_err());
+
+        let result = keystore.get_keybundle("copy_of_keybundle");
+        assert!(!result.is_err());
+
+        let mut key_bundle_copy = result.unwrap();
+
+        assert!(key_bundle.sign_keys.is_same(&mut key_bundle_copy.sign_keys));
+        assert!(key_bundle.enc_keys.is_same(&mut key_bundle_copy.enc_keys));
+    }
+
+    #[test]
+    /// Tests if the keystore encrypted with holochain_common::DEFAULT_PASSPHRASE can be decrypted,
+    /// no matter what passphrase we get from the passphrase manager
+    /// ("definitely wrong passphrase" should not be used at all since the default passphrase should
+    /// be tried before even asking the passphrase manager)
+    fn test_keystore_default_passphrase() {
+        let mut loaded_keystore = Keystore::new_from_file(
+            PathBuf::from("test_keystore"),
+            mock_passphrase_manager("definitely wrong passphrase".to_string()),
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            loaded_keystore.list(),
+            vec![
+                "primary_keybundle:enc_key",
+                "primary_keybundle:sign_key",
+                "root_seed"
+            ]
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+        );
+
+        let result = loaded_keystore.get_keybundle("primary_keybundle");
+
+        assert!(!result.is_err());
+        let mut key_bundle = result.unwrap();
+
+        assert_eq!(
+            key_bundle.sign_keys.public(),
+            "HcSCIowJEUHintsxps7dnz5V38ypdDoadU986V476InyYicyWQBx937Y8dxQrgi"
+        );
+        assert_eq!(
+            key_bundle.enc_keys.public(),
+            "HcKciaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        );
+
+        assert_eq!(base64::encode(&**key_bundle.sign_keys.private().read_lock()), "1cqLOpr5Zs7ZgEN3R+ocYQ0ygJf0It1MCFaxMWQpXU42qSTOhko2dHo2Y3TPruGNoBz/7lNd4hl7oFerw2/ntw==".to_string());
+        assert_eq!(
+            base64::encode(&**key_bundle.enc_keys.private().read_lock()),
+            "VX4j1zRvIT7FojcTsqJJfu81NU1bUgiKxqWZOl/bCR4=".to_string()
+        );
     }
 
 }

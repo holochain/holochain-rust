@@ -14,17 +14,18 @@
 //! extern crate holochain_dpki;
 //! extern crate holochain_sodium;
 //! extern crate tempfile;
+//! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
-//! use holochain_core::nucleus::ribosome::capabilities::CapabilityRequest;
 //! use holochain_core_types::{
 //!     cas::content::Address,
 //!     agent::AgentId,
-//!     dna::Dna,
+//!     dna::{Dna, capabilities::CapabilityRequest,},
 //!     json::JsonString,
 //!     signature::Signature,
 //! };
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
 //! use holochain_sodium::secbuf::SecBuf;
+//! use test_utils;
 //!
 //! use std::sync::{Arc, Mutex};
 //! use tempfile::tempdir;
@@ -35,7 +36,7 @@
 //! // let dna = holochain_core_types::dna::from_package_file("mydna.dna.json");
 //!
 //! // But for now:
-//! let dna = Dna::new();
+//! let dna = test_utils::create_arbitrary_test_dna();
 //! let dir = tempdir().unwrap();
 //! let storage_directory_path = dir.path().to_str().unwrap();
 //!
@@ -90,13 +91,17 @@ use holochain_core::{
     instance::Instance,
     nucleus::{
         call_zome_function,
-        ribosome::{capabilities::CapabilityRequest, run_dna, WasmCallData},
+        ribosome::{run_dna, WasmCallData},
         ZomeFnCall,
     },
     persister::{Persister, SimplePersister},
     state::State,
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    dna::{capabilities::CapabilityRequest, Dna},
+    error::HolochainError,
+    json::JsonString,
+};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -114,9 +119,8 @@ impl Holochain {
 
         for zome in dna.zomes.values() {
             let maybe_json_string = run_dna(
-                zome.code.code.clone(),
                 Some("{}".as_bytes().to_vec()),
-                WasmCallData::DirectCall("__hdk_git_hash".to_string()),
+                WasmCallData::DirectCall("__hdk_git_hash".to_string(), zome.code.code.clone()),
             );
 
             if let Ok(json_string) = maybe_json_string {
@@ -199,7 +203,7 @@ impl Holochain {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
 
-        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
+        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
         let context = self.context();
         Ok(context.block_on(call_zome_function(zome_call, context))?)
     }
@@ -229,22 +233,22 @@ mod tests {
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::{
-            actions::call_zome_function::make_cap_request_for_call,
-            ribosome::capabilities::CapabilityRequest,
-        },
+        nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        dna::Dna,
+        dna::capabilities::CapabilityRequest,
         json::RawString,
     };
     use holochain_wasm_utils::wasm_target_dir;
-    use std::sync::{Arc, Mutex};
+    use std::{
+        path::PathBuf,
+        sync::{Arc, Mutex},
+    };
     use test_utils::{
-        create_test_defs_with_fn_name, create_test_dna_with_defs, create_test_dna_with_wat,
-        create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
+        create_arbitrary_test_dna, create_test_defs_with_fn_name, create_test_dna_with_defs,
+        create_test_dna_with_wat, create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
         mock_signing::{mock_conductor_api, registered_test_agent},
     };
 
@@ -268,11 +272,21 @@ mod tests {
         )
     }
 
-    fn example_api_wasm_path() -> String {
-        format!(
-            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-            wasm_target_dir("conductor_api/", "wasm-test/"),
-        )
+    fn example_api_wasm_path() -> PathBuf {
+        let mut path = wasm_target_dir(
+            &String::from("conductor_api").into(),
+            &String::from("wasm-test").into(),
+        );
+        let wasm_path_component: PathBuf = [
+            String::from("wasm32-unknown-unknown"),
+            String::from("release"),
+            String::from("example_api_wasm.wasm"),
+        ]
+        .iter()
+        .collect();
+        path.push(wasm_path_component);
+
+        path
     }
 
     fn example_api_wasm() -> Vec<u8> {
@@ -285,13 +299,13 @@ mod tests {
             context.clone(),
             Address::from(context.clone().agent_id.address()),
             fn_name,
-            params.to_string(),
+            JsonString::from_json(params),
         )
     }
 
     #[test]
     fn can_instantiate() {
-        let mut dna = Dna::new();
+        let mut dna = create_arbitrary_test_dna();;
         dna.name = "TestApp".to_string();
         let (context, test_logger, _) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
@@ -396,7 +410,7 @@ mod tests {
 
     #[test]
     fn can_start_and_stop() {
-        let dna = Dna::new();
+        let dna = create_arbitrary_test_dna();
         let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
         assert!(!hc.active());
@@ -460,13 +474,13 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from("{\"holo\":\"world\"}")
+            JsonString::from_json("{\"holo\":\"world\"}")
         );
     }
 
     #[test]
     fn can_get_state() {
-        let dna = Dna::new();
+        let dna = create_arbitrary_test_dna();
         let (context, _, _) = test_context("bob");
         let hc = Holochain::new(dna.clone(), context).unwrap();
 
@@ -496,7 +510,9 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from(r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#),
+            JsonString::from_json(
+                r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#
+            ),
         );
     }
 
@@ -535,7 +551,7 @@ mod tests {
         // @TODO fragile test!
         assert_ne!(
             result.clone().ok().unwrap(),
-            JsonString::from("{\"Err\":\"Argument deserialization failed\"}")
+            JsonString::from_json("{\"Err\":\"Argument deserialization failed\"}")
         );
 
         expect_action(&signal_rx, |action| {
@@ -574,7 +590,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from("{\"Err\":\"Argument deserialization failed\"}"),
+            JsonString::from_json("{\"Err\":\"Argument deserialization failed\"}"),
         );
 
         expect_action(&signal_rx, |action| {
@@ -675,7 +691,7 @@ mod tests {
             RawString::from(""),
         );
         assert_eq!(
-            JsonString::from("{\"value\":\"fish\"}"),
+            JsonString::from_json("{\"value\":\"fish\"}"),
             call_result.unwrap()
         );
     }
@@ -686,8 +702,9 @@ mod tests {
         use holochain_core::action::Action;
         use std::time::Duration;
         let wasm = include_bytes!(format!(
-            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-            wasm_target_dir("conductor_api/", "wasm-test/"),
+            "{}{slash}wasm32-unknown-unknown{slash}release{slash}example_api_wasm.wasm",
+            slash = std::path::MAIN_SEPARATOR,
+            wasm_target_dir("conductor_api", "wasm-test"),
         ));
         let defs = test_utils::create_test_defs_with_fn_name("commit_test");
         let mut dna = test_utils::create_test_dna_with_defs("test_zome", defs, wasm);

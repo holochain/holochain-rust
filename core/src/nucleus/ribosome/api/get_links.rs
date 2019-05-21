@@ -1,10 +1,8 @@
 use crate::{
-    network::actions::get_links::get_links,
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::get_link_result::get_link_result_workflow,
 };
-use holochain_wasm_utils::api_serialization::get_links::{
-    GetLinksArgs, GetLinksResult, LinksStatusRequestKind,
-};
+use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -17,7 +15,13 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetLinksArgs::try_from(args_str.clone()) {
-        Ok(input) => input,
+        Ok(input) => {
+            context.log(format!(
+                "log/get_links: invoke_get_links called with {:?}",
+                input,
+            ));
+            input
+        }
         Err(_) => {
             context.log(format!(
                 "err/zome: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
@@ -27,36 +31,19 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
 
-    if input.options.status_request != LinksStatusRequestKind::Live {
-        context.log("get links status request other than Live not implemented!");
-        return ribosome_error_code!(Unspecified);
-    }
+    let result = context.block_on(get_link_result_workflow(&context, &input));
 
-    if input.options.sources {
-        context.log("get links retrieve sources not implemented!");
-        return ribosome_error_code!(Unspecified);
-    }
-
-    // Get links from DHT
-    let maybe_links = context.block_on(get_links(
-        context.clone(),
-        input.entry_address,
-        input.tag,
-        input.options.timeout,
-    ));
-
-    runtime.store_result(match maybe_links {
-        Ok(links) => Ok(GetLinksResult::new(links)),
-        Err(hc_err) => Err(hc_err),
-    })
+    runtime.store_result(result)
 }
 
 #[cfg(test)]
 pub mod tests {
+    use std::sync::Arc;
     use test_utils;
 
     use crate::{
         agent::actions::commit::commit_entry,
+        context::Context,
         dht::actions::add_link::add_link,
         instance::tests::{test_context_and_logger, test_instance},
         nucleus::ribosome::{
@@ -67,7 +54,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         entry::{entry_type::test_app_entry_type, Entry},
-        json::JsonString,
+        json::{JsonString, RawString},
         link::Link,
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
@@ -77,7 +64,7 @@ pub mod tests {
     pub fn test_get_links_args_bytes(base: &Address, tag: &str) -> Vec<u8> {
         let args = GetLinksArgs {
             entry_address: base.clone(),
-            tag: String::from(tag),
+            tag: tag.into(),
             options: Default::default(),
         };
         serde_json::to_string(&args)
@@ -85,59 +72,75 @@ pub mod tests {
             .into_bytes()
     }
 
-    #[test]
-    fn returns_list_of_links() {
-        let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
-        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
-
-        let dna_name = &dna.name.to_string().clone();
-        let netname = Some("returns_list_of_links");
-        let instance = test_instance(dna, netname).expect("Could not create test instance");
-
-        let (context, _) = test_context_and_logger("joan", netname);
-        let initialized_context = instance.initialize_context(context);
-
+    fn add_test_entries(initialized_context: Arc<Context>) -> Vec<Address> {
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
+            let entry = Entry::App(
+                test_app_entry_type(),
+                JsonString::from(RawString::from(format!("entry{} value", i))),
+            );
             let address = initialized_context
                 .block_on(commit_entry(entry, None, &initialized_context))
                 .expect("Could not commit entry for testing");
             entry_addresses.push(address);
         }
+        entry_addresses
+    }
 
-        let link1 = Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag");
-        let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag");
+    fn initialize_context() -> Arc<Context> {
+        let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
-        assert!(initialized_context
-            .block_on(add_link(&link1, &initialized_context))
-            .is_ok());
-        assert!(initialized_context
-            .block_on(add_link(&link2, &initialized_context))
-            .is_ok());
+        let netname = Some("returns_list_of_links");
+        let instance = test_instance(dna, netname).expect("Could not create test instance");
 
-        let call_result = test_zome_api_function_call(
-            &dna_name,
+        let (context, _) = test_context_and_logger("joan", netname);
+        instance.initialize_context(context)
+    }
+
+    fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
+        links.iter().for_each(|link| {
+            assert!(initialized_context
+                .block_on(commit_entry(link.add_entry(), None, &initialized_context))
+                .is_ok());
+            assert!(initialized_context
+                .block_on(add_link(&link, &initialized_context))
+                .is_ok());
+        });
+    }
+
+    fn get_links(initialized_context: Arc<Context>, base: &Address, tag: &str) -> JsonString {
+        test_zome_api_function_call(
             initialized_context.clone(),
-            &instance,
-            &wasm,
-            test_get_links_args_bytes(&entry_addresses[0], "test-tag"),
-        );
+            test_get_links_args_bytes(&base, tag),
+        )
+    }
 
-        let expected_1 = JsonString::from(
-            format!(
-                r#"{{"ok":true,"value":"{{\"addresses\":[\"{}\",\"{}\"]}}","error":"null"}}"#,
-                entry_addresses[1], entry_addresses[2]
-            ) + "\u{0}",
-        );
+    #[test]
+    fn returns_list_of_links() {
+        // setup the instance and links
+        let initialized_context = initialize_context();
+        let entry_addresses = add_test_entries(initialized_context.clone());
+        let links = vec![
+            Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag"),
+            Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag"),
+        ];
+        add_links(initialized_context.clone(), links);
 
-        let expected_2 = JsonString::from(
-            format!(
-                r#"{{"ok":true,"value":"{{\"addresses\":[\"{}\",\"{}\"]}}","error":"null"}}"#,
-                entry_addresses[2], entry_addresses[1]
-            ) + "\u{0}",
+        // calling get_links returns both links in some order
+        let call_result = get_links(initialized_context.clone(), &entry_addresses[0], "test-tag");
+        let expected_1 = JsonString::from_json(
+            &(format!(
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
+                entry_addresses[1], entry_addresses[2],
+            ) + "\u{0}"),
         );
-
+        let expected_2 = JsonString::from_json(
+            &(format!(
+               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[]}},{{\"address\":\"{}\",\"headers\":[]}}]}}","error":"null"}}"#,
+                entry_addresses[2], entry_addresses[1],
+            ) + "\u{0}"),
+        );
         assert!(
             call_result == expected_1 || call_result == expected_2,
             "\n call_result = '{:?}'\n   ordering1 = '{:?}'\n   ordering2 = '{:?}'",
@@ -146,21 +149,18 @@ pub mod tests {
             expected_2,
         );
 
-        let call_result = test_zome_api_function_call(
-            &dna_name,
+        // calling get_links with another non-existent tag returns nothing
+        let call_result = get_links(
             initialized_context.clone(),
-            &instance,
-            &wasm,
-            test_get_links_args_bytes(&entry_addresses[0], "other-tag"),
+            &entry_addresses[0],
+            "wrong-tag".into(),
         );
-
         assert_eq!(
             call_result,
-            JsonString::from(
-                String::from(r#"{"ok":true,"value":"{\"addresses\":[]}","error":"null"}"#)
-                    + "\u{0}"
+            JsonString::from_json(
+                &(String::from(r#"{"ok":true,"value":"{\"links\":[]}","error":"null"}"#,)
+                    + "\u{0}")
             ),
         );
     }
-
 }

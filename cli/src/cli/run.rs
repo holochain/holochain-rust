@@ -30,7 +30,7 @@ pub fn run(
     conductor.key_loader = test_keystore_loader();
 
     conductor
-        .load_config()
+        .boot_from_config()
         .map_err(|err| format_err!("{}", err))?;
 
     conductor.start_all_interfaces();
@@ -74,6 +74,7 @@ pub fn hc_run_configuration(
     persist: bool,
     networked: bool,
     interface_type: &String,
+    logging: bool,
 ) -> DefaultResult<Configuration> {
     Ok(Configuration {
         agents: vec![agent_configuration()],
@@ -81,7 +82,7 @@ pub fn hc_run_configuration(
         instances: vec![instance_configuration(storage_configuration(persist)?)],
         interfaces: vec![interface_configuration(&interface_type, port)?],
         network: networking_configuration(networked),
-        logger: logger_configuration(),
+        logger: logger_configuration(logging),
         ..Default::default()
     })
 }
@@ -134,7 +135,7 @@ fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
     if persist {
         fs::create_dir_all(LOCAL_STORAGE_PATH)?;
 
-        Ok(StorageConfiguration::File {
+        Ok(StorageConfiguration::Pickle {
             path: LOCAL_STORAGE_PATH.into(),
         })
     } else {
@@ -180,25 +181,22 @@ fn interface_configuration(
 }
 
 // LOGGER
-fn logger_configuration() -> LoggerConfiguration {
+fn logger_configuration(logging: bool) -> LoggerConfiguration {
     // temporary log rules, should come from a configuration
     LoggerConfiguration {
         logger_type: "debug".to_string(),
-        rules: LogRules::new(),
+        rules: if logging {
+            LogRules::default()
+        } else {
+            LogRules::new()
+        },
     }
 }
 
 // NETWORKING
 fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
-    // note that this behaviour is documented within
-    // holochain_common::env_vars module and should be updated
-    // if this logic changes
-    let maybe_n3h_path = EnvVar::N3hPath.value().ok();
-
     // create an n3h network config if the --networked flag is set
-    // or if a value where to find n3h has been put into the
-    // HC_N3H_PATH environment variable
-    if maybe_n3h_path.is_none() && !networked {
+    if !networked {
         return None;
     }
 
@@ -216,7 +214,6 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
             .value()
             .ok()
             .unwrap_or_else(default_n3h_log_level),
-        n3h_path: maybe_n3h_path.unwrap_or_else(default_n3h_path),
         n3h_mode: EnvVar::N3hMode
             .value()
             .ok()
@@ -307,7 +304,7 @@ mod tests {
         let persist_store = super::storage_configuration(true).unwrap();
         assert_eq!(
             persist_store,
-            StorageConfiguration::File {
+            StorageConfiguration::Pickle {
                 path: ".hc".to_string()
             }
         );
@@ -369,7 +366,6 @@ mod tests {
             Some(NetworkConfig {
                 bootstrap_nodes: Vec::new(),
                 n3h_log_level: default_n3h_log_level(),
-                n3h_path: default_n3h_path(),
                 n3h_mode: default_n3h_mode(),
                 n3h_persistence_path: default_n3h_persistence_path(),
                 n3h_ipc_uri: Default::default(),

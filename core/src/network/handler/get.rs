@@ -1,10 +1,11 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
+    entry::CanPublish,
     instance::dispatch_action,
     nucleus,
 };
-use holochain_core_types::{cas::content::Address, eav::Attribute};
+use holochain_core_types::{cas::content::Address, eav::Attribute, entry::EntryWithMetaAndHeader};
 use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
@@ -13,17 +14,42 @@ use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
-    let maybe_entry_with_meta = nucleus::actions::get_entry::get_entry_with_meta(
-        &context,
-        Address::from(get_dht_data.entry_address.clone()),
-    )
-    .unwrap_or_else(|error| {
-        context.log(format!("err/net: Error trying to find entry {:?}", error));
-        None
-    });
-
-    let action_wrapper =
-        ActionWrapper::new(Action::RespondFetch((get_dht_data, maybe_entry_with_meta)));
+    let address = Address::from(get_dht_data.entry_address.clone());
+    let get_entry = nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone())
+        .map(|entry_with_meta_opt| {
+            let state = context
+                .state()
+                .expect("Could not get state for handle_fetch_entry");
+            state
+                .get_headers(address)
+                .map(|headers| {
+                    entry_with_meta_opt
+                        .map(|entry_with_meta| {
+                            if entry_with_meta.entry.entry_type().can_publish(&context) {
+                                Some(EntryWithMetaAndHeader {
+                                    entry_with_meta: entry_with_meta.clone(),
+                                    headers,
+                                })
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or(None)
+                })
+                .map_err(|error| {
+                    context.log(format!("err/net: Error trying to get headers {:?}", error));
+                    None::<EntryWithMetaAndHeader>
+                })
+        })
+        .map_err(|error| {
+            context.log(format!("err/net: Error trying to find entry {:?}", error));
+            None::<EntryWithMetaAndHeader>
+        })
+        .unwrap_or(Ok(None));
+    let action_wrapper = ActionWrapper::new(Action::RespondFetch((
+        get_dht_data,
+        get_entry.unwrap_or(None),
+    )));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 }
 

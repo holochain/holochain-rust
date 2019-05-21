@@ -1,20 +1,30 @@
 use crate::action::ActionWrapper;
-use std::{
-    sync::mpsc::{channel, sync_channel, Receiver, SyncSender},
-    thread,
-};
+use crossbeam_channel::{unbounded, Receiver, Sender};
+use holochain_core_types::{error::HolochainError, json::JsonString};
+use serde::{Deserialize, Deserializer};
+use std::thread;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Serialize, DefaultJson)]
+#[serde(tag = "signal_type")]
 pub enum Signal {
     Internal(ActionWrapper),
-    User,
+    User(JsonString),
 }
 
-pub type SignalSender = SyncSender<Signal>;
+impl<'de> Deserialize<'de> for Signal {
+    fn deserialize<D>(_deserializer: D) -> Result<Signal, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        unimplemented!()
+    }
+}
+
+pub type SignalSender = Sender<Signal>;
 pub type SignalReceiver = Receiver<Signal>;
 
 pub fn signal_channel() -> (SignalSender, SignalReceiver) {
-    sync_channel(1000)
+    unbounded()
 }
 
 /// Pass on messages from multiple receivers into a single receiver
@@ -23,7 +33,7 @@ pub fn _combine_receivers<T>(rxs: Vec<Receiver<T>>) -> Receiver<T>
 where
     T: 'static + Send,
 {
-    let (master_tx, master_rx) = channel::<T>();
+    let (master_tx, master_rx) = unbounded::<T>();
     for rx in rxs {
         let tx = master_tx.clone();
         thread::spawn(move || {

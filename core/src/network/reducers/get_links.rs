@@ -1,11 +1,10 @@
 use crate::{
     action::{ActionWrapper, GetLinksKey},
-    context::Context,
     network::{reducers::send, state::NetworkState},
+    state::State,
 };
 use holochain_core_types::{error::HolochainError, hash::HashString};
 use holochain_net::connection::json_protocol::{FetchMetaData, JsonProtocol};
-use std::sync::Arc;
 
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
@@ -27,8 +26,8 @@ fn reduce_get_links_inner(
 }
 
 pub fn reduce_get_links(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -43,8 +42,8 @@ pub fn reduce_get_links(
 }
 
 pub fn reduce_get_links_timeout(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -87,7 +86,7 @@ mod tests {
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = store.reduce(action_wrapper);
         let maybe_get_links_result = store
             .network()
             .get_links_results
@@ -118,7 +117,7 @@ mod tests {
             dna_address: "reduce_get_links_test".into(),
             agent_id: String::from("alice"),
         }));
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = store.reduce(action_wrapper);
 
         let entry = test_entry();
         let link_type = String::from("test-link");
@@ -129,7 +128,7 @@ mod tests {
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = store.reduce(action_wrapper);
         let maybe_get_entry_result = store.network().get_links_results.get(&key).cloned();
 
         assert_eq!(maybe_get_entry_result, Some(None));

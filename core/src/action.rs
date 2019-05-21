@@ -1,6 +1,5 @@
 use crate::{
     agent::state::AgentState,
-    context::Context,
     network::{
         direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
     },
@@ -11,6 +10,7 @@ use crate::{
         ZomeFnCall,
     },
     scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
+    state::State,
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -24,15 +24,15 @@ use holochain_core_types::{
     validation::ValidationPackage,
 };
 use holochain_net::{
-    connection::json_protocol::{
-        FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
+    connection::{
+        json_protocol::{FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData},
+        net_connection::NetHandler,
     },
     p2p_config::P2pConfig,
 };
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
-    sync::Arc,
     vec::Vec,
 };
 
@@ -228,7 +228,7 @@ pub enum Action {
 pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
-pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
+pub type ReduceFn<S> = fn(&mut S, &State, &ActionWrapper);
 
 /// The unique key that represents a GetLinks request, used to associate the eventual
 /// response with this GetLinks request
@@ -291,6 +291,10 @@ pub struct NetworkSettings {
     /// The network module needs to know who we are.
     /// This is this agent's address.
     pub agent_id: String,
+
+    /// This is a closure of the code that gets called by the network
+    /// module to have us process incoming messages
+    pub handler: NetHandler,
 }
 
 #[cfg(test)]

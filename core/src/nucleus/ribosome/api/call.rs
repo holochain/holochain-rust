@@ -101,7 +101,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
         input.instance_handle, input.zome_name, input.fn_name, input.fn_args
     );
 
-    let handler = conductor_api.write().unwrap();
+    let handler = conductor_api.get().write().unwrap();
 
     let id = ProcessUniqueId::new();
     // json-rpc format

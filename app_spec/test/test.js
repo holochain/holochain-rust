@@ -116,6 +116,7 @@ scenario1.runTape('show_env', async (t, { alice }) => {
   t.equal(result.Ok.dna_name, "HDK-spec-rust")
   t.equal(result.Ok.agent_address, alice.agentId)
   t.equal(result.Ok.agent_id, '{"nick":"alice","pub_sign_key":"' + alice.agentId + '"}')
+  t.equal(result.Ok.properties, '{"test_property":"test-property-value"}')
 
   // don't compare the public token because it changes every time we change the dna.
   t.deepEqual(result.Ok.cap_request.provenance, [ alice.agentId, '+78GKy9y3laBbCNK1ajrj2rYVV3lBOxzGAZuuLDqXL2MLJUbMaB4lv7ut/UPWSoEeHx7OuXrTFXfu+PihtMMBQ==' ]

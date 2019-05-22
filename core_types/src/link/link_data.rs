@@ -70,6 +70,14 @@ impl LinkData {
             agent_id,
         }
     }
+
+    pub fn add_from_link(link: &Link) -> Self {
+        Self::from_link(link, LinkActionKind::ADD)
+    }
+
+    pub fn remove_from_link(link: &Link) -> Self {
+        Self::from_link(link, LinkActionKind::REMOVE)
+    }
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 {
   "name": "@holochain/holochain-nodejs",
-  "version": "0.4.14-alpha1",
+  "version": "0.4.15-alpha1",
   "description": "Nodejs Holochain Conductor primarily for test execution",
   "repository": {
     "type": "git",

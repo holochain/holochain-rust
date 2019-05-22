@@ -1,5 +1,6 @@
 use crate::{
     action::ActionWrapper,
+    conductor_api::ConductorApi,
     instance::Observer,
     logger::Logger,
     nucleus::actions::get_entry::get_entry_from_cas,
@@ -29,8 +30,6 @@ use holochain_core_types::{
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};
-use jsonrpc_lite::JsonRpc;
-use snowflake::ProcessUniqueId;
 use std::{
     sync::{
         mpsc::{channel, Receiver, SyncSender},
@@ -58,7 +57,7 @@ pub struct Context {
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
-    pub conductor_api: Arc<RwLock<IoHandler>>,
+    pub conductor_api: ConductorApi,
     pub utc_dispatch: Arc<UTCDispatch>,
     signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
@@ -116,8 +115,11 @@ impl Context {
             dht_storage,
             eav_storage: eav,
             p2p_config,
-            conductor_api: Self::test_check_conductor_api(conductor_api, agent_id),
-            utc_dispatch,
+            conductor_api: ConductorApi::new(Self::test_check_conductor_api(
+                conductor_api,
+                agent_id,
+            )),
+            utc_dispatch
         }
     }
 
@@ -145,7 +147,7 @@ impl Context {
             dht_storage: cas,
             eav_storage: eav,
             p2p_config,
-            conductor_api: Self::test_check_conductor_api(None, agent_id),
+            conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             utc_dispatch,
         })
     }
@@ -255,29 +257,7 @@ impl Context {
     }
 
     pub fn sign(&self, payload: String) -> Result<String, HolochainError> {
-        let handler = self.conductor_api.write().unwrap();
-        let request = format!(
-            r#"{{"jsonrpc": "2.0", "method": "agent/sign", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
-            payload, ProcessUniqueId::new()
-        );
-
-        let response = handler
-            .handle_request_sync(&request)
-            .ok_or("Conductor sign call failed".to_string())?;
-
-        let response = JsonRpc::parse(&response)?;
-
-        match response {
-            JsonRpc::Success(_) => Ok(String::from(
-                response.get_result().unwrap()["signature"]
-                    .as_str()
-                    .unwrap(),
-            )),
-            JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
-                serde_json::to_string(&response.get_error().unwrap()).unwrap(),
-            )),
-            _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
-        }
+        self.conductor_api.sign(payload)
     }
 
     /// returns the public capability token (if any)
@@ -322,8 +302,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
         .state()
         .ok_or("Network::start() could not get application state".to_string())?;
     let agent_state = state.agent();
-
-    let agent = await!(agent_state.get_agent(&context))?;
+    let agent = agent_state.get_agent()?;
     let agent_id = agent.pub_sign_key;
 
     let dna = state

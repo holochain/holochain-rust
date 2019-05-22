@@ -40,6 +40,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     );
     let entry = Entry::LinkAdd(link_add);
     // Wait for future to be resolved
+    // This is where the link entry actually gets created.
     let result: Result<Address, HolochainError> = context
         .block_on(author_entry(&entry, None, &context, &vec![]))
         .map(|_| entry.address().clone());

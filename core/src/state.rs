@@ -4,6 +4,7 @@ use crate::{
         chain_store::ChainStore,
         state::{AgentState, AgentStateSnapshot},
     },
+    conductor_api::ConductorApi,
     context::Context,
     dht::dht_store::DhtStore,
     network::state::NetworkState,
@@ -38,6 +39,7 @@ pub struct State {
     // @TODO eventually drop stale history
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub history: HashSet<ActionWrapper>,
+    pub conductor_api: ConductorApi,
 }
 
 impl State {
@@ -50,10 +52,14 @@ impl State {
         let eav = context.eav_storage.clone();
         State {
             nucleus: Arc::new(NucleusState::new()),
-            agent: Arc::new(AgentState::new(ChainStore::new(chain_cas.clone()))),
+            agent: Arc::new(AgentState::new(
+                ChainStore::new(chain_cas.clone()),
+                context.agent_id.address(),
+            )),
             dht: Arc::new(DhtStore::new(dht_cas.clone(), eav)),
             network: Arc::new(NetworkState::new()),
             history: HashSet::new(),
+            conductor_api: context.conductor_api.clone(),
         }
     }
 
@@ -77,6 +83,7 @@ impl State {
             dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
             network: Arc::new(NetworkState::new()),
             history: HashSet::new(),
+            conductor_api: context.conductor_api.clone(),
         }
     }
 
@@ -105,29 +112,18 @@ impl State {
         }
     }
 
-    pub fn reduce(&self, context: Arc<Context>, action_wrapper: ActionWrapper) -> Self {
+    pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
         let mut new_state = State {
-            nucleus: crate::nucleus::reduce(
-                Arc::clone(&context),
-                Arc::clone(&self.nucleus),
-                &action_wrapper,
-            ),
-            agent: crate::agent::state::reduce(
-                Arc::clone(&context),
-                Arc::clone(&self.agent),
-                &action_wrapper,
-            ),
-            dht: crate::dht::dht_reducers::reduce(
-                Arc::clone(&context),
-                Arc::clone(&self.dht),
-                &action_wrapper,
-            ),
+            nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),
+            agent: crate::agent::state::reduce(Arc::clone(&self.agent), &self, &action_wrapper),
+            dht: crate::dht::dht_reducers::reduce(Arc::clone(&self.dht), &action_wrapper),
             network: crate::network::reducers::reduce(
-                Arc::clone(&context),
                 Arc::clone(&self.network),
+                &self,
                 &action_wrapper,
             ),
             history: self.history.clone(),
+            conductor_api: self.conductor_api.clone(),
         };
 
         new_state.history.insert(action_wrapper);
@@ -158,6 +154,7 @@ impl State {
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(context.dht_storage.clone()),
             agent_snapshot.top_chain_header().map(|h| h.to_owned()),
+            context.agent_id.address(),
         );
         let nucleus_state = NucleusState::from(nucleus_snapshot);
         Ok(State::new_with_agent_and_nucleus(

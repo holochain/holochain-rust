@@ -10,8 +10,8 @@ use holochain_core_types::{
 
 use std::sync::Arc;
 
-mod app_entry;
 mod agent_entry;
+mod app_entry;
 mod header_address;
 mod link_entry;
 mod provenances;

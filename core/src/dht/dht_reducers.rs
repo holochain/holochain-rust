@@ -118,7 +118,7 @@ pub(crate) fn reduce_add_link(
     } else {
         let eav = EntityAttributeValueIndex::new(
             link.base(),
-            &Attribute::LinkTag(link.tag().to_owned()),
+            &Attribute::LinkTag(link.link_type().to_owned(), link.tag().to_owned()),
             &entry.address(),
         );
         eav.map(|e| {
@@ -161,7 +161,7 @@ pub(crate) fn reduce_remove_link(
             .fold(None, |_storage_option, link_address| {
                 let eav = EntityAttributeValueIndex::new(
                     link.base(),
-                    &Attribute::RemovedLink(link.tag().to_string()),
+                    &Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_owned()),
                     &link_address,
                 );
                 eav.map(|e| {
@@ -394,7 +394,7 @@ pub mod tests {
         let storage = store.dht().content_storage();
         let _ = (storage.write().unwrap()).add(&entry);
 
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
         let link_entry = Entry::LinkAdd(LinkData::from_link(
             &link.clone(),
             LinkActionKind::ADD,
@@ -420,7 +420,10 @@ pub mod tests {
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), link_entry.address());
-        assert_eq!(eav.attribute(), Attribute::LinkTag(link.tag().to_owned()));
+        assert_eq!(
+            eav.attribute(),
+            Attribute::LinkTag(link.link_type().to_owned(), link.tag().to_owned())
+        );
     }
 
     #[test]
@@ -432,7 +435,7 @@ pub mod tests {
         let _ = store.dht().content_storage().write().unwrap().add(&entry);
 
         let test_tag = String::from("test-tag");
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+            &entry.address(),
         let entry_link_add = Entry::LinkAdd(LinkData::from_link(
             &link.clone(),
             LinkActionKind::ADD,
@@ -472,7 +475,7 @@ pub mod tests {
         assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
             eav.attribute(),
-            Attribute::RemovedLink(link.tag().to_string())
+            Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
         );
     }
 
@@ -482,8 +485,13 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
-        let action = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
+        let link = Link::new(
+Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_owned())        let action = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
+            &entry.address(),
+            "test-link_type",
+            "test-tag",
+        );
+
 
         let new_dht_store = reduce(store.dht(), &action);
 

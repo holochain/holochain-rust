@@ -7,10 +7,12 @@ use holochain_wasm_utils::api_serialization::{
     get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
 };
 
-/// Consumes three values; the address of an entry get get links from (the base), the tag of the links
-/// to be retrieved, and an options struct for selecting what meta data and crud status links to retrieve.
-/// Note: the tag is intended to describe the relationship between the `base` and other entries you wish to lookup.
-/// This function returns a list of addresses of other entries which matched as being linked by the given `tag`.
+/// Consumes four values; the address of an entry get get links from (the base), the type of the links
+/// to be retrieved, an optional tag to match, and an options struct for selecting what meta data and crud status links to retrieve.
+/// Note: the type is intended to describe the relationship between the `base` and other entries you wish to lookup.
+/// This function returns a list of addresses of other entries which matched as being linked by the given `type`. If the `tag` is not None
+/// it will return only links that match the tag exactly. If the tag parameter is None it will return all links of the given type
+/// regardless of their tag.
 /// Links are created using the Zome API function [link_entries](fn.link_entries.html).
 /// If you also need the content of the entry consider using one of the helper functions:
 /// [get_links_result](fn.get_links_result) or [get_links_and_load](fn._get_links_and_load)
@@ -26,28 +28,34 @@ use holochain_wasm_utils::api_serialization::{
 ///
 /// # fn main() {
 /// pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
-///     hdk::get_links_with_options(&agent, "authored_posts", GetLinksOptions::default())
+///     hdk::get_links_with_options(&agent, Some("authored_posts".into()), None, GetLinksOptions::default())
 /// }
 /// # }
 /// ```
-pub fn get_links_with_options<S: Into<String>>(
+pub fn get_links_with_options(
     base: &Address,
-    tag: S,
+    link_type: Option<String>,
+    tag: Option<String>,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
     Dispatch::GetLinks.with_input(GetLinksArgs {
         entry_address: base.clone(),
-        tag: tag.into(),
+        link_type: link_type.into(),
+        tag: tag,
         options,
     })
 }
 
 /// Helper function for get_links. Returns a vector with the default return results.
-pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLinksResult> {
-    get_links_with_options(base, tag, GetLinksOptions::default())
+pub fn get_links(
+    base: &Address,
+    link_type: Option<String>,
+    tag: Option<String>,
+) -> ZomeApiResult<GetLinksResult> {
+    get_links_with_options(base, link_type, tag, GetLinksOptions::default())
 }
 
-/// Retrieves data about entries linked to a base address with a given tag. This is the most general version of the various get_links
+/// Retrieves data about entries linked to a base address with a given type and tag. This is the most general version of the various get_links
 /// helpers (such as get_links_and_load) and can return the linked addresses, entries, headers and sources. Also supports CRUD status_request.
 /// The data returned is configurable with the GetLinksOptions to specify links options and GetEntryOptions argument wto specify options when loading the entries.
 /// # Examples
@@ -63,17 +71,18 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 ///
 /// # fn main() {
 /// fn hangle_get_links_result(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
-///    hdk::get_links_result(&address, "test-tag", GetLinksOptions::default(), GetEntryOptions::default())
+///    hdk::get_links_result(&address, Some("test-link".into()), None, GetLinksOptions::default(), GetEntryOptions::default())
 /// }
 /// # }
 /// ```
-pub fn get_links_result<S: Into<String>>(
+pub fn get_links_result(
     base: &Address,
-    tag: S,
+    link_type: Option<String>,
+    tag: Option<String>,
     options: GetLinksOptions,
     get_entry_options: GetEntryOptions,
 ) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
-    let get_links_result = get_links_with_options(base, tag, options)?;
+    let get_links_result = get_links_with_options(base, link_type, tag, options)?;
     let result = get_links_result
         .addresses()
         .iter()
@@ -83,12 +92,14 @@ pub fn get_links_result<S: Into<String>>(
 }
 
 /// Helper function for get_links. Returns a vector of the entries themselves
-pub fn get_links_and_load<S: Into<String>>(
+pub fn get_links_and_load(
     base: &HashString,
-    tag: S,
+    link_type: Option<String>,
+    tag: Option<String>,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
     let get_links_result = get_links_result(
         base,
+        link_type,
         tag,
         GetLinksOptions::default(),
         GetEntryOptions::default(),

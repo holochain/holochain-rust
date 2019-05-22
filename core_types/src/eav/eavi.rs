@@ -36,8 +36,8 @@ pub enum Attribute {
     EntryHeader,
     Link,
     LinkRemove,
-    LinkTag(String),
-    RemovedLink(String),
+    LinkTag(String, String),
+    RemovedLink(String, String),
     PendingEntry,
 }
 
@@ -72,8 +72,10 @@ impl fmt::Display for Attribute {
             Attribute::EntryHeader => write!(f, "entry-header"),
             Attribute::Link => write!(f, "link"),
             Attribute::LinkRemove => write!(f, "link_remove"),
-            Attribute::LinkTag(tag) => write!(f, "link__{}", tag),
-            Attribute::RemovedLink(tag) => write!(f, "removed_link__{}", tag),
+            Attribute::LinkTag(link_type, tag) => write!(f, "link__{}__{}", link_type, tag),
+            Attribute::RemovedLink(link_type, tag) => {
+                write!(f, "removed_link__{}__{}", link_type, tag)
+            }
             Attribute::PendingEntry => write!(f, "pending-entry"),
         }
     }
@@ -81,9 +83,9 @@ impl fmt::Display for Attribute {
 
 lazy_static! {
     static ref LINK_REGEX: Regex =
-        Regex::new(r"^link__(.*)$").expect("This string literal is a valid regex");
+        Regex::new(r"^link__(.*)__(.*)$").expect("This string literal is a valid regex");
     static ref REMOVED_LINK_REGEX: Regex =
-        Regex::new(r"^removed_link__(.*)$").expect("This string literal is a valid regex");
+        Regex::new(r"^removed_link__(.*)__(.*)$").expect("This string literal is a valid regex");
 }
 
 impl TryFrom<&str> for Attribute {
@@ -91,11 +93,14 @@ impl TryFrom<&str> for Attribute {
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         use self::Attribute::*;
         if LINK_REGEX.is_match(s) {
-            let tag = LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
-            Ok(LinkTag(tag))
+            let link_type = LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
+            let link_tag = LINK_REGEX.captures(s)?.get(2)?.as_str().to_string();
+
+            Ok(LinkTag(link_type, link_tag))
         } else if REMOVED_LINK_REGEX.is_match(s) {
-            let tag = REMOVED_LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
-            Ok(RemovedLink(tag))
+            let link_type = REMOVED_LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
+            let link_tag = REMOVED_LINK_REGEX.captures(s)?.get(2)?.as_str().to_string();
+            Ok(RemovedLink(link_type, link_tag))
         } else {
             match s {
                 "crud-status" => Ok(CrudStatus),
@@ -162,7 +167,7 @@ impl AddressableContent for EntityAttributeValueIndex {
 }
 
 fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
-    if let Attribute::LinkTag(name) | Attribute::RemovedLink(name) = attribute {
+    if let Attribute::LinkTag(name, _tag) | Attribute::RemovedLink(name, _tag) = attribute {
         let regex = RegexBuilder::new(r#"[/:*?<>"'\\|+]"#)
             .build()
             .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
@@ -234,7 +239,7 @@ pub fn test_eav_entity() -> Entry {
 }
 
 pub fn test_eav_attribute() -> Attribute {
-    Attribute::LinkTag("foo-attribute".into())
+    Attribute::LinkTag("foo-attribute".into(), "foo-tag".into())
 }
 
 pub fn test_eav_value() -> Entry {
@@ -393,7 +398,7 @@ pub mod tests {
             test_eav_storage(),
             vec!["a_", "b_", "c_", "d_"]
                 .into_iter()
-                .map(|p| Attribute::LinkTag(p.to_string() + "one_to_many"))
+                .map(|p| Attribute::LinkTag(p.to_string() + "one_to_many", "".into()))
                 .collect(),
         );
     }
@@ -423,8 +428,8 @@ pub mod tests {
     fn attribute_try_from_string() {
         assert_eq!("crud-status".try_into(), Ok(Attribute::CrudStatus));
         assert_eq!(
-            "link__tagalog".try_into(),
-            Ok(Attribute::LinkTag("tagalog".into()))
+            "link__sometype__tagalog".try_into(),
+            Ok(Attribute::LinkTag("sometype".into(), "tagalog".into()))
         );
         assert!(
             (r"unknown \\and// invalid / attribute".try_into() as Result<Attribute, _>).is_err(),
@@ -435,49 +440,49 @@ pub mod tests {
     fn validate_attribute_paths() {
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &Attribute::LinkTag("abc".into()),
+            &Attribute::LinkTag("abc".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_ok());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &Attribute::LinkTag("abc123".into()),
+            &Attribute::LinkTag("abc123".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_ok());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &Attribute::LinkTag("123".into()),
+            &Attribute::LinkTag("123".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_ok());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &Attribute::LinkTag("link_:{}".into()),
+            &Attribute::LinkTag("link_:{}".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &Attribute::LinkTag("link_\"".into()),
+            &Attribute::LinkTag("link_\"".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &Attribute::LinkTag("link_/".into()),
+            &Attribute::LinkTag("link_/".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &Attribute::LinkTag("link_\\".into()),
+            &Attribute::LinkTag("link_\\".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &Attribute::LinkTag("link_?".into()),
+            &Attribute::LinkTag("link_?".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());

@@ -289,7 +289,7 @@ pub mod tests {
             eav_storage,
             vec!["a_", "b_", "c_", "d_"]
                 .into_iter()
-                .map(|p| Attribute::LinkTag(p.to_string() + "one_to_many"))
+                .map(|p| Attribute::LinkTag(p.to_string() + "one_to_many", "".into()))
                 .collect(),
         );
     }

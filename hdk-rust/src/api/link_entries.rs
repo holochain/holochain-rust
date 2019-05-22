@@ -3,10 +3,18 @@ use error::ZomeApiError;
 use holochain_core_types::cas::content::Address;
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 
-/// Adds a named, directed link between two entries on the DHT.
-/// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
-/// relationship between them, called a `tag`. Later, lists of entries can be looked up by using [get_links](fn.get_links.html). Entries
+/// Adds a named, tagged, directed link between two entries on the DHT.
+/// Consumes four values, two of which are the addresses of entries, and two of which are strings used to describe the link.
+///
+/// The first is the `link_type`. This is analogous to the entry_type and determines which validation callback will be run. The link type must match
+/// a type already defined in the DNA using the link!, to! or from! macros.
+///
+/// The second is the `tag`. This can be any arbitrary string. This will be passed to the validation callback allowing the hApp developer to control what constitutes a valid tag.
+///
+/// Later, lists of entries can be looked up by using [get_links](fn.get_links.html). Entries
 /// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
+/// It is possible to retrieve links that exactly match a particular tag and type or return all links for a given type (along with their tag string).
+
 /// # Examples
 /// ```rust
 /// # #![feature(try_from)]
@@ -47,12 +55,13 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 ///         &AGENT_ADDRESS,
 ///         &address,
 ///         "authored_posts",
+///         ""
 ///     )?;
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
 ///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, headers: false, timeout: Default::default() })?;
-///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+///         hdk::link_entries(&in_reply_to_address, &address, "comments", "")?;
 ///     }
 ///
 ///     Ok(address)
@@ -63,11 +72,13 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 pub fn link_entries<S: Into<String>>(
     base: &Address,
     target: &Address,
+    link_type: S,
     tag: S,
 ) -> Result<Address, ZomeApiError> {
     Dispatch::LinkEntries.with_input(LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
+        link_type: link_type.into(),
         tag: tag.into(),
     })
 }

@@ -601,7 +601,8 @@ mod tests {
         let link_add = LinkData::new_add(
             &"base".to_string().into(),
             &"target".to_string().into(),
-            "tag",
+            "link-type",
+            "link-tag"
             0,
             test_agent_id(),
         );

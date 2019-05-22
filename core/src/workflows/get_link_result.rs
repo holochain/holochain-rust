@@ -27,6 +27,7 @@ pub async fn get_link_result_workflow<'a>(
     }?;
     //get links
     let links = await!(get_link_caches(context, link_args))?;
+        link_args.link_type.clone(),
     let (link_results, errors): (Vec<_>, Vec<_>) = links
         .into_iter()
         .map(|link| {
@@ -43,6 +44,7 @@ pub async fn get_link_result_workflow<'a>(
                                 Ok(LinksResult {
                                     address: link_data.link().target().clone(),
                                     headers,
+                                    tag: link_data.link().tag().to_string(),
                                 })
                             },
                             None => {

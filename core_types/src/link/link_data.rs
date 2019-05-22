@@ -12,8 +12,8 @@ use crate::{
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct LinkData {
-    action_kind: LinkActionKind,
-    link: Link,
+    pub action_kind: LinkActionKind,
+    pub link: Link,
     timestamp: i64,
     agent_id: AgentId,
 }
@@ -23,12 +23,13 @@ impl LinkData {
         base: &Address,
         target: &Address,
         tag: &str,
+        link_type : &str
         timestamp: i64,
         agent_id: AgentId,
     ) -> Self {
         LinkData {
             action_kind: LinkActionKind::ADD,
-            link: Link::new(base, target, tag),
+            link: Link::new(base, target, link_type, tag),
             timestamp,
             agent_id,
         }
@@ -43,7 +44,7 @@ impl LinkData {
     ) -> Self {
         LinkData {
             action_kind: LinkActionKind::REMOVE,
-            link: Link::new(base, target, tag),
+            link: Link::new(base, target, link_type, tag),
             timestamp,
             agent_id,
         }
@@ -90,7 +91,7 @@ pub mod tests {
         json::JsonString,
         link::{
             link_data::LinkData,
-            tests::{example_link, example_link_action_kind, example_link_tag},
+            tests::{example_link, example_link_action_kind, example_link_type},
         },
     };
     use std::convert::TryFrom;
@@ -128,8 +129,8 @@ pub mod tests {
     }
 
     #[test]
-    fn link_tag_test() {
-        assert_eq!(&example_link_tag(), example_link().tag(),);
+    fn link_type_test() {
+        assert_eq!(&example_link_type(), example_link().link_type(),);
     }
 
     #[test]

@@ -119,7 +119,7 @@ impl Context {
                 conductor_api,
                 agent_id,
             )),
-            utc_dispatch
+            utc_dispatch,
         }
     }
 

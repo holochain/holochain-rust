@@ -91,7 +91,6 @@ pub mod tests {
     fn initialize_context() -> Arc<Context> {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
-            &entry_addresses[0],
         let netname = Some("returns_list_of_links");
         let instance = test_instance(dna, netname).expect("Could not create test instance");
 
@@ -101,28 +100,19 @@ pub mod tests {
 
     fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
         links.iter().for_each(|link| {
-                &initialized_context,
-            ))
-            .expect("Could not commit link");
-        let link_entry_2 = Entry::LinkAdd(LinkData::new_add(
-            &entry_addresses[0],
-            &entry_addresses[2].clone(),
-            "test-tag",
-            0,
-            test_agent_id(),
-        ));
-        initialized_context
-            .block_on(commit_entry(
-                link_entry_2.clone(),
-                None,
-                &initialized_context,
-            ))
-            .expect("Could not commit link");
             assert!(initialized_context
-                .block_on(commit_entry(link.add_entry(), None, &initialized_context))
+                .block_on(commit_entry(
+                    link.add_entry(0, test_agent_id()),
+                    None,
+                    &initialized_context
+                ))
                 .is_ok());
             assert!(initialized_context
-                .block_on(add_link(&link, &initialized_context))
+                .block_on(add_link(
+                    &Entry::LinkAdd(LinkData::add_from_link(&link, 0, test_agent_id())),
+                    &link,
+                    &initialized_context
+                ))
                 .is_ok());
         });
     }

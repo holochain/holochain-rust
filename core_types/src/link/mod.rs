@@ -5,7 +5,7 @@
 pub mod link_data;
 pub mod link_list;
 
-use crate::{cas::content::Address, error::HolochainError, json::JsonString};
+use crate::{agent::AgentId, cas::content::Address, error::HolochainError, json::JsonString};
 use entry::Entry;
 use link::link_data::LinkData;
 
@@ -40,12 +40,12 @@ impl Link {
         &self.tag
     }
 
-    pub fn add_entry(&self) -> Entry {
-        Entry::LinkAdd(LinkData::add_from_link(self))
+    pub fn add_entry(&self, timestamp: i64, agent_id: AgentId) -> Entry {
+        Entry::LinkAdd(LinkData::add_from_link(self, timestamp, agent_id))
     }
 
-    pub fn remove_entry(&self) -> Entry {
-        Entry::LinkAdd(LinkData::remove_from_link(self))
+    pub fn remove_entry(&self, timestamp: i64, agent_id: AgentId) -> Entry {
+        Entry::LinkAdd(LinkData::remove_from_link(self, timestamp, agent_id))
     }
 }
 

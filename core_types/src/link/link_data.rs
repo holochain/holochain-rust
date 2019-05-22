@@ -71,12 +71,12 @@ impl LinkData {
         }
     }
 
-    pub fn add_from_link(link: &Link) -> Self {
-        Self::from_link(link, LinkActionKind::ADD)
+    pub fn add_from_link(link: &Link, timestamp: i64, agent_id: AgentId) -> Self {
+        Self::from_link(link, LinkActionKind::ADD, timestamp, agent_id)
     }
 
-    pub fn remove_from_link(link: &Link) -> Self {
-        Self::from_link(link, LinkActionKind::REMOVE)
+    pub fn remove_from_link(link: &Link, timestamp: i64, agent_id: AgentId) -> Self {
+        Self::from_link(link, LinkActionKind::REMOVE, timestamp, agent_id)
     }
 }
 

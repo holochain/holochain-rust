@@ -345,7 +345,7 @@ pub mod tests {
         chain_header::test_chain_header,
         eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
-        link::{link_data::LinkData, Link},
+        link::{link_data::LinkData, Link, LinkActionKind},
     };
     use std::convert::TryFrom;
 
@@ -395,8 +395,13 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
-        let action = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
-        let link_entry = Entry::LinkAdd(LinkData::from_link(&link.clone(), LinkActionKind::ADD));
+        let link_entry = Entry::LinkAdd(LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::ADD,
+            0,
+            test_agent_id(),
+        ));
+        let action = ActionWrapper::new(Action::AddLink((link.clone(), link_entry.clone())));
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
@@ -427,18 +432,24 @@ pub mod tests {
         let _ = store.dht().content_storage().write().unwrap().add(&entry);
 
         let test_tag = String::from("test-tag");
-        let action = ActionWrapper::new(Action::AddLink(link.clone()));
-        let new_dht_store = reduce(store.dht(), &action);
-
-        let action = ActionWrapper::new(Action::RemoveLink(link.clone()));
-        let new_dht_store = reduce(new_dht_store, &action);
-            LinkData::new_add(link.base(), link.target(), link.tag(), 0, test_agent_id()),
-            vec![entry.clone().address()],
+        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let entry_link_add = Entry::LinkAdd(LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::ADD,
+            0,
+            test_agent_id(),
         ));
-        action = ActionWrapper::new(Action::RemoveLink((
-            link.clone(),
-            entry_link_remove.clone(),
-        )));
+        let action_link_add =
+            ActionWrapper::new(Action::AddLink((link.clone(), entry_link_add.clone())));
+        let new_dht_store = reduce(store.dht(), &action_link_add);
+
+        let entry_link_remove = Entry::LinkRemove((
+            LinkData::from_link(&link.clone(), LinkActionKind::REMOVE, 0, test_agent_id()),
+            vec![entry_link_add.address()],
+        ));
+        let action_link_remove =
+            ActionWrapper::new(Action::RemoveLink((link.clone(), entry_link_remove)));
+        let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
@@ -457,7 +468,7 @@ pub mod tests {
         assert_eq!(hash_set.len(), 1);
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        let link_entry = link.add_entry();
+        let link_entry = link.add_entry(0, test_agent_id());
         assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
             eav.attribute(),

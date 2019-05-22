@@ -3,10 +3,10 @@ use crate::{
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 
-use futures_util::future::FutureExt;
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
+use holochain_core_types::{
     entry::{Entry, EntryWithMeta, EntryWithMetaAndHeader},
     error::HolochainError,
+    link::link_data::LinkData,
 };
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
@@ -27,19 +27,15 @@ pub async fn get_link_result_workflow<'a>(
     }?;
     //get links
     let links = await!(get_link_caches(context, link_args))?;
-
     let (link_results, errors): (Vec<_>, Vec<_>) = links
         .into_iter()
         .map(|link| {
             //we should probably replace this with get_entry_result_workflow, it does all the work needed
-            context.block_on(
-                get_entry_with_meta_workflow(&context, &link, &link_args.options.timeout).map(
-                    |link_entry_result| {
-                        match link_entry_result {
-                            Ok(Some(EntryWithMetaAndHeader {
+                        match link.1 {
+                            Some(EntryWithMetaAndHeader {
                                 entry_with_meta: EntryWithMeta{entry: Entry::LinkAdd(link_data), ..},
                                 headers,
-                            })) => {
+                            }) => {
                                 let headers = match link_args.options.headers {
                                     true => headers,
                                     false => Vec::new(),
@@ -49,16 +45,11 @@ pub async fn get_link_result_workflow<'a>(
                                     headers,
                                 })
                             },
-                            Ok(None) => {
+                            None => {
                                 Err(HolochainError::ErrorGeneric(
-                                    format!("Could not get link entry for address stored in the EAV entry {}", link),
+                                    format!("Could not get link entry for address stored in the EAV entry {:?}", link),
                                 ))
                             }
-                            Err(e) => {
-                                Err(HolochainError::ErrorGeneric(
-                                    format!("Error retrieveing link: {:?}", e),
-                                ))
-                            },
                             _ => {
                                 Err(HolochainError::ErrorGeneric(
                                     format!("Unknown Error retrieveing link. Most likely EAV entry points to non-link entry type"),
@@ -66,9 +57,7 @@ pub async fn get_link_result_workflow<'a>(
                             }
                         }
                     },
-                ),
             )
-        })
         .partition(Result::is_ok);
 
     if errors.is_empty() {
@@ -85,7 +74,7 @@ pub async fn get_link_result_workflow<'a>(
 async fn get_link_caches<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
-) -> Result<Vec<(Address, Address)>, HolochainError> {
+) -> Result<Vec<(LinkData, Option<EntryWithMetaAndHeader>)>, HolochainError> {
     let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
@@ -103,13 +92,13 @@ async fn get_link_caches<'a>(
             ));
             entry_with_header
                 .map(|link_entry_result| {
-                    link_entry_result.map(|link_entry| match link_entry.entry_with_meta.entry {
-                        Entry::LinkAdd(link) => {
-                            Ok((link.link().base().clone(), link.link().target().clone()))
+                    link_entry_result.clone().map(|link_entry| {
+                        match link_entry.entry_with_meta.entry {
+                            Entry::LinkAdd(link) => Ok((link, link_entry_result)),
+                            _ => Err(HolochainError::ErrorGeneric(
+                                "expected entry of type link".to_string(),
+                            )),
                         }
-                        _ => Err(HolochainError::ErrorGeneric(
-                            "expected entry of type link".to_string(),
-                        )),
                     })
                 })
                 .unwrap_or(None)
@@ -127,7 +116,7 @@ async fn get_link_caches<'a>(
     } else {
         Err(HolochainError::ErrorGeneric(format!(
             "Could not get links: {:?}",
-            errors
+            get_links_error
         )))
     }
 }

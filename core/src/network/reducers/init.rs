@@ -57,9 +57,10 @@ pub mod test {
         state::{test_store, State},
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::{agent::AgentId, cas::content::Address, utc_dispatch::UTCMock};
+    use holochain_core_types::{
         agent::AgentId,
         cas::content::{Address, AddressableContent},
+        utc_dispatch::UTCMock,
     };
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use std::sync::{Mutex, RwLock};

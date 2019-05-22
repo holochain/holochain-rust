@@ -26,6 +26,7 @@ pub trait ConductorAdmin {
         copy: bool,
         expected_hash: Option<HashString>,
         properties: Option<&serde_json::Value>,
+        uuid: Option<String>,
     ) -> Result<HashString, HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_instance(
@@ -81,6 +82,7 @@ impl ConductorAdmin for Conductor {
         copy: bool,
         expected_hash: Option<HashString>,
         properties: Option<&serde_json::Value>,
+        uuid: Option<String>,
     ) -> Result<HashString, HolochainError> {
         let path_string = path
             .to_str()
@@ -108,6 +110,10 @@ impl ConductorAdmin for Conductor {
                 ));
             }
             json_patch::merge(&mut dna.properties, &props);
+        }
+
+        if let Some(uuid) = uuid {
+            dna.uuid = uuid;
         }
 
         let config_path = match copy {
@@ -759,7 +765,8 @@ pattern = '.*'"#
                 String::from("new-dna"),
                 false,
                 None,
-                None
+                None,
+                None,
             )
             .is_ok());
 
@@ -827,7 +834,8 @@ id = 'new-dna'"#,
                 String::from("new-dna"),
                 true,
                 None,
-                None
+                None,
+                None,
             )
             .is_ok());
 
@@ -878,7 +886,8 @@ id = 'new-dna'"#,
                 String::from("new-dna"),
                 false,
                 Some(dna.address()),
-                None
+                None,
+                None,
             )
             .is_ok());
 
@@ -888,7 +897,8 @@ id = 'new-dna'"#,
                 String::from("new-dna"),
                 false,
                 Some("wrong-address".into()),
-                None
+                None,
+                None,
             ),
             Err(HolochainError::DnaHashMismatch(
                 "wrong-address".into(),
@@ -912,7 +922,8 @@ id = 'new-dna'"#,
                 String::from("new-dna-with-props"),
                 false,
                 None,
-                Some(&new_props)
+                Some(&new_props),
+                None,
             ),
             Err(HolochainError::ConfigError(
                 "Cannot install DNA with properties unless copy flag is true".into()
@@ -925,7 +936,8 @@ id = 'new-dna'"#,
                 String::from("new-dna-with-props"),
                 true,
                 None,
-                Some(&new_props)
+                Some(&new_props),
+                None,
             )
             .is_ok());
 
@@ -987,6 +999,7 @@ id = 'new-dna'"#,
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 false,
+                None,
                 None,
                 None,
             )
@@ -1284,6 +1297,7 @@ type = 'http'"#,
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 false,
+                None,
                 None,
                 None,
             )

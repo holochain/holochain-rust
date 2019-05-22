@@ -30,7 +30,9 @@ in rec
     if
       pkgs.stdenv.isDarwin
     then
-      ""
+      ''
+      echo;
+      ''
     else
       ''
         patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $out/bin/${args.binary}

@@ -65,7 +65,7 @@ scenario('alice create & publish post -> recommend own post to self', async (s, 
   await s.consistent()
 
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "QmQja9SJhYWA5B3myrtnd9bR6dNeaFj6Lr3DRjumfTPWaX")
+  t.equal(linked.Ok, "QmZr5F34uGZjAEwmU574VwiRtXGHQmvbUnNgA2MJz7YcTr")
 
   const recommendedPosts = await alice.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)

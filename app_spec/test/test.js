@@ -99,8 +99,7 @@ scenario('show_env', async (s, t, { alice }) => {
   t.equal(result.Ok.properties, '{"test_property":"test-property-value"}')
 
   // don't compare the public token because it changes every time we change the dna.
-  t.deepEqual(result.Ok.cap_request.provenance, [ alice.agentAddress, '+78GKy9y3laBbCNK1ajrj2rYVV3lBOxzGAZuuLDqXL2MLJUbMaB4lv7ut/UPWSoEeHx7OuXrTFXfu+PihtMMBQ==' ]
-);
+  t.deepEqual(result.Ok.cap_request.provenance, [ alice.agentAddress, '+78GKy9y3laBbCNK1ajrj2rYVV3lBOxzGAZuuLDqXL2MLJUbMaB4lv7ut/UPWSoEeHx7OuXrTFXfu+PihtMMBQ==' ])
 
 })
 
@@ -169,6 +168,62 @@ scenario('create_post', async (s, t, { alice }) => {
 })
 
 scenario('create_post_countersigned', async (s, t, { alice, bob }) => {
+  const result1 = await alice.call("blog", "create_tagged_post", {
+    content: "Tutorial on amazing Holochain design patterns",
+    tag: "work"
+  })
+  t.ok(result1.Ok)
+  await s.consistent()
+
+  const result2 = await alice.call("blog", "create_tagged_post", {
+    content: "Fly tying, is it for you?",
+    tag: "fishing"
+  })
+  t.ok(result2.Ok)
+  await s.consistent()
+
+  const getResult = await alice.call("blog", "my_posts", {})
+  t.equal(getResult.Ok.links.length, 2)
+  let tags = getResult.Ok.links.map(l => l.tag)
+  t.ok(tags.includes("work"))
+  t.ok(tags.includes("fishing"))
+})
+
+scenario('create_tagged_post and retrieve exact tag match', async (s, t, { alice }) => {
+  const result1 = await alice.call("blog", "create_tagged_post", {
+    content: "Tutorial on amazing Holochain design patterns",
+    tag: "work"
+  })
+  t.ok(result1.Ok)
+  await s.consistent()
+
+  const result2 = await alice.call("blog", "create_tagged_post", {
+    content: "Fly tying, is it for you?",
+    tag: "fishing"
+  })
+  t.ok(result2.Ok)
+  await s.consistent()
+
+  const getResult = await alice.call("blog", "my_posts", {tag: "fishing"})
+  t.equal(getResult.Ok.links.length, 1)
+  let tags = getResult.Ok.links.map(l => l.tag)
+  t.notOk(tags.includes("work"))
+  t.ok(tags.includes("fishing"))
+})
+
+scenario('tagged link validation', async (s, t, { alice }) => {
+  const result1 = await alice.call("blog", "create_tagged_post", {
+    content: "Achieving a light and fluffy texture",
+    tag: "muffins"
+  })
+  t.ok(result1.Err)  // the linking of the entry should fail because `muffins` is the banned tag
+  await s.consistent()
+
+  const getResult = await alice.call("blog", "my_posts", {})
+  t.equal(getResult.Ok.links.length, 0)
+})
+
+scenario('create_post_countersigned', async (s, t, { alice, bob }) => {
 
   const content = "Holo world"
   const in_reply_to = null
@@ -179,6 +234,7 @@ scenario('create_post_countersigned', async (s, t, { alice, bob }) => {
   t.ok(address_result.Ok)
   const SignResult = await bob.call("converse", "sign_message", { key_id:"", message: address_result.Ok });
   t.ok(SignResult.Ok)
+  await s.consistent()
 
   const counter_signature = [bob.agentAddress, SignResult.Ok];
 

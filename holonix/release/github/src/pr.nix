@@ -64,11 +64,11 @@ Then run `nix-shell --run hc-release-prepare`
    git config --local hub.forkremote ${git.github.upstream}
    if [ "$(git rev-parse --abbrev-ref HEAD)" == "${release.branch}" ]
     then
-     git add . && git commit -am 'Release ${release.core.version.current}'
-     git push && git hub pull new -b 'master' -m '${template}' --no-triangular ${release.branch}
+     git add . && git commit -am 'Release ${release.core.version.current}';
+     git push && git hub pull new -b 'master' -m '${template}' --no-triangular ${release.branch};
     else
-     echo "current branch is not ${release.branch}!"
-     exit 1
+     echo "current branch is not ${release.branch}!";
+     exit 1;
    fi
   '';
 in

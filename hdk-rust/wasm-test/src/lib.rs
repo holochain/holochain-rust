@@ -145,7 +145,7 @@ fn handle_link_two_entries() -> ZomeApiResult<Address> {
 
     hdk::commit_entry(&entry_2)?;
 
-    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test", "test-tag")
 }
 
 fn handle_remove_link() -> ZomeApiResult<()> {
@@ -167,14 +167,14 @@ fn handle_remove_link() -> ZomeApiResult<()> {
     );
 
     hdk::commit_entry(&entry_2)?;
-    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")?;
-    hdk::remove_link(&entry_1.address(), &entry_2.address(), "test-tag")
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test", "test-tag")?;
+    hdk::remove_link(&entry_1.address(), &entry_2.address(), "test", "test-tag")
 
 }
 
 /// Commit 3 entries
-/// Commit a "test-tag" link from entry1 to entry2
-/// Commit a "test-tag" link from entry1 to entry3
+/// Commit a "test" link from entry1 to entry2
+/// Commit a "test" link from entry1 to entry3
 /// return entry1 address
 fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     let entry_1 = Entry::App(
@@ -204,19 +204,19 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     );
     hdk::commit_entry(&entry_3)?;
 
-    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")?;
-    hdk::link_entries(&entry_1.address(), &entry_3.address(), "test-tag")?;
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test", "test-tag")?;
+    hdk::link_entries(&entry_1.address(), &entry_3.address(), "test", "test-tag")?;
     Ok(entry_1.address())
 }
 
 fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&address, "test-tag")
+    hdk::get_links(&address, Some("test".into()), Some("test-tag".into()))
 }
 
 fn handle_links_roundtrip_get_and_load(
     address: Address,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
-    hdk::get_links_and_load(&address, "test-tag")
+    hdk::get_links_and_load(&address, Some("test".into()), Some("test-tag".into()))
 }
 
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
@@ -420,6 +420,7 @@ fn handle_link_validation(stuff1: String, stuff2: String) -> JsonString {
         &entry1.address(),
         &entry2.address(),
         "longer",
+        "test-tag-longer"
     ))
 }
 
@@ -474,7 +475,7 @@ define_zome! {
             links: [
                 to!(
                     "testEntryType",
-                    tag: "test-tag",
+                    link_type: "test",
                     validation_package: || {
                         hdk::ValidationPackageDefinition::ChainFull
                     },
@@ -523,7 +524,7 @@ define_zome! {
             links: [
                 to!(
                     "link_validator",
-                    tag: "longer",
+                    link_type: "longer",
                     validation_package: || {
                         hdk::ValidationPackageDefinition::Entry
                     },

@@ -246,8 +246,18 @@ pub mod tests {
             entry_addresses.push(address);
         }
 
-        let link1 = LinkData::new_add(&entry_addresses[0], &entry_addresses[1], "test-tag");
-        let link2 = LinkData::new_add(&entry_addresses[0], &entry_addresses[2], "test-tag");
+        let link1 = LinkData::new_add(
+            &entry_addresses[0],
+            &entry_addresses[1],
+            "test-link",
+            "test-tag",
+        );
+        let link2 = LinkData::new_add(
+            &entry_addresses[0],
+            &entry_addresses[2],
+            "test-link",
+            "test-tag",
+        );
 
         // Store link1 on the network
         println!("\n add_link(link1) ...");
@@ -272,7 +282,8 @@ pub mod tests {
         let maybe_links = context2.block_on(get_links(
             context2.clone(),
             entry_addresses[0].clone(),
-            String::from("test-tag"),
+            Some("test-link".into()),
+            Some("test-tag".into()),
             Default::default(),
         ));
 

@@ -55,47 +55,48 @@ impl<'a> EaviQuery<'a> {
         match self.index {
             IndexFilter::LatestByAttribute => filtered
                 .filter_map(|eavi| {
-                    let reduced_value = iter2.clone().fold((None, false), |eavi_option, eavi_fold| {
-                        if eavi_option.1 {
-                            eavi_option
-                        } else {
-                            let fold_query = EaviQuery::new(
-                                Some(eavi.entity()).into(),
-                                Some(eavi.attribute()).into(),
-                                Some(eavi.value()).into(),
-                                IndexFilter::LatestByAttribute,
-                                None,
-                            );
-                            if EaviQuery::eav_check(
-                                &eavi_fold,
-                                &fold_query.entity,
-                                &self.attribute,
-                                &fold_query.value,
-                            ) {
-                                if *&self
-                                    .tombstone()
-                                    .as_ref()
-                                    .map(|s| s.check(eavi_fold.attribute()))
-                                    .unwrap_or(true)
-                                    .clone()
-                                {
-                                    (
-                                        Some(eavi_fold),
-                                        *&self
-                                            .tombstone()
-                                            .as_ref()
-                                            .map(|_| true)
-                                            .unwrap_or(false)
-                                            .clone(),
-                                    )
-                                } else {
-                                    (Some(eavi_fold), false)
-                                }
-                            } else {
+                    let reduced_value =
+                        iter2.clone().fold((None, false), |eavi_option, eavi_fold| {
+                            if eavi_option.1 {
                                 eavi_option
+                            } else {
+                                let fold_query = EaviQuery::new(
+                                    Some(eavi.entity()).into(),
+                                    Some(eavi.attribute()).into(),
+                                    Some(eavi.value()).into(),
+                                    IndexFilter::LatestByAttribute,
+                                    None,
+                                );
+                                if EaviQuery::eav_check(
+                                    &eavi_fold,
+                                    &fold_query.entity,
+                                    &self.attribute,
+                                    &fold_query.value,
+                                ) {
+                                    if *&self
+                                        .tombstone()
+                                        .as_ref()
+                                        .map(|s| s.check(eavi_fold.attribute()))
+                                        .unwrap_or(true)
+                                        .clone()
+                                    {
+                                        (
+                                            Some(eavi_fold),
+                                            *&self
+                                                .tombstone()
+                                                .as_ref()
+                                                .map(|_| true)
+                                                .unwrap_or(false)
+                                                .clone(),
+                                        )
+                                    } else {
+                                        (Some(eavi_fold), false)
+                                    }
+                                } else {
+                                    eavi_option
+                                }
                             }
-                        }
-                    });
+                        });
                     reduced_value.0
                 })
                 .collect(),

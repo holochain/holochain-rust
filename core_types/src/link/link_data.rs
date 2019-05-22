@@ -23,7 +23,7 @@ impl LinkData {
         base: &Address,
         target: &Address,
         tag: &str,
-        link_type : &str,
+        link_type: &str,
         timestamp: i64,
         agent_id: AgentId,
     ) -> Self {
@@ -39,7 +39,7 @@ impl LinkData {
         base: &Address,
         target: &Address,
         tag: &str,
-        link_type : &str,
+        link_type: &str,
         timestamp: i64,
         agent_id: AgentId,
     ) -> Self {
@@ -99,7 +99,14 @@ pub mod tests {
 
     pub fn example_link_add() -> LinkData {
         let link = example_link();
-        LinkData::new_add(link.base(), link.target(), link.tag(), 0, test_agent_id())
+        LinkData::new_add(
+            link.base(),
+            link.target(),
+            link.tag(),
+            "test-link-type",
+            0,
+            test_agent_id(),
+        )
     }
 
     pub fn test_link_entry() -> Entry {

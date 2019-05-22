@@ -64,24 +64,29 @@ impl DhtStore {
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
             Some(address).into(),
-            EavFilter::predicate(|attr : Attribute| match attr.clone() {
+            EavFilter::predicate(|attr: Attribute| match attr.clone() {
                 Attribute::LinkTag(query_link_type, query_tag)
-                | Attribute::RemovedLink(query_link_type, query_tag) => match (&link_type.clone(), &tag.clone()) {
-                    (Some(link_type), Some(tag)) => {
-                        link_type == &query_link_type && tag == &query_tag
+                | Attribute::RemovedLink(query_link_type, query_tag) => {
+                    match (&link_type.clone(), &tag.clone()) {
+                        (Some(link_type), Some(tag)) => {
+                            link_type == &query_link_type && tag == &query_tag
+                        }
+                        (Some(link_type), None) => link_type == &query_link_type,
+                        (None, Some(tag)) => tag == &query_tag,
+                        (None, None) => true,
                     }
-                    (Some(link_type), None) => link_type == &query_link_type,
-                    (None, Some(tag)) => tag == &query_tag,
-                    (None, None) => true,
-                },
+                }
                 _ => false,
             }),
             None.into(),
             IndexFilter::LatestByAttribute,
-            Some(EavFilter::single(Attribute::RemovedLink(tag.clone().unwrap_or_default(),link_type.clone().unwrap_or_default()))),
+            Some(EavFilter::single(Attribute::RemovedLink(
+                tag.clone().unwrap_or_default(),
+                link_type.clone().unwrap_or_default(),
+            ))),
         ))?;
 
-        println!("filtered {:?}",filtered.clone());
+        println!("filtered {:?}", filtered.clone());
         Ok(filtered
             .into_iter()
             .filter(|eav| match eav.attribute() {

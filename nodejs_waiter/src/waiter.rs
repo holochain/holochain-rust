@@ -602,7 +602,7 @@ mod tests {
             &"base".to_string().into(),
             &"target".to_string().into(),
             "link-type",
-            "link-tag"
+            "link-tag",
             0,
             test_agent_id(),
         );

@@ -1,8 +1,8 @@
-use crate::{agent::find_chain_header, context::Context};
+use crate::{agent::find_chain_header, state::State};
 use holochain_core_types::{
     cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
 };
-use std::{convert::TryInto, sync::Arc};
+use std::convert::TryInto;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct EntryWithHeader {
@@ -16,12 +16,11 @@ impl EntryWithHeader {
     }
 }
 
-fn fetch_entry_from_cas(
-    address: &Address,
-    context: &Arc<Context>,
-) -> Result<Entry, HolochainError> {
-    let json = context
-        .dht_storage
+fn fetch_entry_from_cas(address: &Address, state: &State) -> Result<Entry, HolochainError> {
+    let json = state
+        .agent()
+        .chain_store()
+        .content_storage()
         .read()?
         .fetch(address)?
         .ok_or("Entry not found".to_string())?;
@@ -31,12 +30,11 @@ fn fetch_entry_from_cas(
 
 pub fn fetch_entry_with_header(
     address: &Address,
-    context: &Arc<Context>,
+    state: &State,
 ) -> Result<EntryWithHeader, HolochainError> {
-    let entry = fetch_entry_from_cas(address, &context)?;
+    let entry = fetch_entry_from_cas(address, state)?;
 
-    let header =
-        find_chain_header(&entry, &context).ok_or("No header found for entry".to_string())?;
+    let header = find_chain_header(&entry, state).ok_or("No header found for entry".to_string())?;
 
     Ok(EntryWithHeader::new(entry, header))
 }

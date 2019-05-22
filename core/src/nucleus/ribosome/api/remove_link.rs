@@ -47,7 +47,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     let links_result = context.block_on(get_links(
         context.clone(),
         link.base().clone(),
-        link.tag().clone(),
+        Some(link.link_type().clone()),
+        Some(link.tag().clone()),
         GetLinksOptions::default().timeout.clone(),
     ));
     if links_result.is_err() {

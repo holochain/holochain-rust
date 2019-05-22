@@ -23,7 +23,7 @@ impl LinkData {
         base: &Address,
         target: &Address,
         tag: &str,
-        link_type : &str
+        link_type : &str,
         timestamp: i64,
         agent_id: AgentId,
     ) -> Self {
@@ -39,6 +39,7 @@ impl LinkData {
         base: &Address,
         target: &Address,
         tag: &str,
+        link_type : &str,
         timestamp: i64,
         agent_id: AgentId,
     ) -> Self {

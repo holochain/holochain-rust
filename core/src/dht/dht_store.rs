@@ -64,9 +64,9 @@ impl DhtStore {
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
             Some(address).into(),
-            EavFilter::predicate(move |attr| match attr {
+            EavFilter::predicate(|attr : Attribute| match attr.clone() {
                 Attribute::LinkTag(query_link_type, query_tag)
-                | Attribute::RemovedLink(query_link_type, query_tag) => match (&link_type, &tag) {
+                | Attribute::RemovedLink(query_link_type, query_tag) => match (&link_type.clone(), &tag.clone()) {
                     (Some(link_type), Some(tag)) => {
                         link_type == &query_link_type && tag == &query_tag
                     }
@@ -78,9 +78,10 @@ impl DhtStore {
             }),
             None.into(),
             IndexFilter::LatestByAttribute,
-            Some(EavFilter::single(Attribute::RemovedLink(tag.clone()))),
+            Some(EavFilter::single(Attribute::RemovedLink(tag.clone().unwrap_or_default(),link_type.clone().unwrap_or_default()))),
         ))?;
 
+        println!("filtered {:?}",filtered.clone());
         Ok(filtered
             .into_iter()
             .filter(|eav| match eav.attribute() {

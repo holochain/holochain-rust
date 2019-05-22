@@ -55,7 +55,7 @@ impl<'a> EaviQuery<'a> {
         match self.index {
             IndexFilter::LatestByAttribute => filtered
                 .filter_map(|eavi| {
-                    let value = iter2.clone().fold((None, false), |eavi_option, eavi_fold| {
+                    let reduced_value = iter2.clone().fold((None, false), |eavi_option, eavi_fold| {
                         if eavi_option.1 {
                             eavi_option
                         } else {
@@ -96,7 +96,7 @@ impl<'a> EaviQuery<'a> {
                             }
                         }
                     });
-                    value.0
+                    reduced_value.0
                 })
                 .collect(),
             IndexFilter::Range(start, end) => filtered

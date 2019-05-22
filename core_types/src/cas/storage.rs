@@ -651,14 +651,14 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let two = A::try_from_content(&bar_content)
             .expect("could not create AddressableContent from Content");
-        let attribute = Attribute::LinkTag("c".into());
+        let attribute = Attribute::LinkTag("c".into(),"c".into());
         let mut expected_tombstone = BTreeSet::new();
         let mut expected_tombstone_not_found = BTreeSet::new();
 
         vec!["a", "b", "c", "d", "e"].iter().for_each(|s| {
             let eav = EntityAttributeValueIndex::new(
                 &one.address(),
-                &Attribute::LinkTag(String::from(s.clone())),
+                &Attribute::LinkTag(String::from(s.clone()),String::from(s.clone())),
                 &two.address(),
             )
             .expect("could not create EAV");
@@ -689,7 +689,7 @@ impl EavTestSuite {
                 .unwrap()
         );
 
-        let expected_last_attribute = Some(Attribute::LinkTag("e".into()));
+        let expected_last_attribute = Some(Attribute::LinkTag("e".into(),"e".into()));
         assert_eq!(
             expected_tombstone_not_found,
             eav_storage

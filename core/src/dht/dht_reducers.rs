@@ -434,8 +434,8 @@ pub mod tests {
 
         let _ = store.dht().content_storage().write().unwrap().add(&entry);
 
+        let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
         let test_tag = String::from("test-tag");
-            &entry.address(),
         let entry_link_add = Entry::LinkAdd(LinkData::from_link(
             &link.clone(),
             LinkActionKind::ADD,
@@ -457,13 +457,21 @@ pub mod tests {
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
-            EavFilter::multiple(vec![
-                Attribute::LinkTag(test_tag.clone()),
-                Attribute::RemovedLink(test_tag.clone()),
-            ]),
+            EavFilter::predicate(|attr : Attribute| match attr.clone() {
+                Attribute::LinkTag(query_link_type, query_tag)
+                | Attribute::RemovedLink(query_link_type, query_tag) => match (&link.link_type().clone().into(), &link.tag().clone().into()) {
+                    (Some(link_type), Some(tag)) => {
+                        link_type == &query_link_type && tag == &query_tag
+                    }
+                    (Some(link_type), None) => link_type == &query_link_type,
+                    (None, Some(tag)) => tag == &query_tag,
+                    (None, None) => true,
+                },
+                _ => false,
+            }),
             None.into(),
             IndexFilter::LatestByAttribute,
-            Some(EavFilter::single(Attribute::RemovedLink(test_tag.clone()))),
+            Some(EavFilter::single(Attribute::RemovedLink(test_tag.clone(),"test-link".to_string()))),
         ));
 
         assert!(fetched.is_ok());
@@ -484,14 +492,16 @@ pub mod tests {
         let context = test_context("bob", None);
         let store = test_store(context.clone());
         let entry = test_entry();
+        let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
 
-        let link = Link::new(
-Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_owned())        let action = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
+        let link = Link::new(      
+            &entry.address(),
             &entry.address(),
             "test-link_type",
             "test-tag",
         );
 
+        let action = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
 
         let new_dht_store = reduce(store.dht(), &action);
 

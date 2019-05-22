@@ -251,6 +251,7 @@ pub mod tests {
             &entry_addresses[0],
             &entry_addresses[1],
             "test-tag",
+            "test-link",
             0,
             test_agent_id(),
         );
@@ -258,6 +259,7 @@ pub mod tests {
             &entry_addresses[0],
             &entry_addresses[2],
             "test-tag",
+            "test-link",
             0,
             test_agent_id(),
         );

@@ -617,7 +617,9 @@ scenario2.runTape('get_sources_from_link', async (t, { alice, bob }) => {
     "agent" : bob.agentId
   });
 
+  t.equal(bob_posts.Ok.links.length, 1)
   t.equal(bob.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
+  t.equal(alice_posts.Ok.links.length, 1)
   t.equal(alice.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
 
 })
@@ -641,8 +643,6 @@ scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
   });
 
   t.equal(bob.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
-  t.equal(bob.agentId,alice_posts.Ok.links[0].headers[1].provenances[0][0]);
-  t.equal(bob.agentId,bob_posts.Ok.links[0].headers[1].provenances[0][0]);
   t.equal(bob.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
 
 })

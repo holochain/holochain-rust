@@ -21,7 +21,7 @@ let
 
    echo
    read -r -p "Are you sure you want to cut a new release based on the current config in shell.nix? [y/N] " response
-   case "$response" in;
+   case "$response" in
     [yY][eE][sS]|[yY])
      hc-release-pulse-tag \
      && hc-release-github-branch \

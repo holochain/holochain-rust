@@ -70,7 +70,7 @@ scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
 
 scenario2.runTape('secrets', async (t, { alice }) => {
     const ListResult = alice.call("converse", "list_secrets", { });
-    // it should start out with the genesis made seed
+    // it should start out with the init made seed
     t.deepEqual(ListResult, { Ok: [ 'app_root_seed', 'primary_keybundle:enc_key', 'primary_keybundle:sign_key', 'root_seed' ]  });
 
     const AddSeedResult = alice.call("converse", "add_seed", {src_id: "app_root_seed", dst_id: "app_seed:1", index: 1 });
@@ -80,7 +80,7 @@ scenario2.runTape('secrets', async (t, { alice }) => {
     t.ok(AddKeyResult)
 
     const ListResult1 = alice.call("converse", "list_secrets", { });
-    // it should start out with the genesis made seed
+    // it should start out with the init made seed
     t.deepEqual(ListResult1, { Ok: [ 'app_key:1', 'app_root_seed', 'app_seed:1', 'primary_keybundle:enc_key', 'primary_keybundle:sign_key', 'root_seed' ]  });
 
     const message = "Hello everyone! Time to start the secret meeting";

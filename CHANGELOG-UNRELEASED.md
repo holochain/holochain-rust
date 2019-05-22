@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds scaffolding/skeleton for a future WASM conductor [#894](https://github.com/holochain/holochain-rust/pull/894)
 
 ### Changed
-- init (formerly genesis) is able to commit entries, make bridge calls, access globals and send messages. [#1422](https://github.com/holochain/holochain-rust/pull/1422)
-- **Breaking Change** Rename genesis to init everywhere [#1417](https://github.com/holochain/holochain-rust/pull/1417)
+
+- **Breaking Change** genesis function now renamed to init and runs when it is ok to commit entries, make bridge calls, access globals and send messages. [#1422](https://github.com/holochain/holochain-rust/pull/1422) [#1417](https://github.com/holochain/holochain-rust/pull/1417)
 - **Breaking Change** Renames link tags to link_type. Adds new link tag which can be any string. This is available in validation of links and links can be retrieved based on their tag+type, just tag, just type or retrieve all. `hdk::link_entries` and `hdk::get_links` now required an extra parameter.  [#1402](https://github.com/holochain/holochain-rust/pull/1402).
 - Option to show NPM output when pulling deps during `hc test` [PR#1401](https://github.com/holochain/holochain-rust/pull/1401)
 - Adds scaffolding/skeleton for a future WASM conductor [#894](https://github.com/holochain/holochain-rust/pull/894)

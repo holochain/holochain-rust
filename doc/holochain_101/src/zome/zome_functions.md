@@ -72,7 +72,7 @@ Each function declaration is an object that includes the `name`, and the `inputs
 The `name` is the most important thing here, because when a function call to an instance is being performed, it will have to match a name which Holochain can find in the `functions`. If the function isn't declared, Holochain will treat it as if it doesn't exist, even if it is an exposed function in the WASM code.
 
 ## Traits
-Traits provide a way to group functions by name.  The primary use of this feature is for creating a composibility space where DNA creators can implement different DNAs to emergent function interfaces and then compose with them in the conductor by matching on the function group names and signatures.  Additionally Holochain may reserve a few special trait names that have specific side-effects.  The first of such reserved names is `hc_public`.  Functions grouped in this name will have automatically added to a public capability grant that happens at genesis time, thus making them accessible to any caller.  For more details on the Holochain security model please see the [Capabilities](capabilities.md) section.
+Traits provide a way to group functions by name.  The primary use of this feature is for creating a composibility space where DNA creators can implement different DNAs to emergent function interfaces and then compose with them in the conductor by matching on the function group names and signatures.  Additionally Holochain may reserve a few special trait names that have specific side-effects.  The first of such reserved names is `hc_public`.  Functions grouped in this name will have automatically added to a public capability grant that happens at init time, thus making them accessible to any caller.  For more details on the Holochain security model please see the [Capabilities](capabilities.md) section.
 
 Here is an example of what a trait definition using the public reserved trait name might look like:
 
@@ -102,7 +102,7 @@ Before making the function call, Holochain will check the validity of the reques
 
 ## Building in Rust: Zome Functions
 
-So far, in [entry type definitions](./entry_type_definitions.md) and [genesis](./genesis.md), the most complex example of `define_zome!` was still very simple, and didn't include any functions:
+So far, in [entry type definitions](./entry_type_definitions.md) and [init](./init.md), the most complex example of `define_zome!` was still very simple, and didn't include any functions:
 
 ```rust
 ...
@@ -129,7 +129,7 @@ define_zome! {
         )
     ]
 
-    genesis: || {
+    init: || {
         Ok(())
     }
 
@@ -155,7 +155,7 @@ define_zome! {
 }
 ```
 
-In this example, `hc_public` is the reserved trait name which creates a `Public` Capbility-type grant at genesis time for access to the `read_post` function.  Additionally it names an `authoring` trait for the `create_post` and `update_post` functions.
+In this example, `hc_public` is the reserved trait name which creates a `Public` Capbility-type grant at init time for access to the `read_post` function.  Additionally it names an `authoring` trait for the `create_post` and `update_post` functions.
 
 ### Adding a Zome Function
 
@@ -248,6 +248,6 @@ define_zome! {
 }
 ```
 
-In this example, `hc_public` is the reserved trait name which create a `Public` Capability-type grant at genesis time for access to the `read_post` function.  Additionally it names an `authoring` trait the `create_post` and `update_post` functions.
+In this example, `hc_public` is the reserved trait name which create a `Public` Capability-type grant at init time for access to the `read_post` function.  Additionally it names an `authoring` trait the `create_post` and `update_post` functions.
 
 Continue reading to learn all about the API Functions and examples of how to use them.

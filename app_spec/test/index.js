@@ -18,8 +18,7 @@ const playbook = new Playbook({
     carol: dna,
   },
   bridges: [
-    // TODO: hook up bridging once instantiation issue is sorted out
-    // Playbook.bridge('test-bridge', 'alice', 'bob')
+    Playbook.bridge('test-bridge', 'alice', 'bob')
   ],
   debugLog: true,
   middleware: [

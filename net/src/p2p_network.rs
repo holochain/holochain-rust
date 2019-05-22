@@ -14,12 +14,9 @@ use crate::{
     p2p_config::*,
     tweetlog::*,
 };
+use crossbeam_channel;
 use holochain_core_types::json::JsonString;
-use std::{
-    convert::TryFrom,
-    sync::mpsc::{channel, Receiver},
-    time::Duration,
-};
+use std::{convert::TryFrom, time::Duration};
 
 const P2P_READY_TIMEOUT_MS: u64 = 5000;
 
@@ -61,9 +58,9 @@ impl P2pNetwork {
             }),
         };
 
-        let (t, rx) = channel();
+        let (t, rx) = crossbeam_channel::unbounded();
         let tx = t.clone();
-        let wrapped_handler: NetHandler = Box::new(move |message| {
+        let wrapped_handler = NetHandler::new(Box::new(move |message| {
             let unwrapped = message.unwrap();
             let message = unwrapped.clone();
             match Protocol::try_from(unwrapped.clone()) {
@@ -77,8 +74,8 @@ impl P2pNetwork {
                     // Generates compiler error.
                 }
             };
-            handler(Ok(message))
-        });
+            handler.handle(Ok(message))
+        }));
 
         // Create NetConnectionThread with appropriate worker factory.  Indicate *what*
         // configuration failed to produce a connection.
@@ -96,7 +93,7 @@ impl P2pNetwork {
         Ok(P2pNetwork { connection })
     }
 
-    fn wait_p2p_ready(rx: &Receiver<Protocol>) {
+    fn wait_p2p_ready(rx: &crossbeam_channel::Receiver<Protocol>) {
         let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
         match maybe_message {
             Ok(Protocol::P2pReady) => log_d!("net/p2p_network: received P2pReady event"),
@@ -142,7 +139,7 @@ mod tests {
     #[test]
     fn it_should_create_memory_network() {
         let mut res = P2pNetwork::new(
-            Box::new(|_r| Ok(())),
+            NetHandler::new(Box::new(|_r| Ok(()))),
             &P2pConfig::new_with_unique_memory_backend(),
         )
         .unwrap();

@@ -1,10 +1,9 @@
-use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
+use crate::{action::ActionWrapper, network::state::NetworkState, state::State};
 use holochain_core_types::error::HolochainError;
-use std::sync::Arc;
 
 pub fn reduce_handle_custom_send_response(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

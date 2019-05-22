@@ -52,7 +52,7 @@ pub(crate) fn reduce_add_remove_link_inner(
                 Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
             }
         };
-        let eav = EntityAttributeValueIndex::new(link.base(), &attr, link.target())?;
+        let eav = EntityAttributeValueIndex::new(link.base(), &attr, &link.add_entry().address())?;
         store.meta_storage().write()?.add_eavi(&eav)?;
         Ok(link.base().clone())
     } else {

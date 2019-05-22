@@ -50,11 +50,11 @@ pub struct ValidatingEntryType {
 pub struct ValidatingLinkDefinition {
     /// Is this link defined as pointing from this entry type to some other type,
     /// or from the other type to this?
-    pub link_type: LinkDirection,
+    pub direction: LinkDirection,
     /// The other entry type the link connects this entry type to
     pub other_entry_type: String,
     /// Tag (i.e. name) of this type of links
-    pub tag: String,
+    pub link_type: String,
     /// Callback that returns a validation package definition that Holochain reads in order
     /// to create the right validation package to pass in to the validator callback on validation.
     pub package_creator: PackageCreator,
@@ -144,7 +144,7 @@ pub struct ValidatingLinkDefinition {
 ///         links: [
 ///             to!(
 ///                 "post",
-///                 tag: "comments",
+///                 link_type: "comments",
 ///
 ///                 validation_package: || {
 ///                     hdk::ValidationPackageDefinition::ChainFull
@@ -187,12 +187,12 @@ macro_rules! entry {
             entry_type.sharing = $sharing;
 
             $($(
-                match $link_expr.link_type {
+                match $link_expr.direction {
                     $crate::LinkDirection::To => {
                         entry_type.links_to.push(
                             $crate::holochain_core_types::dna::entry_types::LinksTo{
                                 target_type: $link_expr.other_entry_type,
-                                tag: $link_expr.tag,
+                                link_type: $link_expr.link_type,
                             }
                         );
                     },
@@ -200,7 +200,7 @@ macro_rules! entry {
                         entry_type.linked_from.push(
                             $crate::holochain_core_types::dna::entry_types::LinkedFrom{
                                 base_type: $link_expr.other_entry_type,
-                                tag: $link_expr.tag,
+                                link_type: $link_expr.link_type,
                             }
                         );
                     }
@@ -257,7 +257,7 @@ macro_rules! entry {
 ///     or `hdk::LinkDirection::From`.
 /// 2. other_type: `other_type` is the entry type this link connects to. If direction is `to` this
 ///     would be the link target, if direction is `from` this defines the link's base type.
-/// 3. tag: `tag` is the name of this association and thus the handle by which it can be retrieved
+/// 3. link_type: `link_type` is the name of this association and thus the handle by which it can be retrieved
 ///     if given to [get_links()](fn.get_links.html) in conjunction with the base address.
 /// 4. validation_package: Similar to entries, links have to be validated.
 ///        `validation_package` is a special identifier, which declares which data is required from peers
@@ -273,7 +273,7 @@ macro_rules! link {
     (
         direction: $direction:expr,
         other_type: $other_type:expr,
-        tag: $tag:expr,
+        link_type: $link_type:expr,
 
         validation_package: || $package_creator:expr,
         validation: | $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
@@ -291,9 +291,9 @@ macro_rules! link {
 
 
             ::hdk::entry_definition::ValidatingLinkDefinition {
-                link_type: $direction,
+                direction: $direction,
                 other_entry_type: String::from($other_type),
-                tag: String::from($tag),
+                link_type: String::from($link_type),
                 package_creator,
                 validator,
             }
@@ -309,7 +309,7 @@ macro_rules! link {
 macro_rules! to {
     (
         $other_type:expr,
-        tag: $tag:expr,
+        link_type: $link_type:expr,
 
         validation_package: || $package_creator:expr,
         validation: | $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
@@ -317,7 +317,7 @@ macro_rules! to {
         link!(
             direction: $crate::LinkDirection::To,
             other_type: $other_type,
-            tag: $tag,
+            link_type: $link_type,
 
             validation_package: || $package_creator,
             validation: | $validation_data : hdk::LinkValidationData | $link_validation
@@ -333,7 +333,7 @@ macro_rules! to {
 macro_rules! from {
     (
         $other_type:expr,
-        tag: $tag:expr,
+        link_type: $link_type:expr,
 
         validation_package: || $package_creator:expr,
         validation: |  $validation_data:ident : hdk::LinkValidationData | $link_validation:expr
@@ -341,7 +341,7 @@ macro_rules! from {
         link!(
             direction: $crate::LinkDirection::From,
             other_type: $other_type,
-            tag: $tag,
+            link_type: $link_type,
 
             validation_package: || $package_creator,
             validation: |  $validation_data : hdk::LinkValidationData | $link_validation

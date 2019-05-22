@@ -86,10 +86,12 @@ pub async fn initialize_chain(
     let dna_entry = Entry::Dna(Box::new(dna.clone()));
     let dna_commit = await!(commit_entry(dna_entry, None, &context_clone));
     if dna_commit.is_err() {
-        dispatch_error_result(&context_clone, dna_commit.err().unwrap());
-        return Err(HolochainError::InitializationFailed(
-            "error committing DNA".to_string(),
-        ));
+        let error = dna_commit.err().unwrap();
+        dispatch_error_result(&context_clone, error.clone());
+        return Err(HolochainError::InitializationFailed(format!(
+            "Error committing DNA: {:?}",
+            error
+        )));
     }
 
     // Commit AgentId to chain

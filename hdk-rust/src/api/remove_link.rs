@@ -5,8 +5,8 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 
 /// Commits a LinkRemove entry to your local source chain that marks a link as 'deleted' by setting
 /// its status metadata to `Deleted` which gets published to the DHT.
-/// Consumes three values, two of which are the addresses of entries, and one of which is a string that removes a
-/// relationship between them, called a `tag`. Later, lists of entries.
+/// Consumes four values, two of which are the addresses of entries, and two of which are strings that describe the link
+/// type and its tag. Both must match exactly to remove a link.
 /// # Examples
 /// ```rust
 /// # #![feature(try_from)]
@@ -47,6 +47,7 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 ///         &AGENT_ADDRESS,
 ///         &address,
 ///         "authored_posts",
+///         "test-tag"
 ///     )?;
 ///
 ///
@@ -58,11 +59,13 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 pub fn remove_link<S: Into<String>>(
     base: &Address,
     target: &Address,
+    link_type: S,
     tag: S,
 ) -> Result<(), ZomeApiError> {
     Dispatch::RemoveLink.with_input(LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
+        link_type: link_type.into(),
         tag: tag.into(),
     })
 }

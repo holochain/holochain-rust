@@ -5,7 +5,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   (cd cli && cargo test)
+  (cd cli && cargo test)
   '';
 in
 script

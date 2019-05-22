@@ -726,7 +726,9 @@ pub mod tests {
         assert!(instance.is_err());
         assert_eq!(
             instance.err().unwrap(),
-            String::from("At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]")
+            String::from(
+                "At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]"
+            )
         );
     }
 

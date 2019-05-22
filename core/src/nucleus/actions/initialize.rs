@@ -3,9 +3,7 @@ use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
     instance::dispatch_action_and_wait,
-    nucleus::{
-        state::NucleusStatus,
-    },
+    nucleus::state::NucleusStatus,
 };
 use futures::{
     future::Future,
@@ -173,12 +171,10 @@ pub async fn initialize_chain(
     // This is now called by the initialize workflow in application.rs
 
     // otherwise return the Initialization struct
-    let initialization_result = Ok(
-        Initialization {
-            public_token,
-            payload: None, // no payload for now
-        }
-    );
+    let initialization_result = Ok(Initialization {
+        public_token,
+        payload: None, // no payload for now
+    });
 
     context_clone
         .action_channel()

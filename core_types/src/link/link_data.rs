@@ -103,7 +103,7 @@ pub mod tests {
             link.base(),
             link.target(),
             link.tag(),
-            "test-link-type",
+            "foo-link-type",
             0,
             test_agent_id(),
         )
@@ -115,7 +115,7 @@ pub mod tests {
 
     pub fn test_link_entry_json_string() -> JsonString {
         JsonString::from_json(&format!(
-            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"tag\":\"foo-tag\"}},\"timestamp\":0,\"agent_id\":{{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}",
+            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"tag\":\"foo-tag\",\"link_type\":\"test-link-type\"}},\"timestamp\":0,\"agent_id\":{{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}",
             test_entry_a().address(),
             test_entry_b().address()
         ))

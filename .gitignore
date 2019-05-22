@@ -1,6 +1,7 @@
 .qmake.stash
 target
 .cargo
+.vagrant
 node_modules
 **/*.sock
 package-lock.json

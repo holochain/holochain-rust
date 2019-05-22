@@ -562,6 +562,8 @@ define_zome! {
 
     genesis: || { Ok(()) }
 
+    agent_validation: || { Ok(()) }
+
     receive: |_from, payload| {
         {
             let entry = Entry::App(

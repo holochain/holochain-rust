@@ -94,13 +94,6 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_validate_agent_entry(
-    _encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
-}
-
-#[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(
     encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {

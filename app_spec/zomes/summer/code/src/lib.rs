@@ -20,6 +20,8 @@ define_zome! {
         Ok(())
     }
 
+    agent_validation: || { Ok(()) }
+
     functions: [
         sum: {
             inputs: |num1: u32, num2: u32|,

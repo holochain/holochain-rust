@@ -90,6 +90,8 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///     genesis: || {
 ///         Ok(())
 ///     }
+///     
+///     agent_validation: || { Ok(()) }
 ///
 ///     functions: [
 ///             sum: {
@@ -202,6 +204,8 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///     genesis: || {
 ///         Ok(())
 ///     }
+///     
+///     agent_validation: || { Ok(()) }
 ///
 ///     functions: [
 ///             check_sum: {

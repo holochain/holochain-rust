@@ -57,6 +57,8 @@ define_zome! {
         }
     }
 
+    agent_validation: || { Ok(()) }
+
     functions: [
         sign_message: {
             inputs: |key_id: String, message: String|,

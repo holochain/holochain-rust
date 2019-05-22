@@ -5,8 +5,8 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   hc-conductor-node-install \
-   && ( cd nodejs_conductor && npm test )
+  hc-conductor-node-install \
+  && ( cd nodejs_conductor && npm test )
   '';
 in
 script

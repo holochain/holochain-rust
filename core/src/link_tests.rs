@@ -20,6 +20,7 @@ pub mod tests {
             &Address::from("12".to_string()),
             &Address::from("34".to_string()),
             "fake",
+            "fake-tag",
         )
     }
 
@@ -32,6 +33,7 @@ pub mod tests {
             &Address::from("56".to_string()),
             &Address::from("78".to_string()),
             "faux",
+            "fake-tag",
         )
     }
 
@@ -40,6 +42,7 @@ pub mod tests {
             &Address::from("90".to_string()),
             &Address::from("ab".to_string()),
             "fake",
+            "fake-tag",
         )
     }
 

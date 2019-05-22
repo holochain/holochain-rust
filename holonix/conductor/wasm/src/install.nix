@@ -7,33 +7,33 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   # check if wasm-bindgen is already installed
-   installed () {
-    command -v wasm-bindgen &> /dev/null
-   }
+  # check if wasm-bindgen is already installed
+  installed () {
+   command -v wasm-bindgen &> /dev/null
+  }
 
-   # check if wasm-bindgen has the correct version
-   correct-version () {
-    wasm-bindgen -V | grep "${version}" &> /dev/null
-   }
+  # check if wasm-bindgen has the correct version
+  correct-version () {
+   wasm-bindgen -V | grep "${version}" &> /dev/null
+  }
 
-   # drop the incorrect version of wasm-bindgen
-   if installed
-    then
-     if ! correct-version
-      then
-       hc-conductor-wasm-uninstall
-     fi
-   fi
+  # drop the incorrect version of wasm-bindgen
+  if installed
+   then
+    if ! correct-version
+     then
+      hc-conductor-wasm-uninstall
+    fi
+  fi
 
-   # install the correct version of wasm-bindgen
-   if ! installed
-    then
-     cargo install wasm-bindgen-cli --version "${version}"
-   fi
+  # install the correct version of wasm-bindgen
+  if ! installed
+   then
+    cargo install wasm-bindgen-cli --version "${version}"
+  fi
 
-   # report the installed version
-   wasm-bindgen -V
+  # report the installed version
+  wasm-bindgen -V
   '';
 in
 script

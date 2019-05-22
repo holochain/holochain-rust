@@ -372,7 +372,7 @@ mod tests {
         let result = Holochain::new(dna.clone(), context.clone());
         assert!(result.is_err());
         assert_eq!(
-            HolochainInstanceError::from(HolochainError::ErrorGeneric("\"Init\"".to_string())),
+            HolochainInstanceError::from(HolochainError::ErrorGeneric("At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]".to_string())),
             result.err().unwrap(),
         );
     }

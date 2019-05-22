@@ -4,7 +4,6 @@ use crate::{
     context::Context,
     instance::dispatch_action_and_wait,
     nucleus::{
-        ribosome::callback::{init::init, CallbackParams, CallbackResult},
         state::NucleusStatus,
     },
 };
@@ -170,32 +169,16 @@ pub async fn initialize_chain(
         None
     };
 
-    // map init across every zome
-    let results: Vec<_> = dna
-        .zomes
-        .keys()
-        .map(|zome_name| init(context_clone.clone(), zome_name, &CallbackParams::Init))
-        .collect();
-
-    // if there was an error report that as the result
-    let maybe_error = results
-        .iter()
-        .find(|ref r| match r {
-            CallbackResult::Fail(_) => true,
-            _ => false,
-        })
-        .and_then(|result| match result {
-            CallbackResult::Fail(error_string) => Some(error_string.clone()),
-            _ => unreachable!(),
-        });
+    // Note: The calling of the zome init callbacks has been moved to its own action `call_init`
+    // This is now called by the initialize workflow in application.rs
 
     // otherwise return the Initialization struct
-    let initialization_result = maybe_error.map(Err).unwrap_or_else(|| {
-        Ok(Initialization {
+    let initialization_result = Ok(
+        Initialization {
             public_token,
             payload: None, // no payload for now
-        })
-    });
+        }
+    );
 
     context_clone
         .action_channel()

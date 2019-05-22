@@ -70,7 +70,7 @@ scenario.runTape('alice create & publish post -> recommend own post to self', as
     agent_address: alice.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "QmP7z1P3vzeSZnP1RXpBhWWEd56hUhLUr34q7xf6UT1KkP")
+  t.ok(linked.Ok);
 
   const recommendedPosts = alice.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
@@ -94,7 +94,7 @@ scenario.runTape('alice create & publish post -> tash recommend to self', async 
     agent_address: tash.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "QmX9mwcKhBCAAoQu2nSjDAJ48HBywD5d4weAQXscS3b9Ec")
+  t.ok(linked.Ok);
 
   const recommendedPosts = tash.call("blog", "my_recommended_posts", {})
   console.log("recommendedPosts", recommendedPosts)
@@ -118,7 +118,7 @@ scenario.runTape('create & publish post -> recommend to other agent', async (t, 
     agent_address: tash.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "Qmc4toXqaPYHSinZ8vMtgQ6vyMdNf4G3zfSMxTfWsjaiVF")
+  t.ok(linked.Ok);
 
   const recommendedPosts = tash.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)

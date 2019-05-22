@@ -146,12 +146,12 @@ pub enum Action {
     ///
     GetEntryTimeout(GetEntryKey),
 
-    /// get links from entry address and tag name
+    /// get links from entry address and link_type name
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
     RespondGetLinks((FetchMetaData, Vec<Address>)),
-    HandleGetLinksResult((FetchMetaResultData, String)),
+    HandleGetLinksResult((FetchMetaResultData, String, String)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -237,8 +237,11 @@ pub struct GetLinksKey {
     /// The address of the Link base
     pub base_address: Address,
 
-    /// The link tag
-    pub tag: String,
+    /// The link type
+    pub link_type: Option<String>,
+
+    /// The link tag, None means get all the tags for a given type
+    pub tag: Option<String>,
 
     /// A unique ID that is used to pair the eventual result to this request
     pub id: String,

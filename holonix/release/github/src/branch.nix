@@ -23,12 +23,12 @@ let
    echo 'checkout or create release branch'
    if git branch | grep -q "${release.branch}"
     then
-     git checkout ${release.branch}
-     git pull
+     git checkout ${release.branch};
+     git pull;
     else
-     git checkout ${release.commit}
-     git checkout -b ${release.branch}
-     git push -u ${git.github.upstream} ${release.branch}
+     git checkout ${release.commit};
+     git checkout -b ${release.branch};
+     git push -u ${git.github.upstream} ${release.branch};
    fi
    echo
   '';

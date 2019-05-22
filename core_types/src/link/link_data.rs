@@ -11,22 +11,22 @@ use crate::{
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct LinkData {
-    action_kind: LinkActionKind,
-    link: Link,
+    pub action_kind: LinkActionKind,
+    pub link: Link,
 }
 
 impl LinkData {
-    pub fn new_add(base: &Address, target: &Address, tag: &str) -> Self {
+    pub fn new_add(base: &Address, target: &Address, link_type: &str, tag: &str) -> Self {
         LinkData {
             action_kind: LinkActionKind::ADD,
-            link: Link::new(base, target, tag),
+            link: Link::new(base, target, link_type, tag),
         }
     }
 
-    pub fn new_delete(base: &Address, target: &Address, tag: &str) -> Self {
+    pub fn new_delete(base: &Address, target: &Address, link_type: &str, tag: &str) -> Self {
         LinkData {
             action_kind: LinkActionKind::REMOVE,
-            link: Link::new(base, target, tag),
+            link: Link::new(base, target, link_type, tag),
         }
     }
 
@@ -63,14 +63,14 @@ pub mod tests {
         json::JsonString,
         link::{
             link_data::LinkData,
-            tests::{example_link, example_link_action_kind, example_link_tag},
+            tests::{example_link, example_link_action_kind, example_link_type},
         },
     };
     use std::convert::TryFrom;
 
     pub fn example_link_add() -> LinkData {
         let link = example_link();
-        LinkData::new_add(link.base(), link.target(), link.tag())
+        LinkData::new_add(link.base(), link.target(), link.link_type(), link.tag())
     }
 
     pub fn test_link_entry() -> Entry {
@@ -79,7 +79,7 @@ pub mod tests {
 
     pub fn test_link_entry_json_string() -> JsonString {
         JsonString::from_json(&format!(
-            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"tag\":\"foo-tag\"}}}}}}",
+            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}}}}}}",
             test_entry_a().address(),
             test_entry_b().address(),
         ))
@@ -101,8 +101,8 @@ pub mod tests {
     }
 
     #[test]
-    fn link_tag_test() {
-        assert_eq!(&example_link_tag(), example_link().tag(),);
+    fn link_type_test() {
+        assert_eq!(&example_link_type(), example_link().link_type(),);
     }
 
     #[test]

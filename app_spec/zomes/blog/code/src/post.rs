@@ -79,17 +79,26 @@ pub fn definition() -> ValidatingEntryType {
         links: [
             from!(
                 "%agent_id",
-                tag: "authored_posts",
+                link_type: "authored_posts",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
-                validation: | _validation_data: hdk::LinkValidationData | {
-                    Ok(())
+                validation: | validation_data: hdk::LinkValidationData | {
+                    // test validation of links based on their tag
+                    if let hdk::LinkValidationData::LinkAdd{link, ..} = validation_data {
+                        if link.link.tag() == "muffins" {
+                            Err("This is the one tag that is not allowed!".into())
+                        } else {
+                            Ok(())
+                        }
+                    } else {
+                        Ok(())
+                    }
                 }
             ),
             from!(
                 "%agent_id",
-                tag: "recommended_posts",
+                link_type: "recommended_posts",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
@@ -143,11 +152,11 @@ mod tests {
             linked_from: vec![
                 LinkedFrom {
                     base_type: "%agent_id".to_string(),
-                    tag: "authored_posts".to_string(),
+                    link_type: "authored_posts".to_string(),
                 },
                 LinkedFrom {
                     base_type: "%agent_id".to_string(),
-                    tag: "recommended_posts".to_string(),
+                    link_type: "recommended_posts".to_string(),
                 },
             ],
             links_to: Vec::new(),
@@ -209,11 +218,11 @@ mod tests {
 
         let expected_link_direction = LinkDirection::From;
         assert_eq!(
-            post_definition_link.link_type.to_owned(),
+            post_definition_link.direction.to_owned(),
             expected_link_direction,
         );
 
         let expected_link_tag = "authored_posts";
-        assert_eq!(post_definition_link.tag.to_owned(), expected_link_tag,);
+        assert_eq!(post_definition_link.link_type.to_owned(), expected_link_tag,);
     }
 }

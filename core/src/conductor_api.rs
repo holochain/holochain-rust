@@ -40,6 +40,10 @@ impl ConductorApi {
     pub fn get(&self) -> &Arc<RwLock<IoHandler>> {
         &self.0
     }
+
+    pub fn reset(&self, api: IoHandler) {
+        *self.0.write().unwrap() = api;
+    }
 }
 
 impl PartialEq for ConductorApi {

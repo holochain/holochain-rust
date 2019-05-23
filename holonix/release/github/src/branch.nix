@@ -14,22 +14,19 @@ let
 
   git fetch
   if git tag | grep -q "${release.branch}"
-  then
-   echo "There is a tag with the same name as the release branch ${release.branch}! aborting..."
-   exit 1
-  fi
+  then echo "There is a tag with the same name as the release branch ${release.branch}! aborting..."
+  exit 1;
+  fi;
 
   echo
   echo 'checkout or create release branch'
   if git branch | grep -q "${release.branch}"
-   then
-    git checkout ${release.branch};
+   then git checkout ${release.branch}
     git pull;
-   else
-    git checkout ${release.commit};
-    git checkout -b ${release.branch};
+   else git checkout ${release.commit}
+    git checkout -b ${release.branch}
     git push -u ${git.github.upstream} ${release.branch};
-  fi
+  fi;
   echo
   '';
 in

@@ -202,7 +202,7 @@ impl Conductor {
                         let broadcasters = broadcasters.read().unwrap();
                         let interfaces_with_instance: Vec<&InterfaceConfiguration> = match signal {
                             // Send internal signals only to admin interfaces:
-                            Signal::Internal(_) => config
+                            Signal::Trace(_) => config
                                 .interfaces
                                 .iter()
                                 .filter(|interface_config| interface_config.admin)
@@ -1549,11 +1549,11 @@ pub mod tests {
 
         assert!(received_signals.len() >= 3);
         assert!(received_signals[0]
-            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+            .starts_with("{\"signal\":{\"Trace\":\"SignalZomeFunctionCall(ZomeFnCall {"));
         assert!(received_signals[1]
-            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+            .starts_with("{\"signal\":{\"Trace\":\"SignalZomeFunctionCall(ZomeFnCall {"));
         assert!(received_signals[2].starts_with(
-            "{\"signal\":{\"Internal\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
+            "{\"signal\":{\"Trace\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
         ));
     }
 }

@@ -45,10 +45,14 @@ pub(crate) fn reduce_add_remove_link_inner(
 ) -> HcResult<Address> {
     if (*store.content_storage().read()?).contains(link.base())? {
         let attr = match link_modification {
-            LinkModification::Add => Attribute::LinkTag(link.tag().to_string()),
-            LinkModification::Remove => Attribute::RemovedLink(link.tag().to_string()),
+            LinkModification::Add => {
+                Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string())
+            }
+            LinkModification::Remove => {
+                Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
+            }
         };
-        let eav = EntityAttributeValueIndex::new(link.base(), &attr, link.target())?;
+        let eav = EntityAttributeValueIndex::new(link.base(), &attr, &link.add_entry().address())?;
         store.meta_storage().write()?.add_eavi(&eav)?;
         Ok(link.base().clone())
     } else {

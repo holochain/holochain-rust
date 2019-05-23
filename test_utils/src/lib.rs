@@ -90,13 +90,13 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
     let mut test_entry_def = EntryTypeDef::new();
     test_entry_def.links_to.push(LinksTo {
         target_type: String::from("testEntryType"),
-        tag: String::from("test-tag"),
+        link_type: String::from("test-link"),
     });
 
     let mut test_entry_b_def = EntryTypeDef::new();
     test_entry_b_def.linked_from.push(LinkedFrom {
         base_type: String::from("testEntryType"),
-        tag: String::from("test-tag"),
+        link_type: String::from("test-link"),
     });
 
     let mut test_entry_c_def = EntryTypeDef::new();

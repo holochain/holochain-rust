@@ -2,7 +2,6 @@
 
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
     dht::dht_store::DhtStore,
     network::entry_with_header::EntryWithHeader,
 };
@@ -14,15 +13,11 @@ use super::dht_inner_reducers::{
 };
 
 // A function that might return a mutated DhtStore
-type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
+type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
-pub fn reduce(
-    context: Arc<Context>,
-    old_store: Arc<DhtStore>,
-    action_wrapper: &ActionWrapper,
-) -> Arc<DhtStore> {
+pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<DhtStore> {
     // Get reducer
     let reducer = match resolve_reducer(action_wrapper) {
         Some(reducer) => reducer,
@@ -31,7 +26,7 @@ pub fn reduce(
         }
     };
     // Reduce
-    match reducer(context, &old_store.clone(), &action_wrapper) {
+    match reducer(&old_store.clone(), &action_wrapper) {
         None => old_store,
         Some(new_store) => Arc::new(new_store),
     }
@@ -51,7 +46,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
 }
 
 pub(crate) fn reduce_commit_entry(
-    context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -60,33 +54,31 @@ pub(crate) fn reduce_commit_entry(
     match reduce_store_entry_inner(&mut new_store, entry) {
         Ok(()) => Some(new_store),
         Err(e) => {
-            context.log(e);
+            println!("{}", e);
             None
         }
     }
 }
 
 pub(crate) fn reduce_hold_entry(
-    context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     let EntryWithHeader { entry, header } = unwrap_to!(action_wrapper.action() => Action::Hold);
     let mut new_store = (*old_store).clone();
-    match reduce_store_entry_inner(&mut new_store, entry) {
+    match reduce_store_entry_inner(&mut new_store, &entry) {
         Ok(()) => {
             new_store.add_header_for_entry(&entry, &header).ok()?;
             Some(new_store)
         }
         Err(e) => {
-            context.log(e);
+            println!("{}", e);
             None
         }
     }
 }
 
 pub(crate) fn reduce_add_link(
-    _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -98,7 +90,6 @@ pub(crate) fn reduce_add_link(
 }
 
 pub(crate) fn reduce_remove_link(
-    _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -110,7 +101,6 @@ pub(crate) fn reduce_remove_link(
 }
 
 pub(crate) fn reduce_update_entry(
-    _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -122,7 +112,6 @@ pub(crate) fn reduce_update_entry(
 }
 
 pub(crate) fn reduce_remove_entry(
-    _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -136,7 +125,6 @@ pub(crate) fn reduce_remove_entry(
 
 #[allow(dead_code)]
 pub(crate) fn reduce_get_links(
-    _context: Arc<Context>,
     _old_store: &DhtStore,
     _action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -149,10 +137,7 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
-        dht::{
-            dht_reducers::{reduce, reduce_hold_entry},
-            dht_store::DhtStore,
-        },
+        dht::dht_reducers::{reduce, reduce_hold_entry},
         instance::tests::test_context,
         network::entry_with_header::EntryWithHeader,
         state::test_store,
@@ -162,17 +147,14 @@ pub mod tests {
         chain_header::test_chain_header,
         eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
-        link::Link,
+        link::{link_data::LinkData, Link, LinkActionKind},
     };
-    use std::{
-        convert::TryFrom,
-        sync::{Arc, RwLock},
-    };
+    use std::convert::TryFrom;
 
     #[test]
     fn reduce_hold_entry_test() {
         let context = test_context("bob", None);
-        let store = test_store(context.clone());
+        let store = test_store(context);
 
         // test_entry is not sys so should do nothing
         let storage = &store.dht().content_storage().clone();
@@ -183,12 +165,9 @@ pub mod tests {
             header: test_chain_header(),
         };
 
-        let new_dht_store = reduce_hold_entry(
-            Arc::clone(&context),
-            &store.dht(),
-            &ActionWrapper::new(Action::Hold(entry_wh)),
-        )
-        .expect("there should be a new store for committing a sys entry");
+        let new_dht_store =
+            reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
+                .expect("there should be a new store for committing a sys entry");
 
         assert_eq!(
             Some(sys_entry.clone()),
@@ -214,23 +193,15 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let locked_state = Arc::new(RwLock::new(store));
-
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
-        let storage = context.dht_storage.clone();
+        let storage = store.dht().content_storage();
         let _ = (storage.write().unwrap()).add(&entry);
-        let context = Arc::new(context);
 
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
+        let link_entry = Entry::LinkAdd(LinkData::from_link(&link.clone(), LinkActionKind::ADD));
 
-        let new_dht_store: DhtStore;
-        {
-            let state = locked_state.read().unwrap();
+        let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
-            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
-        }
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
@@ -244,8 +215,11 @@ pub mod tests {
         assert_eq!(hash_set.len(), 1);
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        assert_eq!(eav.value(), *link.target());
-        assert_eq!(eav.attribute(), Attribute::LinkTag(link.tag().to_owned()));
+        assert_eq!(eav.value(), link_entry.address());
+        assert_eq!(
+            eav.attribute(),
+            Attribute::LinkTag(link.link_type().to_owned(), link.tag().to_owned())
+        );
     }
 
     #[test]
@@ -254,38 +228,26 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let locked_state = Arc::new(RwLock::new(store));
+        let _ = store.dht().content_storage().write().unwrap().add(&entry);
 
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
-        let storage = context.dht_storage.clone();
-        let _ = (storage.write().unwrap()).add(&entry);
-        let context = Arc::new(context);
+        let link = Link::new(
+            &entry.address(),
+            &entry.address(),
+            "test-link_type",
+            "test-tag",
+        );
 
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
-        let mut action = ActionWrapper::new(Action::AddLink(link.clone()));
+        let action = ActionWrapper::new(Action::AddLink(link.clone()));
+        let new_dht_store = reduce(store.dht(), &action);
 
-        let new_dht_store: DhtStore;
-        {
-            let state = locked_state.read().unwrap();
+        let action = ActionWrapper::new(Action::RemoveLink(link.clone()));
+        let new_dht_store = reduce(new_dht_store, &action);
 
-            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
-        }
-        action = ActionWrapper::new(Action::RemoveLink(link.clone()));
-
-        let _ = new_dht_store.meta_storage();
-
-        let new_dht_store: DhtStore;
-        {
-            let state = locked_state.read().unwrap();
-
-            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
-        }
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
             EavFilter::predicate(|a| match a {
-                Attribute::LinkTag(_) | Attribute::RemovedLink(_) => true,
+                Attribute::LinkTag(_, _) | Attribute::RemovedLink(_, _) => true,
                 _ => false,
             }),
             None.into(),
@@ -297,10 +259,11 @@ pub mod tests {
         assert_eq!(hash_set.len(), 1);
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        assert_eq!(eav.value(), *link.target());
+        let link_entry = link.add_entry();
+        assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
             eav.attribute(),
-            Attribute::RemovedLink(link.tag().to_string())
+            Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
         );
     }
 
@@ -310,21 +273,17 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let locked_state = Arc::new(RwLock::new(store));
+        let link = Link::new(
+            &entry.address(),
+            &entry.address(),
+            "test-link_type",
+            "test-tag",
+        );
 
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
-        let context = Arc::new(context);
-
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
-        let new_dht_store: DhtStore;
-        {
-            let state = locked_state.read().unwrap();
+        let new_dht_store = reduce(store.dht(), &action);
 
-            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
-        }
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
@@ -354,7 +313,7 @@ pub mod tests {
         };
         let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
 
-        store.reduce(context.clone(), action_wrapper);
+        store.reduce(action_wrapper);
 
         let cas = context.dht_storage.read().unwrap();
 

@@ -17,11 +17,13 @@ use std::{pin::Pin, sync::Arc, thread};
 pub async fn get_links(
     context: Arc<Context>,
     address: Address,
-    tag: String,
+    link_type: Option<String>,
+    tag: Option<String>,
     timeout: Timeout,
 ) -> HcResult<Vec<Address>> {
     let key = GetLinksKey {
         base_address: address.clone(),
+        link_type: link_type.clone(),
         tag: tag.clone(),
         id: ProcessUniqueId::new().to_string(),
     };

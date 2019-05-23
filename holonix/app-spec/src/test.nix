@@ -7,7 +7,7 @@ let
   ''
   hc-cli-install
   hc-conductor-node-install
-  ( cd app_spec && . build_and_test.sh )
+  (cd app_spec && . build_and_test.sh)
   '';
 in
 script

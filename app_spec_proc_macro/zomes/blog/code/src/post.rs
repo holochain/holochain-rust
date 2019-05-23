@@ -80,7 +80,7 @@ pub fn definition() -> ValidatingEntryType {
         links: [
             from!(
                 "%agent_id",
-                tag: "authored_posts",
+                link_type: "authored_posts",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
@@ -90,7 +90,7 @@ pub fn definition() -> ValidatingEntryType {
             ),
             from!(
                 "%agent_id",
-                tag: "recommended_posts",
+                link_type: "recommended_posts",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
@@ -141,11 +141,11 @@ mod tests {
             description: "blog entry post".to_string(),
             linked_from: vec![LinkedFrom {
                 base_type: "%agent_id".to_string(),
-                tag: "authored_posts".to_string(),
+                link_type: "authored_posts".to_string(),
             },
             LinkedFrom {
                 base_type: "%agent_id".to_string(),
-                tag: "recommended_posts".to_string(),
+                link_type: "recommended_posts".to_string(),
             }],
             links_to : Vec::new(),
             sharing : Sharing::Public
@@ -204,11 +204,11 @@ mod tests {
 
         let expected_link_direction = LinkDirection::From;
         assert_eq!(
-            post_definition_link.link_type.to_owned(),
+            post_definition_link.direction.to_owned(),
             expected_link_direction,
         );
 
-        let expected_link_tag = "authored_posts";
-        assert_eq!(post_definition_link.tag.to_owned(), expected_link_tag,);
+        let expected_link_type = "authored_posts";
+        assert_eq!(post_definition_link.link_type.to_owned(), expected_link_type,);
     }
 }

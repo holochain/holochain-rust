@@ -137,12 +137,12 @@ pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
 pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;
 
-    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts", "")?;
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
-        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments", "")?;
     }
 
     Ok(address)
@@ -155,12 +155,12 @@ pub fn handle_create_post_with_agent(
 ) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;
 
-    hdk::link_entries(&agent_id, &address, "authored_posts")?;
+    hdk::link_entries(&agent_id, &address, "authored_posts", "")?;
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
-        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments", "")?;
     }
 
     Ok(address)
@@ -174,16 +174,16 @@ pub fn handle_create_memo(content: String) -> ZomeApiResult<Address> {
 
 pub fn handle_delete_post(content: String) -> ZomeApiResult<Address> {
     let address = hdk::entry_address(&post_entry(content))?;
-    hdk::remove_link(&AGENT_ADDRESS, &address.clone(), "authored_posts")?;
+    hdk::remove_link(&AGENT_ADDRESS, &address.clone(), "authored_posts", "")?;
     Ok(address)
 }
 
 pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&agent, "authored_posts")
+    hdk::get_links(&agent, Some("authored_posts".into()), None)
 }
 
 pub fn handle_my_posts() -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&AGENT_ADDRESS, "authored_posts")
+    hdk::get_links(&AGENT_ADDRESS, Some("authored_posts".into()), None)
 }
 
 pub fn handle_my_memos() -> ZomeApiResult<Vec<Address>> {
@@ -198,7 +198,8 @@ pub fn handle_get_memo(address: Address) -> ZomeApiResult<Option<Entry>> {
 pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links_with_options(
         &AGENT_ADDRESS,
-        "authored_posts",
+        Some("authored_posts".into()),
+        None,
         GetLinksOptions {
             timeout: 0.into(),
             ..Default::default()
@@ -209,7 +210,8 @@ pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
 pub fn handle_my_posts_get_my_sources(agent: Address) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links_with_options(
         &agent,
-        "authored_posts",
+        Some("authored_posts".into()),
+        None,
         GetLinksOptions {
             headers: true,
             ..Default::default()
@@ -290,12 +292,12 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
 pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<()> {
     hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
     hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
-    hdk::link_entries(&agent_address, &post_address, "recommended_posts")?;
+    hdk::link_entries(&agent_address, &post_address, "recommended_posts", "")?;
     Ok(())
 }
 
 pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&AGENT_ADDRESS, "recommended_posts")
+    hdk::get_links(&AGENT_ADDRESS, Some("recommended_posts".into()), None)
 }
 
 #[cfg(test)]

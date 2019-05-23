@@ -6,6 +6,7 @@ node_modules
 **/*.sock
 package-lock.json
 **/*.rs.bk
+*.log
 net_ipc/tests/node-p2p-ipc
 build_docs_key
 *.orig

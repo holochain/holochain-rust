@@ -41,11 +41,16 @@ pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> H
 pub(crate) fn reduce_add_link_inner(
     store: &mut DhtStore,
     link: &Link,
-    address : Address
+    address : &Address,
+    link_modification : LinkModification
 ) -> HcResult<Address> {
     if (*store.content_storage().read()?).contains(link.base())? {
-        let attr = Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string());
-        let eav = EntityAttributeValueIndex::new(link.base(), &attr, &address)?;
+        let attr = match link_modification
+        {
+            LinkModification::Add => Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string()),
+            LinkModification::Remove => Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
+        };
+        let eav = EntityAttributeValueIndex::new(link.base(), &attr, address)?;
         store.meta_storage().write()?.add_eavi(&eav)?;
         Ok(link.base().clone())
     } else {
@@ -55,37 +60,7 @@ pub(crate) fn reduce_add_link_inner(
     }
 }
 
-pub(crate) fn reduce_remove_link_inner(
-    store: &mut DhtStore,
-    link: &Link,
-    addresses : Vec<Address>
-) -> HcResult<Address> {
-    if (*store.content_storage().read()?).contains(link.base())? {
-        let attr = Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string());
-        let (_, error)  : (BTreeSet<_>,BTreeSet<_>) = addresses.iter().map(|link_address|{
-            EntityAttributeValueIndex::new(link.base(),&Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_owned()),&link_address)
-            .map(|e|{
-                let new_store = store.clone();
-                let storage = new_store.meta_storage();
-                storage.clone().write().unwrap().add_eavi(&e)
-            })
-            .unwrap_or(Err(HolochainError::ErrorGeneric("Could not remove link{:?}".to_string())))
-        }).partition(Result::is_ok);
 
-        if error.is_empty()
-        {
-            Err(HolochainError::ErrorGeneric("error removing links".to_string()))
-        }
-        else 
-        {
-             Ok(link.base().clone())
-        }
-    } else {
-        Err(HolochainError::ErrorGeneric(String::from(
-            "Base for link not found",
-        )))
-    }
-}
 
 pub(crate) fn reduce_update_entry_inner(
     store: &DhtStore,

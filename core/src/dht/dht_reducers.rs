@@ -106,7 +106,7 @@ pub(crate) fn reduce_remove_link(
         _ => Vec::new(),
     };
 
-    let mut new_store = (*old_store).clone();
+    let new_store = (*old_store).clone();
     let store = links_to_remove
         .iter()
         .fold(new_store, |mut store, link_addresses| {

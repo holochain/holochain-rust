@@ -6,6 +6,7 @@ extern crate failure;
 extern crate holochain_core_types;
 #[macro_use]
 extern crate holochain_net;
+extern crate holochain_lib3h_protocol;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]

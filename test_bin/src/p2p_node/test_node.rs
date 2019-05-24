@@ -22,6 +22,10 @@ use std::{
     convert::TryFrom,
 };
 use crossbeam_channel::{unbounded, Receiver};
+use holochain_lib3h_protocol::{
+    protocol_client::Lib3hClientProtocol,
+    protocol_server::Lib3hServerProtocol,
+};
 use holochain_net::connection::net_connection::NetHandler;
 use super::{
     create_config::{create_ipc_config, create_lib3h_config},
@@ -58,6 +62,7 @@ pub struct TestNode {
 
     is_network_ready: bool,
     pub p2p_binding: String,
+    is_json: bool,
 }
 
 /// Query logs
@@ -74,7 +79,7 @@ impl TestNode {
     }
 
     /// Return the ith JSON message that this node has received and fullfills predicate
-    pub fn find_recv_msg(
+    pub fn find_recv_json_msg(
         &self,
         ith: usize,
         predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
@@ -112,13 +117,20 @@ impl TestNode {
             return Ok(());
         }
         let agent_id = self.agent_id.clone();
-        let res = self.send(
-            JsonProtocol::TrackDna(TrackDnaData {
+        let protocol_msg: Protocol = if self.is_json {
+            let track_dna_msg = TrackDnaData {
                 dna_address: dna_address.clone(),
                 agent_id,
-            })
-            .into(),
-        );
+            };
+            JsonProtocol::TrackDna(track_dna_msg).into()
+        } else {
+            let track_dna_msg = holochain_lib3h_protocol::data_types::TrackDnaData {
+                dna_address: dna_address.clone().to_string().into_bytes(),
+                agent_id: agent_id.to_string().into_bytes(),
+            };
+            Lib3hClientProtocol::TrackDna(track_dna_msg).into()
+        };
+        let res = self.send(protocol_msg);
         if res.is_ok() {
             self.tracked_dnas.insert(dna_address.clone());
             if !self.dna_stores.contains_key(dna_address) {
@@ -147,13 +159,20 @@ impl TestNode {
             return Ok(());
         }
         let agent_id = self.agent_id.clone();
-        let res = self.send(
-            JsonProtocol::UntrackDna(TrackDnaData {
+        let protocol_msg: Protocol = if self.is_json {
+            let track_dna_msg = TrackDnaData {
                 dna_address: dna_address.clone(),
                 agent_id,
-            })
-            .into(),
-        );
+            };
+            JsonProtocol::UntrackDna(track_dna_msg).into()
+        } else {
+            let track_dna_msg = holochain_lib3h_protocol::data_types::TrackDnaData {
+                dna_address: dna_address.clone().to_string().into_bytes(),
+                agent_id: agent_id.to_string().into_bytes(),
+            };
+            Lib3hClientProtocol::UntrackDna(track_dna_msg).into()
+        };
+        let res = self.send(protocol_msg);
         if res.is_ok() {
             self.tracked_dnas.remove(dna_address);
         }
@@ -480,7 +499,7 @@ impl TestNode {
     /// Look for the first HandleGetPublishingEntryList request received from network module and reply
     pub fn reply_to_first_HandleGetPublishingEntryList(&mut self) {
         let request = self
-            .find_recv_msg(
+            .find_recv_json_msg(
                 0,
                 Box::new(one_is!(JsonProtocol::HandleGetPublishingEntryList(_))),
             )
@@ -516,7 +535,7 @@ impl TestNode {
             self.agent_id
         ));
         let request = self
-            .find_recv_msg(
+            .find_recv_json_msg(
                 0,
                 Box::new(one_is!(JsonProtocol::HandleGetPublishingMetaList(_))),
             )
@@ -553,7 +572,7 @@ impl TestNode {
     /// Look for the first HandleGetHoldingEntryList request received from network module and reply
     pub fn reply_to_first_HandleGetHoldingEntryList(&mut self) {
         let request = self
-            .find_recv_msg(
+            .find_recv_json_msg(
                 0,
                 Box::new(one_is!(JsonProtocol::HandleGetHoldingEntryList(_))),
             )
@@ -587,7 +606,7 @@ impl TestNode {
     /// Look for the first HandleGetHoldingMetaList request received from network module and reply
     pub fn reply_to_first_HandleGetHoldingMetaList(&mut self) {
         let request = self
-            .find_recv_msg(
+            .find_recv_json_msg(
                 0,
                 Box::new(one_is!(JsonProtocol::HandleGetHoldingMetaList(_))),
             )
@@ -645,6 +664,7 @@ impl TestNode {
             logger: TweetProxy::new("p2pnode"),
             is_network_ready: false,
             p2p_binding: String::new(),
+            is_json: config.backend_kind != P2pBackendKind::LIB3H,
         }
     }
 
@@ -703,10 +723,70 @@ impl TestNode {
         return TestNode::new_with_config(agent_id, &p2p_config, _maybe_temp_dir);
     }
 
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn try_recv(&mut self) -> NetResult<Protocol> {
+        let data = self.receiver.try_recv()?;
+
+        self.recv_msg_log.push(data.clone());
+        Ok(data)
+    }
+
     /// See if there is a message to receive, and log it
     /// return a JsonProtocol if the received message is of that type
     #[cfg_attr(tarpaulin, skip)]
-    pub fn try_recv(&mut self) -> NetResult<JsonProtocol> {
+    pub fn try_recv_json(&mut self) -> NetResult<JsonProtocol> {
+        let data = self.try_recv()?;
+
+        // logging depending on received type
+        match data {
+            Protocol::NamedBinary(_) => {
+                let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
+                self.logger.d(&dbg_msg);
+            }
+            Protocol::Json(_) => {
+                let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
+                self.logger.d(&dbg_msg);
+            }
+            Protocol::P2pReady => {
+                let dbg_msg = format!("<< ({}) recv ** P2pReady **", self.agent_id);
+                self.logger.d(&dbg_msg);
+                self.is_network_ready = true;
+                bail!("received P2pReady");
+            }
+            Protocol::Terminated => {
+                let dbg_msg = format!("<< ({}) recv ** Terminated **", self.agent_id);
+                self.logger.d(&dbg_msg);
+                self.is_network_ready = false;
+                bail!("received Terminated");
+            }
+            _ => {
+                let dbg_msg = format!("<< ({}) recv <other>", self.agent_id);
+                self.logger.t(&dbg_msg);
+            }
+        };
+
+        match JsonProtocol::try_from(&data) {
+            Ok(r) => {
+                self.handle_json(r.clone());
+                Ok(r)
+            }
+            Err(e) => {
+                let s = format!("{:?}", e);
+                if !s.contains("Empty") && !s.contains("Pong(PongData") {
+                    self.logger.e(&format!(
+                        "({}) ###### Received parse error: {} | data = {:?}",
+                        self.agent_id, s, data,
+                    ));
+                }
+                Err(e)
+            }
+        }
+    }
+
+    /// See if there is a message to receive, and log it
+    /// return a JsonProtocol if the received message is of that type
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn try_recv_lib3h(&mut self) -> NetResult<Lib3hServerProtocol> {
         let data = self.receiver.try_recv()?;
 
         self.recv_msg_log.push(data.clone());
@@ -739,9 +819,9 @@ impl TestNode {
             }
         };
 
-        match JsonProtocol::try_from(&data) {
+        match Lib3hServerProtocol::try_from(&data) {
             Ok(r) => {
-                self.handle(r.clone());
+                self.handle_lib3h(r.clone());
                 Ok(r)
             }
             Err(e) => {
@@ -790,7 +870,7 @@ impl TestNode {
     /// return true if a HandleFetchEntry has been received
     #[allow(non_snake_case)]
     pub fn wait_HandleFetchEntry_and_reply(&mut self) -> bool {
-        let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
+        let maybe_request = self.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
         if maybe_request.is_none() {
             return false;
         }
@@ -807,7 +887,7 @@ impl TestNode {
     /// return true if a HandleFetchMeta has been received
     #[allow(non_snake_case)]
     pub fn wait_HandleFetchMeta_and_reply(&mut self) -> bool {
-        let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))));
+        let maybe_request = self.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))));
         if maybe_request.is_none() {
             return false;
         }
@@ -821,7 +901,7 @@ impl TestNode {
     }
 
     /// Wait for receiving a message corresponding to predicate until timeout is reached
-    pub fn wait_with_timeout(
+    pub fn wait_json_with_timeout(
         &mut self,
         predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
         timeout_ms: usize,
@@ -830,7 +910,7 @@ impl TestNode {
         loop {
             let mut did_something = false;
 
-            if let Ok(p2p_msg) = self.try_recv() {
+            if let Ok(p2p_msg) = self.try_recv_json() {
                 self.logger.i(&format!(
                     "({})::wait() - received: {:?}",
                     self.agent_id, p2p_msg
@@ -861,9 +941,16 @@ impl TestNode {
     /// Wait for receiving a message corresponding to predicate
     /// hard coded timeout
     #[cfg_attr(tarpaulin, skip)]
-    pub fn wait(&mut self, predicate: Box<dyn Fn(&JsonProtocol) -> bool>) -> Option<JsonProtocol> {
-        self.wait_with_timeout(predicate, TIMEOUT_MS)
+    pub fn wait_json(&mut self, predicate: Box<dyn Fn(&JsonProtocol) -> bool>) -> Option<JsonProtocol> {
+        self.wait_json_with_timeout(predicate, TIMEOUT_MS)
     }
+//
+//    /// Wait for receiving a message corresponding to predicate
+///// hard coded timeout
+//    #[cfg_attr(tarpaulin, skip)]
+//    pub fn wait(&mut self, predicate: Box<dyn Fn(&Protocol) -> bool>) -> Option<Protocol> {
+//        self.wait_with_timeout(predicate, TIMEOUT_MS)
+//    }
 
     // Stop node
     #[cfg_attr(tarpaulin, skip)]
@@ -881,7 +968,49 @@ impl TestNode {
 
     /// handle all types of json message
     #[cfg_attr(tarpaulin, skip)]
-    fn handle(&mut self, json_msg: JsonProtocol) {
+    fn handle_lib3h(&mut self, lib3h_msg: Lib3hServerProtocol) {
+        match lib3h_msg {
+            Lib3hServerProtocol::SuccessResult(_msg) => {
+                // FIXME
+            },
+            Lib3hServerProtocol::FailureResult(_msg) => {
+                // FIXME
+            },
+            Lib3hServerProtocol::Connected(_msg) => {
+                // FIXME
+            },
+            Lib3hServerProtocol::Disconnected(_msg) => {
+                // FIXME
+            },
+            Lib3hServerProtocol::SendDirectMessageResult(_msg) => {
+                // FIXME
+            },
+            Lib3hServerProtocol::HandleSendDirectMessage(_msg) => {
+                // FIXME
+            },
+            Lib3hServerProtocol::FetchEntryResult(_msg) => {
+                // FIXME
+            },
+            Lib3hServerProtocol::HandleFetchEntry(_msg) => {
+                // FIXME
+            },
+            Lib3hServerProtocol::HandleStoreEntry(_msg) => {
+                // FIXME
+            },
+            Lib3hServerProtocol::HandleDropEntry(_msg) => {
+                // FIXME
+            },
+            Lib3hServerProtocol::HandleGetPublishingEntryList(_msg) => {
+                // FIXME
+            },
+            Lib3hServerProtocol::HandleGetHoldingEntryList(_msg) => {
+                // FIXME
+            },
+        }
+    }
+    /// handle all types of json message
+    #[cfg_attr(tarpaulin, skip)]
+    fn handle_json(&mut self, json_msg: JsonProtocol) {
         match json_msg {
             JsonProtocol::SuccessResult(_msg) => {
                 // n/a

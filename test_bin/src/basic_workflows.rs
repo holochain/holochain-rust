@@ -23,12 +23,12 @@ fn confirm_published_data(
     alex.author_entry(address.into(), content, true)?;
 
     // Check if both nodes are asked to store it
-    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     // #fulldht
     assert!(result_a.is_some());
     log_i!("got HandleStoreEntry on node A: {:?}", result_a);
 
-    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     assert!(result_b.is_some());
     log_i!("got HandleStoreEntry on node B: {:?}", result_b);
 
@@ -39,7 +39,7 @@ fn confirm_published_data(
 
     // billy should receive the data it requested from the netowrk
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
         .unwrap();
     log_i!("got dht Entry result: {:?}", result);
 
@@ -59,11 +59,11 @@ fn confirm_published_metadata(
     let _meta_key = alex.author_meta(address, attribute, link_entry_address, true)?;
 
     // Check if both nodes are asked to store it
-    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
+    let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
     // #fulldht
     assert!(result_a.is_some());
     log_i!("got HandleStoreMeta on node A: {:?}", result_a);
-    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
+    let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
     assert!(result_b.is_some());
     log_i!("got HandleStoreMeta on node B: {:?}", result_b);
 
@@ -75,7 +75,7 @@ fn confirm_published_metadata(
 
     // billy should receive the metadata it requested from the netowrk
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
     log_i!("got dht meta result: {:?}", result);
     // Done
@@ -96,7 +96,7 @@ pub fn setup_one_node(
         .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
 
@@ -107,7 +107,7 @@ pub fn setup_one_node(
         alex.send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on alex");
         let alex_state = alex
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
 
         one_let!(JsonProtocol::GetStateResult(state) = alex_state {
@@ -148,14 +148,14 @@ pub fn setup_two_nodes(
         .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
     billy
         .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 2: {:?}", connect_result_2);
 
@@ -167,13 +167,13 @@ pub fn setup_two_nodes(
         alex.send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on alex");
         let alex_state = alex
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
         billy
             .send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on billy");
         let billy_state = billy
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
 
         one_let!(JsonProtocol::GetStateResult(state) = alex_state {
@@ -196,14 +196,14 @@ pub fn setup_two_nodes(
 
         // Make sure Peers are connected
         let result_a = alex
-            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
             .unwrap();
         log_i!("got connect result A: {:?}", result_a);
         one_let!(JsonProtocol::PeerConnected(d) = result_a {
             assert_eq!(d.agent_id, BILLY_AGENT_ID);
         });
         let result_b = billy
-            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
             .unwrap();
         log_i!("got connect result B: {:?}", result_b);
         one_let!(JsonProtocol::PeerConnected(d) = result_b {
@@ -239,7 +239,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
 
     // Check if billy received it
     let res = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -255,7 +255,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     );
     // Check if alex received it
     let res = alex
-        .wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -311,12 +311,12 @@ pub fn meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
 
     // wait for gossip
     // Check if billy is asked to store it
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    let result = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     // #fulldht
     assert!(result.is_some());
     log_i!("Billy got HandleStoreEntry: {:?}", result);
 
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
+    let result = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
     assert!(result.is_some());
     log_i!("Billy got HandleStoreEntry: {:?}", result);
 
@@ -330,7 +330,7 @@ pub fn meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     alex.reply_to_HandleFetchMeta(&fetch_meta)?;
     // billy should receive requested metadata
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
     log_i!("got GetMetaResult: {:?}", result);
     let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
@@ -352,12 +352,12 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
 
     // Check if both nodes are asked to store it
-    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     // #fulldht
     assert!(result_a.is_some());
     log_i!("got HandleStoreEntry on node A: {:?}", result_a);
 
-    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     assert!(result_b.is_some());
     log_i!("got HandleStoreEntry on node B: {:?}", result_b);
 
@@ -369,7 +369,7 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
 
     // Billy should receive requested data
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
         .unwrap();
     log_i!("got FetchEntryResult: {:?}", result);
 
@@ -381,7 +381,7 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
 
     // Billy should receive FailureResult
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
     log_i!("got FailureResult: {:?}", result);
 
@@ -402,12 +402,12 @@ pub fn no_setup_test(alex: &mut TestNode, billy: &mut TestNode, _connect: bool) 
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
 
     // Alex should receive a FailureResult
-    let _res = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 500);
+    let _res = alex.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 500);
     // in-memory can't send a failure result back
     // assert!(_res.is_some());
 
     // Billy should not receive anything
-    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
     Ok(())
 }
@@ -431,7 +431,7 @@ pub fn untrack_alex_test(
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
 
     // Billy should not receive it.
-    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
     // Alex should also not receive anything back
     assert_eq!(before_count, alex.count_recv_json_messages());
@@ -464,12 +464,12 @@ pub fn untrack_billy_test(
 
     // Alex should receive FailureResult
     let result = alex
-        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
     log_i!("got FailureResult: {:?}", result);
 
     // Billy should not receive it.
-    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
 
     // Done
@@ -515,7 +515,7 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
 
     // Check if billy received it
     let res = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -531,7 +531,7 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
     );
     // Check if alex received it
     let res = alex
-        .wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -563,7 +563,7 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
 
     // Billy should receive an empty list
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
 
     log_i!("got GetMetaResult: {:?}", result);
@@ -585,7 +585,7 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
 
     // Billy should receive an empty list
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
 
     log_i!("got GetMetaResult: {:?}", result);
@@ -614,7 +614,7 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
 
     // Billy should receive meta
     let result = billy
-        .wait(Box::new(one_is_where!(
+        .wait_json(Box::new(one_is_where!(
             JsonProtocol::FetchMetaResult(meta_data),
             { meta_data.request_id == fetch_meta.request_id }
         )))

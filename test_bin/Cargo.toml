@@ -9,6 +9,8 @@ holochain_conductor_api = { path = "../conductor_api" }
 holochain_cas_implementations = { path="../cas_implementations" }
 holochain_core_types = { path = "../core_types" }
 holochain_net = { path = "../net" }
+holochain_lib3h = { path = "../../lib3h/lib3h" }
+holochain_lib3h_protocol = { path = "../../lib3h/lib3h_protocol" }
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 tempfile = "=3.0.7"
 failure = "=0.1.5"

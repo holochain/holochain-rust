@@ -3,6 +3,8 @@
 //! process or library. See json_protocol for a higher level interface.
 
 use serde_bytes;
+use failure::Error;
+use std::convert::TryFrom;
 
 use holochain_core_types::json::JsonString;
 use holochain_lib3h_protocol::{
@@ -23,7 +25,7 @@ pub enum Protocol {
     Json(JsonString),
     /// send/recv Lib3hClientProtocol message
     Lib3hClient(Lib3hClientProtocol),
-    /// send/recv Lib3hClientProtocol message
+    /// send/recv Lib3hServerProtocol message
     Lib3hServer(Lib3hServerProtocol),
     /// send/recv a Ping message (ipc protocol spec)
     Ping(PingData),
@@ -129,6 +131,65 @@ impl<'a> From<&'a str> for Protocol {
 impl From<String> for Protocol {
     fn from(s: String) -> Self {
         s.as_str().into()
+    }
+}
+
+impl<'a> From<&'a Lib3hClientProtocol> for Protocol {
+    fn from(w: &Lib3hClientProtocol) -> Self {
+        Protocol::Lib3hClient(w.clone())
+    }
+}
+
+impl From<Lib3hClientProtocol> for Protocol {
+    fn from(w: Lib3hClientProtocol) -> Self {
+        Protocol::Lib3hClient(w)
+    }
+}
+
+impl<'a> From<&'a Lib3hServerProtocol> for Protocol {
+    fn from(w: &Lib3hServerProtocol) -> Self {
+        Protocol::Lib3hServer(w.clone())
+    }
+}
+
+impl From<Lib3hServerProtocol> for Protocol {
+    fn from(w: Lib3hServerProtocol) -> Self {
+        Protocol::Lib3hServer(w)
+    }
+}
+
+impl<'a> TryFrom<&'a Protocol> for Lib3hServerProtocol {
+    type Error = Error;
+    fn try_from(p: &Protocol) -> Result<Self, Error> {
+        if let Protocol::Lib3hServer(msg) = p {
+            Ok(msg.clone())
+        } else {
+            bail!("could not convert into Lib3hServerProtocol: {:?}", p);
+        }
+    }
+}
+impl TryFrom<Protocol> for Lib3hServerProtocol {
+    type Error = Error;
+    fn try_from(p: Protocol) -> Result<Self, Error> {
+        Lib3hServerProtocol::try_from(&p)
+    }
+}
+
+impl<'a> TryFrom<&'a Protocol> for Lib3hClientProtocol {
+    type Error = Error;
+    fn try_from(p: &Protocol) -> Result<Self, Error> {
+        if let Protocol::Lib3hClient(msg) = p {
+            Ok(msg.clone())
+        } else {
+            bail!("could not convert into Lib3hServerProtocol: {:?}", p);
+        }
+    }
+}
+
+impl TryFrom<Protocol> for Lib3hClientProtocol {
+    type Error = Error;
+    fn try_from(p: Protocol) -> Result<Self, Error> {
+        Lib3hClientProtocol::try_from(&p)
     }
 }
 

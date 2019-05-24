@@ -85,8 +85,7 @@ impl NetWorker for Lib3hWorker {
             self.handler.handle(Ok(Protocol::Terminated))?;
             return Ok(());
         }
-        // FIXME do translation
-        // Post message
+        // Post Lib3hClient messages only
         if let Protocol::Lib3hClient(msg) = data {
             self.net_engine.post(msg.clone())?;
         }

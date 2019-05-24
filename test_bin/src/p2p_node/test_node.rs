@@ -20,10 +20,11 @@ use holochain_net::{
 use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
-    sync::mpsc,
 };
 
 use super::{dna_store::DnaStore, ipc_config::create_ipc_config};
+use crossbeam_channel::{unbounded, Receiver};
+use holochain_net::connection::net_connection::NetHandler;
 
 static TIMEOUT_MS: usize = 5000;
 
@@ -32,7 +33,7 @@ pub struct TestNode {
     // Need to hold the tempdir to keep it alive, otherwise we will get a dir error.
     _maybe_temp_dir: Option<tempfile::TempDir>,
     p2p_connection: P2pNetwork,
-    receiver: mpsc::Receiver<Protocol>,
+    receiver: Receiver<Protocol>,
     pub config: P2pConfig,
 
     pub agent_id: String,
@@ -613,15 +614,15 @@ impl TestNode {
         );
 
         // use a mpsc channel for messaging between p2p connection and main thread
-        let (sender, receiver) = mpsc::channel::<Protocol>();
+        let (sender, receiver) = unbounded::<Protocol>();
         // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
         let agent_id = agent_id_arg.clone();
         let p2p_connection = P2pNetwork::new(
-            Box::new(move |r| {
+            NetHandler::new(Box::new(move |r| {
                 log_tt!("p2pnode", "<<< ({}) handler: {:?}", agent_id_arg, r);
                 sender.send(r?)?;
                 Ok(())
-            }),
+            })),
             &config,
         )
         .expect("Failed to create P2pNetwork");
@@ -705,6 +706,12 @@ impl TestNode {
                 self.logger.d(&dbg_msg);
                 self.is_network_ready = true;
                 bail!("received P2pReady");
+            }
+            Protocol::Terminated => {
+                let dbg_msg = format!("<< ({}) recv ** Terminated **", self.agent_id);
+                self.logger.d(&dbg_msg);
+                self.is_network_ready = false;
+                bail!("received Terminated");
             }
             _ => {
                 let dbg_msg = format!("<< ({}) recv <other>", self.agent_id);

@@ -4,8 +4,9 @@ use crate::{
 };
 
 use holochain_core_types::{
-    cas::content::Address, crud_status::CrudStatus, entry::EntryWithMetaAndHeader,
-    error::HolochainError, time::Timeout,
+use holochain_core_types::{
+    entry::{Entry, EntryWithMeta, EntryWithMetaAndHeader},
+    error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
@@ -19,6 +20,7 @@ pub async fn get_link_result_workflow<'a>(
     let links = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
+        link_args.link_type.clone(),
         link_args.tag.clone(),
         link_args.options.timeout.clone()
     ))?;
@@ -27,29 +29,44 @@ pub async fn get_link_result_workflow<'a>(
         .iter()
         .map(|link| {
             get_latest_entry(
-                context.clone(),
-                link.clone(),
-                link_args.options.timeout.clone(),
-            )
-            .map(|link_entry_result_option| {
-                link_entry_result_option.map(|link_entry| {
-                    let headers = if link_args.options.headers {
-                        link_entry.headers
-                    } else {
-                        Vec::new()
-                    };
-                    Ok(LinksResult {
-                        address: link.clone(),
-                        headers,
-                        crud_status: link_entry.entry_with_meta.crud_status,
+            context.block_on(
+                get_entry_with_meta_workflow(&context, &link, &link_args.options.timeout).map(
+                    |link_entry_result| {
+                        match link_entry_result {
+                            Ok(Some(EntryWithMetaAndHeader {
+                                entry_with_meta: EntryWithMeta{entry: Entry::LinkAdd(link_data), ..},
+                                headers,
+                            })) => {
+                                let headers = match link_args.options.headers {
+                                    true => headers,
+                                    false => Vec::new(),
+                                };
+                                Ok(LinksResult {
+                                    address: link_data.link().target().clone(),
+                                    headers,
+                                    tag: link_data.link().tag().to_string(),
                         crud_link: link_entry.entry_with_meta.maybe_link_update_delete,
-                    })
-                })
-            })
-            .unwrap_or(None)
-            .unwrap_or(Err(HolochainError::ErrorGeneric(
-                "Could not crud information for link".to_string(),
-            )))
+                                })
+                            },
+                            Ok(None) => {
+                                Err(HolochainError::ErrorGeneric(
+                                    format!("Could not get link entry for address stored in the EAV entry {}", link),
+                                ))
+                            }
+                            Err(e) => {
+                                Err(HolochainError::ErrorGeneric(
+                                    format!("Error retrieveing link: {:?}", e),
+                                ))
+                            },
+                            _ => {
+                                Err(HolochainError::ErrorGeneric(
+                                    format!("Unknown Error retrieveing link. Most likely EAV entry points to non-link entry type"),
+                                ))
+                            }
+                        }
+                    },
+                ),
+            )
         })
         .partition(Result::is_ok);
 
@@ -68,9 +85,10 @@ pub async fn get_link_result_workflow<'a>(
                 .collect(),
         ))
     } else {
-        Err(HolochainError::ErrorGeneric(
-            "Could not get links".to_string(),
-        ))
+        Err(HolochainError::ErrorGeneric(format!(
+            "Could not get links: {:?}",
+            errors
+        )))
     }
 }
 

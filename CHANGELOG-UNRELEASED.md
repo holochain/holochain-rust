@@ -6,12 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added `Crud Status` and `Crud Link` information to link data in get_links as well as query through `LinkStatusRequest` [#1337](https://github.com/holochain/holochain-rust/pull/1337)
-- Adds hdk::commit_entry_result() which features: optional argument to include additional provenances. [#1320](https://github.com/holochain/holochain-rust/pull/1320)
-- default.nix file added to facilitate `nix-env` based binary installation [#1356](https://github.com/holochain/holochain-rust/pull/1356)
+- Option to show NPM output when pulling deps during `hc test` [PR#1401](https://github.com/holochain/holochain-rust/pull/1401)
+- Adds scaffolding/skeleton for a future WASM conductor [#894](https://github.com/holochain/holochain-rust/pull/894)
 
 ### Changed
-- Changes `LinkAdd` and `RemoveEntry` so that they return a hash instead of a null [#1343](https://github.com/holochain/holochain-rust/pull/1343)
-- Merged `default.nix` and `shell.nix` to improve `nix-shell` handling [#1371](https://github.com/holochain/holochain-rust/pull/1371)
+
+- **Breaking Change** Renames link tags to link_type. Adds new link tag which can be any string. This is available in validation of links and links can be retrieved based on their tag+type, just tag, just type or retrieve all. `hdk::link_entries` and `hdk::get_links` now required an extra parameter.  [#1402](https://github.com/holochain/holochain-rust/pull/1402).
+- Option to show NPM output when pulling deps during `hc test` [PR#1401](https://github.com/holochain/holochain-rust/pull/1401)
+- Adds scaffolding/skeleton for a future WASM conductor [#894](https://github.com/holochain/holochain-rust/pull/894)
+- Adds PROPERTIES static to the HDK which contains a JsonString with the DNA properties object. Also adds a body to the `hdk::properties` stub which allows retrieving fields from the properties object as JsonString. [#1418](https://github.com/holochain/holochain-rust/pull/1418)
+- Conductor now persists its config in the config root (e.g. `home/peter/.config/holochain/conductor` rather than `~/.holochain`) [#1386](https://github.com/holochain/holochain-rust/pull/1386)
+- Default N3H mode as set when spawned by the conductor got set to "REAL". [#1282](https://github.com/holochain/holochain-rust/pull/1282)
+- Internal signals renamed to Trace signals, with ability to opt in or out through `emit_trace_signals` conductor config [#1428](https://github.com/holochain/holochain-rust/pull/1428)
 
 ### Deprecated
 

@@ -1,11 +1,10 @@
 use crate::{
     action::{ActionWrapper, DirectMessageData},
-    context::Context,
     network::{reducers::send, state::NetworkState},
+    state::State,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_net::connection::json_protocol::{JsonProtocol, MessageData};
-use std::sync::Arc;
 
 fn inner(
     network_state: &mut NetworkState,
@@ -37,23 +36,20 @@ fn inner(
 }
 
 pub fn reduce_send_direct_message(
-    context: Arc<Context>,
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let dm_data = unwrap_to!(action => crate::action::Action::SendDirectMessage);
     if let Err(error) = inner(network_state, dm_data) {
-        context.log(format!(
-            "err/net: Error sending direct message: {:?}",
-            error
-        ));
+        println!("err/net: Error sending direct message: {:?}", error);
     }
 }
 
 pub fn reduce_send_direct_message_timeout(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -75,31 +71,31 @@ mod tests {
         action::{Action, ActionWrapper, DirectMessageData, NetworkSettings},
         context::test_memory_network_config,
         instance::tests::test_context,
-        network::direct_message::{CustomDirectMessage, DirectMessage},
+        network::{
+            direct_message::{CustomDirectMessage, DirectMessage},
+            handler::create_handler,
+        },
         state::test_store,
     };
     use holochain_core_types::{cas::content::Address, error::HolochainError};
-    use std::sync::{Arc, RwLock};
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {
         let netname = Some("reduce_send_direct_message_timeout_test");
-        let mut context = test_context("alice", netname);
-        let store = test_store(context.clone());
-        let store = Arc::new(RwLock::new(store));
+        let context = test_context("alice", netname);
+        let mut store = test_store(context.clone());
 
-        Arc::get_mut(&mut context).unwrap().set_state(store.clone());
+        let dna_address: Address = "reduce_send_direct_message_timeout_test".into();
+        let handler = create_handler(&context, dna_address.to_string());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             p2p_config: test_memory_network_config(netname),
             dna_address: "reduce_send_direct_message_timeout_test".into(),
             agent_id: String::from("alice"),
+            handler,
         }));
 
-        {
-            let mut new_store = store.write().unwrap();
-            *new_store = new_store.reduce(context.clone(), action_wrapper);
-        }
+        store = store.reduce(action_wrapper);
 
         let custom_direct_message = DirectMessage::Custom(CustomDirectMessage {
             zome: String::from("test"),
@@ -114,13 +110,9 @@ mod tests {
         };
         let action_wrapper = ActionWrapper::new(Action::SendDirectMessage(direct_message_data));
 
-        {
-            let mut new_store = store.write().unwrap();
-            *new_store = new_store.reduce(context.clone(), action_wrapper);
-        }
+        store = store.reduce(action_wrapper);
+
         let maybe_reply = store
-            .read()
-            .unwrap()
             .network()
             .custom_direct_message_replys
             .get(&msg_id)
@@ -128,17 +120,14 @@ mod tests {
         assert_eq!(maybe_reply, None);
 
         let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(msg_id.clone()));
-        {
-            let mut new_store = store.write().unwrap();
-            *new_store = new_store.reduce(context.clone(), action_wrapper);
-        }
+        store = store.reduce(action_wrapper);
+
         let maybe_reply = store
-            .read()
-            .unwrap()
             .network()
             .custom_direct_message_replys
             .get(&msg_id.clone())
             .cloned();
+
         assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout)));
     }
 }

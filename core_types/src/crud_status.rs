@@ -103,7 +103,7 @@ mod tests {
             RawString::from("example"),
         ))
         .unwrap();
-        let attribute = Attribute::LinkTag("favourite-badge".into());
+        let attribute = Attribute::LinkTag("favourite-badge".into(), "some-tag".into());
         let value_content: Content =
             CrudStatus::try_from_content(&JsonString::from(CrudStatus::Rejected))
                 .unwrap()

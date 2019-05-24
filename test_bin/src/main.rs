@@ -13,6 +13,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate unwrap_to;
 extern crate backtrace;
+extern crate crossbeam_channel;
 extern crate multihash;
 
 #[macro_use]
@@ -53,6 +54,7 @@ lazy_static! {
         basic_workflows::dht_test,
         basic_workflows::meta_test,
         basic_workflows::no_meta_test,
+        basic_workflows::shutdown_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,
@@ -172,7 +174,12 @@ fn main() {
             .unwrap();
         }
         if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-            launch_two_nodes_test("test_bin/data/network_config.json", None, test_fn).unwrap();
+            launch_two_nodes_test(
+                "test_bin/data/network_config.json",
+                Some("test_bin/data/end_user_net_config.json".to_string()),
+                test_fn,
+            )
+            .unwrap();
         }
     }
 
@@ -191,8 +198,12 @@ fn main() {
                 .unwrap();
             }
             if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-                launch_three_nodes_test("test_bin/data/network_config.json", None, test_fn)
-                    .unwrap();
+                launch_three_nodes_test(
+                    "test_bin/data/network_config.json",
+                    Some("test_bin/data/end_user_net_config.json".to_string()),
+                    test_fn,
+                )
+                .unwrap();
             }
         }
     }
@@ -203,14 +214,14 @@ fn main() {
     {
         connection_workflows::two_nodes_disconnect_test(
             "test_bin/data/network_config.json",
-            None,
+            Some("test_bin/data/end_user_net_config.json".to_string()),
             basic_workflows::dht_test,
         )
         .unwrap();
 
         connection_workflows::three_nodes_disconnect_test(
             "test_bin/data/network_config.json",
-            None,
+            Some("test_bin/data/end_user_net_config.json".to_string()),
             three_workflows::hold_and_publish_test,
         )
         .unwrap();

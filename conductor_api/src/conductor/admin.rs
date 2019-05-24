@@ -26,7 +26,7 @@ pub trait ConductorAdmin {
         copy: bool,
         expected_hash: Option<HashString>,
         properties: Option<&serde_json::Value>,
-    ) -> Result<(), HolochainError>;
+    ) -> Result<HashString, HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_instance(
         &mut self,
@@ -81,7 +81,7 @@ impl ConductorAdmin for Conductor {
         copy: bool,
         expected_hash: Option<HashString>,
         properties: Option<&serde_json::Value>,
-    ) -> Result<(), HolochainError> {
+    ) -> Result<HashString, HolochainError> {
         let path_string = path
             .to_str()
             .ok_or(HolochainError::ConfigError("invalid path".into()))?;
@@ -130,7 +130,7 @@ impl ConductorAdmin for Conductor {
         self.config = new_config;
         self.save_config()?;
         notify(format!("Installed DNA from {} as \"{}\"", path_string, id));
-        Ok(())
+        Ok(dna.address())
     }
 
     /// Removes the DNA given by id from the config.
@@ -595,6 +595,10 @@ pub mod tests {
         Arc::new(loader)
     }
 
+    pub fn general() -> String {
+        "expose_trace_signals = false".to_string()
+    }
+
     pub fn empty_bridges() -> String {
         "bridges = []".to_string()
     }
@@ -617,6 +621,7 @@ pub mod tests {
 
     pub fn header_block(test_name: &str) -> String {
         let mut toml = empty_bridges();
+        toml = add_line(toml, general());
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());
         toml = add_line(toml, empty_ui_interfaces());
@@ -753,16 +758,15 @@ pattern = '.*'"#
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
 
-        assert_eq!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 false,
                 None,
                 None
-            ),
-            Ok(()),
-        );
+            )
+            .is_ok());
 
         let new_dna =
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
@@ -822,16 +826,15 @@ id = 'new-dna'"#,
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
 
-        assert_eq!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 true,
                 None,
                 None
-            ),
-            Ok(()),
-        );
+            )
+            .is_ok());
 
         let new_dna =
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
@@ -874,16 +877,15 @@ id = 'new-dna'"#,
         new_dna_path.push("new-dna.dna.json");
         let dna = Arc::get_mut(&mut conductor.dna_loader).unwrap()(&new_dna_path).unwrap();
 
-        assert_eq!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 false,
                 Some(dna.address()),
                 None
-            ),
-            Ok(()),
-        );
+            )
+            .is_ok());
 
         assert_eq!(
             conductor.install_dna_from_file(
@@ -922,16 +924,15 @@ id = 'new-dna'"#,
             )),
         );
 
-        assert_eq!(
-            conductor.install_dna_from_file(
+        assert!(conductor
+            .install_dna_from_file(
                 new_dna_path.clone(),
                 String::from("new-dna-with-props"),
                 true,
                 None,
                 Some(&new_props)
-            ),
-            Ok(()),
-        );
+            )
+            .is_ok());
 
         let mut new_dna =
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
@@ -1115,6 +1116,7 @@ type = 'websocket'"#,
 
         let mut toml = empty_bridges();
         toml = add_line(toml, "dnas = []".to_string());
+        toml = add_line(toml, general());
         toml = add_line(toml, "instances = []".to_string());
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());
@@ -1238,6 +1240,7 @@ type = 'http'"#,
             .expect("Could not read temp config file");
 
         let mut toml = empty_bridges();
+        toml = add_line(toml, general());
         toml = add_line(toml, "interfaces = []".to_string());
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());
@@ -1538,7 +1541,8 @@ type = 'websocket'"#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = persistence_dir(test_name);
+        let mut toml = general();
+        toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());
         toml = add_line(toml, empty_ui_interfaces());
 

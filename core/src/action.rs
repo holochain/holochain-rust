@@ -1,6 +1,5 @@
 use crate::{
     agent::state::AgentState,
-    context::Context,
     network::{
         direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
     },
@@ -11,6 +10,7 @@ use crate::{
         ZomeFnCall,
     },
     scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
+    state::State,
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -24,15 +24,15 @@ use holochain_core_types::{
     validation::ValidationPackage,
 };
 use holochain_net::{
-    connection::json_protocol::{
-        FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
+    connection::{
+        json_protocol::{FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData},
+        net_connection::NetHandler,
     },
     p2p_config::P2pConfig,
 };
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
-    sync::Arc,
     vec::Vec,
 };
 
@@ -42,7 +42,7 @@ use std::{
 /// The standard approach is to drop the ActionWrapper into the key of a state history HashMap and
 /// use the convenience unwrap_to! macro to extract the action data in a reducer.
 /// All reducer functions must accept an ActionWrapper so all dispatchers take an ActionWrapper.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ActionWrapper {
     action: Action,
     id: snowflake::ProcessUniqueId,
@@ -88,7 +88,8 @@ impl Hash for ActionWrapper {
 }
 
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize)]
+#[serde(tag = "action_type", content = "data")]
 pub enum Action {
     // ----------------
     // Agent actions:
@@ -145,12 +146,12 @@ pub enum Action {
     ///
     GetEntryTimeout(GetEntryKey),
 
-    /// get links from entry address and tag name
+    /// get links from entry address and link_type name
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
     RespondGetLinks((FetchMetaData, Vec<Address>)),
-    HandleGetLinksResult((FetchMetaResultData, String)),
+    HandleGetLinksResult((FetchMetaResultData, String, String)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -227,17 +228,20 @@ pub enum Action {
 pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
-pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
+pub type ReduceFn<S> = fn(&mut S, &State, &ActionWrapper);
 
 /// The unique key that represents a GetLinks request, used to associate the eventual
 /// response with this GetLinks request
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Serialize)]
 pub struct GetLinksKey {
     /// The address of the Link base
     pub base_address: Address,
 
-    /// The link tag
-    pub tag: String,
+    /// The link type
+    pub link_type: Option<String>,
+
+    /// The link tag, None means get all the tags for a given type
+    pub tag: Option<String>,
 
     /// A unique ID that is used to pair the eventual result to this request
     pub id: String,
@@ -245,7 +249,7 @@ pub struct GetLinksKey {
 
 /// The unique key that represents a Get request, used to associate the eventual
 /// response with this Get request
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Serialize)]
 pub struct GetEntryKey {
     /// The address of the entry to get
     pub address: Address,
@@ -256,7 +260,7 @@ pub struct GetEntryKey {
 
 /// Everything the network module needs to know in order to send a
 /// direct message.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize)]
 pub struct DirectMessageData {
     /// The address of the node to send a message to
     pub address: Address,
@@ -274,7 +278,7 @@ pub struct DirectMessageData {
 }
 
 /// Everything the network needs to initialize
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize)]
 pub struct NetworkSettings {
     /// P2pConfig that gets passed to [P2pNetwork](struct.P2pNetwork.html)
     /// determines how to connect to the network module.
@@ -287,6 +291,10 @@ pub struct NetworkSettings {
     /// The network module needs to know who we are.
     /// This is this agent's address.
     pub agent_id: String,
+
+    /// This is a closure of the code that gets called by the network
+    /// module to have us process incoming messages
+    pub handler: NetHandler,
 }
 
 #[cfg(test)]

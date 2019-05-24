@@ -17,6 +17,42 @@ const scenario1 = new Scenario([instanceAlice], { debugLog:true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
+scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
+
+    // Ask for alice to grant a token for bob  (it's hard-coded for bob in re function for now)
+    const result = alice.call("blog", "request_post_grant", {})
+    t.ok(result.Ok)
+    t.notOk(result.Err)
+
+    // Confirm that we can get back the grant
+    const grants = alice.call("blog", "get_grants", {})
+    t.ok(grants.Ok)
+    t.notOk(grants.Err)
+    t.equal(result.Ok, grants.Ok[0])
+
+    // Bob stores the grant as a claim
+    const claim = bob.call("blog", "commit_post_claim", { grantor: alice.agentId, claim: result.Ok })
+    t.deepEqual(claim, { Ok: 'Qmebh1y2kYgVG1RPhDDzDFTAskPcRWvz5YNhiNEi17vW9G' });
+
+    // Bob can now create a post on alice's chain via a node-to-node message with the claim
+    const post_content = "Holo world"
+    const params = { grantor: alice.agentId, content: post_content, in_reply_to: null }
+    const create_result = bob.call("blog", "create_post_with_claim", params)
+    t.deepEqual(create_result, {Ok: "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk"})
+
+    // Confirm that the post was actually added to alice's chain
+    const get_post_result = alice.call("blog", "get_post", { post_address: create_result.Ok })
+    const value = JSON.parse(get_post_result.Ok.App[1])
+    t.equal(value.content, post_content)
+
+
+    // Check that when bob tries to make this call it fails because there is no grant stored
+    const params2 = { grantor: bob.agentId, content: post_content, in_reply_to: null }
+    const create2_result = bob.call("blog", "create_post_with_claim", params2)
+    t.deepEqual(create2_result, {Ok: "error: no matching grant for claim"})
+
+})
+
 const testBridge = Config.bridge('test-bridge', instanceAlice, instanceBob)
 const scenarioBridge = new Scenario([instanceAlice, instanceBob], { bridges: [testBridge], debugLog: true })
 
@@ -62,6 +98,10 @@ scenario2.runTape('secrets', async (t, { alice }) => {
     const VerificationResult1 = alice.call("converse", "verify_message", { message, provenance: provenance1 });
     t.deepEqual(VerificationResult1, { Ok: false });
 
+    const GetKeyResult = alice.call("converse", "get_pubkey", {src_id: "app_key:1" });
+    t.ok(GetKeyResult)
+    t.deepEqual(GetKeyResult,AddKeyResult)
+
 })
 
 scenario2.runTape('agentId', async (t, { alice, bob }) => {
@@ -76,6 +116,7 @@ scenario1.runTape('show_env', async (t, { alice }) => {
   t.equal(result.Ok.dna_name, "HDK-spec-rust")
   t.equal(result.Ok.agent_address, alice.agentId)
   t.equal(result.Ok.agent_id, '{"nick":"alice","pub_sign_key":"' + alice.agentId + '"}')
+  t.equal(result.Ok.properties, '{"test_property":"test-property-value"}')
 
   // don't compare the public token because it changes every time we change the dna.
   t.deepEqual(result.Ok.cap_request.provenance, [ alice.agentId, '+78GKy9y3laBbCNK1ajrj2rYVV3lBOxzGAZuuLDqXL2MLJUbMaB4lv7ut/UPWSoEeHx7OuXrTFXfu+PihtMMBQ==' ]
@@ -112,13 +153,10 @@ scenario1.runTape('cross zome call', async (t, { alice }) => {
   t.equal(result.Ok, 4)
 })
 
-scenario2.runTape('send', async (t, { alice, bob }) => {
-  const params = { to_agent: bob.agentId, message: "ping" }
-  const result = alice.call("blog", "check_send", params)
-
-  //t.deepEqual(result.Ok, "Received : ping")
-  //the line above results in `undefined`, so I switched to result to get the actual error, below:
-  t.deepEqual(result, { Ok: { message: "ping" } })
+scenario2.runTape('send ping', async (t, { alice, bob }) => {
+  const params = { to_agent: bob.agentId, message: "hello" }
+  const result = alice.call("blog", "ping", params)
+    t.deepEqual(result, { Ok: { msg_type:"response", body: "got hello from HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui" } })
 })
 
 scenario1.runTape('hash_post', async (t, { alice }) => {
@@ -147,6 +185,57 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.ok(result.Ok)
   t.notOk(result.Err)
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+})
+
+scenario1.runTape('create_tagged_post and retrieve all tags', async (t, { alice }) => {
+  const result1 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Tutorial on amazing Holochain design patterns",
+    tag: "work"
+  })
+  t.ok(result1.Ok)
+
+  const result2 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Fly tying, is it for you?",
+    tag: "fishing"
+  })
+  t.ok(result2.Ok)
+
+  const getResult = await alice.callSync("blog", "my_posts", {})
+  t.equal(getResult.Ok.links.length, 2)
+  let tags = getResult.Ok.links.map(l => l.tag)
+  t.ok(tags.includes("work"))
+  t.ok(tags.includes("fishing"))
+})
+
+scenario1.runTape('create_tagged_post and retrieve exact tag match', async (t, { alice }) => {
+  const result1 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Tutorial on amazing Holochain design patterns",
+    tag: "work"
+  })
+  t.ok(result1.Ok)
+
+  const result2 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Fly tying, is it for you?",
+    tag: "fishing"
+  })
+  t.ok(result2.Ok)
+
+  const getResult = await alice.callSync("blog", "my_posts", {tag: "fishing"})
+  t.equal(getResult.Ok.links.length, 1)
+  let tags = getResult.Ok.links.map(l => l.tag)
+  t.notOk(tags.includes("work"))
+  t.ok(tags.includes("fishing"))
+})
+
+scenario1.runTape('tagged link validation', async (t, { alice }) => {
+  const result1 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Achieving a light and fluffy texture",
+    tag: "muffins"
+  })
+  t.ok(result1.Err)  // the linking of the entry should fail because `muffins` is the banned tag
+
+  const getResult = await alice.callSync("blog", "my_posts", {})
+  t.equal(getResult.Ok.links.length, 0)
 })
 
 scenario2.runTape('create_post_countersigned', async (t, { alice, bob }) => {

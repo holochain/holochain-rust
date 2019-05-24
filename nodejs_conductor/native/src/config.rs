@@ -1,7 +1,7 @@
 use holochain_conductor_api::{
     config::{
-        AgentConfiguration, Bridge, Configuration, DnaConfiguration, InstanceConfiguration,
-        LoggerConfiguration, StorageConfiguration,
+        AgentConfiguration, Bridge, Configuration, DnaConfiguration, DpkiConfiguration,
+        InstanceConfiguration, LoggerConfiguration, StorageConfiguration,
     },
     key_loaders::test_keystore,
     keystore::PRIMARY_KEYBUNDLE_ID,
@@ -32,8 +32,13 @@ pub struct InstanceData {
 struct MakeConfigOptions {
     #[serde(default)]
     instances: Vec<InstanceData>,
+
     #[serde(default)]
     bridges: Vec<Bridge>,
+
+    #[serde(default)]
+    dpki: Option<DpkiConfiguration>,
+
     #[serde(default, rename = "debugLog")]
     debug_log: bool,
 }
@@ -78,13 +83,14 @@ pub fn js_make_config(mut cx: FunctionContext) -> JsResult<JsValue> {
             rules,
         }
     };
-    let config = make_config(opts.instances, opts.bridges, logger);
+    let config = make_config(opts.instances, opts.bridges, opts.dpki, logger);
     Ok(neon_serde::to_value(&mut cx, &config)?)
 }
 
 fn make_config(
     instance_data: Vec<InstanceData>,
     bridges: Vec<Bridge>,
+    dpki: Option<DpkiConfiguration>,
     logger: LoggerConfiguration,
 ) -> Configuration {
     let mut agent_configs = HashMap::new();
@@ -127,7 +133,9 @@ fn make_config(
         dnas: dna_configs.values().cloned().collect(),
         instances: instance_configs,
         bridges: bridges,
+        dpki: dpki,
         logger,
+        expose_trace_signals: true,
         ..Default::default()
     };
     config

@@ -7,21 +7,25 @@ use hdk::{
         entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
         error::HolochainError,
         json::JsonString,
-        signature::Provenance
+        signature::{Provenance, Signature},
     },
     holochain_wasm_utils::api_serialization::{
+        commit_entry::CommitEntryOptions,
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
-        commit_entry::CommitEntryOptions,
         get_links::{GetLinksOptions, GetLinksResult},
+        QueryArgsOptions, QueryResult,
     },
-    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
+    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN,
 };
 
 use memo::Memo;
 use post::Post;
-use std::{collections::BTreeMap, convert::TryFrom, convert::TryInto};
+use std::{
+    collections::BTreeMap,
+    convert::{TryFrom, TryInto},
+};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -36,6 +40,7 @@ pub struct Env {
     agent_id: String,
     agent_address: String,
     cap_request: CapabilityRequest,
+    properties: JsonString,
 }
 
 /// This handler shows how you can access the globals that are always available
@@ -50,7 +55,12 @@ pub fn handle_show_env() -> ZomeApiResult<Env> {
         agent_id: AGENT_ID_STR.to_string(),
         agent_address: AGENT_ADDRESS.to_string(),
         cap_request: CAPABILITY_REQ.clone(),
+        properties: PROPERTIES.clone(),
     })
+}
+
+pub fn handle_get_test_properties() -> ZomeApiResult<JsonString> {
+    hdk::property("test_property")
 }
 
 pub fn handle_get_sources(address: Address) -> ZomeApiResult<Vec<Address>> {
@@ -90,8 +100,13 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
     )
 }
 
-pub fn handle_check_send(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
-    let received_str = hdk::send(to_agent, message, 10000.into())?;
+pub fn handle_ping(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
+    let json_msg = json!({
+        "msg_type": "ping",
+        "body" : message
+    })
+    .to_string();
+    let received_str = hdk::send(to_agent, json_msg, 10000.into())?;
     Ok(JsonString::from_json(&received_str))
 }
 
@@ -107,17 +122,25 @@ pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&post_entry(content))
 }
 
+pub static BOB_AGENT_ID: &'static str =
+    "HcScj5GbxXdTq69sfnz3jcA4u5f35zftsuu5Eb3dBxHjgd9byUUW6JmN3Bvzqqr";
+
 fn is_my_friend(addr: Address) -> bool {
-    // this is "alice's" hash
-    addr == Address::from("HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui")
+    addr == Address::from(BOB_AGENT_ID)
 }
 
 pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
-    let addr = CAPABILITY_REQ.provenance.source();
+    // we may want to extend the testing conductor to be able to make calls with
+    // arbitrary provenances.  If so we could get the caller we want from the
+    // CAPABILITY_REQ global like this:
+    //    let addr = CAPABILITY_REQ.provenance.source();
+    // but it doesn't work yet so for this test we are hard-coding the "friend"" to bob
+    let addr = Address::from(BOB_AGENT_ID);
+
     if is_my_friend(addr.clone()) {
         let mut functions = BTreeMap::new();
         functions.insert("blog".to_string(), vec!["create_post".to_string()]);
-        Ok(Some(hdk::grant_capability(
+        Ok(Some(hdk::commit_capability_grant(
             "can_post",
             CapabilityType::Assigned,
             Some(vec![addr]),
@@ -132,6 +155,170 @@ pub fn handle_get_grants() -> ZomeApiResult<Vec<Address>> {
     hdk::query(EntryType::CapTokenGrant.into(), 0, 0)
 }
 
+pub fn handle_commit_post_claim(grantor: Address, claim: Address) -> ZomeApiResult<Address> {
+    hdk::commit_capability_claim("can post", grantor, claim)
+}
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
+struct CreatePostArgs {
+    content: String,
+    in_reply_to: Option<Address>,
+}
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
+struct Message {
+    msg_type: String,
+    body: JsonString,
+}
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
+struct PostMessageBody {
+    claim: Address,
+    signature: Signature,
+    args: CreatePostArgs,
+}
+
+fn check_claim_against_grant(claim: &Address, provenance: Provenance, payload: String) -> bool {
+    // first make sure the payload is what was signed in the provenance
+    let signed = hdk::verify_signature(provenance.clone(), payload).unwrap_or(false);
+    if !signed {
+        return false;
+    };
+
+    // Then look up grants and find one that matches the claim, and then check to see if the
+    // source in the provenance matches one of the assignees of the grant.
+    let result = match hdk::query_result(
+        EntryType::CapTokenGrant.into(),
+        QueryArgsOptions {
+            entries: true,
+            ..Default::default()
+        },
+    ) {
+        Ok(r) => r,
+        Err(_) => return false,
+    };
+    match result {
+        QueryResult::Entries(entries) => entries
+            .iter()
+            .filter(|(addr, _)| claim == addr)
+            .find(|(_, entry)| match entry {
+                Entry::CapTokenGrant(ref grant) => match grant.assignees() {
+                    Some(assignees) => assignees.contains(&provenance.source()),
+                    None => false,
+                },
+                _ => false,
+            })
+            .is_some(),
+        _ => false,
+    }
+}
+
+// this is an example of a receive function that can handle a typed messaged
+pub fn handle_receive(from: Address, json_msg: JsonString) -> String {
+    let maybe_message: Result<Message, HolochainError> = json_msg.try_into();
+    let response = match maybe_message {
+        Err(err) => format!("error: {}", err),
+        Ok(message) => match message.msg_type.as_str() {
+            // ping simply returns the body of the message
+            "ping" => format!("got {} from {}", message.body.to_string(), from),
+
+            // post calls the create_post zome function handler after checking the supplied signature
+            "post" => {
+                let maybe_post_body: Result<PostMessageBody, HolochainError> =
+                    message.body.try_into();
+                match maybe_post_body {
+                    Err(err) => format!("error: couldn't parse body: {}", err),
+                    Ok(post_body) => {
+                        // check that the claim matches a grant and correctly signed the content
+                        if !check_claim_against_grant(
+                            &post_body.claim,
+                            Provenance::new(from, post_body.signature),
+                            post_body.args.content.clone(),
+                        ) {
+                            "error: no matching grant for claim".to_string()
+                        } else {
+                            let x = match hdk::commit_entry(&post_entry(post_body.args.content)) {
+                                Err(err) => format!("error: couldn't create post: {}", err),
+                                Ok(addr) => addr.to_string(),
+                            };
+                            let _ =
+                                hdk::debug("For some reason this link_entries statement fails!?!?");
+                            //                            let _ = hdk::link_entries(&AGENT_ADDRESS, &Address::from(x.clone()), "authored_posts");
+
+                            x
+
+                            /*
+                                When we figure out why link_entries above throws an BadCall wasm error
+                                Then we can reinstate calling the creating using the handler as below
+                                match handle_create_post(post_body.args.content, post_body.args.in_reply_to) {
+                                Err(err) => format!("error: couldn't create post: {}", err),
+                                Ok(address) => address.to_string(),
+                            }*/
+                        }
+                    }
+                }
+            }
+            typ => format!("unknown message type: {}", typ),
+        },
+    };
+    json!({
+        "msg_type": "response",
+        "body": response
+    })
+    .to_string()
+}
+
+// this simply returns the first claim which works for this test, thus the arguments are ignored.
+// The exercise of a "real" find_claim function, which we may add to the hdk later, is left to the reader
+fn find_claim(_identifier: &str, _grantor: &Address) -> Result<Address, HolochainError> {
+    //   Ok(Address::from("Qmebh1y2kYgVG1RPhDDzDFTAskPcRWvz5YNhiNEi17vW9G"))
+    let claim = hdk::query_result(
+        EntryType::CapTokenClaim.into(),
+        QueryArgsOptions {
+            entries: true,
+            ..Default::default()
+        },
+    )
+    .and_then(|result| match result {
+        QueryResult::Entries(entries) => {
+            let entry = &entries[0].1;
+            match entry {
+                Entry::CapTokenClaim(ref claim) => Ok(claim.token()),
+                _ => Err(ZomeApiError::Internal("failed to get claim".into())),
+            }
+        }
+        _ => Err(ZomeApiError::Internal("failed to get claim".into())),
+    })?;
+    Ok(claim)
+}
+
+pub fn handle_create_post_with_claim(
+    grantor: Address,
+    content: String,
+    in_reply_to: Option<Address>,
+) -> ZomeApiResult<Address> {
+    // retrieve a previously stored claimed
+    let claim = find_claim("can_blog", &grantor)?;
+
+    let post_body = PostMessageBody {
+        claim,
+        signature: hdk::sign(content.clone()).map(Signature::from)?,
+        args: CreatePostArgs {
+            content,
+            in_reply_to,
+        },
+    };
+
+    let message = Message {
+        msg_type: "post".to_string(),
+        body: post_body.into(),
+    };
+
+    let response = hdk::send(grantor, JsonString::from(message).into(), 10000.into())?;
+    let response_message: Message = JsonString::from_json(&response).try_into()?;
+    Ok(Address::from(response_message.body.to_string()))
+}
+
 pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&memo_entry(content))
 }
@@ -139,37 +326,44 @@ pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
 pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;
 
-    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts", "")?;
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
-        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments", "")?;
     }
 
     Ok(address)
 }
 
-pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Address>,
-                                        counter_signature: Provenance) -> ZomeApiResult<Address> {
+pub fn handle_create_tagged_post(content: String, tag: String) -> ZomeApiResult<Address> {
+    let address = hdk::commit_entry(&post_entry(content))?;
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts", tag.as_ref())?;
+    Ok(address)
+}
 
+pub fn handle_create_post_countersigned(
+    content: String,
+    in_reply_to: Option<Address>,
+    counter_signature: Provenance,
+) -> ZomeApiResult<Address> {
     let entry = post_entry(content);
 
     let options = CommitEntryOptions::new(vec![counter_signature]);
 
     let address = hdk::commit_entry_result(&entry, options).unwrap().address();
 
-    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts", "")?;
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
-        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments", "")?;
     }
 
     Ok(address)
 }
-
 
 pub fn handle_create_post_with_agent(
     agent_id: Address,
@@ -178,12 +372,12 @@ pub fn handle_create_post_with_agent(
 ) -> ZomeApiResult<Address> {
     let address = hdk::commit_entry(&post_entry(content))?;
 
-    hdk::link_entries(&agent_id, &address, "authored_posts")?;
+    hdk::link_entries(&agent_id, &address, "authored_posts", "")?;
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
-        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
+        hdk::link_entries(&in_reply_to_address, &address, "comments", "")?;
     }
 
     Ok(address)
@@ -197,16 +391,16 @@ pub fn handle_create_memo(content: String) -> ZomeApiResult<Address> {
 
 pub fn handle_delete_post(content: String) -> ZomeApiResult<Address> {
     let address = hdk::entry_address(&post_entry(content))?;
-    hdk::remove_link(&AGENT_ADDRESS, &address.clone(), "authored_posts")?;
+    hdk::remove_link(&AGENT_ADDRESS, &address.clone(), "authored_posts", "")?;
     Ok(address)
 }
 
 pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&agent, "authored_posts")
+    hdk::get_links(&agent, Some("authored_posts".into()), None)
 }
 
-pub fn handle_my_posts() -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&AGENT_ADDRESS, "authored_posts")
+pub fn handle_my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {
+    hdk::get_links(&AGENT_ADDRESS, Some("authored_posts".into()), tag)
 }
 
 pub fn handle_my_memos() -> ZomeApiResult<Vec<Address>> {
@@ -221,7 +415,8 @@ pub fn handle_get_memo(address: Address) -> ZomeApiResult<Option<Entry>> {
 pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links_with_options(
         &AGENT_ADDRESS,
-        "authored_posts",
+        Some("authored_posts".into()),
+        None,
         GetLinksOptions {
             timeout: 0.into(),
             ..Default::default()
@@ -232,7 +427,8 @@ pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
 pub fn handle_my_posts_get_my_sources(agent: Address) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links_with_options(
         &agent,
-        "authored_posts",
+        Some("authored_posts".into()),
+        None,
         GetLinksOptions {
             headers: true,
             ..Default::default()
@@ -308,14 +504,17 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
     }
 }
 
-pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<Address> {
+pub fn handle_recommend_post(
+    post_address: Address,
+    agent_address: Address,
+) -> ZomeApiResult<Address> {
     hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
     hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
-    hdk::link_entries(&agent_address, &post_address, "recommended_posts")
+    hdk::link_entries(&agent_address, &post_address, "recommended_posts", "")
 }
 
 pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&AGENT_ADDRESS, "recommended_posts")
+    hdk::get_links(&AGENT_ADDRESS, Some("recommended_posts".into()), None)
 }
 
 pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<Entry>> {
@@ -327,14 +526,21 @@ pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<En
         "get_post",
         json!({
             "post_address": post_address,
-        }).into()
+        })
+        .into(),
     )?;
 
-    hdk::debug(format!("********DEBUG******** BRIDGING RAW response from test-bridge {:?}", raw_json))?;
-     
-    let entry : Option<Entry> = raw_json.try_into()?;
+    hdk::debug(format!(
+        "********DEBUG******** BRIDGING RAW response from test-bridge {:?}",
+        raw_json
+    ))?;
 
-    hdk::debug(format!("********DEBUG******** BRIDGING ACTUAL response from hosting-bridge {:?}", entry))?;
+    let entry: Option<Entry> = raw_json.try_into()?;
+
+    hdk::debug(format!(
+        "********DEBUG******** BRIDGING ACTUAL response from hosting-bridge {:?}",
+        entry
+    ))?;
 
     Ok(entry)
 }

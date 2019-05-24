@@ -198,7 +198,7 @@ impl Instance {
                     .expect("owners of the state RwLock shouldn't panic");
 
                 // Create new state by reducing the action on old state
-                new_state = state.reduce(context.clone(), action_wrapper.clone());
+                new_state = state.reduce(action_wrapper.clone());
             }
 
             // Get write lock
@@ -229,12 +229,12 @@ impl Instance {
     }
 
     /// Given an `Action` that is being processed, decide whether or not it should be
-    /// emitted as a `Signal::Internal`, and if so, send it
+    /// emitted as a `Signal::Trace`, and if so, send it
     fn maybe_emit_action_signal(&self, context: &Arc<Context>, action: ActionWrapper) {
         if let Some(tx) = context.signal_tx() {
             // @TODO: if needed for performance, could add a filter predicate here
             // to prevent emitting too many unneeded signals
-            let signal = Signal::Internal(action);
+            let signal = Signal::Trace(action);
             tx.send(signal).unwrap_or_else(|e| {
                 context.log(format!(
                     "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
@@ -468,7 +468,11 @@ pub mod tests {
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
-        let agent_state = AgentState::new_with_top_chain_header(chain_store, Some(chain_header));
+        let agent_state = AgentState::new_with_top_chain_header(
+            chain_store,
+            Some(chain_header),
+            context.agent_id.address(),
+        );
         let state = State::new_with_agent(Arc::new(context.clone()), agent_state);
         let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());

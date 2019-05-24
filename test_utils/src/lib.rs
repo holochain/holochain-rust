@@ -14,8 +14,7 @@ use holochain_core::{
     logger::{test_logger, TestLogger},
     nucleus::actions::call_zome_function::make_cap_request_for_call,
     signal::Signal,
-}
-;
+};
 use holochain_core_types::{
     cas::content::AddressableContent,
     dna::{
@@ -34,9 +33,9 @@ use holochain_net::p2p_config::P2pConfig;
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
     fs::File,
-    path::PathBuf,
     hash::{Hash, Hasher},
     io::prelude::*,
+    path::PathBuf,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -90,13 +89,13 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
     let mut test_entry_def = EntryTypeDef::new();
     test_entry_def.links_to.push(LinksTo {
         target_type: String::from("testEntryType"),
-        tag: String::from("test-tag"),
+        link_type: String::from("test-link"),
     });
 
     let mut test_entry_b_def = EntryTypeDef::new();
     test_entry_b_def.linked_from.push(LinkedFrom {
         base_type: String::from("testEntryType"),
-        tag: String::from("test-tag"),
+        link_type: String::from("test-link"),
     });
 
     let mut test_entry_c_def = EntryTypeDef::new();
@@ -116,7 +115,6 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
         EntryType::App(AppEntryType::from("testEntryTypeC")),
         test_entry_c_def,
     );
-
 
     let mut zome = Zome::new(
         "some zome description",
@@ -290,7 +288,7 @@ where
             .recv_timeout(Duration::from_millis(timeout))
             .map_err(|e| e.to_string())?
         {
-            Signal::Internal(aw) => {
+            Signal::Trace(aw) => {
                 let action = aw.action().clone();
                 if f(&action) {
                     return Ok(action);

@@ -6,10 +6,16 @@ use error::HolochainError;
 use json::JsonString;
 use regex::Regex;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use std::{convert::TryFrom, fmt, str::FromStr, time::Duration};
+use std::{
+    convert::TryFrom,
+    fmt,
+    ops::{Add, Sub},
+    str::FromStr,
+    time::Duration,
+};
 
 /// Represents a timeout for an HDK function. The usize interface defaults to ms.  Also convertible
-/// to/from a Duration at full precision.
+/// to/from a std::time::Duration (which is also unsigned) at full precision.
 #[derive(Clone, Deserialize, Debug, Eq, PartialEq, Hash, Serialize, DefaultJson)]
 pub struct Timeout(usize);
 
@@ -43,13 +49,14 @@ impl From<usize> for Timeout {
     }
 }
 
-/// A human-readable time Period, implemented as a time::Duration.  Conversion to/from and
-/// Serializable to/from readable form: "1w2d3h4.567s", at full Duration precision; values > 1s w/
-/// ms precision are formatted to fractional seconds w/ full precision, while values < 1s are
-/// formatted to integer ms, us or ns as appropriate.  Accepts y/yr/year, w/wk/week, d/dy/day,
-/// h/hr/hour, m/min/minute, s/sec/second, ms/millis/millisecond, u/μ/micros/microsecond,
-/// n/nanos/nanosecond, singlular or plural.  The humantime and parse_duration crates are complex,
-/// incompatible with each other, depend on crates and/or do not compile to WASM.
+/// A human-readable time Period, implemented as a std::time::Duration (which is unsigned).
+/// Conversion to/from and Serializable to/from readable form: "1w2d3h4.567s", at full Duration
+/// precision; values > 1s w/ ms precision are formatted to fractional seconds w/ full precision,
+/// while values < 1s are formatted to integer ms, us or ns as appropriate.  Accepts y/yr/year,
+/// w/wk/week, d/dy/day, h/hr/hour, m/min/minute, s/sec/second, ms/millis/millisecond,
+/// u/μ/micros/microsecond, n/nanos/nanosecond, singular or plural.  The humantime and
+/// parse_duration crates are complex, incompatible with each other, depend on crates and/or do not
+/// compile to WASM.
 #[derive(Clone, Eq, PartialEq, Hash, DefaultJson)]
 pub struct Period(Duration);
 
@@ -349,7 +356,7 @@ impl From<Period> for Timeout {
     }
 }
 
-// Conversion of Period into Duration
+// Period --> std::time::Duration
 impl From<Period> for Duration {
     fn from(p: Period) -> Self {
         p.0
@@ -359,6 +366,19 @@ impl From<Period> for Duration {
 impl From<&Period> for Duration {
     fn from(p: &Period) -> Self {
         p.0.to_owned()
+    }
+}
+
+// std::time::Duration --> Period
+impl From<Duration> for Period {
+    fn from(d: Duration) -> Self {
+        Period(d)
+    }
+}
+
+impl From<&Duration> for Period {
+    fn from(d: &Duration) -> Self {
+        Period(d.to_owned())
     }
 }
 
@@ -376,18 +396,13 @@ impl From<&Period> for Duration {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, DefaultJson)]
 pub struct Iso8601(DateTime<FixedOffset>);
 
-/// Infallible conversions into and from an Iso8601.  The only infallible way to create an Iso8601
-/// is from a Unix timestamp.  An Iso8601 may be converted infallibly to its underlying DateTime<Fixed>
+/// Infallible conversions into and from an Iso8601.  The only infallible ways to create an Iso8601
+/// is `from` a Unix timestamp, or `new` with a timestamp and nanoseconds, or by converting to/from
+/// its underlying DateTime<Fixed>.
 
-impl From<&Iso8601> for DateTime<FixedOffset> {
-    fn from(lhs: &Iso8601) -> DateTime<FixedOffset> {
-        lhs.0.to_owned()
-    }
-}
-
-impl From<Iso8601> for DateTime<FixedOffset> {
-    fn from(lhs: Iso8601) -> DateTime<FixedOffset> {
-        lhs.0
+impl Iso8601 {
+    pub fn new(secs: i64, nsecs: u32) -> Self {
+        Self(FixedOffset::east(0).timestamp(secs, nsecs))
     }
 }
 
@@ -415,9 +430,92 @@ impl From<u32> for Iso8601 {
     }
 }
 
-impl Iso8601 {
-    fn new(secs: i64, nsecs: u32) -> Self {
-        Self(FixedOffset::east(0).timestamp(secs, nsecs))
+// Iso8601 --> DateTime<FixedOffset>
+impl From<Iso8601> for DateTime<FixedOffset> {
+    fn from(lhs: Iso8601) -> DateTime<FixedOffset> {
+        lhs.0
+    }
+}
+
+impl From<&Iso8601> for DateTime<FixedOffset> {
+    fn from(lhs: &Iso8601) -> DateTime<FixedOffset> {
+        lhs.to_owned().into()
+    }
+}
+
+// DateTime<FixedOffset> --> Iso8601
+impl From<DateTime<FixedOffset>> for Iso8601 {
+    fn from(lhs: DateTime<FixedOffset>) -> Iso8601 {
+        Iso8601(lhs)
+    }
+}
+
+impl From<&DateTime<FixedOffset>> for Iso8601 {
+    fn from(lhs: &DateTime<FixedOffset>) -> Iso8601 {
+        lhs.to_owned().into()
+    }
+}
+
+/// Iso8601 +- Into<Duration>: Add anything that can be converted into a std::time::Duration; for
+/// example, a Timeout or a Period.  On Err, always represents the std::time::Duration as a Period
+/// for ease of interpretation.
+impl<D: Into<Duration>> Add<D> for Iso8601 {
+    type Output = Result<Iso8601, HolochainError>;
+    fn add(self, rhs: D) -> Self::Output {
+        let dur: Duration = rhs.into();
+        Ok(DateTime::<FixedOffset>::from(&self)
+            .checked_add_signed(chrono::Duration::from_std(dur).or_else(|e| {
+                Err(HolochainError::ErrorGeneric(format!(
+                    "Overflow computing chrono::Duration from {}: {}",
+                    Period::from(dur),
+                    e
+                )))
+            })?)
+            .ok_or_else(|| {
+                HolochainError::ErrorGeneric(format!(
+                    "Overflow computing {} + {}",
+                    &self,
+                    Period::from(dur)
+                ))
+            })?
+            .into())
+    }
+}
+
+impl<D: Into<Duration>> Add<D> for &Iso8601 {
+    type Output = Result<Iso8601, HolochainError>;
+    fn add(self, rhs: D) -> Self::Output {
+        self.to_owned() + rhs
+    }
+}
+
+impl<D: Into<Duration>> Sub<D> for Iso8601 {
+    type Output = Result<Iso8601, HolochainError>;
+    fn sub(self, rhs: D) -> Self::Output {
+        let dur: Duration = rhs.into();
+        Ok(DateTime::<FixedOffset>::from(&self)
+            .checked_sub_signed(chrono::Duration::from_std(dur).or_else(|e| {
+                Err(HolochainError::ErrorGeneric(format!(
+                    "Overflow computing chrono::Duration from {}: {}",
+                    Period::from(dur),
+                    e
+                )))
+            })?)
+            .ok_or_else(|| {
+                HolochainError::ErrorGeneric(format!(
+                    "Overflow computing {} - {}",
+                    &self,
+                    Period::from(dur)
+                ))
+            })?
+            .into())
+    }
+}
+
+impl<D: Into<Duration>> Sub<D> for &Iso8601 {
+    type Output = Result<Iso8601, HolochainError>;
+    fn sub(self, rhs: D) -> Self::Output {
+        self.to_owned() - rhs
     }
 }
 
@@ -479,7 +577,8 @@ impl fmt::Display for Iso8601 {
 /// straight RFC 3339 timestamps, then parsing will be quick, otherwise we'll employ a regular
 /// expression to parse a more flexible subset of the ISO 8601 standard from your supplied
 /// timestamp, and then use the RFC 3339 parser again.  We only do this validation once; at the
-/// creation of an Iso8601 from a String/&str.
+/// creation of an Iso8601 from a String/&str.  There are some years that can be encoded as a
+/// DateTime but not parsed, such as negative (BC/BCE) years.
 impl TryFrom<String> for Iso8601 {
     type Error = HolochainError;
     fn try_from(s: String) -> Result<Self, Self::Error> {
@@ -503,6 +602,7 @@ impl FromStr for Iso8601 {
                 r"(?x)         # whitespace-mode
                 ^
                 \s*
+                (?P<neg>-?)    # RFC 3339 rendering supports -'ve years, but parsing doesn't...
                 (?P<Y>\d{4})
                 (?:            # Always require 4-digit year and double-digit mon/day YYYY[[-]MM[[-]DD]]
                   -?
@@ -575,8 +675,8 @@ impl FromStr for Iso8601 {
                                 format!("Failed to find ISO 3339 or RFC 8601 timestamp in {:?}", s))),
                             |cap| {
                                 let timestamp = &format!(
-                                    "{:0>4}-{:0>2}-{:0>2}T{:0>2}:{:0>2}:{:0>2}{}{}",
-                                    &cap["Y"],
+                                    "{}{:0>4}-{:0>2}-{:0>2}T{:0>2}:{:0>2}:{:0>2}{}{}",
+                                    &cap["neg"], &cap["Y"],
                                     cap.name("M").map_or( "1", |m| m.as_str()),
                                     cap.name("D").map_or( "1", |m| m.as_str()),
                                     cap.name("h").map_or( "0", |m| m.as_str()),
@@ -603,8 +703,8 @@ impl FromStr for Iso8601 {
     }
 }
 
-// The only infallible conversions are from an i64 UNIX timestamp.  There are no conversions from
-// String or &str that are infallible.
+// The only infallible conversions are from an i64 UNIX timestamp, or a DateTime<FixedOffset>.
+// There are no conversions from String or &str that are infallible.
 //
 //     $ date  --date="2018-10-11T03:23:38+00:00" +%s
 //     1539228218
@@ -644,6 +744,10 @@ pub mod tests {
                 ))
             ),
             "2y3w4d5h6m7.123456789s"
+        );
+        assert_eq!(
+            format!("{}", Period::try_from("1000000y").unwrap()),
+            "1000000y"
         );
 
         // Errors; cannot mix fractional seconds and ms/ns/us
@@ -774,10 +878,146 @@ pub mod tests {
 
         // We can specify timeouts in human-readable Periods
         assert_eq!(Timeout::from(period), Timeout(1230 + 1000 * WK as usize));
+
+        // Ensure that anything convertible Into<Duration> can be safely added to an Iso8601
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap() + Period::try_from("1000y").unwrap(),
+            Ok(Iso8601::try_from("3019-05-13 00:00:00").unwrap())
+        );
+        // Too big; std::time::Duration (unsigned) --> chrono::Duration (signed) overflow
+        assert_eq!(Iso8601::try_from("2019-05-05 00:00:00").unwrap()
+                   + Duration::new(u64::max_value(), 0),
+                   Err(HolochainError::ErrorGeneric(
+                       "Overflow computing chrono::Duration from 584542046090y32w4d19h15s: Source duration value is out of range for the target type".to_string()
+                   )));
+        // Too big; result not a valid DateTime
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap()
+                + Period::try_from("1000000y").unwrap(),
+            Err(HolochainError::ErrorGeneric(
+                "Overflow computing 2019-05-05T00:00:00+00:00 + 1000000y".to_string()
+            ))
+        );
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap()
+                - Period::try_from("1234567y").unwrap(),
+            Err(HolochainError::ErrorGeneric(
+                "Overflow computing 2019-05-05T00:00:00+00:00 - 1234567y".to_string()
+            ))
+        );
+        // Negative DateTimes are possible -- they are, however, not parseable as ISO 8601
+        assert_eq!(
+            DateTime::<FixedOffset>::from(
+                (Iso8601::try_from("2019-05-05 00:00:00").unwrap()
+                    - Period::try_from("10000y").unwrap())
+                .unwrap()
+            )
+            .to_rfc3339(),
+            "-7981-02-19T00:00:00+00:00"
+        );
+        assert_eq!(
+            Iso8601::try_from("-7981-02-19T00:00:00+00:00"),
+            Err(HolochainError::ErrorGeneric(
+                "Attempting to convert RFC 3339 timestamp \"-7981-02-19T00:00:00+00:00\" from ISO 8601 \"-7981-02-19T00:00:00+00:00\" to a DateTime".to_string()
+            ))
+        );
+
+        // Some other Iso8601 +- Period/Timeout/Duration types, borrows
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap() + Period::try_from("1us").unwrap(),
+            Ok(Iso8601::try_from("2019-05-05 00:00:00.000001").unwrap())
+        );
+        assert_eq!(
+            &Iso8601::try_from("2019-05-05 00:00:00").unwrap() + Period::try_from("1us").unwrap(),
+            Ok(Iso8601::try_from("2019-05-05 00:00:00.000001").unwrap())
+        );
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap() + &Period::try_from("1us").unwrap(),
+            Ok(Iso8601::try_from("2019-05-05 00:00:00.000001").unwrap())
+        );
+        assert_eq!(
+            &Iso8601::try_from("2019-05-05 00:00:00").unwrap() + &Period::try_from("1us").unwrap(),
+            Ok(Iso8601::try_from("2019-05-05 00:00:00.000001").unwrap())
+        );
+
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap() + Timeout::new(1), // ms
+            Ok(Iso8601::try_from("2019-05-05 00:00:00.001").unwrap())
+        );
+        assert_eq!(
+            &Iso8601::try_from("2019-05-05 00:00:00").unwrap() + Timeout::new(1), // ms
+            Ok(Iso8601::try_from("2019-05-05 00:00:00.001").unwrap())
+        );
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap() + &Timeout::new(1), // ms
+            Ok(Iso8601::try_from("2019-05-05 00:00:00.001").unwrap())
+        );
+        assert_eq!(
+            &Iso8601::try_from("2019-05-05 00:00:00").unwrap() + &Timeout::new(1), // ms
+            Ok(Iso8601::try_from("2019-05-05 00:00:00.001").unwrap())
+        );
+
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap() + Duration::new(1, 1), // s, ns
+            Ok(Iso8601::try_from("2019-05-05 00:00:01.000000001").unwrap())
+        );
+        assert_eq!(
+            &Iso8601::try_from("2019-05-05 00:00:00").unwrap() + Duration::new(1, 1), // s, ns
+            Ok(Iso8601::try_from("2019-05-05 00:00:01.000000001").unwrap())
+        );
+
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap() - Period::try_from("1us").unwrap(),
+            Ok(Iso8601::try_from("2019-05-04 23:59:59.999999").unwrap())
+        );
+        assert_eq!(
+            &Iso8601::try_from("2019-05-05 00:00:00").unwrap() - Period::try_from("1us").unwrap(),
+            Ok(Iso8601::try_from("2019-05-04 23:59:59.999999").unwrap())
+        );
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap() - &Period::try_from("1us").unwrap(),
+            Ok(Iso8601::try_from("2019-05-04 23:59:59.999999").unwrap())
+        );
+        assert_eq!(
+            &Iso8601::try_from("2019-05-05 00:00:00").unwrap() - &Period::try_from("1us").unwrap(),
+            Ok(Iso8601::try_from("2019-05-04 23:59:59.999999").unwrap())
+        );
+
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap() - Timeout::new(1), // ms
+            Ok(Iso8601::try_from("2019-05-04 23:59:59.999").unwrap())
+        );
+        assert_eq!(
+            &Iso8601::try_from("2019-05-05 00:00:00").unwrap() - Timeout::new(1), // ms
+            Ok(Iso8601::try_from("2019-05-04 23:59:59.999").unwrap())
+        );
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap() - &Timeout::new(1), // ms
+            Ok(Iso8601::try_from("2019-05-04 23:59:59.999").unwrap())
+        );
+        assert_eq!(
+            &Iso8601::try_from("2019-05-05 00:00:00").unwrap() - &Timeout::new(1), // ms
+            Ok(Iso8601::try_from("2019-05-04 23:59:59.999").unwrap())
+        );
+
+        assert_eq!(
+            Iso8601::try_from("2019-05-05 00:00:00").unwrap() - Duration::new(1, 1), // s, ns
+            Ok(Iso8601::try_from("2019-05-04 23:59:58.999999999").unwrap())
+        );
+        assert_eq!(
+            &Iso8601::try_from("2019-05-05 00:00:00").unwrap() - Duration::new(1, 1), // s, ns
+            Ok(Iso8601::try_from("2019-05-04 23:59:58.999999999").unwrap())
+        );
     }
 
     #[test]
     fn test_iso_8601_basic() {
+        // A public Iso8601::new API is available, for nanosecond-precision times
+        assert_eq!(
+            Iso8601::new(1234567890, 123456789),
+            Iso8601::try_from("2009-02-13T23:31:30.123456789+00:00").unwrap()
+        );
+
         // Different ways of specifying UTC "Zulu".  A bare timestamp will be defaulted to "Zulu".
         vec![
             "2018-10-11T03:23:38 +00:00",

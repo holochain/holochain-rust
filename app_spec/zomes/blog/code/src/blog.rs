@@ -515,12 +515,35 @@ pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&AGENT_ADDRESS, Some("recommended_posts".into()), None)
 }
 
+// this simply returns the first claim which works for this test, thus the arguments are ignored.
+// The exercise of a "real" find_claim function, which we may add to the hdk later, is left to the reader
+fn get_bridge_claim(_identifier: &str) -> Result<Address, HolochainError> {
+    let claim = hdk::query_result(
+        EntryType::CapTokenClaim.into(),
+        QueryArgsOptions {
+            entries: true,
+            ..Default::default()
+        },
+    )
+        .and_then(|result| match result {
+            QueryResult::Entries(entries) => {
+                let entry = &entries[0].1;
+                match entry {
+                    Entry::CapTokenClaim(ref claim) => Ok(claim.token()),
+                    _ => Err(ZomeApiError::Internal("failed to get claim".into())),
+                }
+            }
+            _ => Err(ZomeApiError::Internal("failed to get claim".into())),
+        })?;
+    Ok(claim)
+}
+
 pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     // Obtains the post via bridge to another instance
     let raw_json = hdk::call(
         "test-bridge",
         "blog",
-        Address::from(PUBLIC_TOKEN.to_string()),
+        get_bridge_claim("test-bridge")?, //Address::from(PUBLIC_TOKEN.to_string()),
         "get_post",
         json!({
             "post_address": post_address,

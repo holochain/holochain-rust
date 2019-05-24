@@ -17,44 +17,26 @@ const scenario1 = new Scenario([instanceAlice], { debugLog:true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
-scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
-
-    // Ask for alice to grant a token for bob  (it's hard-coded for bob in re function for now)
-    const result = alice.call("blog", "request_post_grant", {})
-    t.ok(result.Ok)
-    t.notOk(result.Err)
-
-    // Confirm that we can get back the grant
-    const grants = alice.call("blog", "get_grants", {})
-    t.ok(grants.Ok)
-    t.notOk(grants.Err)
-    t.equal(result.Ok, grants.Ok[0])
-
-    // Bob stores the grant as a claim
-    const claim = bob.call("blog", "commit_post_claim", { grantor: alice.agentId, claim: result.Ok })
-    t.deepEqual(claim, { Ok: 'Qmebh1y2kYgVG1RPhDDzDFTAskPcRWvz5YNhiNEi17vW9G' });
-
-    // Bob can now create a post on alice's chain via a node-to-node message with the claim
-    const post_content = "Holo world"
-    const params = { grantor: alice.agentId, content: post_content, in_reply_to: null }
-    const create_result = bob.call("blog", "create_post_with_claim", params)
-    t.deepEqual(create_result, {Ok: "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk"})
-
-    // Confirm that the post was actually added to alice's chain
-    const get_post_result = alice.call("blog", "get_post", { post_address: create_result.Ok })
-    const value = JSON.parse(get_post_result.Ok.App[1])
-    t.equal(value.content, post_content)
-
-
-    // Check that when bob tries to make this call it fails because there is no grant stored
-    const params2 = { grantor: bob.agentId, content: post_content, in_reply_to: null }
-    const create2_result = bob.call("blog", "create_post_with_claim", params2)
-    t.deepEqual(create2_result, {Ok: "error: no matching grant for claim"})
-
-})
 
 const testBridge = Config.bridge('test-bridge', instanceAlice, instanceBob)
 const scenarioBridge = new Scenario([instanceAlice, instanceBob], { bridges: [testBridge], debugLog: true })
+
+scenarioBridge.runTape('scenario test create & publish -> getting post via bridge', async (t, {alice, bob}) => {
+
+    const initialContent = "Holo world"
+    const params = { content: initialContent, in_reply_to: null }
+    const create_result = await bob.callSync("blog", "create_post", params)
+
+    t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+
+    const post_address = create_result.Ok
+    const params_get = { post_address }
+
+    const result = alice.call("blog", "get_post_bridged", params_get)
+    console.log("BRIDGE CALL RESULT: " + JSON.stringify(result))
+    const value = JSON.parse(result.Ok.App[1])
+    t.equal(value.content, initialContent)
+})
 
 scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
@@ -193,7 +175,7 @@ scenario1.runTape('create_tagged_post and retrieve all tags', async (t, { alice 
     tag: "work"
   })
   t.ok(result1.Ok)
-  
+
   const result2 = await alice.callSync("blog", "create_tagged_post", {
     content: "Fly tying, is it for you?",
     tag: "fishing"
@@ -213,7 +195,7 @@ scenario1.runTape('create_tagged_post and retrieve exact tag match', async (t, {
     tag: "work"
   })
   t.ok(result1.Ok)
-  
+
   const result2 = await alice.callSync("blog", "create_tagged_post", {
     content: "Fly tying, is it for you?",
     tag: "fishing"
@@ -233,7 +215,7 @@ scenario1.runTape('tagged link validation', async (t, { alice }) => {
     tag: "muffins"
   })
   t.ok(result1.Err)  // the linking of the entry should fail because `muffins` is the banned tag
-  
+
   const getResult = await alice.callSync("blog", "my_posts", {})
   t.equal(getResult.Ok.links.length, 0)
 })
@@ -750,39 +732,38 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   t.equal(value.content, initialContent)
 })
 
-scenarioBridge.runTape('scenario test create & publish -> getting post via bridge', async (t, {alice, bob}) => {
+scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
 
-  const initialContent = "Holo world"
-  const params = { content: initialContent, in_reply_to: null }
-  const create_result = await bob.callSync("blog", "create_post", params)
-
-  t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
-
-  const post_address = create_result.Ok
-  const params_get = { post_address }
-
-  const result = alice.call("blog", "get_post_bridged", params_get)
-  console.log("BRIDGE CALL RESULT: " + JSON.stringify(result))
-  const value = JSON.parse(result.Ok.App[1])
-  t.equal(value.content, initialContent)
-})
-
-scenario2.runTape('request grant', async (t, { alice, bob }) => {
-
-    /*
-      This is not a complete test of requesting a grant because currently there
-      is no way in the test conductor to actually pass in the provenance of the
-      call.  That will be added when we convert the test framework to being built
-      on top of the rust conductor.   For now this is more a placeholder test, but
-      note that the value returned is actually the capbability token value.
-    */
+    // Ask for alice to grant a token for bob  (it's hard-coded for bob in re function for now)
     const result = alice.call("blog", "request_post_grant", {})
     t.ok(result.Ok)
     t.notOk(result.Err)
 
+    // Confirm that we can get back the grant
     const grants = alice.call("blog", "get_grants", {})
     t.ok(grants.Ok)
     t.notOk(grants.Err)
-
     t.equal(result.Ok, grants.Ok[0])
+
+    // Bob stores the grant as a claim
+    const claim = bob.call("blog", "commit_post_claim", { grantor: alice.agentId, claim: result.Ok })
+    t.deepEqual(claim, { Ok: 'Qmebh1y2kYgVG1RPhDDzDFTAskPcRWvz5YNhiNEi17vW9G' });
+
+    // Bob can now create a post on alice's chain via a node-to-node message with the claim
+    const post_content = "Holo world"
+    const params = { grantor: alice.agentId, content: post_content, in_reply_to: null }
+    const create_result = bob.call("blog", "create_post_with_claim", params)
+    t.deepEqual(create_result, {Ok: "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk"})
+
+    // Confirm that the post was actually added to alice's chain
+    const get_post_result = alice.call("blog", "get_post", { post_address: create_result.Ok })
+    const value = JSON.parse(get_post_result.Ok.App[1])
+    t.equal(value.content, post_content)
+
+
+    // Check that when bob tries to make this call it fails because there is no grant stored
+    const params2 = { grantor: bob.agentId, content: post_content, in_reply_to: null }
+    const create2_result = bob.call("blog", "create_post_with_claim", params2)
+    t.deepEqual(create2_result, {Ok: "error: no matching grant for claim"})
+
 })

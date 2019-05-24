@@ -27,6 +27,19 @@ use hdk::{
     },
 };
 
+//happens inside core
+let token = hdk::commit_capability_grant(
+    "test-bridge",
+    CapabilityType::Assigned,
+    Some(vec![assignee]),
+    functions,
+)?;
+
+
+fn handle_bridge_init_caller(grantor: Address, claim: Address) -> ZomeApiResult<()> {
+    hdk::commit_capability_claim("test-bridge", grantor, claim)
+}
+
 define_zome! {
 
     entries: [
@@ -42,7 +55,27 @@ define_zome! {
         blog::handle_receive(from, JsonString::from_json(&msg_json))
     }
 
+
+    grant_validation: |capability_id, assignees| -> ZomeApiResult<Vec<String>> {
+        match capability_id {
+            "test-bridge", "can_post" => Ok(vec!["create_post".to_string()]),
+            _ => Err(),
+        }
+    }
+
     functions: [
+
+        bridge_init_callee: {
+            inputs: | assignee: Address |,
+            outputs: |token: ZomeApiResult<Address>|,
+            handler: blog::handle_bridge_init_callee
+        }
+
+        bridge_init_caller: {
+            inputs: | token: Address |,
+            outputs: | ZomeApiResult<()>|,
+            handler: blog::handle_bridge_init_caller
+        }
 
         show_env: {
             inputs: | |,

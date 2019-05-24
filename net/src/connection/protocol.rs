@@ -5,7 +5,10 @@
 use serde_bytes;
 
 use holochain_core_types::json::JsonString;
-use holochain_lib3h_protocol::protocol::Lib3hProtocol;
+use holochain_lib3h_protocol::{
+    protocol_client::Lib3hClientProtocol,
+    protocol_server::Lib3hServerProtocol,
+};
 
 /// Low-level interface spec for communicating with the p2p abstraction
 /// notice this is not Serializable or Deserializable
@@ -18,8 +21,10 @@ pub enum Protocol {
     NamedBinary(NamedBinaryData),
     /// send/recv generic json as utf8 strings
     Json(JsonString),
-    /// send/recv Lib3hProtocol message
-    Lib3h(Lib3hProtocol),
+    /// send/recv Lib3hClientProtocol message
+    Lib3hClient(Lib3hClientProtocol),
+    /// send/recv Lib3hClientProtocol message
+    Lib3hServer(Lib3hServerProtocol),
     /// send/recv a Ping message (ipc protocol spec)
     Ping(PingData),
     /// send/recv a Pong message (ipc protocol spec)
@@ -44,8 +49,12 @@ impl<'a> From<&'a Protocol> for NamedBinaryData {
                 name: b"json".to_vec(),
                 data: String::from(j).into_bytes(),
             },
-            Protocol::Lib3h(_h) => NamedBinaryData {
-                name: b"lib3h".to_vec(),
+            Protocol::Lib3hClient(_h) => NamedBinaryData {
+                name: b"lib3hClient".to_vec(),
+                data: String::new().into_bytes(), // FIXME
+            },
+            Protocol::Lib3hServer(_h) => NamedBinaryData {
+                name: b"lib3hServer".to_vec(),
                 data: String::new().into_bytes(), // FIXME
             },
             Protocol::Ping(p) => NamedBinaryData {

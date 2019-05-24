@@ -6,9 +6,7 @@ use crate::connection::{
     NetResult,
 };
 use holochain_core_types::json::JsonString;
-
 use holochain_lib3h::real_engine::{RealEngine, RealEngineConfig};
-
 use holochain_lib3h_protocol::network_engine::NetworkEngine;
 
 /// A worker that makes use of lib3h / NetworkEngine.
@@ -84,12 +82,12 @@ impl NetWorker for Lib3hWorker {
         // Handle 'Shutdown' directly
         if data == Protocol::Shutdown {
             self.net_engine.terminate()?;
-            (self.handler)(Ok(Protocol::Terminated))?;
+            self.handler.handle(Ok(Protocol::Terminated))?;
             return Ok(());
         }
         // FIXME do translation
         // Post message
-        if let Protocol::Lib3h(msg) = data {
+        if let Protocol::Lib3hClient(msg) = data {
             self.net_engine.post(msg.clone())?;
         }
         // Done
@@ -101,13 +99,13 @@ impl NetWorker for Lib3hWorker {
         // Send p2pReady on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
-            (self.handler)(Ok(Protocol::P2pReady))?;
+            self.handler.handle(Ok(Protocol::P2pReady))?;
         }
         // Tick the NetworkEngine and check for incoming protocol messages.
         let (did_something, output) = self.net_engine.process()?;
         if did_something {
             for msg in output {
-                (self.handler)(Ok(Protocol::Lib3h(msg)))?;
+                self.handler.handle(Ok(Protocol::Lib3hServer(msg)))?;
             }
         }
         Ok(did_something)

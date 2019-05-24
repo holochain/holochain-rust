@@ -41,14 +41,17 @@ pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> H
 pub(crate) fn reduce_add_link_inner(
     store: &mut DhtStore,
     link: &Link,
-    address : &Address,
-    link_modification : LinkModification
+    address: &Address,
+    link_modification: LinkModification,
 ) -> HcResult<Address> {
     if (*store.content_storage().read()?).contains(link.base())? {
-        let attr = match link_modification
-        {
-            LinkModification::Add => Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string()),
-            LinkModification::Remove => Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
+        let attr = match link_modification {
+            LinkModification::Add => {
+                Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string())
+            }
+            LinkModification::Remove => {
+                Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
+            }
         };
         let eav = EntityAttributeValueIndex::new(link.base(), &attr, address)?;
         store.meta_storage().write()?.add_eavi(&eav)?;
@@ -59,8 +62,6 @@ pub(crate) fn reduce_add_link_inner(
         )))
     }
 }
-
-
 
 pub(crate) fn reduce_update_entry_inner(
     store: &DhtStore,
@@ -108,7 +109,7 @@ pub(crate) fn reduce_remove_entry_inner(
         Some(Attribute::CrudStatus).into(),
         None.into(),
         IndexFilter::LatestByAttribute,
-        None
+        None,
     ))?;
 
     //TODO clean up some of the early returns in this

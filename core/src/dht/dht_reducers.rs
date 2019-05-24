@@ -8,11 +8,11 @@ use crate::{
 use std::sync::Arc;
 
 use super::dht_inner_reducers::{
-    reduce_add_link_inner,reduce_remove_entry_inner, reduce_store_entry_inner,
+    reduce_add_link_inner, reduce_remove_entry_inner, reduce_store_entry_inner,
     reduce_update_entry_inner, LinkModification,
 };
 
-use holochain_core_types::{entry::Entry,cas::content::AddressableContent};
+use holochain_core_types::{cas::content::AddressableContent, entry::Entry};
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -84,9 +84,14 @@ pub(crate) fn reduce_add_link(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let (link,entry) = unwrap_to!(action_wrapper.action() => Action::AddLink);
+    let (link, entry) = unwrap_to!(action_wrapper.action() => Action::AddLink);
     let mut new_store = (*old_store).clone();
-    let res = reduce_add_link_inner(&mut new_store, link,&entry.address(),LinkModification::Add);
+    let res = reduce_add_link_inner(
+        &mut new_store,
+        link,
+        &entry.address(),
+        LinkModification::Add,
+    );
     new_store.actions_mut().insert(action_wrapper.clone(), res);
     Some(new_store)
 }
@@ -95,20 +100,21 @@ pub(crate) fn reduce_remove_link(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let (link,entry) = unwrap_to!(action_wrapper.action() => Action::RemoveLink);
+    let (link, entry) = unwrap_to!(action_wrapper.action() => Action::RemoveLink);
     let links_to_remove = match entry {
-            Entry::LinkRemove((_, links)) => links.clone(),
-            _ => Vec::new(),
+        Entry::LinkRemove((_, links)) => links.clone(),
+        _ => Vec::new(),
     };
 
     let mut new_store = (*old_store).clone();
     let store = links_to_remove
-    .iter()
-    .fold(new_store,|mut store,link_addresses|{
-        let res =reduce_add_link_inner(&mut store, link,link_addresses,LinkModification::Remove);
-        store.actions_mut().insert(action_wrapper.clone(), res);
-        store.clone()
-    });
+        .iter()
+        .fold(new_store, |mut store, link_addresses| {
+            let res =
+                reduce_add_link_inner(&mut store, link, link_addresses, LinkModification::Remove);
+            store.actions_mut().insert(action_wrapper.clone(), res);
+            store.clone()
+        });
 
     Some(store)
 }

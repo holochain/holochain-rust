@@ -81,6 +81,7 @@ fn publish_link_meta(
     };
     let link = link_type.link().clone();
 
+    // TODO: this shouldn't be with a println, it should log through the logger
     println!(
         "debug/reduce/link_meta: Publishing link meta for link: {:?}",
         link

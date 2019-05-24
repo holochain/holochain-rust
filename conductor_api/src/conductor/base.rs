@@ -214,6 +214,8 @@ impl Conductor {
                                 }
                             }
 
+                            Signal::Consistency(_) => unimplemented!(),
+
                             // Pass through user-defined  signals to the according interfaces
                             // in which the source instance is exposed:
                             Signal::User(_) => config

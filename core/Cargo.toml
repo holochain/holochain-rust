@@ -34,7 +34,7 @@ holochain_core_types_derive = { path = "../core_types_derive" }
 holochain_core_types = { path = "../core_types" }
 holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_dpki = { path = "../dpki" }
-lib3h_sodium = { path = "../../lib3h/sodium", version = "=0.0.1-alpha1" }
+lib3h_sodium = "=0.0.1-alpha1"
 boolinator = "=2.4.0"
 jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 jsonrpc-lite = "=0.5.0"

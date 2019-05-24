@@ -20,9 +20,9 @@ use holochain_net::{
 use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
-    sync::mpsc,
 };
-
+use crossbeam_channel::{unbounded, Receiver};
+use holochain_net::connection::net_connection::NetHandler;
 use super::{
     create_config::{create_ipc_config, create_lib3h_config},
     dna_store::DnaStore,
@@ -35,7 +35,7 @@ pub struct TestNode {
     // Need to hold the tempdir to keep it alive, otherwise we will get a dir error.
     _maybe_temp_dir: Option<tempfile::TempDir>,
     p2p_connection: P2pNetwork,
-    receiver: mpsc::Receiver<Protocol>,
+    receiver: Receiver<Protocol>,
     pub config: P2pConfig,
 
     pub agent_id: String,
@@ -616,15 +616,15 @@ impl TestNode {
         );
 
         // use a mpsc channel for messaging between p2p connection and main thread
-        let (sender, receiver) = mpsc::channel::<Protocol>();
+        let (sender, receiver) = unbounded::<Protocol>();
         // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
         let agent_id = agent_id_arg.clone();
         let p2p_connection = P2pNetwork::new(
-            Box::new(move |r| {
+            NetHandler::new(Box::new(move |r| {
                 log_tt!("p2pnode", "<<< ({}) handler: {:?}", agent_id_arg, r);
                 sender.send(r?)?;
                 Ok(())
-            }),
+            })),
             &config,
         )
         .expect("Failed to create P2pNetwork");

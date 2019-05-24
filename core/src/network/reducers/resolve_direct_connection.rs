@@ -1,9 +1,8 @@
-use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
-use std::sync::Arc;
+use crate::{action::ActionWrapper, network::state::NetworkState, state::State};
 
 pub fn reduce_resolve_direct_connection(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();

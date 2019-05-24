@@ -60,6 +60,7 @@ pub mod test {
     use holochain_core_types::{
         agent::AgentId,
         cas::content::{Address, AddressableContent},
+        utc_dispatch::UTCMock,
     };
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use std::sync::{Mutex, RwLock};
@@ -82,6 +83,7 @@ pub mod test {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            Arc::new(UTCMock::default()),
         );
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

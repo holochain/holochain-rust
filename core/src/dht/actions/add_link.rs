@@ -7,7 +7,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{error::HolochainError, link::Link};
+use holochain_core_types::{entry::Entry, error::HolochainError, link::Link};
 use std::{pin::Pin, sync::Arc};
 
 /// AddLink Action Creator
@@ -18,8 +18,8 @@ use std::{pin::Pin, sync::Arc};
 /// if that is not the case.
 ///
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
-pub fn add_link(link: &Link, context: &Arc<Context>) -> AddLinkFuture {
-    let action_wrapper = ActionWrapper::new(Action::AddLink(link.clone()));
+pub fn add_link(entry: &Entry, link: &Link, context: &Arc<Context>) -> AddLinkFuture {
+    let action_wrapper = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     AddLinkFuture {
@@ -76,7 +76,7 @@ mod tests {
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
 
-        let result = context.block_on(add_link(&link, &context.clone()));
+        let result = context.block_on(add_link(&base.clone(), &link, &context.clone()));
 
         assert!(result.is_ok(), "result = {:?}", result);
     }
@@ -89,7 +89,7 @@ mod tests {
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
 
-        let result = context.block_on(add_link(&link, &context.clone()));
+        let result = context.block_on(add_link(&base.clone(), &link, &context.clone()));
 
         assert!(result.is_err());
         assert_eq!(

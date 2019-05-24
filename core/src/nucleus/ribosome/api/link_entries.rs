@@ -32,7 +32,12 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     };
 
     let link = input.to_link();
-    let link_add = LinkData::from_link(&link, LinkActionKind::ADD);
+    let link_add = LinkData::from_link(
+        &link,
+        LinkActionKind::ADD,
+        context.utc_dispatch.now_dispatch(),
+        context.agent_id.clone(),
+    );
     let entry = Entry::LinkAdd(link_add);
     // Wait for future to be resolved
     // This is where the link entry actually gets created.
@@ -150,7 +155,7 @@ pub mod tests {
         );
 
         let no_entry: Option<Address> = Some(HashString::from(
-            "QmW7YnHJBXRNrrr476Vc2UzdZowQEq8oK93nVjKVfu3gyn",
+            "QmZPcQA972xWc58w15zHk1hQz9RGXGx3ikjdayRKznXvC4",
         ));
         let result = ZomeApiInternalResult::success(no_entry);
         assert_eq!(
@@ -197,7 +202,7 @@ pub mod tests {
         );
 
         let no_entry: Option<Address> = Some(HashString::from(
-            "QmWue97eUUpPvYwYz7vxVQYC9qXEGLDuxghmWK1A2yX99t",
+            "QmRn5j3USemR7zpxH5Jepn8FEA4DSwGuoTa7bHHteBqxNt",
         ));
         let result = ZomeApiInternalResult::success(no_entry);
 

@@ -21,7 +21,7 @@ pub async fn remove_link_workflow<'a>(
     let EntryWithHeader { entry, header } = &entry_with_header;
 
     let link_remove = match entry {
-        Entry::LinkRemove(link_remove) => link_remove,
+        Entry::LinkRemove((link_remove, _)) => link_remove,
         _ => Err(HolochainError::ErrorGeneric(
             "remove_link_workflow expects entry to be an Entry::LinkRemove".to_string(),
         ))?,
@@ -61,7 +61,7 @@ pub async fn remove_link_workflow<'a>(
     context.log(format!("debug/workflow/remove_link: is valid!"));
 
     // 3. If valid store remove the entry in the local DHT shard
-    await!(remove_link(&link, &context))?;
+    await!(remove_link(&entry, &link, &context))?;
     context.log(format!("debug/workflow/remove_link: added! {:?}", link));
     Ok(())
 }

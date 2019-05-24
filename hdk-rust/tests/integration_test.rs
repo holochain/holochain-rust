@@ -588,7 +588,7 @@ fn can_link_entries() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmdQvKn8yNojRHSxr9yK3HhEGAcAzfGgC6f8XT4joZdwTp"}"#)
+        JsonString::from_json(r#"{"Ok":"QmZxPKjvSKmLnTGMRHxuRKzbSEBCBsv2LdpFgAgJHtjZFF"}"#)
     );
 }
 
@@ -600,7 +600,7 @@ fn can_remove_link() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmdQvKn8yNojRHSxr9yK3HhEGAcAzfGgC6f8XT4joZdwTp"}"#)
+        JsonString::from_json(r#"{"Ok":"QmZxPKjvSKmLnTGMRHxuRKzbSEBCBsv2LdpFgAgJHtjZFF"}"#)
     );
 }
 

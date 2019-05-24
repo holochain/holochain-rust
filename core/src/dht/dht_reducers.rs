@@ -8,9 +8,11 @@ use crate::{
 use std::sync::Arc;
 
 use super::dht_inner_reducers::{
-    reduce_add_remove_link_inner, reduce_remove_entry_inner, reduce_store_entry_inner,
+    reduce_add_link_inner, reduce_remove_entry_inner, reduce_store_entry_inner,
     reduce_update_entry_inner, LinkModification,
 };
+
+use holochain_core_types::{cas::content::AddressableContent, entry::Entry};
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -82,9 +84,14 @@ pub(crate) fn reduce_add_link(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let link = unwrap_to!(action_wrapper.action() => Action::AddLink);
+    let (link, entry) = unwrap_to!(action_wrapper.action() => Action::AddLink);
     let mut new_store = (*old_store).clone();
-    let res = reduce_add_remove_link_inner(&mut new_store, link, LinkModification::Add);
+    let res = reduce_add_link_inner(
+        &mut new_store,
+        link,
+        &entry.address(),
+        LinkModification::Add,
+    );
     new_store.actions_mut().insert(action_wrapper.clone(), res);
     Some(new_store)
 }
@@ -93,11 +100,23 @@ pub(crate) fn reduce_remove_link(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let link = unwrap_to!(action_wrapper.action() => Action::RemoveLink);
-    let mut new_store = (*old_store).clone();
-    let res = reduce_add_remove_link_inner(&mut new_store, link, LinkModification::Remove);
-    new_store.actions_mut().insert(action_wrapper.clone(), res);
-    Some(new_store)
+    let (link, entry) = unwrap_to!(action_wrapper.action() => Action::RemoveLink);
+    let links_to_remove = match entry {
+        Entry::LinkRemove((_, links)) => links.clone(),
+        _ => Vec::new(),
+    };
+
+    let new_store = (*old_store).clone();
+    let store = links_to_remove
+        .iter()
+        .fold(new_store, |mut store, link_addresses| {
+            let res =
+                reduce_add_link_inner(&mut store, link, link_addresses, LinkModification::Remove);
+            store.actions_mut().insert(action_wrapper.clone(), res);
+            store.clone()
+        });
+
+    Some(store)
 }
 
 pub(crate) fn reduce_update_entry(
@@ -143,6 +162,7 @@ pub mod tests {
         state::test_store,
     };
     use holochain_core_types::{
+        agent::test_agent_id,
         cas::content::AddressableContent,
         chain_header::test_chain_header,
         eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
@@ -197,8 +217,13 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
-        let action = ActionWrapper::new(Action::AddLink(link.clone()));
-        let link_entry = Entry::LinkAdd(LinkData::from_link(&link.clone(), LinkActionKind::ADD));
+        let link_entry = Entry::LinkAdd(LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::ADD,
+            0,
+            test_agent_id(),
+        ));
+        let action = ActionWrapper::new(Action::AddLink((link.clone(), link_entry.clone())));
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
@@ -208,6 +233,7 @@ pub mod tests {
             None.into(),
             None.into(),
             IndexFilter::LatestByAttribute,
+            None,
         ));
 
         assert!(fetched.is_ok());
@@ -230,28 +256,49 @@ pub mod tests {
 
         let _ = store.dht().content_storage().write().unwrap().add(&entry);
 
-        let link = Link::new(
-            &entry.address(),
-            &entry.address(),
-            "test-link_type",
-            "test-tag",
-        );
+        let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
+        let test_tag = String::from("test-tag");
+        let entry_link_add = Entry::LinkAdd(LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::ADD,
+            0,
+            test_agent_id(),
+        ));
+        let action_link_add =
+            ActionWrapper::new(Action::AddLink((link.clone(), entry_link_add.clone())));
+        let new_dht_store = reduce(store.dht(), &action_link_add);
 
-        let action = ActionWrapper::new(Action::AddLink(link.clone()));
-        let new_dht_store = reduce(store.dht(), &action);
-
-        let action = ActionWrapper::new(Action::RemoveLink(link.clone()));
-        let new_dht_store = reduce(new_dht_store, &action);
+        let entry_link_remove = Entry::LinkRemove((
+            LinkData::from_link(&link.clone(), LinkActionKind::REMOVE, 0, test_agent_id()),
+            vec![entry_link_add.address()],
+        ));
+        let action_link_remove =
+            ActionWrapper::new(Action::RemoveLink((link.clone(), entry_link_remove)));
+        let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
-            EavFilter::predicate(|a| match a {
-                Attribute::LinkTag(_, _) | Attribute::RemovedLink(_, _) => true,
+            EavFilter::predicate(|attr: Attribute| match attr.clone() {
+                Attribute::LinkTag(query_link_type, query_tag)
+                | Attribute::RemovedLink(query_link_type, query_tag) => {
+                    match (&link.link_type().clone().into(), &link.tag().clone().into()) {
+                        (Some(link_type), Some(tag)) => {
+                            link_type == &query_link_type && tag == &query_tag
+                        }
+                        (Some(link_type), None) => link_type == &query_link_type,
+                        (None, Some(tag)) => tag == &query_tag,
+                        (None, None) => true,
+                    }
+                }
                 _ => false,
             }),
             None.into(),
             IndexFilter::LatestByAttribute,
+            Some(EavFilter::single(Attribute::RemovedLink(
+                test_tag.clone(),
+                "test-link".to_string(),
+            ))),
         ));
 
         assert!(fetched.is_ok());
@@ -259,7 +306,7 @@ pub mod tests {
         assert_eq!(hash_set.len(), 1);
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        let link_entry = link.add_entry();
+        let link_entry = link.add_entry(0, test_agent_id());
         assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
             eav.attribute(),
@@ -272,7 +319,6 @@ pub mod tests {
         let context = test_context("bob", None);
         let store = test_store(context.clone());
         let entry = test_entry();
-
         let link = Link::new(
             &entry.address(),
             &entry.address(),
@@ -280,7 +326,7 @@ pub mod tests {
             "test-tag",
         );
 
-        let action = ActionWrapper::new(Action::AddLink(link.clone()));
+        let action = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
 
         let new_dht_store = reduce(store.dht(), &action);
 
@@ -290,6 +336,7 @@ pub mod tests {
             None.into(),
             None.into(),
             IndexFilter::LatestByAttribute,
+            None,
         ));
 
         assert!(fetched.is_ok());

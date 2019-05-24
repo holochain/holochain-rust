@@ -225,14 +225,21 @@ impl Waiter {
                             Entry::LinkAdd(link_add) => {
                                 checker.add(num_instances, move |aw| {
                                     //println!("WAITER: Entry::LinkAdd -> Action::AddLink");
-                                    *aw.action() == Action::AddLink(link_add.clone().link().clone())
+                                    *aw.action()
+                                        == Action::AddLink((
+                                            link_add.clone().link().clone(),
+                                            committed_entry.clone(),
+                                        ))
                                 });
                             }
-                            Entry::LinkRemove(link_remove) => {
+                            Entry::LinkRemove((link_remove, _)) => {
                                 checker.add(num_instances, move |aw| {
                                     //println!("WAITER: Entry::LinkRemove -> Action::RemoveLink");
                                     *aw.action()
-                                        == Action::RemoveLink(link_remove.clone().link().clone())
+                                        == Action::RemoveLink((
+                                            link_remove.clone().link().clone(),
+                                            committed_entry.clone(),
+                                        ))
                                 });
                             }
                             _ => (),
@@ -370,7 +377,7 @@ mod tests {
     use super::{Action::*, *};
     use holochain_core::nucleus::actions::call_zome_function::ExecuteZomeFnResponse;
     use holochain_core_types::{
-        cas::content::Address, chain_header::test_chain_header,
+        agent::test_agent_id, cas::content::Address, chain_header::test_chain_header,
         dna::capabilities::CapabilityRequest, entry::Entry, json::JsonString,
         link::link_data::LinkData, signature::Signature,
     };
@@ -596,6 +603,8 @@ mod tests {
             &"target".to_string().into(),
             "link-type",
             "link-tag",
+            0,
+            test_agent_id(),
         );
         let entry = Entry::LinkAdd(link_add.clone());
         let entry_wh = mk_entry_wh(entry.clone());
@@ -614,7 +623,7 @@ mod tests {
         waiter.process_signal(sig(Hold(entry_wh)));
         assert_eq!(num_conditions(&waiter, &call), 2);
 
-        waiter.process_signal(sig(AddLink(link_add.link().clone())));
+        waiter.process_signal(sig(AddLink((link_add.link().clone(), entry.clone()))));
         assert_eq!(num_conditions(&waiter, &call), 1);
         assert_eq!(waiter.checkers.len(), 1);
 

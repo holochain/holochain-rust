@@ -264,6 +264,7 @@ impl EavTestSuite {
                 Some(attribute.clone()).into(),
                 Some(value_content.address()).into(),
                 IndexFilter::LatestByAttribute,
+                None,
             );
             assert_eq!(
                 BTreeSet::new(),
@@ -308,7 +309,8 @@ impl EavTestSuite {
                             e.into(),
                             a.into(),
                             v.into(),
-                            IndexFilter::LatestByAttribute
+                            IndexFilter::LatestByAttribute,
+                            None
                         ))
                         .expect("could not fetch eav")
                 );
@@ -367,7 +369,8 @@ impl EavTestSuite {
                     Some(one.address()).into(),
                     Some(attribute.clone()).into(),
                     None.into(),
-                    IndexFilter::LatestByAttribute
+                    IndexFilter::LatestByAttribute,
+                    None
                 ))
                 .expect("could not fetch eav")
         );
@@ -385,6 +388,7 @@ impl EavTestSuite {
                     Some(attribute.clone()).into(),
                     Some(many.address()).into(),
                     IndexFilter::LatestByAttribute,
+                    None,
                 ))
                 .expect("could not fetch eav");
             assert_eq!(fetch_set.clone().len(), expected_one.clone().len());
@@ -452,7 +456,8 @@ impl EavTestSuite {
                     Some(many_one.address()).into(),
                     Some(attribute.clone()).into(),
                     Some(one.address()).into(),
-                    index_query_many_one
+                    index_query_many_one,
+                    None
                 ))
                 .unwrap()
         );
@@ -469,7 +474,8 @@ impl EavTestSuite {
                     Some(many_two.address()).into(),
                     Some(attribute.clone()).into(),
                     Some(one.address()).into(),
-                    index_query_many_two
+                    index_query_many_two,
+                    None
                 ))
                 .unwrap()
         );
@@ -486,7 +492,8 @@ impl EavTestSuite {
                     None.into(),
                     Some(attribute.clone()).into(),
                     Some(one.address()).into(),
-                    index_query_all
+                    index_query_all,
+                    None
                 ))
                 .unwrap()
         );
@@ -522,6 +529,7 @@ impl EavTestSuite {
             attributes.into(),
             EavFilter::default(),
             IndexFilter::LatestByAttribute,
+            None,
         );
 
         // get only last value in set of prefix query
@@ -598,6 +606,7 @@ impl EavTestSuite {
             EavFilter::single(attribute.clone()),
             EavFilter::single(one.address()),
             IndexFilter::LatestByAttribute,
+            None,
         );
         // show the many referencing one
         assert_eq!(
@@ -618,6 +627,7 @@ impl EavTestSuite {
                     Some(attribute.clone()).into(),
                     None.into(),
                     IndexFilter::LatestByAttribute,
+                    None,
                 ))
                 .expect("could not fetch eav");
             assert_eq!(fetch_set.clone().len(), expected_one.clone().len());
@@ -627,6 +637,71 @@ impl EavTestSuite {
                 assert_eq!(a.value(), a.value());
             });
         }
+    }
+
+    pub fn test_tombstone<A, S>(mut eav_storage: S)
+    where
+        A: AddressableContent + Clone,
+        S: EntityAttributeValueStorage,
+    {
+        let foo_content = Content::from(RawString::from("foo"));
+        let bar_content = Content::from(RawString::from("bar"));
+
+        let one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
+        let two = A::try_from_content(&bar_content)
+            .expect("could not create AddressableContent from Content");
+        let attribute = Attribute::LinkTag("c".into(), "c".into());
+        let mut expected_tombstone = BTreeSet::new();
+        let mut expected_tombstone_not_found = BTreeSet::new();
+
+        vec!["a", "b", "c", "d", "e"].iter().for_each(|s| {
+            let eav = EntityAttributeValueIndex::new(
+                &one.address(),
+                &Attribute::LinkTag(String::from(s.clone()), String::from(s.clone())),
+                &two.address(),
+            )
+            .expect("could not create EAV");
+            let expected_eav = eav_storage
+                .add_eavi(&eav)
+                .expect("could not add eav")
+                .expect("Could not get eavi option");
+            if *s == "c" {
+                expected_tombstone.insert(expected_eav);
+            } else if *s == "e" {
+                expected_tombstone_not_found.insert(expected_eav);
+            } else {
+                ()
+            }
+        });
+
+        let expected_attribute = Some(attribute.clone());
+        assert_eq!(
+            expected_tombstone,
+            eav_storage
+                .fetch_eavi(&EaviQuery::new(
+                    Some(one.address()).into(),
+                    None.into(),
+                    Some(two.address()).into(),
+                    IndexFilter::LatestByAttribute,
+                    Some(expected_attribute.into())
+                ))
+                .unwrap()
+        );
+
+        let expected_last_attribute = Some(Attribute::LinkTag("e".into(), "e".into()));
+        assert_eq!(
+            expected_tombstone_not_found,
+            eav_storage
+                .fetch_eavi(&EaviQuery::new(
+                    Some(one.address()).into(),
+                    None.into(),
+                    Some(two.address()).into(),
+                    IndexFilter::LatestByAttribute,
+                    Some(expected_last_attribute.into())
+                ))
+                .unwrap()
+        );
     }
 }
 

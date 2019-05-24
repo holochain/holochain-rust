@@ -26,6 +26,7 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
+    utc_dispatch::UTCDispatch,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};
@@ -57,6 +58,7 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
+    pub utc_dispatch: Arc<UTCDispatch>,
     signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
@@ -99,6 +101,7 @@ impl Context {
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
+        utc_dispatch: Arc<UTCDispatch>,
     ) -> Self {
         Context {
             agent_id: agent_id.clone(),
@@ -116,6 +119,7 @@ impl Context {
                 conductor_api,
                 agent_id,
             )),
+            utc_dispatch,
         }
     }
 
@@ -129,6 +133,7 @@ impl Context {
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         p2p_config: P2pConfig,
+        utc_dispatch: Arc<UTCDispatch>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id: agent_id.clone(),
@@ -143,6 +148,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
+            utc_dispatch,
         })
     }
 
@@ -325,7 +331,7 @@ pub mod tests {
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::agent::AgentId;
+    use holochain_core_types::{agent::AgentId, utc_dispatch::UTCMock};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 
@@ -352,6 +358,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            Arc::new(UTCMock::default()),
         );
 
         assert!(maybe_context.state().is_none());
@@ -385,6 +392,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            Arc::new(UTCMock::default()),
         );
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

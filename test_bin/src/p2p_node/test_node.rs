@@ -130,6 +130,7 @@ impl TestNode {
             };
             Lib3hClientProtocol::TrackDna(track_dna_msg).into()
         };
+        println!("TestNode.track_dna(): {:?}", protocol_msg);
         let res = self.send(protocol_msg);
         if res.is_ok() {
             self.tracked_dnas.insert(dna_address.clone());

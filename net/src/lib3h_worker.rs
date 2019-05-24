@@ -79,6 +79,7 @@ impl NetWorker for Lib3hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
+        println!("Lib3hWorker.receive(): {:?}", data);
         // Handle 'Shutdown' directly
         if data == Protocol::Shutdown {
             self.net_engine.terminate()?;
@@ -95,6 +96,7 @@ impl NetWorker for Lib3hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
+        // println!("Lib3hWorker.tick()");
         // Send p2pReady on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;

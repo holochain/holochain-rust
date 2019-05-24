@@ -74,7 +74,7 @@ pub(crate) fn reduce_remove_link_inner(
 
         if error.is_empty()
         {
-            Err(HolochainError::ErrorGeneric("error removing links"))
+            Err(HolochainError::ErrorGeneric("error removing links".to_string()))
         }
         else 
         {

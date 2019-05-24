@@ -26,6 +26,7 @@ pub mod multidna_workflows;
 pub mod p2p_node;
 pub mod publish_hold_workflows;
 pub mod three_workflows;
+pub mod lib3h_workflows;
 
 use constants::*;
 use holochain_net::{connection::NetResult, tweetlog::*};
@@ -74,6 +75,9 @@ lazy_static! {
         multidna_workflows::meta_test,
     ];
     pub static ref MULTI_NODES_TEST_FNS: Vec<MultiNodesTestFn> = vec![
+    ];
+    pub static ref TWO_NODES_LIB3H_TEST_FNS: Vec<TwoNodesTestFn> = vec![
+        lib3h_workflows::send_test,
     ];
 }
 
@@ -182,16 +186,19 @@ fn main() {
             )
             .unwrap();
         }
-        if config["modes"]["LIB3H"].as_bool().unwrap() {
+    }
+
+    // Launch LIB3H tests
+    if config["modes"]["LIB3H"].as_bool().unwrap() {
+        for test_fn in TWO_NODES_LIB3H_TEST_FNS.iter() {
             launch_two_nodes_test_with_lib3h(
                 "test_bin/data/lib3h_config.json",
                 Some("test_bin/data/end_user_net_config.json".to_string()),
-                test_fn,
+                *test_fn,
             )
-            .unwrap();
+                .unwrap();
         }
     }
-
     // Launch THREE_WORKFLOWS tests on each setup
     if config["suites"]["THREE_WORKFLOWS"].as_bool().unwrap() {
         for test_fn in THREE_NODES_TEST_FNS.clone() {
@@ -209,14 +216,6 @@ fn main() {
             if config["modes"]["N3H"].as_bool().unwrap() {
                 launch_three_nodes_test(
                     "test_bin/data/n3h_config.json",
-                    Some("test_bin/data/end_user_net_config.json".to_string()),
-                    test_fn,
-                )
-                .unwrap();
-            }
-            if config["modes"]["LIB3H"].as_bool().unwrap() {
-                launch_three_nodes_test_with_lib3h(
-                    "test_bin/data/lib3h_config.json",
                     Some("test_bin/data/end_user_net_config.json".to_string()),
                     test_fn,
                 )
@@ -241,9 +240,6 @@ fn main() {
                 three_workflows::hold_and_publish_test,
             )
             .unwrap();
-        }
-        if config["modes"]["LIB3H"].as_bool().unwrap() {
-            // FIXME: Lib3h disconnection tests
         }
     }
     // Wait a bit before closing

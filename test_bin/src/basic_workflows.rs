@@ -249,7 +249,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     assert_eq!(ENTRY_CONTENT_1.to_string(), msg.content.to_string());
 
     // Send a message back from billy to alex
-    billy.send_reponse(
+    billy.send_reponse_json(
         msg.clone(),
         json!(format!("echo: {}", msg.content.to_string())),
     );
@@ -525,7 +525,7 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
     assert_eq!("{\"ry\":\"hello\"}".to_string(), msg.content.to_string());
 
     // Send a message back from billy to alex
-    billy.send_reponse(
+    billy.send_reponse_json(
         msg.clone(),
         json!(format!("echo: {}", msg.content.to_string())),
     );

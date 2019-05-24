@@ -25,6 +25,7 @@ use crossbeam_channel::{unbounded, Receiver};
 use holochain_lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
+    data_types::DirectMessageData,
 };
 use holochain_net::connection::net_connection::NetHandler;
 use super::{
@@ -50,7 +51,6 @@ pub struct TestNode {
 
     // logging
     recv_msg_log: Vec<Protocol>,
-    recv_dm_log: Vec<MessageData>,
 
     // datastores per dna
     dna_stores: HashMap<Address, DnaStore>,
@@ -346,28 +346,42 @@ impl TestNode {
     }
 
     /// Node sends Message on the network.
-    pub fn send_message(&mut self, to_agent_id: String, content: serde_json::Value) -> MessageData {
+    pub fn send_message(&mut self, to_agent_id: String, content: serde_json::Value) -> String {
         println!("set_current_dna: {:?}", self.current_dna);
         assert!(self.current_dna.is_some());
-        let current_dna = self.current_dna.clone().unwrap();
-        let msg_data = MessageData {
-            dna_address: current_dna,
-            from_agent_id: self.agent_id.to_string(),
-            request_id: self.generate_request_id(),
-            to_agent_id,
-            content,
+        let dna_address = self.current_dna.clone().unwrap();
+        let request_id = self.generate_request_id();
+        let from_agent_id = self.agent_id.to_string();
+
+        let p = if self.is_json {
+            let msg_data = MessageData {
+                dna_address,
+                from_agent_id,
+                request_id: request_id.clone(),
+                to_agent_id,
+                content,
+            };
+            JsonProtocol::SendMessage(msg_data.clone()).into()
+        } else {
+            let msg_data = DirectMessageData {
+                dna_address: dna_address.to_string().into_bytes(),
+                request_id: request_id.clone(),
+                to_agent_id: to_agent_id.to_string().into_bytes(),
+                from_agent_id: from_agent_id.to_string().into_bytes(),
+                content: content.to_string().into_bytes(),
+            };
+            Lib3hClientProtocol::SendDirectMessage(msg_data.clone()).into()
         };
-        self.send(JsonProtocol::SendMessage(msg_data.clone()).into())
-            .expect("Sending SendMessage failed");
-        msg_data
+        self.send(p).expect("Sending SendMessage failed");
+        request_id
     }
 
     /// Node sends Message on the network.
-    pub fn send_reponse(
+    pub fn send_reponse_json(
         &mut self,
         msg: MessageData,
         response_content: serde_json::Value,
-    ) -> MessageData {
+    ) {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
         assert_eq!(msg.dna_address, current_dna.clone());
@@ -381,7 +395,27 @@ impl TestNode {
         };
         self.send(JsonProtocol::HandleSendMessageResult(response.clone()).into())
             .expect("Sending HandleSendMessageResult failed");
-        response
+    }
+
+    /// Node sends Message on the network.
+    pub fn send_reponse_lib3h(
+        &mut self,
+        msg: DirectMessageData,
+        response_content: serde_json::Value,
+    ) {
+        assert!(self.current_dna.is_some());
+        let current_dna = self.current_dna.clone().unwrap();
+        assert_eq!(msg.dna_address, current_dna.clone().to_string().into_bytes());
+        assert_eq!(msg.to_agent_id, self.agent_id.clone().to_string().into_bytes());
+        let response = DirectMessageData {
+            dna_address: current_dna.clone().to_string().into_bytes(),
+            request_id: msg.request_id,
+            to_agent_id: msg.from_agent_id.clone(),
+            from_agent_id: self.agent_id.to_string().into_bytes(),
+            content: response_content.to_string().into_bytes(),
+        };
+        self.send(Lib3hClientProtocol::HandleSendDirectMessageResult(response.clone()).into())
+            .expect("Sending HandleSendMessageResult failed");
     }
 }
 
@@ -657,7 +691,6 @@ impl TestNode {
             request_log: Vec::new(),
             request_count: 0,
             recv_msg_log: Vec::new(),
-            recv_dm_log: Vec::new(),
             dna_stores: HashMap::new(),
             tracked_dnas: HashSet::new(),
             current_dna: None,
@@ -912,17 +945,17 @@ impl TestNode {
 
             if let Ok(p2p_msg) = self.try_recv_json() {
                 self.logger.i(&format!(
-                    "({})::wait() - received: {:?}",
+                    "({})::wait_json() - received: {:?}",
                     self.agent_id, p2p_msg
                 ));
                 did_something = true;
                 if predicate(&p2p_msg) {
                     self.logger
-                        .i(&format!("({})::wait() - match", self.agent_id));
+                        .i(&format!("({})::wait_json() - match", self.agent_id));
                     return Some(p2p_msg);
                 } else {
                     self.logger
-                        .i(&format!("({})::wait() - NO match", self.agent_id));
+                        .i(&format!("({})::wait_json() - NO match", self.agent_id));
                 }
             }
 
@@ -931,7 +964,7 @@ impl TestNode {
                 time_ms += 10;
                 if time_ms > timeout_ms {
                     self.logger
-                        .i(&format!("({})::wait() has TIMEOUT", self.agent_id));
+                        .i(&format!("({})::wait_json() has TIMEOUT", self.agent_id));
                     return None;
                 }
             }
@@ -944,13 +977,53 @@ impl TestNode {
     pub fn wait_json(&mut self, predicate: Box<dyn Fn(&JsonProtocol) -> bool>) -> Option<JsonProtocol> {
         self.wait_json_with_timeout(predicate, TIMEOUT_MS)
     }
-//
-//    /// Wait for receiving a message corresponding to predicate
-///// hard coded timeout
-//    #[cfg_attr(tarpaulin, skip)]
-//    pub fn wait(&mut self, predicate: Box<dyn Fn(&Protocol) -> bool>) -> Option<Protocol> {
-//        self.wait_with_timeout(predicate, TIMEOUT_MS)
-//    }
+
+    /// Wait for receiving a message corresponding to predicate
+    /// hard coded timeout
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn wait_lib3h(&mut self, predicate: Box<dyn Fn(&Lib3hServerProtocol) -> bool>) -> Option<Lib3hServerProtocol> {
+        self.wait_lib3h_with_timeout(predicate, TIMEOUT_MS)
+    }
+
+    /// Wait for receiving a message corresponding to predicate until timeout is reached
+    pub fn wait_lib3h_with_timeout(
+        &mut self,
+        predicate: Box<dyn Fn(&Lib3hServerProtocol) -> bool>,
+        timeout_ms: usize,
+    ) -> Option<Lib3hServerProtocol> {
+        let mut time_ms: usize = 0;
+        loop {
+            let mut did_something = false;
+
+            if let Ok(p2p_msg) = self.try_recv() {
+                if let Protocol::Lib3hServer(lib3h_msg) = p2p_msg {
+                    self.logger.i(&format!(
+                        "({})::wait_lib3h() - received: {:?}",
+                        self.agent_id, lib3h_msg
+                    ));
+                    did_something = true;
+                    if predicate(&lib3h_msg) {
+                        self.logger
+                            .i(&format!("({})::wait_lib3h() - match", self.agent_id));
+                        return Some(lib3h_msg);
+                    } else {
+                        self.logger
+                            .i(&format!("({})::wait_lib3h() - NO match", self.agent_id));
+                    }
+                }
+            }
+
+            if !did_something {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+                time_ms += 10;
+                if time_ms > timeout_ms {
+                    self.logger
+                        .i(&format!("({})::wait_lib3h() has TIMEOUT", self.agent_id));
+                    return None;
+                }
+            }
+        }
+    }
 
     // Stop node
     #[cfg_attr(tarpaulin, skip)]
@@ -1041,9 +1114,9 @@ impl TestNode {
             JsonProtocol::SendMessageResult(_) => {
                 // n/a
             }
-            JsonProtocol::HandleSendMessage(msg) => {
+            JsonProtocol::HandleSendMessage(_msg) => {
                 // log the direct message sent to us
-                self.recv_dm_log.push(msg);
+                // FIXME
             }
             JsonProtocol::HandleSendMessageResult(_msg) => {
                 panic!("Core should not receive HandleSendMessageResult message");

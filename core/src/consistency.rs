@@ -6,8 +6,17 @@ use holochain_core_types::{
 };
 use std::collections::HashMap;
 
+#[derive(Clone, Debug)]
 pub struct ConsistencyModel {
     commit_cache: HashMap<Address, ConsistencySignal>,
+}
+
+impl ConsistencyModel {
+    pub fn new() -> Self {
+        Self {
+            commit_cache: HashMap::new(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]

@@ -201,7 +201,7 @@ impl Conductor {
                         signal_tx.clone().map(|s| s.send(signal.clone()));
                         let broadcasters = broadcasters.read().unwrap();
                         let interfaces_with_instance: Vec<&InterfaceConfiguration> = match signal {
-                            // Send internal signals only to admin interfaces, if expose_trace_signals is set:
+                            // Send internal signals only to admin interfaces, if signals.trace is set:
                             Signal::Trace(_) => {
                                 if config.signals.trace {
                                     config
@@ -214,6 +214,7 @@ impl Conductor {
                                 }
                             }
 
+                            // Send internal signals only to admin interfaces, if signals.consistency is set:
                             Signal::Consistency(_) => {
                                 if config.signals.consistency {
                                     config

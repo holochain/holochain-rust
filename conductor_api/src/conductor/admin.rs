@@ -679,6 +679,7 @@ type = 'memory'"#
         r#"[signals]
 consistency = false
 trace = false"#
+            .to_string()
     }
 
     pub fn interface(port: u32) -> String {

@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds PROPERTIES static to the HDK which contains a JsonString with the DNA properties object. Also adds a body to the `hdk::properties` stub which allows retrieving fields from the properties object as JsonString. [#1418](https://github.com/holochain/holochain-rust/pull/1418)
 - Conductor now persists its config in the config root (e.g. `home/peter/.config/holochain/conductor` rather than `~/.holochain`) [#1386](https://github.com/holochain/holochain-rust/pull/1386)
 - Default N3H mode as set when spawned by the conductor got set to "REAL". [#1282](https://github.com/holochain/holochain-rust/pull/1282)
-- Internal signals renamed to Trace signals, with ability to opt in or out through `emit_trace_signals` conductor config [#1428](https://github.com/holochain/holochain-rust/pull/1428)
+- Internal signals renamed to Trace signals, with ability to opt in or out through `signals.trace` conductor config [#1428](https://github.com/holochain/holochain-rust/pull/1428)
+- "Consistency" signals added, which aid determinism in end-to-end tests, configurable through `signals.consistency` conductor config [#___](https://github.com/holochain/holochain-rust/pull/___)
 
 ### Deprecated
 

@@ -595,10 +595,6 @@ pub mod tests {
         Arc::new(loader)
     }
 
-    pub fn general() -> String {
-        "expose_trace_signals = false".to_string()
-    }
-
     pub fn empty_bridges() -> String {
         "bridges = []".to_string()
     }
@@ -621,7 +617,6 @@ pub mod tests {
 
     pub fn header_block(test_name: &str) -> String {
         let mut toml = empty_bridges();
-        toml = add_line(toml, general());
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());
         toml = add_line(toml, empty_ui_interfaces());
@@ -678,6 +673,12 @@ id = 'test-instance-2'
 [instances.storage]
 type = 'memory'"#
             .to_string()
+    }
+
+    pub fn signals() -> String {
+        r#"[signals]
+consistency = false
+trace = false"#
     }
 
     pub fn interface(port: u32) -> String {
@@ -1116,7 +1117,6 @@ type = 'websocket'"#,
 
         let mut toml = empty_bridges();
         toml = add_line(toml, "dnas = []".to_string());
-        toml = add_line(toml, general());
         toml = add_line(toml, "instances = []".to_string());
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());
@@ -1141,6 +1141,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1240,7 +1241,6 @@ type = 'http'"#,
             .expect("Could not read temp config file");
 
         let mut toml = empty_bridges();
-        toml = add_line(toml, general());
         toml = add_line(toml, "interfaces = []".to_string());
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());
@@ -1252,6 +1252,7 @@ type = 'http'"#,
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1541,7 +1542,7 @@ type = 'websocket'"#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = general();
+        let mut toml = "".to_string();
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());
         toml = add_line(toml, empty_ui_interfaces());
@@ -1562,6 +1563,7 @@ handle = 'my favourite instance!'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);

@@ -135,6 +135,7 @@ fn make_config(
         bridges: bridges,
         dpki: dpki,
         logger,
+        expose_trace_signals: true,
         ..Default::default()
     };
     config

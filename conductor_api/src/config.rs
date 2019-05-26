@@ -77,6 +77,10 @@ pub struct Configuration {
     /// Optional DPKI configuration if conductor is using a DPKI app to initalize and manage
     /// keys for new instances
     pub dpki: Option<DpkiConfiguration>,
+
+    /// Send Trace signals through interfaces along with other signals
+    #[serde(default)]
+    pub expose_trace_signals: bool,
 }
 
 pub fn default_persistence_dir() -> PathBuf {

@@ -28,24 +28,25 @@ Please click "suggest an edit", and add something you built with Holochain to th
 - [humm](https://humm.earth/): a beautiful p2p publishing platform. Control your content and its distribution, own your creativity and humanity. They're aiming to foster a new kind of economy around content creation (which Holochain would be suitable for with microtransfers). Video timestamp: https://youtu.be/Y8gXQankAu8?t=597.
 - [Comet](https://github.com/MightyAlex200/Comet). Holochain powered distributed Reddit-like application, with differences. "Because it is built on Holochain, Comet has no censorship or moderation, and can run on the devices of the users without the help of servers. Comet also replaces the idea of "subreddits" with tags, and allows posts to be created and crossposted with more than 1 tag. Perhaps the most interesting feature of Comet, though, is its voting system. Firstly, votes can be fractional, they range from -1 to 1. Votes are also not counted as "objective". The scores of posts and comments are always calculated from the perspective of a particular agent (the user). This agent will have upvoted and downvoted other posts from other people. The score is counted depending on how the agent has voted on the other voters in the past. This helps fight spam, vote manipulation, and helps maintain community in an otherwise lawless space." See also this [blog post](https://holochaincitizen.com/2018/09/05/comet-the-decentralized-reddit-killer-designed-to-end-moderator-abuse-and-sybil-attacks/) and https://youtu.be/Y8gXQankAu8?t=636.
 - [Junto](https://junto.foundation/). A social network designed for authenticity. See also https://holo.host/project/junto/.
-- [Core.Network](https://core.network/)
-- Haven (no links available)
-- [Holohouse](https://holohouse.org/)
-- [Allianceblock](https://allianceblock.io/)
-- [Orion](https://orionprotocol.io/)
+- [Core.Network](https://core.network/): a social network designed to unify all social networks into a single visual dashboard.
+- Haven: see https://www.youtube.com/watch?v=Y8gXQankAu8&t=809s.
+- [Holohouse](https://holohouse.org/): Coliving, Coworking and Coop, sustainable and with a purpose
+- [Allianceblock](https://allianceblock.io/): "The All-In-One Investment Ecosystem"
+- [Orion](https://orionprotocol.io/): a liquidity aggregator protocol. "A standard for connecting to centralized and decentralized exchanges, enabling an ecosystem of dApps to solve liquidity issues and price parity. The Orion Protocol enables cross chain trading, omni-exchange accessibility, and liquidity."
 - [Pacio’s](https://www.pacio.io/) [Tender](https://www.tender.buzz/). A zero-fee transaction platform for distributed apps, built on Holochain.
-- [Jala](https://jala.io/)
-- [Bizgees](https://www.bizgees.org/)
-- [bHive](https://bhive.coop/)
-- [Joatu](https://alpha.joatu.org/)
-- [2RowFlow](https://www.2rowflow.com/)
-- [Arcade City Realgame](https://arcade.city/). See also https://github.com/ArcadeCity/unter and https://forum.arcade.city/t/pivoting-upward/37. It's not clear whether the latest private implementation is built on Holochain—so it's best to assume that it's not.
-- [Infinite World Game](http://iwg.life/)
-- [Sacred Capital](https://www.sacred.capital/). See also [this blog post](https://holochaincitizen.com/2018/10/07/the-yin-and-yang-of-wealth-qa-with-the-founder-of-sacred-capital/).
-- [HoloREA](https://github.com/holo-rea). See also [this video](https://www.youtube.com/watch?v=Xy6TB0lbj_c).
-- [Cogov](http://cogov.startbutton.com/). See also http://cogov.tech/.
-- [Creafree](http://creafree.org/)
-- [Ulex](https://instituteforcompgov.org/ulex). See also https://physes.github.io/Ulex/ and https://ulex.app/.
+- [Jala](https://jala.io/): "A digital platform that makes participation in any venture verifiable, intuitive and automated without the need for intermediaries."
+- [Bizgees](https://www.bizgees.org/): Transforming refugees into entrepreneurs using FinTech.
+- [bHive](https://bhive.coop/): "The bHive Cooperative is a community owned person-to-person sharing economy platform being developed for Bendigo [bank] by a team of five local entrepreneurs. bHive is the future of work."
+- [Joatu](https://alpha.joatu.org/): skills and goods marketplace for local communities.
+- [2RowFlow](https://www.2rowflow.com/): "A Digital Commons for Treaty People in Canada"
+- [Arcade City Realgame](https://arcade.city/). A decentralized ride-sharing platform. See also https://github.com/ArcadeCity/unter and https://forum.arcade.city/t/pivoting-upward/37. It's not clear whether the latest closed-source implementation is built on Holochain—so it's best to assume that it's not.
+- [Infinite World Game](http://iwg.life/): "an operating system for humanity. A whole systems breakthrough in service to life.
+The Infinite World Game (IWG) is an unprecedented innovation. A vision and whole-systems platform for a society and world that does things differently.  Cocreative players in the IWG organise themselves as living cells in a planetary super-organism (or ‘Universal Fractal Organism’, UFO), where ‘thriveability’ is the new name of the game for humanity and the planet. Drawing on a new world view and the principles of living systems, the IWG moves beyond our current concepts of economics and social organisation and offers a fresh way to share and regulate resources, interrelate, develop innovations, realise ourselves and co-ordinate our intelligence. As we elevate our capacity as a species, the IWG reorganises our social processes to go beyond product and profitability alone towards a world where every action is creating more life, love and thriveability for all."
+- [Sacred Capital](https://www.sacred.capital/): infrastructure for building and exchanging reputational credit. See also [this blog post](https://holochaincitizen.com/2018/10/07/the-yin-and-yang-of-wealth-qa-with-the-founder-of-sacred-capital/).
+- [HoloREA](https://github.com/holo-rea): happ infrastructure that uses the [Resources, events, agents (REA) accounting model](https://en.wikipedia.org/wiki/Resources,_events,_agents_(accounting_model)), with an implementation based on the [ValueFlows](https://valueflo.ws/) protocol, and is built on [Holochain](https://holochain.org/). See also [this video](https://www.youtube.com/watch?v=Xy6TB0lbj_c).
+- [Cogov](http://cogov.startbutton.com/): a framework for experimentation with social system innovation. See also http://cogov.tech/.
+- [Creafree](http://creafree.org/): "Creafree registers, publishes and promotes creations to better meet the needs of the 21st century."
+- [Ulex](https://instituteforcompgov.org/ulex): an open source legal system. "In the case of Ulex, the “software” is not necessarily code (although you can access Tom W Bell’s Ulex Gitrepository here), rather they are rules that a legal system can operate under. Because Ulex is open source, its foundation is not tied to any one country and can be used in different jurisdictions. The goal of Ulex is to foster an open source community that creates and tries different variants of Ulex. Ulex protects human rights with an efficient and fair dispute resolution process, promoting the rule of law. It is not imposed by any one government, but instead is adopted by the mutual consent of those it governs. " See also https://physes.github.io/Ulex/ and https://ulex.app/.
 
 ### See also
 - [this video: 37 Projects Building on Holochain](https://youtu.be/Y8gXQankAu8).

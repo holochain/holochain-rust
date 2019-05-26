@@ -10,14 +10,14 @@ use hdk::{
         signature::{Provenance, Signature},
     },
     holochain_wasm_utils::api_serialization::{
+        commit_entry::CommitEntryOptions,
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
-        commit_entry::CommitEntryOptions,
         get_links::{GetLinksOptions, GetLinksResult},
         QueryArgsOptions, QueryResult,
     },
-    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN, PROPERTIES,
+    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN,
 };
 
 use memo::Memo;
@@ -198,19 +198,17 @@ fn check_claim_against_grant(claim: &Address, provenance: Provenance, payload: S
         Err(_) => return false,
     };
     match result {
-        QueryResult::Entries(entries) => {
-            entries
-                .iter()
-                .filter(|(addr, _)| claim == addr)
-                .find(|(_, entry)| match entry {
-                    Entry::CapTokenGrant(ref grant) => match grant.assignees() {
-                        Some(assignees) => assignees.contains(&provenance.source()),
-                        None => false,
-                    },
-                    _ => false,
-                })
-                .is_some()
-        }
+        QueryResult::Entries(entries) => entries
+            .iter()
+            .filter(|(addr, _)| claim == addr)
+            .find(|(_, entry)| match entry {
+                Entry::CapTokenGrant(ref grant) => match grant.assignees() {
+                    Some(assignees) => assignees.contains(&provenance.source()),
+                    None => false,
+                },
+                _ => false,
+            })
+            .is_some(),
         _ => false,
     }
 }
@@ -345,9 +343,11 @@ pub fn handle_create_tagged_post(content: String, tag: String) -> ZomeApiResult<
     Ok(address)
 }
 
-pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Address>,
-                                        counter_signature: Provenance) -> ZomeApiResult<Address> {
-
+pub fn handle_create_post_countersigned(
+    content: String,
+    in_reply_to: Option<Address>,
+    counter_signature: Provenance,
+) -> ZomeApiResult<Address> {
     let entry = post_entry(content);
 
     let options = CommitEntryOptions::new(vec![counter_signature]);
@@ -364,7 +364,6 @@ pub fn handle_create_post_countersigned(content: String, in_reply_to: Option<Add
 
     Ok(address)
 }
-
 
 pub fn handle_create_post_with_agent(
     agent_id: Address,
@@ -505,7 +504,10 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
     }
 }
 
-pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<Address> {
+pub fn handle_recommend_post(
+    post_address: Address,
+    agent_address: Address,
+) -> ZomeApiResult<Address> {
     hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
     hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
     hdk::link_entries(&agent_address, &post_address, "recommended_posts", "")
@@ -524,14 +526,21 @@ pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<En
         "get_post",
         json!({
             "post_address": post_address,
-        }).into()
+        })
+        .into(),
     )?;
 
-    hdk::debug(format!("********DEBUG******** BRIDGING RAW response from test-bridge {:?}", raw_json))?;
+    hdk::debug(format!(
+        "********DEBUG******** BRIDGING RAW response from test-bridge {:?}",
+        raw_json
+    ))?;
 
-    let entry : Option<Entry> = raw_json.try_into()?;
+    let entry: Option<Entry> = raw_json.try_into()?;
 
-    hdk::debug(format!("********DEBUG******** BRIDGING ACTUAL response from hosting-bridge {:?}", entry))?;
+    hdk::debug(format!(
+        "********DEBUG******** BRIDGING ACTUAL response from hosting-bridge {:?}",
+        entry
+    ))?;
 
     Ok(entry)
 }

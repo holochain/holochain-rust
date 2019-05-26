@@ -193,7 +193,7 @@ scenario1.runTape('create_tagged_post and retrieve all tags', async (t, { alice 
     tag: "work"
   })
   t.ok(result1.Ok)
-  
+
   const result2 = await alice.callSync("blog", "create_tagged_post", {
     content: "Fly tying, is it for you?",
     tag: "fishing"
@@ -213,7 +213,7 @@ scenario1.runTape('create_tagged_post and retrieve exact tag match', async (t, {
     tag: "work"
   })
   t.ok(result1.Ok)
-  
+
   const result2 = await alice.callSync("blog", "create_tagged_post", {
     content: "Fly tying, is it for you?",
     tag: "fishing"
@@ -233,7 +233,7 @@ scenario1.runTape('tagged link validation', async (t, { alice }) => {
     tag: "muffins"
   })
   t.ok(result1.Err)  // the linking of the entry should fail because `muffins` is the banned tag
-  
+
   const getResult = await alice.callSync("blog", "my_posts", {})
   t.equal(getResult.Ok.links.length, 0)
 })

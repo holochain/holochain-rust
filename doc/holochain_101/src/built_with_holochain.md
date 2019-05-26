@@ -9,17 +9,16 @@ Please click "suggest an edit", and add something you built with Holochain to th
 - [HoloVault](https://github.com/holochain/holochain-ui/tree/develop/dna-src/holo-vault)
 - [Simple App](https://github.com/holochain/simple-app)
 - [Todo List tutorial](https://github.com/willemolding/holochain-rust-todo)
-- [Hylo on Holochain](https://github.com/Hylozoic/hylo-holo-dnas)
-- [Coolcats2](https://github.com/pythagorean/coolcats2)
+- [Hylo](https://www.hylo.com/). See also https://github.com/Hylozoic/hylo-holo-dnas.
+- [Coolcats2](https://github.com/pythagorean/coolcats2): happ intended to replace Twitter.
 - [Learn Using Test Driven Development](https://github.com/holochain/dev-camp-tests-rust)
-- [Holo](https://holo.host/) (people often confuse Holo and Holochain. To make it clear they are not the same thing, Holo is actually a hosting app, not the same thing as Holochain, the framework)
+- [Holo](https://holo.host/). (People often confuse Holo and Holochain. To make it clear they are not the same thing, Holo is actually a web hosting happ, built on Holochain, to make it easier to bridge users to Holochain via web apps without having to know anything about Holochain, or do anything with it. It is not the same thing as Holochain, the agent-centric distributed app framework with unlimited scalability, or with scalability at least proportional to the number of nodes, with the limit on that number only being constrained by physics, number of computers,).
 - [Producer’s Market](https://www.producersmarket.com/). See also [this blog post](https://holochaincitizen.com/2018/09/15/why-did-this-agricultural-supply-chain-start-up-choose-holochain-over-stellar-ethereum-and-hashgraph/).
 - [Morpheus Network](https://morpheus.network/)
 - [Holosupply](http://www.holosupply.io/)
 - [Hypergroove](https://www.hypergroove.co.uk/)
 - [Redgrid](https://redgrid.io/). See also https://holo.host/project/redgrid/.
 - [Metavents](https://www.metavents.com/)
-- [Hylo](https://www.hylo.com/)
 - [Bridgit](https://beta.bridgit.io/) / [Crowdfact](http://crowdfact.io/) 
 - [Scribe](https://github.com/iPlumb3r/Th3Sr1b3Pr0j3ct)
 - [Prtcl (The Underscore Protocol)](http://www.uprtcl.io/)
@@ -30,7 +29,6 @@ Please click "suggest an edit", and add something you built with Holochain to th
 - [Comet](https://github.com/MightyAlex200/Comet). See also this [blog post](https://holochaincitizen.com/2018/09/05/comet-the-decentralized-reddit-killer-designed-to-end-moderator-abuse-and-sybil-attacks/).
 - [Junto](https://junto.foundation/). See also https://holo.host/project/junto/.
 - [Core.Network](https://core.network/)
-- [Coolcats](https://github.com/pythagorean/coolcats2)
 - Haven (no links available)
 - [Holohouse](https://holohouse.org/)
 - [Allianceblock](https://allianceblock.io/)

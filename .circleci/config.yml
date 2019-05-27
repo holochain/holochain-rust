@@ -84,7 +84,14 @@ jobs:
    - run:
        name: nodejs conductor tests
        command: nix-shell --run hc-conductor-node-test
-  
+
+ cluster-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+
    - run:
        name: app spec cluster tests
        command: nix-shell --run hc-app-spec-cluster-test

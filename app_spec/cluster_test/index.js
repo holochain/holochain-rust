@@ -28,7 +28,9 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
       enteringShutdown = true
       console.log('after 5 seconds, all nodes should be holding all entries and all links')
       console.log(`There are only ${countHolding} after 5 seconds.`)
-      await cluster.shutdown()
+      try {
+        await cluster.shutdown()
+      } catch (e) {}
       process.exit(1) // failure status code
     }
   }, 5000)
@@ -42,7 +44,9 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
     if (countHolding === numConductors * 2 && !enteringShutdown) {
       enteringShutdown = true
       console.log('All nodes are successfully HOLDing all entries they should be.')
-      await cluster.shutdown()
+      try {
+        await cluster.shutdown()
+      } catch (e) {}
       process.exit() // success status code
     }
   }))

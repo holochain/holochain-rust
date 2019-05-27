@@ -400,6 +400,10 @@ pub struct InstanceConfiguration {
     pub dna: String,
     pub agent: String,
     pub storage: StorageConfiguration,
+    #[serde(default)]
+    pub genesis_params: JsonString,
+    #[serde(default)]
+    pub init_params: JsonString,
 }
 
 /// This configures the Content Addressable Storage (CAS) that
@@ -1206,6 +1210,29 @@ pub mod tests {
                 "Instance configuration \"bogus instance\" not found, mentioned in dpki"
                     .to_string()
             )
+        );
+    }
+
+    #[test]
+    fn test_instance_config() {
+        let toml = r#"
+        id = "some_instance"
+        dna = "some_dna"
+        agent = "test agent"
+        genesis_params = "{'genesis_field': 'some_value'}"
+        init_params = "{'init_field': 'some_value'}"
+            [storage]
+            type = "file"
+            path = "deepkey_storage"
+        "#;
+        let config = load_configuration::<InstanceConfiguration>(&toml).unwrap();
+        assert_eq!(
+            config.genesis_params,
+            JsonString::from(r#"{'genesis_field': 'some_value'}"#)
+        );
+        assert_eq!(
+            config.init_params,
+            JsonString::from(r#"{'init_field': 'some_value'}"#)
         );
     }
 }

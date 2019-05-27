@@ -9,6 +9,7 @@ use crate::{
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
 use holochain_core_types::{
+    json::JsonString,
     cas::content::AddressableContent, error::HolochainError, hash::HashString,
 };
 use json_patch;
@@ -198,6 +199,8 @@ impl ConductorAdmin for Conductor {
                     ))?
                     .into(),
             },
+            genesis_params: JsonString::default(),
+            init_params: JsonString::default(),
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency()?;
@@ -662,7 +665,9 @@ id = 'test-dna'"#
         r#"[[instances]]
 agent = 'test-agent-1'
 dna = 'test-dna'
+genesis_params = '{}'
 id = 'test-instance-1'
+init_params = '{}'
 
 [instances.storage]
 type = 'memory'"#
@@ -673,7 +678,9 @@ type = 'memory'"#
         r#"[[instances]]
 agent = 'test-agent-2'
 dna = 'test-dna'
+genesis_params = '{}'
 id = 'test-instance-2'
+init_params = '{}'
 
 [instances.storage]
 type = 'memory'"#
@@ -1032,7 +1039,9 @@ id = 'new-dna'"#,
                 r#"[[instances]]
 agent = 'test-agent-1'
 dna = 'new-dna'
-id = 'new-instance'"#,
+genesis_params = '{}'
+id = 'new-instance'
+init_params = '{}'"#,
             ),
         );
 
@@ -1340,7 +1349,9 @@ id = 'new-dna'"#,
                 r#"[[instances]]
 agent = 'test-agent-1'
 dna = 'new-dna'
-id = 'new-instance-2'"#,
+genesis_params = '{}'
+id = 'new-instance-2'
+init_params = '{}'"#,
             ),
         );
 

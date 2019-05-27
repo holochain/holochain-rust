@@ -10,15 +10,15 @@ let
 
     core = {
      version = {
-      previous = "0.0.15-alpha1";
-      current = "0.0.16-alpha1";
+      previous = "0.0.16-alpha1";
+      current = "0.0.17-alpha1";
      };
     };
 
     node-conductor = {
      version = {
-      previous = "0.4.14-alpha1";
-      current = "0.4.15-alpha1";
+      previous = "0.4.15-alpha1";
+      current = "0.4.16-alpha1";
      };
     };
 

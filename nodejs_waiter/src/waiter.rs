@@ -158,7 +158,7 @@ impl Waiter {
     pub fn process_signal(&mut self, sig: Signal) {
         let num_instances = self.num_instances;
         match sig {
-            Signal::Internal(ref aw) => {
+            Signal::Trace(ref aw) => {
                 let aw = aw.clone();
                 match (self.current_checker(), aw.action().clone()) {
                     // Pair every `SignalZomeFunctionCall` with one `ReturnZomeFunctionResult`
@@ -377,7 +377,7 @@ mod tests {
     use std::sync::mpsc::sync_channel;
 
     fn sig(a: Action) -> Signal {
-        Signal::Internal(ActionWrapper::new(a))
+        Signal::Trace(ActionWrapper::new(a))
     }
 
     fn mk_entry(ty: &'static str, content: &'static str) -> Entry {
@@ -594,7 +594,8 @@ mod tests {
         let link_add = LinkData::new_add(
             &"base".to_string().into(),
             &"target".to_string().into(),
-            "tag",
+            "link-type",
+            "link-tag",
         );
         let entry = Entry::LinkAdd(link_add.clone());
         let entry_wh = mk_entry_wh(entry.clone());

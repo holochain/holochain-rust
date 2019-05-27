@@ -7,7 +7,7 @@ use std::thread;
 #[derive(Clone, Debug, Serialize, DefaultJson)]
 #[serde(tag = "signal_type")]
 pub enum Signal {
-    Internal(ActionWrapper),
+    Trace(ActionWrapper),
     User(JsonString),
 }
 

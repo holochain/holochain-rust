@@ -15,9 +15,7 @@ use hdk::{
 <<<<<<< HEAD
     AGENT_ADDRESS,
     DNA_ADDRESS,
-=======
     api::G_MEM_STACK,
->>>>>>> 2bfdf915c112afadf43fa0223eaacdfd9f5f2fb0
     error::{ZomeApiError, ZomeApiResult},
     global_fns::init_global_memory,
 };

@@ -217,6 +217,7 @@ workflows:
    - build
    - fmt
    - app-spec-tests
+   - cluster-tests
    - cli-tests
    - wasm-conductor-tests
 

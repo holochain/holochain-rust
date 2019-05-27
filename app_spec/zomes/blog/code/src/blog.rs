@@ -129,13 +129,15 @@ fn is_my_friend(addr: Address) -> bool {
     addr == Address::from(BOB_AGENT_ID)
 }
 
-pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
+pub fn handle_request_post_grant() -> ZomeApiResult<Address> {
+
     // we may want to extend the testing conductor to be able to make calls with
-    // arbitrary provenances.  If so we could get the caller we want from the
-    // CAPABILITY_REQ global like this:
+    // arbitrary provenances.  If so we would be granting this capability to the
+    // caller using the CAPABILITY_REQ global like this:
     //    let addr = CAPABILITY_REQ.provenance.source();
     // but it doesn't work yet so for this test we are hard-coding the "friend"" to bob
-    let addr = Address::from(BOB_AGENT_ID);
+
+    hdk::grant_capability("can-post",vec![Address::from(BOB_AGENT_ID)])
 
     if is_my_friend(addr.clone()) {
         let mut functions = BTreeMap::new();

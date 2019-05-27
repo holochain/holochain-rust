@@ -17,6 +17,7 @@ pub mod keystore;
 pub mod link_entries;
 pub mod query;
 pub mod receive;
+pub mod validate_grant;
 pub mod send;
 pub mod sign;
 mod update_entry;

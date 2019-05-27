@@ -5,13 +5,14 @@ pub mod genesis;
 pub mod links_utils;
 pub mod receive;
 pub mod validation_package;
+pub mod validate_grant;
 
 use crate::{
     context::Context,
     nucleus::{
         ribosome::{
             self,
-            callback::{genesis::genesis, receive::receive},
+            callback::{genesis::genesis, receive::receive, validate_grant::validate_grant},
             runtime::WasmCallData,
             Defn,
         },
@@ -25,7 +26,7 @@ use holochain_core_types::{
     validation::ValidationPackageDefinition,
 };
 use holochain_wasm_utils::{
-    api_serialization::receive::ReceiveParams, memory::allocation::WasmAllocation,
+    api_serialization::{receive::ReceiveParams, validate_grant::ValidateGrantParams}, memory::allocation::WasmAllocation,
 };
 use num_traits::FromPrimitive;
 use serde_json;
@@ -46,6 +47,10 @@ pub enum Callback {
 
     /// receive(from: Address, message: String) -> String
     Receive,
+
+    /// validate_grant(capability_id: String, assignees: Vec<Address>) -> Result<<Vec<String>,HolochainError>
+    ValidateGrant,
+
 }
 
 impl FromStr for Callback {
@@ -54,6 +59,7 @@ impl FromStr for Callback {
         match s {
             "genesis" => Ok(Callback::Genesis),
             "receive" => Ok(Callback::Receive),
+            "validate_grant" => Ok(Callback::ValidateGrant),
             other if other.is_empty() => Ok(Callback::MissingNo),
             _ => Err("Cannot convert string to Callback"),
         }
@@ -76,6 +82,7 @@ impl Callback {
             // @TODO call this from somewhere
             // @see https://github.com/holochain/holochain-rust/issues/201
             Callback::Receive => receive,
+            Callback::ValidateGrant => validate_grant,
         }
     }
 }
@@ -86,6 +93,7 @@ impl Defn for Callback {
             Callback::MissingNo => "",
             Callback::Genesis => "genesis",
             Callback::Receive => "receive",
+            Callback::Receive => "validate_grant",
         }
     }
 
@@ -109,6 +117,7 @@ pub enum CallbackParams {
     Genesis,
     ValidateCommit(Entry),
     Receive(ReceiveParams),
+    ValidateGrant(ValidateGrantParams),
 }
 
 impl ToString for CallbackParams {
@@ -119,6 +128,7 @@ impl ToString for CallbackParams {
                 String::from(JsonString::from(serialized_entry.to_owned()))
             }
             CallbackParams::Receive(params) => JsonString::from(params).to_string(),
+            CallbackParams::ValidateGrant(params) => JsonString::from(params).to_string(),
         }
     }
 }
@@ -130,6 +140,7 @@ pub enum CallbackResult {
     NotImplemented(String),
     ValidationPackageDefinition(ValidationPackageDefinition),
     ReceiveResult(String),
+    ValidateGrantResult(Result<Vec<String>,HolochainError>),
 }
 
 impl From<CallbackResult> for JsonString {
@@ -310,6 +321,10 @@ pub mod tests {
             Callback::Receive,
             Callback::from_str("receive").expect("string literal should be valid callback")
         );
+        assert_eq!(
+            Callback::ValidateGrant,
+            Callback::from_str("validate_grant").expect("string literal should be valid callback")
+        );
 
         assert_eq!(
             "Cannot convert string to Callback",
@@ -324,12 +339,13 @@ pub mod tests {
             (Callback::MissingNo, ""),
             (Callback::Genesis, "genesis"),
             (Callback::Receive, "receive"),
+            (Callback::ValidateGrant, "validate_grant"),
         ] {
             assert_eq!(output, input.as_str());
         }
 
         // str_to_index()
-        for (input, output) in vec![("", 0), ("genesis", 1), ("receive", 2)] {
+        for (input, output) in vec![("", 0), ("genesis", 1), ("receive", 2), ("validate_grant", 3)] {
             assert_eq!(output, Callback::str_to_index(input));
         }
 
@@ -338,6 +354,7 @@ pub mod tests {
             (0, Callback::MissingNo),
             (1, Callback::Genesis),
             (2, Callback::Receive),
+            (3, Callback::ValidateGrant),
         ] {
             assert_eq!(output, Callback::from_index(input));
         }

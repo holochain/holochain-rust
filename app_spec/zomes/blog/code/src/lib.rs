@@ -27,19 +27,6 @@ use hdk::{
     },
 };
 
-//happens inside core
-let token = hdk::commit_capability_grant(
-    "test-bridge",
-    CapabilityType::Assigned,
-    Some(vec![assignee]),
-    functions,
-)?;
-
-
-fn handle_bridge_init_caller(grantor: Address, claim: Address) -> ZomeApiResult<()> {
-    hdk::commit_capability_claim("test-bridge", grantor, claim)
-}
-
 define_zome! {
 
     entries: [
@@ -55,27 +42,25 @@ define_zome! {
         blog::handle_receive(from, JsonString::from_json(&msg_json))
     }
 
-
-    grant_validation: |capability_id, assignees| -> ZomeApiResult<Vec<String>> {
+    // validate_grant gets called for all grants initiated by bridge initialization, or
+    // by calls to `hdk::grant_capability`.  For grants initiated by bridging, the capability_id
+    // will be the bridge handle as defined in the DNA.
+    validate_grant: |capability_id, assignees| {
         match capability_id {
-            "test-bridge", "can_post" => Ok(vec!["create_post".to_string()]),
-            _ => Err(),
+            "test-bridge" => Ok(vec!["create_post".into(),"update_post".into()]),
+            "can-post" => {
+                for addr in assignees {
+                    if !blog::is_my_friend(addr) {
+                        return Err(HolochainError::ValidationFailed(format!("assignee not allowed: {}", addr)));
+                    }
+                }
+                Ok(vec!["create_post".to_string()])
+            },
+            _ => Err(HolochainError::ValidationFailed(format!("unknown capability id: {}", capability_id)),
         }
     }
 
     functions: [
-
-        bridge_init_callee: {
-            inputs: | assignee: Address |,
-            outputs: |token: ZomeApiResult<Address>|,
-            handler: blog::handle_bridge_init_callee
-        }
-
-        bridge_init_caller: {
-            inputs: | token: Address |,
-            outputs: | ZomeApiResult<()>|,
-            handler: blog::handle_bridge_init_caller
-        }
 
         show_env: {
             inputs: | |,

@@ -19,7 +19,6 @@ struct ReceiveReturnValue(Result<String, String>);
 pub fn receive(
     context: Arc<Context>,
     zome: &str,
-    // we ignore params for genesis
     parameters: &CallbackParams,
 ) -> CallbackResult {
     let params = match parameters {

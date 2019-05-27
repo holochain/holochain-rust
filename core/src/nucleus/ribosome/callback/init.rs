@@ -92,7 +92,7 @@ pub mod tests {
         assert!(instance.is_err());
         let error = instance.err().unwrap();
         assert_eq!(
-            "At least one zome init returned error: [(\"test_zome\", \"\\\"\")]".to_string(),
+            "At least one zome init returned error: [(\"test_zome\", \"{\")]".to_string(),
             error
         );
     }

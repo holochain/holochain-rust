@@ -373,7 +373,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             HolochainInstanceError::from(HolochainError::ErrorGeneric(
-                "At least one zome init returned error: [(\"test_zome\", \"{\\\"Init\\\":\\\"\")]"
+                "At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]"
                     .to_string()
             )),
             result.err().unwrap(),

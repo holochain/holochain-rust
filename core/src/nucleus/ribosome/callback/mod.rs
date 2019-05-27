@@ -25,7 +25,7 @@ use holochain_core_types::{
     validation::ValidationPackageDefinition,
 };
 use holochain_wasm_utils::{
-    api_serialization::receive::ReceiveParams, memory::allocation::WasmAllocation,
+    api_serialization::{receive::ReceiveParams, init::InitParams}, memory::allocation::WasmAllocation,
 };
 use num_traits::FromPrimitive;
 use serde_json;
@@ -41,7 +41,7 @@ pub enum Callback {
     /// Error index for unimplemented functions
     MissingNo = 0,
 
-    /// init() -> bool
+    /// init(params: JsonString) -> ()
     Init,
 
     /// receive(from: Address, message: String) -> String
@@ -106,7 +106,7 @@ impl Defn for Callback {
 
 #[derive(Debug, Serialize, Deserialize, DefaultJson)]
 pub enum CallbackParams {
-    Init,
+    Init(InitParams),
     ValidateCommit(Entry),
     Receive(ReceiveParams),
 }
@@ -114,7 +114,7 @@ pub enum CallbackParams {
 impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
-            CallbackParams::Init => String::new(),
+            CallbackParams::Init(params) => JsonString::from(params).to_string(),
             CallbackParams::ValidateCommit(serialized_entry) => {
                 String::from(JsonString::from(serialized_entry.to_owned()))
             }

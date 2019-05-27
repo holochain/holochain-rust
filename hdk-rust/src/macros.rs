@@ -213,7 +213,7 @@ macro_rules! define_zome {
             $( $entry_expr:expr ),*
         ]
 
-        init : || {
+        init : | $init_params:ident : JsonString | {
             $init_expr:expr
         }
 
@@ -265,11 +265,15 @@ macro_rules! define_zome {
                 ).into();
             }
 
-            fn execute() -> Result<(), String> {
+            // Deserialize input
+            let input = load_json!(encoded_allocation_of_input);
+
+            fn execute(input: $crate::holochain_wasm_utils::api_serialization::init::InitParams) -> Result<(), String> {
+                let $init_params = input.params;
                 $init_expr
             }
 
-            match execute() {
+            match execute(input) {
                 Ok(_) => hdk::holochain_core_types::error::RibosomeEncodedValue::Success.into(),
                 Err(e) => $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
                     $crate::global_fns::write_json(

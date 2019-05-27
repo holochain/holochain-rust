@@ -9,7 +9,7 @@ use holochain_conductor_api::{
     keystore::PRIMARY_KEYBUNDLE_ID,
     logger::LogRules,
 };
-use holochain_core_types::agent::AgentId;
+use holochain_core_types::{agent::AgentId, json::JsonString};
 use std::{fs, path::PathBuf};
 
 /// Starts a minimal configuration Conductor with the current application running
@@ -152,6 +152,8 @@ fn instance_configuration(storage: StorageConfiguration) -> InstanceConfiguratio
         dna: DNA_CONFIG_ID.into(),
         agent: AGENT_CONFIG_ID.into(),
         storage,
+        genesis_params: JsonString::empty_object(),
+        init_params: JsonString::empty_object(),
     }
 }
 
@@ -234,6 +236,7 @@ mod tests {
     // use std::{env, process::Command, path::PathBuf};
     use holochain_conductor_api::config::*;
     use std::path::PathBuf;
+    use holochain_core_types::json::JsonString;
 
     #[test]
     // flagged as broken for:
@@ -321,6 +324,8 @@ mod tests {
                 dna: "hc-run-dna".to_string(),
                 agent: "hc-run-agent".to_string(),
                 storage: StorageConfiguration::Memory,
+                init_params: JsonString::empty_object(),
+                genesis_params: JsonString::empty_object(),
             }
         )
     }

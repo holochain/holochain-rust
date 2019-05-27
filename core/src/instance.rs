@@ -378,6 +378,7 @@ pub mod tests {
                 test_memory_network_config(network_name),
                 None,
                 None,
+                None,
             )),
             logger,
         )
@@ -417,6 +418,7 @@ pub mod tests {
                         .unwrap(),
                 )),
                 test_memory_network_config(network_name),
+                None,
             )
             .unwrap(),
         )
@@ -438,6 +440,7 @@ pub mod tests {
                     .unwrap(),
             )),
             test_memory_network_config(network_name),
+            None,
             None,
             None,
         );
@@ -462,6 +465,7 @@ pub mod tests {
                     .unwrap(),
             )),
             test_memory_network_config(network_name),
+            None,
             None,
             None,
         );

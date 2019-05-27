@@ -54,6 +54,12 @@ impl JsonString {
     }
 }
 
+impl Default for JsonString {
+    fn default() -> Self {
+        Self::empty_object()
+    }
+}
+
 impl From<bool> for JsonString {
     fn from(u: bool) -> JsonString {
         default_to_json(u)

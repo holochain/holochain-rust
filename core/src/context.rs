@@ -26,6 +26,7 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
+    dna::params::DnaParams,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};
@@ -47,6 +48,7 @@ use test_utils::mock_signing::mock_conductor_api;
 #[derive(Clone)]
 pub struct Context {
     pub agent_id: AgentId,
+    pub params: Option<DnaParams>,
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
@@ -99,6 +101,7 @@ impl Context {
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
+        params: Option<DnaParams>,
     ) -> Self {
         Context {
             agent_id: agent_id.clone(),
@@ -116,6 +119,7 @@ impl Context {
                 conductor_api,
                 agent_id,
             )),
+            params,
         }
     }
 
@@ -129,6 +133,7 @@ impl Context {
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         p2p_config: P2pConfig,
+        params: Option<DnaParams>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id: agent_id.clone(),
@@ -143,6 +148,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
+            params,
         })
     }
 
@@ -352,6 +358,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            None,
         );
 
         assert!(maybe_context.state().is_none());
@@ -383,6 +390,7 @@ pub mod tests {
                     .unwrap(),
             )),
             P2pConfig::new_with_unique_memory_backend(),
+            None,
             None,
             None,
         );

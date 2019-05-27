@@ -18,7 +18,7 @@ fn handle_call_bridge() -> JsonString {
 define_zome! {
     entries: []
 
-    init: || {
+    init: |_params: JsonString| {
         Ok(())
     }
 

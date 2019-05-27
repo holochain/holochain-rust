@@ -11,7 +11,7 @@ use holochain_core::{
 };
 use holochain_core_types::{
     agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
-    error::HolochainError,
+    error::HolochainError, dna::params::DnaParams,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::IoHandler;
@@ -41,6 +41,7 @@ pub struct ContextBuilder {
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
+    params: Option<DnaParams>,
 }
 
 impl ContextBuilder {
@@ -54,6 +55,7 @@ impl ContextBuilder {
             p2p_config: None,
             conductor_api: None,
             signal_tx: None,
+            params: None,
         }
     }
 
@@ -131,6 +133,11 @@ impl ContextBuilder {
         self
     }
 
+    pub fn with_dna_params(mut self, params: DnaParams) -> Self {
+        self.params = Some(params);
+        self
+    }
+
     /// Actually creates the context.
     /// Defaults to memory storages, an in-memory network config and a fake agent called "alice".
     /// The logger gets set to SimpleLogger.
@@ -156,6 +163,7 @@ impl ContextBuilder {
                 .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
+            self.params,
         )
     }
 }

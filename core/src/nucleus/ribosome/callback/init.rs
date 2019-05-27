@@ -1,17 +1,42 @@
-use super::call;
+use crate::nucleus::ribosome::callback::run_callback;
 use crate::{
     context::Context,
-    nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult},
+    nucleus::{
+        ribosome::callback::{Callback, CallbackParams, CallbackResult, Defn},
+        CallbackFnCall,
+    }
 };
+use holochain_core_types::{json::JsonString};
 use std::sync::Arc;
 
 pub fn init(
     context: Arc<Context>,
     zome: &str,
-    // we ignore params for init
-    params: &CallbackParams,
+    parameters: &CallbackParams,
 ) -> CallbackResult {
-    call(context, zome, &Callback::Init, params)
+    let params = match parameters {
+        CallbackParams::Init(params) => params,
+        _ => return CallbackResult::NotImplemented("init/0".into()),
+    };
+
+    let call = CallbackFnCall::new(
+        zome,
+        &Callback::Init.as_str().to_string(),
+        JsonString::from(params),
+    );
+    // had to reimplement parts of call here so I can JsonStringify the params
+
+    let dna = context.get_dna().expect("Callback called without DNA set!");
+    match dna.get_wasm_from_zome_name(zome) {
+        None => CallbackResult::NotImplemented("init/1".into()),
+        Some(wasm) => {
+            if wasm.code.is_empty() {
+                CallbackResult::NotImplemented("init/2".into())
+            } else {
+                run_callback(context.clone(), call)
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -25,6 +50,9 @@ pub mod tests {
             Defn,
         },
     };
+    use holochain_wasm_utils::{
+        api_serialization::init::InitParams,
+    };
 
     #[test]
     fn pass() {
@@ -34,7 +62,7 @@ pub mod tests {
             .expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test", netname));
 
-        let result = init(context, zome, &CallbackParams::Init);
+        let result = init(context, zome, &CallbackParams::Init(InitParams::default()));
 
         assert_eq!(CallbackResult::Pass, result);
     }
@@ -54,7 +82,7 @@ pub mod tests {
 
         let context = instance.initialize_context(test_context("test", netname));
 
-        let result = init(context, zome, &CallbackParams::Init);
+        let result = init(context, zome, &CallbackParams::Init(InitParams::default()));
 
         if let CallbackResult::NotImplemented(_) = result {
             ()

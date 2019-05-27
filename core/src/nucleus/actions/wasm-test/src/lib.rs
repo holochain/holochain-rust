@@ -160,9 +160,9 @@ define_zome! {
         )
     ]
 
-    init: || {
+    init: |_params: JsonString| {{
         Ok(())
-    }
+    }}
 
     functions: [
         test_fn: {

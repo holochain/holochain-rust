@@ -566,7 +566,7 @@ define_zome! {
         )
     ]
 
-    init: || {{
+    init: |_params: JsonString| {{
         // should be able to commit an entry
         let entry = Entry::App(
             "testEntryType".into(),

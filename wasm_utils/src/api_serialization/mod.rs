@@ -23,5 +23,6 @@ mod update_entry;
 pub mod validation;
 pub mod verify_signature;
 mod zome_api_globals;
+pub mod init;
 
 pub use self::{call::*, query::*, update_entry::*, zome_api_globals::*};

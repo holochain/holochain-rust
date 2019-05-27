@@ -30,6 +30,7 @@ pub mod fn_declarations;
 pub mod traits;
 pub mod wasm;
 pub mod zome;
+pub mod params;
 
 use crate::{
     cas::content::{AddressableContent, Content},

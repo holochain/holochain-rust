@@ -35,7 +35,7 @@ define_zome! {
         memo::definition()
     ]
 
-    init: || {{
+    init: |_params: JsonString| {{
         // should be able to commit an entry
         let entry = Entry::App(
             "post".into(),

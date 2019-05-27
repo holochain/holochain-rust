@@ -16,7 +16,7 @@ fn handle_sum(num1: u32, num2: u32) -> u32 {
 define_zome! {
     entries: []
 
-    init: || {
+    init: |_params: JsonString| {
         Ok(())
     }
 

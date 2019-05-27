@@ -311,6 +311,7 @@ id = 'test-bundle-id'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3001));
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,)

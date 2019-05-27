@@ -7,16 +7,34 @@ process.on('unhandledRejection', error => {
 
 const scenarioTest = async (numConductors = 2, debugging = false) => {
   const dnaPath = path.join(__dirname, '..', 'dist/app_spec.dna.json')
-  console.log(dnaPath)
   const instanceId = 'test-1'
 
+  // just creates the instance
   const cluster = new ConductorCluster(numConductors, { debugging })
+  // spawns the conductors and connects
+  // to their newly opened websocket connections
   await cluster.initialize()
+  // install the DNA and create an instance
+  // with the test agent already in each Conductor
   await cluster.batch(conductor => conductor.createDnaInstance(instanceId, dnaPath))
 
   let enteringShutdown = false
+
+  // wait a maximum of 5 seconds for
+  // all the expected signals to arrive
+  // otherwise consider it a timed out failure
+  setTimeout(async () => {
+    if (!enteringShutdown) {
+      enteringShutdown = true
+      console.log('after 5 seconds, all nodes should be holding all entries and all links')
+      console.log(`There are only ${countHolding} after 5 seconds.`)
+      await cluster.shutdown()
+      process.exit(1) // failure status code
+    }
+  }, 5000)
+
   let countHolding = 0
-  cluster.batch((c) => c.onSignal(async signal => {
+  cluster.batch(conductor => conductor.onSignal(async signal => {
     if (signal.action_type === "Hold") {
       countHolding++
     }
@@ -32,23 +50,16 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
   // calling this will trigger a flurry of actions/signals
   // including the Hold actions related to the Commits this function
   // invokes
-  await cluster.conductors[0].callZome(instanceId, 'blog', 'create_post')({
+  cluster.conductors[0].callZome(instanceId, 'blog', 'create_post')({
     content: 'hi',
     in_reply_to: null,
   })
-
-  setTimeout(async () => {
-    console.log('after 5 seconds, all nodes should be holding all entries and all links')
-    console.log(`There are only ${countHolding} after 5 seconds.`)
-    await cluster.shutdown()
-    process.exit(1) // failure status code
-  }, 5000)
 }
 
 // first argument is the number of nodes to run
 const optionalNumber = process.argv[2]
 
-// third argument is
+// second argument is whether to show debugging logs or not
 const optionalDebugging = process.argv[3]
 
 scenarioTest(optionalNumber, optionalDebugging)

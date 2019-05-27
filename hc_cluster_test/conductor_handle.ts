@@ -86,8 +86,11 @@ export default class ConductorHandle {
   }
 
   shutdown() {
-    return new Promise((resolve) => {
-      kill(this.handle.pid, resolve)
+    return new Promise((resolve, reject) => {
+      kill(this.handle.pid, (e) => {
+        if (e) reject(e)
+        else resolve()
+      })
     })
   }
 }

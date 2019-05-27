@@ -7,7 +7,7 @@ use crate::{
 };
 use hcid::*;
 use holochain_core_types::{agent::Base32, error::HcResult};
-use holochain_sodium::{kx, secbuf::SecBuf, sign};
+use lib3h_sodium::{kx, secbuf::SecBuf, sign};
 use serde_json::json;
 use std::str;
 
@@ -79,7 +79,7 @@ impl KeyPair for SigningKeyPair {
         // Generate keys
         let mut pub_sec_buf = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut priv_sec_buf = SecBuf::with_secure(sign::SECRETKEYBYTES);
-        holochain_sodium::sign::seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
+        lib3h_sodium::sign::seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
         // Convert and encode public key side
         let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, Self::codec())?;
         // Done
@@ -108,7 +108,7 @@ impl SigningKeyPair {
     /// @return {SecBuf} signature - Empty SecBuf to be filled with the signature
     pub fn sign(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
         let mut signature = SecBuf::with_insecure(SIGNATURE_SIZE);
-        holochain_sodium::sign::sign(data, &mut self.private, &mut signature)?;
+        lib3h_sodium::sign::sign(data, &mut self.private, &mut signature)?;
         Ok(signature)
     }
 
@@ -118,7 +118,7 @@ impl SigningKeyPair {
     /// @return true if verification succeeded
     pub fn verify(&mut self, data: &mut SecBuf, signature: &mut SecBuf) -> bool {
         let mut pub_key = self.decode_pub_key_into_secbuf();
-        holochain_sodium::sign::verify(signature, data, &mut pub_key)
+        lib3h_sodium::sign::verify(signature, data, &mut pub_key)
     }
 }
 
@@ -150,7 +150,7 @@ impl KeyPair for EncryptingKeyPair {
         // Generate keys
         let mut pub_sec_buf = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
         let mut priv_sec_buf = SecBuf::with_secure(kx::SECRETKEYBYTES);
-        holochain_sodium::kx::seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
+        lib3h_sodium::kx::seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
         // Convert and encode public key side
         let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, Self::codec())?;
         // Done

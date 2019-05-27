@@ -15,7 +15,7 @@ use holochain_dpki::{
     SEED_SIZE,
 };
 
-use holochain_sodium::{
+use lib3h_sodium::{
     pwhash::{ALG_ARGON2ID13, MEMLIMIT_INTERACTIVE, OPSLIMIT_INTERACTIVE},
     secbuf::SecBuf,
 };

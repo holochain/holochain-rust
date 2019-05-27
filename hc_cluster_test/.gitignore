@@ -1,4 +1,5 @@
 dmg-mount
+**/*.js
 
 # Logs
 logs

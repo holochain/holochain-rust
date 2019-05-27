@@ -1,7 +1,4 @@
-
-
-const adminInterfaceId = "admin-interface"
-module.exports.adminInterfaceId = adminInterfaceId
-
-const dnaInterfaceId = "dna-interface"
-module.exports.dnaInterfaceId = dnaInterfaceId
+"use strict";
+exports.__esModule = true;
+exports.adminInterfaceId = "admin-interface";
+exports.dnaInterfaceId = "dna-interface";

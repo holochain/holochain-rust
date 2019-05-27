@@ -1,5 +1,5 @@
 const path = require('path')
-const { ConductorCluster } = require('../../hc_cluster_test')
+const ConductorCluster = require('../../hc_cluster_test').default
 
 process.on('unhandledRejection', error => {
   console.log('unhandledRejection', error.message);

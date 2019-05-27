@@ -25,7 +25,8 @@ use holochain_core_types::{
     validation::ValidationPackageDefinition,
 };
 use holochain_wasm_utils::{
-    api_serialization::{receive::ReceiveParams, init::InitParams}, memory::allocation::WasmAllocation,
+    api_serialization::{init::InitParams, receive::ReceiveParams},
+    memory::allocation::WasmAllocation,
 };
 use num_traits::FromPrimitive;
 use serde_json;

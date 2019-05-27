@@ -9,8 +9,7 @@ use crate::{
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
 use holochain_core_types::{
-    json::JsonString,
-    cas::content::AddressableContent, error::HolochainError, hash::HashString,
+    cas::content::AddressableContent, error::HolochainError, hash::HashString, json::JsonString,
 };
 use json_patch;
 use std::{
@@ -199,8 +198,8 @@ impl ConductorAdmin for Conductor {
                     ))?
                     .into(),
             },
-            genesis_params: JsonString::default(),
-            init_params: JsonString::default(),
+            genesis_params: JsonString::default().to_string(),
+            init_params: JsonString::default().to_string(),
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency()?;

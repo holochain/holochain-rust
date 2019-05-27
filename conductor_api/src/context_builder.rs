@@ -10,8 +10,8 @@ use holochain_core::{
     signal::SignalSender,
 };
 use holochain_core_types::{
-    agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
-    error::HolochainError, dna::params::DnaParams,
+    agent::AgentId, cas::storage::ContentAddressableStorage, dna::params::DnaParams,
+    eav::EntityAttributeValueStorage, error::HolochainError,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::IoHandler;

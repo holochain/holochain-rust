@@ -27,10 +27,10 @@ pub mod bridges;
 pub mod capabilities;
 pub mod entry_types;
 pub mod fn_declarations;
+pub mod params;
 pub mod traits;
 pub mod wasm;
 pub mod zome;
-pub mod params;
 
 use crate::{
     cas::content::{AddressableContent, Content},

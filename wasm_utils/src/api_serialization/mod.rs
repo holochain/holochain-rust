@@ -13,6 +13,7 @@ pub mod capabilities;
 pub mod commit_entry;
 pub mod get_entry;
 pub mod get_links;
+pub mod init;
 pub mod keystore;
 pub mod link_entries;
 pub mod query;
@@ -23,6 +24,5 @@ mod update_entry;
 pub mod validation;
 pub mod verify_signature;
 mod zome_api_globals;
-pub mod init;
 
 pub use self::{call::*, query::*, update_entry::*, zome_api_globals::*};

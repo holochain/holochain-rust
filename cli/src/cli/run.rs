@@ -152,8 +152,8 @@ fn instance_configuration(storage: StorageConfiguration) -> InstanceConfiguratio
         dna: DNA_CONFIG_ID.into(),
         agent: AGENT_CONFIG_ID.into(),
         storage,
-        genesis_params: JsonString::empty_object(),
-        init_params: JsonString::empty_object(),
+        genesis_params: JsonString::empty_object().to_string(),
+        init_params: JsonString::empty_object().to_string(),
     }
 }
 
@@ -235,8 +235,8 @@ mod tests {
     // use assert_cmd::prelude::*;
     // use std::{env, process::Command, path::PathBuf};
     use holochain_conductor_api::config::*;
-    use std::path::PathBuf;
     use holochain_core_types::json::JsonString;
+    use std::path::PathBuf;
 
     #[test]
     // flagged as broken for:
@@ -324,8 +324,8 @@ mod tests {
                 dna: "hc-run-dna".to_string(),
                 agent: "hc-run-agent".to_string(),
                 storage: StorageConfiguration::Memory,
-                init_params: JsonString::empty_object(),
-                genesis_params: JsonString::empty_object(),
+                init_params: JsonString::empty_object().to_string(),
+                genesis_params: JsonString::empty_object().to_string(),
             }
         )
     }

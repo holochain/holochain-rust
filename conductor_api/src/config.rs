@@ -401,9 +401,9 @@ pub struct InstanceConfiguration {
     pub agent: String,
     pub storage: StorageConfiguration,
     #[serde(default)]
-    pub genesis_params: JsonString,
+    pub genesis_params: String,
     #[serde(default)]
-    pub init_params: JsonString,
+    pub init_params: String,
 }
 
 /// This configures the Content Addressable Storage (CAS) that
@@ -1226,13 +1226,7 @@ pub mod tests {
             path = "deepkey_storage"
         "#;
         let config = load_configuration::<InstanceConfiguration>(&toml).unwrap();
-        assert_eq!(
-            config.genesis_params,
-            JsonString::from(r#"{'genesis_field': 'some_value'}"#)
-        );
-        assert_eq!(
-            config.init_params,
-            JsonString::from(r#"{'init_field': 'some_value'}"#)
-        );
+        assert_eq!(config.genesis_params, r#"{'genesis_field': 'some_value'}"#);
+        assert_eq!(config.init_params, r#"{'init_field': 'some_value'}"#);
     }
 }

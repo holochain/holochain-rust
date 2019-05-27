@@ -2,21 +2,15 @@ use crate::nucleus::ribosome::callback::run_callback;
 // use crate::nucleus::ribosome::callback::call;
 use crate::{
     context::Context,
-    nucleus::{
-        ribosome::callback::{Callback, CallbackParams, CallbackResult, CallbackFnCall, Defn},
-    }
+    nucleus::ribosome::callback::{Callback, CallbackFnCall, CallbackParams, CallbackResult, Defn},
 };
 use std::sync::Arc;
 
-pub fn init(
-    context: Arc<Context>,
-    zome: &str,
-    parameters: &CallbackParams,
-) -> CallbackResult {
+pub fn init(context: Arc<Context>, zome: &str, parameters: &CallbackParams) -> CallbackResult {
     // call(context, zome, &Callback::Init, parameters)
-    let params = match parameters { 
+    let params = match parameters {
         CallbackParams::Init(params) => params,
-        _ => return CallbackResult::NotImplemented("init/0".into())
+        _ => return CallbackResult::NotImplemented("init/0".into()),
     };
     let call = CallbackFnCall::new(zome, &Callback::Init.as_str().to_string(), params);
     let dna = context.get_dna().expect("Callback called without DNA set!");
@@ -43,9 +37,7 @@ pub mod tests {
             Defn,
         },
     };
-    use holochain_wasm_utils::{
-        api_serialization::init::InitParams,
-    };
+    use holochain_wasm_utils::api_serialization::init::InitParams;
 
     #[test]
     fn pass() {

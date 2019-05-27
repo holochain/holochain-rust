@@ -7,9 +7,9 @@ use holochain_conductor_api::{
     keystore::PRIMARY_KEYBUNDLE_ID,
     logger::LogRules,
 };
+use holochain_core_types::json::JsonString;
 use neon::prelude::*;
 use std::{collections::HashMap, path::PathBuf};
-use holochain_core_types::json::JsonString;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AgentData {
@@ -27,6 +27,10 @@ pub struct InstanceData {
     pub agent: AgentData,
     pub dna: DnaData,
     pub name: String,
+    #[serde(default)]
+    pub genesis_params: Option<String>,
+    #[serde(default)]
+    pub init_params: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -125,8 +129,10 @@ fn make_config(
             agent: agent_id,
             dna: dna_id,
             storage: StorageConfiguration::Memory,
-            init_params: JsonString::default(),
-            genesis_params: JsonString::default(),
+            init_params: instance.init_params
+                .unwrap_or(JsonString::default().to_string()),
+            genesis_params: instance.genesis_params
+                .unwrap_or(JsonString::default().to_string()),
         };
         instance_configs.push(instance);
     }

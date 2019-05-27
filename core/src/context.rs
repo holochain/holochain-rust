@@ -18,7 +18,7 @@ use holochain_core_types::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
-    dna::{wasm::DnaWasm, Dna},
+    dna::{params::DnaParams, wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
     entry::{
         cap_entries::{CapabilityType, ReservedCapabilityId},
@@ -26,7 +26,6 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
-    dna::params::DnaParams,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};

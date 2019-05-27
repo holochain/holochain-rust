@@ -1,12 +1,11 @@
 use crate::nucleus::ribosome::callback::run_callback;
+// use crate::nucleus::ribosome::callback::call;
 use crate::{
     context::Context,
     nucleus::{
-        ribosome::callback::{Callback, CallbackParams, CallbackResult, Defn},
-        CallbackFnCall,
+        ribosome::callback::{Callback, CallbackParams, CallbackResult, CallbackFnCall, Defn},
     }
 };
-use holochain_core_types::{json::JsonString};
 use std::sync::Arc;
 
 pub fn init(
@@ -14,18 +13,12 @@ pub fn init(
     zome: &str,
     parameters: &CallbackParams,
 ) -> CallbackResult {
-    let params = match parameters {
+    // call(context, zome, &Callback::Init, parameters)
+    let params = match parameters { 
         CallbackParams::Init(params) => params,
-        _ => return CallbackResult::NotImplemented("init/0".into()),
+        _ => return CallbackResult::NotImplemented("init/0".into())
     };
-
-    let call = CallbackFnCall::new(
-        zome,
-        &Callback::Init.as_str().to_string(),
-        JsonString::from(params),
-    );
-    // had to reimplement parts of call here so I can JsonStringify the params
-
+    let call = CallbackFnCall::new(zome, &Callback::Init.as_str().to_string(), params);
     let dna = context.get_dna().expect("Callback called without DNA set!");
     match dna.get_wasm_from_zome_name(zome) {
         None => CallbackResult::NotImplemented("init/1".into()),

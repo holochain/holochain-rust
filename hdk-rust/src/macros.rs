@@ -266,10 +266,12 @@ macro_rules! define_zome {
             }
 
             // Deserialize input
-            let input = load_json!(encoded_allocation_of_input);
+            let input: $crate::holochain_wasm_utils::api_serialization::init::InitParams = load_json!(encoded_allocation_of_input);
+
+            // let input = $crate::holochain_wasm_utils::api_serialization::init::InitParams::default();
 
             fn execute(input: $crate::holochain_wasm_utils::api_serialization::init::InitParams) -> Result<(), String> {
-                let $init_params = input.params;
+                let $init_params: JsonString = input.params;
                 $init_expr
             }
 

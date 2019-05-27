@@ -201,12 +201,18 @@ impl Conductor {
                         signal_tx.clone().map(|s| s.send(signal.clone()));
                         let broadcasters = broadcasters.read().unwrap();
                         let interfaces_with_instance: Vec<&InterfaceConfiguration> = match signal {
-                            // Send internal signals only to admin interfaces:
-                            Signal::Internal(_) => config
-                                .interfaces
-                                .iter()
-                                .filter(|interface_config| interface_config.admin)
-                                .collect(),
+                            // Send internal signals only to admin interfaces, if expose_trace_signals is set:
+                            Signal::Trace(_) => {
+                                if config.expose_trace_signals {
+                                    config
+                                        .interfaces
+                                        .iter()
+                                        .filter(|interface_config| interface_config.admin)
+                                        .collect()
+                                } else {
+                                    Vec::new()
+                                }
+                            }
 
                             // Pass through user-defined  signals to the according interfaces
                             // in which the source instance is exposed:
@@ -1551,11 +1557,11 @@ pub mod tests {
 
         assert!(received_signals.len() >= 3);
         assert!(received_signals[0]
-            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+            .starts_with("{\"signal\":{\"Trace\":\"SignalZomeFunctionCall(ZomeFnCall {"));
         assert!(received_signals[1]
-            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+            .starts_with("{\"signal\":{\"Trace\":\"SignalZomeFunctionCall(ZomeFnCall {"));
         assert!(received_signals[2].starts_with(
-            "{\"signal\":{\"Internal\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
+            "{\"signal\":{\"Trace\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
         ));
     }
 }

@@ -11,19 +11,15 @@ use std::{
 
 use holochain_conductor_api::{
     conductor::Conductor as RustConductor,
-    key_loaders::test_keystore_loader,
     config::{load_configuration, Configuration},
+    key_loaders::test_keystore_loader,
 };
 use holochain_core::{
     action::Action,
-    signal::{signal_channel, Signal, SignalReceiver},
     nucleus::actions::call_zome_function::make_cap_request_for_call,
+    signal::{signal_channel, Signal, SignalReceiver},
 };
-use holochain_core_types::{
-    cas::content::AddressableContent,
-    entry::Entry,
-    json::JsonString,
-};
+use holochain_core_types::{cas::content::AddressableContent, entry::Entry, json::JsonString};
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
 /// Block until Hold(agent.public_address) is seen for each agent in the conductor.
@@ -36,7 +32,7 @@ fn await_held_agent_ids(config: Configuration, signal_rx: &SignalReceiver) {
         .map(|c| c.public_address.to_string())
         .collect();
     loop {
-        if let Ok(Signal::Internal(aw)) = signal_rx.recv_timeout(Duration::from_millis(10)) {
+        if let Ok(Signal::Trace(aw)) = signal_rx.recv_timeout(Duration::from_millis(10)) {
             let action = aw.action();
             if let Action::Hold(EntryWithHeader {
                 entry: Entry::AgentId(id),

@@ -729,12 +729,12 @@ mod tests {
             let msg_publish = signal_rx
                 .recv_timeout(Duration::from_millis(timeout))
                 .expect("no more signals to receive (outer)");
-            if let Signal::Internal(Action::Publish(address)) = msg_publish {
+            if let Signal::Trace(Action::Publish(address)) = msg_publish {
                 loop {
                     let msg_hold = signal_rx
                         .recv_timeout(Duration::from_millis(timeout))
                         .expect("no more signals to receive (inner)");
-                    if let Signal::Internal(Action::Hold(entry)) = msg_hold {
+                    if let Signal::Trace(Action::Hold(entry)) = msg_hold {
                         assert_eq!(address, entry.address());
                         break 'outer;
                     }

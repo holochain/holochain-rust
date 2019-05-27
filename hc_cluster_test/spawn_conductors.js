@@ -86,7 +86,6 @@ const spawnConductor = (i, debugging) => {
   })
 }
 
-
 const spawnConductors = async (numberOfConductors, debugging) => {
   const promises = []
 

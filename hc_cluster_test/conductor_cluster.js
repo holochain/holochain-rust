@@ -11,7 +11,7 @@ class ConductorCluster {
     const conductorsArray = await spawnConductors(this.numConductors, this.options.debugging)
     console.log('spawnConductors completed')
     this.conductors = conductorsArray.map(conductorInfo => new ConductorHandle(conductorInfo))
-    return Promise.all(this.conductors.map(conductor => conductor.initialize()))
+    return this.batch(conductor => conductor.initialize())
   }
 
   batch(fn) {
@@ -19,7 +19,7 @@ class ConductorCluster {
   }
 
   shutdown() {
-    return this.batch(c => c.shutdown())
+    return this.batch(conductor => conductor.shutdown())
   }
 }
 module.exports.ConductorCluster = ConductorCluster

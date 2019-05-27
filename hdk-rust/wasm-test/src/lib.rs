@@ -12,7 +12,6 @@ extern crate holochain_core_types_derive;
 
 use boolinator::Boolinator;
 use hdk::{
-<<<<<<< HEAD
     AGENT_ADDRESS,
     DNA_ADDRESS,
     api::G_MEM_STACK,

@@ -84,6 +84,10 @@ jobs:
    - run:
        name: nodejs conductor tests
        command: nix-shell --run hc-conductor-node-test
+  
+   - run:
+       name: app spec cluster tests
+       command: nix-shell --run hc-app-spec-cluster-test
 
  cli-tests:
   docker:

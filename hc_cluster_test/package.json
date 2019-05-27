@@ -1,0 +1,12 @@
+{
+  "name": "hc_cluster_test",
+  "version": "0.0.1",
+  "description": "",
+  "main": "conductor_cluster.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@holochain/hc-web-client": "^0.4.1",
+    "tree-kill": "^1.2.1"
+  }
+}

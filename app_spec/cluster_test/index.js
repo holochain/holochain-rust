@@ -44,9 +44,8 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
       enteringShutdown = true
       console.log('All nodes are successfully HOLDing all entries they should be.')
       cluster.shutdown().finally(() => {
-        process.exit()
+        process.exit() // success status code
       })
-      process.exit() // success status code
     }
   }))
 

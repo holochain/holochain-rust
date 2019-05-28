@@ -13,7 +13,6 @@ members = [
   "hdk-proc-macros",
   "net",
   "nodejs_waiter",
-  "sodium",
   "dpki",
   "test_bin",
   "benchmarks"

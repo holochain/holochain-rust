@@ -1,6 +1,6 @@
 use crossbeam_channel::{unbounded, Sender};
 use holochain_core_types::error::HolochainError;
-use holochain_sodium::secbuf::SecBuf;
+use lib3h_sodium::secbuf::SecBuf;
 use std::{
     io::{self, Write},
     sync::{Arc, Mutex},

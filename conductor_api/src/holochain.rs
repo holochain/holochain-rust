@@ -12,7 +12,7 @@
 //! extern crate holochain_net;
 //! extern crate holochain_cas_implementations;
 //! extern crate holochain_dpki;
-//! extern crate holochain_sodium;
+//! extern crate lib3h_sodium;
 //! extern crate tempfile;
 //! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
@@ -24,7 +24,7 @@
 //!     signature::Signature,
 //! };
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
-//! use holochain_sodium::secbuf::SecBuf;
+//! use lib3h_sodium::secbuf::SecBuf;
 //! use test_utils;
 //!
 //! use std::sync::{Arc, Mutex};
@@ -726,12 +726,12 @@ mod tests {
             let msg_publish = signal_rx
                 .recv_timeout(Duration::from_millis(timeout))
                 .expect("no more signals to receive (outer)");
-            if let Signal::Internal(Action::Publish(address)) = msg_publish {
+            if let Signal::Trace(Action::Publish(address)) = msg_publish {
                 loop {
                     let msg_hold = signal_rx
                         .recv_timeout(Duration::from_millis(timeout))
                         .expect("no more signals to receive (inner)");
-                    if let Signal::Internal(Action::Hold(entry)) = msg_hold {
+                    if let Signal::Trace(Action::Hold(entry)) = msg_hold {
                         assert_eq!(address, entry.address());
                         break 'outer;
                     }

@@ -22,6 +22,8 @@ define_zome! {
         Ok(())
     }
 
+    agent_validation: || { Ok(()) }
+
     functions: [
         call_bridge: {
             inputs: | |,

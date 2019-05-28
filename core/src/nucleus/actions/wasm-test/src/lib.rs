@@ -164,6 +164,8 @@ define_zome! {
         Ok(())
     }}
 
+    agent_validation: || { Ok(()) }
+
     functions: [
         test_fn: {
             inputs: | |,

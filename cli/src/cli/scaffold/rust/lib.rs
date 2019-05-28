@@ -61,8 +61,10 @@ define_zome! {
        definition()
     ]
 
-    init: || { Ok(()) }
-
+    init: |_params: JsonString| {
+        Ok(())
+    }
+    
     functions: [
         create_my_entry: {
             inputs: |entry: MyEntry|,

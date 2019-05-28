@@ -2,14 +2,14 @@ use crate::{
     context::Context,
     nucleus::{
         actions::run_validation_callback::run_validation_callback,
-        validation::{ValidationError, ValidationResult},
+        validation::{ValidationError, ValidationResult, EntryValidationData},
         CallbackFnCall,
     },
 };
 use futures::future;
 use futures_util::future::FutureExt;
 use holochain_core_types::{
-    cas::content::AddressableContent, entry::Entry, validation::ValidationData, agent::AgentId,
+    cas::content::AddressableContent, entry::Entry, validation::ValidationData,
 };
 use holochain_wasm_utils::api_serialization::validation::AgentIdValidationArgs;
 use std::sync::Arc;
@@ -21,9 +21,11 @@ pub async fn validate_agent_entry(
 ) -> ValidationResult {
     let dna = context.get_dna().expect("Callback called without DNA set!");
 
+    let agent_id = unwrap_to!(entry => Entry::AgentId);
+
+    // TODO: Need to consider what it means to update/delete an agent id. Should it just not be allowed?
     let params = AgentIdValidationArgs {
-        agent_id: AgentId::generate_fake("TODO"),
-        validation_data,
+        validation_data: EntryValidationData::Create{ entry: agent_id.to_owned(), validation_data }
     };
 
     let results = await!(future::join_all(dna.zomes.iter().map(|(zome_name, _)| {

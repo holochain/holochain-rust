@@ -164,7 +164,7 @@ define_zome! {
         Ok(())
     }}
 
-    agent_validation: || { Ok(()) }
+    agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
 
     functions: [
         test_fn: {

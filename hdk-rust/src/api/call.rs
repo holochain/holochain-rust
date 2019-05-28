@@ -87,11 +87,11 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// define_zome! {
 ///     entries: []
 ///
-///     init: || {
+///     init: |_params: JsonString| {
 ///         Ok(())
 ///     }
 ///     
-///     agent_validation: || { Ok(()) }
+///     agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
 ///
 ///     functions: [
 ///             sum: {
@@ -201,11 +201,11 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// define_zome! {
 ///     entries: []
 ///
-///     init: || {
+///     init: |_params: JsonString| {
 ///         Ok(())
 ///     }
 ///     
-///     agent_validation: || { Ok(()) }
+///     agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
 ///
 ///     functions: [
 ///             check_sum: {

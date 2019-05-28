@@ -177,11 +177,11 @@ macro_rules! load_string {
 ///         )
 ///     ]
 ///
-///     init: || {
+///     init: |_params: JsonString| {
 ///         Ok(())
 ///     }
 ///     
-///     agent_validation: || { Ok(()) }
+///     agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
 ///
 ///     receive: |from, payload| {
 ///       // just return what was received, but modified
@@ -219,7 +219,7 @@ macro_rules! define_zome {
             $init_expr:expr
         }
 
-        agent_validation: || {
+        agent_validation: | $agent_validation_data:ident : hdk::EntryValidationData<AgentId> | {
             $agent_validation_expr:expr
         }
 

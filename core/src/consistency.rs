@@ -52,16 +52,18 @@ impl ConsistencySignal {
 #[derive(Clone, Debug, Serialize)]
 pub enum ConsistencyEvent {
     // CAUSES
-    Publish(Address),              // -> Hold
-    AddPendingValidation(Address), // -> RemovePendingValidation
+    Publish(Address),                                   // -> Hold
+    AddPendingValidation(Address),                      // -> RemovePendingValidation
+    SignalZomeFunctionCall(snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
 
     // EFFECTS
-    Hold(Address),                    // <- Publish
-    UpdateEntry(Address, Address),    // <- Publish, entry_type=Update
-    RemoveEntry(Address, Address),    // <- Publish, entry_type=Deletion
-    AddLink(Link),                    // <- Publish, entry_type=LinkAdd
-    RemoveLink(Link),                 // <- Publish, entry_type=LinkRemove
-    RemovePendingValidation(Address), // <- AddPendingValidation
+    Hold(Address),                                        // <- Publish
+    UpdateEntry(Address, Address),                        // <- Publish, entry_type=Update
+    RemoveEntry(Address, Address),                        // <- Publish, entry_type=Deletion
+    AddLink(Link),                                        // <- Publish, entry_type=LinkAdd
+    RemoveLink(Link),                                     // <- Publish, entry_type=LinkRemove
+    RemovePendingValidation(Address),                     // <- AddPendingValidation
+    ReturnZomeFunctionResult(snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -86,7 +88,7 @@ impl ConsistencyModel {
                 let hold = Hold(address.clone());
                 let meta = crud_link.clone().and_then(|crud| match entry {
                     Entry::App(_, _) => Some(UpdateEntry(crud, address.clone())),
-                    Entry::Deletion(_) => Some(UpdateEntry(crud, address.clone())),
+                    Entry::Deletion(_) => Some(RemoveEntry(crud, address.clone())),
                     Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone().link)),
                     Entry::LinkRemove(link_data) => Some(RemoveLink(link_data.clone().link)),
                     // Question: Why does Entry::LinkAdd take LinkData instead of Link?
@@ -130,6 +132,15 @@ impl ConsistencyModel {
             }
             Action::RemovePendingValidation((address, _)) => Some(ConsistencySignal::new_terminal(
                 RemovePendingValidation(address.clone()),
+            )),
+
+            Action::SignalZomeFunctionCall(call) => Some(ConsistencySignal::new_pending(
+                SignalZomeFunctionCall(call.id()),
+                Source,
+                vec![ReturnZomeFunctionResult(call.id())],
+            )),
+            Action::ReturnZomeFunctionResult(result) => Some(ConsistencySignal::new_terminal(
+                ReturnZomeFunctionResult(result.call().id()),
             )),
             _ => None,
         }

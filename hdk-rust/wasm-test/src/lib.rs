@@ -57,6 +57,11 @@ struct EntryStruct {
     stuff: String,
 }
 
+#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
+struct InitParams {
+    should_fail: bool,
+}
+
 #[no_mangle]
 pub extern "C" fn handle_check_global() -> Address {
     hdk::AGENT_LATEST_HASH.clone()
@@ -566,7 +571,13 @@ define_zome! {
         )
     ]
 
-    init: |_params: JsonString| {{
+    init: |params: JsonString| {{
+
+        let params = InitParams::try_from(params)?;
+        if params.should_fail {
+            return Err("Erroring as requested".to_string())
+        }
+
         // should be able to commit an entry
         let entry = Entry::App(
             "testEntryType".into(),

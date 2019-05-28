@@ -26,6 +26,7 @@ use holochain_core_types::{
         entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
         zome::{ZomeFnDeclarations, ZomeTraits},
+        params::DnaParams,
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
@@ -268,6 +269,19 @@ fn start_holochain_instance<T: Into<String>>(
     uuid: T,
     agent_name: T,
 ) -> (Holochain, Arc<Mutex<TestLogger>>) {
+    let params = DnaParams {
+        init: JsonString::from_json("{\"should_fail\": false}"),
+        ..DnaParams::default()
+    };
+    let (maybe_hc, logger) = start_holochain_instance_with_params(uuid, agent_name, params);
+    (maybe_hc.expect("could not create new Holochain instance."), logger)
+}
+
+fn start_holochain_instance_with_params<T: Into<String>>(
+    uuid: T,
+    agent_name: T,
+    params: DnaParams,
+) -> (HolochainResult<Holochain>, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
 
     let mut wasm_path = PathBuf::new();
@@ -344,14 +358,21 @@ fn start_holochain_instance<T: Into<String>>(
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
 
-    let (context, test_logger) =
+    let (mut arc_context, test_logger) =
         test_context_and_logger_with_network_name(&agent_name.into(), Some(&dna.uuid));
-    let mut hc =
-        Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
+    let context = Arc::get_mut(&mut arc_context).unwrap();
+    context.params = Some(params);
+    let hc =
+        Holochain::new(dna.clone(), Arc::new(context.clone()));
 
     // Run the holochain instance
-    hc.start().expect("couldn't start");
-    (hc, test_logger)
+    // hc.start().expect("couldn't start");
+    (
+        hc.and_then(|mut h| {
+            h.start().map(|_| h)
+        }), 
+        test_logger
+    )
 }
 
 fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
@@ -381,6 +402,19 @@ fn can_use_globals() {
         "result = {:?}",
         result
     );
+}
+
+#[test]
+fn can_call_init_with_params() {
+    let params = DnaParams{
+        init: JsonString::from("{\"should_fail\": true}"),
+        ..DnaParams::default()
+    };
+    let (hc, _) = start_holochain_instance_with_params("can_call_init_with_params", "alice", params);
+    match hc {
+        Ok(_) => panic!("Init did not error as expected"),
+        Err(e) => assert!(e.to_string().contains("Erroring as requested"))
+    }
 }
 
 #[test]

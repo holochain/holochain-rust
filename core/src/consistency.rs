@@ -89,9 +89,17 @@ impl ConsistencyModel {
         use ConsistencyGroup::*;
         match action {
             Action::Commit((entry, crud_link, _)) => {
+                // XXX: Since can_publish relies on a properly initialized Context, there are a few ways
+                // can_publish can fail. If we hit the possiblity of failure, just add the commit to the cache
+                // anyway. The only reason to check is to avoid filling up the cache unnecessarily with
+                // commits that will never be published.
+                let do_cache = self.context.state().is_none()
+                    || self.context.get_dna().is_none()
+                    || entry.entry_type().can_publish(&self.context);
+
                 // If entry is publishable, construct the ConsistencySignal that should be emitted
                 // when the entry is finally published, and save it for later
-                if entry.entry_type().can_publish(&self.context) {
+                if do_cache {
                     let address = entry.address();
                     let hold = Hold(address.clone());
                     let meta = crud_link.clone().and_then(|crud| match entry {

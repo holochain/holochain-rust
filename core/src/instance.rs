@@ -257,23 +257,23 @@ impl Instance {
     /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(State::new(context))),
+            state: Arc::new(RwLock::new(State::new(context.clone()))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
-            consistency_model: ConsistencyModel::new(),
+            consistency_model: ConsistencyModel::new(context.clone()),
         }
     }
 
-    pub fn from_state(state: State) -> Self {
+    pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
             state: Arc::new(RwLock::new(state)),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
-            consistency_model: ConsistencyModel::new(),
+            consistency_model: ConsistencyModel::new(context.clone()),
         }
     }
 

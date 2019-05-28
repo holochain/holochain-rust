@@ -1,20 +1,25 @@
-use crate::{action::Action, network::entry_with_header::EntryWithHeader};
+use crate::{
+    action::Action, context::Context, entry::CanPublish,
+    network::entry_with_header::EntryWithHeader,
+};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::Entry,
     link::Link,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct ConsistencyModel {
     commit_cache: HashMap<Address, ConsistencySignal>,
+    context: Arc<Context>,
 }
 
 impl ConsistencyModel {
-    pub fn new() -> Self {
+    pub fn new(context: Arc<Context>) -> Self {
         Self {
             commit_cache: HashMap::new(),
+            context,
         }
     }
 }
@@ -84,28 +89,41 @@ impl ConsistencyModel {
         use ConsistencyGroup::*;
         match action {
             Action::Commit((entry, crud_link, _)) => {
-                let address = entry.address();
-                let hold = Hold(address.clone());
-                let meta = crud_link.clone().and_then(|crud| match entry {
-                    Entry::App(_, _) => Some(UpdateEntry(crud, address.clone())),
-                    Entry::Deletion(_) => Some(RemoveEntry(crud, address.clone())),
-                    Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone().link)),
-                    Entry::LinkRemove(link_data) => Some(RemoveLink(link_data.clone().link)),
-                    // Question: Why does Entry::LinkAdd take LinkData instead of Link?
-                    _ => None,
-                });
-                let mut pending = vec![hold];
-                meta.map(|m| pending.push(m));
-                let signal =
-                    ConsistencySignal::new_pending(Publish(address.clone()), Validators, pending);
-                self.commit_cache.insert(address, signal);
+                // If entry is publishable, construct the ConsistencySignal that should be emitted
+                // when the entry is finally published, and save it for later
+                if entry.entry_type().can_publish(&self.context) {
+                    let address = entry.address();
+                    let hold = Hold(address.clone());
+                    let meta = crud_link.clone().and_then(|crud| match entry {
+                        Entry::App(_, _) => Some(UpdateEntry(crud, address.clone())),
+                        Entry::Deletion(_) => Some(RemoveEntry(crud, address.clone())),
+                        Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone().link)),
+                        Entry::LinkRemove(link_data) => Some(RemoveLink(link_data.clone().link)),
+                        // Question: Why does Entry::LinkAdd take LinkData instead of Link?
+                        _ => None,
+                    });
+                    let mut pending = vec![hold];
+                    meta.map(|m| pending.push(m));
+                    let signal = ConsistencySignal::new_pending(
+                        Publish(address.clone()),
+                        Validators,
+                        pending,
+                    );
+                    self.commit_cache.insert(address, signal);
+                }
                 None
             }
-            Action::Publish(address) => self.commit_cache.remove(address).or_else(|| {
-                // TODO: hook up logger
-                println!("warn/consistency: Publishing address that was not previously committed");
-                None
-            }),
+            Action::Publish(address) => {
+                // Emit the signal that was created when observing the corresponding Commit
+                let maybe_signal = self.commit_cache.remove(address);
+                maybe_signal.or_else(|| {
+                    // TODO: hook up logger
+                    println!(
+                        "warn/consistency: Publishing address that was not previously committed"
+                    );
+                    None
+                })
+            }
             Action::Hold(EntryWithHeader { entry, header: _ }) => {
                 Some(ConsistencySignal::new_terminal(Hold(entry.address())))
             }

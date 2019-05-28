@@ -72,7 +72,7 @@ struct PendingConsistency {
 
 #[derive(Clone, Debug, Serialize)]
 pub enum ConsistencyGroup {
-    Committer,
+    Source,
     Validators,
 }
 
@@ -124,7 +124,7 @@ impl ConsistencyModel {
                 let address = validation.entry_with_header.entry.address();
                 Some(ConsistencySignal::new_pending(
                     AddPendingValidation(address.clone()),
-                    Committer,
+                    Source,
                     vec![RemovePendingValidation(address.clone())],
                 ))
             }

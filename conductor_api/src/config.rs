@@ -77,6 +77,10 @@ pub struct Configuration {
     /// Optional DPKI configuration if conductor is using a DPKI app to initalize and manage
     /// keys for new instances
     pub dpki: Option<DpkiConfiguration>,
+
+    /// Which signals to emit
+    #[serde(default)]
+    pub signals: SignalConfig,
 }
 
 pub fn default_persistence_dir() -> PathBuf {
@@ -587,6 +591,13 @@ pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
 pub struct DpkiConfiguration {
     pub instance_id: String,
     pub init_params: String,
+}
+
+/// Configure which signals to emit, to reduce unwanted signal volume
+#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
+pub struct SignalConfig {
+    pub trace: bool,
+    pub consistency: bool,
 }
 
 #[cfg(test)]

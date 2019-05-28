@@ -3,7 +3,8 @@ use holochain_core_types::{
     error::HolochainError,
     json::*,
     link::Link,
-    validation::{EntryValidationData, LinkValidationData},
+    agent::AgentId,
+    validation::{EntryValidationData, LinkValidationData, ValidationData},
 };
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
@@ -30,4 +31,12 @@ pub struct LinkValidationArgs {
     pub link: Link,
     pub direction: LinkDirection,
     pub validation_data: LinkValidationData,
+}
+
+pub type AgentIdValidationPayload = JsonString;
+
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
+pub struct AgentIdValidationArgs {
+    pub agent_id: AgentId,
+    pub validation_data: ValidationData,
 }

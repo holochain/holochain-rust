@@ -357,9 +357,9 @@ mod tests {
             (module
                 (memory (;0;) 1)
                 (func (export "init") (param $p0 i64) (result i64)
-                    i64.const 9
+                    i64.const 85899345924 ;; this is (20<<32)+4 so 20 bytes offset and 4 bytes long to capture "fail"
                 )
-                (data (i32.const 0)
+                (data (i32.const 20) ;; write fail in memory 20 bytes offset
                     "fail"
                 )
                 (export "memory" (memory 0))
@@ -373,7 +373,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             HolochainInstanceError::from(HolochainError::ErrorGeneric(
-                "At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]"
+                "At least one zome init returned error: [(\"test_zome\", \"fail\")]"
                     .to_string()
             )),
             result.err().unwrap(),
@@ -385,7 +385,6 @@ mod tests {
     fn fails_instantiate_if_init_times_out() {
         let dna = create_test_dna_with_wat(
             "test_zome",
-            Callback::Init.capability().as_str(),
             Some(
                 r#"
             (module

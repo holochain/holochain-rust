@@ -715,9 +715,9 @@ pub mod tests {
             (module
                 (memory (;0;) 1)
                 (func (export "init") (param $p0 i64) (result i64)
-                    i64.const 9
+                    i64.const 85899345926 ;; this is (20<<32)+6 so 20 bytes offset and 6 bytes long to capture "1337.0"
                 )
-                (data (i32.const 0)
+                (data (i32.const 20)
                     "1337.0"
                 )
                 (export "memory" (memory 0))
@@ -731,7 +731,7 @@ pub mod tests {
         assert_eq!(
             instance.err().unwrap(),
             String::from(
-                "At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]"
+                "At least one zome init returned error: [(\"test_zome\", \"1337.0\")]"
             )
         );
     }

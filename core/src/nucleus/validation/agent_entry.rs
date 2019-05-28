@@ -9,22 +9,28 @@ use crate::{
 use futures::future;
 use futures_util::future::FutureExt;
 use holochain_core_types::{
-    cas::content::AddressableContent, entry::Entry, json::JsonString, validation::ValidationData,
+    cas::content::AddressableContent, entry::Entry, validation::ValidationData, agent::AgentId,
 };
+use holochain_wasm_utils::api_serialization::validation::AgentIdValidationArgs;
 use std::sync::Arc;
 
 pub async fn validate_agent_entry(
     entry: Entry,
-    _validation_data: ValidationData,
+    validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> ValidationResult {
     let dna = context.get_dna().expect("Callback called without DNA set!");
+
+    let params = AgentIdValidationArgs {
+        agent_id: AgentId::generate_fake("TODO"),
+        validation_data,
+    };
 
     let results = await!(future::join_all(dna.zomes.iter().map(|(zome_name, _)| {
         let call = CallbackFnCall::new(
             &zome_name,
             "__hdk_validate_agent_entry",
-            JsonString::empty_object(),
+            params.clone(),
         );
         // Need to return a boxed future for it to work with join_all
         // https://users.rust-lang.org/t/the-trait-unpin-is-not-implemented-for-genfuture-error-when-using-join-all/23612/2

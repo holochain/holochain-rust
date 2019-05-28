@@ -153,6 +153,11 @@ impl Configuration {
                     instance.dna, instance.id
                 )
             })?;
+            serde_json::from_str::<serde_json::Value>(&instance.genesis_params)
+                .map_err(|_| format!("genesis_params field is not valid JSON: {}", instance.genesis_params).to_string())?;
+
+            serde_json::from_str::<serde_json::Value>(&instance.init_params)
+                .map_err(|_| format!("init_params field is not valid JSON: {}", instance.init_params).to_string())?;
         }
         for ref interface in self.interfaces.iter() {
             for ref instance in interface.instances.iter() {
@@ -400,10 +405,14 @@ pub struct InstanceConfiguration {
     pub dna: String,
     pub agent: String,
     pub storage: StorageConfiguration,
-    #[serde(default)]
+    #[serde(default = "empty_object")]
     pub genesis_params: String,
-    #[serde(default)]
+    #[serde(default = "empty_object")]
     pub init_params: String,
+}
+
+fn empty_object() -> String {
+    JsonString::empty_object().to_string()
 }
 
 /// This configures the Content Addressable Storage (CAS) that

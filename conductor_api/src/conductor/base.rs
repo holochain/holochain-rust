@@ -37,6 +37,7 @@ use std::{
 };
 
 use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
+use config::AgentConfiguration;
 use holochain_net::{
     ipc::spawn::{ipc_spawn, SpawnResult},
     p2p_config::P2pConfig,
@@ -44,7 +45,6 @@ use holochain_net::{
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
 use signal_wrapper::SignalWrapper;
 use static_file_server::StaticServer;
-use config::AgentConfiguration;
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.
@@ -605,7 +605,11 @@ impl Conductor {
             })
     }
 
-    pub fn build_conductor_api(&mut self, instance_id: String, config: &Configuration) -> Result<IoHandler, HolochainError> {
+    pub fn build_conductor_api(
+        &mut self,
+        instance_id: String,
+        config: &Configuration,
+    ) -> Result<IoHandler, HolochainError> {
         let instance_config = config.instance_by_id(&instance_id)?;
         let agent_id = instance_config.agent.clone();
         let agent_config = config.agent_by_id(&agent_id)?;
@@ -647,16 +651,19 @@ impl Conductor {
                     the bridge API"#,
             );
 
-            api_builder = api_builder
-                .with_named_instance(bridge.handle.clone(), callee_instance.clone());
-            api_builder = api_builder
-                .with_named_instance_config(bridge.handle.clone(), callee_config);
+            api_builder =
+                api_builder.with_named_instance(bridge.handle.clone(), callee_instance.clone());
+            api_builder =
+                api_builder.with_named_instance_config(bridge.handle.clone(), callee_config);
         }
 
         Ok(api_builder.spawn())
     }
 
-    pub fn agent_config_to_id(&mut self, agent_config: &AgentConfiguration) -> Result<AgentId,HolochainError> {
+    pub fn agent_config_to_id(
+        &mut self,
+        agent_config: &AgentConfiguration,
+    ) -> Result<AgentId, HolochainError> {
         Ok(if let Some(true) = agent_config.holo_remote_key {
             // !!!!!!!!!!!!!!!!!!!!!!!
             // Holo closed-alpha hack:

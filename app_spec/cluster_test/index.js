@@ -28,9 +28,15 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
       enteringShutdown = true
       console.log('after 5 seconds, all nodes should be holding all entries and all links')
       console.log(`There are only ${countHolding} after 5 seconds.`)
-      cluster.shutdown().finally(() => {
+      // done this way because cluster.shutdown() was causing
+      // errors on CircleCI
+      if (process.env.CI) {
         process.exit(1) // failure status code
-      })
+      } else {
+        cluster.shutdown().finally(() => {
+          process.exit(1) // failure status code
+        })
+      }
     }
   }, 5000)
 
@@ -43,9 +49,16 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
     if (countHolding === numConductors * 2 && !enteringShutdown) {
       enteringShutdown = true
       console.log('All nodes are successfully HOLDing all entries they should be.')
-      cluster.shutdown().finally(() => {
+
+      // done this way because cluster.shutdown() was causing
+      // errors on CircleCI
+      if (process.env.CI) {
         process.exit() // success status code
-      })
+      } else {
+        cluster.shutdown().finally(() => {
+          process.exit() // success status code
+        })
+      }
     }
   }))
 

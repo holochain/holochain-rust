@@ -5,7 +5,6 @@ use crate::{
         InstanceReferenceConfiguration, InterfaceConfiguration, StorageConfiguration,
     },
     dpki_instance::DpkiInstance,
-    error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
 use holochain_core_types::{
@@ -35,8 +34,6 @@ pub trait ConductorAdmin {
         agent_id: &String,
     ) -> Result<(), HolochainError>;
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
-    fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
-    fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn add_interface(&mut self, new_instance: InterfaceConfiguration)
         -> Result<(), HolochainError>;
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError>;
@@ -234,19 +231,6 @@ impl ConductorAdmin for Conductor {
 
         notify(format!("Removed instance \"{}\".", id));
         Ok(())
-    }
-
-    fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
-        let instance = self.instances.get(id)?;
-
-        notify(format!("Starting instance \"{}\"...", id));
-        instance.write().unwrap().start()
-    }
-
-    fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
-        let instance = self.instances.get(id)?;
-        notify(format!("Stopping instance \"{}\"...", id));
-        instance.write().unwrap().stop()
     }
 
     fn add_interface(&mut self, interface: InterfaceConfiguration) -> Result<(), HolochainError> {
@@ -1149,31 +1133,6 @@ type = 'websocket'"#,
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
-    }
-
-    #[test]
-    fn test_start_stop_instance() {
-        let mut conductor = create_test_conductor("test_start_stop_instance", 3004);
-        assert_eq!(
-            conductor.start_instance(&String::from("test-instance-1")),
-            Ok(()),
-        );
-        assert_eq!(
-            conductor.start_instance(&String::from("test-instance-1")),
-            Err(HolochainInstanceError::InstanceAlreadyActive),
-        );
-        assert_eq!(
-            conductor.start_instance(&String::from("non-existant-id")),
-            Err(HolochainInstanceError::NoSuchInstance),
-        );
-        assert_eq!(
-            conductor.stop_instance(&String::from("test-instance-1")),
-            Ok(())
-        );
-        assert_eq!(
-            conductor.stop_instance(&String::from("test-instance-1")),
-            Err(HolochainInstanceError::InstanceNotActiveYet),
-        );
     }
 
     #[test]

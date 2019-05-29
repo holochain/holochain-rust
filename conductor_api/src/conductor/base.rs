@@ -319,6 +319,19 @@ impl Conductor {
         Ok(())
     }
 
+    pub fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+        let instance = self.instances.get(id)?;
+
+        notify(format!("Starting instance \"{}\"...", id));
+        instance.write().unwrap().start()
+    }
+
+    pub fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+        let instance = self.instances.get(id)?;
+        notify(format!("Stopping instance \"{}\"...", id));
+        instance.write().unwrap().stop()
+    }
+
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
         self.instances
@@ -1574,5 +1587,30 @@ pub mod tests {
         assert!(received_signals[2].starts_with(
             "{\"signal\":{\"Trace\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
         ));
+    }
+
+    #[test]
+    fn test_start_stop_instance() {
+        let mut conductor = test_conductor(10051, 10052);
+        assert_eq!(
+            conductor.start_instance(&String::from("test-instance-1")),
+            Ok(()),
+        );
+        assert_eq!(
+            conductor.start_instance(&String::from("test-instance-1")),
+            Err(HolochainInstanceError::InstanceAlreadyActive),
+        );
+        assert_eq!(
+            conductor.start_instance(&String::from("non-existant-id")),
+            Err(HolochainInstanceError::NoSuchInstance),
+        );
+        assert_eq!(
+            conductor.stop_instance(&String::from("test-instance-1")),
+            Ok(())
+        );
+        assert_eq!(
+            conductor.stop_instance(&String::from("test-instance-1")),
+            Err(HolochainInstanceError::InstanceNotActiveYet),
+        );
     }
 }

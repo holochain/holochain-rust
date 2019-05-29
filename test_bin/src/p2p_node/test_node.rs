@@ -17,20 +17,19 @@ use holochain_net::{
     tweetlog::{TweetProxy, *},
 };
 
-use std::{
-    collections::{HashMap, HashSet},
-    convert::TryFrom,
-};
-use crossbeam_channel::{unbounded, Receiver};
-use lib3h_protocol::{
-    protocol_client::Lib3hClientProtocol,
-    protocol_server::Lib3hServerProtocol,
-    data_types::DirectMessageData,
-};
-use holochain_net::connection::net_connection::NetHandler;
 use super::{
     create_config::{create_ipc_config, create_lib3h_config},
     dna_store::DnaStore,
+};
+use crossbeam_channel::{unbounded, Receiver};
+use holochain_net::connection::net_connection::NetHandler;
+use lib3h_protocol::{
+    data_types::DirectMessageData, protocol_client::Lib3hClientProtocol,
+    protocol_server::Lib3hServerProtocol,
+};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryFrom,
 };
 
 static TIMEOUT_MS: usize = 5000;
@@ -380,11 +379,7 @@ impl TestNode {
     }
 
     /// Node sends Message on the network.
-    pub fn send_reponse_json(
-        &mut self,
-        msg: MessageData,
-        response_content: serde_json::Value,
-    ) {
+    pub fn send_reponse_json(&mut self, msg: MessageData, response_content: serde_json::Value) {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
         assert_eq!(msg.dna_address, current_dna.clone());
@@ -408,8 +403,14 @@ impl TestNode {
     ) {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
-        assert_eq!(msg.space_address, current_dna.clone().to_string().into_bytes());
-        assert_eq!(msg.to_agent_id, self.agent_id.clone().to_string().into_bytes());
+        assert_eq!(
+            msg.space_address,
+            current_dna.clone().to_string().into_bytes()
+        );
+        assert_eq!(
+            msg.to_agent_id,
+            self.agent_id.clone().to_string().into_bytes()
+        );
         let response = DirectMessageData {
             space_address: current_dna.clone().to_string().into_bytes(),
             request_id: msg.request_id,
@@ -977,14 +978,20 @@ impl TestNode {
     /// Wait for receiving a message corresponding to predicate
     /// hard coded timeout
     #[cfg_attr(tarpaulin, skip)]
-    pub fn wait_json(&mut self, predicate: Box<dyn Fn(&JsonProtocol) -> bool>) -> Option<JsonProtocol> {
+    pub fn wait_json(
+        &mut self,
+        predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
+    ) -> Option<JsonProtocol> {
         self.wait_json_with_timeout(predicate, TIMEOUT_MS)
     }
 
     /// Wait for receiving a message corresponding to predicate
     /// hard coded timeout
     #[cfg_attr(tarpaulin, skip)]
-    pub fn wait_lib3h(&mut self, predicate: Box<dyn Fn(&Lib3hServerProtocol) -> bool>) -> Option<Lib3hServerProtocol> {
+    pub fn wait_lib3h(
+        &mut self,
+        predicate: Box<dyn Fn(&Lib3hServerProtocol) -> bool>,
+    ) -> Option<Lib3hServerProtocol> {
         self.wait_lib3h_with_timeout(predicate, TIMEOUT_MS)
     }
 
@@ -1048,40 +1055,40 @@ impl TestNode {
         match lib3h_msg {
             Lib3hServerProtocol::SuccessResult(_msg) => {
                 // FIXME
-            },
+            }
             Lib3hServerProtocol::FailureResult(_msg) => {
                 // FIXME
-            },
+            }
             Lib3hServerProtocol::Connected(_msg) => {
                 // FIXME
-            },
+            }
             Lib3hServerProtocol::Disconnected(_msg) => {
                 // FIXME
-            },
+            }
             Lib3hServerProtocol::SendDirectMessageResult(_msg) => {
                 // FIXME
-            },
+            }
             Lib3hServerProtocol::HandleSendDirectMessage(_msg) => {
                 // FIXME
-            },
+            }
             Lib3hServerProtocol::FetchEntryResult(_msg) => {
                 // FIXME
-            },
+            }
             Lib3hServerProtocol::HandleFetchEntry(_msg) => {
                 // FIXME
-            },
+            }
             Lib3hServerProtocol::HandleStoreEntry(_msg) => {
                 // FIXME
-            },
+            }
             Lib3hServerProtocol::HandleDropEntry(_msg) => {
                 // FIXME
-            },
+            }
             Lib3hServerProtocol::HandleGetPublishingEntryList(_msg) => {
                 // FIXME
-            },
+            }
             Lib3hServerProtocol::HandleGetHoldingEntryList(_msg) => {
                 // FIXME
-            },
+            }
         }
     }
     /// handle all types of json message

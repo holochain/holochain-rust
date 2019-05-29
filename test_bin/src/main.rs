@@ -22,11 +22,11 @@ pub mod predicate;
 pub mod basic_workflows;
 pub mod connection_workflows;
 pub mod constants;
+pub mod lib3h_workflows;
 pub mod multidna_workflows;
 pub mod p2p_node;
 pub mod publish_hold_workflows;
 pub mod three_workflows;
-pub mod lib3h_workflows;
 
 use constants::*;
 use holochain_net::{connection::NetResult, tweetlog::*};
@@ -196,7 +196,7 @@ fn main() {
                 Some("test_bin/data/end_user_net_config.json".to_string()),
                 *test_fn,
             )
-                .unwrap();
+            .unwrap();
         }
     }
     // Launch THREE_WORKFLOWS tests on each setup
@@ -484,6 +484,7 @@ fn launch_three_nodes_test(
 
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
+#[allow(dead_code)]
 fn launch_three_nodes_test_with_lib3h(
     config_filepath: &str,
     maybe_end_user_config_filepath: Option<String>,

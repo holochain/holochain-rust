@@ -67,7 +67,8 @@ pub fn send_test(
 
     // Billy should not receive it
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
-    let res = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
+    let res =
+        billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
     assert!(res.is_none());
 
     // Send messages on DNA B
@@ -115,7 +116,8 @@ pub fn send_test(
 
     // Alex should not receive it
     camille.send_message(ALEX_AGENT_ID.to_string(), ENTRY_CONTENT_3.clone());
-    let res = alex.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
+    let res =
+        alex.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
     assert!(res.is_none());
     log_i!("Send messages on DNA C COMPLETE \n\n\n");
 
@@ -163,7 +165,8 @@ pub fn dht_test(
     alex.reply_to_HandleFetchEntry(&fetch_data)?;
 
     // Billy might receive FailureResult
-    let result = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 1000);
+    let result =
+        billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 1000);
     log_i!("got FailureResult: {:?}", result);
 
     // Done

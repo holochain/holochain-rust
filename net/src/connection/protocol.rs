@@ -2,15 +2,12 @@
 //! for communications between holochain core and the p2p / networking
 //! process or library. See json_protocol for a higher level interface.
 
-use serde_bytes;
 use failure::Error;
+use serde_bytes;
 use std::convert::TryFrom;
 
 use holochain_core_types::json::JsonString;
-use lib3h_protocol::{
-    protocol_client::Lib3hClientProtocol,
-    protocol_server::Lib3hServerProtocol,
-};
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 
 /// Low-level interface spec for communicating with the p2p abstraction
 /// notice this is not Serializable or Deserializable

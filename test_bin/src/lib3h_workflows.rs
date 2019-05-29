@@ -1,18 +1,12 @@
-use std::str;
 use constants::*;
 use holochain_core_types::cas::content::Address;
 use holochain_net::{
-    connection::{
-        net_connection::NetSend,
-        NetResult,
-    },
+    connection::{net_connection::NetSend, NetResult},
     tweetlog::TWEETLOG,
 };
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 use p2p_node::test_node::TestNode;
-use lib3h_protocol::{
-    protocol_client::Lib3hClientProtocol,
-    protocol_server::Lib3hServerProtocol,
-};
+use std::str;
 
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
@@ -23,7 +17,6 @@ pub fn setup_two_lib3h_nodes(
     dna_address: &Address,
     can_connect: bool,
 ) -> NetResult<()> {
-
     // Make sure network module is ready
     let mut time_ms: usize = 0;
     while !(alex.is_network_ready() && billy.is_network_ready()) && time_ms < 1000 {
@@ -39,7 +32,9 @@ pub fn setup_two_lib3h_nodes(
         .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
-        .wait_lib3h(Box::new(one_is_lib3h!(Lib3hServerProtocol::SuccessResult(_))))
+        .wait_lib3h(Box::new(one_is_lib3h!(
+            Lib3hServerProtocol::SuccessResult(_)
+        )))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
     billy
@@ -52,7 +47,7 @@ pub fn setup_two_lib3h_nodes(
 
     if can_connect {
         let mut _node1_id = String::new();
-        let mut node2_binding = String::new();
+        let node2_binding = String::new();
 
         // Connect nodes between them
         log_i!("connect: node2_binding = {}", node2_binding);
@@ -62,7 +57,7 @@ pub fn setup_two_lib3h_nodes(
                 peer_transport: billy.p2p_binding.clone().into(),
                 network_id: "FIXME".into(),
             })
-                .into(),
+            .into(),
         )?;
 
         // Make sure Peers are connected
@@ -97,23 +92,33 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
 
     // Check if billy received it
     let res = billy
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))))
+        .wait_lib3h(Box::new(one_is!(
+            Lib3hServerProtocol::HandleSendDirectMessage(_)
+        )))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
         Lib3hServerProtocol::HandleSendDirectMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!(ENTRY_CONTENT_1.to_string(), str::from_utf8(msg.content.as_slice()).unwrap());
+    assert_eq!(
+        ENTRY_CONTENT_1.to_string(),
+        str::from_utf8(msg.content.as_slice()).unwrap()
+    );
 
     // Send a message back from billy to alex
     billy.send_reponse_lib3h(
         msg.clone(),
-        json!(format!("echo: {}", str::from_utf8(msg.content.as_slice()).unwrap())),
+        json!(format!(
+            "echo: {}",
+            str::from_utf8(msg.content.as_slice()).unwrap()
+        )),
     );
     // Check if alex received it
     let res = alex
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::SendDirectMessageResult(_))))
+        .wait_lib3h(Box::new(one_is!(
+            Lib3hServerProtocol::SendDirectMessageResult(_)
+        )))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {

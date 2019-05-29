@@ -7,8 +7,8 @@ use crate::connection::{
 };
 use holochain_core_types::json::JsonString;
 use lib3h::{
+    real_engine::{RealEngine, RealEngineConfig},
     transport_wss::TransportWss,
-    real_engine::{RealEngine, RealEngineConfig}
 };
 use lib3h_protocol::network_engine::NetworkEngine;
 

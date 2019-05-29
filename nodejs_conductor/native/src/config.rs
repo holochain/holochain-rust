@@ -1,7 +1,7 @@
 use holochain_conductor_api::{
     config::{
         AgentConfiguration, Bridge, Configuration, DnaConfiguration, DpkiConfiguration,
-        InstanceConfiguration, LoggerConfiguration, StorageConfiguration,
+        InstanceConfiguration, LoggerConfiguration, SignalConfig, StorageConfiguration,
     },
     key_loaders::test_keystore,
     keystore::PRIMARY_KEYBUNDLE_ID,
@@ -128,14 +128,19 @@ fn make_config(
         instance_configs.push(instance);
     }
 
+    let signals = SignalConfig {
+        trace: true,
+        consistency: false,
+    };
+
     let config = Configuration {
         agents: agent_configs.values().cloned().collect(),
         dnas: dna_configs.values().cloned().collect(),
         instances: instance_configs,
-        bridges: bridges,
-        dpki: dpki,
+        bridges,
+        dpki,
         logger,
-        expose_trace_signals: true,
+        signals,
         ..Default::default()
     };
     config

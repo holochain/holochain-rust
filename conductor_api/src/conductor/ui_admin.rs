@@ -202,7 +202,6 @@ pub mod tests {
             .expect("Could not read temp config file");
 
         let mut toml = empty_bridges();
-        toml = add_line(toml, general());
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_interfaces());
         toml = add_block(toml, agent1());
@@ -220,6 +219,7 @@ root_dir = '.'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,)
@@ -251,7 +251,6 @@ root_dir = '.'"#,
             .join("test-bundle-id");
 
         let mut toml = empty_bridges();
-        toml = add_line(toml, general());
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_interfaces());
         toml = add_block(toml, agent1());
@@ -269,6 +268,7 @@ id = 'test-bundle-id'"#,
         );
         toml = add_line(toml, format!("root_dir = '{}'", dest.display()));
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,)
@@ -311,6 +311,7 @@ id = 'test-bundle-id'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3001));
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,)
@@ -358,7 +359,6 @@ id = 'test-bundle-id'"#,
             .expect("Could not read temp config file");
 
         let mut toml = empty_bridges();
-        toml = add_line(toml, general());
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
@@ -380,6 +380,7 @@ port = 4000"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml);
@@ -429,7 +430,6 @@ port = 4000"#,
             .expect("Could not read temp config file");
 
         let mut toml = empty_bridges();
-        toml = add_line(toml, general());
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_interfaces());
         toml = add_block(toml, agent1());
@@ -447,6 +447,7 @@ root_dir = '.'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml);

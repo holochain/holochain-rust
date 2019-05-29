@@ -26,13 +26,13 @@ const genConfig = (index: number, debugging: boolean, tmpPath: string, n3hPath: 
   const config = `
 persistence_dir = "${tmpPath}"
 
-[signals]
-consistency = false
-trace = true
-
 agents = []
 dnas = []
 instances = []
+
+[signals]
+consistency = false
+trace = true
 
 [[interfaces]]
 admin = true

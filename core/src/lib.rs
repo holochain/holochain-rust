@@ -22,6 +22,7 @@ extern crate pretty_assertions;
 
 pub mod action;
 pub mod agent;
+pub mod consistency;
 pub mod context;
 pub mod dht;
 pub mod entry;

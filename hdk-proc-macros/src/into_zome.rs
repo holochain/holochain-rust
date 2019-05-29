@@ -497,7 +497,7 @@ mod tests {
                 }
 
                 #[receive]
-                fn receive(message: String) {
+                fn receive(from :Address, message: String) {
                     Ok(())
                 }
             }

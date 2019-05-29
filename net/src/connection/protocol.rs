@@ -7,7 +7,7 @@ use failure::Error;
 use std::convert::TryFrom;
 
 use holochain_core_types::json::JsonString;
-use holochain_lib3h_protocol::{
+use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
 };

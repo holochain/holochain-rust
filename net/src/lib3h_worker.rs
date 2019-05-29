@@ -6,8 +6,11 @@ use crate::connection::{
     NetResult,
 };
 use holochain_core_types::json::JsonString;
-use holochain_lib3h::real_engine::{RealEngine, RealEngineConfig};
-use holochain_lib3h_protocol::network_engine::NetworkEngine;
+use lib3h::{
+    transport_wss::TransportWss,
+    real_engine::{RealEngine, RealEngineConfig}
+};
+use lib3h_protocol::network_engine::NetworkEngine;
 
 /// A worker that makes use of lib3h / NetworkEngine.
 /// It adapts the Worker interface with Lib3h's NetworkEngine's interface.
@@ -16,7 +19,7 @@ use holochain_lib3h_protocol::network_engine::NetworkEngine;
 pub struct Lib3hWorker {
     handler: NetHandler,
     can_send_P2pReady: bool,
-    net_engine: RealEngine,
+    net_engine: RealEngine<TransportWss<std::net::TcpStream>>,
 }
 
 /// Constructors

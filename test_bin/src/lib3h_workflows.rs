@@ -4,13 +4,12 @@ use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
         net_connection::NetSend,
-        protocol::Protocol,
         NetResult,
     },
     tweetlog::TWEETLOG,
 };
 use p2p_node::test_node::TestNode;
-use holochain_lib3h_protocol::{
+use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
 };
@@ -58,7 +57,7 @@ pub fn setup_two_lib3h_nodes(
         // Connect nodes between them
         log_i!("connect: node2_binding = {}", node2_binding);
         alex.send(
-            Lib3hClientProtocol::Connect(holochain_lib3h_protocol::data_types::ConnectData {
+            Lib3hClientProtocol::Connect(lib3h_protocol::data_types::ConnectData {
                 request_id: "connect_req_1".into(),
                 peer_transport: billy.p2p_binding.clone().into(),
                 network_id: "FIXME".into(),

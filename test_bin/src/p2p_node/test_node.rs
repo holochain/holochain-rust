@@ -22,7 +22,7 @@ use std::{
     convert::TryFrom,
 };
 use crossbeam_channel::{unbounded, Receiver};
-use holochain_lib3h_protocol::{
+use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
     data_types::DirectMessageData,
@@ -124,11 +124,12 @@ impl TestNode {
             };
             JsonProtocol::TrackDna(track_dna_msg).into()
         } else {
-            let track_dna_msg = holochain_lib3h_protocol::data_types::TrackDnaData {
-                dna_address: dna_address.clone().to_string().into_bytes(),
+            let track_dna_msg = lib3h_protocol::data_types::SpaceData {
+                request_id: "leave_space_req".to_string(),
+                space_address: dna_address.clone().to_string().into_bytes(),
                 agent_id: agent_id.to_string().into_bytes(),
             };
-            Lib3hClientProtocol::TrackDna(track_dna_msg).into()
+            Lib3hClientProtocol::JoinSpace(track_dna_msg).into()
         };
         println!("TestNode.track_dna(): {:?}", protocol_msg);
         let res = self.send(protocol_msg);
@@ -165,13 +166,14 @@ impl TestNode {
                 dna_address: dna_address.clone(),
                 agent_id,
             };
-            JsonProtocol::UntrackDna(track_dna_msg).into()
+            JsonProtocol::TrackDna(track_dna_msg).into()
         } else {
-            let track_dna_msg = holochain_lib3h_protocol::data_types::TrackDnaData {
-                dna_address: dna_address.clone().to_string().into_bytes(),
+            let leave_space_msg = lib3h_protocol::data_types::SpaceData {
+                request_id: "leave_space_req".to_string(),
+                space_address: dna_address.clone().to_string().into_bytes(),
                 agent_id: agent_id.to_string().into_bytes(),
             };
-            Lib3hClientProtocol::UntrackDna(track_dna_msg).into()
+            Lib3hClientProtocol::LeaveSpace(leave_space_msg).into()
         };
         let res = self.send(protocol_msg);
         if res.is_ok() {
@@ -365,7 +367,7 @@ impl TestNode {
             JsonProtocol::SendMessage(msg_data.clone()).into()
         } else {
             let msg_data = DirectMessageData {
-                dna_address: dna_address.to_string().into_bytes(),
+                space_address: dna_address.to_string().into_bytes(),
                 request_id: request_id.clone(),
                 to_agent_id: to_agent_id.to_string().into_bytes(),
                 from_agent_id: from_agent_id.to_string().into_bytes(),
@@ -406,10 +408,10 @@ impl TestNode {
     ) {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
-        assert_eq!(msg.dna_address, current_dna.clone().to_string().into_bytes());
+        assert_eq!(msg.space_address, current_dna.clone().to_string().into_bytes());
         assert_eq!(msg.to_agent_id, self.agent_id.clone().to_string().into_bytes());
         let response = DirectMessageData {
-            dna_address: current_dna.clone().to_string().into_bytes(),
+            space_address: current_dna.clone().to_string().into_bytes(),
             request_id: msg.request_id,
             to_agent_id: msg.from_agent_id.clone(),
             from_agent_id: self.agent_id.to_string().into_bytes(),

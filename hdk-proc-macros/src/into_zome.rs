@@ -219,7 +219,7 @@ impl IntoZome for syn::ItemMod {
 
                         match (params[0], params[1]) {
                             (
-                                syn::FnArg::Captured(syn::ArgCaptured{pat: syn::Pat::Ident(from_ident), ..}), 
+                                syn::FnArg::Captured(syn::ArgCaptured{pat: syn::Pat::Ident(from_ident), ..}),
                                 syn::FnArg::Captured(syn::ArgCaptured{pat: syn::Pat::Ident(message_ident), ..})
                             ) => {
                                 acc.push(ReceiveCallback {

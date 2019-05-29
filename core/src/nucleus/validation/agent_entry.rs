@@ -51,7 +51,7 @@ pub async fn validate_agent_entry(
         Ok(())
     } else {
         Err(ValidationError::Error(
-            "Failed to validate agent ID on a zome".into(),
+            format!("Failed to validate agent ID on a zome, {:?}", errors).into(),
         ))
     }
 }

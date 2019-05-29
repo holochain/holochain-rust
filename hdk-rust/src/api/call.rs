@@ -91,7 +91,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///         Ok(())
 ///     }
 ///     
-///     agent_validation: |_validation_data: hdk::EntryValidationArgs| { Ok(()) }
+///     agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
 ///
 ///     functions: [
 ///             sum: {
@@ -205,7 +205,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///         Ok(())
 ///     }
 ///     
-///     agent_validation: |_validation_data: hdk::EntryValidationArgs| { Ok(()) }
+///     agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
 ///
 ///     functions: [
 ///             check_sum: {

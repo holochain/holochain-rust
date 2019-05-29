@@ -1436,7 +1436,10 @@ pub mod tests {
         path.push(wasm_path_component);
 
         let wasm = create_wasm_from_file(&path);
-        let defs = create_test_defs_with_fn_name("call_bridge");
+        let defs = create_test_defs_with_fn_names(vec![
+            "call_bridge".to_string(),
+            "call_bridge_error".to_string(),
+        ]);
         let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         dna.uuid = String::from("basic_bridge_call");
         dna
@@ -1472,6 +1475,40 @@ pub mod tests {
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
         assert_eq!(result, JsonString::from(RawString::from("Holo World")));
+    }
+
+    #[test]
+    fn basic_bridge_call_error() {
+        let config = load_configuration::<Configuration>(&test_toml(10041, 10042)).unwrap();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        conductor
+            .boot_from_config()
+            .expect("Test config must be sane");
+        conductor
+            .start_all_instances()
+            .expect("Instances must be spawnable");
+        let caller_instance = conductor.instances["bridge-caller"].clone();
+        let mut instance = caller_instance.write().unwrap();
+
+        let cap_call = {
+            let context = instance.context();
+            make_cap_request_for_call(
+                context.clone(),
+                Address::from(context.clone().agent_id.address()),
+                "call_bridge_error",
+                JsonString::empty_object(),
+            )
+        };
+        let result = instance.call("test_zome", cap_call, "call_bridge_error", "{}");
+
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ErrorGeneric\\\":\\\"{\\\\\\\"code\\\\\\\":-32602,\\\\\\\"message\\\\\\\":\\\\\\\"Holochain Instance Error: Zome function \'non-existent-function\' not found in Zome \'greeter\'\\\\\\\"}\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"225\\\"}\"}}"
+            )
+        );
     }
 
     #[test]

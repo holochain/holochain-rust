@@ -1,6 +1,6 @@
 use crate::{
-    action::ActionWrapper, context::Context, persister::Persister, scheduled_jobs, signal::Signal,
-    state::State, workflows::application,
+    action::ActionWrapper, consistency::ConsistencyModel, context::Context, persister::Persister,
+    scheduled_jobs, signal::Signal, state::State, workflows::application,
 };
 #[cfg(test)]
 use crate::{
@@ -35,6 +35,7 @@ pub struct Instance {
     observer_channel: Option<SyncSender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
     persister: Option<Arc<Mutex<Persister>>>,
+    consistency_model: ConsistencyModel,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -161,18 +162,19 @@ impl Instance {
         rx_action: Receiver<ActionWrapper>,
         rx_observer: Receiver<Observer>,
     ) {
-        let sync_self = self.clone();
+        let mut sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
         thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
             for action_wrapper in rx_action {
                 state_observers = sync_self.process_action(
-                    action_wrapper,
+                    &action_wrapper,
                     state_observers,
                     &rx_observer,
                     &sub_context,
                 );
+                sync_self.emit_signals(&sub_context, &action_wrapper);
             }
         });
     }
@@ -181,7 +183,7 @@ impl Instance {
     /// returns the new vector of observers
     pub(crate) fn process_action(
         &self,
-        action_wrapper: ActionWrapper,
+        action_wrapper: &ActionWrapper,
         mut state_observers: Vec<Observer>,
         rx_observer: &Receiver<Observer>,
         context: &Arc<Context>,
@@ -217,7 +219,6 @@ impl Instance {
                 e
             ));
         }
-        self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers
         state_observers.extend(rx_observer.try_iter());
@@ -228,40 +229,51 @@ impl Instance {
             .collect()
     }
 
-    /// Given an `Action` that is being processed, decide whether or not it should be
-    /// emitted as a `Signal::Trace`, and if so, send it
-    fn maybe_emit_action_signal(&self, context: &Arc<Context>, action: ActionWrapper) {
+    pub(crate) fn emit_signals(&mut self, context: &Context, action_wrapper: &ActionWrapper) {
         if let Some(tx) = context.signal_tx() {
             // @TODO: if needed for performance, could add a filter predicate here
             // to prevent emitting too many unneeded signals
-            let signal = Signal::Trace(action);
-            tx.send(signal).unwrap_or_else(|e| {
+            let trace_signal = Signal::Trace(action_wrapper.clone());
+            tx.send(trace_signal).unwrap_or_else(|e| {
                 context.log(format!(
                     "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
                     e
                 ));
-            })
+            });
+
+            self.consistency_model
+                .process_action(action_wrapper.action())
+                .map(|signal| {
+                    tx.send(Signal::Consistency(signal)).unwrap_or_else(|e| {
+                        context.log(format!(
+                            "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                            e
+                        ));
+                    });
+                });
         }
     }
 
     /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(State::new(context))),
+            state: Arc::new(RwLock::new(State::new(context.clone()))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
+            consistency_model: ConsistencyModel::new(context.clone()),
         }
     }
 
-    pub fn from_state(state: State) -> Self {
+    pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
             state: Arc::new(RwLock::new(state)),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
+            consistency_model: ConsistencyModel::new(context.clone()),
         }
     }
 
@@ -595,7 +607,7 @@ pub mod tests {
 
         let action_wrapper = test_action_wrapper_commit();
         let new_observers = instance.process_action(
-            action_wrapper.clone(),
+            &action_wrapper,
             Vec::new(), // start with no observers
             &rx_observer,
             &context,
@@ -746,7 +758,7 @@ pub mod tests {
         let context = instance.initialize_context(context);
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
-        instance.process_action(commit_action, state_observers, &rx_observer, &context);
+        instance.process_action(&commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());
@@ -779,7 +791,12 @@ pub mod tests {
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);
-        instance.process_action(commit_agent_action, state_observers, &rx_observer, &context);
+        instance.process_action(
+            &commit_agent_action,
+            state_observers,
+            &rx_observer,
+            &context,
+        );
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());

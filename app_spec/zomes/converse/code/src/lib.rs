@@ -57,7 +57,7 @@ define_zome! {
         }
     }
 
-    agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
+    agent_validation: |_validation_data: hdk::EntryValidationArgs| { Ok(()) }
 
     functions: [
         sign_message: {

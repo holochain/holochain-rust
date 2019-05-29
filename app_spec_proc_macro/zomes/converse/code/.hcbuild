@@ -1,0 +1,11 @@
+{
+  "steps": {
+    "cargo": [
+      "build",
+      "--release",
+      "--target=wasm32-unknown-unknown",
+      "--target-dir=target"
+    ]
+  },
+  "artifact": "target/wasm32-unknown-unknown/release/converse.wasm"
+}

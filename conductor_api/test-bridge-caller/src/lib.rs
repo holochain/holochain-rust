@@ -22,7 +22,7 @@ define_zome! {
         Ok(())
     }
 
-    agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
+    agent_validation: |_validation_data: hdk::EntryValidationArgs| { Ok(()) }
 
     functions: [
         call_bridge: {

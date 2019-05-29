@@ -12,7 +12,7 @@
 //! extern crate holochain_net;
 //! extern crate holochain_cas_implementations;
 //! extern crate holochain_dpki;
-//! extern crate holochain_sodium;
+//! extern crate lib3h_sodium;
 //! extern crate tempfile;
 //! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
@@ -24,7 +24,7 @@
 //!     signature::Signature,
 //! };
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
-//! use holochain_sodium::secbuf::SecBuf;
+//! use lib3h_sodium::secbuf::SecBuf;
 //! use test_utils;
 //!
 //! use std::sync::{Arc, Mutex};
@@ -164,7 +164,7 @@ impl Holochain {
             .ok_or(HolochainError::ErrorGeneric(
                 "State could not be loaded due to NoneError".to_string(),
             ))?;
-        let mut instance = Instance::from_state(loaded_state.clone());
+        let mut instance = Instance::from_state(loaded_state.clone(), context.clone());
         let new_context = instance.initialize(None, context.clone())?;
         Ok(Holochain {
             instance,

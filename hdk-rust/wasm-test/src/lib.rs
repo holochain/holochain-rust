@@ -613,7 +613,7 @@ define_zome! {
         Ok(())
     }}
 
-    agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
+    agent_validation: |_validation_data: hdk::EntryValidationArgs| { Ok(()) }
 
     receive: |_from, payload| {
         {

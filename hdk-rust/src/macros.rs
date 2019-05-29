@@ -181,7 +181,7 @@ macro_rules! load_string {
 ///         Ok(())
 ///     }
 ///     
-///     agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
+///     agent_validation: |_validation_data: hdk::EntryValidationArgs| { Ok(()) }
 ///
 ///     receive: |from, payload| {
 ///       // just return what was received, but modified
@@ -219,7 +219,7 @@ macro_rules! define_zome {
             $init_expr:expr
         }
 
-        agent_validation: | $agent_validation_data:ident : hdk::EntryValidationData<AgentId> | {
+        agent_validation: | $agent_validation_data:ident : hdk::EntryValidationArgs | {
             $agent_validation_expr:expr
         }
 
@@ -293,23 +293,22 @@ macro_rules! define_zome {
 
         #[no_mangle]
         pub extern "C" fn __hdk_validate_agent_entry(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
-            let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
-            let allocation = match maybe_allocation {
-                Ok(allocation) => allocation,
-                Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
-            };
-            let init = $crate::global_fns::init_global_memory(allocation);
-            if init.is_err() {
-                return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                    init
-                ).into();
+            use $crate::holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
+            if let Err(allocation_error) =
+                $crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+            {
+                return allocation_error.as_ribosome_encoding();
             }
 
-            fn execute() -> Result<(), String> {
+            // Deserialize input
+            let input: EntryValidationArgs = load_json!(encoded_allocation_of_input);
+
+            fn execute(input: EntryValidationArgs) -> Result<(), String> {
+                let $agent_validation_data = input;
                 $agent_validation_expr
             }
 
-            match execute() {
+            match execute(input) {
                 Ok(_) => hdk::holochain_core_types::error::RibosomeEncodedValue::Success.into(),
                 Err(e) => $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
                     $crate::global_fns::write_json(

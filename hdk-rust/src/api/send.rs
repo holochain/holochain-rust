@@ -93,7 +93,7 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 ///    init: |_params: JsonString| {
 ///        Ok(())
 ///    }  
-///    agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
+///    agent_validation: |_validation_data: hdk::EntryValidationArgs| { Ok(()) }
 ///
 ///    receive: |from, payload| {
 ///        // if you want to serialize data as json to pass, use the json! serde macro

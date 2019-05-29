@@ -1,5 +1,5 @@
 #![allow(warnings)]
-use holochain_sodium::{kx, secbuf::SecBuf, sign, *};
+use lib3h_sodium::{kx, secbuf::SecBuf, sign, *};
 
 use crate::{
     keypair::*,
@@ -77,7 +77,7 @@ impl KeyBundle {
 pub(crate) mod tests {
     use super::*;
     use crate::{keypair::*, utils::generate_random_seed_buf, SIGNATURE_SIZE};
-    use holochain_sodium::pwhash;
+    use lib3h_sodium::pwhash;
 
     pub(crate) const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
         pwhash::OPSLIMIT_INTERACTIVE,

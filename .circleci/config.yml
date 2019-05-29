@@ -82,6 +82,10 @@ jobs:
        command: nix-shell --run hc-app-spec-test
 
    - run:
+       name: proc macro app spec tests
+       command: nix-shell --run hc-app-spec-test-proc
+
+   - run:
        name: nodejs conductor tests
        command: nix-shell --run hc-conductor-node-test
 

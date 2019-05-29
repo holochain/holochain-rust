@@ -72,7 +72,7 @@ define_zome! {
         Ok(())
     }}
 
-    agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
+    agent_validation: |_validation_data: hdk::EntryValidationArgs| { Ok(()) }
 
     receive: |from, msg_json| {
         blog::handle_receive(from, JsonString::from_json(&msg_json))

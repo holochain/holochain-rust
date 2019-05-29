@@ -24,6 +24,7 @@
 //! ```
 
 pub mod bridges;
+pub mod capabilities;
 pub mod entry_types;
 pub mod fn_declarations;
 pub mod traits;
@@ -304,7 +305,7 @@ pub mod tests {
                                 "links_to": [
                                     {
                                         "target_type": "test",
-                                        "tag": "test"
+                                        "link_type": "test"
                                     }
                                 ],
                                 "linked_from": []
@@ -479,7 +480,7 @@ pub mod tests {
                                 "links_to": [
                                     {
                                         "target_type": "test",
-                                        "tag": "test"
+                                        "link_type": "test"
                                     }
                                 ],
                                 "linked_from": []

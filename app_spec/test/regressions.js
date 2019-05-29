@@ -23,7 +23,7 @@ scenario.runTape('calling get_links before link_entries makes no difference', as
   const get2 = alice.call("blog", "my_posts", {})
   t.ok(get2.Ok)
 
-  t.equal(get2.Ok.addresses.length, 1)
+  t.equal(get2.Ok.links.length, 1)
 })
 
 scenario.runTape('calling get_links twice in a row is no different than calling it once', async (t, {alice}) => {
@@ -40,7 +40,7 @@ scenario.runTape('calling get_links twice in a row is no different than calling 
   const get2 = alice.call("blog", "my_posts", {})
   t.ok(get2.Ok)
 
-  t.equal(get2.Ok.addresses.length, 1)
+  t.equal(get2.Ok.links.length, 1)
 })
 
 scenario.runTape('not calling get_links in the beginning is also ok', async (t, {alice}) => {
@@ -51,7 +51,7 @@ scenario.runTape('not calling get_links in the beginning is also ok', async (t, 
   const get1 = alice.call("blog", "my_posts", {})
   t.ok(get1.Ok)
 
-  t.equal(get1.Ok.addresses.length, 1)
+  t.equal(get1.Ok.links.length, 1)
 })
 
 scenario.runTape('alice create & publish post -> recommend own post to self', async (t, {alice, tash}) => {
@@ -70,13 +70,13 @@ scenario.runTape('alice create & publish post -> recommend own post to self', as
     agent_address: alice.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, null)
+  t.equal(linked.Ok, "QmZr5F34uGZjAEwmU574VwiRtXGHQmvbUnNgA2MJz7YcTr")
 
   const recommendedPosts = alice.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, alice.agentId)
 
-  t.equal(recommendedPosts.Ok.addresses.length, 1)
+  t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
 scenario.runTape('alice create & publish post -> tash recommend to self', async (t, {alice, tash}) => {
@@ -94,13 +94,13 @@ scenario.runTape('alice create & publish post -> tash recommend to self', async 
     agent_address: tash.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, null)
+  t.equal(linked.Ok, "QmT2Z8Hdkgxkt7X4ZeEkoDt3YTQBzyJa1RNPhfkj9icsQ4")
 
   const recommendedPosts = tash.call("blog", "my_recommended_posts", {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, tash.agentId)
 
-  t.equal(recommendedPosts.Ok.addresses.length, 1)
+  t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
 scenario.runTape('create & publish post -> recommend to other agent', async (t, {alice, tash}) => {
@@ -118,11 +118,11 @@ scenario.runTape('create & publish post -> recommend to other agent', async (t, 
     agent_address: tash.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, null)
+  t.equal(linked.Ok, "QmUFkn3kTXuFmBvynEMQ4ox3WyvkkG4GtfvPkNqb5b7Ge7")
 
   const recommendedPosts = tash.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, tash.agentId)
 
-  t.equal(recommendedPosts.Ok.addresses.length, 1)
+  t.equal(recommendedPosts.Ok.links.length, 1)
 })

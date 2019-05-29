@@ -48,7 +48,9 @@ impl NetConnectionThread {
         // Spawn worker thread
         let thread = thread::spawn(move || {
             // Create worker
-            let mut worker = worker_factory(handler).unwrap_or_else(|e| panic!("{:?}", e));
+            let mut worker = worker_factory(handler).unwrap_or_else(|e| {
+                panic!("Failure while attempting to create network worker with provided P2pConfig. Error: {:?}", e)
+            });
             // Get endpoint and send it to owner (NetConnectionThread)
             let endpoint = worker.endpoint();
             send_endpoint
@@ -104,10 +106,10 @@ impl NetConnectionThread {
             });
         });
 
-        // Retrieve endpoint from spawned thread
-        let endpoint = recv_endpoint
-            .recv()
-            .expect("Failed to receive endpoint address from net worker");
+        // Retrieve endpoint from spawned thread.
+        let endpoint = recv_endpoint.recv().map_err(|e| {
+            format_err!("Failed to receive endpoint address from net worker: {}", e)
+        })?;
         let endpoint = endpoint
             .expect("Should have an endpoint address")
             .to_string();
@@ -140,6 +142,7 @@ impl NetConnectionThread {
 #[cfg(test)]
 mod tests {
     use super::{super::net_connection::NetWorker, *};
+    use crossbeam_channel::unbounded;
 
     struct DefWorker;
 
@@ -148,7 +151,7 @@ mod tests {
     #[test]
     fn it_can_defaults() {
         let mut con = NetConnectionThread::new(
-            Box::new(move |_r| Ok(())),
+            NetHandler::new(Box::new(move |_r| Ok(()))),
             Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
             None,
         )
@@ -164,24 +167,24 @@ mod tests {
 
     impl NetWorker for SimpleWorker {
         fn tick(&mut self) -> NetResult<bool> {
-            (self.handler)(Ok("tick".into()))?;
+            self.handler.handle(Ok("tick".into()))?;
             Ok(true)
         }
 
         fn receive(&mut self, data: Protocol) -> NetResult<()> {
-            (self.handler)(Ok(data))
+            self.handler.handle(Ok(data))
         }
     }
 
     #[test]
     fn it_invokes_connection_thread() {
-        let (sender, receiver) = mpsc::channel();
+        let (sender, receiver) = unbounded();
 
         let mut con = NetConnectionThread::new(
-            Box::new(move |r| {
+            NetHandler::new(Box::new(move |r| {
                 sender.send(r?)?;
                 Ok(())
-            }),
+            })),
             Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )
@@ -208,13 +211,13 @@ mod tests {
 
     #[test]
     fn it_can_tick() {
-        let (sender, receiver) = mpsc::channel();
+        let (sender, receiver) = unbounded();
 
         let con = NetConnectionThread::new(
-            Box::new(move |r| {
+            NetHandler::new(Box::new(move |r| {
                 sender.send(r?)?;
                 Ok(())
-            }),
+            })),
             Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )

@@ -25,7 +25,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         // Exit on error
         Err(_) => {
             context.log(format!(
-                "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+                "err/zome: invoke_remove_link failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
             ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
@@ -38,7 +38,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
 
     // Wait for future to be resolved
     let result: Result<(), HolochainError> = context
-        .block_on(author_entry(&entry, None, &context))
+        .block_on(author_entry(&entry, None, &context, &vec![]))
         .map(|_| ());
 
     runtime.store_result(result)

@@ -16,7 +16,7 @@ use holochain_core_types::{
     cas::content::Address,
     dna::{traits::ReservedTraitNames, Dna},
     entry::{
-        cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
+        cap_entries::{CapFunctions, CapTokenGrant, CapabilityType, ReservedCapabilityId},
         Entry,
     },
     error::HolochainError,
@@ -86,10 +86,12 @@ pub async fn initialize_chain(
     let dna_entry = Entry::Dna(Box::new(dna.clone()));
     let dna_commit = await!(commit_entry(dna_entry, None, &context_clone));
     if dna_commit.is_err() {
-        dispatch_error_result(&context_clone, dna_commit.err().unwrap());
-        return Err(HolochainError::InitializationFailed(
-            "error committing DNA".to_string(),
-        ));
+        let error = dna_commit.err().unwrap();
+        dispatch_error_result(&context_clone, error.clone());
+        return Err(HolochainError::InitializationFailed(format!(
+            "Error committing DNA: {:?}",
+            error
+        )));
     }
 
     // Commit AgentId to chain
@@ -126,10 +128,14 @@ pub async fn initialize_chain(
         }
     }
     let public_token = if cap_functions.len() > 0 {
-        let maybe_public_cap_grant_entry =
-            CapTokenGrant::create(CapabilityType::Public, None, cap_functions);
+        let maybe_public_cap_grant_entry = CapTokenGrant::create(
+            ReservedCapabilityId::Public.as_str(),
+            CapabilityType::Public,
+            None,
+            cap_functions,
+        );
 
-        // Let initialization fail if Public Grant could not be committed.
+        // Let initialization fail if Public Grant could not be created.
         if maybe_public_cap_grant_entry.is_err() {
             dispatch_error_result(&context_clone, maybe_public_cap_grant_entry.err().unwrap());
             return Err(HolochainError::InitializationFailed(

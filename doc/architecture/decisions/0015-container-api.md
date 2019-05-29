@@ -118,7 +118,7 @@ Only the admin user can manage apps and permissions:
 * `stop_app(hash)`
 * `promote_to_admin(client_id)`
 * `retract_admin(client_id)`
-* `grant_capability(client_id, app_hash, capability)`
+* `commit_capability_grant(client_id, app_hash, capability)`
 * `deny_capability(client_id, app_hash, capability)`
 
 ### Extensible

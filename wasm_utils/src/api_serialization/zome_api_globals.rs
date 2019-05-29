@@ -1,5 +1,6 @@
 use holochain_core_types::{
-    cas::content::Address, error::HolochainError, hash::HashString, json::*,
+    cas::content::Address, dna::capabilities::CapabilityRequest, error::HolochainError,
+    hash::HashString, json::*,
 };
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson)]
@@ -11,4 +12,6 @@ pub struct ZomeApiGlobals {
     pub agent_initial_hash: HashString,
     pub agent_latest_hash: HashString,
     pub public_token: Address,
+    pub cap_request: CapabilityRequest,
+    pub properties: JsonString,
 }

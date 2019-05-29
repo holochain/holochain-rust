@@ -14,7 +14,6 @@ pub mod send_direct_message;
 
 use crate::{
     action::{Action, ActionWrapper, NetworkReduceFn},
-    context::Context,
     network::{
         direct_message::DirectMessage,
         reducers::{
@@ -34,6 +33,7 @@ use crate::{
         },
         state::NetworkState,
     },
+    state::State,
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net::connection::{
@@ -67,15 +67,15 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
 }
 
 pub fn reduce(
-    context: Arc<Context>,
     old_state: Arc<NetworkState>,
+    root_state: &State,
     action_wrapper: &ActionWrapper,
 ) -> Arc<NetworkState> {
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
             let mut new_state: NetworkState = (*old_state).clone();
-            f(context, &mut new_state, &action_wrapper);
+            f(&mut new_state, &root_state, &action_wrapper);
             Arc::new(new_state)
         }
         None => old_state,
@@ -99,7 +99,7 @@ pub fn send(
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or(HolochainError::ErrorGeneric(
-            "Network not intialized".to_string(),
+            "Network not initialized".to_string(),
         ))?
 }
 

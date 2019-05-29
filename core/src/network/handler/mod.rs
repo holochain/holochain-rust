@@ -12,6 +12,7 @@ use crate::{
 };
 use holochain_core_types::hash::HashString;
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
+
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
@@ -35,12 +36,13 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
 /// has to handle.
 pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
-    Box::new(move |message| {
+    NetHandler::new(Box::new(move |message| {
         let message = message.unwrap();
         // context.log(format!(
         //   "trace/net/handle:({}): {:?}",
         //   context.agent_id.nick, message
         // ));
+
         let maybe_json_msg = JsonProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {
             return Ok(());
@@ -180,6 +182,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if is_my_id(&context, &peer_data.agent_id) {
                     return Ok(());
                 }
+
+                context.log(format!("debug/net/handle: PeerConnected: {:?}", peer_data));
                 // Total hack in lieu of a world-model.
                 // Just republish everything when a new person comes on-line!!
                 republish_all_public_chain_entries(&context);
@@ -187,7 +191,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             _ => {}
         }
         Ok(())
-    })
+    }))
 }
 
 fn republish_all_public_chain_entries(context: &Arc<Context>) {

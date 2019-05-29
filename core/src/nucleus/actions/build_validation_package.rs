@@ -15,14 +15,16 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
+    signature::Provenance,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
-use std::{convert::TryInto, pin::Pin, sync::Arc, thread};
+use std::{convert::TryInto, pin::Pin, sync::Arc, thread, vec::Vec};
 
-pub async fn build_validation_package(
-    entry: &Entry,
+pub async fn build_validation_package<'a>(
+    entry: &'a Entry,
     context: Arc<Context>,
+    provenances: &'a Vec<Provenance>,
 ) -> Result<ValidationPackage, HolochainError> {
     let id = snowflake::ProcessUniqueId::new();
 
@@ -75,7 +77,8 @@ pub async fn build_validation_package(
         let id = id.clone();
         let entry = entry.clone();
         let context = context.clone();
-        let entry_header = find_chain_header(&entry.clone(), &context).unwrap_or(
+        let maybe_entry_header = find_chain_header(&entry.clone(), &context.state().unwrap());
+        let entry_header = if maybe_entry_header.is_none() {
             // TODO: make sure that we don't run into race conditions with respect to the chain
             // We need the source chain header as part of the validation package.
             // For an already committed entry (when asked to deliver the validation package to
@@ -88,8 +91,17 @@ pub async fn build_validation_package(
             // and just used for the validation, I don't see why it would be a problem.
             // If it was a problem, we would have to make sure that the whole commit process
             // (including validtion) is atomic.
-            agent::state::create_new_chain_header(&entry, context.clone(), &None)?,
-        );
+            let state = &context.state()?;
+            agent::state::create_new_chain_header(
+                &entry,
+                &state.agent(),
+                &*state,
+                &None,
+                provenances,
+            )?
+        } else {
+            maybe_entry_header.unwrap()
+        };
 
         thread::spawn(move || {
             let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
@@ -230,6 +242,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_entry(),
             context.clone(),
+            &vec![],
         ));
         println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
@@ -258,6 +271,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_entries(),
             context.clone(),
+            &vec![],
         ));
         println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
@@ -286,6 +300,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_headers(),
             context.clone(),
+            &vec![],
         ));
         assert!(maybe_validation_package.is_ok());
 
@@ -313,6 +328,7 @@ mod tests {
         let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_full(),
             context.clone(),
+            &vec![],
         ));
         assert!(maybe_validation_package.is_ok());
 

@@ -1,5 +1,6 @@
 use crate::{
     action::ActionWrapper,
+    conductor_api::ConductorApi,
     instance::Observer,
     logger::Logger,
     nucleus::actions::get_entry::get_entry_from_cas,
@@ -19,13 +20,15 @@ use holochain_core_types::{
     },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
-    entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
+    entry::{
+        cap_entries::{CapabilityType, ReservedCapabilityId},
+        entry_type::EntryType,
+        Entry,
+    },
     error::{HcResult, HolochainError},
 };
 use holochain_net::p2p_config::P2pConfig;
-use jsonrpc_lite::JsonRpc;
-use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use snowflake::ProcessUniqueId;
+use jsonrpc_core::{self, IoHandler};
 use std::{
     sync::{
         mpsc::{channel, Receiver, SyncSender},
@@ -53,8 +56,8 @@ pub struct Context {
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
-    pub conductor_api: Arc<RwLock<IoHandler>>,
-    pub signal_tx: Option<SyncSender<Signal>>,
+    pub conductor_api: ConductorApi,
+    signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
 impl Context {
@@ -109,7 +112,10 @@ impl Context {
             dht_storage,
             eav_storage: eav,
             p2p_config,
-            conductor_api: Self::test_check_conductor_api(conductor_api, agent_id),
+            conductor_api: ConductorApi::new(Self::test_check_conductor_api(
+                conductor_api,
+                agent_id,
+            )),
         }
     }
 
@@ -118,7 +124,7 @@ impl Context {
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: Option<SyncSender<ActionWrapper>>,
-        signal_tx: Option<SyncSender<Signal>>,
+        signal_tx: Option<crossbeam_channel::Sender<Signal>>,
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
@@ -136,7 +142,7 @@ impl Context {
             dht_storage: cas,
             eav_storage: eav,
             p2p_config,
-            conductor_api: Self::test_check_conductor_api(None, agent_id),
+            conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
         })
     }
 
@@ -207,10 +213,8 @@ impl Context {
             .expect("Action channel not initialized")
     }
 
-    pub fn signal_tx(&self) -> &SyncSender<Signal> {
-        self.signal_tx
-            .as_ref()
-            .expect("Signal channel not initialized")
+    pub fn signal_tx(&self) -> Option<&crossbeam_channel::Sender<Signal>> {
+        self.signal_tx.as_ref()
     }
 
     pub fn observer_channel(&self) -> &SyncSender<Observer> {
@@ -247,29 +251,7 @@ impl Context {
     }
 
     pub fn sign(&self, payload: String) -> Result<String, HolochainError> {
-        let handler = self.conductor_api.write().unwrap();
-        let request = format!(
-            r#"{{"jsonrpc": "2.0", "method": "agent/sign", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
-            payload, ProcessUniqueId::new()
-        );
-
-        let response = handler
-            .handle_request_sync(&request)
-            .ok_or("Conductor sign call failed".to_string())?;
-
-        let response = JsonRpc::parse(&response)?;
-
-        match response {
-            JsonRpc::Success(_) => Ok(String::from(
-                response.get_result().unwrap()["signature"]
-                    .as_str()
-                    .unwrap(),
-            )),
-            JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
-                serde_json::to_string(&response.get_error().unwrap()).unwrap(),
-            )),
-            _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
-        }
+        self.conductor_api.sign(payload)
     }
 
     /// returns the public capability token (if any)
@@ -281,33 +263,31 @@ impl Context {
             .ok_or::<HolochainError>("No top chain header".into())?;
 
         // Get address of first Token Grant entry (return early if none)
-        let addr = state
+        let grants = state
             .agent()
             .chain_store()
-            .iter_type(&Some(top), &EntryType::CapTokenGrant)
-            .next()
-            .ok_or::<HolochainError>("No CapTokenGrant entry type in chain".into())?
-            .entry_address()
-            .to_owned();
+            .iter_type(&Some(top), &EntryType::CapTokenGrant);
 
         // Get CAS
         let cas = state.agent().chain_store().content_storage();
 
-        // Get according Token Grant entry from CAS
-        let entry = get_entry_from_cas(&cas, &addr)?
-            .ok_or::<HolochainError>("Can't get CapTokenGrant entry from CAS".into())?;
-
-        // Make sure entry is a public grant and return it
-        if let Entry::CapTokenGrant(grant) = entry {
-            match grant.cap_type() {
-                CapabilityType::Public => Ok(addr),
-                _ => Err(HolochainError::ErrorGeneric(
-                    "Got CapTokenGrant, but it was not public!".to_string(),
-                )),
+        for grant in grants {
+            let addr = grant.entry_address().to_owned();
+            let entry = get_entry_from_cas(&cas, &addr)?
+                .ok_or::<HolochainError>("Can't get CapTokenGrant entry from CAS".into())?;
+            // if entry is the public grant return it
+            if let Entry::CapTokenGrant(grant) = entry {
+                if grant.cap_type() == CapabilityType::Public
+                    && grant.id() == ReservedCapabilityId::Public.as_str()
+                {
+                    return Ok(addr);
+                }
             }
-        } else {
-            unreachable!()
         }
+
+        Err(HolochainError::ErrorGeneric(
+            "No public CapTokenGrant entry type in chain".into(),
+        ))
     }
 }
 
@@ -316,8 +296,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
         .state()
         .ok_or("Network::start() could not get application state".to_string())?;
     let agent_state = state.agent();
-
-    let agent = await!(agent_state.get_agent(&context))?;
+    let agent = agent_state.get_agent()?;
     let agent_id = agent.pub_sign_key;
 
     let dna = state

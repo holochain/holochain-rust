@@ -248,9 +248,10 @@ pub struct MetaListData {
 #[serde(rename_all = "camelCase", tag = "method")]
 pub enum JsonProtocol {
     // -- Generic responses -- //
-    /// Success response to a request (any message with an _id field.)
+    /// Generic success response to a request (any message with an _id field.).
+    /// Used when the request is not expecting a response holding specific data.
     SuccessResult(SuccessResultData),
-    /// Failure response to a request (any message with an _id field.)
+    /// Generic failure response to a request (any message with an _id field.)
     /// Can also be a response to a mal-formed request.
     FailureResult(FailureResultData),
 
@@ -261,9 +262,12 @@ pub enum JsonProtocol {
     /// Order the p2p module to leave the network of the specified DNA.
     UntrackDna(TrackDnaData),
 
-    /// Connect to the specified multiaddr
+    /// Request the network module to connect to a specific Peer. Used for bootstrapping only.
+    /// Connection address should be an opaque transport-layer connection string,
+    /// which will generally be a URI, but in the case of libp2p is a multiaddr.
     Connect(ConnectData),
-    /// Notification of a connection from another peer.
+    /// Notify that another Peer has connected to this Dna.
+    /// This is sent when another Peer joins the Network.
     PeerConnected(PeerData),
 
     // -- Config (deprecated?) -- //
@@ -289,55 +293,66 @@ pub enum JsonProtocol {
     SendMessageResult(MessageData),
     /// Request to handle a message another peer has sent us.
     HandleSendMessage(MessageData),
-    /// Our response to a message from another peer.
+    /// Core's response to a `HandleSendMessage`
     HandleSendMessageResult(MessageData),
 
     // -- Entry -- //
-    /// Request data from the dht network
+    /// Request an Entry from the DHT network of a DNA.
     FetchEntry(FetchEntryData),
-    /// Response from requesting dht data from the network
+    /// The network's reponse from `FetchEntry`
     FetchEntryResult(FetchEntryResultData),
-    /// Another node, or the network module itself is requesting data from us
+    /// The network module is requesting its Core to respond to a `FetchEntry`
     HandleFetchEntry(FetchEntryData),
-    /// Successful data response for a `HandleFetchDhtData` request
+    /// Successful response for a `FetchEntry` request from Core
     HandleFetchEntryResult(FetchEntryResultData),
 
-    /// Publish data to the dht.
+    /// Core's request to add an Entry to the DHT network.
+    /// The network will take care to figure out which nodes are going to store it.
     PublishEntry(EntryData),
-    /// Store data on a node's dht slice.
+    /// Network request for Core to store an Entry in its DHT shard.
     HandleStoreEntry(EntryData),
+    /// Network informing Core that it isn't required to hold an Entry in its DHT shard anymore.
     HandleDropEntry(DropEntryData),
 
     // -- Meta -- //
-    /// Request metadata from the dht
+    /// Request a Meta from the DHT network of a DNA.
     FetchMeta(FetchMetaData),
-    /// Response by the network for our metadata request
+    /// The network's reponse from `FetchMeta`
     FetchMetaResult(FetchMetaResultData),
-    /// Another node, or the network module itself, is requesting data from us
+    /// The network module is requesting its Core to respond to a `FetchMeta`
     HandleFetchMeta(FetchMetaData),
-    /// Successful metadata response for a `HandleFetchMeta` request
+    /// Successful response for a `HandleFetchMeta` request from Core
     HandleFetchMetaResult(FetchMetaResultData),
 
-    /// Publish metadata to the dht.
+    /// Core's request to add a Meta to the DHT network.
+    /// The network will take care to figure out which nodes are going to store it.
     PublishMeta(DhtMetaData),
-    /// Store metadata on a node's dht slice.
+    /// Network request for Core to store a Meta in its DHT shard.
     HandleStoreMeta(DhtMetaData),
-    /// Drop metadata on a node's dht slice.
+    /// Network informing Core that it isn't required to hold a Meta in its DHT shard anymore.
     #[serde(rename = "handleDropData")]
     HandleDropMeta(DropMetaData),
 
     // -- Entry lists -- //
+    /// The p2p module requests from Core the list of entries it has authored
+    /// and wants published on the network.
     HandleGetPublishingEntryList(GetListData),
+    /// Core's response to a `HandleGetPublishingEntryList
     HandleGetPublishingEntryListResult(EntryListData),
-
+    /// The p2p module requests from Core the list of entries it is holding for the network.
     HandleGetHoldingEntryList(GetListData),
+    /// Core's response to a `HandleGetHoldingEntryList`
     HandleGetHoldingEntryListResult(EntryListData),
 
     // -- Meta lists -- //
+    /// The p2p module requests from Core the list of Meta it has authored
+    /// and wants published on the network.
     HandleGetPublishingMetaList(GetListData),
+    /// Core's response to a `HandleGetPublishingMetaList`
     HandleGetPublishingMetaListResult(MetaListData),
-
+    /// The p2p module requests from Core the list of Meta it is holding for the network.
     HandleGetHoldingMetaList(GetListData),
+    /// Core's response to a `HandleGetHoldingMetaList`
     HandleGetHoldingMetaListResult(MetaListData),
 }
 

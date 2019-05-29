@@ -1,9 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
     agent::chain_store::{ChainStore, ChainStoreIterator},
-    context::Context,
     state::State,
-    workflows::get_entry_result::get_entry_result_workflow,
 };
 use holochain_core_types::{
     agent::AgentId,
@@ -15,9 +13,13 @@ use holochain_core_types::{
     signature::{Provenance, Signature},
     time::Iso8601,
 };
-use holochain_wasm_utils::api_serialization::get_entry::*;
 use serde_json;
-use std::{collections::HashMap, convert::TryFrom, sync::Arc, time::SystemTime};
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+    sync::Arc,
+    time::SystemTime,
+};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -29,26 +31,30 @@ pub struct AgentState {
     actions: HashMap<ActionWrapper, ActionResponse>,
     chain_store: ChainStore,
     top_chain_header: Option<ChainHeader>,
+    initial_agent_address: Address,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain_store: ChainStore) -> AgentState {
+    pub fn new(chain_store: ChainStore, initial_agent_address: Address) -> AgentState {
         AgentState {
             actions: HashMap::new(),
             chain_store,
             top_chain_header: None,
+            initial_agent_address,
         }
     }
 
     pub fn new_with_top_chain_header(
         chain_store: ChainStore,
         chain_header: Option<ChainHeader>,
+        initial_agent_address: Address,
     ) -> AgentState {
         AgentState {
             actions: HashMap::new(),
             chain_store,
             top_chain_header: chain_header,
+            initial_agent_address,
         }
     }
 
@@ -75,24 +81,26 @@ impl AgentState {
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
             .nth(0)
             .and_then(|chain_header| Some(chain_header.entry_address().clone()))
+            .or_else(|| Some(self.initial_agent_address.clone()))
             .ok_or(HolochainError::ErrorGeneric(
                 "Agent entry not found".to_string(),
             ))
     }
 
-    pub async fn get_agent<'a>(&'a self, context: &'a Arc<Context>) -> HcResult<AgentId> {
+    pub fn get_agent(&self) -> HcResult<AgentId> {
         let agent_entry_address = self.get_agent_address()?;
-        let entry_args = GetEntryArgs {
-            address: agent_entry_address,
-            options: Default::default(),
-        };
-        let agent_entry_result = await!(get_entry_result_workflow(context, &entry_args))?;
-        let agent_entry = agent_entry_result.latest();
+        let maybe_agent_entry_json = self
+            .chain_store()
+            .content_storage()
+            .read()?
+            .fetch(&agent_entry_address)?;
+        let agent_entry_json = maybe_agent_entry_json.ok_or(HolochainError::ErrorGeneric(
+            "Agent entry not found".to_string(),
+        ))?;
+
+        let agent_entry: Entry = agent_entry_json.try_into()?;
         match agent_entry {
-            None => Err(HolochainError::ErrorGeneric(
-                "Agent entry not found".to_string(),
-            )),
-            Some(Entry::AgentId(agent_id)) => Ok(agent_id),
+            Entry::AgentId(agent_id) => Ok(agent_id),
             _ => unreachable!(),
         }
     }
@@ -161,18 +169,14 @@ pub enum ActionResponse {
 
 pub fn create_new_chain_header(
     entry: &Entry,
-    context: Arc<Context>,
+    agent_state: &AgentState,
+    root_state: &State,
     crud_link: &Option<Address>,
+    provenances: &Vec<Provenance>,
 ) -> Result<ChainHeader, HolochainError> {
-    let agent_state = context
-        .state()
-        .expect("create_new_chain_header called without state")
-        .agent();
-    let agent_address = agent_state
-        .get_agent_address()
-        .unwrap_or(context.agent_id.address());
+    let agent_address = agent_state.get_agent_address()?;
     let signature = Signature::from(
-        context.sign(entry.address().to_string())?,
+        root_state.conductor_api.sign(entry.address().to_string())?,
         // Temporarily replaced by error handling for Holo hack signing.
         // TODO: pull in the expect below after removing the Holo signing hack again
         //.expect("Must be able to create signatures!"),
@@ -180,10 +184,14 @@ pub fn create_new_chain_header(
     let duration_since_epoch = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("System time must not be before UNIX EPOCH");
+
+    let mut provenances: Vec<Provenance> = provenances.to_vec();
+    provenances.push(Provenance::new(agent_address, signature));
+
     Ok(ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
-        &vec![Provenance::new(agent_address, signature)],
+        &provenances,
         &agent_state
             .top_chain_header
             .clone()
@@ -202,31 +210,33 @@ pub fn create_new_chain_header(
 /// Intended for use inside the reducer, isolated for unit testing.
 /// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
 /// action reduction to hang
-/// @TODO is there a way to reduce that doesn't block indefinitely on callback fns?
-/// @see https://github.com/holochain/holochain-rust/issues/222
-/// @TODO Better error handling in the state persister section
-/// https://github.com/holochain/holochain-rust/issues/555
 fn reduce_commit_entry(
-    context: Arc<Context>,
-    state: &mut AgentState,
+    agent_state: &mut AgentState,
+    root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (entry, maybe_link_update_delete) = unwrap_to!(action => Action::Commit);
+    let (entry, maybe_link_update_delete, provenances) = unwrap_to!(action => Action::Commit);
 
-    let result = create_new_chain_header(&entry, context.clone(), &maybe_link_update_delete)
-        .and_then(|chain_header| {
-            let storage = &state.chain_store.content_storage().clone();
-            storage.write().unwrap().add(entry)?;
-            storage.write().unwrap().add(&chain_header)?;
-            Ok((chain_header, entry.address()))
-        })
-        .and_then(|(chain_header, address)| {
-            state.top_chain_header = Some(chain_header);
-            Ok(address)
-        });
+    let result = create_new_chain_header(
+        &entry,
+        agent_state,
+        root_state,
+        &maybe_link_update_delete,
+        provenances,
+    )
+    .and_then(|chain_header| {
+        let storage = &agent_state.chain_store.content_storage().clone();
+        storage.write().unwrap().add(entry)?;
+        storage.write().unwrap().add(&chain_header)?;
+        Ok((chain_header, entry.address()))
+    })
+    .and_then(|(chain_header, address)| {
+        agent_state.top_chain_header = Some(chain_header);
+        Ok(address)
+    });
 
-    state
+    agent_state
         .actions
         .insert(action_wrapper.clone(), ActionResponse::Commit(result));
 }
@@ -241,15 +251,15 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
 
 /// Reduce Agent's state according to provided Action
 pub fn reduce(
-    context: Arc<Context>,
     old_state: Arc<AgentState>,
+    root_state: &State,
     action_wrapper: &ActionWrapper,
 ) -> Arc<AgentState> {
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
-            f(context, &mut new_state, &action_wrapper);
+            f(&mut new_state, root_state, &action_wrapper);
             Arc::new(new_state)
         }
         None => old_state,
@@ -272,15 +282,17 @@ pub mod tests {
         signature::Signature,
     };
     use serde_json;
-    use std::{
-        collections::HashMap,
-        sync::{Arc, RwLock},
-    };
+    use std::collections::HashMap;
     use test_utils::mock_signing::mock_signer;
 
     /// dummy agent state
-    pub fn test_agent_state() -> AgentState {
-        AgentState::new(test_chain_store())
+    pub fn test_agent_state(maybe_initial_agent_address: Option<Address>) -> AgentState {
+        AgentState::new(
+            test_chain_store(),
+            maybe_initial_agent_address
+                .or_else(|| Some(AgentId::generate_fake("test agent").address()))
+                .unwrap(),
+        )
     }
 
     /// dummy action response for a successful commit as test_entry()
@@ -291,29 +303,25 @@ pub mod tests {
     #[test]
     /// smoke test for building a new AgentState
     fn agent_state_new() {
-        test_agent_state();
+        test_agent_state(None);
     }
 
     #[test]
     /// test for the agent state actions getter
     fn agent_state_actions() {
-        assert_eq!(HashMap::new(), test_agent_state().actions());
+        assert_eq!(HashMap::new(), test_agent_state(None).actions());
     }
 
     #[test]
     /// test for reducing commit entry
     fn test_reduce_commit_entry() {
-        let mut agent_state = test_agent_state();
         let netname = Some("test_reduce_commit_entry");
         let context = test_context("bob", netname);
+        let mut agent_state = test_agent_state(Some(context.agent_id.address()));
         let state = State::new_with_agent(context, agent_state.clone());
-        let mut context = test_context("bob", netname);
-        Arc::get_mut(&mut context)
-            .unwrap()
-            .set_state(Arc::new(RwLock::new(state)));
         let action_wrapper = test_action_wrapper_commit();
 
-        reduce_commit_entry(context, &mut agent_state, &action_wrapper);
+        reduce_commit_entry(&mut agent_state, &state, &action_wrapper);
 
         assert_eq!(
             agent_state.actions().get(&action_wrapper),
@@ -399,28 +407,22 @@ pub mod tests {
 
     #[test]
     fn test_create_new_chain_header() {
-        let agent_state = test_agent_state();
         let netname = Some("test_create_new_chain_header");
         let context = test_context("bob", netname);
-        let state = State::new_with_agent(context, agent_state.clone());
-        let mut context = test_context("bob", netname);
-        Arc::get_mut(&mut context)
-            .unwrap()
-            .set_state(Arc::new(RwLock::new(state)));
+        let agent_state = test_agent_state(Some(context.agent_id.address()));
+        let state = State::new_with_agent(context.clone(), agent_state.clone());
 
-        let header = create_new_chain_header(&test_entry(), context.clone(), &None).unwrap();
-        println!("{:?}", header);
+        let header =
+            create_new_chain_header(&test_entry(), &agent_state, &state, &None, &vec![]).unwrap();
+        let agent_id = context.agent_id.clone();
         assert_eq!(
             header,
             ChainHeader::new(
                 &test_entry().entry_type(),
                 &test_entry().address(),
                 &[Provenance::new(
-                    context.agent_id.address(),
-                    Signature::from(mock_signer(
-                        test_entry().address().to_string(),
-                        &context.agent_id
-                    ))
+                    agent_id.address(),
+                    Signature::from(mock_signer(test_entry().address().to_string(), &agent_id))
                 )]
                 .to_vec(),
                 &None,

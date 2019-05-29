@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
-    network::{handler::create_handler, state::NetworkState},
+    network::state::NetworkState,
+    state::State,
 };
 use holochain_net::{
     connection::{
@@ -12,15 +12,11 @@ use holochain_net::{
 };
 use std::sync::{Arc, Mutex};
 
-pub fn reduce_init(
-    context: Arc<Context>,
-    state: &mut NetworkState,
-    action_wrapper: &ActionWrapper,
-) {
+pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
     let mut network = P2pNetwork::new(
-        create_handler(&context, network_settings.dna_address.to_string()),
+        network_settings.handler.clone(),
         &network_settings.p2p_config,
     )
     .unwrap();
@@ -48,4 +44,70 @@ pub fn reduce_init(
         state.agent_id = Some(network_settings.agent_id.clone());
         Ok(())
     });
+}
+
+#[cfg(test)]
+pub mod test {
+    use self::tempfile::tempdir;
+    use super::*;
+    use crate::{
+        context::Context,
+        logger::test_logger,
+        persister::SimplePersister,
+        state::{test_store, State},
+    };
+    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use holochain_core_types::{
+        agent::AgentId,
+        cas::content::{Address, AddressableContent},
+    };
+    use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
+    use std::sync::{Mutex, RwLock};
+    use tempfile;
+
+    fn test_context() -> Arc<Context> {
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
+        let mut context = Context::new(
+            AgentId::generate_fake("Terence"),
+            test_logger(),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
+            file_storage.clone(),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
+            P2pConfig::new_with_unique_memory_backend(),
+            None,
+            None,
+        );
+
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        context.set_state(global_state.clone());
+        Arc::new(context)
+    }
+
+    #[test]
+    pub fn should_wait_for_protocol_p2p_ready() {
+        let context: Arc<Context> = test_context();
+        let dna_address: Address = context.agent_id.address();
+        let agent_id = context.agent_id.content().to_string();
+        let handler = NetHandler::new(Box::new(|_| Ok(())));
+        let network_settings = crate::action::NetworkSettings {
+            p2p_config: context.p2p_config.clone(),
+            dna_address,
+            agent_id,
+            handler,
+        };
+        let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
+
+        let mut network_state = NetworkState::new();
+        let root_state = test_store(context.clone());
+        let result = reduce_init(&mut network_state, &root_state, &action_wrapper);
+
+        assert_eq!(result, ());
+    }
+
 }

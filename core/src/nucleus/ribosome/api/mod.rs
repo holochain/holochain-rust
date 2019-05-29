@@ -11,6 +11,7 @@ pub mod init_globals;
 pub mod link_entries;
 #[macro_use]
 mod macros;
+pub mod capabilities;
 pub mod keystore;
 pub mod query;
 pub mod remove_entry;
@@ -24,6 +25,7 @@ pub mod verify_signature;
 use crate::nucleus::ribosome::{
     api::{
         call::invoke_call,
+        capabilities::{invoke_commit_capability_claim, invoke_commit_capability_grant},
         commit::invoke_commit_app_entry,
         debug::invoke_debug,
         entry_address::invoke_entry_address,
@@ -31,8 +33,9 @@ use crate::nucleus::ribosome::{
         get_links::invoke_get_links,
         init_globals::invoke_init_globals,
         keystore::{
-            invoke_keystore_derive_key, invoke_keystore_derive_seed, invoke_keystore_list,
-            invoke_keystore_new_random, invoke_keystore_sign,
+            invoke_keystore_derive_key, invoke_keystore_derive_seed,
+            invoke_keystore_get_public_key, invoke_keystore_list, invoke_keystore_new_random,
+            invoke_keystore_sign,
         },
         link_entries::invoke_link_entries,
         query::invoke_query,
@@ -127,6 +130,15 @@ link_zome_api! {
 
     /// Sign a block of data using a key in the keystore
     "hc_keystore_sign", KeystoreSign, invoke_keystore_sign;
+
+    /// Get the public key for a given secret
+    "hc_keystore_get_public_key", KeystoreGetPublicKey, invoke_keystore_get_public_key;
+
+    /// Commit a capability grant to the source chain
+    "hc_commit_capability_grant", CommitCapabilityGrant, invoke_commit_capability_grant;
+
+    /// Commit a capability grant to the source chain
+    "hc_commit_capability_claim", CommitCapabilityClaim, invoke_commit_capability_claim;
 }
 
 #[cfg(test)]

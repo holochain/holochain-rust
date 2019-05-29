@@ -1,6 +1,6 @@
 [package]
 name = "holochain_node_test_waiter"
-version = "0.0.11-alpha1"
+version = "0.0.17-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -10,4 +10,5 @@ neon = "=0.2.0"
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
-holochain_sodium = { path = "../sodium" }
+lib3h_sodium = "=0.0.1-alpha1"
+crossbeam-channel = "=0.3.8"

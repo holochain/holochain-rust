@@ -1504,11 +1504,7 @@ pub mod tests {
         let result = instance.call("test_zome", cap_call, "call_bridge_error", "{}");
 
         assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap(),
-            JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ErrorGeneric\\\":\\\"{\\\\\\\"code\\\\\\\":-32602,\\\\\\\"message\\\\\\\":\\\\\\\"Holochain Instance Error: Zome function \'non-existent-function\' not found in Zome \'greeter\'\\\\\\\"}\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"225\\\"}\"}}"
-            )
-        );
+        assert!(result.unwrap().to_string().contains("Holochain Instance Error: Zome function \'non-existent-function\' not found in Zome \'greeter\'"));
     }
 
     #[test]

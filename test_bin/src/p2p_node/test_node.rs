@@ -165,7 +165,7 @@ impl TestNode {
                 dna_address: dna_address.clone(),
                 agent_id,
             };
-            JsonProtocol::TrackDna(track_dna_msg).into()
+            JsonProtocol::UntrackDna(track_dna_msg).into()
         } else {
             let leave_space_msg = lib3h_protocol::data_types::SpaceData {
                 request_id: "leave_space_req".to_string(),

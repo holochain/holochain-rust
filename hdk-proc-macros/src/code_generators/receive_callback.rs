@@ -4,9 +4,9 @@ use quote::quote;
 
 impl ZomeCodeDef {
     pub fn receive_callback(&self) -> TokenStream {
-        let (receive_blocks, receive_params) = match &self.receive_callback {
-            None => (Vec::new(), Vec::new()),
-            Some(callback) => (vec![callback.code.clone()], vec![callback.param.clone()]),
+        let (receive_blocks, receive_from, receive_param) = match &self.receive_callback {
+            None => (Vec::new(), Vec::new(),Vec::new()),
+            Some(callback) => (vec![callback.code.clone()], vec![callback.from_param.clone()], vec![callback.message_param.clone()]),
         };
 
         quote! {
@@ -26,10 +26,11 @@ impl ZomeCodeDef {
                     }
 
                     // Deserialize input
-                    let input = load_string!(encoded_allocation_of_input);
+                    let input = load_json!(encoded_allocation_of_input);
 
-                    fn execute(payload: String) -> String {
-                        let #receive_params = payload;
+                    fn execute(input: hdk::holochain_wasm_utils::api_serialization::receive::ReceiveParams) -> String {
+                        let #receive_from = input.from;
+                        let #receive_param = input.payload;
                         #receive_blocks
                     }
 

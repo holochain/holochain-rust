@@ -26,6 +26,7 @@ use hdk::{
         cas::content::Address,
         entry::Entry,
         json::JsonString,
+        signature::Provenance,
     },
     holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}}
 };
@@ -50,10 +51,8 @@ pub mod blog {
     }
 
     #[receive]
-    pub fn receive(message: String) {
-        json!({
-            "message": message
-        }).to_string()
+    pub fn receive(from: Address, msg_json: String) {
+        blog::handle_receive(from, JsonString::from_json(&msg_json))
     }
 
     #[zome_fn("hc_public")]
@@ -72,8 +71,8 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
-    pub fn check_send(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
-        blog::handle_check_send(to_agent, message)
+    pub fn ping(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
+        blog::handle_ping(to_agent, message)
     }
 
     #[zome_fn("hc_public")]
@@ -87,6 +86,11 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
+    pub fn create_tagged_post(content: String, tag: String) -> ZomeApiResult<Address> {
+        blog::handle_create_tagged_post(content, tag)
+    }
+
+    #[zome_fn("hc_public")]
     pub fn create_post_with_agent(agent_id: Address,content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
         blog::handle_create_post_with_agent(agent_id, content, in_reply_to)
     }
@@ -97,12 +101,27 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
+    pub fn create_post_countersigned(content: String, in_reply_to: Option<Address>, counter_signature: Provenance) -> ZomeApiResult<Address> {
+        blog::handle_create_post_countersigned(content, in_reply_to, counter_signature)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn commit_post_claim(grantor: Address, claim: Address) -> ZomeApiResult<Address> {
+        blog::handle_commit_post_claim(grantor, claim)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn create_post_with_claim(grantor: Address, content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
+        blog::handle_create_post_with_claim(grantor, content, in_reply_to)
+    }
+
+    #[zome_fn("hc_public")]
     pub fn delete_post(content: String) -> ZomeApiResult<Address> {
         blog::handle_delete_post(content)
     }
 
     #[zome_fn("hc_public")]
-    pub fn delete_entry_post(post_address: Address) -> ZomeApiResult<()> {
+    pub fn delete_entry_post(post_address: Address) -> ZomeApiResult<Address> {
         blog::handle_delete_entry_post(post_address)
     }
 
@@ -137,8 +156,8 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
-    pub fn my_posts() -> ZomeApiResult<GetLinksResult> {
-        blog::handle_my_posts()
+    pub fn my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {
+        blog::handle_my_posts(tag)
     }
 
     #[zome_fn("hc_public")]
@@ -172,6 +191,11 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
+    pub fn get_post_bridged(post_address: Address) -> ZomeApiResult<Option<Entry>> {
+        blog::handle_get_post_bridged(post_address)
+    }
+
+    #[zome_fn("hc_public")]
     pub fn my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
         blog::handle_my_posts_immediate_timeout()
     }
@@ -182,7 +206,7 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
-    pub fn recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<()> {
+    pub fn recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<Address> {
         blog::handle_recommend_post(post_address, agent_address)
     }
 

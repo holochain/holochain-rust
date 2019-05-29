@@ -10,7 +10,8 @@ pub type EntryDefCallback = syn::ItemFn;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct ReceiveCallback {
-    pub param: Ident,
+    pub from_param: Ident,
+    pub message_param: Ident,
     pub code: syn::Block,
 }
 

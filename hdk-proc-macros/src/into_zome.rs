@@ -214,29 +214,33 @@ impl IntoZome for syn::ItemMod {
                 let inputs = func.decl.inputs;
 
                 match inputs.len() {
-                    1 => {
-                        let input = inputs.iter().next().unwrap();
-                        if let syn::FnArg::Captured(arg) = input {
-                            let name = match &arg.pat {
-                                syn::Pat::Ident(name_ident) => name_ident.ident.clone(),
-                                _ => {
-                                    emit_error(
-                                        &func.ident,
-                                        "The argument to receive must have a name",
-                                    );
-                                    panic!()
-                                }
-                            };
-                            acc.push(ReceiveCallback {
-                                param: name,
-                                code: *func.block,
-                            });
+                    2 => {
+                        let params = inputs.iter().take(2).collect::<Vec<_>>();
+
+                        match (params[0], params[1]) {
+                            (
+                                syn::FnArg::Captured(syn::ArgCaptured{pat: syn::Pat::Ident(from_ident), ..}), 
+                                syn::FnArg::Captured(syn::ArgCaptured{pat: syn::Pat::Ident(message_ident), ..})
+                            ) => {
+                                acc.push(ReceiveCallback {
+                                    from_param: from_ident.ident.clone(),
+                                    message_param: message_ident.ident.clone(),
+                                    code: *func.block,
+                                });
+                            },
+                            _ => {
+                                emit_error(
+                                    &func.ident,
+                                    "Receive callback must take two named arguments of type 'Address' and 'String' respectively",
+                                );
+                                panic!()
+                            }
                         }
                     }
                     _ => {
                         emit_error(
                             &func.ident,
-                            "Receive callback must take a single argument of type 'String'",
+                            "Receive callback must take two named arguments of type 'Address' and 'String' respectively",
                         );
                         panic!()
                     }

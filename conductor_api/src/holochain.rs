@@ -164,7 +164,7 @@ impl Holochain {
             .ok_or(HolochainError::ErrorGeneric(
                 "State could not be loaded due to NoneError".to_string(),
             ))?;
-        let mut instance = Instance::from_state(loaded_state.clone());
+        let mut instance = Instance::from_state(loaded_state.clone(), context.clone());
         let new_context = instance.initialize(None, context.clone())?;
         Ok(Holochain {
             instance,

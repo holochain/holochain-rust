@@ -10,6 +10,7 @@ members = [
   "core",
   "dna_c_binding",
   "hdk-rust",
+  "hdk-proc-macros",
   "net",
   "nodejs_waiter",
   "dpki",
@@ -19,5 +20,6 @@ members = [
 exclude = [
   "test_utils",
   "app_spec",
+  "app_spec_proc_macro",
   "nodejs_conductor/native",
 ]

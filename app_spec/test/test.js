@@ -714,7 +714,7 @@ scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
     "agent" : alice.agentId
   })
 
-  const alice_posts_live= bob.call("blog","posts_by_agent",
+  const bob_posts_live= bob.call("blog","posts_by_agent",
   {
     "agent" : alice.agentId
   })
@@ -742,21 +742,21 @@ scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
   t.equal("deleted",alice_posts_deleted.Ok.links[0].crud_status);
   t.equal("deleted",bob_posts_deleted.Ok.links[0].crud_status);
 
-  const bob_posts_deleted = bob.call("blog","posts_by_agent_all",
+  const bob_posts_all = bob.call("blog","posts_by_agent_all",
   {
     "agent" : alice.agentId
   });
-  const alice_posts_deleted = alice.call("blog","posts_by_agent_all",
+  const alice_posts_all = alice.call("blog","posts_by_agent_all",
   {
     "agent" : alice.agentId
   });
 
-  t.equal(2,alice_posts_live.Ok.links.length);
-  t.equal("live",alice_posts_live.Ok.links[0].status);
-  t.equal("deleted",alice_posts_live.Ok.links[1].status);
-  t.equal(2,bob_posts_live.Ok.links.length);
-  t.equal("live",bob_posts_live.Ok.links[0].crud_status);
-  t.equal("deleted",bob_posts_live.Ok.links[1].status);
+  t.equal(2,alice_posts_all.Ok.links.length);
+  t.equal("live",alice_posts_all.Ok.links[0].status);
+  t.equal("deleted",alice_posts_all.Ok.links[1].status);
+  t.equal(2,bob_posts_all.Ok.links.length);
+  t.equal("live",bob_posts_all.Ok.links[0].crud_status);
+  t.equal("deleted",bob_posts_all.Ok.links[1].status);
 
 
 })

@@ -612,9 +612,14 @@ impl Conductor {
                 // the loaded dna.
                 {
                     let dna_hash_from_conductor_config =
-                        HashString::from(dna_config.hash.clone().unwrap_or("".to_string()))
+                        HashString::from(dna_config.hash.clone().unwrap_or("Missing DNA config hash".to_string()))
                             .to_owned();
                     let dna_hash_computed = &dna.address();
+
+                    let dna_hash_computed_from_file = match Conductor::load_dna(&dna_file) {
+                        Ok(dna) => HashString::from(dna.address()),
+                        Err(_) => HashString::from(String::from("Missing DNA File."))
+                    };
 
                     match Conductor::check_dna_consistency(
                         &dna_hash_from_conductor_config,
@@ -622,10 +627,48 @@ impl Conductor {
                         Ok(_) => (),
                         Err(_e) => {
                             let msg = format!("\
-                                err/Conductor: DNA hashes mismatch: 'conductor config' != 'Conductor instance': \
+                                err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
                                 '{}' != '{}'",
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed);
+                            context.log(msg);
+
+                            // Do we want to return an error when there is a discrepancy between DNA hashes
+                            // or just warn the user here?
+                            // return Err(_e);
+                        }
+                    }
+
+                    match Conductor::check_dna_consistency(
+                        &dna_hash_from_conductor_config,
+                        &dna_hash_computed_from_file) {
+                        Ok(_) => (),
+                        Err(_e) => {
+                            let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Hash computed from the file {:?}': \
+                                '{}' != '{}'",
+                                &dna_file,
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed_from_file);
+                            context.log(msg);
+
+                            // Do we want to return an error when there is a discrepancy between DNA hashes
+                            // or just warn the user here?
+                            // return Err(_e);
+                        }
+                    }
+
+                    match Conductor::check_dna_consistency(
+                        &dna_hash_computed,
+                        &dna_hash_computed_from_file) {
+                        Ok(_) => (),
+                        Err(_e) => {
+                            let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'Conductor instance' != 'Hash computed from the file {:?}': \
+                                '{}' != '{}'",
+                                &dna_file,
+                                &dna_hash_computed,
+                                &dna_hash_computed_from_file);
                             context.log(msg);
 
                             // Do we want to return an error when there is a discrepancy between DNA hashes
@@ -687,16 +730,16 @@ impl Conductor {
     fn check_dna_consistency(
         dna_hash_from_conductor_config: &HashString,
         dna_hash_computed: &HashString,
-    ) -> Result<(), HolochainInstanceError> {
+        ) -> Result<(), HolochainError> {
         if *dna_hash_from_conductor_config == *dna_hash_computed {
             Ok(())
         } else {
-            Err(HolochainInstanceError::InternalFailure(
+            Err(
                 HolochainError::DnaHashMismatch(
                     dna_hash_from_conductor_config.clone(),
                     dna_hash_computed.clone(),
                 ),
-            ))
+            )
         }
     }
 
@@ -1449,12 +1492,72 @@ pub mod tests {
 
         assert_eq!(
             Conductor::check_dna_consistency(&a, &b),
-            Err(HolochainInstanceError::InternalFailure(
-                HolochainError::DnaHashMismatch(a, b)
-            )),
-            // Err(HolochainError::DnaHashMismatch(a, b)),
+            Err(HolochainError::DnaHashMismatch(a, b)),
             "DNA consistency check Fail."
         )
+    }
+
+    #[test]
+    fn test_check_dna_consistency_from_dna_file() {
+        let fixture = String::from(
+            r#"{
+                "name": "test",
+                "description": "test",
+                "version": "test",
+                "uuid": "00000000-0000-0000-0000-000000000000",
+                "dna_spec_version": "2.0",
+                "properties": {
+                    "test": "test"
+                },
+                "zomes": {
+                    "test": {
+                        "description": "test",
+                        "config": {},
+                        "entry_types": {
+                            "test": {
+                                "description": "test",
+                                "sharing": "public",
+                                "links_to": [
+                                    {
+                                        "target_type": "test",
+                                        "tag": "test"
+                                    }
+                                ],
+                                "linked_from": []
+                            }
+                        },
+                        "traits": {
+                            "hc_public": {
+                                "functions": ["test"]
+                            }
+                        },
+                        "fn_declarations": [
+                            {
+                                "name": "test",
+                                "inputs": [],
+                                "outputs": []
+                            }
+                        ],
+                        "code": {
+                            "code": "AAECAw=="
+                        },
+                        "bridges": []
+                    }
+                }
+            }"#,
+        );
+        let dna_hash_from_file = HashString::from(Dna::try_from(JsonString::from_json(&fixture))
+            .expect(&format!("Fail to load DNA from raw string: {}", fixture))
+            .address());
+        let dna_hash_computed = HashString::from("QmXW3J2gYQ3UPWXqZBcmE9JJkd73YmgQ6Bo5HcPB12hDin");
+
+        assert_eq!(
+            Conductor::check_dna_consistency(&dna_hash_from_file, &dna_hash_computed),
+            Ok(()),
+            "DNA consistency from DNA file check Fail."
+            );
+
+
     }
 
     //#[test]

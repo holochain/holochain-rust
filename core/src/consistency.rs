@@ -106,7 +106,7 @@ impl ConsistencyModel {
                         Entry::App(_, _) => Some(UpdateEntry(crud, address.clone())),
                         Entry::Deletion(_) => Some(RemoveEntry(crud, address.clone())),
                         Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone().link)),
-                        Entry::LinkRemove(link_data) => Some(RemoveLink(link_data.clone().link)),
+                        Entry::LinkRemove(link_data) => Some(RemoveLink(link_data.0.clone().link)),
                         // Question: Why does Entry::LinkAdd take LinkData instead of Link?
                         _ => None,
                     });
@@ -142,10 +142,10 @@ impl ConsistencyModel {
                 ConsistencyEvent::RemoveEntry(old.clone(), new.clone()),
             )),
             Action::AddLink(link) => Some(ConsistencySignal::new_terminal(
-                ConsistencyEvent::AddLink(link.clone()),
+                ConsistencyEvent::AddLink(link.0.clone()),
             )),
             Action::RemoveLink(link) => Some(ConsistencySignal::new_terminal(
-                ConsistencyEvent::RemoveLink(link.clone()),
+                ConsistencyEvent::RemoveLink(link.0.clone()),
             )),
 
             Action::AddPendingValidation(validation) => {

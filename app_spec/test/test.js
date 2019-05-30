@@ -17,7 +17,7 @@ const scenario1 = new Scenario([instanceAlice], { debugLog:false })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: false })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: false })
 
-/*scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
+scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
 
     // Ask for alice to grant a token for bob  (it's hard-coded for bob in re function for now)
     const result = alice.call("blog", "request_post_grant", {})
@@ -697,7 +697,7 @@ scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
   t.equal(bob.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
   t.equal(bob.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
 
-})*/
+})
 
 
 scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
@@ -831,7 +831,7 @@ scenarioBridge.runTape('scenario test create & publish -> getting post via bridg
   t.equal(value.content, initialContent)
 })*/
 
-//scenario2.runTape('request grant', async (t, { alice, bob }) => {
+scenario2.runTape('request grant', async (t, { alice, bob }) => {
 
     /*
       This is not a complete test of requesting a grant because currently there
@@ -840,13 +840,13 @@ scenarioBridge.runTape('scenario test create & publish -> getting post via bridg
       on top of the rust conductor.   For now this is more a placeholder test, but
       note that the value returned is actually the capbability token value.
     */
-    //const result = alice.call("blog", "request_post_grant", {})
-    //t.ok(result.Ok)
-    //t.notOk(result.Err)
+    const result = alice.call("blog", "request_post_grant", {})
+    t.ok(result.Ok)
+    t.notOk(result.Err)
 
-    //const grants = alice.call("blog", "get_grants", {})
-    //t.ok(grants.Ok)
-    //t.notOk(grants.Err)
+    const grants = alice.call("blog", "get_grants", {})
+    t.ok(grants.Ok)
+    t.notOk(grants.Err)
 
-    //t.equal(result.Ok, grants.Ok[0])
-//})
+    t.equal(result.Ok, grants.Ok[0])
+})

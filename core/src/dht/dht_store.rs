@@ -11,7 +11,10 @@ use holochain_core_types::{
     },
     entry::Entry,
     error::HolochainError,
+    crud_status::CrudStatus
 };
+
+use holochain_wasm_utils::api_serialization::get_links::LinksStatusRequestKind;
 
 use std::{
     collections::{BTreeSet, HashMap},
@@ -61,7 +64,7 @@ impl DhtStore {
         address: Address,
         link_type: Option<String>,
         tag: Option<String>,
-    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+    ) -> Result<BTreeSet<(EntityAttributeValueIndex,CrudStatus)>, HolochainError> {
         let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
             Some(address).into(),
             EavFilter::predicate(|attr: Attribute| match attr.clone() {
@@ -85,15 +88,15 @@ impl DhtStore {
                 link_type.clone().unwrap_or_default(),
             ))),
         ))?;
-
-        println!("filtered {:?}", filtered.clone());
-        Ok(filtered
-            .into_iter()
-            .filter(|eav| match eav.attribute() {
-                Attribute::LinkTag(_, _) => true,
-                _ => false,
-            })
-            .collect())
+       
+       Ok(filtered.into_iter().map(|s|{
+           match s.attribute()
+           {
+               Attribute::LinkTag(_,_) => (s,CrudStatus::Live),
+               _ => (s,CrudStatus::Deleted)
+           }
+       }).collect())
+        
     }
 
     /// Get all headers for an entry by first looking in the DHT meta store

@@ -5,7 +5,7 @@ use crate::{
 use boolinator::*;
 use holochain_core_types::{
     cas::content::Address, entry::EntryWithMetaAndHeader, error::HolochainError,
-    validation::ValidationPackage,
+    validation::ValidationPackage,crud_status::CrudStatus
 };
 use holochain_net::p2p_network::P2pNetwork;
 use snowflake;
@@ -27,7 +27,7 @@ type GetEntryWithMetaResult = Option<Result<Option<EntryWithMetaAndHeader>, Holo
 /// None: process started, but no response yet from the network
 /// Some(Err(_)): there was a problem at some point
 /// Some(Ok(_)): we got the list of links
-type GetLinksResult = Option<Result<Vec<Address>, HolochainError>>;
+type GetLinksResult = Option<Result<Vec<(Address,CrudStatus)>, HolochainError>>;
 
 /// This represents the state of a get_validation_package network process:
 /// None: process started, but no response yet from the network

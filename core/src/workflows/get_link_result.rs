@@ -7,6 +7,8 @@ use holochain_core_types::{
     entry::{Entry, EntryWithMeta, EntryWithMetaAndHeader},
     error::HolochainError,
     link::link_data::LinkData,
+    time::Timeout,
+    cas::content::Address
 };
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
@@ -21,7 +23,6 @@ pub async fn get_link_result_workflow<'a>(
     let (link_results, errors): (Vec<_>, Vec<_>) = links
         .into_iter()
         .map(|link| {
-            get_latest_entry(
                         match link.1 {
                             Some(EntryWithMetaAndHeader {
                                 entry_with_meta: EntryWithMeta{entry: Entry::LinkAdd(link_data), ..},
@@ -35,7 +36,6 @@ pub async fn get_link_result_workflow<'a>(
                                     address: link_data.link().target().clone(),
                                     headers,
                                     tag: link_data.link().tag().to_string(),
-                        crud_link: link_entry.entry_with_meta.maybe_link_update_delete,
                                 })
                             },
                             None => {
@@ -50,7 +50,7 @@ pub async fn get_link_result_workflow<'a>(
                             }
                         }
                     },
-            )
+        )
         .partition(Result::is_ok);
 
     if errors.is_empty() {
@@ -58,13 +58,6 @@ pub async fn get_link_result_workflow<'a>(
             link_results
                 .into_iter()
                 .map(|s| s.unwrap())
-                .filter(|link_result| match link_args.options.status_request {
-                    LinksStatusRequestKind::All => true,
-                    LinksStatusRequestKind::Deleted => {
-                        link_result.crud_status == CrudStatus::Deleted
-                    }
-                    LinksStatusRequestKind::Live => link_result.crud_status == CrudStatus::Live,
-                })
                 .collect(),
         ))
     } else {
@@ -91,7 +84,7 @@ async fn get_link_caches<'a>(
         .map(|s| {
             let entry_with_header = context.block_on(get_entry_with_meta_workflow(
                 &context.clone(),
-                &s.clone(),
+                &s.0.clone(),
                 &link_args.options.timeout.clone(),
             ));
             entry_with_header

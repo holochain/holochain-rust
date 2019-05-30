@@ -7,7 +7,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HcResult, time::Timeout};
+use holochain_core_types::{cas::content::Address, error::HcResult, time::Timeout,crud_status::CrudStatus};
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};
 
@@ -20,7 +20,7 @@ pub async fn get_links(
     link_type: Option<String>,
     tag: Option<String>,
     timeout: Timeout,
-) -> HcResult<Vec<Address>> {
+) -> HcResult<Vec<(Address,CrudStatus)>> {
     let key = GetLinksKey {
         base_address: address.clone(),
         link_type: link_type.clone(),
@@ -52,7 +52,7 @@ pub struct GetLinksFuture {
 }
 
 impl Future for GetLinksFuture {
-    type Output = HcResult<Vec<Address>>;
+    type Output = HcResult<Vec<(Address,CrudStatus)>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         let state = self.context.state().unwrap().network();

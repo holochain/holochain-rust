@@ -730,16 +730,14 @@ impl Conductor {
     fn check_dna_consistency(
         dna_hash_from_conductor_config: &HashString,
         dna_hash_computed: &HashString,
-        ) -> Result<(), HolochainError> {
+    ) -> Result<(), HolochainError> {
         if *dna_hash_from_conductor_config == *dna_hash_computed {
             Ok(())
         } else {
-            Err(
-                HolochainError::DnaHashMismatch(
-                    dna_hash_from_conductor_config.clone(),
-                    dna_hash_computed.clone(),
-                ),
-            )
+            Err(HolochainError::DnaHashMismatch(
+                dna_hash_from_conductor_config.clone(),
+                dna_hash_computed.clone(),
+            ))
         }
     }
 
@@ -1546,18 +1544,18 @@ pub mod tests {
                 }
             }"#,
         );
-        let dna_hash_from_file = HashString::from(Dna::try_from(JsonString::from_json(&fixture))
-            .expect(&format!("Fail to load DNA from raw string: {}", fixture))
-            .address());
+        let dna_hash_from_file = HashString::from(
+            Dna::try_from(JsonString::from_json(&fixture))
+                .expect(&format!("Fail to load DNA from raw string: {}", fixture))
+                .address(),
+        );
         let dna_hash_computed = HashString::from("QmXW3J2gYQ3UPWXqZBcmE9JJkd73YmgQ6Bo5HcPB12hDin");
 
         assert_eq!(
             Conductor::check_dna_consistency(&dna_hash_from_file, &dna_hash_computed),
             Ok(()),
             "DNA consistency from DNA file check Fail."
-            );
-
-
+        );
     }
 
     //#[test]

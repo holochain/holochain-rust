@@ -16,6 +16,9 @@ List of URIs that point to other nodes to bootstrap p2p connections.
 Set the logging level used globally by N3H. Must be one of the following: 't', 'd', 'i', 'w', 'e'
 Each value corresponding to the industry standard log level: Trace, Debug, Info, Warning, Error.
 
+#### `networking_config_file`: `string`
+work in progress...
+
 #### `n3h_ipc_uri`: `string` Optional
 URI pointing to an n3h process that is already running and not managed by this
 Conductor. If this is set the Conductor does not spawn n3h itself and ignores the path configs above. Default is this value is empty.

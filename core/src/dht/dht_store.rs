@@ -12,6 +12,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
 };
+use regex::Regex;
 
 use std::{
     collections::{BTreeSet, HashMap},
@@ -62,16 +63,20 @@ impl DhtStore {
         link_type: Option<String>,
         tag: Option<String>,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+        // interpret link tags and types as regex
+        let link_type = link_type.map(|s| Regex::new(&s).unwrap());
+        let tag = tag.map(|s| Regex::new(&s).unwrap());
+
         let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
             Some(address).into(),
             EavFilter::predicate(move |attr| match attr {
                 Attribute::LinkTag(query_link_type, query_tag)
                 | Attribute::RemovedLink(query_link_type, query_tag) => match (&link_type, &tag) {
                     (Some(link_type), Some(tag)) => {
-                        link_type == &query_link_type && tag == &query_tag
+                        link_type.is_match(&query_link_type) && tag.is_match(&query_tag)
                     }
-                    (Some(link_type), None) => link_type == &query_link_type,
-                    (None, Some(tag)) => tag == &query_tag,
+                    (Some(link_type), None) => link_type.is_match(&query_link_type),
+                    (None, Some(tag)) => tag.is_match(&query_tag),
                     (None, None) => true,
                 },
                 _ => false,

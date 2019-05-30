@@ -72,7 +72,18 @@ define_zome! {
         Ok(())
     }}
 
-    agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| { Ok(()) }
+    agent_validation: |_validation_data: hdk::EntryValidationData<AgentId>| {
+        Ok(())
+        // match validation_data {
+        //     EntryValidationData::Create{ entry: agent_id, validation_data: _ } => {
+        //         hdk::debug(format!("validating agent ID: {:?}", agent_id))?;
+        //         Ok(()) 
+        //     },
+        //     _ => {
+        //         Err("Called operation other than create on agent entry".to_string())
+        //     }
+        // }
+    }
 
     receive: |from, msg_json| {
         blog::handle_receive(from, JsonString::from_json(&msg_json))

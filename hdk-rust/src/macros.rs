@@ -294,28 +294,26 @@ macro_rules! define_zome {
         #[no_mangle]
         pub extern "C" fn __hdk_validate_agent_entry(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
             
-            hdk::holochain_core_types::error::RibosomeEncodedValue::Success.into()
-
-            // use $crate::holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
-            // use $crate::holochain_core_types::validation::EntryValidationData;
-            // use $crate::holochain_core_types::agent::AgentId;
-
-            // let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
-            // let allocation = match maybe_allocation {
-            //     Ok(allocation) => allocation,
-            //     Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
-            // };
-            // let init = $crate::global_fns::init_global_memory(allocation);
-            // if init.is_err() {
-            //     return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-            //         init
-            //     ).into();
-            // }
-
             // hdk::holochain_core_types::error::RibosomeEncodedValue::Success.into()
 
+            use $crate::holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
+            use $crate::holochain_core_types::validation::EntryValidationData;
+            use $crate::holochain_core_types::agent::AgentId;
+
+            let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
+            let allocation = match maybe_allocation {
+                Ok(allocation) => allocation,
+                Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
+            };
+            let init = $crate::global_fns::init_global_memory(allocation);
+            if init.is_err() {
+                return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                    init
+                ).into();
+            }
+
             // // Deserialize input
-            // let input: EntryValidationArgs = load_json!(encoded_allocation_of_input);
+            let input: EntryValidationArgs = load_json!(encoded_allocation_of_input);
             // let validation_data = hdk::entry_definition::entry_to_native_type::<AgentId>(input.validation_data.clone())
             //     .expect("__hdk_validate_agent_entry called with incorrect entry type.");
 
@@ -324,14 +322,21 @@ macro_rules! define_zome {
             //     $agent_validation_expr
             // }
 
-            // match execute(validation_data) {
-            //     Ok(_) => hdk::holochain_core_types::error::RibosomeEncodedValue::Success.into(),
-            //     Err(e) => $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-            //         $crate::global_fns::write_json(
-            //             $crate::holochain_wasm_utils::holochain_core_types::json::RawString::from(e)
-            //         )
-            //     ).into(),
-            // }
+            // Deserialize input
+
+            fn execute() -> Result<(), String> {
+                $agent_validation_expr
+            }
+
+
+            match execute() {
+                Ok(_) => hdk::holochain_core_types::error::RibosomeEncodedValue::Success.into(),
+                Err(e) => $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                    $crate::global_fns::write_json(
+                        $crate::holochain_wasm_utils::holochain_core_types::json::RawString::from(e)
+                    )
+                ).into(),
+            }
         }
 
         $(

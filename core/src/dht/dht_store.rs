@@ -5,15 +5,14 @@ use holochain_core_types::{
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
+    crud_status::CrudStatus,
     eav::{
         Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
         IndexFilter,
     },
     entry::Entry,
     error::HolochainError,
-    crud_status::CrudStatus
 };
-
 
 use std::{
     collections::{BTreeSet, HashMap},
@@ -63,7 +62,7 @@ impl DhtStore {
         address: Address,
         link_type: Option<String>,
         tag: Option<String>,
-    ) -> Result<BTreeSet<(EntityAttributeValueIndex,CrudStatus)>, HolochainError> {
+    ) -> Result<BTreeSet<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
             Some(address).into(),
             EavFilter::predicate(|attr: Attribute| match attr.clone() {
@@ -87,15 +86,14 @@ impl DhtStore {
                 link_type.clone().unwrap_or_default(),
             ))),
         ))?;
-       
-       Ok(filtered.into_iter().map(|s|{
-           match s.attribute()
-           {
-               Attribute::LinkTag(_,_) => (s,CrudStatus::Live),
-               _ => (s,CrudStatus::Deleted)
-           }
-       }).collect())
-        
+
+        Ok(filtered
+            .into_iter()
+            .map(|s| match s.attribute() {
+                Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
+                _ => (s, CrudStatus::Deleted),
+            })
+            .collect())
     }
 
     /// Get all headers for an entry by first looking in the DHT meta store

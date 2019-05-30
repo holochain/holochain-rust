@@ -4,12 +4,12 @@ use crate::{
 };
 
 use holochain_core_types::{
+    cas::content::Address,
+    crud_status::CrudStatus,
     entry::{Entry, EntryWithMeta, EntryWithMetaAndHeader},
     error::HolochainError,
     link::link_data::LinkData,
     time::Timeout,
-    cas::content::Address,
-    crud_status::CrudStatus
 };
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
@@ -65,10 +65,7 @@ pub async fn get_link_result_workflow<'a>(
 
     if errors.is_empty() {
         Ok(GetLinksResult::new(
-            link_results
-                .into_iter()
-                .map(|s| s.unwrap())
-                .collect(),
+            link_results.into_iter().map(|s| s.unwrap()).collect(),
         ))
     } else {
         Err(HolochainError::ErrorGeneric(
@@ -80,7 +77,7 @@ pub async fn get_link_result_workflow<'a>(
 async fn get_link_caches<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
-) -> Result<Vec<(LinkData, Option<EntryWithMetaAndHeader>,CrudStatus)>, HolochainError> {
+) -> Result<Vec<(LinkData, Option<EntryWithMetaAndHeader>, CrudStatus)>, HolochainError> {
     let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
@@ -101,7 +98,7 @@ async fn get_link_caches<'a>(
                 .map(|link_entry_result| {
                     link_entry_result.clone().map(|link_entry| {
                         match link_entry.entry_with_meta.entry {
-                            Entry::LinkAdd(link) => Ok((link, link_entry_result,s.1.clone())),
+                            Entry::LinkAdd(link) => Ok((link, link_entry_result, s.1.clone())),
                             _ => Err(HolochainError::ErrorGeneric(
                                 "expected entry of type link".to_string(),
                             )),

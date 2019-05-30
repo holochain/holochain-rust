@@ -61,8 +61,12 @@ pub fn handle_fetch_entry_result(dht_data: FetchEntryResultData, context: Arc<Co
 
 pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) {
     if let Ok(Attribute::LinkTag(link_type, tag)) = fetch_meta_data.attribute.as_str().try_into() {
-        let unwrapped_tag: Option<String> = if &tag == "*" { None} else { Some(tag)};
-        let unwrapped_link_type: Option<String> = if &link_type == "*" { None} else { Some(link_type)};
+        let unwrapped_tag: Option<String> = if &tag == "*" { None } else { Some(tag) };
+        let unwrapped_link_type: Option<String> = if &link_type == "*" {
+            None
+        } else {
+            Some(link_type)
+        };
         let links = context
             .state()
             .unwrap()
@@ -74,7 +78,7 @@ pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) 
             )
             .unwrap_or(BTreeSet::new())
             .into_iter()
-            .map(|eav_crud| (eav_crud.0.value(),eav_crud.1))
+            .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
             .collect::<Vec<_>>();
         let action_wrapper = ActionWrapper::new(Action::RespondGetLinks((fetch_meta_data, links)));
         dispatch_action(context.action_channel(), action_wrapper.clone());

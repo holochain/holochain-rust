@@ -13,9 +13,9 @@ const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 const instanceCarol = Config.instance(agentCarol, dna)
 
-const scenario1 = new Scenario([instanceAlice], { debugLog:false })
-const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: false })
-const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: false })
+const scenario1 = new Scenario([instanceAlice], { debugLog:true })
+const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
+const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
 scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
 
@@ -763,7 +763,7 @@ scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
 
 })
 
-/*scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
+scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = null
@@ -829,7 +829,7 @@ scenarioBridge.runTape('scenario test create & publish -> getting post via bridg
   console.log("BRIDGE CALL RESULT: " + JSON.stringify(result))
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})*/
+})
 
 scenario2.runTape('request grant', async (t, { alice, bob }) => {
 

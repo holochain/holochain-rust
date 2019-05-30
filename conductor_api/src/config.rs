@@ -77,6 +77,10 @@ pub struct Configuration {
     /// Optional DPKI configuration if conductor is using a DPKI app to initalize and manage
     /// keys for new instances
     pub dpki: Option<DpkiConfiguration>,
+
+    /// Which signals to emit
+    #[serde(default)]
+    pub signals: SignalConfig,
 }
 
 pub fn default_persistence_dir() -> PathBuf {
@@ -539,7 +543,15 @@ pub struct NetworkConfig {
     /// Global logging level output by N3H
     #[serde(default = "default_n3h_log_level")]
     pub n3h_log_level: String,
-    /// networking mode used by n3h
+    /// Overall mode n3h operates in.
+    /// Should be one of
+    /// * REAL
+    /// * MOCK
+    /// * HACK
+    /// REAL is the default and what should be used in all production cases.
+    /// MOCK is for using n3h only as a local hub that apps connect to directly, i.e. n3h will
+    /// not connect to any other n3h instance.
+    /// HACK is Deprecated. Used by n3h developers only. Will get removed soon.
     #[serde(default = "default_n3h_mode")]
     pub n3h_mode: String,
     /// Absolute path to the directory that n3h uses to store persisted data.
@@ -560,7 +572,7 @@ pub struct NetworkConfig {
 // holochain_common::env_vars module and should be updated
 // if this logic changes
 pub fn default_n3h_mode() -> String {
-    String::from("HACK")
+    String::from("REAL")
 }
 
 // note that this behaviour is documented within
@@ -606,6 +618,13 @@ pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
 pub struct DpkiConfiguration {
     pub instance_id: String,
     pub init_params: String,
+}
+
+/// Configure which signals to emit, to reduce unwanted signal volume
+#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
+pub struct SignalConfig {
+    pub trace: bool,
+    pub consistency: bool,
 }
 
 #[cfg(test)]
@@ -750,7 +769,7 @@ pub mod tests {
                     "wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"
                 )],
                 n3h_log_level: String::from("d"),
-                n3h_mode: String::from("HACK"),
+                n3h_mode: String::from("REAL"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
                 n3h_ipc_uri: None,
                 networking_config_file: Some(String::from(

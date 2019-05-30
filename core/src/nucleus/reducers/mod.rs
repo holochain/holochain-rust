@@ -8,7 +8,6 @@ pub mod return_zome_function_result;
 
 use crate::{
     action::{Action, ActionWrapper, NucleusReduceFn},
-    context::Context,
     nucleus::{
         reducers::{
             add_pending_validation::reduce_add_pending_validation,
@@ -23,6 +22,7 @@ use crate::{
     },
 };
 
+use crate::state::State;
 use std::sync::Arc;
 
 /// Maps incoming action to the correct reducer
@@ -42,15 +42,15 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
 /// Reduce state of Nucleus according to action.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
 pub fn reduce(
-    context: Arc<Context>,
     old_state: Arc<NucleusState>,
+    root_state: &State,
     action_wrapper: &ActionWrapper,
 ) -> Arc<NucleusState> {
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
             let mut new_state: NucleusState = (*old_state).clone();
-            f(context, &mut new_state, &action_wrapper);
+            f(&mut new_state, root_state, &action_wrapper);
             Arc::new(new_state)
         }
         None => old_state,

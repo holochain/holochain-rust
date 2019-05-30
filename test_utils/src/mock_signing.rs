@@ -6,7 +6,7 @@ use holochain_dpki::{
     key_bundle::KeyBundle,
     SEED_SIZE,
 };
-use holochain_sodium::secbuf::SecBuf;
+use lib3h_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
 use std::{
     collections::HashMap,

@@ -49,11 +49,6 @@ environment:
     wasm_path:
     wasm_path_2:
 
-  - test_p: holochain_sodium
-    test_path: sodium
-    wasm_path:
-    wasm_path_2:
-
   - test_p: holochain_net
     test_path: net
     wasm_path:

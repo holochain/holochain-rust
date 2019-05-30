@@ -78,9 +78,9 @@ pub struct Configuration {
     /// keys for new instances
     pub dpki: Option<DpkiConfiguration>,
 
-    /// Send Trace signals through interfaces along with other signals
+    /// Which signals to emit
     #[serde(default)]
-    pub expose_trace_signals: bool,
+    pub signals: SignalConfig,
 }
 
 pub fn default_persistence_dir() -> PathBuf {
@@ -583,6 +583,13 @@ pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
 pub struct DpkiConfiguration {
     pub instance_id: String,
     pub init_params: String,
+}
+
+/// Configure which signals to emit, to reduce unwanted signal volume
+#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
+pub struct SignalConfig {
+    pub trace: bool,
+    pub consistency: bool,
 }
 
 #[cfg(test)]

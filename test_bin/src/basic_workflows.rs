@@ -235,7 +235,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Send a message from alex to billy
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_1.clone());
 
     // Check if billy received it
     let res = billy
@@ -278,7 +278,7 @@ pub fn meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Send data & metadata on same address
-    confirm_published_data(alex, billy, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1)?;
+    confirm_published_data(alex, billy, &ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()])?;
     confirm_published_metadata(
         alex,
         billy,
@@ -296,12 +296,12 @@ pub fn meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
         META_LINK_ATTRIBUTE,
         &META_LINK_CONTENT_2,
     )?;
-    confirm_published_data(alex, billy, &ENTRY_ADDRESS_2, &ENTRY_CONTENT_2)?;
+    confirm_published_data(alex, billy, &ENTRY_ADDRESS_2, vec![ENTRY_CONTENT_2.clone()])?;
     log_i!("confirm_published_metadata(ENTRY_ADDRESS_2) COMPLETE");
 
     // Again but 'wait' at the end
     // Alex publishs data & meta on the network
-    alex.author_entry(&ENTRY_ADDRESS_3, &ENTRY_CONTENT_3, true)?;
+    alex.author_entry(&ENTRY_ADDRESS_3, vec![ENTRY_CONTENT_3.clone()], true)?;
     alex.author_meta(
         &ENTRY_ADDRESS_3,
         &META_LINK_ATTRIBUTE.to_string(),
@@ -321,9 +321,9 @@ pub fn meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     log_i!("Billy got HandleStoreEntry: {:?}", result);
 
     // Billy sends FetchEntry message
-    let fetch_data = billy.request_entry(ENTRY_ADDRESS_3.clone());
+    let query_data = billy.request_entry(ENTRY_ADDRESS_3.clone());
     // Billy sends HandleFetchEntryResult message
-    alex.reply_to_HandleFetchEntry(&fetch_data)?;
+    alex.reply_to_HandleQuery(&query_data)?;
     // Billy sends FetchMeta message
     let fetch_meta = billy.request_meta(ENTRY_ADDRESS_3.clone(), META_LINK_ATTRIBUTE.to_string());
     // Alex sends HandleFetchMetaResult message
@@ -349,7 +349,7 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Alex publish data on the network
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
@@ -362,10 +362,10 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
     log_i!("got HandleStoreEntry on node B: {:?}", result_b);
 
     // Billy asks for that data
-    let fetch_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
     // Alex sends that data back to the network
-    alex.reply_to_HandleFetchEntry(&fetch_data)?;
+    alex.reply_to_HandleQuery(&query_data)?;
 
     // Billy should receive requested data
     let result = billy
@@ -374,10 +374,10 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
     log_i!("got FetchEntryResult: {:?}", result);
 
     // Billy asks for unknown data
-    let fetch_data = billy.request_entry(ENTRY_ADDRESS_2.clone());
+    let query_data = billy.request_entry(ENTRY_ADDRESS_2.clone());
 
     // Alex sends that data back to the network
-    alex.reply_to_HandleFetchEntry(&fetch_data)?;
+    alex.reply_to_HandleQuery(&query_data)?;
 
     // Billy should receive FailureResult
     let result = billy
@@ -399,7 +399,7 @@ pub fn no_setup_test(alex: &mut TestNode, billy: &mut TestNode, _connect: bool) 
     alex.set_current_dna(&DNA_ADDRESS_A);
 
     // Send a message from alex to billy
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_1.clone());
 
     // Alex should receive a FailureResult
     let _res = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 500);
@@ -428,7 +428,7 @@ pub fn untrack_alex_test(
 
     // Send a message from alex to billy
     let before_count = alex.count_recv_json_messages();
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_1.clone());
 
     // Billy should not receive it.
     let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
@@ -460,7 +460,7 @@ pub fn untrack_billy_test(
     billy.listen(1000);
 
     // Send a message from alex to billy
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_1.clone());
 
     // Alex should receive FailureResult
     let result = alex
@@ -511,7 +511,7 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
     log_i!("Alternate setup COMPLETE");
 
     // Send a message from alex to billy
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_1.clone());
 
     // Check if billy received it
     let res = billy
@@ -575,7 +575,7 @@ pub fn no_meta_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
     // Entry but no Meta
     // =================
     // Alex publish data on the network
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
 
     // Billy asks for missing metadata on the network.
     let fetch_meta = billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.to_string());
@@ -641,7 +641,7 @@ pub fn shutdown_test(
     assert_eq!(alex.is_network_ready(), true);
 
     // Do something
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
     let _ = billy.listen(200);
 
     // kill alex manually

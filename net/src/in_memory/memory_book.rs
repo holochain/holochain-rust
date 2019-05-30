@@ -1,7 +1,5 @@
 use holochain_core_types::{cas::content::Address, hash::HashString};
 
-use crate::connection::json_protocol::MetaTuple;
-
 use std::collections::{HashMap, HashSet};
 
 //--------------------------------------------------------------------------------------------------
@@ -10,142 +8,125 @@ use std::collections::{HashMap, HashSet};
 
 /// Cell = DnaInstance
 /// CellId = DNA hash + agentId
-pub(crate) type CellId = String;
-
-/// Hash of a meta content in a way to uniquely identify it
-pub(crate) type MetaId = Address;
+pub(crate) type ChainId = String;
 
 /// return a cell_id out of a dna_address and agent_id
-pub(crate) fn into_cell_id(dna_address: &Address, agent_id: &str) -> CellId {
+pub(crate) fn into_chain_id(dna_address: &Address, agent_id: &Address) -> ChainId {
     format!("{}::{}", dna_address, agent_id)
 }
 
-/// return a unique identifier out of an entry_address and attribute
-pub(crate) fn into_meta_id(meta_tuple: &MetaTuple) -> MetaId {
-    HashString::from(format!(
-        "{}||{}||{}",
-        meta_tuple.0, meta_tuple.1, meta_tuple.2
-    ))
-}
-
 /// unmerge meta_id into a tuple
-pub(crate) fn _undo_meta_id(meta_id: &MetaId) -> MetaTuple {
-    let meta_str = String::from(meta_id.clone());
-    let vec: Vec<&str> = meta_str.split("||").collect();
-    assert_eq!(vec.len(), 3);
+pub(crate) fn undo_chain_id(chain_id: &ChainId) -> (Address, Address) {
+    let chain_str = chain_id.clone();
+    let vec: Vec<&str> = chain_str.split("||").collect();
+    assert_eq!(vec.len(), 2);
     // Convert & return
-    (
-        HashString::from(vec[0]),
-        vec[1].to_string(),
-        serde_json::from_str(vec[2]).expect("metaId not holding valid json content"),
-    )
+    (HashString::from(vec[0]), HashString::from(vec[1]))
 }
 
-/// Tells if metaId is of given entry and attribute
-pub(crate) fn _meta_id_is(meta_id: &MetaId, entry_address: Address, attribute: String) -> bool {
-    let meta_tuple = _undo_meta_id(meta_id);
-    return meta_tuple.0 == entry_address && meta_tuple.1 == attribute;
-}
+///// return a unique identifier out of an entry_address and attribute
+//pub(crate) fn into_aspect_id(aspect_key: &AspectKey) -> AspectId {
+//    HashString::from(format!("{}||{}", aspect_key.0, aspect_key.1))
+//}
 
 //--------------------------------------------------------------------------------------------------
 // Books
 //--------------------------------------------------------------------------------------------------
 
-/// Type for holding list of metaId per entry
-/// i.e. map of entry_address -> Set(metaId)
-/// edge case is entry_address -> entry_address, which is the way to signal that we are holding
-/// the entry itself
-pub(crate) type EntryBook = HashMap<Address, HashSet<HashString>>;
+/// Type for holding list of EntryAspects per Entry.
+/// i.e. map of entry_address -> Set(aspect_address)
+/// entry_address -> Set(entry_address) -- edge case for indicating we are storing an entry?
+pub(crate) type EntryBook = HashMap<Address, HashSet<Address>>;
 
-/// Type for holding list of addresses per entry per dna+agent_id
-/// i.e. map of cell_id -> EntryBook
-pub(crate) type CellBook = HashMap<CellId, EntryBook>;
+/// Type for holding list of addresses per entry per ChainId (dna+agent_id)
+/// i.e. map of ChainId -> EntryBook
+pub(crate) type ChainBook = HashMap<ChainId, EntryBook>;
 
 /// Add an address to a book
-pub(crate) fn bookkeep_with_cell_id(
-    cell_book: &mut CellBook,
-    cell_id: CellId,
-    base_address: &Address,
-    data_address: &Address,
+pub(crate) fn bookkeep_with_chain_id(
+    chain_book: &mut ChainBook,
+    chain_id: ChainId,
+    entry_address: &Address,
+    aspect_address: &Address,
 ) {
     // Append to existing address list if there is one
     {
-        let maybe_entry_book = cell_book.get_mut(&cell_id);
+        let maybe_entry_book = chain_book.get_mut(&chain_id);
         if let Some(entry_book) = maybe_entry_book {
             // Append to existing address list if there is one
             {
-                let maybe_meta_set = entry_book.get_mut(&base_address);
-                if let Some(meta_set) = maybe_meta_set {
-                    meta_set.insert(data_address.clone());
+                let maybe_aspect_set = entry_book.get_mut(&entry_address);
+                if let Some(meta_set) = maybe_aspect_set {
+                    meta_set.insert(aspect_address.clone());
                     return;
                 }
             }
-            let mut meta_set = HashSet::new();
-            meta_set.insert(data_address.clone());
-            entry_book.insert(base_address.clone(), meta_set.clone());
+            let mut aspect_set = HashSet::new();
+            aspect_set.insert(aspect_address.clone());
+            entry_book.insert(entry_address.clone(), aspect_set.clone());
             return;
         }
     } // unborrow book
       // None: Create and add a new EntryBook
     let mut entry_book = EntryBook::new();
-    let mut meta_set = HashSet::new();
-    meta_set.insert(data_address.clone());
-    entry_book.insert(base_address.clone(), meta_set);
-    cell_book.insert(cell_id, entry_book);
+    let mut aspect_set = HashSet::new();
+    aspect_set.insert(aspect_address.clone());
+    entry_book.insert(entry_address.clone(), aspect_set);
+    chain_book.insert(chain_id, entry_book);
 }
 
 /// Add an address to a book (sugar)
 pub(crate) fn bookkeep(
-    cell_book: &mut CellBook,
+    chain_book: &mut ChainBook,
     dna_address: &Address,
-    agent_id: &str,
-    base_address: &Address,
-    data_address: &Address,
+    agent_id: &Address,
+    entry_address: &Address,
+    aspect_address: &Address,
 ) {
-    let cell_id = into_cell_id(dna_address, agent_id);
-    bookkeep_with_cell_id(cell_book, cell_id, base_address, data_address);
+    let chain_id = into_chain_id(dna_address, agent_id);
+    bookkeep_with_chain_id(chain_book, chain_id, entry_address, aspect_address);
 }
 
 // Return true if data is in book
-pub fn book_has(
-    cell_book: &CellBook,
-    cell_id: CellId,
-    base_address: &Address,
-    data_address: &Address,
+pub fn book_has_aspect(
+    chain_book: &ChainBook,
+    chain_id: ChainId,
+    entry_address: &Address,
+    aspect_address: &Address,
 ) -> bool {
-    let maybe_entry_book = cell_book.get(&cell_id);
+    let maybe_entry_book = chain_book.get(&chain_id);
     if maybe_entry_book.is_none() {
         return false;
     }
     let entry_book = maybe_entry_book.unwrap();
-    let maybe_meta_set = entry_book.get(base_address);
-    if maybe_meta_set.is_none() {
+    let maybe_aspect_set = entry_book.get(entry_address);
+    if maybe_aspect_set.is_none() {
         return false;
     }
-    let meta_set = maybe_meta_set.unwrap();
-    meta_set.contains(data_address)
+    let aspect_set = maybe_aspect_set.unwrap();
+    aspect_set.contains(aspect_address)
 }
 
 ///
-pub fn book_has_entry(cell_book: &CellBook, cell_id: CellId, entry_address: &Address) -> bool {
-    book_has(&cell_book, cell_id, entry_address, entry_address)
+pub fn book_has_entry(chain_book: &ChainBook, chain_id: ChainId, entry_address: &Address) -> bool {
+    book_has_aspect(&chain_book, chain_id, entry_address, entry_address)
 }
 
 /// Remove an address from a book
 /// Return true if address exists and has been successfully removed.
 pub(crate) fn _unbookkeep_address(
-    cell_book: &mut CellBook,
+    chain_book: &mut ChainBook,
     dna_address: &Address,
-    agent_id: &str,
-    base_address: &Address,
-    data_address: &Address,
+    agent_id: &Address,
+    entry_address: &Address,
+    aspect_address: &Address,
 ) -> bool {
-    let cell_id = into_cell_id(dna_address, agent_id);
-    let maybe_entry_book = cell_book.get_mut(&cell_id);
+    let chain_id = into_chain_id(dna_address, agent_id);
+    let maybe_entry_book = chain_book.get_mut(&chain_id);
     if let Some(entry_book) = maybe_entry_book {
-        let maybe_meta_set = entry_book.get_mut(base_address);
-        if let Some(meta_set) = maybe_meta_set {
-            let succeeded = meta_set.remove(data_address);
+        let maybe_aspect_set = entry_book.get_mut(entry_address);
+        if let Some(aspect_set) = maybe_aspect_set {
+            let succeeded = aspect_set.remove(aspect_address);
             return succeeded;
         }
     }

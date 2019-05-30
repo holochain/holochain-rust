@@ -53,7 +53,7 @@ pub fn send_test(
     camille.set_current_dna(&DNA_ADDRESS_A);
 
     // Camille should receive it
-    alex.send_message(CAMILLE_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&CAMILLE_AGENT_ID, ENTRY_CONTENT_1.clone());
     let res = camille
         .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
@@ -66,7 +66,7 @@ pub fn send_test(
     log_i!("Send messages on DNA A COMPLETE \n\n\n");
 
     // Billy should not receive it
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_1.clone());
     let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
     assert!(res.is_none());
 
@@ -77,7 +77,7 @@ pub fn send_test(
     camille.set_current_dna(&DNA_ADDRESS_B);
 
     // Billy should receive it
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_2.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_2.clone());
     let res = billy
         .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
@@ -89,7 +89,7 @@ pub fn send_test(
     assert_eq!(ENTRY_CONTENT_2.to_string(), msg.content.to_string());
 
     // Camille should not receive it
-    alex.send_message(CAMILLE_AGENT_ID.to_string(), ENTRY_CONTENT_2.clone());
+    alex.send_direct_message(&CAMILLE_AGENT_ID, ENTRY_CONTENT_2.clone());
     let res =
         camille.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
     assert!(res.is_none());
@@ -102,7 +102,7 @@ pub fn send_test(
     camille.set_current_dna(&DNA_ADDRESS_C);
 
     // Camille should receive it
-    camille.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_3.clone());
+    camille.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_3.clone());
     let res = billy
         .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
@@ -114,7 +114,7 @@ pub fn send_test(
     assert_eq!(ENTRY_CONTENT_3.to_string(), msg.content.to_string());
 
     // Alex should not receive it
-    camille.send_message(ALEX_AGENT_ID.to_string(), ENTRY_CONTENT_3.clone());
+    camille.send_direct_message(&ALEX_AGENT_ID, ENTRY_CONTENT_3.clone());
     let res = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
     assert!(res.is_none());
     log_i!("Send messages on DNA C COMPLETE \n\n\n");
@@ -142,13 +142,13 @@ pub fn dht_test(
     let _msg_count = alex.listen(200);
 
     // Alex publish data on the network
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
 
     // Camille asks for that data
-    let fetch_data = camille.request_entry(ENTRY_ADDRESS_1.clone());
+    let query_data = camille.request_entry(ENTRY_ADDRESS_1.clone());
 
     // Alex sends that data back to the network
-    alex.reply_to_HandleFetchEntry(&fetch_data)?;
+    alex.reply_to_HandleQuery(&query_data)?;
 
     // Camille should receive requested data
     let result = camille
@@ -157,10 +157,10 @@ pub fn dht_test(
     log_i!("got FetchEntryResult: {:?}", result);
 
     // Billy asks for data on unknown DNA
-    let fetch_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
     // Alex sends that data back to the network
-    alex.reply_to_HandleFetchEntry(&fetch_data)?;
+    alex.reply_to_HandleQuery(&query_data)?;
 
     // Billy might receive FailureResult
     let result = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 1000);
@@ -190,7 +190,7 @@ pub fn meta_test(
     let _msg_count = billy.listen(200);
 
     // Alex publishs entry & meta on DNA B
-    alex.author_entry(&ENTRY_ADDRESS_3, &ENTRY_CONTENT_3, true)?;
+    alex.author_entry(&ENTRY_ADDRESS_3, vec![ENTRY_CONTENT_3.clone()], true)?;
     alex.author_meta(
         &ENTRY_ADDRESS_3,
         &META_LINK_ATTRIBUTE.to_string(),

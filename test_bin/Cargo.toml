@@ -4,9 +4,6 @@ version = "0.0.15-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core = { path = "../core" }
-holochain_conductor_api = { path = "../conductor_api" }
-holochain_cas_implementations = { path="../cas_implementations" }
 holochain_core_types = { path = "../core_types" }
 holochain_net = { path = "../net" }
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }

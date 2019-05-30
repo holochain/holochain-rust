@@ -25,14 +25,14 @@ pub(crate) fn two_nodes_disconnect_test(
     let alex_dir_path = alex_dir.path().to_string_lossy().to_string();
     // Create two nodes
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        ALEX_AGENT_ID.to_string(),
+        &ALEX_AGENT_ID,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         Some(alex_dir_path.clone()),
     );
     let mut billy = TestNode::new_with_spawn_ipc_network(
-        BILLY_AGENT_ID.to_string(),
+        &BILLY_AGENT_ID,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -54,7 +54,7 @@ pub(crate) fn two_nodes_disconnect_test(
 
     // re-enable alex
     alex = TestNode::new_with_spawn_ipc_network(
-        ALEX_AGENT_ID.to_string(),
+        &ALEX_AGENT_ID,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         // TODO test bootstrap with billy's endpoint
@@ -117,7 +117,7 @@ pub(crate) fn three_nodes_disconnect_test(
     let alex_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
     let alex_dir_path = alex_dir.path().to_string_lossy().to_string();
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        ALEX_AGENT_ID.to_string(),
+        &ALEX_AGENT_ID,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -127,7 +127,7 @@ pub(crate) fn three_nodes_disconnect_test(
     let billy_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
     let billy_dir_path = billy_dir.path().to_string_lossy().to_string();
     let mut billy = TestNode::new_with_spawn_ipc_network(
-        BILLY_AGENT_ID.to_string(),
+        &BILLY_AGENT_ID,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -137,7 +137,7 @@ pub(crate) fn three_nodes_disconnect_test(
     let camille_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
     let camille_dir_path = camille_dir.path().to_string_lossy().to_string();
     let mut camille = TestNode::new_with_spawn_ipc_network(
-        CAMILLE_AGENT_ID.to_string(),
+        &CAMILLE_AGENT_ID,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -155,13 +155,13 @@ pub(crate) fn three_nodes_disconnect_test(
     log_i!("#### billy got after alex shutdown: {}\n\n\n\n", count);
 
     // Have Camille author something while alex is offline
-    camille.author_entry(&ENTRY_ADDRESS_3, &ENTRY_CONTENT_3, true)?;
+    camille.author_entry(&ENTRY_ADDRESS_3, vec![ENTRY_CONTENT_3.clone()], true)?;
     let count = billy.listen(1000);
     log_i!("#### billy got alex camille authoring: {}\n\n\n\n", count);
 
     // re-enable alex
     alex = TestNode::new_with_spawn_ipc_network(
-        ALEX_AGENT_ID.to_string(),
+        &ALEX_AGENT_ID,
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec![billy.p2p_binding.clone()],

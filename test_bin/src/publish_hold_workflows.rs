@@ -26,11 +26,11 @@ pub fn empty_publish_entry_list_test(
     println!("Testing: empty_publish_entry_list_test()");
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
     // Alex replies an empty list to the initial HandleGetPublishingEntryList
-    alex.reply_to_first_HandleGetPublishingEntryList();
+    alex.reply_to_first_HandleGetAuthoringEntryList();
     // Billy asks for unpublished data.
-    let fetch_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
     // Alex sends back a failureResult response to the network
-    alex.reply_to_HandleFetchEntry(&fetch_data)?;
+    alex.reply_to_HandleQuery(&query_data)?;
     // Billy should receive the failureResult back
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
@@ -51,9 +51,9 @@ pub fn publish_entry_list_test(
     println!("Testing: publish_entry_list_test()");
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
     // author an entry without publishing it
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, false)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], false)?;
     // Reply to the publish_list request received from network module
-    alex.reply_to_first_HandleGetPublishingEntryList();
+    alex.reply_to_first_HandleGetAuthoringEntryList();
     // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(has_received);
@@ -87,7 +87,7 @@ pub fn publish_meta_list_test(
     println!("Testing: publish_meta_list_test()");
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
     // Author meta and reply to HandleGetPublishingMetaList
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
     alex.author_meta(
         &ENTRY_ADDRESS_1,
         META_LINK_ATTRIBUTE.into(),
@@ -166,8 +166,8 @@ pub fn double_publish_entry_list_test(
 ) -> NetResult<()> {
     println!("Testing: double_publish_entry_list_test()");
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
-    alex.reply_to_first_HandleGetPublishingEntryList();
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
+    alex.reply_to_first_HandleGetAuthoringEntryList();
     // Should NOT receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(!has_received);
@@ -201,7 +201,7 @@ pub fn double_publish_meta_list_test(
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Author meta and reply to HandleGetPublishingMetaList
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
     alex.author_meta(
         &ENTRY_ADDRESS_1,
         META_LINK_ATTRIBUTE.into(),
@@ -243,7 +243,7 @@ pub fn many_meta_test(
     println!("Testing: many_meta_test()");
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
     // Author meta and reply to HandleGetPublishingMetaList
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
     log_d!("entry authored");
 
     alex.author_meta(

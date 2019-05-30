@@ -13,4 +13,5 @@ pub struct ZomeApiGlobals {
     pub agent_latest_hash: HashString,
     pub public_token: Address,
     pub cap_request: CapabilityRequest,
+    pub properties: JsonString,
 }

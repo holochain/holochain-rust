@@ -133,7 +133,7 @@ pub fn notify(msg: String) {
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
-        holochain_sodium::check_init();
+        lib3h_sodium::check_init();
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
@@ -201,12 +201,31 @@ impl Conductor {
                         signal_tx.clone().map(|s| s.send(signal.clone()));
                         let broadcasters = broadcasters.read().unwrap();
                         let interfaces_with_instance: Vec<&InterfaceConfiguration> = match signal {
-                            // Send internal signals only to admin interfaces:
-                            Signal::Internal(_) => config
-                                .interfaces
-                                .iter()
-                                .filter(|interface_config| interface_config.admin)
-                                .collect(),
+                            // Send internal signals only to admin interfaces, if signals.trace is set:
+                            Signal::Trace(_) => {
+                                if config.signals.trace {
+                                    config
+                                        .interfaces
+                                        .iter()
+                                        .filter(|interface_config| interface_config.admin)
+                                        .collect()
+                                } else {
+                                    Vec::new()
+                                }
+                            }
+
+                            // Send internal signals only to admin interfaces, if signals.consistency is set:
+                            Signal::Consistency(_) => {
+                                if config.signals.consistency {
+                                    config
+                                        .interfaces
+                                        .iter()
+                                        .filter(|interface_config| interface_config.admin)
+                                        .collect()
+                                } else {
+                                    Vec::new()
+                                }
+                            }
 
                             // Pass through user-defined  signals to the according interfaces
                             // in which the source instance is exposed:
@@ -1042,8 +1061,8 @@ pub mod tests {
     };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
-    use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
+    use lib3h_sodium::secbuf::SecBuf;
     use std::{
         fs::{File, OpenOptions},
         io::Write,
@@ -1877,11 +1896,11 @@ pub mod tests {
 
         assert!(received_signals.len() >= 3);
         assert!(received_signals[0]
-            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+            .starts_with("{\"signal\":{\"Trace\":\"SignalZomeFunctionCall(ZomeFnCall {"));
         assert!(received_signals[1]
-            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+            .starts_with("{\"signal\":{\"Trace\":\"SignalZomeFunctionCall(ZomeFnCall {"));
         assert!(received_signals[2].starts_with(
-            "{\"signal\":{\"Internal\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
+            "{\"signal\":{\"Trace\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
         ));
     }
 }

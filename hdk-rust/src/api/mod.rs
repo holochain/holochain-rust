@@ -225,6 +225,10 @@ lazy_static! {
     /// The CapabilityRequest under which this wasm function is executing
     pub static ref CAPABILITY_REQ: &'static CapabilityRequest = &GLOBALS.cap_request;
 
+    /// The json string from the DNA top level properties field.
+    /// Deserialize this into a serde_json::Value or a zome specific struct to access the fields
+    pub static ref PROPERTIES: &'static JsonString = &GLOBALS.properties;
+
 }
 
 impl From<DNA_NAME> for JsonString {

@@ -203,7 +203,7 @@ impl NetWorker for IpcNetWorker {
                         };
                     }
                     // Send data back to handler
-                    (self.handler)(Ok(msg.clone()))?;
+                    self.handler.handle(Ok(msg.clone()))?;
 
                     // on shutdown, close all connections
                     if msg == Protocol::Terminated {
@@ -219,7 +219,7 @@ impl NetWorker for IpcNetWorker {
                     // - Try connecting to boostrap nodes
                     if !self.is_network_ready && &self.last_known_state == "ready" {
                         self.is_network_ready = true;
-                        (self.handler)(Ok(Protocol::P2pReady))?;
+                        self.handler.handle(Ok(Protocol::P2pReady))?;
                         self.priv_send_connects()?;
                     }
                 }

@@ -12,13 +12,15 @@ extern crate holochain_core_types_derive;
 
 use boolinator::Boolinator;
 use hdk::{
+    api::G_MEM_STACK,
     error::{ZomeApiError, ZomeApiResult},
+    global_fns::init_global_memory,
 };
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryOptions, GetEntryResult},
         get_links::GetLinksResult,
-        query::{ QueryArgsNames, QueryArgsOptions, QueryResult },
+        query::{QueryArgsNames, QueryArgsOptions, QueryResult},
     },
     holochain_core_types::{
         cas::content::{Address, AddressableContent},
@@ -27,24 +29,18 @@ use holochain_wasm_utils::{
             entry_type::{AppEntryType, EntryType},
             AppEntryValue, Entry,
         },
-        error::{
-            HolochainError,
-            RibosomeErrorCode,
-        },
-        json::{JsonString,RawString},
+        error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeErrorCode},
+        json::{JsonString, RawString},
+        validation::{EntryValidationData, LinkValidationData},
+    },
+    memory::{
+        allocation::WasmAllocation,
+        ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
     },
 };
-use holochain_wasm_utils::holochain_core_types::{validation::{LinkValidationData,EntryValidationData},error::RibosomeEncodingBits};
-use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
-use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
-use holochain_wasm_utils::memory::allocation::WasmAllocation;
-use hdk::global_fns::init_global_memory;
-use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedValue;
-use std::convert::TryFrom;
-use std::time::Duration;
-use hdk::api::G_MEM_STACK;
+use std::{convert::TryFrom, time::Duration};
 
-#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 struct TestEntryType {
     stuff: String,
 }
@@ -65,8 +61,9 @@ pub extern "C" fn handle_check_global() -> Address {
 }
 
 #[no_mangle]
-pub extern "C" fn check_commit_entry(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
-
+pub extern "C" fn check_commit_entry(
+    encoded_allocation_of_input: RibosomeEncodingBits,
+) -> RibosomeEncodingBits {
     let allocation = match WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input) {
         Ok(allocation) => allocation,
         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
@@ -82,8 +79,9 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: RibosomeEncodi
         Ok(entry) => entry,
         Err(hc_err) => {
             hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).ok();
-            return RibosomeEncodedValue::Failure(RibosomeErrorCode::ArgumentDeserializationFailed).into();
-        },
+            return RibosomeEncodedValue::Failure(RibosomeErrorCode::ArgumentDeserializationFailed)
+                .into();
+        }
     };
 
     hdk::debug(format!("Entry: {:?}", entry)).ok();
@@ -100,10 +98,7 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: RibosomeEncodi
         None => return RibosomeEncodedValue::Failure(RibosomeErrorCode::OutOfMemory).into(),
     };
 
-    return_code_for_allocation_result(
-        wasm_stack.write_json(res_obj)
-    ).into()
-
+    return_code_for_allocation_result(wasm_stack.write_json(res_obj)).into()
 }
 
 fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {
@@ -145,7 +140,7 @@ fn handle_link_two_entries() -> ZomeApiResult<Address> {
 
     hdk::commit_entry(&entry_2)?;
 
-    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test", "test-tag")
 }
 
 fn handle_remove_link() -> ZomeApiResult<()> {
@@ -167,14 +162,13 @@ fn handle_remove_link() -> ZomeApiResult<()> {
     );
 
     hdk::commit_entry(&entry_2)?;
-    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")?;
-    hdk::remove_link(&entry_1.address(), &entry_2.address(), "test-tag")
-
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test", "test-tag")?;
+    hdk::remove_link(&entry_1.address(), &entry_2.address(), "test", "test-tag")
 }
 
 /// Commit 3 entries
-/// Commit a "test-tag" link from entry1 to entry2
-/// Commit a "test-tag" link from entry1 to entry3
+/// Commit a "test" link from entry1 to entry2
+/// Commit a "test" link from entry1 to entry3
 /// return entry1 address
 fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     let entry_1 = Entry::App(
@@ -204,19 +198,19 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     );
     hdk::commit_entry(&entry_3)?;
 
-    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")?;
-    hdk::link_entries(&entry_1.address(), &entry_3.address(), "test-tag")?;
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test", "test-tag")?;
+    hdk::link_entries(&entry_1.address(), &entry_3.address(), "test", "test-tag")?;
     Ok(entry_1.address())
 }
 
 fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&address, "test-tag")
+    hdk::get_links(&address, Some("test".into()), Some("test-tag".into()))
 }
 
 fn handle_links_roundtrip_get_and_load(
     address: Address,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
-    hdk::get_links_and_load(&address, "test-tag")
+    hdk::get_links_and_load(&address, Some("test".into()), Some("test-tag".into()))
 }
 
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
@@ -302,17 +296,27 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
     }
 
     // Confirm same results via hdk::query_result
-    let addresses = match hdk::query_result(vec!["[%]*","testEntryType"].into(),
-                                            QueryArgsOptions::default()).unwrap() {
+    let addresses = match hdk::query_result(
+        vec!["[%]*", "testEntryType"].into(),
+        QueryArgsOptions::default(),
+    )
+    .unwrap()
+    {
         QueryResult::Addresses(av) => av,
         _ => return err("Unexpected hdk::query_result"),
     };
     if !addresses.len() == 5 {
         return err("System + testEntryType Addresses enum not length 5");
     };
-    let headers = match hdk::query_result(vec!["[%]*","testEntryType"].into(),
-                                          QueryArgsOptions{ headers: true,
-                                                            ..Default::default()}).unwrap() {
+    let headers = match hdk::query_result(
+        vec!["[%]*", "testEntryType"].into(),
+        QueryArgsOptions {
+            headers: true,
+            ..Default::default()
+        },
+    )
+    .unwrap()
+    {
         QueryResult::Headers(hv) => hv,
         _ => return err("Unexpected hdk::query_result"),
     };
@@ -420,6 +424,7 @@ fn handle_link_validation(stuff1: String, stuff2: String) -> JsonString {
         &entry1.address(),
         &entry2.address(),
         "longer",
+        "test-tag-longer",
     ))
 }
 
@@ -474,7 +479,7 @@ define_zome! {
             links: [
                 to!(
                     "testEntryType",
-                    tag: "test-tag",
+                    link_type: "test",
                     validation_package: || {
                         hdk::ValidationPackageDefinition::ChainFull
                     },
@@ -523,7 +528,7 @@ define_zome! {
             links: [
                 to!(
                     "link_validator",
-                    tag: "longer",
+                    link_type: "longer",
                     validation_package: || {
                         hdk::ValidationPackageDefinition::Entry
                     },

@@ -75,6 +75,10 @@ impl ZomeFnCall {
     pub fn cap_token(&self) -> Address {
         self.cap.cap_token.clone()
     }
+
+    pub fn id(&self) -> snowflake::ProcessUniqueId {
+        self.id.clone()
+    }
 }
 
 pub type ZomeFnResult = HcResult<JsonString>;

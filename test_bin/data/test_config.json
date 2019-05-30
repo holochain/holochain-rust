@@ -2,7 +2,8 @@
   "modes": {
     "IN_MEMORY": true,
     "IPC_MOCK": true,
-    "HACK_MODE": true
+    "N3H": true,
+    "LIB3H": false
   },
   "suites": {
     "BASIC_WORKFLOWS": true,

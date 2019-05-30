@@ -619,6 +619,7 @@ impl Conductor {
                     let dna_hash_computed_from_file = match Conductor::load_dna(&dna_file) {
                         Ok(dna) => HashString::from(dna.address()),
                         Err(_) => HashString::from(String::from("Missing DNA File."))
+                        // HolochainError::IoError(_) => HashString::from(String::from("Missing DNA File."))
                     };
 
                     match Conductor::check_dna_consistency(
@@ -635,7 +636,7 @@ impl Conductor {
 
                             // Do we want to return an error when there is a discrepancy between DNA hashes
                             // or just warn the user here?
-                            // return Err(_e);
+                            return Err(_e.to_string());
                         }
                     }
 
@@ -654,7 +655,7 @@ impl Conductor {
 
                             // Do we want to return an error when there is a discrepancy between DNA hashes
                             // or just warn the user here?
-                            // return Err(_e);
+                            return Err(_e.to_string());
                         }
                     }
 
@@ -673,7 +674,7 @@ impl Conductor {
 
                             // Do we want to return an error when there is a discrepancy between DNA hashes
                             // or just warn the user here?
-                            // return Err(_e);
+                            return Err(_e.to_string());
                         }
                     }
                 }

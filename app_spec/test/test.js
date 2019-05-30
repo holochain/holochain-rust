@@ -13,11 +13,11 @@ const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 const instanceCarol = Config.instance(agentCarol, dna)
 
-const scenario1 = new Scenario([instanceAlice], { debugLog:true })
-const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
-const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
+const scenario1 = new Scenario([instanceAlice], { debugLog:false })
+const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: false })
+const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: false })
 
-scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
+/*scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
 
     // Ask for alice to grant a token for bob  (it's hard-coded for bob in re function for now)
     const result = alice.call("blog", "request_post_grant", {})
@@ -697,7 +697,7 @@ scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
   t.equal(bob.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
   t.equal(bob.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
 
-})
+})*/
 
 
 scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
@@ -722,12 +722,13 @@ scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
   t.equal("live",alice_posts_live.Ok.links[0].status);
   t.equal("live",alice_posts_live.Ok.links[1].status);
   t.equal(2,bob_posts_live.Ok.links.length);
-  t.equal("live",bob_posts_live.Ok.links[0].crud_status);
+  t.equal("live",bob_posts_live.Ok.links[0].status);
   t.equal("live",bob_posts_live.Ok.links[1].status);
 
-
-  const deletionParams = { post_address: alice_result.Ok }
-  const deletionResult = await alice.callSync("blog", "delete_entry_post", deletionParams)
+  await alice.callSync("blog","delete_post",
+  {
+    "content" : "Holo world"
+  });
 
   const bob_posts_deleted = bob.call("blog","posts_by_agent_deleted",
   {
@@ -737,10 +738,11 @@ scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
   {
     "agent" : alice.agentId
   });
+
   t.equal(1,alice_posts_deleted.Ok.links.length);
   t.equal(1,bob_posts_deleted.Ok.links.length);
-  t.equal("deleted",alice_posts_deleted.Ok.links[0].crud_status);
-  t.equal("deleted",bob_posts_deleted.Ok.links[0].crud_status);
+  t.equal("deleted",alice_posts_deleted.Ok.links[0].status);
+  t.equal("deleted",bob_posts_deleted.Ok.links[0].status);
 
   const bob_posts_all = bob.call("blog","posts_by_agent_all",
   {
@@ -755,13 +757,13 @@ scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
   t.equal("live",alice_posts_all.Ok.links[0].status);
   t.equal("deleted",alice_posts_all.Ok.links[1].status);
   t.equal(2,bob_posts_all.Ok.links.length);
-  t.equal("live",bob_posts_all.Ok.links[0].crud_status);
+  t.equal("live",bob_posts_all.Ok.links[0].status);
   t.equal("deleted",bob_posts_all.Ok.links[1].status);
 
 
 })
 
-scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
+/*scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = null
@@ -827,9 +829,9 @@ scenarioBridge.runTape('scenario test create & publish -> getting post via bridg
   console.log("BRIDGE CALL RESULT: " + JSON.stringify(result))
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})
+})*/
 
-scenario2.runTape('request grant', async (t, { alice, bob }) => {
+//scenario2.runTape('request grant', async (t, { alice, bob }) => {
 
     /*
       This is not a complete test of requesting a grant because currently there
@@ -838,13 +840,13 @@ scenario2.runTape('request grant', async (t, { alice, bob }) => {
       on top of the rust conductor.   For now this is more a placeholder test, but
       note that the value returned is actually the capbability token value.
     */
-    const result = alice.call("blog", "request_post_grant", {})
-    t.ok(result.Ok)
-    t.notOk(result.Err)
+    //const result = alice.call("blog", "request_post_grant", {})
+    //t.ok(result.Ok)
+    //t.notOk(result.Err)
 
-    const grants = alice.call("blog", "get_grants", {})
-    t.ok(grants.Ok)
-    t.notOk(grants.Err)
+    //const grants = alice.call("blog", "get_grants", {})
+    //t.ok(grants.Ok)
+    //t.notOk(grants.Err)
 
-    t.equal(result.Ok, grants.Ok[0])
-})
+    //t.equal(result.Ok, grants.Ok[0])
+//})

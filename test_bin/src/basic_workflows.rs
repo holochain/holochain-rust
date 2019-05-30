@@ -646,12 +646,13 @@ pub fn shutdown_test(
     // Do something
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
     let _ = billy.listen(200);
+    let _ = alex.listen(200);
 
     // kill alex manually
     alex.send(Protocol::Shutdown.into())?;
 
-    // alex should receive 'Terminated' which should set `is_network_ready`  to false
-    let _ = alex.listen(200);
+    // alex should receive 'Terminated' which should set `is_network_ready` to false
+    let _ = alex.wait_json_with_timeout(Box::new(|_| {true}), 200);
     assert_eq!(alex.is_network_ready(), false);
 
     // Done

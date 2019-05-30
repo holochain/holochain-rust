@@ -15,7 +15,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net::connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
+use holochain_net::connection::json_protocol::{DhtMetaData, ProvidedEntryData, JsonProtocol};
 use std::sync::Arc;
 
 /// Send to network a PublishDhtData message
@@ -25,7 +25,7 @@ fn publish_entry(
 ) -> Result<(), HolochainError> {
     send(
         network_state,
-        JsonProtocol::PublishEntry(EntryData {
+        JsonProtocol::PublishEntry(ProvidedEntryData {
             dna_address: network_state.dna_address.clone().unwrap(),
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: entry_with_header.entry.address().clone(),

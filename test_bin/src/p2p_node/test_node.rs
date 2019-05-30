@@ -4,7 +4,7 @@ use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
         json_protocol::{
-            DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
+            DhtMetaData, ProvidedEntryData, EntryListData, FailureResultData, FetchEntryData,
             FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
             MessageData, MetaKey, MetaListData, TrackDnaData,
         },
@@ -192,7 +192,7 @@ impl TestNode {
                 .insert(entry_address.clone(), entry_content.clone());
         }
         if can_publish {
-            let msg_data = EntryData {
+            let msg_data = ProvidedEntryData {
                 dna_address: current_dna,
                 provider_agent_id: self.agent_id.clone(),
                 entry_address: entry_address.clone(),
@@ -472,7 +472,7 @@ impl TestNode {
                 dna_address: request.dna_address.clone(),
             };
         }
-        self.send(JsonProtocol::HandleGetPublishingEntryListResult(msg).into())
+        self.send(JsonProtocol::HandleGetAuthoringEntryListResult(msg).into())
     }
     /// Look for the first HandleGetPublishingEntryList request received from network module and reply
     pub fn reply_to_first_HandleGetPublishingEntryList(&mut self) {
@@ -545,7 +545,7 @@ impl TestNode {
                 entry_address_list: entry_address_list,
             };
         }
-        self.send(JsonProtocol::HandleGetHoldingEntryListResult(msg).into())
+        self.send(JsonProtocol::HandleGetGossipingEntryListResult(msg).into())
     }
     /// Look for the first HandleGetHoldingEntryList request received from network module and reply
     pub fn reply_to_first_HandleGetHoldingEntryList(&mut self) {
@@ -975,17 +975,17 @@ impl TestNode {
             //            }
 
             // -- Publish & Hold data -- //
-            JsonProtocol::HandleGetPublishingEntryList(_) => {
+            JsonProtocol::HandleGetAuthoringEntryList(_) => {
                 // n/a
             }
-            JsonProtocol::HandleGetPublishingEntryListResult(_) => {
+            JsonProtocol::HandleGetAuthoringEntryListResult(_) => {
                 panic!("Core should not receive HandleGetPublishingDataListResult message");
             }
-            JsonProtocol::HandleGetHoldingEntryList(_) => {
+            JsonProtocol::HandleGetGossipingEntryList(_) => {
                 // n/a
             }
             // Our request for the hold_list has returned
-            JsonProtocol::HandleGetHoldingEntryListResult(_) => {
+            JsonProtocol::HandleGetGossipingEntryListResult(_) => {
                 panic!("Core should not receive HandleGetHoldingDataListResult message");
             }
 

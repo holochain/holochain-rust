@@ -8,7 +8,7 @@ use super::memory_book::*;
 use crate::{
     connection::{
         json_protocol::{
-            DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
+            DhtMetaData, ProvidedEntryData, EntryListData, FailureResultData, FetchEntryData,
             FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
             MessageData, MetaListData, PeerData,
         },
@@ -104,7 +104,7 @@ impl InMemoryServer {
         self.priv_send_one(
             dna_address,
             agent_id,
-            JsonProtocol::HandleGetPublishingEntryList(GetListData {
+            JsonProtocol::HandleGetAuthoringEntryList(GetListData {
                 request_id,
                 dna_address: dna_address.clone(),
             })
@@ -116,7 +116,7 @@ impl InMemoryServer {
         self.priv_send_one(
             dna_address,
             agent_id,
-            JsonProtocol::HandleGetHoldingEntryList(GetListData {
+            JsonProtocol::HandleGetGossipingEntryList(GetListData {
                 request_id,
                 dna_address: dna_address.clone(),
             })
@@ -348,12 +348,12 @@ impl InMemoryServer {
             }
 
             // Our request for the publish_list has returned
-            JsonProtocol::HandleGetPublishingEntryListResult(msg) => {
+            JsonProtocol::HandleGetAuthoringEntryListResult(msg) => {
                 self.priv_serve_HandleGetPublishingEntryListResult(&msg)?;
             }
 
             // Our request for the hold_list has returned
-            JsonProtocol::HandleGetHoldingEntryListResult(msg) => {
+            JsonProtocol::HandleGetGossipingEntryListResult(msg) => {
                 self.priv_serve_HandleGetHoldingEntryListResult(&msg);
             }
 
@@ -540,7 +540,7 @@ impl InMemoryServer {
     // -- serve DHT Entry -- //
 
     /// on publish, we send store requests to all nodes connected on this dna
-    fn priv_serve_PublishEntry(&mut self, msg: &EntryData) -> NetResult<()> {
+    fn priv_serve_PublishEntry(&mut self, msg: &ProvidedEntryData) -> NetResult<()> {
         // Provider must be tracking
         let sender_info = Some((msg.provider_agent_id.clone(), None));
         let is_tracking =
@@ -629,7 +629,7 @@ impl InMemoryServer {
         }
         // if its from our own request do a publish
         if self.request_book.contains_key(&msg.request_id) {
-            let dht_data = EntryData {
+            let dht_data = ProvidedEntryData {
                 dna_address: msg.dna_address.clone(),
                 provider_agent_id: msg.provider_agent_id.clone(),
                 entry_address: msg.entry_address.clone(),

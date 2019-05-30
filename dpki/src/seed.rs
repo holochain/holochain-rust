@@ -6,7 +6,7 @@ use crate::{
 };
 use bip39::{Language, Mnemonic};
 use holochain_core_types::error::{HcResult, HolochainError};
-use holochain_sodium::{kdf, pwhash, secbuf::SecBuf};
+use lib3h_sodium::{kdf, pwhash, secbuf::SecBuf};
 use serde_derive::{Deserialize, Serialize};
 use std::str;
 

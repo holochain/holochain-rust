@@ -9,7 +9,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     signature::{Provenance, Signature},
 };
-use holochain_sodium::{kdf, secbuf::SecBuf, sign};
+use lib3h_sodium::{kdf, secbuf::SecBuf, sign};
 use std::str;
 
 /// a trait for things that have a provenance that can be verified
@@ -72,11 +72,7 @@ pub fn verify_bufs(
     signature: &mut SecBuf,
 ) -> HcResult<bool> {
     let mut pub_key = decode_pub_key(pub_sign_key_b32, &CODEC_HCS0)?;
-    Ok(holochain_sodium::sign::verify(
-        signature,
-        data,
-        &mut pub_key,
-    ))
+    Ok(lib3h_sodium::sign::verify(signature, data, &mut pub_key))
 }
 
 pub struct SeedContext {
@@ -167,7 +163,7 @@ pub fn decrypt_with_passphrase_buf(
 mod tests {
     use super::*;
     use crate::SIGNATURE_SIZE;
-    use holochain_sodium::{secbuf::SecBuf, sign};
+    use lib3h_sodium::{secbuf::SecBuf, sign};
 
     #[test]
     fn it_should_hcid_roundtrip() {
@@ -192,13 +188,13 @@ mod tests {
         // Create keys
         let mut public_key = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut secret_key = SecBuf::with_secure(sign::SECRETKEYBYTES);
-        holochain_sodium::sign::seed_keypair(&mut public_key, &mut secret_key, &mut seed).unwrap();
+        lib3h_sodium::sign::seed_keypair(&mut public_key, &mut secret_key, &mut seed).unwrap();
         let pub_key_b32 = encode_pub_key(&mut public_key, &codec).unwrap();
         // Create signing buffers
         let mut message = SecBuf::with_insecure(42);
         message.randomize();
         let mut signature = SecBuf::with_insecure(SIGNATURE_SIZE);
-        holochain_sodium::sign::sign(&mut message, &mut secret_key, &mut signature).unwrap();
+        lib3h_sodium::sign::sign(&mut message, &mut secret_key, &mut signature).unwrap();
         let res = verify_bufs(pub_key_b32, &mut message, &mut signature);
         assert!(res.unwrap());
     }

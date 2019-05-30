@@ -652,7 +652,7 @@ pub fn shutdown_test(
     alex.send(Protocol::Shutdown.into())?;
 
     // alex should receive 'Terminated' which should set `is_network_ready` to false
-    let _ = alex.wait_json_with_timeout(Box::new(|_| {true}), 200);
+    let _ = alex.wait_json_with_timeout(Box::new(|_| true), 200);
     assert_eq!(alex.is_network_ready(), false);
 
     // Done

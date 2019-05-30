@@ -44,6 +44,7 @@ pub struct LinksResult {
     pub address: Address,
     pub headers: Vec<ChainHeader>,
     pub tag: String,
+    pub status : CrudStatus
 }
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]

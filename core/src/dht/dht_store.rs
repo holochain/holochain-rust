@@ -14,7 +14,6 @@ use holochain_core_types::{
     crud_status::CrudStatus
 };
 
-use holochain_wasm_utils::api_serialization::get_links::LinksStatusRequestKind;
 
 use std::{
     collections::{BTreeSet, HashMap},

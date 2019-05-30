@@ -8,7 +8,8 @@ use holochain_core_types::{
     error::HolochainError,
     link::link_data::LinkData,
     time::Timeout,
-    cas::content::Address
+    cas::content::Address,
+    crud_status::CrudStatus
 };
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
@@ -22,6 +23,14 @@ pub async fn get_link_result_workflow<'a>(
     let links = await!(get_link_caches(context, link_args))?;
     let (link_results, errors): (Vec<_>, Vec<_>) = links
         .into_iter()
+        .filter(|link_entry_crud|{
+            match link_args.options.status_request
+            {
+                LinksStatusRequestKind::All => true,
+                LinksStatusRequestKind::Live => link_entry_crud.2 == CrudStatus::Live,
+                _ => link_entry_crud.2 == CrudStatus::Deleted
+            }
+        })
         .map(|link| {
                         match link.1 {
                             Some(EntryWithMetaAndHeader {
@@ -36,6 +45,7 @@ pub async fn get_link_result_workflow<'a>(
                                     address: link_data.link().target().clone(),
                                     headers,
                                     tag: link_data.link().tag().to_string(),
+                                    status : link.2
                                 })
                             },
                             None => {
@@ -70,7 +80,7 @@ pub async fn get_link_result_workflow<'a>(
 async fn get_link_caches<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
-) -> Result<Vec<(LinkData, Option<EntryWithMetaAndHeader>)>, HolochainError> {
+) -> Result<Vec<(LinkData, Option<EntryWithMetaAndHeader>,CrudStatus)>, HolochainError> {
     let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
@@ -91,7 +101,7 @@ async fn get_link_caches<'a>(
                 .map(|link_entry_result| {
                     link_entry_result.clone().map(|link_entry| {
                         match link_entry.entry_with_meta.entry {
-                            Entry::LinkAdd(link) => Ok((link, link_entry_result)),
+                            Entry::LinkAdd(link) => Ok((link, link_entry_result,s.1.clone())),
                             _ => Err(HolochainError::ErrorGeneric(
                                 "expected entry of type link".to_string(),
                             )),

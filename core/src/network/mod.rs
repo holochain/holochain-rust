@@ -297,8 +297,8 @@ pub mod tests {
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order
         assert!(
-            (links[0] == entry_addresses[1] || links[0] == entry_addresses[2])
-                && (links[1] == entry_addresses[1] || links[1] == entry_addresses[2])
+            (links[0] == (entry_addresses[1].clone(),CrudStatus::Live) || links[0] == (entry_addresses[2].clone(),CrudStatus::Live))
+                && (links[1] == (entry_addresses[1].clone(),CrudStatus::Live) || links[1] == (entry_addresses[2].clone(),CrudStatus::Live))
         );
     }
 }

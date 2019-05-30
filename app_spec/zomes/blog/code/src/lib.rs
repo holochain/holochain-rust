@@ -164,6 +164,18 @@ define_zome! {
             handler: blog::handle_posts_by_agent
         }
 
+        posts_by_agent_all : {
+            inputs: |agent: Address|,
+            outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
+            handler: blog::handle_posts_by_agent_all
+        }
+
+        posts_by_agent_deleted : {
+            inputs: |agent: Address|,
+            outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
+            handler: blog::handle_posts_by_agent_deleted
+        }
+
         authored_posts_with_sources : {
             inputs : |agent : Address|,
             outputs : | post_hashes : ZomeApiResult<GetLinksResult>|,

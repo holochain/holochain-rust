@@ -702,57 +702,62 @@ scenario2.runTape('get_sources_after_same_link', async (t, { alice, bob }) => {
 
 scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
 
-   await bob.callSync("blog", "create_post_with_agent",
+   await alice.callSync("blog", "create_post_with_agent",
     { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
   );
   const alice_result = await alice.callSync("blog", "create_post_with_agent",
-  { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
+  { "agent_id": alice.agentId ,"content": "Holo world 2", "in_reply_to": null }
   );
 
-  const alice_posts = bob.call("blog","authored_posts_with_sources",
+  const alice_posts_live= alice.call("blog","posts_by_agent",
   {
     "agent" : alice.agentId
-  });
-  const bob_posts = alice.call("blog","authored_posts_with_sources",
+  })
+
+  const alice_posts_live= bob.call("blog","posts_by_agent",
   {
     "agent" : alice.agentId
-  });
+  })
+  t.equal(2,alice_posts_live.Ok.links.length);
+  t.equal("live",alice_posts_live.Ok.links[0].status);
+  t.equal("live",alice_posts_live.Ok.links[1].status);
+  t.equal(2,bob_posts_live.Ok.links.length);
+  t.equal("live",bob_posts_live.Ok.links[0].crud_status);
+  t.equal("live",bob_posts_live.Ok.links[1].status);
 
-
-  const updateParamsV2 = { post_address: alice_result.Ok, new_content: "Hello Holo V2" }
-  const updated_alice_post = await alice.callSync("blog", "update_post", updateParamsV2)
-
-  const alice_posts_update_crud = bob.call("blog","authored_posts_with_sources",
-  {
-    "agent" : alice.agentId
-  });
-  const bob_posts_update_crud = alice.call("blog","authored_posts_with_sources",
-  {
-    "agent" : alice.agentId
-  });
-  t.equal("modified",alice_posts_update_crud.Ok.links[0].crud_status);
-  t.equal(updated_alice_post.Ok,alice_posts_update_crud.Ok.links[0].crud_link);
-
-  t.equal("modified",bob_posts_update_crud.Ok.links[0].crud_status);
-  t.equal(updated_alice_post.Ok,bob_posts_update_crud.Ok.links[0].crud_link);
 
   const deletionParams = { post_address: alice_result.Ok }
   const deletionResult = await alice.callSync("blog", "delete_entry_post", deletionParams)
 
-  const alice_posts_delete_crud = bob.call("blog","authored_posts_with_sources",
+  const bob_posts_deleted = bob.call("blog","posts_by_agent_deleted",
   {
     "agent" : alice.agentId
   });
-  const bob_posts_delete_crud = alice.call("blog","authored_posts_with_sources",
+  const alice_posts_deleted = alice.call("blog","posts_by_agent_deleted",
+  {
+    "agent" : alice.agentId
+  });
+  t.equal(1,alice_posts_deleted.Ok.links.length);
+  t.equal(1,bob_posts_deleted.Ok.links.length);
+  t.equal("deleted",alice_posts_deleted.Ok.links[0].crud_status);
+  t.equal("deleted",bob_posts_deleted.Ok.links[0].crud_status);
+
+  const bob_posts_deleted = bob.call("blog","posts_by_agent_all",
+  {
+    "agent" : alice.agentId
+  });
+  const alice_posts_deleted = alice.call("blog","posts_by_agent_all",
   {
     "agent" : alice.agentId
   });
 
-  const delete_entry_address = "Qme5FriDFQobHSM8kYgo4QqVJTg8CFqtfhjnziKuLB3QfG"
-  t.equal("deleted",alice_posts_delete_crud.Ok.links[0].crud_status);
-  t.equal(delete_entry_address,alice_posts_delete_crud.Ok.links[0].crud_link);
-  t.equal("deleted",bob_posts_delete_crud.Ok.links[0].crud_status);
-  t.equal(delete_entry_address,bob_posts_delete_crud.Ok.links[0].crud_link);
+  t.equal(2,alice_posts_live.Ok.links.length);
+  t.equal("live",alice_posts_live.Ok.links[0].status);
+  t.equal("deleted",alice_posts_live.Ok.links[1].status);
+  t.equal(2,bob_posts_live.Ok.links.length);
+  t.equal("live",bob_posts_live.Ok.links[0].crud_status);
+  t.equal("deleted",bob_posts_live.Ok.links[1].status);
+
 
 })
 

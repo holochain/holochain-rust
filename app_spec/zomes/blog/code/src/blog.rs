@@ -14,7 +14,7 @@ use hdk::{
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
-        get_links::{GetLinksOptions, GetLinksResult},
+        get_links::{GetLinksOptions, GetLinksResult,LinksStatusRequestKind},
         QueryArgsOptions, QueryResult,
     },
     AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN,
@@ -397,6 +397,24 @@ pub fn handle_delete_post(content: String) -> ZomeApiResult<Address> {
 
 pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&agent, Some("authored_posts".into()), None)
+}
+
+pub fn handle_posts_by_agent_all(agent : Address) ->ZomeApiResult<GetLinksResult>
+{
+    let options = GetLinksOptions{
+        status_request : LinksStatusRequestKind::All,
+        ..GetLinksOptions::default()
+    };
+    hdk::get_links_with_options(&agent, Some("authored_posts".into()), None,options)
+}
+
+pub fn handle_posts_by_agent_deleted(agent : Address) ->ZomeApiResult<GetLinksResult>
+{
+    let options = GetLinksOptions{
+        status_request : LinksStatusRequestKind::Deleted,
+        ..GetLinksOptions::default()
+    };
+    hdk::get_links_with_options(&agent, Some("authored_posts".into()), None,options)
 }
 
 pub fn handle_my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {

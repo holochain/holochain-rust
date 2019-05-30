@@ -637,13 +637,13 @@ fn can_roundtrip_links() {
             address: entry_address_2.clone(),
             headers: Vec::new(),
             tag: "test-tag".into(),
-            crud_link: None,
+            status: CrudStatus::Live,
         },
         LinksResult {
             address: entry_address_3.clone(),
             headers: Vec::new(),
             tag: "test-tag".into(),
-            crud_link: None,
+            status: CrudStatus::Live,
         },
     ]));
     let expected_links = JsonString::from(expected_links);
@@ -657,13 +657,13 @@ fn can_roundtrip_links() {
                 address: entry_address_3.clone(),
                 headers: Vec::new(),
                 tag: "".into(),
-                crud_link: None,
+                status: CrudStatus::Live,
             },
             LinksResult {
                 address: entry_address_2.clone(),
                 headers: Vec::new(),
                 tag: "".into(),
-                crud_link: None,
+                status: CrudStatus::Live,
             },
         ]));
     let expected_links_reversed = JsonString::from(expected_links_reversed);

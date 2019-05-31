@@ -617,7 +617,7 @@ mod tests {
         waiter.process_signal(sig(Hold(entry_wh)));
         assert_eq!(num_conditions(&waiter, &call), 2);
 
-        waiter.process_signal(sig(AddLink((link_add.link().clone(), entry.clone()))));
+        waiter.process_signal(sig(AddLink(link_add)));
         assert_eq!(num_conditions(&waiter, &call), 1);
         assert_eq!(waiter.checkers.len(), 1);
 

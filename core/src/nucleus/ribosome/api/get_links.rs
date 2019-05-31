@@ -114,8 +114,7 @@ pub mod tests {
                 .is_ok());
             assert!(initialized_context
                 .block_on(add_link(
-                    &Entry::LinkAdd(LinkData::add_from_link(&link, 0, test_agent_id())),
-                    &link,
+                    &LinkData::add_from_link(&link, 0, test_agent_id()),
                     &initialized_context
                 ))
                 .is_ok());

@@ -226,7 +226,7 @@ pub mod tests {
             test_agent_id(),
         );
         let link_entry = Entry::LinkAdd(link_data.clone());
-        let action = ActionWrapper::new(Action::AddLink(link_data);
+        let action = ActionWrapper::new(Action::AddLink(link_data));
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
@@ -261,14 +261,9 @@ pub mod tests {
 
         let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
         let test_tag = String::from("test-tag");
-        let entry_link_add = Entry::LinkAdd(LinkData::from_link(
-            &link.clone(),
-            LinkActionKind::ADD,
-            0,
-            test_agent_id(),
-        ));
-        let action_link_add =
-            ActionWrapper::new(Action::AddLink((link.clone(), entry_link_add.clone())));
+        let link_data = LinkData::from_link(&link.clone(),LinkActionKind::ADD,0,test_agent_id());
+        let entry_link_add = Entry::LinkAdd(link_data.clone());
+        let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         let entry_link_remove = Entry::LinkRemove((
@@ -276,7 +271,7 @@ pub mod tests {
             vec![entry_link_add.address()],
         ));
         let action_link_remove =
-            ActionWrapper::new(Action::RemoveLink((link.clone(), entry_link_remove)));
+            ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         let storage = new_dht_store.meta_storage();
@@ -329,7 +324,8 @@ pub mod tests {
             "test-tag",
         );
 
-        let action = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
+        let link_data = LinkData::from_link(&link.clone(),LinkActionKind::ADD,0,test_agent_id());
+        let action = ActionWrapper::new(Action::AddLink(link_data));
 
         let new_dht_store = reduce(store.dht(), &action);
 

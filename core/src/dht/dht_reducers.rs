@@ -8,7 +8,7 @@ use crate::{
 use std::sync::Arc;
 
 use super::dht_inner_reducers::{
-    reduce_add_link_inner, reduce_remove_entry_inner, reduce_store_entry_inner,
+    reduce_add_remove_link_inner, reduce_remove_entry_inner, reduce_store_entry_inner,
     reduce_update_entry_inner, LinkModification,
 };
 
@@ -86,7 +86,7 @@ pub(crate) fn reduce_add_link(
 ) -> Option<DhtStore> {
     let (link, entry) = unwrap_to!(action_wrapper.action() => Action::AddLink);
     let mut new_store = (*old_store).clone();
-    let res = reduce_add_link_inner(
+    let res = reduce_add_remove_link_inner(
         &mut new_store,
         link,
         &entry.address(),
@@ -111,7 +111,7 @@ pub(crate) fn reduce_remove_link(
         .iter()
         .fold(new_store, |mut store, link_addresses| {
             let res =
-                reduce_add_link_inner(&mut store, link, link_addresses, LinkModification::Remove);
+                reduce_add_remove_link_inner(&mut store, link, link_addresses, LinkModification::Remove);
             store.actions_mut().insert(action_wrapper.clone(), res);
             store.clone()
         });

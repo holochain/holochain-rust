@@ -110,8 +110,12 @@ pub(crate) fn reduce_remove_link(
     let store = links_to_remove
         .iter()
         .fold(new_store, |mut store, link_addresses| {
-            let res =
-                reduce_add_remove_link_inner(&mut store, link, link_addresses, LinkModification::Remove);
+            let res = reduce_add_remove_link_inner(
+                &mut store,
+                link,
+                link_addresses,
+                LinkModification::Remove,
+            );
             store.actions_mut().insert(action_wrapper.clone(), res);
             store.clone()
         });

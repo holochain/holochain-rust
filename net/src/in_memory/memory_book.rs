@@ -3,7 +3,7 @@ use holochain_core_types::{cas::content::Address, hash::HashString};
 use std::collections::{HashMap, HashSet};
 
 //--------------------------------------------------------------------------------------------------
-// Ids
+// IDs
 //--------------------------------------------------------------------------------------------------
 
 /// Cell = DnaInstance
@@ -23,11 +23,6 @@ pub(crate) fn undo_chain_id(chain_id: &ChainId) -> (Address, Address) {
     // Convert & return
     (HashString::from(vec[0]), HashString::from(vec[1]))
 }
-
-///// return a unique identifier out of an entry_address and attribute
-//pub(crate) fn into_aspect_id(aspect_key: &AspectKey) -> AspectId {
-//    HashString::from(format!("{}||{}", aspect_key.0, aspect_key.1))
-//}
 
 //--------------------------------------------------------------------------------------------------
 // Books

@@ -4,15 +4,28 @@
 
 #![allow(non_snake_case)]
 
+use super::protocol::Protocol;
 use failure::Error;
 use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
 use std::convert::TryFrom;
 
-use super::protocol::Protocol;
+//--------------------------------------------------------------------------------------------------
+// Generic response
+//--------------------------------------------------------------------------------------------------
 
-/// Tuple holding all the info required for identifying an EntryAspect:
-/// (entry_address, aspect_address)
-pub type AspectKey = (Address, Address);
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct GenericResultData {
+    pub dna_address: Address,
+    #[serde(rename = "_id")]
+    pub request_id: String,
+    pub to_agent_id: Address,
+    pub result_info: Vec<u8>,
+}
+
+//--------------------------------------------------------------------------------------------------
+// Config & State
+//--------------------------------------------------------------------------------------------------
 
 fn get_default_state_id() -> String {
     "undefined".to_string()
@@ -36,6 +49,10 @@ pub struct ConfigData {
     pub config: String,
 }
 
+//--------------------------------------------------------------------------------------------------
+// Connection
+//--------------------------------------------------------------------------------------------------
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
 pub struct ConnectData {
     #[serde(rename = "address")]
@@ -47,6 +64,10 @@ pub struct PeerData {
     #[serde(rename = "agentId")]
     pub agent_id: Address,
 }
+
+//--------------------------------------------------------------------------------------------------
+// Direct messaging
+//--------------------------------------------------------------------------------------------------
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
 #[serde(rename_all = "camelCase")]
@@ -60,21 +81,15 @@ pub struct MessageData {
     pub content: Vec<u8>,
 }
 
+//--------------------------------------------------------------------------------------------------
+// DNA tracking
+//--------------------------------------------------------------------------------------------------
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackDnaData {
     pub dna_address: Address,
     pub agent_id: Address,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct GenericResultData {
-    pub dna_address: Address,
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    pub to_agent_id: Address,
-    pub result_info: Vec<u8>,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -98,6 +113,7 @@ pub struct EntryData {
 }
 
 impl EntryData {
+    /// get an EntryAspectData in an EntryData
     pub fn get(&self, aspect_address: &Address) -> Option<EntryAspectData> {
         for aspect in self.aspect_list.iter() {
             if aspect.aspect_address == *aspect_address {
@@ -231,12 +247,13 @@ pub enum JsonProtocol {
     /// Can also be a response to a mal-formed request.
     FailureResult(GenericResultData),
 
-    // -- Connection -- //
+    // -- DNA tracking -- //
     /// Order the p2p module to be part of the network of the specified DNA.
     TrackDna(TrackDnaData),
     /// Order the p2p module to leave the network of the specified DNA.
     UntrackDna(TrackDnaData),
 
+    // -- Connection -- //
     /// Request the network module to connect to a specific Peer. Used for bootstrapping only.
     /// Connection address should be an opaque transport-layer connection string,
     /// which will generally be a URI, but in the case of libp2p is a multiaddr.
@@ -245,7 +262,7 @@ pub enum JsonProtocol {
     /// This is sent when another Peer joins the Network.
     PeerConnected(PeerData),
 
-    // -- Config (deprecated?) -- //
+    // -- Config & State -- //
     /// Request the current state from the p2p module
     #[serde(rename = "requestState")]
     GetState,
@@ -276,7 +293,6 @@ pub enum JsonProtocol {
     HandleFetchEntry(FetchEntryData),
     /// Successful data response for a `HandleFetchEntry` request
     HandleFetchEntryResult(FetchEntryResultData),
-
     /// Core's request to add an Entry to the DHT network.
     /// The network will take care to figure out which nodes are going to store it.
     PublishEntry(ProvidedEntryData),
@@ -290,7 +306,7 @@ pub enum JsonProtocol {
     HandleQueryEntry(QueryEntryData),
     HandleQueryEntryResult(QueryEntryResultData),
 
-    // -- Entry lists -- //
+    // -- Get lists -- //
     /// The p2p module requests from Core the list of entries it has authored
     /// and wants published on the network.
     HandleGetAuthoringEntryList(GetListData),

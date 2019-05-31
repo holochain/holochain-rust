@@ -743,8 +743,6 @@ impl Conductor {
                                 &dna_hash_computed);
                 ctx.log(msg);
 
-                // Do we want to return an error when there is a discrepancy between DNA hashes
-                // or just warn the user here?
                 return Err(e);
             }
         }
@@ -763,8 +761,6 @@ impl Conductor {
                                 &dna_hash_computed_from_file);
                 ctx.log(msg);
 
-                // Do we want to return an error when there is a discrepancy between DNA hashes
-                // or just warn the user here?
                 return Err(e);
             }
         }
@@ -780,8 +776,6 @@ impl Conductor {
                                 &dna_hash_computed_from_file);
                 ctx.log(msg);
 
-                // Do we want to return an error when there is a discrepancy between DNA hashes
-                // or just warn the user here?
                 return Err(e);
             }
         }

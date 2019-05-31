@@ -59,7 +59,12 @@ mod tests {
     use super::*;
     use crate::nucleus;
 
-    use holochain_core_types::{cas::content::AddressableContent, entry::Entry, link::{Link,LinkActionKind},agent::test_agent_id};
+    use holochain_core_types::{
+        agent::test_agent_id,
+        cas::content::AddressableContent,
+        entry::Entry,
+        link::{Link, LinkActionKind},
+    };
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry() -> Entry {

@@ -342,28 +342,62 @@ scenario2.runTape('my_memos_are_private', async (t, { alice, bob }) => {
 })
 
 
-scenario2.runTape('delete_post', async (t, { alice, bob }) => {
+scenario2.runTape('delete_post', async (t, { alice, bob,carol }) => {
 
-  //create post
-  const alice_create_post_result = await alice.callSync("blog", "create_post",
+  //create by alice
+  await alice.callSync("blog", "create_post",
     { "content": "Posty", "in_reply_to": "" }
   )
 
-  const bob_create_post_result = await bob.callSync("blog", "posts_by_agent",
+  //bob creates post with alice id
+  await bob.callSync("blog", "create_post_with_agent",
+    { "agent_id":alice.agent_id, "content": "Posty", "in_reply_to": "" }
+  )
+  
+  //create post by alice
+  const alice_posts = await bob.callSync("blog", "posts_by_agent",
     { "agent": alice.agentId }
   )
 
-  t.ok(bob_create_post_result.Ok)
-  t.equal(bob_create_post_result.Ok.links.length, 1);
+  t.ok(alice_posts.Ok)
+  t.equal(alice_posts.Ok.links.length, 2);
 
-  //remove link by alicce
+  //create post by alice
+  const bob_posts = await alice.callSync("blog", "posts_by_agent",
+    { "agent": bob.agentId }
+  )
+
+  t.ok(bob_posts.Ok)
+  t.equal(bob_posts.Ok.links.length, 2);
+
+  //remove link by alice
   await alice.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
 
   // get posts by bob
   const bob_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
 
+  const alice_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
+
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
+
+  t.ok(alice_agent_posts_expect_empty.Ok)
+  t.equal(alice_agent_posts_expect_empty.Ok.links.length, 0);
+
+  //utc in the nodejs conductor is set to 0 so in order to set a different time we need to use a new author
+  await carol.callSync("blog", "create_post_with_agent",
+  { "agent_id":alice.agent_id, "content": "Posty", "in_reply_to": "" }
+  );
+
+  //get carol posts from bob
+  const carol_posts = await bob.callSync("blog", "posts_by_agent",
+    { "agent": carol.agentId }
+  )
+
+  t.ok(carol_posts.Ok)
+  t.equal(carol_posts.Ok.links.length, 2);
+
+
 })
 
 scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {

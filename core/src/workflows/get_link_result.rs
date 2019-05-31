@@ -1,15 +1,14 @@
 use crate::{
     context::Context, network::actions::get_links::get_links,
-    workflows::get_entry_result::get_entry_with_meta_workflow,
+    workflows::get_entry_result::get_entry_result_workflow,
 };
 
 use holochain_core_types::{
-    entry::{Entry, EntryWithMeta, EntryWithMetaAndHeader},
-    error::HolochainError,
-    link::link_data::LinkData,
+    chain_header::ChainHeader, entry::Entry, error::HolochainError, link::link_data::LinkData,
 };
-use holochain_wasm_utils::api_serialization::get_links::{
-    GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
+use holochain_wasm_utils::api_serialization::{
+    get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResultType::Single},
+    get_links::{GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind},
 };
 use std::sync::Arc;
 
@@ -27,55 +26,22 @@ pub async fn get_link_result_workflow<'a>(
     }?;
     //get links
     let links = await!(get_link_add_entries(context, link_args))?;
-    let (link_results, errors): (Vec<_>, Vec<_>) = links
+    let link_results = links
         .into_iter()
-        .map(|link| {
-            //we should probably replace this with get_entry_result_workflow, it does all the work needed
-                        match link.1 {
-                            Some(EntryWithMetaAndHeader {
-                                entry_with_meta: EntryWithMeta{entry: Entry::LinkAdd(link_data), ..},
-                                headers,
-                            }) => {
-                                let headers = match link_args.options.headers {
-                                    true => headers,
-                                    false => Vec::new(),
-                                };
-                                Ok(LinksResult {
-                                    address: link_data.link().target().clone(),
-                                    headers,
-                                    tag: link_data.link().tag().to_string(),
-                                })
-                            },
-                            None => {
-                                Err(HolochainError::ErrorGeneric(
-                                    format!("Could not get link entry for address stored in the EAV entry {:?}", link),
-                                ))
-                            }
-                            _ => {
-                                Err(HolochainError::ErrorGeneric(
-                                    format!("Unknown Error retrieveing link. Most likely EAV entry points to non-link entry type"),
-                                ))
-                            }
-                        }
-                    },
-            )
-        .partition(Result::is_ok);
+        .map(|link_data| LinksResult {
+            address: link_data.0.link().target().clone(),
+            headers: link_data.1,
+            tag: link_data.0.link().tag().to_string(),
+        })
+        .collect::<Vec<LinksResult>>();
 
-    if errors.is_empty() {
-        Ok(GetLinksResult::new(
-            link_results.into_iter().map(|s| s.unwrap()).collect(),
-        ))
-    } else {
-        Err(HolochainError::ErrorGeneric(
-            "Could not get links".to_string(),
-        ))
-    }
+    Ok(GetLinksResult::new(link_results))
 }
 
 async fn get_link_add_entries<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
-) -> Result<Vec<(LinkData, Option<EntryWithMetaAndHeader>)>, HolochainError> {
+) -> Result<Vec<(LinkData, Vec<ChainHeader>)>, HolochainError> {
     let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
@@ -87,23 +53,35 @@ async fn get_link_add_entries<'a>(
     let (links_result, get_links_error): (Vec<_>, Vec<_>) = links_caches
         .iter()
         .map(|s| {
-            let entry_with_header = context.block_on(get_entry_with_meta_workflow(
-                &context.clone(),
-                &s.clone(),
-                &link_args.options.timeout.clone(),
-            ));
-            entry_with_header
-                .map(|link_entry_result| {
-                    link_entry_result.clone().map(|link_entry| {
-                        match link_entry.entry_with_meta.entry {
-                            Entry::LinkAdd(link) => Ok((link, link_entry_result)),
+            let get_entry_args = GetEntryArgs {
+                address: s.clone(),
+                options: GetEntryOptions {
+                    entry: true,
+                    headers: link_args.options.headers,
+                    timeout: link_args.options.timeout.clone(),
+                    ..GetEntryOptions::default()
+                },
+            };
+            let entry_result =
+                context.block_on(get_entry_result_workflow(&context.clone(), &get_entry_args));
+            entry_result
+                .map(|link_entry_result| match link_entry_result.result {
+                    Single(entry_type) => entry_type
+                        .entry
+                        .clone()
+                        .map(|unwrapped_type| match unwrapped_type {
+                            Entry::LinkAdd(link_data) => Ok((link_data, entry_type.headers)),
                             _ => Err(HolochainError::ErrorGeneric(
-                                "expected entry of type link".to_string(),
+                                "Wrong entry type retrieved".to_string(),
                             )),
-                        }
-                    })
+                        })
+                        .unwrap_or(Err(HolochainError::ErrorGeneric(
+                            "Could not obtain Entry".to_string(),
+                        ))),
+                    _ => Err(HolochainError::ErrorGeneric(
+                        "Status Kind Of Lastest Requested".to_string(),
+                    )),
                 })
-                .unwrap_or(None)
                 .unwrap_or(Err(HolochainError::ErrorGeneric(
                     "expected entry of type link".to_string(),
                 )))

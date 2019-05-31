@@ -72,16 +72,12 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
             }
         }
         local_call(runtime, input.clone()).map_err(|error| {
-            zome_call_data
-                .context
-                .log(format!("err/zome-to-zome-call/[{:?}]: {:?}", input, error));
+            context.log(format!("err/zome-to-zome-call/[{:?}]: {:?}", input, error));
             error
         })
     } else {
         bridge_call(runtime, input.clone()).map_err(|error| {
-            zome_call_data
-                .context
-                .log(format!("err/bridge-call/[{:?}]: {:?}", input, error));
+            context.log(format!("err/bridge-call/[{:?}]: {:?}", input, error));
             error
         })
     };

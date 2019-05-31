@@ -1412,7 +1412,7 @@ pub mod tests {
         [[dnas]]
         id = "bridge-caller"
         file = "bridge/caller.dna"
-        hash = "QmdCoUqyeAKuVsTFasJnUeReaqqFvfT6toMeWieCCtrF3V"
+        hash = "QmTLP5vrg1edcucavGwMXcLLMAof2nd16P6XBzLk9kxQ4x"
 
         [[instances]]
         id = "test-instance-1"

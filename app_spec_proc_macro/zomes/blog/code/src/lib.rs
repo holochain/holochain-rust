@@ -136,24 +136,16 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
-    pub fn handle_posts_by_agent_all(agent : Address) ->ZomeApiResult<GetLinksResult>
-    {
-        let options = GetLinksOptions{
-            status_request : LinksStatusRequestKind::All,
-            ..GetLinksOptions::default()
-        };
-        hdk::get_links_with_options(&agent, Some("authored_posts".into()), None,options)
+    pub fn posts_by_agent_all(agent: Address) -> ZomeApiResult<GetLinksResult> {
+        blog::handle_posts_by_agent_all(agent)
     }
 
     #[zome_fn("hc_public")]
-    pub fn handle_posts_by_agent_deleted(agent : Address) ->ZomeApiResult<GetLinksResult>
-    {
-        let options = GetLinksOptions{
-            status_request : LinksStatusRequestKind::Deleted,
-            ..GetLinksOptions::default()
-        };
-        hdk::get_links_with_options(&agent, Some("authored_posts".into()), None,options)
+    pub fn posts_by_agent_deleted(agent: Address) -> ZomeApiResult<GetLinksResult> {
+        blog::handle_posts_by_agent_deleted(agent)
     }
+
+    
 
     #[zome_fn("hc_public")]
     pub fn get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {

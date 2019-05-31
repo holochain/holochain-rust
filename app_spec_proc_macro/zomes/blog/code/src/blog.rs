@@ -399,6 +399,26 @@ pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&agent, Some("authored_posts".into()), None)
 }
 
+#[zome_fn("hc_public")]
+pub fn handle_posts_by_agent_all(agent : Address) ->ZomeApiResult<GetLinksResult>
+{
+    let options = GetLinksOptions{
+        status_request : LinksStatusRequestKind::All,
+        ..GetLinksOptions::default()
+    };
+    hdk::get_links_with_options(&agent, Some("authored_posts".into()), None,options)
+}
+
+#[zome_fn("hc_public")]
+pub fn handle_posts_by_agent_deleted(agent : Address) ->ZomeApiResult<GetLinksResult>
+{
+    let options = GetLinksOptions{
+        status_request : LinksStatusRequestKind::Deleted,
+        ..GetLinksOptions::default()
+    };
+    hdk::get_links_with_options(&agent, Some("authored_posts".into()), None,options)
+}
+
 pub fn handle_my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&AGENT_ADDRESS, Some("authored_posts".into()), tag)
 }

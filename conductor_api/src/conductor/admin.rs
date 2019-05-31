@@ -782,7 +782,9 @@ pattern = '.*'"#
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: Some(String::from(
+                        "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
+                    )),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
@@ -860,7 +862,9 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: Some(String::from(
+                        "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
+                    )),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
@@ -961,7 +965,9 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: Some(String::from(
+                        "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
+                    )),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-props"),

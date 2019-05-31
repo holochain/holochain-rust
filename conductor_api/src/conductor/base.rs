@@ -1210,12 +1210,12 @@ pub mod tests {
     [[dnas]]
     id = "bridge-callee"
     file = "bridge/callee.dna"
-    hash = "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
+    hash = "QmaxFoQiVziSdELCxgQvmDbLGxNPEDiQSnm6aKHijMwsZg"
 
     [[dnas]]
     id = "bridge-caller"
     file = "bridge/caller.dna"
-    hash = "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
+    hash = "QmdCoUqyeAKuVsTFasJnUeReaqqFvfT6toMeWieCCtrF3V"
 
     [[instances]]
     id = "test-instance-1"
@@ -1407,12 +1407,12 @@ pub mod tests {
         [[dnas]]
         id = "bridge-callee"
         file = "bridge/callee.dna"
-        hash = "QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR"
+        hash = "QmaxFoQiVziSdELCxgQvmDbLGxNPEDiQSnm6aKHijMwsZg"
 
         [[dnas]]
         id = "bridge-caller"
         file = "bridge/caller.dna"
-        hash = "QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh"
+        hash = "QmdCoUqyeAKuVsTFasJnUeReaqqFvfT6toMeWieCCtrF3V"
 
         [[instances]]
         id = "test-instance-1"
@@ -1451,13 +1451,21 @@ pub mod tests {
             Ok(()),
             "Conductor failed to boot from config"
         );
+
         let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
         let b = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
         assert_eq!(
             Conductor::check_dna_consistency(&a, &b),
             Ok(()),
             "DNA consistency check Fail."
-        )
+        );
+
+        let b = HashString::from("QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a");
+        assert_ne!(
+            Conductor::check_dna_consistency(&a, &b),
+            Ok(()),
+            "DNA consistency check Fail."
+        );
     }
 
     #[test]
@@ -1556,47 +1564,47 @@ pub mod tests {
     fn test_check_dna_consistency_from_dna_file() {
         let fixture = String::from(
             r#"{
-                "name": "test",
-                "description": "test",
-                "version": "test",
-                "uuid": "00000000-0000-0000-0000-000000000000",
+                "name": "my dna",
+                "description": "",
+                "version": "",
+                "uuid": "00000000-0000-0000-0000-000000000001",
                 "dna_spec_version": "2.0",
-                "properties": {
-                    "test": "test"
-                },
+                "properties": {},
                 "zomes": {
-                    "test": {
-                        "description": "test",
+                    "": {
+                        "description": "",
                         "config": {},
                         "entry_types": {
-                            "test": {
-                                "description": "test",
-                                "sharing": "public",
-                                "links_to": [
-                                    {
-                                        "target_type": "test",
-                                        "tag": "test"
-                                    }
-                                ],
-                                "linked_from": []
+                            "": {
+                                "description": "",
+                                "sharing": "public"
                             }
                         },
                         "traits": {
-                            "hc_public": {
+                            "test": {
                                 "functions": ["test"]
-                            }
+                             }
                         },
                         "fn_declarations": [
                             {
                                 "name": "test",
-                                "inputs": [],
-                                "outputs": []
+                                "inputs": [
+                                    {
+                                        "name": "post",
+                                        "type": "string"
+                                    }
+                                ],
+                                "outputs" : [
+                                    {
+                                        "name": "hash",
+                                        "type": "string"
+                                    }
+                                ]
                             }
                         ],
                         "code": {
                             "code": "AAECAw=="
-                        },
-                        "bridges": []
+                        }
                     }
                 }
             }"#,
@@ -1606,7 +1614,8 @@ pub mod tests {
                 .expect(&format!("Fail to load DNA from raw string: {}", fixture))
                 .address(),
         );
-        let dna_hash_computed = HashString::from("Qmf3ksiaUzihtXrSVPQbwhnn6gszLMiah8e4bcKeaTKAih");
+        // let dna_hash_computed = HashString::from("Qmf3ksiaUzihtXrSVPQbwhnn6gszLMiah8e4bcKeaTKAih");
+        let dna_hash_computed = HashString::from("QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a");
 
         assert_eq!(
             Conductor::check_dna_consistency(&dna_hash_from_file, &dna_hash_computed),

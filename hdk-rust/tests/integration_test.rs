@@ -197,6 +197,11 @@ pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 }
 
 #[no_mangle]
+pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
 pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
@@ -325,7 +330,7 @@ fn start_holochain_instance<T: Into<String>>(
             .unwrap();
         test_entry_type.links_to.push(LinksTo {
             target_type: String::from("testEntryType"),
-            tag: String::from("test-tag"),
+            link_type: String::from("test"),
         });
     }
 
@@ -334,7 +339,7 @@ fn start_holochain_instance<T: Into<String>>(
         let mut link_validator = EntryTypeDef::new();
         link_validator.links_to.push(LinksTo {
             target_type: String::from("link_validator"),
-            tag: String::from("longer"),
+            link_type: String::from("longer"),
         });
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
@@ -582,7 +587,7 @@ fn can_link_entries() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+        JsonString::from_json(r#"{"Ok":"QmdQvKn8yNojRHSxr9yK3HhEGAcAzfGgC6f8XT4joZdwTp"}"#)
     );
 }
 
@@ -594,7 +599,7 @@ fn can_remove_link() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmQvTQKNEXSrPxqB8VBz7vmpf44vubPD7jhPTWRBATZuDD"}"#)
+        JsonString::from_json(r#"{"Ok":"QmdQvKn8yNojRHSxr9yK3HhEGAcAzfGgC6f8XT4joZdwTp"}"#)
     );
 }
 
@@ -630,10 +635,12 @@ fn can_roundtrip_links() {
         LinksResult {
             address: entry_address_2.clone(),
             headers: Vec::new(),
+            tag: "test-tag".into(),
         },
         LinksResult {
             address: entry_address_3.clone(),
             headers: Vec::new(),
+            tag: "test-tag".into(),
         },
     ]));
     let expected_links = JsonString::from(expected_links);
@@ -646,10 +653,12 @@ fn can_roundtrip_links() {
             LinksResult {
                 address: entry_address_3.clone(),
                 headers: Vec::new(),
+                tag: "".into(),
             },
             LinksResult {
                 address: entry_address_2.clone(),
                 headers: Vec::new(),
+                tag: "".into(),
             },
         ]));
     let expected_links_reversed = JsonString::from(expected_links_reversed);

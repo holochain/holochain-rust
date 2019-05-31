@@ -55,7 +55,7 @@ pub fn send_test(
     // Camille should receive it
     alex.send_direct_message(&CAMILLE_AGENT_ID, ENTRY_CONTENT_1.clone());
     let res = camille
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -67,7 +67,7 @@ pub fn send_test(
 
     // Billy should not receive it
     alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_1.clone());
-    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
+    let res = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
     assert!(res.is_none());
 
     // Send messages on DNA B
@@ -79,7 +79,7 @@ pub fn send_test(
     // Billy should receive it
     alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_2.clone());
     let res = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -91,7 +91,7 @@ pub fn send_test(
     // Camille should not receive it
     alex.send_direct_message(&CAMILLE_AGENT_ID, ENTRY_CONTENT_2.clone());
     let res =
-        camille.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
+        camille.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
     assert!(res.is_none());
     log_i!("Send messages on DNA B COMPLETE \n\n\n");
 
@@ -104,7 +104,7 @@ pub fn send_test(
     // Camille should receive it
     camille.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_3.clone());
     let res = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -115,7 +115,7 @@ pub fn send_test(
 
     // Alex should not receive it
     camille.send_direct_message(&ALEX_AGENT_ID, ENTRY_CONTENT_3.clone());
-    let res = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
+    let res = alex.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
     assert!(res.is_none());
     log_i!("Send messages on DNA C COMPLETE \n\n\n");
 
@@ -152,7 +152,7 @@ pub fn dht_test(
 
     // Camille should receive requested data
     let result = camille
-        .wait(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
         .unwrap();
     log_i!("got QueryEntryResult: {:?}", result);
 
@@ -163,7 +163,8 @@ pub fn dht_test(
     alex.reply_to_HandleQueryEntry(&query_data).unwrap();
 
     // Billy might receive FailureResult
-    let result = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 1000);
+    let result =
+        billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 1000);
     log_i!("got FailureResult: {:?}", result);
 
     // Done

@@ -116,6 +116,7 @@ scenario1.runTape('show_env', async (t, { alice }) => {
   t.equal(result.Ok.dna_name, "HDK-spec-rust")
   t.equal(result.Ok.agent_address, alice.agentId)
   t.equal(result.Ok.agent_id, '{"nick":"alice","pub_sign_key":"' + alice.agentId + '"}')
+  t.equal(result.Ok.properties, '{"test_property":"test-property-value"}')
 
   // don't compare the public token because it changes every time we change the dna.
   t.deepEqual(result.Ok.cap_request.provenance, [ alice.agentId, '+78GKy9y3laBbCNK1ajrj2rYVV3lBOxzGAZuuLDqXL2MLJUbMaB4lv7ut/UPWSoEeHx7OuXrTFXfu+PihtMMBQ==' ]
@@ -184,6 +185,57 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.ok(result.Ok)
   t.notOk(result.Err)
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+})
+
+scenario1.runTape('create_tagged_post and retrieve all tags', async (t, { alice }) => {
+  const result1 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Tutorial on amazing Holochain design patterns",
+    tag: "work"
+  })
+  t.ok(result1.Ok)
+
+  const result2 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Fly tying, is it for you?",
+    tag: "fishing"
+  })
+  t.ok(result2.Ok)
+
+  const getResult = await alice.callSync("blog", "my_posts", {})
+  t.equal(getResult.Ok.links.length, 2)
+  let tags = getResult.Ok.links.map(l => l.tag)
+  t.ok(tags.includes("work"))
+  t.ok(tags.includes("fishing"))
+})
+
+scenario1.runTape('create_tagged_post and retrieve exact tag match', async (t, { alice }) => {
+  const result1 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Tutorial on amazing Holochain design patterns",
+    tag: "work"
+  })
+  t.ok(result1.Ok)
+
+  const result2 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Fly tying, is it for you?",
+    tag: "fishing"
+  })
+  t.ok(result2.Ok)
+
+  const getResult = await alice.callSync("blog", "my_posts", {tag: "fishing"})
+  t.equal(getResult.Ok.links.length, 1)
+  let tags = getResult.Ok.links.map(l => l.tag)
+  t.notOk(tags.includes("work"))
+  t.ok(tags.includes("fishing"))
+})
+
+scenario1.runTape('tagged link validation', async (t, { alice }) => {
+  const result1 = await alice.callSync("blog", "create_tagged_post", {
+    content: "Achieving a light and fluffy texture",
+    tag: "muffins"
+  })
+  t.ok(result1.Err)  // the linking of the entry should fail because `muffins` is the banned tag
+
+  const getResult = await alice.callSync("blog", "my_posts", {})
+  t.equal(getResult.Ok.links.length, 0)
 })
 
 scenario2.runTape('create_post_countersigned', async (t, { alice, bob }) => {

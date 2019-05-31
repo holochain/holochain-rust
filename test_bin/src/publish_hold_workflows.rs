@@ -24,7 +24,7 @@ pub fn empty_publish_entry_list_test(
     alex.reply_to_HandleQueryEntry(&query_data).unwrap();
     // Billy should receive the failureResult back
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
     log_i!("got result: {:?}", result);
     // Done
@@ -49,7 +49,7 @@ pub fn publish_entry_list_test(
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(has_received);
     // billy might receive HandleStoreEntryAspect
-    let _ = billy.wait_with_timeout(
+    let _ = billy.wait_json_with_timeout(
         Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
@@ -60,9 +60,9 @@ pub fn publish_entry_list_test(
         let _has_received = billy.wait_HandleQueryEntry_and_reply();
     }
     // Billy should receive the entry data
-    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
+    let mut result = billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
     if result.is_none() {
-        result = billy.wait(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
+        result = billy.wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
     }
     let json = result.unwrap();
     log_i!("got result: {:?}", json);
@@ -173,9 +173,9 @@ pub fn double_publish_entry_list_test(
         let _has_received = billy.wait_HandleQueryEntry_and_reply();
     }
     // Billy should receive the entry data back
-    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
+    let mut result = billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
     if result.is_none() {
-        result = billy.wait(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
+        result = billy.wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
     }
     let json = result.unwrap();
     log_i!("got result: {:?}", json);

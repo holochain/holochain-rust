@@ -1,12 +1,12 @@
 use crate::{
     action::ActionWrapper,
-    context::Context,
     network::{
         actions::ActionResponse,
         entry_with_header::{fetch_entry_with_header, EntryWithHeader},
         reducers::send,
         state::NetworkState,
     },
+    state::State,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -16,7 +16,6 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_net::connection::json_protocol::{DhtMetaData, JsonProtocol, ProvidedEntryData};
-use std::sync::Arc;
 
 /// Send to network a PublishDhtData message
 fn publish_entry(
@@ -67,7 +66,6 @@ fn publish_update_delete_meta(
 
 /// Send to network a PublishMeta message holding a link metadata to `entry_with_header`
 fn publish_link_meta(
-    context: &Arc<Context>,
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
@@ -83,10 +81,10 @@ fn publish_link_meta(
     };
     let link = link_type.link().clone();
 
-    context.log(format!(
+    println!(
         "debug/reduce/link_meta: Publishing link meta for link: {:?}",
         link
-    ));
+    );
 
     send(
         network_state,
@@ -104,13 +102,13 @@ fn publish_link_meta(
 }
 
 fn reduce_publish_inner(
-    context: &Arc<Context>,
     network_state: &mut NetworkState,
+    root_state: &State,
     address: &Address,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
-    let entry_with_header = fetch_entry_with_header(&address, &context)?;
+    let entry_with_header = fetch_entry_with_header(&address, root_state)?;
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
@@ -126,9 +124,9 @@ fn reduce_publish_inner(
             }
         }),
         EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
+            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
         EntryType::LinkRemove => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
+            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
         EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
             publish_update_delete_meta(
                 network_state,
@@ -144,14 +142,14 @@ fn reduce_publish_inner(
 }
 
 pub fn reduce_publish(
-    context: Arc<Context>,
     network_state: &mut NetworkState,
+    root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let address = unwrap_to!(action => crate::action::Action::Publish);
 
-    let result = reduce_publish_inner(&context, network_state, &address);
+    let result = reduce_publish_inner(network_state, root_state, &address);
     network_state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::Publish(match result {
@@ -179,7 +177,7 @@ mod tests {
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::Publish(entry.address()));
 
-        store.reduce(context.clone(), action_wrapper);
+        store.reduce(action_wrapper);
     }
 
 }

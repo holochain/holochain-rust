@@ -76,14 +76,14 @@ pub(crate) fn two_nodes_disconnect_test(
     )?;
     // Make sure Peers are connected
     let result_a = alex
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("got connect result A: {:?}", result_a);
     one_let!(JsonProtocol::PeerConnected(d) = result_a {
         assert_eq!(d.agent_id, *BILLY_AGENT_ID);
     });
     let result_b = billy
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("got connect result B: {:?}", result_b);
     one_let!(JsonProtocol::PeerConnected(d) = result_b {
@@ -187,14 +187,14 @@ pub(crate) fn three_nodes_disconnect_test(
 
     // Alex should receive the data
     let req_id = query_entry.request_id.clone();
-    let mut result = alex.find_recv_msg(
+    let mut result = alex.find_recv_json_msg(
         0,
         Box::new(one_is_where!(JsonProtocol::QueryEntryResult(entry_data), {
             entry_data.request_id == req_id
         })),
     );
     if result.is_none() {
-        result = alex.wait(Box::new(one_is_where!(
+        result = alex.wait_json(Box::new(one_is_where!(
             JsonProtocol::QueryEntryResult(entry_data),
             { entry_data.request_id == query_entry.request_id }
         )))

@@ -20,7 +20,7 @@ pub enum LinkDirection {
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct LinkValidationPackageArgs {
     pub entry_type: String,
-    pub tag: String,
+    pub link_type: String,
     pub direction: LinkDirection,
 }
 

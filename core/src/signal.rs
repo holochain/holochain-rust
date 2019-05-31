@@ -1,4 +1,4 @@
-use crate::action::ActionWrapper;
+use crate::{action::ActionWrapper, consistency::ConsistencySignal};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use serde::{Deserialize, Deserializer};
@@ -7,7 +7,8 @@ use std::thread;
 #[derive(Clone, Debug, Serialize, DefaultJson)]
 #[serde(tag = "signal_type")]
 pub enum Signal {
-    Internal(ActionWrapper),
+    Trace(ActionWrapper),
+    Consistency(ConsistencySignal),
     User(JsonString),
 }
 

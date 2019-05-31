@@ -13,11 +13,12 @@ use std::convert::TryFrom;
 /// of a get_links_and_load for a given type. Any entries that either fail to
 /// load or cannot be converted to the type will be dropped.
 ///
-pub fn get_links_and_load_type<S: Into<String>, R: TryFrom<AppEntryValue>>(
+pub fn get_links_and_load_type<R: TryFrom<AppEntryValue>>(
     base: &Address,
-    tag: S,
+    link_type: Option<String>,
+    tag: Option<String>,
 ) -> ZomeApiResult<Vec<R>> {
-    let link_load_results = hdk::get_links_and_load(base, tag)?;
+    let link_load_results = hdk::get_links_and_load(base, link_type, tag)?;
 
     Ok(link_load_results
         .iter()
@@ -63,26 +64,29 @@ pub fn get_as_type<R: TryFrom<AppEntryValue>>(address: Address) -> ZomeApiResult
 }
 
 /// Creates two links:
-/// From A to B, and from B to A, with given tags.
+/// From A to B, and from B to A, with given link_types.
 pub fn link_entries_bidir<S: Into<String>>(
     a: &Address,
     b: &Address,
-    tag_a_b: S,
-    tag_b_a: S,
+    link_type_a_b: S,
+    link_type_b_a: S,
+    link_tag_a_b: S,
+    link_tag_b_a: S,
 ) -> ZomeApiResult<()> {
-    hdk::link_entries(a, b, tag_a_b)?;
-    hdk::link_entries(b, a, tag_b_a)?;
+    hdk::link_entries(a, b, link_type_a_b, link_tag_a_b)?;
+    hdk::link_entries(b, a, link_type_b_a, link_tag_b_a)?;
     Ok(())
 }
 
 /// Commits the given entry and links it from the base
-/// with the given tag.
+/// with the given link_type.
 pub fn commit_and_link<S: Into<String>>(
     entry: &Entry,
     base: &Address,
+    link_type: S,
     tag: S,
 ) -> ZomeApiResult<Address> {
     let entry_addr = hdk::commit_entry(entry)?;
-    hdk::link_entries(base, &entry_addr, tag)?;
+    hdk::link_entries(base, &entry_addr, link_type, tag)?;
     Ok(entry_addr)
 }

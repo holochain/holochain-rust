@@ -25,7 +25,7 @@ pub fn setup_one_node(
         .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
 
@@ -36,7 +36,7 @@ pub fn setup_one_node(
         alex.send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on alex");
         let alex_state = alex
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
 
         one_let!(JsonProtocol::GetStateResult(state) = alex_state {
@@ -77,14 +77,14 @@ pub fn setup_two_nodes(
         .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
     billy
         .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 2: {:?}", connect_result_2);
 
@@ -96,13 +96,13 @@ pub fn setup_two_nodes(
         alex.send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on alex");
         let alex_state = alex
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
         billy
             .send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on billy");
         let billy_state = billy
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
 
         one_let!(JsonProtocol::GetStateResult(state) = alex_state {
@@ -125,14 +125,14 @@ pub fn setup_two_nodes(
 
         // Make sure Peers are connected
         let result_a = alex
-            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
             .unwrap();
         log_i!("got connect result A: {:?}", result_a);
         one_let!(JsonProtocol::PeerConnected(d) = result_a {
             assert_eq!(d.agent_id, *BILLY_AGENT_ID);
         });
         let result_b = billy
-            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
             .unwrap();
         log_i!("got connect result B: {:?}", result_b);
         one_let!(JsonProtocol::PeerConnected(d) = result_b {
@@ -168,7 +168,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
 
     // Check if billy received it
     let res = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -283,12 +283,12 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
 
     // Check if both nodes are asked to store it
-    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     // #fulldht
     assert!(result_a.is_some());
     log_i!("got HandleStoreEntryAspect on node A: {:?}", result_a);
 
-    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     assert!(result_b.is_some());
     log_i!("got HandleStoreEntryAspect on node B: {:?}", result_b);
 
@@ -300,7 +300,7 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
 
     // Billy should receive requested data
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
         .unwrap();
     log_i!("got QueryEntryResult: {:?}", result);
 
@@ -312,7 +312,7 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
 
     // Billy should receive FailureResult
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
     log_i!("got FailureResult: {:?}", result);
 
@@ -333,12 +333,12 @@ pub fn no_setup_test(alex: &mut TestNode, billy: &mut TestNode, _connect: bool) 
     alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_1.clone());
 
     // Alex should receive a FailureResult
-    let _res = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 500);
+    let _res = alex.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 500);
     // in-memory can't send a failure result back
     // assert!(_res.is_some());
 
     // Billy should not receive anything
-    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
     Ok(())
 }
@@ -362,7 +362,7 @@ pub fn untrack_alex_test(
     alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_1.clone());
 
     // Billy should not receive it.
-    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
     // Alex should also not receive anything back
     assert_eq!(before_count, alex.count_recv_json_messages());
@@ -395,12 +395,12 @@ pub fn untrack_billy_test(
 
     // Alex should receive FailureResult
     let result = alex
-        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
     log_i!("got FailureResult: {:?}", result);
 
     // Billy should not receive it.
-    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
 
     // Done
@@ -467,7 +467,7 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
     );
     // Check if alex received it
     let res = alex
-        .wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -579,12 +579,13 @@ pub fn shutdown_test(
     // Do something
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
     let _ = billy.listen(200);
+    let _ = alex.listen(200);
 
     // kill alex manually
     alex.send(Protocol::Shutdown.into())?;
 
     // alex should receive 'Terminated' which should set `is_network_ready`  to false
-    let _ = alex.listen(200);
+    let _ = alex.wait_json_with_timeout(Box::new(|_| true), 200);
     assert_eq!(alex.is_network_ready(), false);
 
     // Done

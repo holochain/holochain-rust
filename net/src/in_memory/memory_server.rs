@@ -307,10 +307,10 @@ impl InMemoryServer {
                 self.priv_serve_HandleFetchEntryResult(&msg)?;
             }
             JsonProtocol::QueryEntry(msg) => {
-                self.priv_serve_Query(&msg)?;
+                self.priv_serve_QueryEntry(&msg)?;
             }
             JsonProtocol::HandleQueryEntryResult(msg) => {
-                self.priv_serve_HandleQueryResult(&msg)?;
+                self.priv_serve_HandleQueryEntryResult(&msg)?;
             }
 
             // Our request for the publish_list has returned
@@ -510,14 +510,18 @@ impl InMemoryServer {
 
         // Store every aspect
         for aspect in msg.entry.aspect_list.clone() {
-            // book-keep authoring
-            bookkeep(
-                &mut self.authored_book,
-                &msg.dna_address,
-                &msg.provider_agent_id,
-                &msg.entry.entry_address,
-                &aspect.aspect_address,
-            );
+            let chain_id = into_chain_id(&msg.dna_address, &msg.provider_agent_id);
+            // Publish is authoring unless its broadcasting an aspect we are storing
+            if !book_has_aspect(&self.stored_book, chain_id, &msg.entry.entry_address,
+                                &aspect.aspect_address) {
+                bookkeep(
+                    &mut self.authored_book,
+                    &msg.dna_address,
+                    &msg.provider_agent_id,
+                    &msg.entry.entry_address,
+                    &aspect.aspect_address,
+                );
+            }
             let store_msg = StoreEntryAspectData {
                 request_id: self.priv_generate_request_id(),
                 dna_address: msg.dna_address.clone(),
@@ -526,7 +530,7 @@ impl InMemoryServer {
                 entry_aspect: aspect,
             };
             // #fulldht
-            // have everyone store it (including self)
+            // Broadcast: have everyone store it (including self)
             self.priv_send_all(
                 &msg.dna_address,
                 JsonProtocol::HandleStoreEntryAspect(store_msg).into(),
@@ -568,9 +572,9 @@ impl InMemoryServer {
         Ok(())
     }
 
-    // -- serve Query -- //
+    // -- serve QueryEntry -- //
 
-    fn priv_serve_Query(&mut self, msg: &QueryEntryData) -> NetResult<()> {
+    fn priv_serve_QueryEntry(&mut self, msg: &QueryEntryData) -> NetResult<()> {
         // Provider must be tracking
         let sender_info = Some((msg.requester_agent_id.clone(), Some(msg.request_id.clone())));
         let is_tracking =
@@ -610,7 +614,7 @@ impl InMemoryServer {
         Ok(())
     }
 
-    fn priv_serve_HandleQueryResult(&mut self, msg: &QueryEntryResultData) -> NetResult<()> {
+    fn priv_serve_HandleQueryEntryResult(&mut self, msg: &QueryEntryResultData) -> NetResult<()> {
         // Provider/Responder must be tracking
         let sender_info = Some((msg.responder_agent_id.clone(), Some(msg.request_id.clone())));
         let is_tracking = self.priv_check_or_fail(
@@ -708,6 +712,19 @@ impl InMemoryServer {
                     chain_id.clone(),
                     &entry_address,
                     &aspect_address,
+                );
+                // Ask for the new aspect since in-memory mode doesnt gossip
+                let request_id = self.priv_create_request_with_chain_id(&chain_id);
+                let _ = self.priv_send_one_with_chain_id(
+                    &chain_id,
+                    JsonProtocol::HandleFetchEntry(FetchEntryData {
+                        dna_address: msg.dna_address.clone(),
+                        provider_agent_id: undo_chain_id(&chain_id).1,
+                        request_id,
+                        entry_address: entry_address.clone(),
+                        aspect_address_list: Some(vec![aspect_address]),
+                    })
+                        .into(),
                 );
             }
         }

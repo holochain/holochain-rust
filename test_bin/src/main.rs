@@ -62,11 +62,9 @@ lazy_static! {
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,
         publish_hold_workflows::publish_entry_list_test,
-        //publish_hold_workflows::publish_meta_list_test,
-        //publish_hold_workflows::hold_meta_list_test,
         publish_hold_workflows::double_publish_entry_list_test,
-        //publish_hold_workflows::double_publish_meta_list_test,
-        //publish_hold_workflows::many_aspects_test,
+        publish_hold_workflows::hold_list_test,
+        publish_hold_workflows::many_aspects_test,
     ];
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
         three_workflows::hold_and_publish_test,

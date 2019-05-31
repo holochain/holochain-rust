@@ -243,7 +243,7 @@ impl TestNode {
                     }
                 }
                 if !success {
-                    panic!("Authoring of all aspects failed.");
+                    return Err(format_err!("Authoring of all aspects failed."));
                 }
             }
         }
@@ -259,7 +259,7 @@ impl TestNode {
         Ok(())
     }
 
-    pub fn hold_entry(&mut self, entry_address: &Address, aspect_content_list: Vec<Vec<u8>>) {
+    pub fn hold_entry(&mut self, entry_address: &Address, aspect_content_list: Vec<Vec<u8>>) -> NetResult<()> {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
         let entry = TestNode::into_EntryData(entry_address, aspect_content_list);
@@ -278,9 +278,11 @@ impl TestNode {
                 }
             }
             if !success {
-                panic!("Storing of all aspects failed.");
+                return Err(format_err!("Storing of all aspects failed."));
             }
         }
+        // Done
+        Ok(())
     }
 }
 

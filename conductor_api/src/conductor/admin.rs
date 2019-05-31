@@ -648,7 +648,7 @@ public_address = '{}'"#,
     pub fn dna() -> String {
         r#"[[dnas]]
 file = 'app_spec.dna.json'
-hash = 'Qm328wyq38924y'
+hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
 id = 'test-dna'"#
             .to_string()
     }

@@ -194,7 +194,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
         _ => unreachable!(),
     };
     assert_eq!(
-        "echo: hello".to_string(),
+        "echo: hello-1".to_string(),
         std::str::from_utf8(&msg.content).unwrap(),
     );
 
@@ -308,13 +308,15 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
     let query_data = billy.request_entry(ENTRY_ADDRESS_2.clone());
 
     // Alex sends that data back to the network
-    alex.reply_to_HandleQueryEntry(&query_data).unwrap();
-
+    let res = alex.reply_to_HandleQueryEntry(&query_data);
+    assert!(res.is_err());
     // Billy should receive FailureResult
     let result = billy
         .wait_json(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
     log_i!("got FailureResult: {:?}", result);
+    let gen_res = unwrap_to!(result => JsonProtocol::FailureResult);
+    assert_eq!(res.err().unwrap(), *gen_res);
 
     // Done
     Ok(())
@@ -457,7 +459,7 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
         _ => unreachable!(),
     };
     assert_eq!(
-        "hello".to_string(),
+        "hello-1".to_string(),
         std::str::from_utf8(&msg.content).unwrap()
     );
 
@@ -478,7 +480,7 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
         _ => unreachable!(),
     };
     assert_eq!(
-        "echo: hello".to_string(),
+        "echo: hello-1".to_string(),
         std::str::from_utf8(&msg.content).unwrap(),
     );
 

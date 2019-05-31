@@ -18,7 +18,7 @@ pub(crate) fn into_chain_id(dna_address: &Address, agent_id: &Address) -> ChainI
 /// unmerge meta_id into a tuple
 pub(crate) fn undo_chain_id(chain_id: &ChainId) -> (Address, Address) {
     let chain_str = chain_id.clone();
-    let vec: Vec<&str> = chain_str.split("||").collect();
+    let vec: Vec<&str> = chain_str.split("::").collect();
     assert_eq!(vec.len(), 2);
     // Convert & return
     (HashString::from(vec[0]), HashString::from(vec[1]))

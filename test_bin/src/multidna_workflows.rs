@@ -162,7 +162,7 @@ pub fn dht_test(
     let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
     // Alex sends that data back to the network
-    alex.reply_to_HandleQueryEntry(&query_data).unwrap();
+    let _ = alex.reply_to_HandleQueryEntry(&query_data);
 
     // Billy might receive FailureResult
     let result =

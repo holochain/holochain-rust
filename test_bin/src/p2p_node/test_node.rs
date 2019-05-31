@@ -232,12 +232,8 @@ impl TestNode {
                 .chain_store_list
                 .get_mut(&current_dna)
                 .expect("No dna_store for this DNA");
-            assert!(!chain_store
-                .authored_entry_store
-                .get(&entry_address)
-                .is_some());
-            assert!(!chain_store.stored_entry_store.get(&entry_address).is_some());
-            chain_store.authored_entry_store.insert_entry(&entry);
+            chain_store.author_entry(&entry)
+                .expect("Should not already have entry");
         }
         if can_broadcast {
             let msg_data = ProvidedEntryData {
@@ -259,12 +255,8 @@ impl TestNode {
             .chain_store_list
             .get_mut(&current_dna)
             .expect("No dna_store for this DNA");
-        assert!(!chain_store
-            .authored_entry_store
-            .get(&entry_address)
-            .is_some());
-        assert!(!chain_store.stored_entry_store.get(&entry_address).is_some());
-        chain_store.stored_entry_store.insert_entry(&entry);
+        chain_store.hold_entry(&entry)
+            .expect("ChainStore should not already have entry.");
     }
 }
 
@@ -486,9 +478,7 @@ impl TestNode {
                 .chain_store_list
                 .get_mut(&current_dna)
                 .expect("No chain_store for this DNA")
-                .authored_entry_store
-                .store
-                .clone();
+                .get_authored_store();
             let mut entry_address_list = HashMap::new();
             for (entry_address, entry_map) in authored_entry_store {
                 let aspect_map = entry_map
@@ -529,9 +519,7 @@ impl TestNode {
                 .chain_store_list
                 .get_mut(&current_dna)
                 .expect("No chain_store for this DNA")
-                .stored_entry_store
-                .store
-                .clone();
+                .get_stored_store();
             let mut entry_address_list = HashMap::new();
             for (entry_address, entry_map) in stored_entry_store {
                 let aspect_map = entry_map
@@ -1067,9 +1055,7 @@ impl TestNode {
                         .chain_store_list
                         .get_mut(&msg.dna_address)
                         .expect("No dna_store for this DNA");
-                    chain_store
-                        .stored_entry_store
-                        .insert_aspect(&msg.entry_address, &msg.entry_aspect);
+                    let _ = chain_store.hold_aspect(&msg.entry_address, &msg.entry_aspect);
                 }
             }
 

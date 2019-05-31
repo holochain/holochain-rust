@@ -319,15 +319,15 @@ pub fn publish_entry_stress_test(
     // Alex or Billy or Camille might receive HandleFetchEntry request as this moment
     #[allow(unused_assignments)]
     let mut has_received = false;
-    has_received = alex.wait_HandleFetchEntry_and_reply();
+    has_received = alex.wait_HandleQueryEntry_and_reply();
     if !has_received {
-        has_received = billy.wait_HandleFetchEntry_and_reply();
+        has_received = billy.wait_HandleQueryEntry_and_reply();
         if !has_received {
-            has_received = camille.wait_HandleFetchEntry_and_reply();
+            has_received = camille.wait_HandleQueryEntry_and_reply();
         }
     }
-    log_i!("has_received 'HandleFetchEntry': {}", has_received);
-    let time_after_handle_fetch = SystemTime::now();
+    log_i!("has_received 'HandleQueryEntry': {}", has_received);
+    let time_after_handle_query = SystemTime::now();
 
     // Camille should receive the data
     log_i!("Waiting for fetch result...\n\n");
@@ -349,8 +349,11 @@ pub fn publish_entry_stress_test(
     let json = result.unwrap();
     log_i!("got result 1: {:?}", json);
     let query_data = unwrap_to!(json => JsonProtocol::QueryEntryResult);
+    let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
     assert_eq!(query_data.entry_address, address_42.clone());
-    assert_eq!(query_data.query_result, entry_42.clone());
+    assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
+    assert_eq!(query_result.aspect_list.len(), 1);
+    assert_eq!(query_result.aspect_list[0].aspect, entry_42.clone());
 
     let time_end = SystemTime::now();
 
@@ -360,7 +363,7 @@ pub fn publish_entry_stress_test(
         time_end.duration_since(time_start).unwrap().as_millis() as f32 / 1000.0
     );
     println!(
-        "  - startup    : {:?}s",
+        "  - startup   : {:?}s",
         time_after_startup
             .duration_since(time_start)
             .unwrap()
@@ -368,7 +371,7 @@ pub fn publish_entry_stress_test(
             / 1000.0
     );
     println!(
-        "  - Authoring  : {:?}s",
+        "  - Authoring : {:?}s",
         time_after_authoring
             .duration_since(time_after_startup)
             .unwrap()
@@ -376,17 +379,17 @@ pub fn publish_entry_stress_test(
             / 1000.0
     );
     println!(
-        "  - Handling   : {:?}s",
-        time_after_handle_fetch
+        "  - Handling  : {:?}s",
+        time_after_handle_query
             .duration_since(time_after_authoring)
             .unwrap()
             .as_millis() as f32
             / 1000.0
     );
     println!(
-        "  - Fetching   : {:?}s",
+        "  - Fetching  : {:?}s",
         time_end
-            .duration_since(time_after_handle_fetch)
+            .duration_since(time_after_handle_query)
             .unwrap()
             .as_millis() as f32
             / 1000.0

@@ -94,13 +94,7 @@ impl EntryStore {
         if maybe_entry.is_none() {
             return None;
         }
-        let aspect_list = maybe_entry.unwrap().aspect_list;
-        for aspect in aspect_list.iter() {
-            if aspect.aspect_address == *aspect_address {
-                return Some(aspect.clone());
-            }
-        }
-        None
+        return maybe_entry.unwrap().get(aspect_address);
     }
 
     //    /// Get all values stored

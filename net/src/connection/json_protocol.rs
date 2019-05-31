@@ -97,6 +97,17 @@ pub struct EntryData {
     pub aspect_list: Vec<EntryAspectData>,
 }
 
+impl EntryData {
+    pub fn get(&self, aspect_address: &Address) -> Option<EntryAspectData> {
+        for aspect in self.aspect_list.iter() {
+            if aspect.aspect_address == *aspect_address {
+                return Some(aspect.clone());
+            }
+        }
+        None
+    }
+}
+
 //--------------------------------------------------------------------------------------------------
 // Query
 //--------------------------------------------------------------------------------------------------

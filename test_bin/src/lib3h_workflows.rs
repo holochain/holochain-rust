@@ -123,7 +123,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
         _ => unreachable!(),
     };
     assert_eq!(
-        "\"echo: {\\\"ry\\\":\\\"hello\\\"}\"".to_string(),
+        "echo: hello-1".to_string(),
         str::from_utf8(msg.content.as_slice()).unwrap()
     );
 

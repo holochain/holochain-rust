@@ -21,12 +21,15 @@ pub fn empty_publish_entry_list_test(
     // Billy asks for unpublished data.
     let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
     // Alex sends back a failureResult response to the network
-    alex.reply_to_HandleQueryEntry(&query_data).unwrap();
+    let res = alex.reply_to_HandleQueryEntry(&query_data);
+    assert!(res.is_err());
     // Billy should receive the failureResult back
     let result = billy
         .wait_json(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
     log_i!("got result: {:?}", result);
+    let gen_res = unwrap_to!(result => JsonProtocol::FailureResult);
+    assert_eq!(res.err().unwrap(), *gen_res);
     // Done
     Ok(())
 }

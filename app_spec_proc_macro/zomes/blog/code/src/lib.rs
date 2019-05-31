@@ -28,7 +28,7 @@ use hdk::{
         json::JsonString,
         signature::Provenance,
     },
-    holochain_wasm_utils::api_serialization::{get_links::{GetLinksResult,GetLinksOptions,LinksStatusRequestKind},get_entry::{EntryHistory,GetEntryResult}}
+    holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}}
 };
 use blog::Env;
 
@@ -145,7 +145,6 @@ pub mod blog {
         blog::handle_posts_by_agent_deleted(agent)
     }
 
-    
 
     #[zome_fn("hc_public")]
     pub fn get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {

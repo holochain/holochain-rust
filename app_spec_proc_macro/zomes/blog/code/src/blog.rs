@@ -14,7 +14,7 @@ use hdk::{
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
-        get_links::{GetLinksOptions, GetLinksResult},
+        get_links::{GetLinksOptions, GetLinksResult,LinksStatusRequestKind},
         QueryArgsOptions, QueryResult,
     },
     AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN,
@@ -399,7 +399,6 @@ pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&agent, Some("authored_posts".into()), None)
 }
 
-#[zome_fn("hc_public")]
 pub fn handle_posts_by_agent_all(agent : Address) ->ZomeApiResult<GetLinksResult>
 {
     let options = GetLinksOptions{
@@ -409,7 +408,6 @@ pub fn handle_posts_by_agent_all(agent : Address) ->ZomeApiResult<GetLinksResult
     hdk::get_links_with_options(&agent, Some("authored_posts".into()), None,options)
 }
 
-#[zome_fn("hc_public")]
 pub fn handle_posts_by_agent_deleted(agent : Address) ->ZomeApiResult<GetLinksResult>
 {
     let options = GetLinksOptions{

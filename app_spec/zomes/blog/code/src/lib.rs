@@ -70,7 +70,7 @@ define_zome! {
 
         ping: {
             inputs: |to_agent: Address, message: String|,
-            outputs: |response: ZomeApiResult<JsonString>|,
+            outputs: |response: ZomeApiResult<String>|,
             handler: blog::handle_ping
         }
 

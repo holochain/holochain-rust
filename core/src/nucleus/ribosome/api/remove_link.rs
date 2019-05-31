@@ -53,7 +53,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     ));
     if links_result.is_err() {
         context.log("err/zome : Could not get links for remove_link method");
-        return ribosome_error_code!(ArgumentDeserializationFailed);
+        return ribosome_error_code!(WorkflowFailed);
     }
 
     let links = links_result.expect("This is supposed to not fail");

@@ -1,6 +1,6 @@
 use super::entry_store::EntryStore;
 use holochain_core_types::cas::content::Address;
-use holochain_net::connection::json_protocol::{EntryData, EntryAspectData};
+use holochain_net::connection::json_protocol::{EntryAspectData, EntryData};
 use std::collections::HashMap;
 
 /// Holds DNA-specific data
@@ -48,8 +48,7 @@ impl ChainStore {
         if self.has(&entry.entry_address) {
             return Err(());
         }
-        self.authored_entry_store
-            .insert_entry(entry);
+        self.authored_entry_store.insert_entry(entry);
         Ok(())
     }
 
@@ -58,14 +57,20 @@ impl ChainStore {
         if self.has(&entry.entry_address) {
             return Err(());
         }
-        self.stored_entry_store
-            .insert_entry(entry);
+        self.stored_entry_store.insert_entry(entry);
         Ok(())
     }
 
     /// Return Err if Aspect is already known
-    pub fn author_aspect(&mut self, entry_address: &Address, aspect: &EntryAspectData) -> Result<(), ()> {
-        if self.get_aspect(entry_address, &aspect.aspect_address).is_some() {
+    pub fn author_aspect(
+        &mut self,
+        entry_address: &Address,
+        aspect: &EntryAspectData,
+    ) -> Result<(), ()> {
+        if self
+            .get_aspect(entry_address, &aspect.aspect_address)
+            .is_some()
+        {
             return Err(());
         }
         self.authored_entry_store
@@ -74,36 +79,40 @@ impl ChainStore {
     }
 
     /// Return Err if Aspect is already known
-    pub fn hold_aspect(&mut self, entry_address: &Address, aspect: &EntryAspectData) -> Result<(), ()> {
-        if self.get_aspect(entry_address, &aspect.aspect_address).is_some() {
+    pub fn hold_aspect(
+        &mut self,
+        entry_address: &Address,
+        aspect: &EntryAspectData,
+    ) -> Result<(), ()> {
+        if self
+            .get_aspect(entry_address, &aspect.aspect_address)
+            .is_some()
+        {
             return Err(());
         }
-        self.stored_entry_store
-            .insert_aspect(entry_address, aspect);
+        self.stored_entry_store.insert_aspect(entry_address, aspect);
         Ok(())
     }
 
     // -- has -- //
 
     pub fn has_authored(&self, entry_address: &Address) -> bool {
-        self
-            .authored_entry_store
-            .get(&entry_address)
-            .is_some()
+        self.authored_entry_store.get(&entry_address).is_some()
     }
 
     pub fn has_stored(&self, entry_address: &Address) -> bool {
-        self
-            .stored_entry_store
-            .get(&entry_address)
-            .is_some()
+        self.stored_entry_store.get(&entry_address).is_some()
     }
 
     pub fn has(&self, entry_address: &Address) -> bool {
         self.has_authored(entry_address) || self.has_stored(entry_address)
     }
 
-    pub fn get_aspect(&self, entry_address: &Address, aspect_address: &Address) -> Option<EntryAspectData> {
+    pub fn get_aspect(
+        &self,
+        entry_address: &Address,
+        aspect_address: &Address,
+    ) -> Option<EntryAspectData> {
         let maybe_entry = self.get_entry(entry_address);
         if let Some(entry) = maybe_entry {
             return entry.get(aspect_address);
@@ -114,15 +123,11 @@ impl ChainStore {
     // -- Getters -- //
 
     pub fn get_authored_store(&self) -> HashMap<Address, HashMap<Address, EntryAspectData>> {
-        self.authored_entry_store
-        .store
-        .clone()
+        self.authored_entry_store.store.clone()
     }
 
     pub fn get_stored_store(&self) -> HashMap<Address, HashMap<Address, EntryAspectData>> {
-        self.stored_entry_store
-            .store
-            .clone()
+        self.stored_entry_store.store.clone()
     }
 
     pub fn dna_address(&self) -> Address {

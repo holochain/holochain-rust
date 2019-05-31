@@ -2,7 +2,7 @@ use constants::*;
 use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
-        json_protocol::{ConnectData, JsonProtocol, EntryData},
+        json_protocol::{ConnectData, EntryData, JsonProtocol},
         net_connection::NetSend,
         protocol::Protocol,
         NetResult,
@@ -252,12 +252,20 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn dht_two_aspects_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
+pub fn dht_two_aspects_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Alex publish data on the network
-    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone(),ASPECT_CONTENT_2.clone()], true)?;
+    alex.author_entry(
+        &ENTRY_ADDRESS_1,
+        vec![ASPECT_CONTENT_1.clone(), ASPECT_CONTENT_2.clone()],
+        true,
+    )?;
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
@@ -267,10 +275,14 @@ pub fn dht_two_aspects_test(alex: &mut TestNode, billy: &mut TestNode, can_conne
     log_i!("got HandleStoreEntryAspect on node A: {:?}", json);
     let store_data_1 = unwrap_to!(json => JsonProtocol::HandleStoreEntryAspect);
     assert_eq!(store_data_1.entry_address, ENTRY_ADDRESS_1.clone());
-    assert!(store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_1 ||
-        store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_2);
-    assert!(store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1 ||
-        store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2);
+    assert!(
+        store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_1
+            || store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_2
+    );
+    assert!(
+        store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1
+            || store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
+    );
     // 2nd store
     let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     assert!(result_a.is_some());
@@ -279,10 +291,14 @@ pub fn dht_two_aspects_test(alex: &mut TestNode, billy: &mut TestNode, can_conne
     let store_data_2 = unwrap_to!(json => JsonProtocol::HandleStoreEntryAspect);
     assert_ne!(store_data_1, store_data_2);
     assert_eq!(store_data_2.entry_address, ENTRY_ADDRESS_1.clone());
-    assert!(store_data_2.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_1 ||
-        store_data_2.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_2);
-    assert!(store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1 ||
-        store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2);
+    assert!(
+        store_data_2.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_1
+            || store_data_2.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_2
+    );
+    assert!(
+        store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1
+            || store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
+    );
 
     // TODO also check aspects on billy?
 
@@ -302,8 +318,10 @@ pub fn dht_two_aspects_test(alex: &mut TestNode, billy: &mut TestNode, can_conne
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 2);
-    assert!(query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_1 ||
-        query_result.aspect_list[0].aspect_address.clone()  == *ASPECT_ADDRESS_2);
+    assert!(
+        query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_1
+            || query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_2
+    );
     // Done
     Ok(())
 }
@@ -500,7 +518,6 @@ pub fn shutdown_test(
     Ok(())
 }
 
-
 ///// Entry with no Aspect case
 //// this is all debug code, no need to track code test coverage
 //#[cfg_attr(tarpaulin, skip)]
@@ -531,10 +548,13 @@ pub fn shutdown_test(
 //    assert_eq!(meta_data.content_list.len(), 0);
 //}
 
-
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-pub fn two_authors_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
+pub fn two_authors_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
@@ -578,8 +598,10 @@ pub fn two_authors_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: 
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 2);
-    assert!(query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_1 ||
-        query_result.aspect_list[0].aspect_address.clone()  == *ASPECT_ADDRESS_2);
+    assert!(
+        query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_1
+            || query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_2
+    );
     // Done
     Ok(())
 }

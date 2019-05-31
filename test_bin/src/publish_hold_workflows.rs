@@ -2,8 +2,9 @@ use basic_workflows::setup_two_nodes;
 use constants::*;
 use holochain_net::{
     connection::{
-        json_protocol::{JsonProtocol, EntryData},
-        NetResult},
+        json_protocol::{EntryData, JsonProtocol},
+        NetResult,
+    },
     tweetlog::*,
 };
 use p2p_node::test_node::TestNode;
@@ -188,15 +189,21 @@ pub fn many_aspects_test(
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 3);
-    assert!(query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_1 ||
-        query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_2 ||
-        query_result.aspect_list[0].aspect_address.clone()  == *ASPECT_ADDRESS_3);
-    assert!(query_result.aspect_list[1].aspect_address.clone() == *ASPECT_ADDRESS_1 ||
-        query_result.aspect_list[1].aspect_address.clone() == *ASPECT_ADDRESS_2 ||
-        query_result.aspect_list[1].aspect_address.clone()  == *ASPECT_ADDRESS_3);
-    assert!(query_result.aspect_list[2].aspect_address.clone() == *ASPECT_ADDRESS_1 ||
-        query_result.aspect_list[2].aspect_address.clone() == *ASPECT_ADDRESS_2 ||
-        query_result.aspect_list[2].aspect_address.clone()  == *ASPECT_ADDRESS_3);
+    assert!(
+        query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_1
+            || query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_2
+            || query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_3
+    );
+    assert!(
+        query_result.aspect_list[1].aspect_address.clone() == *ASPECT_ADDRESS_1
+            || query_result.aspect_list[1].aspect_address.clone() == *ASPECT_ADDRESS_2
+            || query_result.aspect_list[1].aspect_address.clone() == *ASPECT_ADDRESS_3
+    );
+    assert!(
+        query_result.aspect_list[2].aspect_address.clone() == *ASPECT_ADDRESS_1
+            || query_result.aspect_list[2].aspect_address.clone() == *ASPECT_ADDRESS_2
+            || query_result.aspect_list[2].aspect_address.clone() == *ASPECT_ADDRESS_3
+    );
     // Done
     Ok(())
 }

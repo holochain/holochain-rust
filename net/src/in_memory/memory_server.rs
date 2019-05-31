@@ -512,8 +512,12 @@ impl InMemoryServer {
         for aspect in msg.entry.aspect_list.clone() {
             let chain_id = into_chain_id(&msg.dna_address, &msg.provider_agent_id);
             // Publish is authoring unless its broadcasting an aspect we are storing
-            if !book_has_aspect(&self.stored_book, chain_id, &msg.entry.entry_address,
-                                &aspect.aspect_address) {
+            if !book_has_aspect(
+                &self.stored_book,
+                chain_id,
+                &msg.entry.entry_address,
+                &aspect.aspect_address,
+            ) {
                 bookkeep(
                     &mut self.authored_book,
                     &msg.dna_address,
@@ -724,7 +728,7 @@ impl InMemoryServer {
                         entry_address: entry_address.clone(),
                         aspect_address_list: Some(vec![aspect_address]),
                     })
-                        .into(),
+                    .into(),
                 );
             }
         }

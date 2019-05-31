@@ -632,68 +632,40 @@ impl Conductor {
                 {
                     let dna_hash_from_conductor_config =
                         HashString::from(dna_config.hash.clone().unwrap_or("Missing DNA config hash".to_string()))
-                            .to_owned();
+                        .to_owned();
                     let dna_hash_computed = &dna.address();
 
-                    let dna_hash_computed_from_file = match Conductor::load_dna(&dna_file) {
-                        Ok(dna) => HashString::from(dna.address()),
-                        Err(_) => HashString::from(String::from("Missing DNA File."))
-                        // HolochainError::IoError(_) => HashString::from(String::from("Missing DNA File."))
-                    };
-
-                    match Conductor::check_dna_consistency(
-                        &dna_hash_from_conductor_config,
-                        &dna_hash_computed) {
-                        Ok(_) => (),
-                        Err(_e) => {
-                            let msg = format!("\
+                    match Conductor::load_dna(&dna_file) {
+                        Ok(dna) => {
+                            let dna_hash_computed_from_file = HashString::from(dna.address());
+                            Conductor::check_dna_consistency_from_all_sources(
+                                &context,
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed,
+                                &dna_hash_computed_from_file, &dna_file)?;
+                        },
+                        Err(_) => {
+                            let msg = format!("warn/Conductor: DNA file {:?} is missing.", &dna_file);
+                            context.log(msg);
+                            // If the file that is supposed to contain the DNA is missing, we only
+                            // check the 2 primary sources of DNA's hashes
+                            match Conductor::check_dna_consistency(
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed) {
+                                Ok(_) => (),
+                                Err(_e) => {
+                                    let msg = format!("\
                                 err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
                                 '{}' != '{}'",
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed);
-                            context.log(msg);
+                                    context.log(msg);
 
-                            // Do we want to return an error when there is a discrepancy between DNA hashes
-                            // or just warn the user here?
-                            return Err(_e.to_string());
-                        }
-                    }
-
-                    match Conductor::check_dna_consistency(
-                        &dna_hash_from_conductor_config,
-                        &dna_hash_computed_from_file) {
-                        Ok(_) => (),
-                        Err(_e) => {
-                            let msg = format!("\
-                                err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Hash computed from the file {:?}': \
-                                '{}' != '{}'",
-                                &dna_file,
-                                &dna_hash_from_conductor_config,
-                                &dna_hash_computed_from_file);
-                            context.log(msg);
-
-                            // Do we want to return an error when there is a discrepancy between DNA hashes
-                            // or just warn the user here?
-                            return Err(_e.to_string());
-                        }
-                    }
-
-                    match Conductor::check_dna_consistency(
-                        &dna_hash_computed,
-                        &dna_hash_computed_from_file) {
-                        Ok(_) => (),
-                        Err(_e) => {
-                            let msg = format!("\
-                                err/Conductor: DNA hashes mismatch: 'Conductor instance' != 'Hash computed from the file {:?}': \
-                                '{}' != '{}'",
-                                &dna_file,
-                                &dna_hash_computed,
-                                &dna_hash_computed_from_file);
-                            context.log(msg);
-
-                            // Do we want to return an error when there is a discrepancy between DNA hashes
-                            // or just warn the user here?
-                            return Err(_e.to_string());
+                                    // Do we want to return an error when there is a discrepancy between DNA hashes
+                                    // or just warn the user here?
+                                    return Err(_e.to_string());
+                                }
+                            }
                         }
                     }
                 }
@@ -745,18 +717,86 @@ impl Conductor {
         Ok(())
     }
 
+    /// Checks DNA's hashes from all sources:
+    /// - dna_hash_from_conductor_config: from the Conductor configuration
+    /// - dna_hash_computed: from the hash computed based on the loaded DNA
+    /// and
+    /// - dna_hash_computed_from_file: from the hash computed from the loaded DNA of the file.dna
+    fn check_dna_consistency_from_all_sources(
+        ctx: &holochain_core::context::Context,
+        dna_hash_from_conductor_config: &HashString,
+        dna_hash_computed: &HashString,
+        dna_hash_computed_from_file: &HashString,
+        dna_file: &PathBuf,
+    ) -> Result<(), HolochainError> {
+        match Conductor::check_dna_consistency(&dna_hash_from_conductor_config, &dna_hash_computed)
+        {
+            Ok(_) => (),
+            Err(e) => {
+                let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
+                                '{}' != '{}'",
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed);
+                ctx.log(msg);
+
+                // Do we want to return an error when there is a discrepancy between DNA hashes
+                // or just warn the user here?
+                return Err(e);
+            }
+        }
+
+        match Conductor::check_dna_consistency(
+            &dna_hash_from_conductor_config,
+            &dna_hash_computed_from_file,
+        ) {
+            Ok(_) => (),
+            Err(e) => {
+                let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Hash computed from the file {:?}': \
+                                '{}' != '{}'",
+                                &dna_file,
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed_from_file);
+                ctx.log(msg);
+
+                // Do we want to return an error when there is a discrepancy between DNA hashes
+                // or just warn the user here?
+                return Err(e);
+            }
+        }
+
+        match Conductor::check_dna_consistency(&dna_hash_computed, &dna_hash_computed_from_file) {
+            Ok(_) => (),
+            Err(e) => {
+                let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'Conductor instance' != 'Hash computed from the file {:?}': \
+                                '{}' != '{}'",
+                                &dna_file,
+                                &dna_hash_computed,
+                                &dna_hash_computed_from_file);
+                ctx.log(msg);
+
+                // Do we want to return an error when there is a discrepancy between DNA hashes
+                // or just warn the user here?
+                return Err(e);
+            }
+        }
+        Ok(())
+    }
+
     /// This is where we check for DNA's hashes consistency.
     /// Only a simple equality check between DNA hashes is currently performed.
     fn check_dna_consistency(
-        dna_hash_from_conductor_config: &HashString,
-        dna_hash_computed: &HashString,
+        dna_hash_a: &HashString,
+        dna_hash_b: &HashString,
     ) -> Result<(), HolochainError> {
-        if *dna_hash_from_conductor_config == *dna_hash_computed {
+        if *dna_hash_a == *dna_hash_b {
             Ok(())
         } else {
             Err(HolochainError::DnaHashMismatch(
-                dna_hash_from_conductor_config.clone(),
-                dna_hash_computed.clone(),
+                dna_hash_a.clone(),
+                dna_hash_b.clone(),
             ))
         }
     }
@@ -1569,7 +1609,7 @@ pub mod tests {
                 .expect(&format!("Fail to load DNA from raw string: {}", fixture))
                 .address(),
         );
-        let dna_hash_computed = HashString::from("QmXW3J2gYQ3UPWXqZBcmE9JJkd73YmgQ6Bo5HcPB12hDin");
+        let dna_hash_computed = HashString::from("Qmf3ksiaUzihtXrSVPQbwhnn6gszLMiah8e4bcKeaTKAih");
 
         assert_eq!(
             Conductor::check_dna_consistency(&dna_hash_from_file, &dna_hash_computed),

@@ -347,14 +347,14 @@ fn launch_two_nodes_test_with_lib3h(
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = TestNode::new_with_lib3h(
-        ALEX_AGENT_ID.to_string(),
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
     let mut billy = TestNode::new_with_lib3h(
-        BILLY_AGENT_ID.to_string(),
+        BILLY_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -490,21 +490,21 @@ fn launch_three_nodes_test_with_lib3h(
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = TestNode::new_with_lib3h(
-        ALEX_AGENT_ID.to_string(),
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
     let mut billy = TestNode::new_with_lib3h(
-        BILLY_AGENT_ID.to_string(),
+        BILLY_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
     let mut camille = TestNode::new_with_lib3h(
-        CAMILLE_AGENT_ID.to_string(),
+        CAMILLE_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],

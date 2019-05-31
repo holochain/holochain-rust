@@ -22,7 +22,17 @@ use std::{
     convert::TryFrom,
 };
 
-use super::{dna_store::DnaStore, ipc_config::create_ipc_config};
+use super::{
+    chain_store::ChainStore,
+    create_config::{create_ipc_config, create_lib3h_config},
+};
+use crossbeam_channel::{unbounded, Receiver};
+use holochain_net::connection::net_connection::NetHandler;
+use lib3h_protocol::{
+    data_types::DirectMessageData, protocol_client::Lib3hClientProtocol,
+    protocol_server::Lib3hServerProtocol,
+};
+use multihash::Hash;
 
 static TIMEOUT_MS: usize = 5000;
 
@@ -201,7 +211,7 @@ impl TestNode {
             });
         }
         EntryData {
-                entry_address: entry_address.clone(),
+            entry_address: entry_address.clone(),
             aspect_list,
         }
     }
@@ -387,7 +397,7 @@ impl TestNode {
 }
 impl TestNode {
     /// Node sends Message on the network.
-    pub fn send_message(&mut self, to_agent_id: String, content: serde_json::Value) -> MessageData {
+    pub fn send_direct_message(&mut self, to_agent_id: &Address, content: Vec<u8>) -> String {
         println!("set_current_dna: {:?}", self.current_dna);
         assert!(self.current_dna.is_some());
         let dna_address = self.current_dna.clone().unwrap();
@@ -395,13 +405,13 @@ impl TestNode {
         let from_agent_id = self.agent_id.to_string();
 
         let p = if self.is_json {
-        let msg_data = MessageData {
-            dna_address: current_dna,
-            from_agent_id: self.agent_id.to_string(),
-            request_id: self.generate_request_id(),
-            to_agent_id,
-            content,
-        };
+            let msg_data = MessageData {
+                dna_address,
+                from_agent_id: self.agent_id.clone(),
+                request_id: self.generate_request_id(),
+                to_agent_id: to_agent_id.clone(),
+                content,
+            };
             JsonProtocol::SendMessage(msg_data.clone()).into()
         } else {
             let msg_data = DirectMessageData {
@@ -409,7 +419,7 @@ impl TestNode {
                 request_id: request_id.clone(),
                 to_agent_id: to_agent_id.to_string().into_bytes(),
                 from_agent_id: from_agent_id.to_string().into_bytes(),
-                content: content.to_string().into_bytes(),
+                content,
             };
             Lib3hClientProtocol::SendDirectMessage(msg_data.clone()).into()
         };
@@ -418,7 +428,7 @@ impl TestNode {
     }
 
     /// Node sends Message on the network.
-    pub fn send_dm_reponse(&mut self, msg: MessageData, response_content: Vec<u8>) -> MessageData {
+    pub fn send_reponse_json(&mut self, msg: MessageData, response_content: Vec<u8>) {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
         assert_eq!(msg.dna_address, current_dna.clone());
@@ -482,9 +492,9 @@ impl TestNode {
             let mut entry_address_list = HashMap::new();
             for (entry_address, entry_map) in authored_entry_store {
                 let aspect_map = entry_map
-                .iter()
+                    .iter()
                     .map(|(a_address, _)| a_address.clone())
-                .collect();
+                    .collect();
                 entry_address_list.insert(entry_address, aspect_map);
             }
             msg = EntryListData {
@@ -525,9 +535,9 @@ impl TestNode {
             let mut entry_address_list = HashMap::new();
             for (entry_address, entry_map) in stored_entry_store {
                 let aspect_map = entry_map
-                .iter()
+                    .iter()
                     .map(|(a_address, _)| a_address.clone())
-                .collect();
+                    .collect();
                 entry_address_list.insert(entry_address, aspect_map);
             }
             msg = EntryListData {
@@ -574,13 +584,8 @@ impl TestNode {
         // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
         let agent_id = agent_id_arg.clone();
         let p2p_connection = P2pNetwork::new(
-            Box::new(move |r| {
-                log_tt!(
-                    "p2pnode",
-                    "<<< ({}) handler: {:?}",
-                    agent_id_arg.to_string(),
-                    r
-                );
+            NetHandler::new(Box::new(move |r| {
+                log_tt!("p2pnode", "<<< ({}) handler: {:?}", agent_id_arg, r);
                 sender.send(r?)?;
                 Ok(())
             })),
@@ -629,7 +634,7 @@ impl TestNode {
     /// Constructor for an IPC node that uses an existing n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_lib3h(
-        agent_id: String,
+        agent_id: Address,
         maybe_config_filepath: Option<&str>,
         maybe_end_user_config_filepath: Option<String>,
         bootstrap_nodes: Vec<String>,
@@ -1079,7 +1084,7 @@ impl TestNode {
             }
             JsonProtocol::HandleQueryEntryResult(_msg) => {
                 panic!("Core should not receive HandleQueryResult message");
-                }
+            }
 
             // -- Publish & Hold data -- //
             JsonProtocol::HandleGetAuthoringEntryList(_) => {

@@ -178,7 +178,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     assert_eq!(ENTRY_CONTENT_1.to_owned(), msg.content);
 
     // Send a message back from billy to alex
-    billy.send_dm_reponse(
+    billy.send_reponse_json(
         msg.clone(),
         format!("echo: {}", std::str::from_utf8(&msg.content).unwrap())
             .as_bytes()
@@ -186,7 +186,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     );
     // Check if alex received it
     let res = alex
-        .wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -338,7 +338,8 @@ pub fn no_setup_test(alex: &mut TestNode, billy: &mut TestNode, _connect: bool) 
     // assert!(_res.is_some());
 
     // Billy should not receive anything
-    let res = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res =
+        billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
     Ok(())
 }
@@ -362,7 +363,8 @@ pub fn untrack_alex_test(
     alex.send_direct_message(&BILLY_AGENT_ID, ENTRY_CONTENT_1.clone());
 
     // Billy should not receive it.
-    let res = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res =
+        billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
     // Alex should also not receive anything back
     assert_eq!(before_count, alex.count_recv_json_messages());
@@ -400,7 +402,8 @@ pub fn untrack_billy_test(
     log_i!("got FailureResult: {:?}", result);
 
     // Billy should not receive it.
-    let res = billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res =
+        billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
 
     // Done
@@ -446,7 +449,7 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
 
     // Check if billy received it
     let res = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -459,7 +462,7 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
     );
 
     // Send a message back from billy to alex
-    billy.send_dm_reponse(
+    billy.send_reponse_json(
         msg.clone(),
         format!("echo: {}", std::str::from_utf8(&msg.content).unwrap())
             .as_bytes()

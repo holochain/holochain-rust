@@ -60,7 +60,8 @@ pub fn publish_entry_list_test(
         let _has_received = billy.wait_HandleQueryEntry_and_reply();
     }
     // Billy should receive the entry data
-    let mut result = billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
+    let mut result =
+        billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
     if result.is_none() {
         result = billy.wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
     }
@@ -173,7 +174,8 @@ pub fn double_publish_entry_list_test(
         let _has_received = billy.wait_HandleQueryEntry_and_reply();
     }
     // Billy should receive the entry data back
-    let mut result = billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
+    let mut result =
+        billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
     if result.is_none() {
         result = billy.wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
     }

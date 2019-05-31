@@ -88,7 +88,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     setup_two_lib3h_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Send a message from alex to billy
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&*BILLY_AGENT_ID, ENTRY_CONTENT_1.clone());
 
     // Check if billy received it
     let res = billy
@@ -101,10 +101,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
         Lib3hServerProtocol::HandleSendDirectMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!(
-        ENTRY_CONTENT_1.to_string(),
-        str::from_utf8(msg.content.as_slice()).unwrap()
-    );
+    assert_eq!(ENTRY_CONTENT_1.clone(), msg.content.as_slice(),);
 
     // Send a message back from billy to alex
     billy.send_reponse_lib3h(

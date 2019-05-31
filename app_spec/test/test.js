@@ -342,7 +342,7 @@ scenario2.runTape('my_memos_are_private', async (t, { alice, bob }) => {
 })
 
 
-scenario2.runTape('delete_post', async (t, { alice, bob,carol }) => {
+scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
 
   //create by alice
   await alice.callSync("blog", "create_post",
@@ -364,7 +364,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob,carol }) => {
 
   //create post by alice
   const bob_posts = await alice.callSync("blog", "posts_by_agent",
-    { "agent": bob.agentId }
+    { "agent": alice.agentId }
   )
 
   t.ok(bob_posts.Ok)
@@ -391,11 +391,11 @@ scenario2.runTape('delete_post', async (t, { alice, bob,carol }) => {
 
   //get carol posts from bob
   const carol_posts = await bob.callSync("blog", "posts_by_agent",
-    { "agent": carol.agentId }
+    { "agent": alice.agentId }
   )
 
   t.ok(carol_posts.Ok)
-  t.equal(carol_posts.Ok.links.length, 2);
+  t.equal(carol_posts.Ok.links.length, 1);
 
 
 })

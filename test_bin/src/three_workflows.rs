@@ -177,7 +177,7 @@ pub fn hold_and_publish_test(
     setup_three_nodes(alex, billy, camille, &DNA_ADDRESS_A, can_connect)?;
 
     // Have alex hold some data
-    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], false)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], false)?;
     // Alex: Look for the hold_list request received from network module and reply
     alex.reply_to_first_HandleGetAuthoringEntryList();
 
@@ -187,7 +187,7 @@ pub fn hold_and_publish_test(
     assert!(has_received);
 
     // Have billy author the same data
-    billy.author_entry(&ENTRY_ADDRESS_2, vec![ENTRY_CONTENT_2.clone()], true)?;
+    billy.author_entry(&ENTRY_ADDRESS_2, vec![ASPECT_CONTENT_2.clone()], true)?;
 
     let _msg_count = camille.listen(3000);
 
@@ -223,7 +223,7 @@ pub fn hold_and_publish_test(
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 1);
-    assert_eq!(query_result.aspect_list[0].aspect, ENTRY_CONTENT_1.clone());
+    assert_eq!(query_result.aspect_list[0].aspect, ASPECT_CONTENT_1.clone());
 
     // Camille requests that entry
     let query_data = camille.request_entry(ENTRY_ADDRESS_2.clone());
@@ -257,7 +257,7 @@ pub fn hold_and_publish_test(
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_2.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 1);
-    assert_eq!(query_result.aspect_list[0].aspect, ENTRY_CONTENT_2.clone());
+    assert_eq!(query_result.aspect_list[0].aspect, ASPECT_CONTENT_2.clone());
 
     // Done
     Ok(())

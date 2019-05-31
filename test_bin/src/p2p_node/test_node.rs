@@ -232,8 +232,20 @@ impl TestNode {
                 .chain_store_list
                 .get_mut(&current_dna)
                 .expect("No dna_store for this DNA");
-            chain_store.author_entry(&entry)
-                .expect("Should not already have entry");
+            let res = chain_store.author_entry(&entry);
+            // Entry is known, try authoring each aspect instead
+            if res.is_err() {
+                let mut success = false;
+                for aspect in &entry.aspect_list {
+                    let aspect_res = chain_store.author_aspect(&entry.entry_address, aspect);
+                    if aspect_res.is_ok() {
+                        success = true;
+                    }
+                }
+                if !success {
+                    panic!("Authoring of all aspects failed.");
+                }
+            }
         }
         if can_broadcast {
             let msg_data = ProvidedEntryData {
@@ -255,8 +267,20 @@ impl TestNode {
             .chain_store_list
             .get_mut(&current_dna)
             .expect("No dna_store for this DNA");
-        chain_store.hold_entry(&entry)
-            .expect("ChainStore should not already have entry.");
+        let res = chain_store.hold_entry(&entry);
+        // Entry is known, try authoring each aspect instead
+        if res.is_err() {
+            let mut success = false;
+            for aspect in entry.aspect_list {
+                let aspect_res = chain_store.hold_aspect(&entry.entry_address, &aspect);
+                if aspect_res.is_ok() {
+                    success = true;
+                }
+            }
+            if !success {
+                panic!("Storing of all aspects failed.");
+            }
+        }
     }
 }
 

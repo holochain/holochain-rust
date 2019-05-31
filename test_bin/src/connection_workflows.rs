@@ -155,7 +155,7 @@ pub(crate) fn three_nodes_disconnect_test(
     log_i!("#### billy got after alex shutdown: {}\n\n\n\n", count);
 
     // Have Camille author something while alex is offline
-    camille.author_entry(&ENTRY_ADDRESS_3, vec![ENTRY_CONTENT_3.clone()], true)?;
+    camille.author_entry(&ENTRY_ADDRESS_3, vec![ASPECT_CONTENT_3.clone()], true)?;
     let count = billy.listen(1000);
     log_i!("#### billy got alex camille authoring: {}\n\n\n\n", count);
 
@@ -206,7 +206,7 @@ pub(crate) fn three_nodes_disconnect_test(
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_3.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 1);
-    assert_eq!(query_result.aspect_list[0].aspect, ENTRY_CONTENT_3.clone());
+    assert_eq!(query_result.aspect_list[0].aspect, ASPECT_CONTENT_3.clone());
 
     log_i!("============");
     print_three_nodes_test_name("N3H three_nodes_disconnect_test END: ", test_fn);

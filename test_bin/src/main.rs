@@ -54,9 +54,10 @@ lazy_static! {
         basic_workflows::untrack_billy_test,
         basic_workflows::retrack_test,
         basic_workflows::dht_test,
-        //basic_workflows::meta_test,
-        //basic_workflows::no_meta_test,
+        basic_workflows::dht_two_aspects_test,
+        basic_workflows::two_authors_test,
         basic_workflows::shutdown_test,
+        //basic_workflows::no_aspect_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,
@@ -65,14 +66,13 @@ lazy_static! {
         //publish_hold_workflows::hold_meta_list_test,
         publish_hold_workflows::double_publish_entry_list_test,
         //publish_hold_workflows::double_publish_meta_list_test,
-        //publish_hold_workflows::many_meta_test,
+        //publish_hold_workflows::many_aspects_test,
     ];
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
         three_workflows::hold_and_publish_test,
         three_workflows::publish_entry_stress_test,
         multidna_workflows::send_test,
         multidna_workflows::dht_test,
-        //multidna_workflows::meta_test,
     ];
     pub static ref MULTI_NODES_TEST_FNS: Vec<MultiNodesTestFn> = vec![
     ];

@@ -45,7 +45,7 @@ pub fn publish_entry_list_test(
     println!("Testing: publish_entry_list_test()");
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
     // author an entry without publishing it
-    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], false)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], false)?;
     // Reply to the publish_list request received from network module
     alex.reply_to_first_HandleGetAuthoringEntryList();
     // Should receive a HandleFetchEntry request from network module
@@ -85,7 +85,7 @@ pub fn publish_entry_list_test(
 //    println!("Testing: publish_meta_list_test()");
 //    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 //    // Author meta and reply to HandleGetPublishingMetaList
-//    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
+//    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
 //    alex.author_meta(
 //        &ENTRY_ADDRESS_1,
 //        META_LINK_ATTRIBUTE.into(),
@@ -164,7 +164,7 @@ pub fn double_publish_entry_list_test(
 ) -> NetResult<()> {
     println!("Testing: double_publish_entry_list_test()");
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
-    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
     alex.reply_to_first_HandleGetAuthoringEntryList();
     // Should NOT receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchEntry_and_reply();
@@ -200,7 +200,7 @@ pub fn double_publish_entry_list_test(
 //    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 //
 //    // Author meta and reply to HandleGetPublishingMetaList
-//    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
+//    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
 //    alex.author_meta(
 //        &ENTRY_ADDRESS_1,
 //        META_LINK_ATTRIBUTE.into(),
@@ -243,7 +243,7 @@ pub fn double_publish_entry_list_test(
 //    println!("Testing: many_meta_test()");
 //    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 //    // Author meta and reply to HandleGetPublishingMetaList
-//    alex.author_entry(&ENTRY_ADDRESS_1, vec![ENTRY_CONTENT_1.clone()], true)?;
+//    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
 //    log_d!("entry authored");
 //
 //    alex.author_meta(

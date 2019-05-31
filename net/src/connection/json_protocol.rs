@@ -226,9 +226,12 @@ pub enum JsonProtocol {
     /// Order the p2p module to leave the network of the specified DNA.
     UntrackDna(TrackDnaData),
 
-    /// Connect to the specified multiaddr
+    /// Request the network module to connect to a specific Peer. Used for bootstrapping only.
+    /// Connection address should be an opaque transport-layer connection string,
+    /// which will generally be a URI, but in the case of libp2p is a multiaddr.
     Connect(ConnectData),
-    /// Notification of a connection from another peer.
+    /// Notify that another Peer has connected to this Dna.
+    /// This is sent when another Peer joins the Network.
     PeerConnected(PeerData),
 
     // -- Config (deprecated?) -- //
@@ -254,7 +257,7 @@ pub enum JsonProtocol {
     SendMessageResult(MessageData),
     /// Request to handle a message another peer has sent us.
     HandleSendMessage(MessageData),
-    /// Our response to a message from another peer.
+    /// Core's response to a `HandleSendMessage`
     HandleSendMessageResult(MessageData),
 
     // -- Entry -- //
@@ -263,9 +266,10 @@ pub enum JsonProtocol {
     /// Successful data response for a `HandleFetchEntry` request
     HandleFetchEntryResult(FetchEntryResultData),
 
-    /// Publish data to the dht.
+    /// Core's request to add an Entry to the DHT network.
+    /// The network will take care to figure out which nodes are going to store it.
     PublishEntry(ProvidedEntryData),
-    /// Store data on a node's dht slice.
+    /// Network request for Core to store an Entry in its DHT shard.
     HandleStoreEntryAspect(StoreEntryAspectData),
 
     // -- Query -- //
@@ -276,9 +280,11 @@ pub enum JsonProtocol {
     HandleQueryEntryResult(QueryEntryResultData),
 
     // -- Entry lists -- //
+    /// The p2p module requests from Core the list of entries it has authored
+    /// and wants published on the network.
     HandleGetAuthoringEntryList(GetListData),
     HandleGetAuthoringEntryListResult(EntryListData),
-
+    /// The p2p module requests from Core the list of entries it is holding for the network.
     HandleGetGossipingEntryList(GetListData),
     HandleGetGossipingEntryListResult(EntryListData),
 }

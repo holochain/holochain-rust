@@ -9,6 +9,8 @@ tempfile = "=3.0.7"
 
 [dependencies]
 failure = "=0.1.5"
+lib3h = "=0.0.1-alpha1"
+lib3h_protocol = "=0.0.1-alpha1"
 holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }

@@ -28,6 +28,10 @@ use std::{
     path::PathBuf,
 };
 use toml;
+use conductor::base::DnaLoader;
+use holochain_core_types::dna::bridges::{BridgePresence, BridgeReference};
+use holochain_core_types::cas::content::AddressableContent;
+use std::sync::Arc;
 
 /// Main conductor configuration struct
 /// This is the root of the configuration tree / aggregates
@@ -134,7 +138,7 @@ fn detect_dupes<'a, I: Iterator<Item = &'a String>>(
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.
-    pub fn check_consistency<'a>(&'a self) -> Result<(), String> {
+    pub fn check_consistency(&self, mut dna_loader: &mut DnaLoader) -> Result<(), String> {
         detect_dupes("agent", self.agents.iter().map(|c| &c.id))?;
         detect_dupes("dna", self.dnas.iter().map(|c| &c.id))?;
         detect_dupes("instance", self.instances.iter().map(|c| &c.id))?;
@@ -147,12 +151,80 @@ impl Configuration {
                     instance.agent, instance.id
                 )
             })?;
-            self.dna_by_id(&instance.dna).is_some().ok_or_else(|| {
+            let dna_config = self.dna_by_id(&instance.dna);
+            dna_config.is_some().ok_or_else(|| {
                 format!(
                     "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
                     instance.dna, instance.id
                 )
             })?;
+            let dna_config = dna_config.unwrap();
+            let dna = Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(dna_config.file.clone())).map_err(|_| {
+                format!(
+                    "Could not load DNA file \"{}\"",
+                    dna_config.file
+                )
+            })?;
+
+            for zome in dna.zomes.values() {
+                for bridge in zome.bridges.iter() {
+                    if bridge.presence == BridgePresence::Required {
+                        let handle = bridge.handle.clone();
+                        let bridge_config = self
+                            .bridges
+                            .iter()
+                            .find(|b| b.handle == handle)
+                            .ok_or(format!(
+                                "Required bridge '{}' for instance '{}' missing",
+                                handle,
+                                instance.id
+                            ))?;
+
+                        let callee_config = self.instance_by_id(&bridge_config.callee_id)
+                            .ok_or(format!(
+                                "Instance configuration \"{}\" not found, mentioned in bridge",
+                                bridge_config.callee_id
+                            ))?;
+
+                        let callee_dna_config = self.dna_by_id(&callee_config.dna);
+                        callee_dna_config.is_some().ok_or_else(|| {
+                            format!(
+                                "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
+                                instance.dna, instance.id
+                            )
+                        })?;
+                        let callee_dna_config = callee_dna_config.unwrap();
+                        let callee_dna = Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(callee_dna_config.file)).map_err(|_| {
+                            format!(
+                                "Could not load DNA file \"{}\"",
+                                dna_config.file
+                            )
+                        })?;
+
+
+                        match bridge.reference {
+                            BridgeReference::Address{ref dna_address} => {
+                                if *dna_address != callee_dna.address() {
+                                    return Err(format!(
+                                        "Bridge '{}' of instance '{}' requires callee to be DNA with hash '{}', but the configure instance '{}' runs DNA with hash '{}'.",
+                                        bridge.handle,
+                                        instance.id,
+                                        dna_address,
+                                        callee_config.id,
+                                        callee_dna.address(),
+                                    ));
+                                }
+                            },
+                            BridgeReference::Trait{ref traits} => {
+                                let _ = traits;
+                            },
+                        }
+
+
+                    }
+                }
+            }
+
         }
         for ref interface in self.interfaces.iter() {
             for ref instance in interface.instances.iter() {
@@ -597,6 +669,7 @@ pub mod tests {
     use super::*;
     use crate::config::{load_configuration, Configuration, NetworkConfig};
     use holochain_net::p2p_config::P2pConfig;
+    use conductor::tests::test_dna_loader;
 
     pub fn example_serialized_network_config() -> String {
         String::from(JsonString::from(P2pConfig::new_with_unique_memory_backend()))
@@ -714,7 +787,7 @@ pub mod tests {
 
         let config = load_configuration::<Configuration>(toml).unwrap();
 
-        assert_eq!(config.check_consistency(), Ok(()));
+        assert_eq!(config.check_consistency(&mut test_dna_loader()), Ok(()));
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
@@ -810,7 +883,7 @@ pub mod tests {
 
         let config = load_configuration::<Configuration>(toml).unwrap();
 
-        assert_eq!(config.check_consistency(), Ok(()));
+        assert_eq!(config.check_consistency(&mut test_dna_loader()), Ok(()));
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
@@ -854,7 +927,7 @@ pub mod tests {
         let config: Configuration =
             load_configuration(toml).expect("Failed to load config from toml string");
 
-        assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
+        assert_eq!(config.check_consistency(&mut test_dna_loader()), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
     }
 
     #[test]
@@ -891,7 +964,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(toml).unwrap();
 
         assert_eq!(
-            config.check_consistency(),
+            config.check_consistency(&mut test_dna_loader()),
             Err(
                 "Instance configuration \"WRONG INSTANCE ID\" not found, mentioned in interface"
                     .to_string()
@@ -1002,7 +1075,7 @@ pub mod tests {
         );
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
-        assert_eq!(config.check_consistency(), Ok(()));
+        assert_eq!(config.check_consistency(&mut test_dna_loader()), Ok(()));
 
         // "->": calls
         // app1 -> app2 -> app3
@@ -1042,7 +1115,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
         assert_eq!(
-            config.check_consistency(),
+            config.check_consistency(&mut test_dna_loader()),
             Err("Cyclic dependency in bridge configuration".to_string())
         );
     }
@@ -1070,7 +1143,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
         assert_eq!(
-            config.check_consistency(),
+            config.check_consistency(&mut test_dna_loader()),
             Err("Instance configuration \"app9000\" not found, mentioned in bridge".to_string())
         );
     }
@@ -1174,7 +1247,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
         assert_eq!(
-            config.check_consistency(),
+            config.check_consistency(&mut test_dna_loader()),
             Err("DNA Interface configuration \"<not existant>\" not found, mentioned in UI interface \"ui-interface-1\"".to_string())
         );
     }
@@ -1208,7 +1281,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
         assert_eq!(
-            config.check_consistency(),
+            config.check_consistency(&mut test_dna_loader()),
             Err(
                 "Instance configuration \"bogus instance\" not found, mentioned in dpki"
                     .to_string()

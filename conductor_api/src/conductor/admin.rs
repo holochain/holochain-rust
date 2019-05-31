@@ -123,7 +123,7 @@ impl ConductorAdmin for Conductor {
 
         let mut new_config = self.config.clone();
         new_config.dnas.push(new_dna.clone());
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
         notify(format!("Installed DNA from {} as \"{}\"", path_string, id));
@@ -153,7 +153,7 @@ impl ConductorAdmin for Conductor {
             new_config = new_config.save_remove_instance(id);
         }
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -197,7 +197,7 @@ impl ConductorAdmin for Conductor {
             },
         };
         new_config.instances.push(new_instance_config);
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         let instance = self.instantiate_from_config(id, &new_config)?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
@@ -215,7 +215,7 @@ impl ConductorAdmin for Conductor {
 
         new_config = new_config.save_remove_instance(id);
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -242,7 +242,7 @@ impl ConductorAdmin for Conductor {
             )));
         }
         new_config.interfaces.push(interface.clone());
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
         self.start_interface_by_id(&interface.id)?;
@@ -269,7 +269,7 @@ impl ConductorAdmin for Conductor {
             .filter(|interface| interface.id != *id)
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -315,7 +315,7 @@ impl ConductorAdmin for Conductor {
             })
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -363,7 +363,7 @@ impl ConductorAdmin for Conductor {
             })
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -433,7 +433,7 @@ impl ConductorAdmin for Conductor {
         };
 
         new_config.agents.push(new_agent);
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -468,7 +468,7 @@ impl ConductorAdmin for Conductor {
             new_config = new_config.save_remove_instance(id);
         }
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -502,7 +502,7 @@ impl ConductorAdmin for Conductor {
             )));
         }
         new_config.bridges.push(new_bridge.clone());
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -537,7 +537,7 @@ impl ConductorAdmin for Conductor {
             .filter(|bridge| bridge.caller_id != *caller_id || bridge.callee_id != *callee_id)
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 

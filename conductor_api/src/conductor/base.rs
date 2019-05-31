@@ -497,7 +497,7 @@ impl Conductor {
     /// The first time we call this, we also initialize the conductor-wide config
     /// for use with all instances
     pub fn boot_from_config(&mut self) -> Result<(), String> {
-        let _ = self.config.check_consistency()?;
+        let _ = self.config.check_consistency(&mut self.dna_loader)?;
 
         if self.p2p_config.is_none() {
             self.p2p_config = Some(self.initialize_p2p_config());
@@ -558,7 +558,7 @@ impl Conductor {
         id: &String,
         config: &Configuration,
     ) -> Result<Holochain, String> {
-        let _ = config.check_consistency()?;
+        let _ = config.check_consistency(&mut self.dna_loader)?;
 
         config
             .instance_by_id(&id)
@@ -800,7 +800,7 @@ impl Conductor {
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
-    fn load_dna(file: &PathBuf) -> Result<Dna, HolochainError> {
+    pub fn load_dna(file: &PathBuf) -> Result<Dna, HolochainError> {
         notify(format!("Reading DNA from {}", file.display()));
         let mut f = File::open(file)?;
         let mut contents = String::new();

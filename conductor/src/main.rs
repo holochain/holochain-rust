@@ -27,6 +27,8 @@ use holochain_conductor_api::{
 use holochain_core_types::error::HolochainError;
 use std::{fs::File, io::prelude::*, path::PathBuf, thread::sleep, time::Duration};
 use structopt::StructOpt;
+use holochain_conductor_api::conductor::Conductor;
+use std::sync::Arc;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "holochain")]
@@ -80,7 +82,7 @@ fn main() {
 fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
-        .check_consistency()
+        .check_consistency(&mut Arc::new(Box::new(Conductor::load_dna)))
         .map_err(|string| HolochainError::ConfigError(string))?;
     mount_conductor_from_config(config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();

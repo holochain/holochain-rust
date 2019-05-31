@@ -72,7 +72,7 @@ pub async fn get_link_result_workflow<'a>(
     }
 }
 
-async fn get_link_caches<'a>(
+async fn get_link_add_entries<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<Vec<(LinkData, Option<EntryWithMetaAndHeader>)>, HolochainError> {

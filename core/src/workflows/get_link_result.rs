@@ -26,7 +26,7 @@ pub async fn get_link_result_workflow<'a>(
         Ok(())
     }?;
     //get links
-    let links = await!(get_link_caches(context, link_args))?;
+    let links = await!(get_link_add_entries(context, link_args))?;
     let (link_results, errors): (Vec<_>, Vec<_>) = links
         .into_iter()
         .map(|link| {

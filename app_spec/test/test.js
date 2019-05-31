@@ -355,20 +355,20 @@ scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
   )
   
   //create post by alice
-  const alice_posts = await bob.callSync("blog", "posts_by_agent",
+  const alice_posts = bob.call("blog", "posts_by_agent",
     { "agent": alice.agentId }
   )
 
   t.ok(alice_posts.Ok)
-  t.equal(alice_posts.Ok.links.length, 2);
+  t.equal(alice_posts.Ok.links.length,1 );
 
   //create post by alice
-  const bob_posts = await alice.callSync("blog", "posts_by_agent",
+  const bob_posts = alice.call("blog", "posts_by_agent",
     { "agent": alice.agentId }
   )
 
   t.ok(bob_posts.Ok)
-  t.equal(bob_posts.Ok.links.length, 2);
+  t.equal(bob_posts.Ok.links.length,1 );
 
   //remove link by alice
   await alice.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
@@ -389,11 +389,8 @@ scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
   { "agent_id":alice.agent_id, "content": "Posty", "in_reply_to": "" }
   );
 
-  console.log("alice" + alice.agentId);
-  console.log("bob" + bob.agentId);
-  console.log("carol" + carol.agentId);
   //get carol posts from bob
-  const carol_posts = await carol.callSync("blog", "posts_by_agent",
+  const carol_posts = carol.call("blog", "posts_by_agent",
     { "agent": alice.agentId }
   )
 

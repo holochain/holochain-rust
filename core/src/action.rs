@@ -19,9 +19,9 @@ use holochain_core_types::{
     dna::Dna,
     entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
-    link::Link,
     signature::Provenance,
     validation::ValidationPackage,
+    link::link_data::LinkData
 };
 use holochain_net::{
     connection::{
@@ -107,13 +107,13 @@ pub enum Action {
 
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.
-    AddLink((Link, Entry)),
+    AddLink(LinkData),
 
     //action for updating crudstatus
     CrudStatus((EntryWithHeader, CrudStatus)),
 
     //Removes a link for the local DHT
-    RemoveLink((Link, Entry)),
+    RemoveLink(Entry),
 
     // ----------------
     // Network actions:

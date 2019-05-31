@@ -84,11 +84,12 @@ pub(crate) fn reduce_add_link(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let (link, entry) = unwrap_to!(action_wrapper.action() => Action::AddLink);
+    let link_data = unwrap_to!(action_wrapper.action() => Action::AddLink);
     let mut new_store = (*old_store).clone();
+    let entry =  Entry::LinkAdd(link_data.clone());
     let res = reduce_add_remove_link_inner(
         &mut new_store,
-        link,
+        link_data.link(),
         &entry.address(),
         LinkModification::Add,
     );
@@ -100,19 +101,16 @@ pub(crate) fn reduce_remove_link(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let (link, entry) = unwrap_to!(action_wrapper.action() => Action::RemoveLink);
-    let links_to_remove = match entry {
-        Entry::LinkRemove((_, links)) => links.clone(),
-        _ => Vec::new(),
-    };
-
+    let entry= unwrap_to!(action_wrapper.action() => Action::RemoveLink);
+    let (link_data,links_to_remove) = unwrap_to!(entry => Entry::LinkRemove);
     let new_store = (*old_store).clone();
     let store = links_to_remove
         .iter()
         .fold(new_store, |mut store, link_addresses| {
+
             let res = reduce_add_remove_link_inner(
                 &mut store,
-                link,
+                link_data.link(),
                 link_addresses,
                 LinkModification::Remove,
             );
@@ -221,13 +219,14 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
-        let link_entry = Entry::LinkAdd(LinkData::from_link(
+        let link_data = LinkData::from_link(
             &link.clone(),
             LinkActionKind::ADD,
             0,
             test_agent_id(),
-        ));
-        let action = ActionWrapper::new(Action::AddLink((link.clone(), link_entry.clone())));
+        );
+        let link_entry = Entry::LinkAdd(link_data.clone());
+        let action = ActionWrapper::new(Action::AddLink(link_data);
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 

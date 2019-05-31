@@ -636,6 +636,8 @@ impl Conductor {
                     let dna_hash_computed = &dna.address();
 
                     match Conductor::load_dna(&dna_file) {
+                        // If the file is correctly loaded, meaning it exists in the file system,
+                        // we can operate on its computed DNA hash
                         Ok(dna) => {
                             let dna_hash_computed_from_file = HashString::from(dna.address());
                             Conductor::check_dna_consistency_from_all_sources(
@@ -645,15 +647,18 @@ impl Conductor {
                                 &dna_hash_computed_from_file, &dna_file)?;
                         },
                         Err(_) => {
+                            // But if it doesn't exist, like in every unit test, we warn the user
+                            // and do some partial check
                             let msg = format!("warn/Conductor: DNA file {:?} is missing.", &dna_file);
                             context.log(msg);
+
                             // If the file that is supposed to contain the DNA is missing, we only
                             // check the 2 primary sources of DNA's hashes
                             match Conductor::check_dna_consistency(
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed) {
                                 Ok(_) => (),
-                                Err(_e) => {
+                                Err(e) => {
                                     let msg = format!("\
                                 err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
                                 '{}' != '{}'",
@@ -661,9 +666,7 @@ impl Conductor {
                                 &dna_hash_computed);
                                     context.log(msg);
 
-                                    // Do we want to return an error when there is a discrepancy between DNA hashes
-                                    // or just warn the user here?
-                                    return Err(_e.to_string());
+                                    return Err(e.to_string());
                                 }
                             }
                         }

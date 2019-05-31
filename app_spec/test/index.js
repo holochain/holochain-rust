@@ -1,7 +1,7 @@
 const path = require('path')
 const tape = require('tape')
 
-const { Playbook, tapeMiddleware } = require('@holochain/playbook')
+const { Playbook, tapeExecutor } = require('@holochain/playbook')
 
 process.on('unhandledRejection', error => {
   // Will print "unhandledRejection err is not defined"
@@ -20,13 +20,11 @@ const playbook = new Playbook({
   bridges: [
     Playbook.bridge('test-bridge', 'alice', 'bob')
   ],
-  debugLog: true,
-  middleware: [
-    tapeMiddleware(require('tape')),
-  ],
+  debugLog: false,
+  executor: tapeExecutor(require('tape')),
 })
 
 require('./test')(playbook.registerScenario)
 require('./regressions')(playbook.registerScenario)
 
-playbook.runSuite().then(playbook.close)
+playbook.run()

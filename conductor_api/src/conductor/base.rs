@@ -36,7 +36,9 @@ use std::{
     time::Duration,
 };
 
+use boolinator::Boolinator;
 use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
+use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     ipc::spawn::{ipc_spawn, SpawnResult},
     p2p_config::P2pConfig,
@@ -320,10 +322,45 @@ impl Conductor {
     }
 
     pub fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
-        let instance = self.instances.get(id)?;
-
+        let mut instance = self.instances.get(id)?.write().unwrap();
         notify(format!("Starting instance \"{}\"...", id));
-        instance.write().unwrap().start()
+
+        // Get instance DNA so we can read out required bridge definitions:
+        let dna =
+            instance
+                .state()?
+                .nucleus()
+                .dna()
+                .ok_or(HolochainInstanceError::InternalFailure(
+                    HolochainError::DnaMissing,
+                ))?;
+
+        // Make sure required bridges are configured and started:
+        for zome in dna.zomes.values() {
+            for bridge in zome.bridges.iter() {
+                if bridge.presence == BridgePresence::Required {
+                    let handle = bridge.handle.clone();
+                    let bridge_config = self
+                        .config
+                        .bridges
+                        .iter()
+                        .find(|b| b.handle == handle)
+                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(
+                            handle.clone(),
+                        ))?;
+                    self.instances
+                        .get(&bridge_config.callee_id)
+                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(
+                            handle.clone(),
+                        ))?
+                        .read()
+                        .unwrap()
+                        .active()
+                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(handle))?;
+                }
+            }
+        }
+        instance.start()
     }
 
     pub fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
@@ -334,12 +371,14 @@ impl Conductor {
 
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
-        self.instances
-            .iter_mut()
-            .map(|(id, hc)| {
-                notify(format!("Starting instance \"{}\"...", id));
-                hc.write().unwrap().start()
-            })
+        self
+            .config
+            .instances
+            .iter()
+            .map(|instance_config| instance_config.id.clone())
+            .collect::<Vec<String>>()
+            .iter()
+            .map(|id| self.start_instance(&id))
             .collect::<Result<Vec<()>, _>>()
             .map(|_| ())
     }
@@ -997,6 +1036,8 @@ pub mod tests {
 
     use self::tempfile::tempdir;
     use test_utils::*;
+    use holochain_core_types::dna::bridges::{Bridge, BridgeReference};
+    use std::collections::BTreeMap;
 
     //    commented while test_signals_through_admin_websocket is broken
     //    extern crate ws;
@@ -1452,6 +1493,14 @@ pub mod tests {
         let defs = create_test_defs_with_fn_name("call_bridge");
         let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         dna.uuid = String::from("basic_bridge_call");
+        let bridge = Bridge {
+            presence: BridgePresence::Required,
+            handle: String::from("test-callee"),
+            reference: BridgeReference::Trait {
+                traits: BTreeMap::new(),
+            },
+        };
+        dna.zomes.get_mut("test_zome").unwrap().bridges.push(bridge);
         dna
     }
 
@@ -1485,6 +1534,21 @@ pub mod tests {
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
         assert_eq!(result, JsonString::from(RawString::from("Holo World")));
+    }
+
+    #[test]
+    fn error_if_required_bridge_missing() {
+        let mut config = load_configuration::<Configuration>(&test_toml(10061, 10062)).unwrap();
+        config.bridges.clear();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        conductor
+            .boot_from_config()
+            .expect("Test config must be sane");
+        let result = conductor.start_all_instances();
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), HolochainInstanceError::RequiredBridgeMissing("test-callee".to_string()));
     }
 
     #[test]

@@ -39,7 +39,7 @@ pub struct Env {
     dna_address: String,
     agent_id: String,
     agent_address: String,
-    cap_request: CapabilityRequest,
+    cap_request: Option<CapabilityRequest>,
     properties: JsonString,
 }
 

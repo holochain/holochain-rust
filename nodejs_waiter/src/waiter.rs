@@ -227,7 +227,7 @@ impl Waiter {
                                     //println!("WAITER: Entry::LinkAdd -> Action::AddLink");
                                     *aw.action()
                                         == Action::AddLink((
-                                            link_add.clone().link().clone(),
+                                            link_add.clone(),
                                             committed_entry.clone(),
                                         ))
                                 });
@@ -237,7 +237,7 @@ impl Waiter {
                                     //println!("WAITER: Entry::LinkRemove -> Action::RemoveLink");
                                     *aw.action()
                                         == Action::RemoveLink((
-                                            link_remove.clone().link().clone(),
+                                            link_remove.clone(),
                                             committed_entry.clone(),
                                         ))
                                 });
@@ -623,7 +623,7 @@ mod tests {
         waiter.process_signal(sig(Hold(entry_wh)));
         assert_eq!(num_conditions(&waiter, &call), 2);
 
-        waiter.process_signal(sig(AddLink((link_add.link().clone(), entry.clone()))));
+        waiter.process_signal(sig(AddLink((link_add.clone(), entry.clone()))));
         assert_eq!(num_conditions(&waiter, &call), 1);
         assert_eq!(waiter.checkers.len(), 1);
 

@@ -389,6 +389,9 @@ scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
   { "agent_id":alice.agent_id, "content": "Posty", "in_reply_to": "" }
   );
 
+  console.log("alice" + alice.agentId);
+  console.log("bob" + bob.agentId);
+  console.log("carol" + carol.agentId);
   //get carol posts from bob
   const carol_posts = await carol.callSync("blog", "posts_by_agent",
     { "agent": alice.agentId }

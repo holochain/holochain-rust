@@ -1,9 +1,6 @@
-use holochain_core_types::cas::content::Address;
-use std::collections::HashMap;
-use holochain_net::{
-    connection::json_protocol::{AspectKey, EntryAspectData, EntryData},
-};
 use super::entry_store::EntryStore;
+use holochain_core_types::cas::content::Address;
+use holochain_net::connection::json_protocol::EntryData;
 
 /// Holds DNA-specific data
 pub struct ChainStore {
@@ -40,11 +37,6 @@ impl ChainStore {
             has_aspects = true;
         }
         // Done
-        return if has_aspects {
-            Some(entry)
-        } else {
-            None
-        }
-
+        return if has_aspects { Some(entry) } else { None };
     }
 }

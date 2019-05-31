@@ -63,7 +63,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
                 context.log(format!(
-                    "debug/net/handle: HandleStoreEntry: {:?}",
+                    "debug/net/handle: HandleStoreEntryAspect: {:?}",
                     dht_entry_data
                 ));
                 handle_store_entry(dht_entry_data, context.clone())

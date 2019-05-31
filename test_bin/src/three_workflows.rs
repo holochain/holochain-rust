@@ -2,7 +2,7 @@ use constants::*;
 use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
-        json_protocol::{ConnectData, JsonProtocol},
+        json_protocol::{ConnectData, EntryData, JsonProtocol},
         net_connection::NetSend,
         NetResult,
     },
@@ -97,14 +97,14 @@ pub fn setup_three_nodes(
             .unwrap();
         println!("got connect result A: {:?}", result_a);
         one_let!(JsonProtocol::PeerConnected(d) = result_a {
-            assert_eq!(d.agent_id, BILLY_AGENT_ID);
+            assert_eq!(d.agent_id, *BILLY_AGENT_ID);
         });
         let result_b = billy
             .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
             .unwrap();
         println!("got connect result B: {:?}", result_b);
         one_let!(JsonProtocol::PeerConnected(d) = result_b {
-            assert_eq!(d.agent_id, ALEX_AGENT_ID);
+            assert_eq!(d.agent_id, *ALEX_AGENT_ID);
         });
 
         // Connect nodes between them
@@ -121,7 +121,7 @@ pub fn setup_three_nodes(
         let result_b = billy
             .wait(Box::new(one_is_where!(
                 JsonProtocol::PeerConnected(data),
-                { data.agent_id == CAMILLE_AGENT_ID }
+                { data.agent_id == *CAMILLE_AGENT_ID }
             )))
             .unwrap();
         println!("got connect result on Billy: {:?}", result_b);
@@ -129,7 +129,7 @@ pub fn setup_three_nodes(
         let result_c = camille
             .wait(Box::new(one_is_where!(
                 JsonProtocol::PeerConnected(data),
-                { data.agent_id == BILLY_AGENT_ID }
+                { data.agent_id == *BILLY_AGENT_ID }
             )))
             .unwrap();
         println!("got connect result on Camille: {:?}", result_c);
@@ -137,7 +137,7 @@ pub fn setup_three_nodes(
         let result_a = alex
             .wait(Box::new(one_is_where!(
                 JsonProtocol::PeerConnected(data),
-                { data.agent_id == CAMILLE_AGENT_ID }
+                { data.agent_id == *CAMILLE_AGENT_ID }
             )))
             .unwrap();
         println!("got connect result on Alex: {:?}", result_a);
@@ -192,66 +192,72 @@ pub fn hold_and_publish_test(
     let _msg_count = camille.listen(3000);
 
     // Camille requests that entry
-    let fetch_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());
+    let query_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());
     // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    let has_received = alex.wait_HandleQueryEntry_and_reply();
     if !has_received {
-        let has_received = billy.wait_HandleFetchEntry_and_reply();
+        let has_received = billy.wait_HandleQueryEntry_and_reply();
         if !has_received {
-            let _has_received = camille.wait_HandleFetchEntry_and_reply();
+            let _has_received = camille.wait_HandleQueryEntry_and_reply();
         }
     }
 
     // Camille should receive the data
-    let req_id = fetch_entry.request_id.clone();
+    let req_id = query_entry.request_id.clone();
     let mut result = camille.find_recv_msg(
         0,
-        Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+        Box::new(one_is_where!(JsonProtocol::QueryEntryResult(entry_data), {
             entry_data.request_id == req_id
         })),
     );
     if result.is_none() {
         result = camille.wait(Box::new(one_is_where!(
-            JsonProtocol::FetchEntryResult(entry_data),
-            { entry_data.request_id == fetch_entry.request_id }
+            JsonProtocol::QueryEntryResult(entry_data),
+            { entry_data.request_id == query_entry.request_id }
         )))
     }
     let json = result.unwrap();
     log_i!("got result 1: {:?}", json);
-    let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);
-    assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_1.clone());
-    assert_eq!(entry_data.entry_content, ENTRY_CONTENT_1.clone());
+    let query_data = unwrap_to!(json => JsonProtocol::QueryEntryResult);
+    let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
+    assert_eq!(query_data.entry_address, ENTRY_ADDRESS_1.clone());
+    assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
+    assert_eq!(query_result.aspect_list.len(), 1);
+    assert_eq!(query_result.aspect_list[0].aspect, ENTRY_CONTENT_1.clone());
 
     // Camille requests that entry
-    let fetch_entry = camille.request_entry(ENTRY_ADDRESS_2.clone());
+    let query_data = camille.request_entry(ENTRY_ADDRESS_2.clone());
     // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    let has_received = alex.wait_HandleQueryEntry_and_reply();
     if !has_received {
-        let has_received = billy.wait_HandleFetchEntry_and_reply();
+        let has_received = billy.wait_HandleQueryEntry_and_reply();
         if !has_received {
-            let _has_received = camille.wait_HandleFetchEntry_and_reply();
+            let _has_received = camille.wait_HandleQueryEntry_and_reply();
         }
     }
 
     // Camille should receive the data
-    let req_id = fetch_entry.request_id.clone();
+    let req_id = query_data.request_id.clone();
     let mut result = camille.find_recv_msg(
         0,
-        Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+        Box::new(one_is_where!(JsonProtocol::QueryEntryResult(entry_data), {
             entry_data.request_id == req_id
         })),
     );
     if result.is_none() {
         result = camille.wait(Box::new(one_is_where!(
-            JsonProtocol::FetchEntryResult(entry_data),
-            { entry_data.request_id == fetch_entry.request_id }
+            JsonProtocol::QueryEntryResult(entry_data),
+            { entry_data.request_id == query_data.request_id }
         )))
     }
     let json = result.unwrap();
     log_i!("got result 2: {:?}", json);
-    let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);
-    assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_2.clone());
-    assert_eq!(entry_data.entry_content, ENTRY_CONTENT_2.clone());
+    let query_data = unwrap_to!(json => JsonProtocol::QueryEntryResult);
+    let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
+    assert_eq!(query_data.entry_address, ENTRY_ADDRESS_2.clone());
+    assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
+    assert_eq!(query_result.aspect_list.len(), 1);
+    assert_eq!(query_result.aspect_list[0].aspect, ENTRY_CONTENT_2.clone());
 
     // Done
     Ok(())
@@ -279,13 +285,13 @@ pub fn publish_entry_stress_test(
         // select node & publish entry
         match i % 3 {
             0 => {
-                alex.author_entry(&address, &entry, true)?;
+                alex.author_entry(&address, vec![entry], true)?;
             }
             1 => {
-                billy.author_entry(&address, &entry, true)?;
+                billy.author_entry(&address, vec![entry], true)?;
             }
             2 => {
-                camille.author_entry(&address, &entry, true)?;
+                camille.author_entry(&address, vec![entry], true)?;
             }
             _ => unreachable!(),
         };
@@ -298,17 +304,18 @@ pub fn publish_entry_stress_test(
     // #fulldht
     // wait for store entry request
     let result = camille.wait_with_timeout(
-        Box::new(one_is_where!(JsonProtocol::HandleStoreEntry(entry_data), {
-            entry_data.entry_address == address_42_clone
-        })),
+        Box::new(one_is_where!(
+            JsonProtocol::HandleStoreEntryAspect(entry_data),
+            { entry_data.entry_address == address_42_clone }
+        )),
         10000,
     );
     assert!(result.is_some());
 
     log_i!("Requesting entry \n\n");
     // Camille requests that entry
-    let fetch_entry = camille.request_entry(address_42.clone());
-    let req_id = fetch_entry.request_id.clone();
+    let query_entry = camille.request_entry(address_42.clone());
+    let req_id = query_entry.request_id.clone();
     // Alex or Billy or Camille might receive HandleFetchEntry request as this moment
     #[allow(unused_assignments)]
     let mut has_received = false;
@@ -327,23 +334,23 @@ pub fn publish_entry_stress_test(
 
     let mut result = camille.find_recv_msg(
         0,
-        Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+        Box::new(one_is_where!(JsonProtocol::QueryEntryResult(entry_data), {
             entry_data.request_id == req_id
         })),
     );
     if result.is_none() {
         result = camille.wait_with_timeout(
-            Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
-                entry_data.request_id == fetch_entry.request_id
+            Box::new(one_is_where!(JsonProtocol::QueryEntryResult(entry_data), {
+                entry_data.request_id == query_entry.request_id
             })),
             10000,
         )
     }
     let json = result.unwrap();
     log_i!("got result 1: {:?}", json);
-    let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);
-    assert_eq!(entry_data.entry_address, address_42.clone());
-    assert_eq!(entry_data.entry_content, entry_42.clone());
+    let query_data = unwrap_to!(json => JsonProtocol::QueryEntryResult);
+    assert_eq!(query_data.entry_address, address_42.clone());
+    assert_eq!(query_data.query_result, entry_42.clone());
 
     let time_end = SystemTime::now();
 

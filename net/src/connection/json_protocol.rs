@@ -103,7 +103,7 @@ pub struct EntryData {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct QueryData {
+pub struct QueryEntryData {
     pub dna_address: Address,
     #[serde(rename = "address")]
     pub entry_address: Address,
@@ -115,7 +115,7 @@ pub struct QueryData {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct QueryResultData {
+pub struct QueryEntryResultData {
     pub dna_address: Address,
     #[serde(rename = "address")]
     pub entry_address: Address,
@@ -270,10 +270,10 @@ pub enum JsonProtocol {
 
     // -- Query -- //
     /// Request some info / data from a Entry
-    Query(QueryData),
-    QueryResult(QueryResultData),
-    HandleQuery(QueryData),
-    HandleQueryResult(QueryResultData),
+    QueryEntry(QueryEntryData),
+    QueryEntryResult(QueryEntryResultData),
+    HandleQueryEntry(QueryEntryData),
+    HandleQueryEntryResult(QueryEntryResultData),
 
     // -- Entry lists -- //
     HandleGetAuthoringEntryList(GetListData),
@@ -472,16 +472,6 @@ mod tests {
         }));
     }
     #[test]
-    fn it_can_convert_FetchEntryResult() {
-        test_convert!(JsonProtocol::FetchEntryResult(FetchEntryResultData {
-            dna_address: "test_dna".into(),
-            request_id: "test_id".to_string(),
-            requester_agent_id: "test_to".to_string(),
-            provider_agent_id: "test_from".to_string(),
-            entry: test_entry(),
-        }));
-    }
-    #[test]
     fn it_can_convert_HandleFetchEntryResult() {
         test_convert!(JsonProtocol::HandleFetchEntryResult(FetchEntryResultData {
             dna_address: "test_dna".into(),
@@ -499,7 +489,7 @@ mod tests {
     }
     #[test]
     fn it_can_convert_HandleStoreEntry() {
-        test_convert!(JsonProtocol::HandleStoreEntry(StoreEntryAspectData {
+        test_convert!(JsonProtocol::HandleStoreEntryAspect(StoreEntryAspectData {
             request_id: "req_id".to_string(),
             dna_address: "test_dna".into(),
             provider_agent_id: "test_from".to_string(),
@@ -512,7 +502,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_Query() {
-        test_convert!(JsonProtocol::Query(QueryData {
+        test_convert!(JsonProtocol::QueryEntry(QueryData {
             dna_address: "test_dna".into(),
             entry_address: "Hk42".into(),
             request_id: "test_id".to_string(),
@@ -522,7 +512,7 @@ mod tests {
     }
     #[test]
     fn it_can_convert_QueryResult() {
-        test_convert!(JsonProtocol::QueryResult(QueryResultData {
+        test_convert!(JsonProtocol::QueryEntryResult(QueryResultData {
             dna_address: "test_dna".into(),
             entry_address: "Hk42".into(),
             request_id: "test_id".to_string(),
@@ -536,14 +526,14 @@ mod tests {
 
     #[test]
     fn it_can_convert_HandleGetAuthoringEntryList() {
-        test_convert!(JsonProtocol::HandleGetPublishingEntryList(GetListData {
+        test_convert!(JsonProtocol::HandleGetAuthoringEntryList(GetListData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
         }));
     }
     #[test]
     fn it_can_convert_HandleGetAuthoringEntryListResult() {
-        test_convert!(JsonProtocol::HandleGetPublishingEntryListResult(
+        test_convert!(JsonProtocol::HandleGetAuthoringEntryListResult(
             EntryListData {
                 dna_address: "test_dna".into(),
                 request_id: "test_id".to_string(),
@@ -553,14 +543,14 @@ mod tests {
     }
     #[test]
     fn it_can_convert_HandleGetGossipingEntryList() {
-        test_convert!(JsonProtocol::HandleGetHoldingEntryList(GetListData {
+        test_convert!(JsonProtocol::HandleGetGossipingEntryList(GetListData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
         }));
     }
     #[test]
     fn it_can_convert_HandleGetGossipingEntryListResult() {
-        test_convert!(JsonProtocol::HandleGetHoldingEntryListResult(
+        test_convert!(JsonProtocol::HandleGetGossipingEntryListResult(
             EntryListData {
                 dna_address: "test_dna".into(),
                 request_id: "test_id".to_string(),

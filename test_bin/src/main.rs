@@ -51,25 +51,25 @@ lazy_static! {
         basic_workflows::untrack_billy_test,
         basic_workflows::retrack_test,
         basic_workflows::dht_test,
-        basic_workflows::meta_test,
-        basic_workflows::no_meta_test,
+        //basic_workflows::meta_test,
+        //basic_workflows::no_meta_test,
         basic_workflows::shutdown_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,
         publish_hold_workflows::publish_entry_list_test,
-        publish_hold_workflows::publish_meta_list_test,
-        publish_hold_workflows::hold_meta_list_test,
+        //publish_hold_workflows::publish_meta_list_test,
+        //publish_hold_workflows::hold_meta_list_test,
         publish_hold_workflows::double_publish_entry_list_test,
-        publish_hold_workflows::double_publish_meta_list_test,
-        publish_hold_workflows::many_meta_test,
+        //publish_hold_workflows::double_publish_meta_list_test,
+        //publish_hold_workflows::many_meta_test,
     ];
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
         three_workflows::hold_and_publish_test,
         three_workflows::publish_entry_stress_test,
         multidna_workflows::send_test,
         multidna_workflows::dht_test,
-        multidna_workflows::meta_test,
+        //multidna_workflows::meta_test,
     ];
     pub static ref MULTI_NODES_TEST_FNS: Vec<MultiNodesTestFn> = vec![
     ];
@@ -240,8 +240,8 @@ fn main() {
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResult<()> {
-    let mut alex = TestNode::new_with_unique_memory_network(&ALEX_AGENT_ID);
-    let mut billy = TestNode::new_with_config(&BILLY_AGENT_ID, &alex.config, None);
+    let mut alex = TestNode::new_with_unique_memory_network(ALEX_AGENT_ID.clone());
+    let mut billy = TestNode::new_with_config(BILLY_AGENT_ID.clone(), &alex.config, None);
 
     log_i!("");
     print_two_nodes_test_name("IN-MEMORY TWO NODE TEST: ", test_fn);
@@ -265,14 +265,13 @@ fn launch_two_nodes_test_with_ipc_mock(
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        &ALEX_AGENT_ID,
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
-    let mut billy =
-        TestNode::new_with_uri_ipc_network(&BILLY_AGENT_ID, &alex.endpoint());
+    let mut billy = TestNode::new_with_uri_ipc_network(BILLY_AGENT_ID.clone(), &alex.endpoint());
 
     log_i!("");
     print_two_nodes_test_name("IPC-MOCK TWO NODE TEST: ", test_fn);
@@ -296,14 +295,14 @@ fn launch_two_nodes_test(
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        &ALEX_AGENT_ID,
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
     let mut billy = TestNode::new_with_spawn_ipc_network(
-        &BILLY_AGENT_ID,
+        BILLY_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -331,9 +330,9 @@ fn launch_two_nodes_test(
 #[cfg_attr(tarpaulin, skip)]
 fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> NetResult<()> {
     // Create nodes
-    let mut alex = TestNode::new_with_unique_memory_network(&ALEX_AGENT_ID);
-    let mut billy = TestNode::new_with_config(&BILLY_AGENT_ID, &alex.config, None);
-    let mut camille = TestNode::new_with_config(&CAMILLE_AGENT_ID, &alex.config, None);
+    let mut alex = TestNode::new_with_unique_memory_network(ALEX_AGENT_ID.clone());
+    let mut billy = TestNode::new_with_config(BILLY_AGENT_ID.clone(), &alex.config, None);
+    let mut camille = TestNode::new_with_config(CAMILLE_AGENT_ID.clone(), &alex.config, None);
 
     // Launch test
     log_i!("");
@@ -361,16 +360,15 @@ fn launch_three_nodes_test_with_ipc_mock(
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        &ALEX_AGENT_ID,
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
-    let mut billy =
-        TestNode::new_with_uri_ipc_network(&BILLY_AGENT_ID, &alex.endpoint());
+    let mut billy = TestNode::new_with_uri_ipc_network(BILLY_AGENT_ID.clone(), &alex.endpoint());
     let mut camille =
-        TestNode::new_with_uri_ipc_network(&CAMILLE_AGENT_ID, &alex.endpoint());
+        TestNode::new_with_uri_ipc_network(CAMILLE_AGENT_ID.clone(), &alex.endpoint());
 
     log_i!("");
     print_three_nodes_test_name("IPC-MOCK THREE NODE TEST: ", test_fn);
@@ -395,21 +393,21 @@ fn launch_three_nodes_test(
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        &ALEX_AGENT_ID,
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
     let mut billy = TestNode::new_with_spawn_ipc_network(
-        &BILLY_AGENT_ID,
+        BILLY_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
     let mut camille = TestNode::new_with_spawn_ipc_network(
-        &CAMILLE_AGENT_ID,
+        CAMILLE_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],

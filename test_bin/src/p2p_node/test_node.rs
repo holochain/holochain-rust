@@ -1,16 +1,12 @@
 #![allow(non_snake_case)]
 
-use holochain_core_types::{
-    cas::content::Address,
-    hash::HashString,
-};
+use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net::{
     connection::{
         json_protocol::{
-            EntryListData, FetchEntryData, FetchEntryResultData,
-            GetListData, JsonProtocol, MessageData, EntryAspectData,
-            ProvidedEntryData, TrackDnaData, EntryData, QueryData,
-            QueryResultData, GenericResultData,
+            EntryAspectData, EntryData, EntryListData, FetchEntryData, FetchEntryResultData,
+            GenericResultData, GetListData, JsonProtocol, MessageData, ProvidedEntryData,
+            QueryEntryData, QueryEntryResultData, TrackDnaData,
         },
         net_connection::NetSend,
         protocol::Protocol,
@@ -21,11 +17,11 @@ use holochain_net::{
     tweetlog::{TweetProxy, *},
 };
 
+use multihash::Hash;
 use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
     sync::mpsc,
-    hash::Hash,
 };
 
 use super::{chain_store::ChainStore, ipc_config::create_ipc_config};
@@ -177,7 +173,7 @@ impl TestNode {
 
 ///
 impl TestNode {
-
+    /// Convert an aspect_content_list into an EntryData
     fn into_EntryData(entry_address: &Address, aspect_content_list: Vec<Vec<u8>>) -> EntryData {
         let mut aspect_list = Vec::new();
         for aspect_content in aspect_content_list {
@@ -190,7 +186,7 @@ impl TestNode {
             });
         }
         EntryData {
-            entry_address: entry_address.clone,
+            entry_address: entry_address.clone(),
             aspect_list,
         }
     }
@@ -211,11 +207,12 @@ impl TestNode {
                 .chain_store_list
                 .get_mut(&current_dna)
                 .expect("No dna_store for this DNA");
-            assert!(!chain_store.authored_entry_store.get(&entry_address).is_some());
-            assert!(!chain_store.stored_entry_store.get(&entry_address).is_some());
-            chain_store
+            assert!(!chain_store
                 .authored_entry_store
-                .insert_entry(&entry);
+                .get(&entry_address)
+                .is_some());
+            assert!(!chain_store.stored_entry_store.get(&entry_address).is_some());
+            chain_store.authored_entry_store.insert_entry(&entry);
         }
         if can_broadcast {
             let msg_data = ProvidedEntryData {
@@ -229,9 +226,7 @@ impl TestNode {
         Ok(())
     }
 
-    pub fn hold_entry(&mut self,
-                      entry_address: &Address,
-                      aspect_content_list: Vec<Vec<u8>>) {
+    pub fn hold_entry(&mut self, entry_address: &Address, aspect_content_list: Vec<Vec<u8>>) {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
         let entry = TestNode::into_EntryData(entry_address, aspect_content_list);
@@ -239,15 +234,16 @@ impl TestNode {
             .chain_store_list
             .get_mut(&current_dna)
             .expect("No dna_store for this DNA");
-        assert!(!chain_store.authored_entry_store.get(&entry_address).is_some());
+        assert!(!chain_store
+            .authored_entry_store
+            .get(&entry_address)
+            .is_some());
         assert!(!chain_store.stored_entry_store.get(&entry_address).is_some());
-        chain_store
-            .stored_entry_store
-            .insert_entry(&entry);
+        chain_store.stored_entry_store.insert_entry(&entry);
     }
 }
 
-/// Query & send DirectMessage
+/// Query & Fetch
 impl TestNode {
     /// generate a new request_id
     fn generate_request_id(&mut self) -> String {
@@ -258,37 +254,28 @@ impl TestNode {
     }
 
     /// Node asks for some entry on the network.
-    pub fn request_entry(&mut self, entry_address: Address) -> QueryData {
+    pub fn request_entry(&mut self, entry_address: Address) -> QueryEntryData {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
-        let query_data = QueryData {
+        let query_data = QueryEntryData {
             dna_address: current_dna,
             entry_address,
             request_id: self.generate_request_id(),
             requester_agent_id: self.agent_id.clone(),
             query: vec![], // empty means give me the EntryData,
         };
-        self.send(JsonProtocol::Query(query_data.clone()).into())
+        self.send(JsonProtocol::QueryEntry(query_data.clone()).into())
             .expect("Sending Query failed");
         query_data
     }
 
-    /// Node asks for some entry on the network.
-    pub fn reply_to_HandleQuery(&mut self, query: &QueryData) -> Result<QueryResultData, GenericResultData> {
-        // Must be tracking DNA
-        if !self.is_tracking(&query.dna_address) {
-            let msg_data = GenericResultData {
-                dna_address: query.dna_address.clone(),
-                request_id: query.request_id.clone(),
-                to_agent_id: query.requester_agent_id.clone(),
-                result_info: "DNA is not tracked".as_bytes().to_vec(),
-            };
-            self.send(JsonProtocol::FailureResult(msg_data.clone()).into())
-                .expect("Sending FailureResult failed");
-            return Err(msg_data);
-        }
+    ///
+    pub fn reply_to_HandleQueryEntry(
+        &mut self,
+        query: &QueryEntryData,
+    ) -> Result<QueryEntryResultData, GenericResultData> {
         // Must be empty query
-        if query.query == [] {
+        if !query.query.is_empty() {
             let msg_data = GenericResultData {
                 dna_address: query.dna_address.clone(),
                 request_id: query.request_id.clone(),
@@ -299,31 +286,91 @@ impl TestNode {
                 .expect("Sending FailureResult failed");
             return Err(msg_data);
         }
-        // Get Entry
-        let maybe_store = self.chain_store_list.get(&query.dna_address);
-        let query_result = match maybe_store {
-            None => vec![],
-            Some(chain_store) => {
-                match chain_store.get_entry(&query.entry_address) {
-                    None => vec![],
-                    Some(entry) => entry.as_bytes().to_vec(),
-                }
-            },
+        // Convert query to fetch
+        let fetch = FetchEntryData {
+            dna_address: query.dna_address.clone(),
+            request_id: query.request_id.clone(),
+            provider_agent_id: query.requester_agent_id.clone(),
+            entry_address: query.entry_address.clone(),
+            aspect_address_list: None,
         };
-        // Send EntryData as binary
-        let query_result_data = QueryResultData {
+        // HandleFetchEntry
+        let fetch_res = self.reply_to_HandleFetchEntry_inner(&fetch);
+        if let Err(res) = fetch_res {
+            self.send(JsonProtocol::FailureResult(res.clone()).into())
+                .expect("Sending FailureResult failed");
+            return Err(res);
+        }
+        // Convert query to fetch
+        let query_res = QueryEntryResultData {
             dna_address: query.dna_address.clone(),
             entry_address: query.entry_address.clone(),
             request_id: query.request_id.clone(),
             requester_agent_id: query.requester_agent_id.clone(),
             responder_agent_id: self.agent_id.clone(),
-            query_result,
+            query_result: bincode::serialize(&fetch_res.unwrap().entry).unwrap(),
         };
-        self.send(JsonProtocol::HandleQueryResult(query_result_data.clone()).into())
-            .expect("Sending Query failed");
-        Ok(query_result_data)
+        self.send(JsonProtocol::HandleQueryEntryResult(query_res.clone()).into())
+            .expect("Sending FailureResult failed");
+        return Ok(query_res);
     }
 
+    ///
+    pub fn reply_to_HandleFetchEntry(
+        &mut self,
+        fetch: &FetchEntryData,
+    ) -> Result<FetchEntryResultData, GenericResultData> {
+        let fetch_res = self.reply_to_HandleFetchEntry_inner(fetch);
+        let json_msg = match fetch_res.clone() {
+            Err(res) => JsonProtocol::FailureResult(res),
+            Ok(fetch) => JsonProtocol::HandleFetchEntryResult(fetch),
+        };
+        self.send(json_msg.into()).expect("Sending failed");
+        fetch_res
+    }
+
+    /// Node asks for some entry on the network.
+    fn reply_to_HandleFetchEntry_inner(
+        &mut self,
+        fetch: &FetchEntryData,
+    ) -> Result<FetchEntryResultData, GenericResultData> {
+        // Must be tracking DNA
+        if !self.is_tracking(&fetch.dna_address) {
+            let msg_data = GenericResultData {
+                dna_address: fetch.dna_address.clone(),
+                request_id: fetch.request_id.clone(),
+                to_agent_id: fetch.provider_agent_id.clone(),
+                result_info: "DNA is not tracked".as_bytes().to_vec(),
+            };
+            return Err(msg_data);
+        }
+        // Get Entry
+        let maybe_store = self.chain_store_list.get(&fetch.dna_address);
+        let maybe_entry = match maybe_store {
+            None => None,
+            Some(chain_store) => chain_store.get_entry(&fetch.entry_address),
+        };
+        // No entry, send failure
+        if maybe_entry.is_none() {
+            let msg_data = GenericResultData {
+                dna_address: fetch.dna_address.clone(),
+                request_id: fetch.request_id.clone(),
+                to_agent_id: fetch.provider_agent_id.clone(),
+                result_info: "No entry found".as_bytes().to_vec(),
+            };
+            return Err(msg_data);
+        }
+        // Send EntryData as binary
+        let fetch_result_data = FetchEntryResultData {
+            dna_address: fetch.dna_address.clone(),
+            provider_agent_id: fetch.provider_agent_id.clone(),
+            request_id: fetch.request_id.clone(),
+            entry: maybe_entry.unwrap(),
+        };
+        Ok(fetch_result_data)
+    }
+}
+impl TestNode {
     /// Node sends Message on the network.
     pub fn send_direct_message(&mut self, to_agent_id: &Address, content: Vec<u8>) -> MessageData {
         println!("set_current_dna: {:?}", self.current_dna);
@@ -342,11 +389,7 @@ impl TestNode {
     }
 
     /// Node sends Message on the network.
-    pub fn send_reponse(
-        &mut self,
-        msg: MessageData,
-        response_content: Vec<u8>,
-    ) -> MessageData {
+    pub fn send_dm_reponse(&mut self, msg: MessageData, response_content: Vec<u8>) -> MessageData {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
         assert_eq!(msg.dna_address, current_dna.clone());
@@ -364,78 +407,31 @@ impl TestNode {
     }
 }
 
-// Replies
+/// Reply LISTS
 impl TestNode {
-    // -- FETCH -- //
-
-    /// Send a reponse to a FetchDhtData request
-    pub fn reply_to_HandleFetchEntry(&mut self, request: &FetchEntryData) -> NetResult<()> {
-        assert!(self.current_dna.is_some());
-        let current_dna = self.current_dna.clone().unwrap();
-        assert_eq!(request.dna_address, current_dna);
-        // Create msg data
-        let msg;
-        {
-            // Get data from local datastores
-            let chain_store = self
-                .chain_store_list
-                .get_mut(&current_dna)
-                .expect("No dna_store for this DNA");
-            let mut maybe_entry = chain_store.authored_entry_store.get(&request.entry_address);
-            if maybe_entry.is_none() {
-                maybe_entry = chain_store.stored_entry_store.get(&request.entry_address);
-            }
-            // Send failure or success response
-            msg = match maybe_entry.clone() {
-                None => {
-                    let msg_data = GenericResultData {
-                        request_id: request.request_id.clone(),
-                        dna_address: request.dna_address.clone(),
-                        to_agent_id: request.requester_agent_id.clone(),
-                        result_info: "Does not have the requested data".as_bytes().to_vec(),
-                    };
-                    JsonProtocol::FailureResult(msg_data).into()
-                }
-                Some(entry) => {
-                    let msg_data = FetchEntryResultData {
-                        dna_address: request.dna_address.clone(),
-                        provider_agent_id: self.agent_id.clone(),
-                        request_id: request.request_id.clone(),
-                        entry: entry.clone(),
-                    };
-                    JsonProtocol::HandleFetchEntryResult(msg_data).into()
-                }
-            };
-        }
-        self.logger.t(&format!(
-            "> ({}) reply_to_HandleFetchEntry() sending",
-            self.agent_id,
-        ));
-        self.send(msg)
-    }
-
-    // -- LISTS -- //
-
     /// Reply to a HandleGetAuthoringEntryList request
-    pub fn reply_to_HandleGetAuthoringEntryList(
-        &mut self,
-        request: &GetListData,
-    ) -> NetResult<()> {
+    pub fn reply_to_HandleGetAuthoringEntryList(&mut self, request: &GetListData) -> NetResult<()> {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
         assert_eq!(request.dna_address, current_dna);
         // Create msg data
         let msg;
         {
-            let dna_store = self
+            let authored_entry_store = self
                 .chain_store_list
                 .get_mut(&current_dna)
-                .expect("No dna_store for this DNA");
-            let entry_address_list = dna_store
+                .expect("No chain_store for this DNA")
                 .authored_entry_store
-                .iter()
-                .map(|(k, _)| k.clone())
-                .collect();
+                .store
+                .clone();
+            let mut entry_address_list = HashMap::new();
+            for (entry_address, entry_map) in authored_entry_store {
+                let aspect_map = entry_map
+                    .iter()
+                    .map(|(a_address, _)| a_address.clone())
+                    .collect();
+                entry_address_list.insert(entry_address, aspect_map);
+            }
             msg = EntryListData {
                 request_id: request.request_id.clone(),
                 dna_address: request.dna_address.clone(),
@@ -444,17 +440,17 @@ impl TestNode {
         }
         self.send(JsonProtocol::HandleGetAuthoringEntryListResult(msg).into())
     }
-    /// Look for the first HandleGetPublishingEntryList request received from network module and reply
+    /// Look for the first HandleGetAuthoringEntryList request received from network module and reply
     pub fn reply_to_first_HandleGetAuthoringEntryList(&mut self) {
         let request = self
             .find_recv_msg(
                 0,
-                Box::new(one_is!(JsonProtocol::HandleGetPublishingEntryList(_))),
+                Box::new(one_is!(JsonProtocol::HandleGetAuthoringEntryList(_))),
             )
-            .expect("Did not receive any HandleGetPublishingEntryList request");
-        let get_entry_list_data = unwrap_to!(request => JsonProtocol::HandleGetPublishingEntryList);
+            .expect("Did not receive any HandleGetAuthoringEntryList request");
+        let get_entry_list_data = unwrap_to!(request => JsonProtocol::HandleGetAuthoringEntryList);
         self.reply_to_HandleGetAuthoringEntryList(&get_entry_list_data)
-            .expect("Reply to HandleGetPublishingEntryList failed.");
+            .expect("Reply to HandleGetAuthoringEntryList failed.");
     }
 
     /// Reply to a HandleGetHoldingEntryList request
@@ -464,18 +460,24 @@ impl TestNode {
         assert_eq!(request.dna_address, current_dna);
         let msg;
         {
-            let dna_store = self
+            let stored_entry_store = self
                 .chain_store_list
                 .get_mut(&current_dna)
-                .expect("No dna_store for this DNA");
-            let entry_address_list = dna_store
+                .expect("No chain_store for this DNA")
                 .stored_entry_store
-                .iter()
-                .map(|(k, _)| k.clone())
-                .collect();
+                .store
+                .clone();
+            let mut entry_address_list = HashMap::new();
+            for (entry_address, entry_map) in stored_entry_store {
+                let aspect_map = entry_map
+                    .iter()
+                    .map(|(a_address, _)| a_address.clone())
+                    .collect();
+                entry_address_list.insert(entry_address, aspect_map);
+            }
             msg = EntryListData {
-                dna_address: request.dna_address.clone(),
                 request_id: request.request_id.clone(),
+                dna_address: request.dna_address.clone(),
                 address_map: entry_address_list,
             };
         }
@@ -486,11 +488,11 @@ impl TestNode {
         let request = self
             .find_recv_msg(
                 0,
-                Box::new(one_is!(JsonProtocol::HandleGetHoldingEntryList(_))),
+                Box::new(one_is!(JsonProtocol::HandleGetGossipingEntryList(_))),
             )
             .expect("Did not receive a HandleGetHoldingEntryList request");
         // extract request data
-        let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetHoldingEntryList);
+        let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetGossipingEntryList);
         // reply
         self.reply_to_HandleGetHoldingEntryList(&get_list_data)
             .expect("Reply to HandleGetHoldingEntryList failed.");
@@ -501,7 +503,7 @@ impl TestNode {
     /// Private constructor
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_config(
-        agent_id_arg: &Address,
+        agent_id_arg: Address,
         config: &P2pConfig,
         _maybe_temp_dir: Option<tempfile::TempDir>,
     ) -> Self {
@@ -518,7 +520,12 @@ impl TestNode {
         let agent_id = agent_id_arg.clone();
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
-                log_tt!("p2pnode", "<<< ({}) handler: {:?}", agent_id_arg.to_string(), r);
+                log_tt!(
+                    "p2pnode",
+                    "<<< ({}) handler: {:?}",
+                    agent_id_arg.to_string(),
+                    r
+                );
                 sender.send(r?)?;
                 Ok(())
             }),
@@ -552,14 +559,14 @@ impl TestNode {
 
     /// Constructor for an in-memory P2P Network
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_unique_memory_network(agent_id: &Address) -> Self {
+    pub fn new_with_unique_memory_network(agent_id: Address) -> Self {
         let config = P2pConfig::new_with_unique_memory_backend();
         return TestNode::new_with_config(agent_id, &config, None);
     }
 
     /// Constructor for an IPC node that uses an existing n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_uri_ipc_network(agent_id: &Address, ipc_binding: &str) -> Self {
+    pub fn new_with_uri_ipc_network(agent_id: Address, ipc_binding: &str) -> Self {
         let p2p_config = P2pConfig::default_ipc_uri(Some(ipc_binding));
         return TestNode::new_with_config(agent_id, &p2p_config, None);
     }
@@ -567,7 +574,7 @@ impl TestNode {
     /// Constructor for an IPC node that spawns and uses a n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_spawn_ipc_network(
-        agent_id: &Address,
+        agent_id: Address,
         maybe_config_filepath: Option<&str>,
         maybe_end_user_config_filepath: Option<String>,
         bootstrap_nodes: Vec<String>,
@@ -667,7 +674,6 @@ impl TestNode {
 
     /// wait to receive a HandleFetchEntry request and automatically reply
     /// return true if a HandleFetchEntry has been received
-    #[allow(non_snake_case)]
     pub fn wait_HandleFetchEntry_and_reply(&mut self) -> bool {
         let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
         if maybe_request.is_none() {
@@ -682,20 +688,19 @@ impl TestNode {
         true
     }
 
-    /// wait to receive a HandleFetchMeta request and automatically reply
-    /// return true if a HandleFetchMeta has been received
-    #[allow(non_snake_case)]
-    pub fn wait_HandleFetchMeta_and_reply(&mut self) -> bool {
-        let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))));
+    /// wait to receive a HandleFetchEntry request and automatically reply
+    /// return true if a HandleFetchEntry has been received
+    pub fn wait_HandleQueryEntry_and_reply(&mut self) -> bool {
+        let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleQueryEntry(_))));
         if maybe_request.is_none() {
             return false;
         }
         let request = maybe_request.unwrap();
         // extract msg data
-        let fetch_meta = unwrap_to!(request => JsonProtocol::HandleFetchMeta);
-        // Alex responds: should send entry data back
-        self.reply_to_HandleFetchMeta(&fetch_meta)
-            .expect("Reply to HandleFetchMeta should work");
+        let query_data = unwrap_to!(request => JsonProtocol::HandleQueryEntry);
+        // Respond
+        self.reply_to_HandleQueryEntry(&query_data)
+            .expect("Reply to HandleFetchEntry should work");
         true
     }
 
@@ -835,16 +840,16 @@ impl TestNode {
                 }
             }
 
-            JsonProtocol::Query(_msg) => {
+            JsonProtocol::QueryEntry(_msg) => {
                 panic!("Core should not receive Query message");
             }
-            JsonProtocol::QueryResult(_msg) => {
+            JsonProtocol::QueryEntryResult(_msg) => {
                 // n/a
             }
-            JsonProtocol::HandleQuery(_msg) => {
+            JsonProtocol::HandleQueryEntry(_msg) => {
                 // n/a
             }
-            JsonProtocol::HandleQueryResult(_msg) => {
+            JsonProtocol::HandleQueryEntryResult(_msg) => {
                 panic!("Core should not receive HandleQueryResult message");
             }
 
@@ -862,9 +867,6 @@ impl TestNode {
             JsonProtocol::HandleGetGossipingEntryListResult(_) => {
                 panic!("Core should not receive HandleGetHoldingDataListResult message");
             }
-
-            // ignore GetState, etc.
-            _ => (),
         }
     }
 }

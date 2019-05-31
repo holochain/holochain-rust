@@ -13,6 +13,7 @@ lazy_static = "=1.2.0"
 unwrap_to = "=0.1.0"
 backtrace = "=0.3.14"
 multihash = "=0.8.0"
+bincode = "=1.1.4"
 
 [[bin]]
 name = "holochain_test_bin"

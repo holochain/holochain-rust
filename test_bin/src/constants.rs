@@ -1,5 +1,3 @@
-use serde_json::json;
-
 use holochain_core_types::{cas::content::Address, hash::HashString};
 
 // CONSTS

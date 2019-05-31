@@ -9,8 +9,8 @@ use crate::{
     connection::{
         json_protocol::{
             EntryListData, FetchEntryData, FetchEntryResultData, GenericResultData, GetListData,
-            JsonProtocol, MessageData, PeerData, ProvidedEntryData, QueryData, QueryResultData,
-            StoreEntryAspectData,
+            JsonProtocol, MessageData, PeerData, ProvidedEntryData, QueryEntryData,
+            QueryEntryResultData, StoreEntryAspectData,
         },
         protocol::Protocol,
         NetResult,
@@ -110,7 +110,7 @@ impl InMemoryServer {
             })
             .into(),
         )
-        .expect("Sending HandleGetPublishingEntryList failed");
+        .expect("Sending HandleGetAuthoringEntryList failed");
         // Request this agent's holding entries
         let request_id = self.priv_create_request(dna_address, agent_id);
         self.priv_send_one(
@@ -306,10 +306,10 @@ impl InMemoryServer {
             JsonProtocol::HandleFetchEntryResult(msg) => {
                 self.priv_serve_HandleFetchEntryResult(&msg)?;
             }
-            JsonProtocol::Query(msg) => {
+            JsonProtocol::QueryEntry(msg) => {
                 self.priv_serve_Query(&msg)?;
             }
-            JsonProtocol::HandleQueryResult(msg) => {
+            JsonProtocol::HandleQueryEntryResult(msg) => {
                 self.priv_serve_HandleQueryResult(&msg)?;
             }
 
@@ -570,7 +570,7 @@ impl InMemoryServer {
 
     // -- serve Query -- //
 
-    fn priv_serve_Query(&mut self, msg: &QueryData) -> NetResult<()> {
+    fn priv_serve_Query(&mut self, msg: &QueryEntryData) -> NetResult<()> {
         // Provider must be tracking
         let sender_info = Some((msg.requester_agent_id.clone(), Some(msg.request_id.clone())));
         let is_tracking =
@@ -588,7 +588,7 @@ impl InMemoryServer {
                         .iter()
                         .next()
                         .expect("No Chain is registered to track the DNA");
-                    r.send(JsonProtocol::HandleQuery(msg.clone()).into())?;
+                    r.send(JsonProtocol::HandleQueryEntry(msg.clone()).into())?;
                     return Ok(());
                 }
             }
@@ -597,7 +597,7 @@ impl InMemoryServer {
 
         // No node found, send an empty FetchEntryResultData
         // TODO: should send a FailureResult instead?
-        let response = JsonProtocol::QueryResult(QueryResultData {
+        let response = JsonProtocol::QueryEntryResult(QueryEntryResultData {
             dna_address: msg.dna_address.clone(),
             entry_address: msg.entry_address.clone(),
             request_id: msg.request_id.clone(),
@@ -610,7 +610,7 @@ impl InMemoryServer {
         Ok(())
     }
 
-    fn priv_serve_HandleQueryResult(&mut self, msg: &QueryResultData) -> NetResult<()> {
+    fn priv_serve_HandleQueryResult(&mut self, msg: &QueryEntryResultData) -> NetResult<()> {
         // Provider/Responder must be tracking
         let sender_info = Some((msg.responder_agent_id.clone(), Some(msg.request_id.clone())));
         let is_tracking = self.priv_check_or_fail(
@@ -631,7 +631,7 @@ impl InMemoryServer {
         self.priv_send_one(
             &msg.dna_address,
             &msg.requester_agent_id,
-            JsonProtocol::QueryResult(msg.clone()).into(),
+            JsonProtocol::QueryEntryResult(msg.clone()).into(),
         )?;
         Ok(())
     }

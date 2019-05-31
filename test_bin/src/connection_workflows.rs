@@ -5,7 +5,7 @@ use crate::{
 use constants::*;
 use holochain_net::{
     connection::{
-        json_protocol::{ConnectData, JsonProtocol},
+        json_protocol::{ConnectData, EntryData, JsonProtocol},
         net_connection::NetSend,
         NetResult,
     },
@@ -25,14 +25,14 @@ pub(crate) fn two_nodes_disconnect_test(
     let alex_dir_path = alex_dir.path().to_string_lossy().to_string();
     // Create two nodes
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        &ALEX_AGENT_ID,
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         Some(alex_dir_path.clone()),
     );
     let mut billy = TestNode::new_with_spawn_ipc_network(
-        &BILLY_AGENT_ID,
+        BILLY_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -54,7 +54,7 @@ pub(crate) fn two_nodes_disconnect_test(
 
     // re-enable alex
     alex = TestNode::new_with_spawn_ipc_network(
-        &ALEX_AGENT_ID,
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         // TODO test bootstrap with billy's endpoint
@@ -80,14 +80,14 @@ pub(crate) fn two_nodes_disconnect_test(
         .unwrap();
     log_i!("got connect result A: {:?}", result_a);
     one_let!(JsonProtocol::PeerConnected(d) = result_a {
-        assert_eq!(d.agent_id, BILLY_AGENT_ID);
+        assert_eq!(d.agent_id, *BILLY_AGENT_ID);
     });
     let result_b = billy
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("got connect result B: {:?}", result_b);
     one_let!(JsonProtocol::PeerConnected(d) = result_b {
-        assert_eq!(d.agent_id, ALEX_AGENT_ID);
+        assert_eq!(d.agent_id, *ALEX_AGENT_ID);
     });
 
     // see what alex is receiving
@@ -117,7 +117,7 @@ pub(crate) fn three_nodes_disconnect_test(
     let alex_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
     let alex_dir_path = alex_dir.path().to_string_lossy().to_string();
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        &ALEX_AGENT_ID,
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -127,7 +127,7 @@ pub(crate) fn three_nodes_disconnect_test(
     let billy_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
     let billy_dir_path = billy_dir.path().to_string_lossy().to_string();
     let mut billy = TestNode::new_with_spawn_ipc_network(
-        &BILLY_AGENT_ID,
+        BILLY_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -137,7 +137,7 @@ pub(crate) fn three_nodes_disconnect_test(
     let camille_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
     let camille_dir_path = camille_dir.path().to_string_lossy().to_string();
     let mut camille = TestNode::new_with_spawn_ipc_network(
-        &CAMILLE_AGENT_ID,
+        CAMILLE_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -161,7 +161,7 @@ pub(crate) fn three_nodes_disconnect_test(
 
     // re-enable alex
     alex = TestNode::new_with_spawn_ipc_network(
-        &ALEX_AGENT_ID,
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec![billy.p2p_binding.clone()],
@@ -175,7 +175,7 @@ pub(crate) fn three_nodes_disconnect_test(
     log_i!("#### alex got reconnecting: {}\n\n", count);
 
     // Make sure Peers are connected
-    let fetch_entry = alex.request_entry(ENTRY_ADDRESS_3.clone());
+    let query_entry = alex.request_entry(ENTRY_ADDRESS_3.clone());
     // Alex or billy or Camille might receive HandleFetchEntry request as this moment
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     if !has_received {
@@ -186,24 +186,27 @@ pub(crate) fn three_nodes_disconnect_test(
     }
 
     // Alex should receive the data
-    let req_id = fetch_entry.request_id.clone();
+    let req_id = query_entry.request_id.clone();
     let mut result = alex.find_recv_msg(
         0,
-        Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
+        Box::new(one_is_where!(JsonProtocol::QueryEntryResult(entry_data), {
             entry_data.request_id == req_id
         })),
     );
     if result.is_none() {
         result = alex.wait(Box::new(one_is_where!(
-            JsonProtocol::FetchEntryResult(entry_data),
-            { entry_data.request_id == fetch_entry.request_id }
+            JsonProtocol::QueryEntryResult(entry_data),
+            { entry_data.request_id == query_entry.request_id }
         )))
     }
     let json = result.unwrap();
     log_i!("got result 3: {:?}", json);
-    let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);
-    assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_3.clone());
-    assert_eq!(entry_data.entry_content, ENTRY_CONTENT_3.clone());
+    let query_data = unwrap_to!(json => JsonProtocol::QueryEntryResult);
+    let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
+    assert_eq!(query_data.entry_address, ENTRY_ADDRESS_3.clone());
+    assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
+    assert_eq!(query_result.aspect_list.len(), 1);
+    assert_eq!(query_result.aspect_list[0].aspect, ENTRY_CONTENT_3.clone());
 
     log_i!("============");
     print_three_nodes_test_name("N3H three_nodes_disconnect_test END: ", test_fn);

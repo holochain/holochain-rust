@@ -49,7 +49,7 @@ scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
     // Check that when bob tries to make this call it fails because there is no grant stored
     const params2 = { grantor: bob.agentId, content: post_content, in_reply_to: null }
     const create2_result = bob.call("blog", "create_post_with_claim", params2)
-    t.deepEqual(create2_result, {Ok: "error: no matching grant for claim"})
+    t.deepEqual(create2_result, {Err: { Internal: "error: no matching grant for claim"}})
 
 })
 
@@ -156,7 +156,7 @@ scenario1.runTape('cross zome call', async (t, { alice }) => {
 scenario2.runTape('send ping', async (t, { alice, bob }) => {
   const params = { to_agent: bob.agentId, message: "hello" }
   const result = alice.call("blog", "ping", params)
-    t.deepEqual(result, { Ok: { msg_type:"response", body: "got hello from HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui" } })
+  t.deepEqual(result, { Ok: "got hello from HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui at HcScj5GbxXdTq69sfnz3jcA4u5f35zftsuu5Eb3dBxHjgd9byUUW6JmN3Bvzqqr" } )
 })
 
 scenario1.runTape('hash_post', async (t, { alice }) => {

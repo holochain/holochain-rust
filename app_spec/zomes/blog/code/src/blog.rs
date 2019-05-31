@@ -100,14 +100,25 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
     )
 }
 
-pub fn handle_ping(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
-    let json_msg = json!({
-        "msg_type": "ping",
-        "body" : message
-    })
-    .to_string();
-    let received_str = hdk::send(to_agent, json_msg, 10000.into())?;
-    Ok(JsonString::from_json(&received_str))
+pub fn handle_ping(to_agent: Address, message: String) -> ZomeApiResult<String> {
+
+    let response = hdk::send(to_agent, JsonString::from(Message::Ping(PingPayload(message))).to_string(), 10000.into())?;
+
+    // A JSON-encoded Result<..., HolochainError> is expected
+    //let response_message: Result<Message, HolochainError> = JsonString::from_json(&response).try_into()?;
+    let response_message: Result<Message, HolochainError> = serde_json::from_str(&response)
+        .map_err(|e| HolochainError::ErrorGeneric(format!(
+            "handle_ping: couldn't extract Result<Message, HolochainError> {:?}: {}",
+            &response, e )))?;
+
+    // We expect only a Message::PingPayload w/ a String in response to our Message::Ping
+    match response_message {
+        Err(e) => Err(e.into()),
+        Ok(Message::Ping(PingPayload(string))) => Ok(string),
+        other => Err(HolochainError::ErrorGeneric(format!(
+            "Incorrect response to hdk::send of Message::Ping: {:?}",
+            other)).into()),
+    }
 }
 
 fn post_entry(content: String) -> Entry {
@@ -165,11 +176,17 @@ struct CreatePostArgs {
     in_reply_to: Option<Address>,
 }
 
+// The hdk::send/receive Message types we know about.  These are Serialized to JSON to hdk::send,
+// and a Result<Message, HolochainError> response is Serialized by the receive callback.
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
-struct Message {
-    msg_type: String,
-    body: JsonString,
+enum Message {
+    PostRequest(PostMessageBody),
+    PostReply(Address),
+    Ping(PingPayload),
 }
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
+struct PingPayload(String);
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct PostMessageBody {
@@ -213,59 +230,137 @@ fn check_claim_against_grant(claim: &Address, provenance: Provenance, payload: S
     }
 }
 
-// this is an example of a receive function that can handle a typed messaged
-pub fn handle_receive(from: Address, json_msg: JsonString) -> String {
-    let maybe_message: Result<Message, HolochainError> = json_msg.try_into();
-    let response = match maybe_message {
-        Err(err) => format!("error: {}", err),
-        Ok(message) => match message.msg_type.as_str() {
-            // ping simply returns the body of the message
-            "ping" => format!("got {} from {}", message.body.to_string(), from),
-
-            // post calls the create_post zome function handler after checking the supplied signature
-            "post" => {
-                let maybe_post_body: Result<PostMessageBody, HolochainError> =
-                    message.body.try_into();
-                match maybe_post_body {
-                    Err(err) => format!("error: couldn't parse body: {}", err),
-                    Ok(post_body) => {
-                        // check that the claim matches a grant and correctly signed the content
-                        if !check_claim_against_grant(
-                            &post_body.claim,
-                            Provenance::new(from, post_body.signature),
-                            post_body.args.content.clone(),
-                        ) {
-                            "error: no matching grant for claim".to_string()
-                        } else {
-                            let x = match hdk::commit_entry(&post_entry(post_body.args.content)) {
-                                Err(err) => format!("error: couldn't create post: {}", err),
-                                Ok(addr) => addr.to_string(),
-                            };
-                            let _ =
-                                hdk::debug("For some reason this link_entries statement fails!?!?");
-                            //                            let _ = hdk::link_entries(&AGENT_ADDRESS, &Address::from(x.clone()), "authored_posts");
-
-                            x
-
-                            /*
-                                When we figure out why link_entries above throws an BadCall wasm error
-                                Then we can reinstate calling the creating using the handler as below
-                                match handle_create_post(post_body.args.content, post_body.args.in_reply_to) {
-                                Err(err) => format!("error: couldn't create post: {}", err),
-                                Ok(address) => address.to_string(),
-                            }*/
-                        }
+/// See if the Post w/ the given Address appears in the source-chain; if not return an Err
+fn validate_post_in_source_chain(
+    post_addr: Address
+) -> Result<Address, HolochainError> {
+    // Confirm Entry hits the local source-chain and is immediately accessible via hdk::query.
+    // First, get an Vec<Address, Entry>
+    match hdk::query_result(
+        "post".into(),
+        QueryArgsOptions{ entries: true, ..Default::default() }
+    ) {
+        Ok(QueryResult::Entries(addr_entry_vec)) => {
+            // Convert Vec<(Address, Entry)> int Vec<(Address, Post)>, catching any HolochainErrors,
+            // filtering out any that aren't the one just added above w/ Address == post_addr.  This
+            // is silly, but allows us to catch any non-Post Entry...
+            match addr_entry_vec
+                .iter()
+                .map(|(addr, entry)| {
+                    match entry {
+                        Entry::App(_entry_type, entry_value)
+                            => Ok((addr.to_owned(), Post::try_from(entry_value)?)),
+                        unknown
+                            => Err(HolochainError::ErrorGeneric(format!(
+                                "Unexpected hdk::query response entry type for post: {:?}", &unknown))),
                     }
-                }
+                })
+                .filter(|addr_post_maybe| {
+                    match addr_post_maybe {
+                        Ok((addr, _post)) => if *addr == post_addr {
+                            hdk::debug(format!(
+                                "Found just-committed Post {} in hdk::query results", &post_addr)).ok();
+                            true
+                        } else {
+                            false
+                        },
+                        Err(_) => true,
+                    }
+                })
+                .collect::<Result<Vec<(Address, Post)>, HolochainError>>()
+            {
+                Err(e) => Err(e),
+                Ok(addr_post_vec) => {
+                    // The last entry in the Vec<(Address, Post)> must be the one we just
+                    // posted.  Unless we filter out all others, this *might* not be the case
+                    // (eg. if a different Thread also just committed a Post).
+                    if addr_post_vec.len() < 1 || addr_post_vec[addr_post_vec.len() - 1].0 != post_addr {
+                        Err(HolochainError::ErrorGeneric(format!(
+                            "Couldn't find the Post we just committed: {:#?}", addr_post_vec )))
+                    } else {
+                        Ok(post_addr)
+                    }
+                },
             }
-            typ => format!("unknown message type: {}", typ),
+        },
+        other => Err(HolochainError::ErrorGeneric(format!(
+            "Unexpected hdk::query response for post: {:?}", other))),
+    }
+}
+
+// post calls the create_post zome function handler after checking the supplied signature
+fn handle_receive_post(
+    from: Address,
+    post_body: PostMessageBody
+) -> Result<Message, HolochainError> {
+    // check that the claim matches a grant and correctly signed the content
+    if !check_claim_against_grant(
+        &post_body.claim,
+        Provenance::new(from, post_body.signature),
+        post_body.args.content.clone(),
+    ) {
+        Err(HolochainError::ErrorGeneric(format!("error: no matching grant for claim")))
+    } else {
+        let response = match hdk::commit_entry(&post_entry(post_body.args.content)) {
+            Err(err) => Err(HolochainError::ErrorGeneric(format!(
+                "error: couldn't create post: {}", err))),
+            Ok(post_addr) => Ok(Message::PostReply(post_addr)),
+        };
+
+        if let Ok(Message::PostReply(post_addr)) = response {
+            match validate_post_in_source_chain(post_addr) {
+                Ok(post_addr) => {
+                    // Success; re-constitute the original result.  TODO: When hdk::commit_entry /
+                    // hdk::query testing is complete, remove all of the surrounding code involving
+                    // validate_post_in_source_chain, and just retain the following:
+                    Ok(Message::PostReply(post_addr))
+
+                    // TODO: This BadCallError failure was due to accessing hdk::AGENT_ADDRESS.
+                    // Someone who understands the semantics of "authored_posts" should re-enable
+                    // this code:
+
+                    // let _ = hdk::link_entries(&AGENT_ADDRESS, &Address::from(x.clone()), "authored_posts");
+                    /*
+                        When we figure out why link_entries above throws an BadCall wasm error
+                        Then we can reinstate calling the creating using the handler as below
+                        match handle_create_post(post_body.args.content, post_body.args.in_reply_to) {
+                        Err(err) => format!("error: couldn't create post: {}", err),
+                        Ok(address) => address.to_string(),
+                     */
+                },
+                Err(e) => Err(e),
+            }
+        } else {
+            response // Err(...) from check_claim_against_grant
+        }
+    }
+}
+
+// ping simply returns the payload, with the sender's Address and our Address
+fn handle_receive_ping(
+    from: Address,
+    payload: PingPayload
+) -> Result<Message, HolochainError> {
+    Ok(Message::Ping(PingPayload(format!(
+        "got {} from {} at {}", payload.0, &from, AGENT_ADDRESS.to_string()))))
+}
+
+// this is an example of a receive function that can handle a typed messaged
+pub fn handle_receive(
+    from: Address,
+    json_msg: JsonString
+) -> String {
+    let maybe_message: Result<Message, HolochainError> = json_msg.try_into();
+    let response: Result<Message, HolochainError> = match maybe_message {
+        Err(err) => Err(err),
+        Ok(message) => match message {
+            Message::Ping(payload) => handle_receive_ping(from, payload),
+            Message::PostRequest(post_body) => handle_receive_post(from, post_body),
+            typ => Err(HolochainError::ErrorGeneric(format!("unknown message type: {:?}", typ))),
         },
     };
-    json!({
-        "msg_type": "response",
-        "body": response
-    })
-    .to_string()
+
+    JsonString::from(response).to_string()
 }
 
 // this simply returns the first claim which works for this test, thus the arguments are ignored.
@@ -297,7 +392,7 @@ pub fn handle_create_post_with_claim(
     content: String,
     in_reply_to: Option<Address>,
 ) -> ZomeApiResult<Address> {
-    // retrieve a previously stored claimed
+    // retrieve a previously stored claim
     let claim = find_claim("can_blog", &grantor)?;
 
     let post_body = PostMessageBody {
@@ -309,14 +404,24 @@ pub fn handle_create_post_with_claim(
         },
     };
 
-    let message = Message {
-        msg_type: "post".to_string(),
-        body: post_body.into(),
-    };
+    let message = Message::PostRequest(post_body);
 
     let response = hdk::send(grantor, JsonString::from(message).into(), 10000.into())?;
-    let response_message: Message = JsonString::from_json(&response).try_into()?;
-    Ok(Address::from(response_message.body.to_string()))
+    // TODO: avoid serde_json::from_str() when JsonString...try_into() works for Result<...>
+    //let response_message: Result<Message, HolochainError> = JsonString::from_json(&response).try_into()?;
+    let response_message: Result<Message, HolochainError> = serde_json::from_str(&response)
+        .map_err(|e| HolochainError::ErrorGeneric(format!(
+            "handle_create_post_with_claim: couldn't extract Result<Message, HolochainError> {:?}: {}",
+            &response, e )))?;
+
+    // We expect only a Message::PostReply w/ an Address in response to our Message::PostRequest
+    match response_message {
+        Err(e) => Err(e.into()),
+        Ok(Message::PostReply(address)) => Ok(address),
+        other => Err(HolochainError::ErrorGeneric(format!(
+            "Incorrect response to hdk::send of Message::PostRequest: {:?}",
+            other)).into()),
+    }
 }
 
 pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {

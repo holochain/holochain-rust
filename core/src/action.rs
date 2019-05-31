@@ -19,9 +19,9 @@ use holochain_core_types::{
     dna::Dna,
     entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
+    link::link_data::LinkData,
     signature::Provenance,
     validation::ValidationPackage,
-    link::link_data::LinkData
 };
 use holochain_net::{
     connection::{

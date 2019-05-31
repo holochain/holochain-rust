@@ -225,15 +225,13 @@ impl Waiter {
                             Entry::LinkAdd(link_add) => {
                                 checker.add(num_instances, move |aw| {
                                     //println!("WAITER: Entry::LinkAdd -> Action::AddLink");
-                                    *aw.action()
-                                        == Action::AddLink(link_add.clone())
+                                    *aw.action() == Action::AddLink(link_add.clone())
                                 });
                             }
                             Entry::LinkRemove((_, _)) => {
                                 checker.add(num_instances, move |aw| {
                                     //println!("WAITER: Entry::LinkRemove -> Action::RemoveLink");
-                                    *aw.action()
-                                        == Action::RemoveLink(committed_entry.clone())
+                                    *aw.action() == Action::RemoveLink(committed_entry.clone())
                                 });
                             }
                             _ => (),

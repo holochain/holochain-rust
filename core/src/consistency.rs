@@ -65,8 +65,8 @@ pub enum ConsistencyEvent {
     Hold(Address),                                        // <- Publish
     UpdateEntry(Address, Address),                        // <- Publish, entry_type=Update
     RemoveEntry(Address, Address),                        // <- Publish, entry_type=Deletion
-    AddLink(LinkData),                                        // <- Publish, entry_type=LinkAdd
-    RemoveLink(Entry),                                     // <- Publish, entry_type=LinkRemove
+    AddLink(LinkData),                                    // <- Publish, entry_type=LinkAdd
+    RemoveLink(Entry),                                    // <- Publish, entry_type=LinkRemove
     RemovePendingValidation(Address),                     // <- AddPendingValidation
     ReturnZomeFunctionResult(snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }

@@ -59,7 +59,12 @@ mod tests {
     use super::*;
     use crate::nucleus;
 
-    use holochain_core_types::{cas::content::AddressableContent, entry::Entry, link::{link_data::LinkData,Link,LinkActionKind},agent::test_agent_id};
+    use holochain_core_types::{
+        agent::test_agent_id,
+        cas::content::AddressableContent,
+        entry::Entry,
+        link::{link_data::LinkData, Link, LinkActionKind},
+    };
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry() -> Entry {
@@ -75,7 +80,7 @@ mod tests {
 
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
-        let link_data  = LinkData::from_link(&link, LinkActionKind::ADD, 0, test_agent_id());
+        let link_data = LinkData::from_link(&link, LinkActionKind::ADD, 0, test_agent_id());
         let result = context.block_on(add_link(&link_data, &context.clone()));
 
         assert!(result.is_ok(), "result = {:?}", result);
@@ -89,8 +94,8 @@ mod tests {
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
 
-        let link_data  = LinkData::from_link(&link, LinkActionKind::ADD, 0, test_agent_id());
-        let result = context.block_on(add_link(&link_data,&context.clone()));
+        let link_data = LinkData::from_link(&link, LinkActionKind::ADD, 0, test_agent_id());
+        let result = context.block_on(add_link(&link_data, &context.clone()));
 
         assert!(result.is_err());
         assert_eq!(

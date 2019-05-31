@@ -7,7 +7,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{entry::Entry, error::HolochainError, link::Link};
+use holochain_core_types::{entry::Entry, error::HolochainError, link::link_data::LinkData};
 use std::{pin::Pin, sync::Arc};
 
 /// AddLink Action Creator
@@ -18,7 +18,7 @@ use std::{pin::Pin, sync::Arc};
 /// if that is not the case.
 ///
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
-pub fn add_link(entry: &Entry, link: &Link, context: &Arc<Context>) -> AddLinkFuture {
+pub fn add_link(entry: &Entry, link: &LinkData, context: &Arc<Context>) -> AddLinkFuture {
     let action_wrapper = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
@@ -59,7 +59,7 @@ mod tests {
     use super::*;
     use crate::nucleus;
 
-    use holochain_core_types::{cas::content::AddressableContent, entry::Entry, link::Link};
+    use holochain_core_types::{cas::content::AddressableContent, entry::Entry, link::{Link,LinkActionKind},agent::test_agent_id};
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry() -> Entry {
@@ -75,8 +75,9 @@ mod tests {
 
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
+        let link_data = LinkData::from_link(&link, LinkActionKind::ADD, 0, test_agent_id());
 
-        let result = context.block_on(add_link(&base.clone(), &link, &context.clone()));
+        let result = context.block_on(add_link(&base.clone(), &link_data, &context.clone()));
 
         assert!(result.is_ok(), "result = {:?}", result);
     }
@@ -88,8 +89,9 @@ mod tests {
         let base = test_entry();
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
+        let link_data = LinkData::from_link(&link, LinkActionKind::ADD, 0, test_agent_id());
 
-        let result = context.block_on(add_link(&base.clone(), &link, &context.clone()));
+        let result = context.block_on(add_link(&base.clone(), &link_data, &context.clone()));
 
         assert!(result.is_err());
         assert_eq!(

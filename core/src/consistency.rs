@@ -5,7 +5,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::Entry,
-    link::Link,
+    link::link_data::LinkData
 };
 use std::{collections::HashMap, sync::Arc};
 
@@ -65,8 +65,8 @@ pub enum ConsistencyEvent {
     Hold(Address),                                        // <- Publish
     UpdateEntry(Address, Address),                        // <- Publish, entry_type=Update
     RemoveEntry(Address, Address),                        // <- Publish, entry_type=Deletion
-    AddLink(Link),                                        // <- Publish, entry_type=LinkAdd
-    RemoveLink(Link),                                     // <- Publish, entry_type=LinkRemove
+    AddLink(LinkData),                                        // <- Publish, entry_type=LinkAdd
+    RemoveLink(LinkData),                                     // <- Publish, entry_type=LinkRemove
     RemovePendingValidation(Address),                     // <- AddPendingValidation
     ReturnZomeFunctionResult(snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
@@ -105,9 +105,10 @@ impl ConsistencyModel {
                     let meta = crud_link.clone().and_then(|crud| match entry {
                         Entry::App(_, _) => Some(UpdateEntry(crud, address.clone())),
                         Entry::Deletion(_) => Some(RemoveEntry(crud, address.clone())),
-                        Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone().link)),
-                        Entry::LinkRemove(link_data) => Some(RemoveLink(link_data.0.clone().link)),
+                        Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone())),
+                        Entry::LinkRemove(link_data) => Some(RemoveLink(link_data.0.clone())),
                         // Question: Why does Entry::LinkAdd take LinkData instead of Link?
+                        // as of now, link data contains more information than just the link
                         _ => None,
                     });
                     let mut pending = vec![hold];

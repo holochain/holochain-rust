@@ -66,7 +66,7 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
   // calling this will trigger a flurry of actions/signals
   // including the Hold actions related to the Commits this function
   // invokes
-  await cluster.conductors[0].callZome(instanceId, 'blog', 'create_post')({
+  cluster.conductors[0].callZome(instanceId, 'blog', 'create_post')({
     content: 'hi',
     in_reply_to: null,
   })

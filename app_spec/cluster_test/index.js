@@ -38,7 +38,7 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
         })
       }
     }
-  }, 5000)
+  }, 35000)
 
   let countHolding = 0
   cluster.batch(conductor => conductor.onSignal(async signal => {

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Breaking change** - renames `emit_trace_signals` to `signals.trace` in conductor config [#1431](https://github.com/holochain/holochain-rust/pull/1431)
 - "Consistency" signals added, which aid determinism in end-to-end tests, configurable through `signals.consistency` conductor config [#1431](https://github.com/holochain/holochain-rust/pull/1431)
-- Removes dependency on nodejs_conductor, instead using [playbook](https://github.com/holochain/hc-playbook), which runs scenario tests on the rust conductor [#1414](https://github.com/holochain/holochain-rust/pull/1414)
+- Removes dependency on nodejs_conductor, instead using [diorama](https://github.com/holochain/diorama), which runs scenario tests on the rust conductor [#1414](https://github.com/holochain/holochain-rust/pull/1414)
 
 ### Deprecated
 

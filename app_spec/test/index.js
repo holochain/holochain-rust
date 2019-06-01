@@ -1,7 +1,7 @@
 const path = require('path')
 const tape = require('tape')
 
-const { Playbook, tapeExecutor } = require('@holochain/playbook')
+const { Diorama, tapeExecutor } = require('@holochain/diorama')
 
 process.on('unhandledRejection', error => {
   // Will print "unhandledRejection err is not defined"
@@ -9,22 +9,22 @@ process.on('unhandledRejection', error => {
 });
 
 const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
-const dna = Playbook.dna(dnaPath, 'app-spec')
+const dna = Diorama.dna(dnaPath, 'app-spec')
 
-const playbook = new Playbook({
+const diorama = new Diorama({
   instances: {
     alice: dna,
     bob: dna,
     carol: dna,
   },
   bridges: [
-    Playbook.bridge('test-bridge', 'alice', 'bob')
+    Diorama.bridge('test-bridge', 'alice', 'bob')
   ],
   debugLog: false,
   executor: tapeExecutor(require('tape')),
 })
 
-require('./test')(playbook.registerScenario)
-require('./regressions')(playbook.registerScenario)
+require('./test')(diorama.registerScenario)
+require('./regressions')(diorama.registerScenario)
 
-playbook.run()
+diorama.run()

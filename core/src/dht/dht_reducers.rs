@@ -163,7 +163,7 @@ pub mod tests {
         state::test_store,
     };
     use holochain_core_types::{
-        agent::{test_agent_id,test_agent_id_with_name},
+        agent::{test_agent_id, test_agent_id_with_name},
         cas::content::AddressableContent,
         chain_header::test_chain_header,
         eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
@@ -304,10 +304,15 @@ pub mod tests {
             Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
         );
 
-        let link_data = LinkData::from_link(&link.clone(), LinkActionKind::ADD, 0, test_agent_id_with_name("new_agent"));
+        let link_data = LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::ADD,
+            0,
+            test_agent_id_with_name("new_agent"),
+        );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
-        let new_dht_store = reduce(store.dht(), &action_link_add);
+        let _new_dht_store = reduce(store.dht(), &action_link_add);
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
             EavFilter::predicate(|attr: Attribute| match attr.clone() {
@@ -334,17 +339,16 @@ pub mod tests {
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
-        println!("hashset {:?}",hash_set.clone());
+        println!("hashset {:?}", hash_set.clone());
         assert_eq!(hash_set.len(), 2);
         let eav = hash_set.iter().nth(1).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        let link_entry = link.add_entry(0, test_agent_id());
+        let _link_entry = link.add_entry(0, test_agent_id());
         assert_eq!(eav.value(), entry_link_add.address());
         assert_eq!(
             eav.attribute(),
             Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string())
         );
-
     }
 
     #[test]

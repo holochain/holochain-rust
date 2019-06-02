@@ -53,41 +53,43 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     ));
     if links_result.is_err() {
         context.log("err/zome : Could not get links for remove_link method");
-        return ribosome_error_code!(WorkflowFailed);
+        ribosome_error_code!(WorkflowFailed)
+    } else {
+        let links = links_result.expect("This is supposed to not fail");
+        let filtered_links = links
+            .into_iter()
+            .filter(|link_address| {
+                context
+                    .block_on(get_entry_result_workflow(
+                        &context,
+                        &GetEntryArgs {
+                            address: link_address.clone().clone(),
+                            options: GetEntryOptions::default(),
+                        },
+                    ))
+                    .map(|get_entry_result| match get_entry_result.result {
+                        GetEntryResultType::Single(single_item) => single_item
+                            .entry
+                            .map(|entry| match entry {
+                                Entry::LinkAdd(link_data) => {
+                                    link_data.link().target() == link.target()
+                                }
+                                _ => false,
+                            })
+                            .unwrap_or(false),
+                        _ => false,
+                    })
+                    .unwrap_or(false)
+            })
+            .collect::<Vec<_>>();
+
+        let entry = Entry::LinkRemove((link_remove, filtered_links));
+
+        // Wait for future to be resolved
+        let result: Result<(), HolochainError> = context
+            .block_on(author_entry(&entry, None, &context, &vec![]))
+            .map(|_| ());
+
+        runtime.store_result(result)
     }
-
-    let links = links_result.expect("This is supposed to not fail");
-    let filtered_links = links
-        .into_iter()
-        .filter(|link_address| {
-            context
-                .block_on(get_entry_result_workflow(
-                    &context,
-                    &GetEntryArgs {
-                        address: link_address.clone().clone(),
-                        options: GetEntryOptions::default(),
-                    },
-                ))
-                .map(|get_entry_result| match get_entry_result.result {
-                    GetEntryResultType::Single(single_item) => single_item
-                        .entry
-                        .map(|entry| match entry {
-                            Entry::LinkAdd(link_data) => link_data.link().target() == link.target(),
-                            _ => false,
-                        })
-                        .unwrap_or(false),
-                    _ => false,
-                })
-                .unwrap_or(false)
-        })
-        .collect::<Vec<_>>();
-
-    let entry = Entry::LinkRemove((link_remove, filtered_links));
-
-    // Wait for future to be resolved
-    let result: Result<(), HolochainError> = context
-        .block_on(author_entry(&entry, None, &context, &vec![]))
-        .map(|_| ());
-
-    runtime.store_result(result)
 }

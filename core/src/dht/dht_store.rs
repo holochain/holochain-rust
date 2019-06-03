@@ -82,7 +82,7 @@ impl DhtStore {
             IndexFilter::LatestByAttribute,
             Some(EavFilter::single(Attribute::RemovedLink(
                 link_type.clone().unwrap_or_default(),
-                tag.clone().unwrap_or_default()
+                tag.clone().unwrap_or_default(),
             ))),
         ))?;
         Ok(filtered

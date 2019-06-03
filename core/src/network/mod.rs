@@ -26,9 +26,9 @@ pub mod tests {
         cas::content::{Address, AddressableContent},
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
+        iso_dispatch::{ISODispatch, ISODispatcherMock},
         json::JsonString,
         link::link_data::LinkData,
-        iso_dispatch::{ISODispatcherMock,ISODispatch}
     };
     use test_utils::*;
 

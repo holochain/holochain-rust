@@ -109,8 +109,8 @@ pub mod tests {
     };
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, link::link_data::LinkData,
-        iso_dispatch::ISODispatcherMock
+        cas::content::AddressableContent, entry::test_entry, iso_dispatch::ISODispatcherMock,
+        link::link_data::LinkData,
     };
     use test_utils::*;
 

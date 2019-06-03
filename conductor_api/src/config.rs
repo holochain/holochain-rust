@@ -84,7 +84,7 @@ pub struct Configuration {
     pub signals: SignalConfig,
 
     #[serde(default)]
-    pub iso_config: ISOConfiguration
+    pub iso_config: ISOConfiguration,
 }
 
 pub fn default_persistence_dir() -> PathBuf {
@@ -169,7 +169,6 @@ impl Configuration {
             }
         }
 
-
         for ref bridge in self.bridges.iter() {
             self.instance_by_id(&bridge.callee_id)
                 .is_some()
@@ -220,8 +219,6 @@ impl Configuration {
                     )
                 })?;
         }
-
-
 
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
 
@@ -389,9 +386,9 @@ pub struct DnaConfiguration {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
-pub enum ISOActive{
+pub enum ISOActive {
     On,
-    Off
+    Off,
 }
 
 impl Default for ISOActive {
@@ -403,7 +400,7 @@ impl Default for ISOActive {
 /// Configure if ISO generation should exist
 #[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
 pub struct ISOConfiguration {
-    pub iso_active : ISOActive
+    pub iso_active: ISOActive,
 }
 
 impl TryFrom<DnaConfiguration> for Dna {

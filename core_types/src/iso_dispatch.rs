@@ -1,6 +1,5 @@
-use std::time::SystemTime;
+use std::{convert::TryFrom, time::SystemTime};
 use time::Iso8601;
-use std::convert::TryFrom;
 
 #[derive(Default)]
 pub struct ISODispatcherMock(i64);
@@ -30,4 +29,3 @@ impl ISODispatch for ISODispatcherConcrete {
         Iso8601::from(duration_since_epoch.as_secs()).to_string()
     }
 }
-

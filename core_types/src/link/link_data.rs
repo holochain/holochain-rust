@@ -89,12 +89,12 @@ pub mod tests {
         agent::test_agent_id,
         cas::content::AddressableContent,
         entry::{test_entry_a, test_entry_b, Entry},
+        iso_dispatch::{ISODispatch, ISODispatcherMock},
         json::JsonString,
         link::{
             link_data::LinkData,
             tests::{example_link, example_link_action_kind, example_link_type},
         },
-        iso_dispatch::{ISODispatcherMock,ISODispatch}
     };
     use std::convert::TryFrom;
 

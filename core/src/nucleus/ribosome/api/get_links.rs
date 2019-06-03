@@ -55,9 +55,9 @@ pub mod tests {
         agent::test_agent_id,
         cas::content::Address,
         entry::{entry_type::test_app_entry_type, Entry},
+        iso_dispatch::{ISODispatch, ISODispatcherMock},
         json::{JsonString, RawString},
         link::{link_data::LinkData, Link},
-        iso_dispatch::{ISODispatcherMock,ISODispatch}
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use serde_json;
@@ -115,7 +115,11 @@ pub mod tests {
                 .is_ok());
             assert!(initialized_context
                 .block_on(add_link(
-                    &LinkData::add_from_link(&link, ISODispatcherMock::default().now_dispatch(), test_agent_id()),
+                    &LinkData::add_from_link(
+                        &link,
+                        ISODispatcherMock::default().now_dispatch(),
+                        test_agent_id()
+                    ),
                     &initialized_context
                 ))
                 .is_ok());

@@ -63,8 +63,8 @@ mod tests {
         agent::test_agent_id,
         cas::content::AddressableContent,
         entry::Entry,
+        iso_dispatch::{ISODispatch, ISODispatcherMock},
         link::{link_data::LinkData, Link, LinkActionKind},
-        iso_dispatch::{ISODispatcherMock,ISODispatch}
     };
 
     #[cfg_attr(tarpaulin, skip)]

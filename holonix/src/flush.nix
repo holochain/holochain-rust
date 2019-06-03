@@ -5,9 +5,9 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   hc-node-flush
-   hc-rust-flush
-   hc-qt-c-bindings-flush
+  hc-node-flush
+  hc-rust-flush
+  hc-qt-c-bindings-flush
   '';
 in
 script

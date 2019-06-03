@@ -6,12 +6,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   find . \
-    -iname "readme.*" \
-    | xargs cat \
-    | grep -E 'nightly-' \
-    | grep -v '${rust.nightly.date}' \
-    | cat
+  find . -iname "readme.*" | xargs cat | grep -E 'nightly-' | grep -v '${rust.nightly.date}' | cat
   '';
 in
 script

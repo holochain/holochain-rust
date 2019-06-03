@@ -5,9 +5,9 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   hc-cli-dist
-   hc-conductor-node-dist
-   hc-conductor-rust-dist
+  hc-cli-dist
+  hc-conductor-node-dist
+  hc-conductor-rust-dist
   '';
 in
 script

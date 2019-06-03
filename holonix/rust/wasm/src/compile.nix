@@ -13,13 +13,13 @@ let
 
   compile = path:
   ''
-   export WASM_PATH=${path}/
-   cargo build --release --target wasm32-unknown-unknown --manifest-path "$WASM_PATH"Cargo.toml --target-dir "$HC_TARGET_PREFIX""$WASM_PATH"target;
+  export WASM_PATH=${path}/
+  cargo build --release --target wasm32-unknown-unknown --manifest-path "$WASM_PATH"Cargo.toml --target-dir "$HC_TARGET_PREFIX""$WASM_PATH"target;
   '';
 
   script = pkgs.writeShellScriptBin name
   ''
-   ${pkgs.lib.concatMapStrings (path: compile path) paths}
+  ${pkgs.lib.concatMapStrings (path: compile path) paths}
   '';
 in
 script

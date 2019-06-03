@@ -5,7 +5,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   cargo uninstall wasm-bindgen-cli
+  cargo uninstall wasm-bindgen-cli
   '';
 in
 script

@@ -1,6 +1,6 @@
 [package]
 name = "hdk"
-version = "0.0.17-alpha2"
+version = "0.0.18-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]

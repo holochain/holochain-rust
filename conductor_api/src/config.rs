@@ -11,9 +11,14 @@ use crate::logger::LogRules;
 ///   the conductor
 /// * bridges, which are
 use boolinator::*;
+use conductor::base::DnaLoader;
 use holochain_core_types::{
     agent::{AgentId, Base32},
-    dna::Dna,
+    cas::content::AddressableContent,
+    dna::{
+        bridges::{BridgePresence, BridgeReference},
+        Dna,
+    },
     error::{HcResult, HolochainError},
     json::JsonString,
 };
@@ -26,12 +31,9 @@ use std::{
     fs::File,
     io::prelude::*,
     path::PathBuf,
+    sync::Arc,
 };
 use toml;
-use conductor::base::DnaLoader;
-use holochain_core_types::dna::bridges::{BridgePresence, BridgeReference};
-use holochain_core_types::cas::content::AddressableContent;
-use std::sync::Arc;
 
 /// Main conductor configuration struct
 /// This is the root of the configuration tree / aggregates
@@ -159,12 +161,9 @@ impl Configuration {
                 )
             })?;
             let dna_config = dna_config.unwrap();
-            let dna = Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(dna_config.file.clone())).map_err(|_| {
-                format!(
-                    "Could not load DNA file \"{}\"",
-                    dna_config.file
-                )
-            })?;
+            let dna =
+                Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(dna_config.file.clone()))
+                    .map_err(|_| format!("Could not load DNA file \"{}\"", dna_config.file))?;
 
             for zome in dna.zomes.values() {
                 for bridge in zome.bridges.iter() {
@@ -176,15 +175,15 @@ impl Configuration {
                             .find(|b| b.handle == handle)
                             .ok_or(format!(
                                 "Required bridge '{}' for instance '{}' missing",
-                                handle,
-                                instance.id
+                                handle, instance.id
                             ))?;
 
-                        let callee_config = self.instance_by_id(&bridge_config.callee_id)
-                            .ok_or(format!(
-                                "Instance configuration \"{}\" not found, mentioned in bridge",
-                                bridge_config.callee_id
-                            ))?;
+                        let callee_config =
+                            self.instance_by_id(&bridge_config.callee_id)
+                                .ok_or(format!(
+                                    "Instance configuration \"{}\" not found, mentioned in bridge",
+                                    bridge_config.callee_id
+                                ))?;
 
                         let callee_dna_config = self.dna_by_id(&callee_config.dna);
                         callee_dna_config.is_some().ok_or_else(|| {
@@ -194,16 +193,13 @@ impl Configuration {
                             )
                         })?;
                         let callee_dna_config = callee_dna_config.unwrap();
-                        let callee_dna = Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(callee_dna_config.file)).map_err(|_| {
-                            format!(
-                                "Could not load DNA file \"{}\"",
-                                dna_config.file
-                            )
-                        })?;
-
+                        let callee_dna = Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(
+                            callee_dna_config.file,
+                        ))
+                        .map_err(|_| format!("Could not load DNA file \"{}\"", dna_config.file))?;
 
                         match bridge.reference {
-                            BridgeReference::Address{ref dna_address} => {
+                            BridgeReference::Address { ref dna_address } => {
                                 if *dna_address != callee_dna.address() {
                                     return Err(format!(
                                         "Bridge '{}' of instance '{}' requires callee to be DNA with hash '{}', but the configure instance '{}' runs DNA with hash '{}'.",
@@ -214,17 +210,14 @@ impl Configuration {
                                         callee_dna.address(),
                                     ));
                                 }
-                            },
-                            BridgeReference::Trait{ref traits} => {
+                            }
+                            BridgeReference::Trait { ref traits } => {
                                 let _ = traits;
-                            },
+                            }
                         }
-
-
                     }
                 }
             }
-
         }
         for ref interface in self.interfaces.iter() {
             for ref instance in interface.instances.iter() {
@@ -668,8 +661,8 @@ pub struct SignalConfig {
 pub mod tests {
     use super::*;
     use crate::config::{load_configuration, Configuration, NetworkConfig};
-    use holochain_net::p2p_config::P2pConfig;
     use conductor::tests::test_dna_loader;
+    use holochain_net::p2p_config::P2pConfig;
 
     pub fn example_serialized_network_config() -> String {
         String::from(JsonString::from(P2pConfig::new_with_unique_memory_backend()))

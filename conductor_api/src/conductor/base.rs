@@ -371,8 +371,7 @@ impl Conductor {
 
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
-        self
-            .config
+        self.config
             .instances
             .iter()
             .map(|instance_config| instance_config.id.clone())
@@ -1035,9 +1034,9 @@ pub mod tests {
     };
 
     use self::tempfile::tempdir;
-    use test_utils::*;
     use holochain_core_types::dna::bridges::{Bridge, BridgeReference};
     use std::collections::BTreeMap;
+    use test_utils::*;
 
     //    commented while test_signals_through_admin_websocket is broken
     //    extern crate ws;
@@ -1548,7 +1547,10 @@ pub mod tests {
             .expect("Test config must be sane");
         let result = conductor.start_all_instances();
         assert!(result.is_err());
-        assert_eq!(result.err().unwrap(), HolochainInstanceError::RequiredBridgeMissing("test-callee".to_string()));
+        assert_eq!(
+            result.err().unwrap(),
+            HolochainInstanceError::RequiredBridgeMissing("test-callee".to_string())
+        );
     }
 
     #[test]

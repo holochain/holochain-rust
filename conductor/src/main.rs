@@ -21,14 +21,12 @@ extern crate lib3h_sodium;
 extern crate structopt;
 
 use holochain_conductor_api::{
-    conductor::{mount_conductor_from_config, CONDUCTOR},
+    conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::error::HolochainError;
-use std::{fs::File, io::prelude::*, path::PathBuf, thread::sleep, time::Duration};
+use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc, thread::sleep, time::Duration};
 use structopt::StructOpt;
-use holochain_conductor_api::conductor::Conductor;
-use std::sync::Arc;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "holochain")]

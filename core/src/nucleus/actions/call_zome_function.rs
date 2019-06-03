@@ -195,6 +195,7 @@ fn make_call_sig<J: Into<JsonString>>(
     Signature::from(
         context
             .sign(encode_call_data_for_signing(function, parameters))
+            .map_err(|e| context.log(format!("err/signature: {}", e.to_string())))
             .expect("signing should work"),
     )
 }

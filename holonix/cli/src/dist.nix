@@ -13,7 +13,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   ${dist-lib.build-rust-artifact artifact}
+  ${dist-lib.build-rust-artifact artifact}
   '';
 in
 script

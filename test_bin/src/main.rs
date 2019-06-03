@@ -74,7 +74,7 @@ lazy_static! {
         three_workflows::publish_entry_stress_test,
         multidna_workflows::send_test,
         // Error occured in p2p network module, on receive: ErrorMessage { msg: "(memory-auto-puid-0-0) No sender channel found for DNA_A::billy" }
-        // @s33 https://github.com/holochain/holochain-rust/pull/1470
+        // @see https://github.com/holochain/holochain-rust/pull/1470
         // multidna_workflows::dht_test,
         multidna_workflows::meta_test,
     ];

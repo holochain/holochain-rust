@@ -97,7 +97,7 @@ extern crate holochain_core_types;
 extern crate holochain_core_types_derive;
 extern crate holochain_dpki;
 extern crate holochain_net;
-extern crate holochain_sodium;
+extern crate lib3h_sodium;
 
 extern crate chrono;
 extern crate crossbeam_channel;

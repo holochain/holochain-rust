@@ -17,7 +17,7 @@
 /// A custom config can be provided with the --config, -c flag.
 extern crate holochain_conductor_api;
 extern crate holochain_core_types;
-extern crate holochain_sodium;
+extern crate lib3h_sodium;
 extern crate structopt;
 
 use holochain_conductor_api::{
@@ -38,7 +38,7 @@ struct Opt {
 
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
-    holochain_sodium::check_init();
+    lib3h_sodium::check_init();
     let opt = Opt::from_args();
     let config_path = opt
         .config

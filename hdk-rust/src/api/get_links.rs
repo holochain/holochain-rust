@@ -3,7 +3,7 @@ use api::get_entry::get_entry_result;
 use error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{cas::content::Address, entry::Entry, hash::HashString};
 use holochain_wasm_utils::api_serialization::{
-    get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultType},
+    get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultItem, GetEntryResultType},
     get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
 };
 
@@ -110,8 +110,9 @@ pub fn get_links_and_load(
     .map(|get_result| {
         let get_type = get_result?.result;
         match get_type {
-            GetEntryResultType::Single(elem) => Ok(elem.entry.unwrap().to_owned()),
-            GetEntryResultType::All(_) => Err(ZomeApiError::Internal("Invalid response. get_links_result returned all entries when latest was requested".to_string()))
+            GetEntryResultType::Single(GetEntryResultItem{entry: Some(entry), ..}) => Ok(entry),
+            GetEntryResultType::Single(GetEntryResultItem{entry: None, ..}) => Err(ZomeApiError::Internal("Entry is None so most likely has been marked as deleted".to_string())),
+            GetEntryResultType::All(_) => Err(ZomeApiError::Internal("Invalid response. get_links_result returned all entries when latest was requested".to_string())),
         }
     })
     .collect();

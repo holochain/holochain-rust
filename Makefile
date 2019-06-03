@@ -18,7 +18,7 @@ help:
 	@echo "run 'make test_holochain' to test holochain builds"
 	@echo "run 'make test_cli' to build and test the command line tool builds"
 	@echo "run 'make install_cli' to build and install the command line tool builds"
-  @echo "run 'make build_conductor_wasm' to build the wasm light-client browser conductor"
+	@echo "run 'make build_conductor_wasm' to build the wasm light-client browser conductor"
 	@echo "run 'make test-something' to run cargo tests matching 'something'"
 
 SHELL = /bin/bash

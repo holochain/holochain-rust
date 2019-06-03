@@ -1,5 +1,5 @@
 use holochain_core_types::error::HcResult;
-use holochain_sodium::{aead, kx, pwhash, secbuf::SecBuf};
+use lib3h_sodium::{aead, kx, pwhash, secbuf::SecBuf};
 use serde_derive::{Deserialize, Serialize};
 
 pub type OpsLimit = u64;

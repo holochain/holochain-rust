@@ -102,8 +102,8 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
-use std::sync::Arc;
 use jsonrpc_core::IoHandler;
+use std::sync::Arc;
 
 /// contains a Holochain application instance
 pub struct Holochain {

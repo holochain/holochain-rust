@@ -8,38 +8,37 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   echo
-   echo "Current git:"
-   echo
+  echo
+  echo "Current git:"
+  echo
 
-   git show --pretty=oneline
+  git show --pretty=oneline
 
-   echo
-   echo "All the important release vars:"
-   echo
+  echo
+  echo "All the important release vars:"
+  echo
 
-   echo "Target commit: ${release.commit}"
+  echo "Target commit: ${release.commit}"
 
-   echo
+  echo
 
-   echo "Dev pulse URL hash: ${release-pulse.url-hash}"
-   echo "Dev pulse version: ${release-pulse.version}"
-   echo "Dev pulse URL (derived): ${release-pulse.url}"
+  echo "Dev pulse URL hash: ${release-pulse.url-hash}"
+  echo "Dev pulse version: ${release-pulse.version}"
+  echo "Dev pulse URL (derived): ${release-pulse.url}"
 
-   echo
+  echo
 
-   echo "New core version: ${release.core.version.current}"
-   echo "Previous core version: ${release.core.version.previous}"
+  echo "New core version: ${release.core.version.current}"
+  echo "Previous core version: ${release.core.version.previous}"
 
-   echo
+  echo
 
-   echo "New node conductor version: ${release.node-conductor.version.current}"
-   echo "Previous node conductor version: ${release.node-conductor.version.previous}"
+  echo "New node conductor version: ${release.node-conductor.version.current}"
+  echo "Previous node conductor version: ${release.node-conductor.version.previous}"
 
-   echo
+  echo
 
-   echo "Release process url: ${release.process-url}"
-
+  echo "Release process url: ${release.process-url}"
   '';
 in
 script

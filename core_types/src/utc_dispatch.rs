@@ -22,6 +22,6 @@ impl UTCDispatch for UTCMock {
 
 impl UTCDispatch for UTCConcrete {
     fn now_dispatch(&self) -> i64 {
-        Utc::now().timestamp_nanos()
+        Utc::now().timestamp()
     }
 }

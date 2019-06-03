@@ -2,7 +2,7 @@ use crate::{
     conductor::broadcaster::Broadcaster,
     config::{
         serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
-        StorageConfiguration,
+        StorageConfiguration,ISOActive
     },
     context_builder::ContextBuilder,
     dpki_instance::DpkiInstance,
@@ -19,7 +19,7 @@ use holochain_core::{
 };
 use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
-    iso_dispatch::ISODispatcherConcrete, json::JsonString,
+    iso_dispatch::{ISODispatcherMock,ISODispatcherConcrete,ISODispatch}, json::JsonString,
 };
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -567,8 +567,9 @@ impl Conductor {
                     )));
                 }
 
+                let iso_dispatcher : Arc<ISODispatch> = if config.iso_config.iso_active == ISOActive::On { Arc::new(ISODispatcherConcrete {}) } else { Arc::new(ISODispatcherMock::default())};
                 context_builder =
-                    context_builder.with_utc_dispatcher(Arc::new(ISODispatcherConcrete {}));
+                    context_builder.with_utc_dispatcher(iso_dispatcher);
 
                 // Conductor API
                 let mut api_builder = ConductorApiBuilder::new();

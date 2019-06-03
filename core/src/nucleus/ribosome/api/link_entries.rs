@@ -39,6 +39,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         context.agent_id.clone(),
     );
     let entry = Entry::LinkAdd(link_add);
+
     // Wait for future to be resolved
     // This is where the link entry actually gets created.
     let result: Result<Address, HolochainError> = context

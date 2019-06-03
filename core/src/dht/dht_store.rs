@@ -81,12 +81,10 @@ impl DhtStore {
             None.into(),
             IndexFilter::LatestByAttribute,
             Some(EavFilter::single(Attribute::RemovedLink(
-                tag.clone().unwrap_or_default(),
                 link_type.clone().unwrap_or_default(),
+                tag.clone().unwrap_or_default()
             ))),
         ))?;
-
-        println!("filtered {:?}", filtered.clone());
         Ok(filtered
             .into_iter()
             .filter(|eav| match eav.attribute() {

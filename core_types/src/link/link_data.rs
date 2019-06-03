@@ -94,6 +94,7 @@ pub mod tests {
             link_data::LinkData,
             tests::{example_link, example_link_action_kind, example_link_type},
         },
+        iso_dispatch::{ISODispatcherMock,ISODispatch}
     };
     use std::convert::TryFrom;
 
@@ -104,7 +105,7 @@ pub mod tests {
             link.target(),
             link.tag(),
             "foo-link-type",
-            String::from(""),
+            ISODispatcherMock::default().now_dispatch(),
             test_agent_id(),
         )
     }
@@ -115,9 +116,10 @@ pub mod tests {
 
     pub fn test_link_entry_json_string() -> JsonString {
         JsonString::from_json(&format!(
-            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}},\"timestamp\":\"\",\"agent_id\":{{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}",
+            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}},\"timestamp\":\"{}\",\"agent_id\":{{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}",
             test_entry_a().address(),
-            test_entry_b().address()
+            test_entry_b().address(),
+            ISODispatcherMock::default().now_dispatch()
         ))
     }
 

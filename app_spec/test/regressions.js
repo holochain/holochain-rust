@@ -22,7 +22,7 @@ scenario.runTape('calling get_links before link_entries makes no difference', as
 
   const get2 = alice.call("blog", "my_posts", {})
   t.ok(get2.Ok)
-
+  t.equal(get2.Ok.links[0].address,"QmWY98zemN4Mi9A9SgmC8vQufaQUf5a13Xe81PfWDvvnn9");
   t.equal(get2.Ok.links.length,1)
 })
 
@@ -39,7 +39,7 @@ scenario.runTape('calling get_links twice in a row is no different than calling 
   alice.call("blog", "my_posts", {})
   const get2 = alice.call("blog", "my_posts", {})
   t.ok(get2.Ok)
-
+  t.equal(get2.Ok.links[0].address,"QmWY98zemN4Mi9A9SgmC8vQufaQUf5a13Xe81PfWDvvnn9");
   t.equal(get2.Ok.links.length, 1)
 })
 
@@ -50,7 +50,7 @@ scenario.runTape('not calling get_links in the beginning is also ok', async (t, 
 
   const get1 = alice.call("blog", "my_posts", {})
   t.ok(get1.Ok)
-
+  t.equal(get1.Ok.links[0].address,"QmWY98zemN4Mi9A9SgmC8vQufaQUf5a13Xe81PfWDvvnn9");
   t.equal(get1.Ok.links.length, 1)
 })
 
@@ -75,7 +75,7 @@ scenario.runTape('alice create & publish post -> recommend own post to self', as
   const recommendedPosts = alice.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, alice.agentId)
-
+  t.equal(recommendedPosts.Ok.links[0].address,"Qmd9ntsqCYbNaegmmrDVr7UYZVoHnEQq3fkEqUQj7Sb3Dj");
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
@@ -99,7 +99,7 @@ scenario.runTape('alice create & publish post -> tash recommend to self', async 
   const recommendedPosts = tash.call("blog", "my_recommended_posts", {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, tash.agentId)
-
+  t.equal(recommendedPosts.Ok.links[0].address,"QmXmu6LBkxXsNZ5poaZB5YxCK6nqg3GGBHZTc1FV62tA4o");
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
@@ -123,6 +123,6 @@ scenario.runTape('create & publish post -> recommend to other agent', async (t, 
   const recommendedPosts = tash.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, tash.agentId)
-
+  t.equal(recommendedPosts.Ok.links[0].address,"QmaERphTvXExCBcVdCRzGBE2d1dnRNWDjthwfyBuq9Mf6a");
   t.equal(recommendedPosts.Ok.links.length, 1)
 })

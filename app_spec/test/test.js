@@ -366,7 +366,7 @@ scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
   const bob_posts = alice.call("blog", "posts_by_agent",
     { "agent": alice.agentId }
   )
-
+  console.log("links" + JSON.stringify(bob_posts));
   t.ok(bob_posts.Ok)
   t.equal(bob_posts.Ok.links.length,2 );
 
@@ -384,7 +384,20 @@ scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
   t.ok(alice_agent_posts_expect_empty.Ok)
   t.equal(alice_agent_posts_expect_empty.Ok.links.length, 0);
 
-  //utc in the nodejs conductor is set to 0 so in order to set a different time we need to use a new author
+  //create by alice with same data
+  console.log("testing tombstone");
+  await alice.callSync("blog", "create_post_with_agent",
+    { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
+  )
+
+  // get posts by bob
+  const bob_agent_posts_expect_empty_again = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
+  console.log("links" + JSON.stringify(bob_agent_posts_expect_empty_again));
+  //same time same author
+  t.ok(bob_agent_posts_expect_empty_again.Ok)
+  t.equal(bob_agent_posts_expect_empty_again.Ok.links.length, 0);
+
+  //time in the nodejs conductor is set to 0 so in order to set a different time we need to use a new author
   await carol.callSync("blog", "create_post_with_agent",
   { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
   );
@@ -393,6 +406,7 @@ scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
   const carol_posts = carol.call("blog", "posts_by_agent",
     { "agent": alice.agentId }
   )
+  console.log("links" + JSON.stringify(carol_posts));
 
   t.ok(carol_posts.Ok)
   t.equal(carol_posts.Ok.links.length, 1);

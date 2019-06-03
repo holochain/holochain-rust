@@ -47,11 +47,11 @@ impl Link {
         &self.tag
     }
 
-    pub fn add_entry(&self, timestamp: i64, agent_id: AgentId) -> Entry {
+    pub fn add_entry(&self, timestamp: String, agent_id: AgentId) -> Entry {
         Entry::LinkAdd(LinkData::add_from_link(self, timestamp, agent_id))
     }
 
-    pub fn remove_entry(&self, timestamp: i64, agent_id: AgentId) -> Entry {
+    pub fn remove_entry(&self, timestamp: String, agent_id: AgentId) -> Entry {
         Entry::LinkAdd(LinkData::remove_from_link(self, timestamp, agent_id))
     }
 }

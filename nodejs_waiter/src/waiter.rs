@@ -372,7 +372,7 @@ mod tests {
         agent::test_agent_id, cas::content::Address, chain_header::test_chain_header,
         dna::capabilities::CapabilityRequest, entry::Entry, json::JsonString,
         link::link_data::LinkData, signature::Signature,
-        iso_dispatch::ISODispatcherMock
+        iso_dispatch::{ISODispatcherMock,ISODispatch}
     };
     use std::sync::mpsc::sync_channel;
 

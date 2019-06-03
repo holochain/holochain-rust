@@ -631,8 +631,10 @@ impl Conductor {
                 // the loaded dna.
                 {
                     let dna_hash_from_conductor_config =
-                        HashString::from(dna_config.hash.clone().unwrap_or("Missing DNA hash from Conductor config.".to_string()))
-                        .to_owned();
+                        HashString::from(dna_config.hash.clone()
+                                         // .unwrap_or("Missing DNA hash from Conductor config.".to_string()))
+                                         .unwrap_or("".to_string()))
+                                         .to_owned();
                     let dna_hash_computed = &dna.address();
 
                     // Let's warn the user that we encounter an empty DNA hash in the Conductor

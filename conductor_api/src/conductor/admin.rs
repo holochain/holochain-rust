@@ -986,6 +986,77 @@ id = 'new-dna'"#,
     }
 
     #[test]
+    fn test_install_dna_from_file_with_uuid() {
+        let test_name = "test_install_dna_from_file_with_uuid";
+        let mut conductor = create_test_conductor(test_name, 3000);
+
+        let mut new_dna_path = PathBuf::new();
+        new_dna_path.push("new-dna.dna.json");
+        let uuid = "uuid".to_string();
+
+        assert!(conductor
+            .install_dna_from_file(
+                new_dna_path.clone(),
+                String::from("new-dna-with-uuid-1"),
+                false,
+                None,
+                None,
+                Some(uuid.clone()),
+            )
+            .is_ok());
+
+        assert!(conductor
+            .install_dna_from_file(
+                new_dna_path.clone(),
+                String::from("new-dna-with-uuid-2"),
+                true,
+                None,
+                None,
+                Some(uuid.clone()),
+            )
+            .is_ok());
+
+        let mut new_dna =
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
+                .unwrap();
+        let original_hash = new_dna.address();
+        new_dna.uuid = uuid;
+        let new_hash = new_dna.address();
+        assert_ne!(original_hash, new_hash);
+
+        let mut output_dna_file = current_dir()
+            .expect("Could not get current dir")
+            .join("tmp-test")
+            .join(test_name)
+            .join("dna");
+
+        output_dna_file.push(new_hash.to_string());
+        output_dna_file.set_extension(DNA_EXTENSION);
+
+        assert_eq!(
+            conductor.config().dnas,
+            vec![
+                DnaConfiguration {
+                    id: String::from("test-dna"),
+                    file: String::from("app_spec.dna.json"),
+                    hash: Some(String::from("Qm328wyq38924y")),
+                },
+                DnaConfiguration {
+                    id: String::from("new-dna-with-uuid-1"),
+                    file: new_dna_path.to_string_lossy().to_string(),
+                    hash: Some(String::from(new_dna.address())),
+                },
+                DnaConfiguration {
+                    id: String::from("new-dna-with-uuid-2"),
+                    file: output_dna_file.to_str().unwrap().to_string(),
+                    hash: Some(String::from(new_dna.address())),
+                },
+            ]
+        );
+        assert!(output_dna_file.is_file())
+    }
+
+    #[test]
     fn test_add_instance() {
         let test_name = "test_add_instance";
         let mut conductor = create_test_conductor(test_name, 3001);

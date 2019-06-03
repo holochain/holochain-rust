@@ -1,5 +1,5 @@
-use time::Iso8601;
 use std::time::SystemTime;
+use time::Iso8601;
 
 #[derive(Default)]
 pub struct ISODispatcherMock(i64);
@@ -17,15 +17,15 @@ pub trait ISODispatch: Send + Sync {
 
 impl ISODispatch for ISODispatcherMock {
     fn now_dispatch(&self) -> String {
-         Iso8601::from(self.0).to_string()
+        Iso8601::from(self.0).to_string()
     }
 }
 
 impl ISODispatch for ISODispatcherConcrete {
     fn now_dispatch(&self) -> String {
         let duration_since_epoch = SystemTime::now()
-         .duration_since(SystemTime::UNIX_EPOCH)
-        .expect("System time must not be before UNIX EPOCH");
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("System time must not be before UNIX EPOCH");
         Iso8601::from(duration_since_epoch.as_secs()).to_string()
     }
 }

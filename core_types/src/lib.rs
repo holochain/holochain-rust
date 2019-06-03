@@ -49,11 +49,11 @@ pub mod bits_n_pieces;
 pub mod chain_migrate;
 pub mod dna;
 pub mod hash;
+pub mod iso_dispatch;
 pub mod json;
 pub mod link;
 pub mod signature;
 pub mod time;
-pub mod iso_dispatch;
 pub mod validation;
 
 pub const GIT_HASH: &str = env!(

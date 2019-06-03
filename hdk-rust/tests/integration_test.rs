@@ -593,7 +593,7 @@ fn can_link_entries() {
 
 #[test]
 fn can_remove_link() {
-    let (mut hc, _) = start_holochain_instance("can_link_entries", "alice");
+    let (mut hc, _) = start_holochain_instance("can_remove_link", "alice");
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);

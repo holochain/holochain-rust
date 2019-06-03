@@ -23,7 +23,7 @@ scenario.runTape('calling get_links before link_entries makes no difference', as
   const get2 = alice.call("blog", "my_posts", {})
   t.ok(get2.Ok)
 
-  t.equal(get2.Ok.links.length, 1)
+  t.equal(get2.Ok.links.length,1)
 })
 
 scenario.runTape('calling get_links twice in a row is no different than calling it once', async (t, {alice}) => {

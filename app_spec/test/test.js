@@ -345,13 +345,13 @@ scenario2.runTape('my_memos_are_private', async (t, { alice, bob }) => {
 scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
 
   //create by alice
-  await alice.callSync("blog", "create_post",
-    { "content": "Posty", "in_reply_to": "" }
+  await alice.callSync("blog", "create_post_with_agent",
+    { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
   )
 
   //bob creates post with alice id
   await bob.callSync("blog", "create_post_with_agent",
-    { "agent_id":alice.agent_id, "content": "Posty", "in_reply_to": "" }
+    { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
   )
   
   //create post by alice
@@ -360,7 +360,7 @@ scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
   )
 
   t.ok(alice_posts.Ok)
-  t.equal(alice_posts.Ok.links.length,1 );
+  t.equal(alice_posts.Ok.links.length,2 );
 
   //create post by alice
   const bob_posts = alice.call("blog", "posts_by_agent",
@@ -368,7 +368,7 @@ scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
   )
 
   t.ok(bob_posts.Ok)
-  t.equal(bob_posts.Ok.links.length,1 );
+  t.equal(bob_posts.Ok.links.length,2 );
 
   //remove link by alice
   await alice.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
@@ -386,7 +386,7 @@ scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
 
   //utc in the nodejs conductor is set to 0 so in order to set a different time we need to use a new author
   await carol.callSync("blog", "create_post_with_agent",
-  { "agent_id":alice.agent_id, "content": "Posty", "in_reply_to": "" }
+  { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
   );
 
   //get carol posts from bob

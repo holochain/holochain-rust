@@ -8,8 +8,8 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   rm c_binding_tests/hc_dna/.qmake.stash
-   rm c_binding_tests/hc_dna/Makefile
+  rm c_binding_tests/hc_dna/.qmake.stash
+  rm c_binding_tests/hc_dna/Makefile
   '';
 in
 script

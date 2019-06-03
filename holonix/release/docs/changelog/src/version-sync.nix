@@ -38,22 +38,22 @@ ${heading-placeholder}
   # cat ${unreleased-path} | sed "s/\[Unreleased\]/${template}\#\# \[${release.core.version.current}\] - $(date --iso --u)/"
   script = pkgs.writeShellScriptBin name
   ''
-   echo
-   echo "locking off changelog version"
-   echo
+  echo
+  echo "locking off changelog version"
+  echo
 
-   template="$(cat ${unreleased-path})"
-   heading_placeholder="${heading-placeholder}"
-   heading="## [${release.core.version.current}] - $(date --iso --u)"
+  template="$(cat ${unreleased-path})"
+  heading_placeholder="${heading-placeholder}"
+  heading="## [${release.core.version.current}] - $(date --iso --u)"
 
-   prepend=''${template/$heading_placeholder/$heading}
-   current=$( cat ./CHANGELOG.md | sed -e '1,4d' )
+  prepend=''${template/$heading_placeholder/$heading}
+  current=$( cat ./CHANGELOG.md | sed -e '1,4d' )
 
-   echo "timestamping and retemplating changelog"
+  echo "timestamping and retemplating changelog"
 
-   printf '%s\n\n%s\n' "$prepend" "$current" > ${changelog-path}
+  printf '%s\n\n%s\n' "$prepend" "$current" > ${changelog-path}
 
-   echo '${template}' > '${unreleased-path}'
+  echo '${template}' > '${unreleased-path}'
   '';
 in
 script

@@ -7,14 +7,14 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   export GITHUB_USER='holochain'
-   export GITHUB_REPO='holochain-rust'
-   export GITHUB_TOKEN=$( git config --get hub.oauthtoken )
+  export GITHUB_USER='holochain'
+  export GITHUB_REPO='holochain-rust'
+  export GITHUB_TOKEN=$( git config --get hub.oauthtoken )
 
-   echo
-   echo 'Injecting medium summary/highlights into github release notes'
-   echo
-   github-release -v edit --tag ${release.core.tag} --name ${release.core.tag} --description "$( hc-release-github-notes )" --pre-release
+  echo
+  echo 'Injecting medium summary/highlights into github release notes'
+  echo
+  github-release -v edit --tag ${release.core.tag} --name ${release.core.tag} --description "$( hc-release-github-notes )" --pre-release
   '';
 in
 script

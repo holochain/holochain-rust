@@ -631,9 +631,13 @@ impl Conductor {
                 // the loaded dna.
                 {
                     let dna_hash_from_conductor_config =
-                        HashString::from(dna_config.hash.clone().unwrap_or("Missing DNA config hash".to_string()))
+                        HashString::from(dna_config.hash.clone().unwrap_or("Missing DNA hash from Conductor config.".to_string()))
                         .to_owned();
                     let dna_hash_computed = &dna.address();
+
+                    // Let's warn the user that we encounter an empty DNA hash in the Conductor
+                    // config that is mmeant to be skipped by the consistency checking mechanisim
+                    context.log("warn/Conductor: Empty DNA hash encountered in the Conductor configuration.");
 
                     match Conductor::load_dna(&dna_file) {
                         // If the file is correctly loaded, meaning it exists in the file system,
@@ -784,11 +788,15 @@ impl Conductor {
 
     /// This is where we check for DNA's hashes consistency.
     /// Only a simple equality check between DNA hashes is currently performed.
+    /// N.B.: Empty hashes are skipped for debugging purposes.
     fn check_dna_consistency(
         dna_hash_a: &HashString,
         dna_hash_b: &HashString,
     ) -> Result<(), HolochainError> {
-        if *dna_hash_a == *dna_hash_b {
+        // Here we skip empty DNA hashes for debugging purpose to help Zome developers
+        let empty_hash = HashString::from("");
+        if *dna_hash_a == empty_hash || *dna_hash_b == empty_hash { Ok(()) }
+        else if *dna_hash_a == *dna_hash_b {
             Ok(())
         } else {
             Err(HolochainError::DnaHashMismatch(
@@ -1215,7 +1223,7 @@ pub mod tests {
     [[dnas]]
     id = "bridge-caller"
     file = "bridge/caller.dna"
-    hash = "QmVtGK9A9wHckLujCEgMA9nkrzwq73eqMGbnvWfNtzEjuY"
+    hash = ""
 
     [[instances]]
     id = "test-instance-1"
@@ -1412,7 +1420,7 @@ pub mod tests {
         [[dnas]]
         id = "bridge-caller"
         file = "bridge/caller.dna"
-        hash = "QmVtGK9A9wHckLujCEgMA9nkrzwq73eqMGbnvWfNtzEjuY"
+        hash = ""
 
         [[instances]]
         id = "test-instance-1"

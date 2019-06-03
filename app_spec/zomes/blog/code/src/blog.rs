@@ -104,11 +104,10 @@ pub fn handle_ping(to_agent: Address, message: String) -> ZomeApiResult<String> 
 
     let response = hdk::send(to_agent, JsonString::from(Message::Ping(PingPayload(message))).to_string(), 10000.into())?;
 
-    // A JSON-encoded Result<..., HolochainError> is expected
-    //let response_message: Result<Message, HolochainError> = JsonString::from_json(&response).try_into()?;
-    let response_message: Result<Message, HolochainError> = serde_json::from_str(&response)
+    let response_message: Result<Message, HolochainError> = JsonString::from_json(&response)
+        .try_into()
         .map_err(|e| HolochainError::ErrorGeneric(format!(
-            "handle_ping: couldn't extract Result<Message, HolochainError> {:?}: {}",
+            "handle_ping: expected Result<Message, HolochainError>, got: {:?}: {}",
             &response, e )))?;
 
     // We expect only a Message::PingPayload w/ a String in response to our Message::Ping
@@ -336,7 +335,7 @@ fn handle_receive_post(
     }
 }
 
-// ping simply returns the payload, with the sender's Address and our Address
+// ping simply returns the payload, with the sender's Address, and our own agent Address
 fn handle_receive_ping(
     from: Address,
     payload: PingPayload
@@ -345,7 +344,8 @@ fn handle_receive_ping(
         "got {} from {} at {}", payload.0, &from, AGENT_ADDRESS.to_string()))))
 }
 
-// this is an example of a receive function that can handle a typed messaged
+// this is an example of a receive function that can handle a serialized typed Message, returning a
+// serialized Result<Message, HolochainError>
 pub fn handle_receive(
     from: Address,
     json_msg: JsonString
@@ -407,11 +407,10 @@ pub fn handle_create_post_with_claim(
     let message = Message::PostRequest(post_body);
 
     let response = hdk::send(grantor, JsonString::from(message).into(), 10000.into())?;
-    // TODO: avoid serde_json::from_str() when JsonString...try_into() works for Result<...>
-    //let response_message: Result<Message, HolochainError> = JsonString::from_json(&response).try_into()?;
-    let response_message: Result<Message, HolochainError> = serde_json::from_str(&response)
+    let response_message: Result<Message, HolochainError> = JsonString::from_json(&response)
+        .try_into()
         .map_err(|e| HolochainError::ErrorGeneric(format!(
-            "handle_create_post_with_claim: couldn't extract Result<Message, HolochainError> {:?}: {}",
+            "handle_create_post_with_claim: expected Result<Message, HolochainError>, got: {:?}: {}",
             &response, e )))?;
 
     // We expect only a Message::PostReply w/ an Address in response to our Message::PostRequest

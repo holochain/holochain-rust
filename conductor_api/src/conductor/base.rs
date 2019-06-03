@@ -795,8 +795,9 @@ impl Conductor {
     ) -> Result<(), HolochainError> {
         // Here we skip empty DNA hashes for debugging purpose to help Zome developers
         let empty_hash = HashString::from("");
-        if *dna_hash_a == empty_hash || *dna_hash_b == empty_hash { Ok(()) }
-        else if *dna_hash_a == *dna_hash_b {
+        if *dna_hash_a == empty_hash || *dna_hash_b == empty_hash {
+            Ok(())
+        } else if *dna_hash_a == *dna_hash_b {
             Ok(())
         } else {
             Err(HolochainError::DnaHashMismatch(

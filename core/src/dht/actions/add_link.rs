@@ -80,7 +80,12 @@ mod tests {
 
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
-        let link_data = LinkData::from_link(&link, LinkActionKind::ADD, 0, test_agent_id());
+        let link_data = LinkData::from_link(
+            &link,
+            LinkActionKind::ADD,
+            String::from(""),
+            test_agent_id(),
+        );
         let result = context.block_on(add_link(&link_data, &context.clone()));
 
         assert!(result.is_ok(), "result = {:?}", result);
@@ -94,7 +99,12 @@ mod tests {
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
 
-        let link_data = LinkData::from_link(&link, LinkActionKind::ADD, 0, test_agent_id());
+        let link_data = LinkData::from_link(
+            &link,
+            LinkActionKind::ADD,
+            String::from(""),
+            test_agent_id(),
+        );
         let result = context.block_on(add_link(&link_data, &context.clone()));
 
         assert!(result.is_err());

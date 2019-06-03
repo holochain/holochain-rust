@@ -104,7 +104,7 @@ pub mod tests {
             link.target(),
             link.tag(),
             "foo-link-type",
-            0,
+            String::from(""),
             test_agent_id(),
         )
     }

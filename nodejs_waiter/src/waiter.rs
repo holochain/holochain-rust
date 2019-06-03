@@ -595,7 +595,7 @@ mod tests {
             &"target".to_string().into(),
             "link-type",
             "link-tag",
-            0,
+            String::from(""),
             test_agent_id(),
         );
         let entry = Entry::LinkAdd(link_add.clone());

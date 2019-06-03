@@ -218,7 +218,12 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
-        let link_data = LinkData::from_link(&link.clone(), LinkActionKind::ADD, 0, test_agent_id());
+        let link_data = LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::ADD,
+            String::from(""),
+            test_agent_id(),
+        );
         let link_entry = Entry::LinkAdd(link_data.clone());
         let action = ActionWrapper::new(Action::AddLink(link_data));
 
@@ -255,13 +260,23 @@ pub mod tests {
 
         let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
         let test_tag = String::from("test-tag");
-        let link_data = LinkData::from_link(&link.clone(), LinkActionKind::ADD, 0, test_agent_id());
+        let link_data = LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::ADD,
+            String::from(""),
+            test_agent_id(),
+        );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         let entry_link_remove = Entry::LinkRemove((
-            LinkData::from_link(&link.clone(), LinkActionKind::REMOVE, 0, test_agent_id()),
+            LinkData::from_link(
+                &link.clone(),
+                LinkActionKind::REMOVE,
+                String::from(""),
+                test_agent_id(),
+            ),
             vec![entry_link_add.address()],
         ));
         let action_link_remove = ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));
@@ -297,7 +312,7 @@ pub mod tests {
         assert_eq!(hash_set.len(), 1);
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        let link_entry = link.add_entry(0, test_agent_id());
+        let link_entry = link.add_entry(String::from(""), test_agent_id());
         assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
             eav.attribute(),
@@ -307,7 +322,7 @@ pub mod tests {
         let link_data = LinkData::from_link(
             &link.clone(),
             LinkActionKind::ADD,
-            0,
+            String::from(""),
             test_agent_id_with_name("new_agent"),
         );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
@@ -343,7 +358,7 @@ pub mod tests {
         assert_eq!(hash_set.len(), 2);
         let eav = hash_set.iter().nth(1).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        let _link_entry = link.add_entry(0, test_agent_id());
+        let _link_entry = link.add_entry(String::from(""), test_agent_id());
         assert_eq!(eav.value(), entry_link_add.address());
         assert_eq!(
             eav.attribute(),
@@ -363,7 +378,12 @@ pub mod tests {
             "test-tag",
         );
 
-        let link_data = LinkData::from_link(&link.clone(), LinkActionKind::ADD, 0, test_agent_id());
+        let link_data = LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::ADD,
+            String::from(""),
+            test_agent_id(),
+        );
         let action = ActionWrapper::new(Action::AddLink(link_data));
 
         let new_dht_store = reduce(store.dht(), &action);

@@ -368,7 +368,7 @@ pub mod tests {
     use holochain_cas_implementations::{
         cas::memory::MemoryStorage, eav::memory::EavMemoryStorage,
     };
-    use holochain_core_types::{entry::Entry, utc_dispatch::UTCMock};
+    use holochain_core_types::{entry::Entry, iso_dispatch::ISODispatcherMock};
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]
@@ -391,7 +391,7 @@ pub mod tests {
                 test_memory_network_config(network_name),
                 None,
                 None,
-                Arc::new(UTCMock::default()),
+                Arc::new(ISODispatcherMock::default()),
             )),
             logger,
         )
@@ -431,7 +431,7 @@ pub mod tests {
                         .unwrap(),
                 )),
                 test_memory_network_config(network_name),
-                Arc::new(UTCMock::default()),
+                Arc::new(ISODispatcherMock::default()),
             )
             .unwrap(),
         )
@@ -455,7 +455,7 @@ pub mod tests {
             test_memory_network_config(network_name),
             None,
             None,
-            Arc::new(UTCMock::default()),
+            Arc::new(ISODispatcherMock::default()),
         );
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -480,7 +480,7 @@ pub mod tests {
             test_memory_network_config(network_name),
             None,
             None,
-            Arc::new(UTCMock::default()),
+            Arc::new(ISODispatcherMock::default()),
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();

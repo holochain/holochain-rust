@@ -252,7 +252,7 @@ pub mod tests {
             &entry_addresses[1],
             "test-tag",
             "test-link",
-            0,
+            String::from(""),
             test_agent_id(),
         );
         let link2 = LinkData::new_add(
@@ -260,7 +260,7 @@ pub mod tests {
             &entry_addresses[2],
             "test-tag",
             "test-link",
-            0,
+            String::from(""),
             test_agent_id(),
         );
 

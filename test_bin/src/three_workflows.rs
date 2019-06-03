@@ -218,7 +218,9 @@ pub fn hold_and_publish_test(
             { entry_data.request_id == loop_fetch_entry.request_id }
         )))
     }
-    let json = result.clone().expect(&format!("no result 1 for camille {:?}", &result));
+    let json = result
+        .clone()
+        .expect(&format!("no result 1 for camille {:?}", &result));
     log_i!("got result 1: {:?}", json);
     let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);
     assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_1.clone());
@@ -251,7 +253,9 @@ pub fn hold_and_publish_test(
             { entry_data.request_id == loop_fetch_entry.request_id }
         )))
     }
-    let json = result.clone().expect(&format!("no result 2 for camille {:?}", result));
+    let json = result
+        .clone()
+        .expect(&format!("no result 2 for camille {:?}", result));
     log_i!("got result 2: {:?}", json);
     let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);
     assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_2.clone());

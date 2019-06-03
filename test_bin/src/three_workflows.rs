@@ -210,13 +210,15 @@ pub fn hold_and_publish_test(
             entry_data.request_id == req_id
         })),
     );
-    if result.is_none() {
+    while result.is_none() {
+        println!("camille time out wait more");
+        let loop_fetch_entry = fetch_entry.clone();
         result = camille.wait_json(Box::new(one_is_where!(
             JsonProtocol::FetchEntryResult(entry_data),
-            { entry_data.request_id == fetch_entry.request_id }
+            { entry_data.request_id == loop_fetch_entry.request_id }
         )))
     }
-    let json = result.unwrap();
+    let json = result.clone().expect(&format!("no result 1 for camille {:?}", &result));
     log_i!("got result 1: {:?}", json);
     let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);
     assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_1.clone());
@@ -241,13 +243,15 @@ pub fn hold_and_publish_test(
             entry_data.request_id == req_id
         })),
     );
-    if result.is_none() {
+    while result.is_none() {
+        println!("camille time out wait more");
+        let loop_fetch_entry = fetch_entry.clone();
         result = camille.wait_json(Box::new(one_is_where!(
             JsonProtocol::FetchEntryResult(entry_data),
-            { entry_data.request_id == fetch_entry.request_id }
+            { entry_data.request_id == loop_fetch_entry.request_id }
         )))
     }
-    let json = result.unwrap();
+    let json = result.clone().expect(&format!("no result 2 for camille {:?}", result));
     log_i!("got result 2: {:?}", json);
     let entry_data = unwrap_to!(json => JsonProtocol::FetchEntryResult);
     assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_2.clone());

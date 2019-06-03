@@ -5,7 +5,7 @@ use crate::error::{HcResult, HolochainError};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json;
 use std::{
-    convert::TryFrom,
+    convert::{TryFrom, TryInto},
     fmt::{Debug, Display, Formatter, Result as FmtResult},
 };
 
@@ -147,6 +147,8 @@ pub trait JsonError {}
 
 impl JsonError for HolochainError {}
 
+// conversions from result types
+
 fn result_to_json_string<T: Into<JsonString>, E: Into<JsonString>>(
     result: Result<T, E>,
 ) -> JsonString {
@@ -190,6 +192,19 @@ impl From<Result<String, String>> for JsonString {
         )
     }
 }
+
+// conversions to result types
+
+impl<T, E> TryInto<Result<T, E>> for JsonString 
+    where T: Into<JsonString> + DeserializeOwned,
+        E: Into<JsonString> + JsonError + DeserializeOwned 
+{
+    type Error = HolochainError;
+    fn try_into(self) -> Result<Result<T, E>, Self::Error> {
+        default_try_from_json(self)
+    }
+}
+
 
 pub type JsonResult = Result<JsonString, HolochainError>;
 
@@ -321,7 +336,7 @@ pub mod tests {
         json::{JsonString, RawString},
     };
     use serde_json;
-    use std::convert::TryFrom;
+    use std::convert::{TryFrom, TryInto};
 
     #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq, Clone)]
     struct DeriveTest {
@@ -447,6 +462,18 @@ pub mod tests {
         assert_eq!(
             String::from("1.0"),
             String::from(JsonString::from(RawString::from(1))),
+        );
+    }
+
+    #[test]
+    fn result_from_json_string() {
+        let j = JsonString::from_json(r#"{"Ok":"raw-string-content"}"#);
+        let r: Result<RawString, HolochainError> = j.try_into()
+            .expect("Could not convert json string to result type");
+
+        assert_eq!(
+            r.unwrap(),
+            RawString::from("raw-string-content"),
         );
     }
 }

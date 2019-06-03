@@ -165,19 +165,29 @@ fn result_to_json_string<T: Into<JsonString>, E: Into<JsonString>>(
     ))
 }
 
-impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> for JsonString {
+impl<T, E> From<Result<T, E>> for JsonString
+where
+    T: Into<JsonString>,
+    E: Into<JsonString>,
+{
     fn from(result: Result<T, E>) -> JsonString {
         result_to_json_string(result)
     }
 }
 
-impl<T: Into<JsonString>> From<Result<T, String>> for JsonString {
+impl<T> From<Result<T, String>> for JsonString
+where
+    T: Into<JsonString>,
+{
     fn from(result: Result<T, String>) -> JsonString {
         result_to_json_string(result.map_err(|e| RawString::from(e)))
     }
 }
 
-impl<E: Into<JsonString>> From<Result<String, E>> for JsonString {
+impl<E> From<Result<String, E>> for JsonString
+where
+    E: Into<JsonString>,
+{
     fn from(result: Result<String, E>) -> JsonString {
         result_to_json_string(result.map(|v| RawString::from(v)))
     }
@@ -198,7 +208,7 @@ impl From<Result<String, String>> for JsonString {
 impl<T, E> TryInto<Result<T, E>> for JsonString
 where
     T: Into<JsonString> + DeserializeOwned,
-    E: Into<JsonString> + JsonError + DeserializeOwned,
+    E: Into<JsonString> + DeserializeOwned,
 {
     type Error = HolochainError;
     fn try_into(self) -> Result<Result<T, E>, Self::Error> {
@@ -218,7 +228,7 @@ where
 
 impl<E> TryInto<Result<String, E>> for JsonString
 where
-    E: Into<JsonString> + JsonError + DeserializeOwned,
+    E: Into<JsonString> + DeserializeOwned,
 {
     type Error = HolochainError;
     fn try_into(self) -> Result<Result<String, E>, Self::Error> {

@@ -1,7 +1,7 @@
 # First steps writing Holochain hApps with Rust
 
 ___
-This tutorial builds for the 0.0.9-alpha release but as the API and HDK are changing it will likely fail under newer releases.
+This tutorial builds for the 0.0.17-alpha2 release but as the API and HDK are changing it will likely fail under newer releases.
 ___
 
 Holochain hApps are made of compiled WebAssembly that encodes the rules of the hApp, the data it can store and how users will interact with it. This means that [any language that can compile to WebAssembly](https://github.com/appcypher/awesome-wasm-langs) can one day be used for Holochain.
@@ -12,7 +12,7 @@ In this article we will walk through the steps of creating a simple hApp using R
 
 ## Requirements
 
-First step is to download the appropriate [dev preview release](https://github.com/holochain/holochain-rust/releases) for your OS. If you decide to build the latest version from source, be warned that the API is undergoing rapid change, so some of the steps in this article may not work. The release contains the binary for the holochain developer command line tool, `hc`, which is used to generate a skeleton app, run tests and build the app package. Follow the installations on [this page](https://developer.holochain.org/start.html) to install the required dependencies.
+First step is to download the appropriate [dev preview release](https://github.com/holochain/holochain-rust/releases/tag/v0.0.17-alpha2) for your OS. If you decide to build the latest version from source, be warned that the API is undergoing rapid change, so some of the steps in this article may not work. The release contains the binary for the holochain developer command line tool, `hc`, which is used to generate a skeleton app, run tests and build the app package. Follow the installations on [this page](https://developer.holochain.org/start.html) to install the required dependencies.
 
 Ensure that `hc` is available on your path. If you instead decide to [build from source](https://developer.holochain.org/start.html) cargo will ensure the binaries are on your path automatically.
 
@@ -30,12 +30,16 @@ hc init holochain-rust-todo
 
 This will generate the following directory structure:
 
-```
-holochain-rust-todo/
+``` $ tree
+$ tree
+.
 ├── app.json
 ├── test
-│ └── …
+│   ├── index.js
+│   └── package.json
 └── zomes
+
+2 directories, 3 files
 ```
 
 Notice the `zomes` directory. All Holochain hApps are comprised of one or more zomes. They can be thought of as similar to modules in JavaScript, each one should provide some self-contained functionality. Every zome has its own build system so it is possible to combine zomes written in different languages to produce a single hApp.
@@ -49,22 +53,25 @@ hc generate zomes/lists rust
 
 The project structure should now be as follows:
 
-```
+``` $ tree
+.
 ├── app.json
 ├── test
-│ └── …
+│   ├── index.js
+│   └── package.json
 └── zomes
- └── lists
- ├── code
- │ ├── .hcbuild
- │ ├── Cargo.toml
- │ └── src
- │  └── lib.rs
- └── zome.json
+    └── lists
+        ├── code
+        │   ├── Cargo.toml
+        │   └── src
+        │       └── lib.rs
+        └── zome.json
+
+5 directories, 6 files
 ```
  
 ## Writing the lists zome
-The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The most important of which is the [`define_zome!`](https://developer.holochain.org/api/0.0.9-alpha/hdk/macro.define_zome.html) macro. Every zome must use this to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (genesis).
+The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The most important of which is the [`define_zome!`](https://developer.holochain.org/api/0.0.17-alpha2/hdk/macro.define_zome.html) macro. Every zome must use this to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (genesis).
 
 Open up `lib.rs` and replace its contents with the following:
 
@@ -517,4 +524,4 @@ Pro tip: [Pipe the output to tap-spec](https://github.com/scottcorgan/tap-spec) 
 
 And there we have it! A simple Zome created with Holochain using the Rust HDK.
 
-The [complete working version of this project is available on github](https://github.com/willemolding/holochain-rust-todo). This builds under the 0.0.9-alpha release but as the API and HDK are changing it will likely fail under newer releases.
+The [complete working version of this project is available on github](https://github.com/willemolding/holochain-rust-todo). This builds under the 0.0.17-alpha2 release but as the API and HDK are changing it will likely fail under newer releases.

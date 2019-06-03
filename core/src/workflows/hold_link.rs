@@ -110,6 +110,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent, entry::test_entry, link::link_data::LinkData,
+        iso_dispatch::ISODispatcherMock
     };
     use test_utils::*;
 
@@ -145,7 +146,7 @@ pub mod tests {
             &entry_address,
             &entry_address,
             "test-tag",
-            0,
+            ISODispatcherMock::default().now_dispatch(),
             test_agent_id(),
         );
         let link_entry = Entry::LinkAdd(link_add);

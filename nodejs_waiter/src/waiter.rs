@@ -372,6 +372,7 @@ mod tests {
         agent::test_agent_id, cas::content::Address, chain_header::test_chain_header,
         dna::capabilities::CapabilityRequest, entry::Entry, json::JsonString,
         link::link_data::LinkData, signature::Signature,
+        iso_dispatch::ISODispatcherMock
     };
     use std::sync::mpsc::sync_channel;
 
@@ -595,7 +596,7 @@ mod tests {
             &"target".to_string().into(),
             "link-type",
             "link-tag",
-            String::from(""),
+            ISODispatcherMock::default().now_dispatch(),
             test_agent_id(),
         );
         let entry = Entry::LinkAdd(link_add.clone());

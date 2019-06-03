@@ -64,6 +64,7 @@ mod tests {
         cas::content::AddressableContent,
         entry::Entry,
         link::{link_data::LinkData, Link, LinkActionKind},
+        iso_dispatch::{ISODispatcherMock,ISODispatch}
     };
 
     #[cfg_attr(tarpaulin, skip)]
@@ -83,7 +84,7 @@ mod tests {
         let link_data = LinkData::from_link(
             &link,
             LinkActionKind::ADD,
-            String::from(""),
+            ISODispatcherMock::default().now_dispatch(),
             test_agent_id(),
         );
         let result = context.block_on(add_link(&link_data, &context.clone()));
@@ -102,7 +103,7 @@ mod tests {
         let link_data = LinkData::from_link(
             &link,
             LinkActionKind::ADD,
-            String::from(""),
+            ISODispatcherMock::default().now_dispatch(),
             test_agent_id(),
         );
         let result = context.block_on(add_link(&link_data, &context.clone()));

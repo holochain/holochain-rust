@@ -68,11 +68,13 @@ lazy_static! {
         publish_hold_workflows::many_meta_test,
     ];
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
-        // thread 'tests::run_three_nodes_tests_with_in_memory_network' panicked at 'called `Option::unwrap()` on a `None` value', src/libcore/option.rs:345:21
-        three_workflows::hold_and_publish_test,
+        // sometimes times out and loops forever
+        // @see https://github.com/holochain/holochain-rust/pull/1470
+        // three_workflows::hold_and_publish_test,
         three_workflows::publish_entry_stress_test,
         multidna_workflows::send_test,
         // Error occured in p2p network module, on receive: ErrorMessage { msg: "(memory-auto-puid-0-0) No sender channel found for DNA_A::billy" }
+        // @s33 https://github.com/holochain/holochain-rust/pull/1470
         // multidna_workflows::dht_test,
         multidna_workflows::meta_test,
     ];

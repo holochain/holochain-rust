@@ -1048,6 +1048,7 @@ pub mod tests {
             Ok(match path.to_str().unwrap().as_ref() {
                 "bridge/callee.dna" => callee_dna(),
                 "bridge/caller.dna" => caller_dna(),
+                "bridge/caller_dna_ref.dna" => caller_dna_with_dna_reference(),
                 _ => Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap(),
             })
         })
@@ -1537,6 +1538,98 @@ pub mod tests {
 
     #[test]
     fn error_if_required_bridge_missing() {
+        let mut config = load_configuration::<Configuration>(&test_toml(10061, 10062)).unwrap();
+        config.bridges.clear();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+
+        let result = conductor.boot_from_config();
+        assert!(result.is_err());
+        assert_eq!(
+            result.err().unwrap(),
+            "Required bridge \'test-callee\' for instance \'bridge-caller\' missing",
+        );
+    }
+
+    fn caller_dna_with_dna_reference() -> Dna {
+        let mut dna = caller_dna();
+        {
+            let bridge = dna
+                .zomes
+                .get_mut("test_zome")
+                .unwrap()
+                .bridges
+                .get_mut(0)
+                .unwrap();
+            bridge.reference = BridgeReference::Address {
+                dna_address: Address::from("fake bridge reference"),
+            };
+        }
+        dna
+    }
+
+
+    pub fn bridge_dna_ref_test_toml() -> String {
+        format!(
+            r#"
+    [[agents]]
+    id = "test-agent-1"
+    name = "Holo Tester 1"
+    public_address = "{}"
+    keystore_file = "holo_tester1.key"
+
+    [[dnas]]
+    id = "bridge-callee"
+    file = "bridge/callee.dna"
+    hash = "Qm328wyq38924y"
+
+    [[dnas]]
+    id = "bridge-caller"
+    file = "bridge/caller_dna_ref.dna"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "bridge-callee"
+    dna = "bridge-callee"
+    agent = "test-agent-1"
+    [instances.storage]
+    type = "memory"
+
+    [[instances]]
+    id = "bridge-caller"
+    dna = "bridge-caller"
+    agent = "test-agent-1"
+    [instances.storage]
+    type = "memory"
+
+    [[bridges]]
+    caller_id = "bridge-caller"
+    callee_id = "bridge-callee"
+    handle = "test-callee"
+    "#,
+            test_keybundle(1).get_id(),
+        )
+    }
+
+    #[test]
+    fn error_if_bridge_reference_dna_mismatch() {
+        let config =
+            load_configuration::<Configuration>(&bridge_dna_ref_test_toml()).unwrap();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        let result = conductor.boot_from_config();
+
+        assert!(result.is_err());
+        println!("{:?}", result);
+        assert!(result.err().unwrap().starts_with(
+            "Bridge 'test-callee' of instance 'bridge-caller' requires callee to be DNA with hash 'fake bridge reference', but the configure instance 'bridge-callee' runs DNA with hash"
+        ));
+    }
+
+    #[test]
+    fn error_if_required_bridge_not_running() {
         let mut config = load_configuration::<Configuration>(&test_toml(10061, 10062)).unwrap();
         config.bridges.clear();
         let mut conductor = Conductor::from_config(config.clone());

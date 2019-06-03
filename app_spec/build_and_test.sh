@@ -2,7 +2,10 @@
 mkdir -p dist
 echo "===================================================================================="
 echo "RUNNING cargo test for zomes"
+echo "Using conductor binary: `which holochain`"
+echo "Using cli binary:       `which hc`"
 echo "------------------------------------------------------------------------------------"
+
 cargo test --manifest-path zomes/blog/code/Cargo.toml
 cargo test --manifest-path zomes/summer/code/Cargo.toml
 echo "===================================================================================="

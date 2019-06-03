@@ -195,9 +195,10 @@ impl From<Result<String, String>> for JsonString {
 
 // conversions to result types
 
-impl<T, E> TryInto<Result<T, E>> for JsonString 
-    where T: Into<JsonString> + DeserializeOwned,
-        E: Into<JsonString> + JsonError + DeserializeOwned 
+impl<T, E> TryInto<Result<T, E>> for JsonString
+where
+    T: Into<JsonString> + DeserializeOwned,
+    E: Into<JsonString> + JsonError + DeserializeOwned,
 {
     type Error = HolochainError;
     fn try_into(self) -> Result<Result<T, E>, Self::Error> {
@@ -205,6 +206,32 @@ impl<T, E> TryInto<Result<T, E>> for JsonString
     }
 }
 
+impl<T> TryInto<Result<T, String>> for JsonString
+where
+    T: Into<JsonString> + DeserializeOwned,
+{
+    type Error = HolochainError;
+    fn try_into(self) -> Result<Result<T, String>, Self::Error> {
+        default_try_from_json(self)
+    }
+}
+
+impl<E> TryInto<Result<String, E>> for JsonString
+where
+    E: Into<JsonString> + JsonError + DeserializeOwned,
+{
+    type Error = HolochainError;
+    fn try_into(self) -> Result<Result<String, E>, Self::Error> {
+        default_try_from_json(self)
+    }
+}
+
+impl TryInto<Result<String, String>> for JsonString {
+    type Error = HolochainError;
+    fn try_into(self) -> Result<Result<String, String>, Self::Error> {
+        default_try_from_json(self)
+    }
+}
 
 pub type JsonResult = Result<JsonString, HolochainError>;
 
@@ -468,12 +495,20 @@ pub mod tests {
     #[test]
     fn result_from_json_string() {
         let j = JsonString::from_json(r#"{"Ok":"raw-string-content"}"#);
-        let r: Result<RawString, HolochainError> = j.try_into()
+        let r: Result<RawString, HolochainError> = j
+            .try_into()
             .expect("Could not convert json string to result type");
 
-        assert_eq!(
-            r.unwrap(),
-            RawString::from("raw-string-content"),
-        );
+        assert_eq!(r.unwrap(), RawString::from("raw-string-content"),);
+    }
+
+    #[test]
+    fn result_from_json_string_with_strings() {
+        let j = JsonString::from_json(r#"{"Ok":"string-content"}"#);
+        let r: Result<String, String> = j
+            .try_into()
+            .expect("Could not convert json string to result type");
+
+        assert_eq!(r.unwrap(), String::from("string-content"),);
     }
 }

@@ -9,7 +9,7 @@ use holochain_core_types::{
     signature::Provenance,
 };
 use holochain_dpki::key_bundle::KeyBundle;
-use holochain_sodium::secbuf::SecBuf;
+use lib3h_sodium::secbuf::SecBuf;
 use Holochain;
 
 use jsonrpc_core::{self, types::params::Params, IoHandler, Value};

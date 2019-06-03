@@ -45,7 +45,7 @@ impl ZomeFnCall {
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
 
@@ -53,7 +53,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            zome_call_data.context.log(format!(
+            context.log(format!(
                 "err/zome: invoke_call failed to deserialize: {:?}",
                 args_str
             ));
@@ -63,15 +63,23 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 
     let result = if input.instance_handle == String::from(THIS_INSTANCE) {
         // ZomeFnCallArgs to ZomeFnCall
-        let zome_call = ZomeFnCall::from_args(zome_call_data.context.clone(), input.clone());
+        let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
 
-        // Don't allow recursive calls
-        if zome_call.same_fn_as(&zome_call_data.call) {
-            return ribosome_error_code!(RecursiveCallForbidden);
+        if let Ok(zome_call_data) = runtime.zome_call_data() {
+            // Don't allow recursive calls
+            if zome_call.same_fn_as(&zome_call_data.call) {
+                return ribosome_error_code!(RecursiveCallForbidden);
+            }
         }
-        local_call(runtime, input)
+        local_call(runtime, input.clone()).map_err(|error| {
+            context.log(format!("err/zome-to-zome-call/[{:?}]: {:?}", input, error));
+            error
+        })
     } else {
-        bridge_call(runtime, input)
+        bridge_call(runtime, input.clone()).map_err(|error| {
+            context.log(format!("err/bridge-call/[{:?}]: {:?}", input, error));
+            error
+        })
     };
 
     runtime.store_result(result)

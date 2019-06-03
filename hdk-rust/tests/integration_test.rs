@@ -197,6 +197,11 @@ pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 }
 
 #[no_mangle]
+pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
 pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
@@ -588,7 +593,7 @@ fn can_link_entries() {
 
 #[test]
 fn can_remove_link() {
-    let (mut hc, _) = start_holochain_instance("can_link_entries", "alice");
+    let (mut hc, _) = start_holochain_instance("can_remove_link", "alice");
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);

@@ -35,7 +35,7 @@ with pkgs;
      # https://github.com/rust-lang/rustup.rs/issues/994
      export CARGO_HOME=`pwd`/.cargo
      export CARGO_INSTALL_ROOT=`pwd`/.cargo
-     export PATH="$PATH:$CARGO_INSTALL_ROOT/bin"
+     export PATH="$CARGO_INSTALL_ROOT/bin:$PATH"
 
      export HC_TARGET_PREFIX=~/nix-holochain/
      export NIX_LDFLAGS="${darwin.ld-flags}$NIX_LDFLAGS"

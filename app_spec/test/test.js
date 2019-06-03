@@ -193,7 +193,7 @@ scenario1.runTape('create_tagged_post and retrieve all tags', async (t, { alice 
     tag: "work"
   })
   t.ok(result1.Ok)
-  
+
   const result2 = await alice.callSync("blog", "create_tagged_post", {
     content: "Fly tying, is it for you?",
     tag: "fishing"
@@ -213,7 +213,7 @@ scenario1.runTape('create_tagged_post and retrieve exact tag match', async (t, {
     tag: "work"
   })
   t.ok(result1.Ok)
-  
+
   const result2 = await alice.callSync("blog", "create_tagged_post", {
     content: "Fly tying, is it for you?",
     tag: "fishing"
@@ -233,7 +233,7 @@ scenario1.runTape('tagged link validation', async (t, { alice }) => {
     tag: "muffins"
   })
   t.ok(result1.Err)  // the linking of the entry should fail because `muffins` is the banned tag
-  
+
   const getResult = await alice.callSync("blog", "my_posts", {})
   t.equal(getResult.Ok.links.length, 0)
 })
@@ -364,6 +364,30 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
+})
+
+scenario1.runTape('get_links_and_load with a delete_post', async (t, { alice }) => {
+
+  //create post
+  const alice_create_post_result = await alice.callSync("blog", "create_post",
+    { "content": "Posty", "in_reply_to": "" }
+  )
+
+  const alice_get_post_result1 = await alice.callSync("blog", "my_posts_with_load",
+    { "tag": null }
+  )
+
+  t.ok(alice_get_post_result1.Ok)
+  t.equal(alice_get_post_result1.Ok.length, 1);
+
+  //remove link by alicce
+  await alice.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
+
+  const alice_get_post_result2 = await alice.callSync("blog", "my_posts_with_load",
+    { "tag": null }
+  )
+  t.ok(alice_get_post_result2.Ok)
+  t.equal(alice_get_post_result2.Ok.length, 0);
 })
 
 scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {

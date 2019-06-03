@@ -14,8 +14,7 @@ use holochain_core::{
     logger::{test_logger, TestLogger},
     nucleus::actions::call_zome_function::make_cap_request_for_call,
     signal::Signal,
-}
-;
+};
 use holochain_core_types::{
     cas::content::AddressableContent,
     dna::{
@@ -34,9 +33,9 @@ use holochain_net::p2p_config::P2pConfig;
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
     fs::File,
-    path::PathBuf,
     hash::{Hash, Hasher},
     io::prelude::*,
+    path::PathBuf,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -117,7 +116,6 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
         test_entry_c_def,
     );
 
-
     let mut zome = Zome::new(
         "some zome description",
         &Config::new(),
@@ -147,6 +145,22 @@ pub fn create_test_defs_with_fn_name(fn_name: &str) -> (ZomeFnDeclarations, Zome
 
     let mut functions = Vec::new();
     functions.push(fn_decl);
+    (functions, traits)
+}
+
+pub fn create_test_defs_with_fn_names(fn_names: Vec<String>) -> (ZomeFnDeclarations, ZomeTraits) {
+    let mut trait_fns = TraitFns::new();
+    let mut functions = Vec::new();
+    for fn_name in fn_names {
+        let mut fn_decl = FnDeclaration::new();
+        fn_decl.name = fn_name.clone();
+        functions.push(fn_decl);
+        trait_fns.functions.push(fn_name.clone());
+    }
+
+    let mut traits = BTreeMap::new();
+    traits.insert(ReservedTraitNames::Public.as_str().to_string(), trait_fns);
+
     (functions, traits)
 }
 
@@ -290,7 +304,7 @@ where
             .recv_timeout(Duration::from_millis(timeout))
             .map_err(|e| e.to_string())?
         {
-            Signal::Internal(aw) => {
+            Signal::Trace(aw) => {
                 let action = aw.action().clone();
                 if f(&action) {
                     return Ok(action);

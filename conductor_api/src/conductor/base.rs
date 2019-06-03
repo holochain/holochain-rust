@@ -133,7 +133,7 @@ pub fn notify(msg: String) {
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
-        holochain_sodium::check_init();
+        lib3h_sodium::check_init();
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
@@ -201,12 +201,31 @@ impl Conductor {
                         signal_tx.clone().map(|s| s.send(signal.clone()));
                         let broadcasters = broadcasters.read().unwrap();
                         let interfaces_with_instance: Vec<&InterfaceConfiguration> = match signal {
-                            // Send internal signals only to admin interfaces:
-                            Signal::Internal(_) => config
-                                .interfaces
-                                .iter()
-                                .filter(|interface_config| interface_config.admin)
-                                .collect(),
+                            // Send internal signals only to admin interfaces, if signals.trace is set:
+                            Signal::Trace(_) => {
+                                if config.signals.trace {
+                                    config
+                                        .interfaces
+                                        .iter()
+                                        .filter(|interface_config| interface_config.admin)
+                                        .collect()
+                                } else {
+                                    Vec::new()
+                                }
+                            }
+
+                            // Send internal signals only to admin interfaces, if signals.consistency is set:
+                            Signal::Consistency(_) => {
+                                if config.signals.consistency {
+                                    config
+                                        .interfaces
+                                        .iter()
+                                        .filter(|interface_config| interface_config.admin)
+                                        .collect()
+                                } else {
+                                    Vec::new()
+                                }
+                            }
 
                             // Pass through user-defined  signals to the according interfaces
                             // in which the source instance is exposed:
@@ -955,8 +974,8 @@ pub mod tests {
     };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
-    use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
+    use lib3h_sodium::secbuf::SecBuf;
     use std::{
         fs::{File, OpenOptions},
         io::Write,
@@ -1417,7 +1436,10 @@ pub mod tests {
         path.push(wasm_path_component);
 
         let wasm = create_wasm_from_file(&path);
-        let defs = create_test_defs_with_fn_name("call_bridge");
+        let defs = create_test_defs_with_fn_names(vec![
+            "call_bridge".to_string(),
+            "call_bridge_error".to_string(),
+        ]);
         let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         dna.uuid = String::from("basic_bridge_call");
         dna
@@ -1453,6 +1475,36 @@ pub mod tests {
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
         assert_eq!(result, JsonString::from(RawString::from("Holo World")));
+    }
+
+    #[test]
+    fn basic_bridge_call_error() {
+        let config = load_configuration::<Configuration>(&test_toml(10041, 10042)).unwrap();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        conductor
+            .boot_from_config()
+            .expect("Test config must be sane");
+        conductor
+            .start_all_instances()
+            .expect("Instances must be spawnable");
+        let caller_instance = conductor.instances["bridge-caller"].clone();
+        let mut instance = caller_instance.write().unwrap();
+
+        let cap_call = {
+            let context = instance.context();
+            make_cap_request_for_call(
+                context.clone(),
+                Address::from(context.clone().agent_id.address()),
+                "call_bridge_error",
+                JsonString::empty_object(),
+            )
+        };
+        let result = instance.call("test_zome", cap_call, "call_bridge_error", "{}");
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("Holochain Instance Error: Zome function \'non-existent-function\' not found in Zome \'greeter\'"));
     }
 
     #[test]
@@ -1549,11 +1601,11 @@ pub mod tests {
 
         assert!(received_signals.len() >= 3);
         assert!(received_signals[0]
-            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+            .starts_with("{\"signal\":{\"Trace\":\"SignalZomeFunctionCall(ZomeFnCall {"));
         assert!(received_signals[1]
-            .starts_with("{\"signal\":{\"Internal\":\"SignalZomeFunctionCall(ZomeFnCall {"));
+            .starts_with("{\"signal\":{\"Trace\":\"SignalZomeFunctionCall(ZomeFnCall {"));
         assert!(received_signals[2].starts_with(
-            "{\"signal\":{\"Internal\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
+            "{\"signal\":{\"Trace\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
         ));
     }
 }

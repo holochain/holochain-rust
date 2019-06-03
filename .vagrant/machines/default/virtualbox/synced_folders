@@ -1,0 +1,1 @@
+{"rsync":{"/vagrant":{"type":"rsync","rsync__exclude":[".git/","node_modules","target",".cargo","Cargo.lock"],"rsync__verbose":true,"guestpath":"/vagrant","hostpath":"/home/thedavidmeister/holochain-rust","disabled":false,"__vagrantfile":true,"exclude":[".git/","node_modules","target",".cargo","Cargo.lock"],"verbose":true,"owner":"vagrant","group":"vagrant"}}}

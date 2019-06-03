@@ -681,6 +681,13 @@ type = 'memory'"#
             .to_string()
     }
 
+    pub fn signals() -> String {
+        r#"[signals]
+consistency = false
+trace = false"#
+            .to_string()
+    }
+
     pub fn interface(port: u32) -> String {
         format!(
             r#"[[interfaces]]
@@ -815,6 +822,7 @@ id = 'new-dna'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3000));
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1054,6 +1062,7 @@ id = 'new-instance'"#,
         );
         toml = add_block(toml, interface(3001));
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1101,6 +1110,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1148,6 +1158,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1219,6 +1230,7 @@ type = 'http'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1258,6 +1270,7 @@ type = 'http'"#,
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1381,6 +1394,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1433,6 +1447,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1480,6 +1495,7 @@ public_address = '{}'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3009));
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1524,6 +1540,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1568,6 +1585,7 @@ handle = 'my favourite instance!'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
@@ -1594,6 +1612,7 @@ handle = 'my favourite instance!'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
+        toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);

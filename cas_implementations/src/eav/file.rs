@@ -117,30 +117,30 @@ impl EavFileStorage {
                 .map_err(|_| HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
 
             let (paths, errors): (Vec<_>, Vec<_>) = paths.partition(Result::is_ok);
-           
+
             if !errors.is_empty() {
                 Err(HolochainError::ErrorGeneric(
                     "Could not read eavs from directory".to_string(),
                 ))
             } else {
-                 let eavs = paths
-                .into_iter()
-                .map(Result::unwrap)
-                .filter(|pathbuf| {
-                    pathbuf
-                        .iter()
-                        .last()
-                        .and_then(|v| {
-                            let v = v.to_string_lossy();
-                            v.to_string()
-                                .try_into()
-                                .map_err(|_| println!("warn/eav: invalid EAV string: {}", v))
-                                .ok()
-                                .map(|val| eav_filter.check(val))
-                        })
-                        .unwrap_or_default()
-                })
-                .map(|pathbuf| read_eav(pathbuf.clone()));
+                let eavs = paths
+                    .into_iter()
+                    .map(Result::unwrap)
+                    .filter(|pathbuf| {
+                        pathbuf
+                            .iter()
+                            .last()
+                            .and_then(|v| {
+                                let v = v.to_string_lossy();
+                                v.to_string()
+                                    .try_into()
+                                    .map_err(|_| println!("warn/eav: invalid EAV string: {}", v))
+                                    .ok()
+                                    .map(|val| eav_filter.check(val))
+                            })
+                            .unwrap_or_default()
+                    })
+                    .map(|pathbuf| read_eav(pathbuf.clone()));
                 Ok(eavs.filter_map(|s| s.ok()).flatten().collect())
             }
         } else {

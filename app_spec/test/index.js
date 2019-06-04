@@ -25,7 +25,7 @@ const diorama = new Diorama({
   middleware: backwardCompatibilityMiddleware,
 })
 
-require('./test')(diorama.registerScenario)
 require('./regressions')(diorama.registerScenario)
+require('./test')(diorama.registerScenario)
 
 diorama.run()

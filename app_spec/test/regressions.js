@@ -82,7 +82,7 @@ scenario('alice create & publish post -> bob recommend to self', async (s, t, {a
     agent_address: bob.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "QmT2Z8Hdkgxkt7X4ZeEkoDt3YTQBzyJa1RNPhfkj9icsQ4")
+  t.equal(linked.Ok, "QmaLKGRgSHv6z73FaseCgudGt9uZ9fPhBREUy3gZ1C8s2K")
 
   const recommendedPosts = await bob.call("blog", "my_recommended_posts", {})
   console.log("recommendedPosts", recommendedPosts)
@@ -106,7 +106,7 @@ scenario('create & publish post -> recommend to other agent', async (s, t, {alic
     agent_address: bob.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "QmUFkn3kTXuFmBvynEMQ4ox3WyvkkG4GtfvPkNqb5b7Ge7")
+  t.equal(linked.Ok, "QmWBQCMdgZURpxa7WsbxnnVNZcFxdaTV7mxVdgh9nHnVwT")
 
   const recommendedPosts = await bob.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)

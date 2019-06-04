@@ -6,6 +6,7 @@ use crate::{
         entry::{AppEntryValue, Entry},
     },
 };
+use holochain_core_types::link::LinkMatch;
 use std::convert::TryFrom;
 
 ///
@@ -13,10 +14,10 @@ use std::convert::TryFrom;
 /// of a get_links_and_load for a given type. Any entries that either fail to
 /// load or cannot be converted to the type will be dropped.
 ///
-pub fn get_links_and_load_type<R: TryFrom<AppEntryValue>>(
+pub fn get_links_and_load_type<R: TryFrom<AppEntryValue>, S: Into<String>>(
     base: &Address,
-    link_type: Option<String>,
-    tag: Option<String>,
+    link_type: LinkMatch<S>,
+    tag: LinkMatch<S>,
 ) -> ZomeApiResult<Vec<R>> {
     let link_load_results = hdk::get_links_and_load(base, link_type, tag)?;
 

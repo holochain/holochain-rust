@@ -30,7 +30,6 @@ pub extern crate holochain_core_types_derive;
 pub extern crate holochain_wasm_utils;
 // #[macro_use]
 pub extern crate pretty_assertions;
-extern crate regex_syntax;
 
 pub mod api;
 pub mod utils;

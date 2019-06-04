@@ -1,36 +1,11 @@
 use super::Dispatch;
 use api::get_entry::get_entry_result;
 use error::{ZomeApiError, ZomeApiResult};
-use holochain_core_types::{cas::content::Address, entry::Entry, hash::HashString};
+use holochain_core_types::{cas::content::Address, entry::Entry, hash::HashString, link::LinkMatch};
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultItem, GetEntryResultType},
     get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
 };
-use regex_syntax::Parser;
-
-pub enum LinkMatch<S: Into<String>> {
-    Any,
-    Exactly(S),
-    Regex(S),
-}
-
-impl<S: Into<String>> LinkMatch<S> {
-    pub fn to_regex_string(self) -> ZomeApiResult<String> {
-        let re_string: String = match self {
-            LinkMatch::Any => ".*".into(),
-            LinkMatch::Exactly(s) => "^".to_owned() + &s.into() + "$",
-            LinkMatch::Regex(s) => s.into(),
-        };
-        // check that it is a valid regex
-        match Parser::new().parse(&re_string) {
-            Ok(_) => Ok(re_string),
-            Err(_) => Err(ZomeApiError::Internal("Invalid regex passed to get_links".into()))
-        }
-    }
-}
-
-pub type LinkTypeMatch<S> = LinkMatch<S>;
-pub type LinkTagMatch<S> = LinkMatch<S>;
 
 /// Consumes four values; the address of an entry get get links from (the base), the type of the links
 /// to be retrieved, an optional tag to match, and an options struct for selecting what meta data and crud status links to retrieve.
@@ -42,7 +17,7 @@ pub type LinkTagMatch<S> = LinkMatch<S>;
 /// If you also need the content of the entry consider using one of the helper functions:
 /// [get_links_result](fn.get_links_result) or [get_links_and_load](fn._get_links_and_load)
 /// # Examples
-/// ```rust
+/// ```rust 
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_wasm_utils;
@@ -50,17 +25,18 @@ pub type LinkTagMatch<S> = LinkMatch<S>;
 /// # use holochain_core_types::cas::content::Address;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, GetLinksOptions};
+/// # use holochain_core_types::link::LinkMatch;
 ///
 /// # fn main() {
 /// pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
-///     hdk::get_links_with_options(&agent, Some("authored_posts".into()), None, GetLinksOptions::default())
+///     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any, GetLinksOptions::default())
 /// }
 /// # }
 /// ```
 pub fn get_links_with_options<S: Into<String>>(
     base: &Address,
-    link_type: LinkTypeMatch<S>,
-    tag: LinkTagMatch<S>,
+    link_type: LinkMatch<S>,
+    tag: LinkMatch<S>,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
 
@@ -78,8 +54,8 @@ pub fn get_links_with_options<S: Into<String>>(
 /// Helper function for get_links. Returns a vector with the default return results.
 pub fn get_links<S: Into<String>>(
     base: &Address,
-    link_type: LinkTypeMatch<S>,
-    tag: LinkTagMatch<S>,
+    link_type: LinkMatch<S>,
+    tag: LinkMatch<S>,
 ) -> ZomeApiResult<GetLinksResult> {
     get_links_with_options(base, link_type, tag, GetLinksOptions::default())
 }
@@ -97,17 +73,18 @@ pub fn get_links<S: Into<String>>(
 /// # use holochain_wasm_utils::api_serialization::{
 /// #    get_entry::{GetEntryOptions, GetEntryResult},
 /// #    get_links::GetLinksOptions};
-///
+/// # use holochain_core_types::link::LinkMatch;
+/// 
 /// # fn main() {
 /// fn hangle_get_links_result(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
-///    hdk::get_links_result(&address, Some("test-link".into()), None, GetLinksOptions::default(), GetEntryOptions::default())
+///    hdk::get_links_result(&address, LinkMatch::Exactly("test-link"), LinkMatch::Any, GetLinksOptions::default(), GetEntryOptions::default())
 /// }
 /// # }
 /// ```
 pub fn get_links_result<S: Into<String>>(
     base: &Address,
-    link_type: LinkTypeMatch<S>,
-    tag: LinkTagMatch<S>,
+    link_type: LinkMatch<S>,
+    tag: LinkMatch<S>,
     options: GetLinksOptions,
     get_entry_options: GetEntryOptions,
 ) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
@@ -123,8 +100,8 @@ pub fn get_links_result<S: Into<String>>(
 /// Helper function for get_links. Returns a vector of the entries themselves
 pub fn get_links_and_load<S: Into<String>>(
     base: &HashString,
-    link_type: LinkTypeMatch<S>,
-    tag: LinkTagMatch<S>,
+    link_type: LinkMatch<S>,
+    tag: LinkMatch<S>,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
     let get_links_result = get_links_result(
         base,

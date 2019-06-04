@@ -5,8 +5,8 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-  echo "dropping holochain binary from home directory"
-  rm -f ~/.cargo/bin/holochain
+   echo "dropping holochain binary from cargo home directory"
+   rm -f $CARGO_HOME/bin/holochain
   '';
 in
 script

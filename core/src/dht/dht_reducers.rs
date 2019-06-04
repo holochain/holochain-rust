@@ -219,7 +219,12 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
-        let link_data = LinkData::from_link(&link,LinkActionKind::ADD,ISODispatcherMock::default().now_dispatch(),test_agent_id());
+        let link_data = LinkData::from_link(
+            &link,
+            LinkActionKind::ADD,
+            ISODispatcherMock::default().now_dispatch(),
+            test_agent_id(),
+        );
         let action = ActionWrapper::new(Action::AddLink(link_data.clone()));
         let link_entry = Entry::LinkAdd(link_data.clone());
 
@@ -256,20 +261,25 @@ pub mod tests {
 
         let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
         let test_tag = String::from("test-tag");
-        let link_data = LinkData::from_link(&link,LinkActionKind::ADD,ISODispatcherMock::default().now_dispatch(),test_agent_id());
+        let link_data = LinkData::from_link(
+            &link,
+            LinkActionKind::ADD,
+            ISODispatcherMock::default().now_dispatch(),
+            test_agent_id(),
+        );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
-        let link_remove_data =
-            LinkData::from_link(
-                &link.clone(),
-                LinkActionKind::REMOVE,
-                ISODispatcherMock::default().now_dispatch(),
-                test_agent_id(),
-            );
-        
-        let entry_link_remove = Entry::LinkRemove((link_remove_data,vec![entry_link_add.address()]));
+        let link_remove_data = LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::REMOVE,
+            ISODispatcherMock::default().now_dispatch(),
+            test_agent_id(),
+        );
+
+        let entry_link_remove =
+            Entry::LinkRemove((link_remove_data, vec![entry_link_add.address()]));
         let action_link_remove = ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 

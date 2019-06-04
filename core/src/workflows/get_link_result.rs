@@ -4,8 +4,8 @@ use crate::{
 };
 
 use holochain_core_types::{
-    chain_header::ChainHeader, entry::Entry, error::HolochainError, link::link_data::LinkData,
-    crud_status::CrudStatus,
+    chain_header::ChainHeader, crud_status::CrudStatus, entry::Entry, error::HolochainError,
+    link::link_data::LinkData,
 };
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResultType::Single},
@@ -20,22 +20,16 @@ pub async fn get_link_result_workflow<'a>(
     let links = await!(get_link_add_entries(context, link_args))?;
     let link_results = links
         .into_iter()
-        .filter(|link_entry_crud|{
-            match link_args.options.status_request
-            {
-                LinksStatusRequestKind::All => true,
-                LinksStatusRequestKind::Live => link_entry_crud.2 == CrudStatus::Live,
-                _ => link_entry_crud.2 == CrudStatus::Deleted
-            }
+        .filter(|link_entry_crud| match link_args.options.status_request {
+            LinksStatusRequestKind::All => true,
+            LinksStatusRequestKind::Live => link_entry_crud.2 == CrudStatus::Live,
+            _ => link_entry_crud.2 == CrudStatus::Deleted,
         })
-        .map(|link_entry_crud|{
-            LinksResult
-            {
-                address : link_entry_crud.0.link().target().clone(),
-                headers : link_entry_crud.1.clone(),
-                status : link_entry_crud.2.clone(),
-                tag : link_entry_crud.0.link().tag().clone()
-            }
+        .map(|link_entry_crud| LinksResult {
+            address: link_entry_crud.0.link().target().clone(),
+            headers: link_entry_crud.1.clone(),
+            status: link_entry_crud.2.clone(),
+            tag: link_entry_crud.0.link().tag().clone(),
         })
         .collect::<Vec<LinksResult>>();
 
@@ -74,7 +68,9 @@ pub async fn get_link_add_entries<'a>(
                         .entry
                         .clone()
                         .map(|unwrapped_type| match unwrapped_type {
-                            Entry::LinkAdd(link_data) => Ok((link_data, entry_type.headers,s.1.clone())),
+                            Entry::LinkAdd(link_data) => {
+                                Ok((link_data, entry_type.headers, s.1.clone()))
+                            }
                             _ => Err(HolochainError::ErrorGeneric(
                                 "Wrong entry type retrieved".to_string(),
                             )),
@@ -104,5 +100,3 @@ pub async fn get_link_add_entries<'a>(
         )))
     }
 }
-
-

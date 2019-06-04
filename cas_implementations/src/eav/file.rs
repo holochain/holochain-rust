@@ -35,12 +35,11 @@ impl PartialEq for EavFileStorage {
     }
 }
 
-#[warn(unused_must_use)]
 pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<String>> {
     //glob all  files
     let full_path = parent_path.join("*").join("*.txt");
 
-    let paths = glob(full_path.to_str().unwrap())
+    let paths = glob(full_path.to_str()?)
         .map_err(|_| HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
 
     // let path_result = paths.last().ok_or(HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
@@ -221,10 +220,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 Default::default(),
                 query.index().clone(),
             );
-            let it = eavis.iter().map(|e| {
-                e.clone()
-                    .expect("no problem here since we have filtered out all bad conversions")
-            });
+            let it = eavis.iter().cloned().map(Result::unwrap);
             let results = index_query.run(it);
             Ok(results)
         }

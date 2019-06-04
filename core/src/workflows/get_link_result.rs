@@ -80,7 +80,7 @@ pub async fn get_link_result_workflow<'a>(
 
     if errors.is_empty() {
         Ok(GetLinksResult::new(
-            link_results.into_iter().map(|s| s.unwrap()).collect(),
+            link_results.into_iter().map(Result::unwrap).collect(),
         ))
     } else {
         Err(HolochainError::ErrorGeneric(format!(

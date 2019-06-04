@@ -1035,7 +1035,7 @@ pub mod tests {
 
     use self::tempfile::tempdir;
     use holochain_core_types::dna::bridges::{Bridge, BridgeReference};
-    use std::collections::BTreeMap;
+    use holochain_core_types::dna::fn_declarations::{Trait, FnDeclaration, TraitFns};
     use test_utils::*;
 
     //    commented while test_signals_through_admin_websocket is broken
@@ -1450,26 +1450,38 @@ pub mod tests {
         .to_string()
     }
 
+    fn bridge_call_fn_declaration() -> FnDeclaration {
+        FnDeclaration {
+            name: String::from("hello"),
+            inputs: vec![],
+            outputs: vec![dna::fn_declarations::FnParameter {
+                name: String::from("greeting"),
+                parameter_type: String::from("String"),
+            }],
+        }
+    }
+
     fn callee_dna() -> Dna {
         let wat = &callee_wat();
         let mut dna = create_test_dna_with_wat("greeter", Some(wat));
         dna.uuid = String::from("basic_bridge_call");
-        dna.zomes.get_mut("greeter").unwrap().add_fn_declaration(
-            String::from("hello"),
-            vec![],
-            vec![dna::fn_declarations::FnParameter {
-                name: String::from("greeting"),
-                parameter_type: String::from("String"),
-            }],
-        );
-        dna.zomes
-            .get_mut("greeter")
-            .unwrap()
-            .traits
-            .get_mut("hc_public")
-            .unwrap()
-            .functions
-            .push("hello".into());
+        let fn_declaration = bridge_call_fn_declaration();
+
+        {
+            let zome = dna.zomes.get_mut("greeter").unwrap();
+            zome.fn_declarations.push(fn_declaration.clone());
+            zome.traits
+                .get_mut("hc_public")
+                .unwrap()
+                .functions
+                .push(fn_declaration.name.clone());
+            zome.traits
+                .insert(
+                    String::from("greetable"),
+                    TraitFns{functions: vec![fn_declaration.name.clone()]}
+                );
+        }
+
         dna
     }
 
@@ -1497,7 +1509,11 @@ pub mod tests {
             presence: BridgePresence::Required,
             handle: String::from("test-callee"),
             reference: BridgeReference::Trait {
-                traits: BTreeMap::new(),
+                traits: btreemap! {
+                    String::from("greetable") => Trait{
+                        functions: vec![bridge_call_fn_declaration()]
+                    }
+                }
             },
         };
         dna.zomes.get_mut("test_zome").unwrap().bridges.push(bridge);

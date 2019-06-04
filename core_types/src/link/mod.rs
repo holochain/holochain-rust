@@ -64,7 +64,6 @@ pub enum LinkActionKind {
     REMOVE,
 }
 
-
 pub enum LinkMatch<S: Into<String>> {
     Any,
     Exactly(S),
@@ -81,7 +80,7 @@ impl<S: Into<String>> LinkMatch<S> {
         // check that it is a valid regex
         match Regex::new(&re_string) {
             Ok(_) => Ok(re_string),
-            Err(_) => Err("Invalid regex passed to get_links".into())
+            Err(_) => Err("Invalid regex passed to get_links".into()),
         }
     }
 }

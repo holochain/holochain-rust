@@ -270,7 +270,12 @@ pub mod tests {
         ];
         add_links(initialized_context.clone(), links);
 
-        let call_result = get_links(initialized_context.clone(), &entry_addresses[0], LinkMatch::Any, LinkMatch::Any);
+        let call_result = get_links(
+            initialized_context.clone(),
+            &entry_addresses[0],
+            LinkMatch::Any,
+            LinkMatch::Any,
+        );
         let expected_1 = JsonString::from_json(
             &(format!(
                 r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,

@@ -64,8 +64,10 @@ impl DhtStore {
         tag: String,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         // interpret link tags and types as regex
-        let link_type = Regex::new(&link_type).map_err(|_| HolochainError::from("Invalid regex passed for type"))?;
-        let tag = Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
+        let link_type = Regex::new(&link_type)
+            .map_err(|_| HolochainError::from("Invalid regex passed for type"))?;
+        let tag =
+            Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
 
         let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
             Some(address).into(),
@@ -73,7 +75,7 @@ impl DhtStore {
                 Attribute::LinkTag(query_link_type, query_tag)
                 | Attribute::RemovedLink(query_link_type, query_tag) => {
                     link_type.is_match(&query_link_type) && tag.is_match(&query_tag)
-                },
+                }
                 _ => false,
             }),
             None.into(),

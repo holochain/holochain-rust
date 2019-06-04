@@ -26,7 +26,7 @@ pub mod tests {
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
         json::JsonString,
-        link::{link_data::LinkData},
+        link::link_data::LinkData,
     };
     use test_utils::*;
 

@@ -102,6 +102,7 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
+use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -220,6 +221,10 @@ impl Holochain {
 
     pub fn context(&self) -> &Arc<Context> {
         &self.context
+    }
+
+    pub fn set_conductor_api(&mut self, api: IoHandler) {
+        self.context.conductor_api.reset(api);
     }
 }
 

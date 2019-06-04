@@ -148,6 +148,22 @@ pub fn create_test_defs_with_fn_name(fn_name: &str) -> (ZomeFnDeclarations, Zome
     (functions, traits)
 }
 
+pub fn create_test_defs_with_fn_names(fn_names: Vec<String>) -> (ZomeFnDeclarations, ZomeTraits) {
+    let mut trait_fns = TraitFns::new();
+    let mut functions = Vec::new();
+    for fn_name in fn_names {
+        let mut fn_decl = FnDeclaration::new();
+        fn_decl.name = fn_name.clone();
+        functions.push(fn_decl);
+        trait_fns.functions.push(fn_name.clone());
+    }
+
+    let mut traits = BTreeMap::new();
+    traits.insert(ReservedTraitNames::Public.as_str().to_string(), trait_fns);
+
+    (functions, traits)
+}
+
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_defs(
     zome_name: &str,

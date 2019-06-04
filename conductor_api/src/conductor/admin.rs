@@ -201,7 +201,7 @@ impl ConductorAdmin for Conductor {
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency()?;
-        let instance = self.instantiate_from_config(id, &new_config)?;
+        let instance = self.instantiate_from_config(id, Some(&new_config))?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;
@@ -519,8 +519,14 @@ impl ConductorAdmin for Conductor {
         }
         new_config.bridges.push(new_bridge.clone());
         new_config.check_consistency()?;
-        self.config = new_config;
+        self.config = new_config.clone();
         self.save_config()?;
+
+        // Rebuild and reset caller's conductor api so it sees the bridge handle
+        let id = &new_bridge.caller_id;
+        let new_conductor_api = self.build_conductor_api(id.clone(), &new_config)?;
+        let mut instance = self.instances.get(id)?.write()?;
+        instance.set_conductor_api(new_conductor_api);
 
         notify(format!(
             "Added bridge from '{}' to '{}' as '{}'",

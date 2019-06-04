@@ -1034,8 +1034,10 @@ pub mod tests {
     };
 
     use self::tempfile::tempdir;
-    use holochain_core_types::dna::bridges::{Bridge, BridgeReference};
-    use holochain_core_types::dna::fn_declarations::{Trait, FnDeclaration, TraitFns};
+    use holochain_core_types::dna::{
+        bridges::{Bridge, BridgeReference},
+        fn_declarations::{FnDeclaration, Trait, TraitFns},
+    };
     use test_utils::*;
 
     //    commented while test_signals_through_admin_websocket is broken
@@ -1476,11 +1478,12 @@ pub mod tests {
                 .unwrap()
                 .functions
                 .push(fn_declaration.name.clone());
-            zome.traits
-                .insert(
-                    String::from("greetable"),
-                    TraitFns{functions: vec![fn_declaration.name.clone()]}
-                );
+            zome.traits.insert(
+                String::from("greetable"),
+                TraitFns {
+                    functions: vec![fn_declaration.name.clone()],
+                },
+            );
         }
 
         dna
@@ -1514,7 +1517,7 @@ pub mod tests {
                     String::from("greetable") => Trait{
                         functions: vec![bridge_call_fn_declaration()]
                     }
-                }
+                },
             },
         };
         dna.zomes.get_mut("test_zome").unwrap().bridges.push(bridge);
@@ -1597,21 +1600,22 @@ pub mod tests {
                 .get_mut(0)
                 .unwrap();
             let mut fn_declaration = bridge_call_fn_declaration();
-            fn_declaration.inputs.push(dna::fn_declarations::FnParameter {
-                name: String::from("additional_parameter"),
-                parameter_type: String::from("String"),
-            });
+            fn_declaration
+                .inputs
+                .push(dna::fn_declarations::FnParameter {
+                    name: String::from("additional_parameter"),
+                    parameter_type: String::from("String"),
+                });
             bridge.reference = BridgeReference::Trait {
                 traits: btreemap! {
                     String::from("greetable") => Trait{
                         functions: vec![fn_declaration]
                     }
-                }
+                },
             };
         }
         dna
     }
-
 
     pub fn bridge_dna_ref_test_toml(caller_dna: &str, callee_dna: &str) -> String {
         format!(
@@ -1659,8 +1663,11 @@ pub mod tests {
 
     #[test]
     fn error_if_bridge_reference_dna_mismatch() {
-        let config =
-            load_configuration::<Configuration>(&bridge_dna_ref_test_toml("bridge/callee_dna.dna", "bridge/caller_dna_ref.dna")).unwrap();
+        let config = load_configuration::<Configuration>(&bridge_dna_ref_test_toml(
+            "bridge/callee_dna.dna",
+            "bridge/caller_dna_ref.dna",
+        ))
+        .unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -1675,8 +1682,11 @@ pub mod tests {
 
     #[test]
     fn error_if_bridge_reference_trait_mismatch() {
-        let config =
-            load_configuration::<Configuration>(&bridge_dna_ref_test_toml("bridge/callee_dna.dna", "bridge/caller_bogus_trait_ref.dna")).unwrap();
+        let config = load_configuration::<Configuration>(&bridge_dna_ref_test_toml(
+            "bridge/callee_dna.dna",
+            "bridge/caller_bogus_trait_ref.dna",
+        ))
+        .unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();

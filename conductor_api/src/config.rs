@@ -215,11 +215,16 @@ impl Configuration {
                                 for (expected_trait_name, expected_trait) in traits {
                                     let mut found = false;
                                     for (_zome_name, zome) in callee_dna.zomes.iter() {
-                                        for (zome_trait_name, zome_trait_functions) in zome.traits.iter() {
+                                        for (zome_trait_name, zome_trait_functions) in
+                                            zome.traits.iter()
+                                        {
                                             if zome_trait_name == expected_trait_name {
                                                 let mut has_all_fns_exported = true;
                                                 for fn_def in expected_trait.functions.iter() {
-                                                    if !zome_trait_functions.functions.contains(&fn_def.name) {
+                                                    if !zome_trait_functions
+                                                        .functions
+                                                        .contains(&fn_def.name)
+                                                    {
                                                         has_all_fns_exported = false;
                                                     }
                                                 }

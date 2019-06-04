@@ -1049,6 +1049,7 @@ pub mod tests {
                 "bridge/callee.dna" => callee_dna(),
                 "bridge/caller.dna" => caller_dna(),
                 "bridge/caller_dna_ref.dna" => caller_dna_with_dna_reference(),
+                "bridge/caller_bogus_trait_ref.dna" => caller_dna_with_bogus_trait_reference(),
                 _ => Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap(),
             })
         })
@@ -1585,8 +1586,34 @@ pub mod tests {
         dna
     }
 
+    fn caller_dna_with_bogus_trait_reference() -> Dna {
+        let mut dna = caller_dna();
+        {
+            let bridge = dna
+                .zomes
+                .get_mut("test_zome")
+                .unwrap()
+                .bridges
+                .get_mut(0)
+                .unwrap();
+            let mut fn_declaration = bridge_call_fn_declaration();
+            fn_declaration.inputs.push(dna::fn_declarations::FnParameter {
+                name: String::from("additional_parameter"),
+                parameter_type: String::from("String"),
+            });
+            bridge.reference = BridgeReference::Trait {
+                traits: btreemap! {
+                    String::from("greetable") => Trait{
+                        functions: vec![fn_declaration]
+                    }
+                }
+            };
+        }
+        dna
+    }
 
-    pub fn bridge_dna_ref_test_toml() -> String {
+
+    pub fn bridge_dna_ref_test_toml(caller_dna: &str, callee_dna: &str) -> String {
         format!(
             r#"
     [[agents]]
@@ -1597,12 +1624,12 @@ pub mod tests {
 
     [[dnas]]
     id = "bridge-callee"
-    file = "bridge/callee.dna"
+    file = "{}"
     hash = "Qm328wyq38924y"
 
     [[dnas]]
     id = "bridge-caller"
-    file = "bridge/caller_dna_ref.dna"
+    file = "{}"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -1625,13 +1652,15 @@ pub mod tests {
     handle = "test-callee"
     "#,
             test_keybundle(1).get_id(),
+            callee_dna,
+            caller_dna,
         )
     }
 
     #[test]
     fn error_if_bridge_reference_dna_mismatch() {
         let config =
-            load_configuration::<Configuration>(&bridge_dna_ref_test_toml()).unwrap();
+            load_configuration::<Configuration>(&bridge_dna_ref_test_toml("bridge/callee_dna.dna", "bridge/caller_dna_ref.dna")).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -1642,6 +1671,23 @@ pub mod tests {
         assert!(result.err().unwrap().starts_with(
             "Bridge 'test-callee' of instance 'bridge-caller' requires callee to be DNA with hash 'fake bridge reference', but the configure instance 'bridge-callee' runs DNA with hash"
         ));
+    }
+
+    #[test]
+    fn error_if_bridge_reference_trait_mismatch() {
+        let config =
+            load_configuration::<Configuration>(&bridge_dna_ref_test_toml("bridge/callee_dna.dna", "bridge/caller_bogus_trait_ref.dna")).unwrap();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        let result = conductor.boot_from_config();
+
+        assert!(result.is_err());
+        println!("{:?}", result);
+        assert_eq!(
+            result.err().unwrap(),
+            "Bridge \'test-callee\' of instance \'bridge-callee\' requires callee to to implement trait \'greetable\' with functions: [FnDeclaration { name: \"hello\", inputs: [FnParameter { parameter_type: \"String\", name: \"additional_parameter\" }], outputs: [FnParameter { parameter_type: \"String\", name: \"greeting\" }] }]",
+        );
     }
 
     #[test]

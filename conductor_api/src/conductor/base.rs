@@ -1061,8 +1061,8 @@ pub mod tests {
         bridges::{Bridge, BridgeReference},
         fn_declarations::{FnDeclaration, Trait, TraitFns},
     };
-    use test_utils::*;
     use std::collections::BTreeMap;
+    use test_utils::*;
 
     //    commented while test_signals_through_admin_websocket is broken
     //    extern crate ws;
@@ -1553,10 +1553,10 @@ pub mod tests {
                 handle: String::from("test-callee"),
                 reference: BridgeReference::Trait {
                     traits: btreemap! {
-                    String::from("greetable") => Trait{
-                        functions: vec![bridge_call_fn_declaration()]
-                    }
-                },
+                        String::from("greetable") => Trait{
+                            functions: vec![bridge_call_fn_declaration()]
+                        }
+                    },
                 },
             });
             zome.bridges.push(Bridge {

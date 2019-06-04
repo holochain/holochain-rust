@@ -235,7 +235,11 @@ impl Configuration {
         Ok(())
     }
 
-    fn check_bridge_requirements(&self, bridge_config: &Bridge, mut dna_loader: &mut DnaLoader) -> Result<(), String> {
+    fn check_bridge_requirements(
+        &self,
+        bridge_config: &Bridge,
+        mut dna_loader: &mut DnaLoader,
+    ) -> Result<(), String> {
         //
         // Get caller's config. DNA config, and DNA:
         //
@@ -246,14 +250,12 @@ impl Configuration {
                 bridge_config.caller_id
             ))?;
 
-        let caller_dna_config = self
-            .dna_by_id(&caller_config.dna)
-            .ok_or_else(|| {
-                format!(
-                    "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
-                    caller_config.dna, caller_config.id
-                )
-            })?;
+        let caller_dna_config = self.dna_by_id(&caller_config.dna).ok_or_else(|| {
+            format!(
+                "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
+                caller_config.dna, caller_config.id
+            )
+        })?;
 
         let caller_dna_file = caller_dna_config.file.clone();
         let caller_dna =
@@ -270,14 +272,12 @@ impl Configuration {
                 bridge_config.callee_id
             ))?;
 
-        let callee_dna_config = self
-            .dna_by_id(&callee_config.dna)
-            .ok_or_else(|| {
-                format!(
-                    "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
-                    callee_config.dna, callee_config.id
-                )
-            })?;
+        let callee_dna_config = self.dna_by_id(&callee_config.dna).ok_or_else(|| {
+            format!(
+                "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
+                callee_config.dna, callee_config.id
+            )
+        })?;
 
         let callee_dna_file = callee_dna_config.file.clone();
         let callee_dna =
@@ -298,8 +298,7 @@ impl Configuration {
 
         let bridge = maybe_bridge.ok_or(format!(
             "No bridge definition with handle '{}' found in {}'s DNA",
-            bridge_config.handle,
-            bridge_config.caller_id,
+            bridge_config.handle, bridge_config.caller_id,
         ))?;
 
         match bridge.reference {

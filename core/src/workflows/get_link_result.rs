@@ -6,7 +6,6 @@ use crate::{
 use holochain_core_types::{
     chain_header::ChainHeader, entry::Entry, error::HolochainError, link::link_data::LinkData,
     crud_status::CrudStatus,
-    time::Timeout,
 };
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResultType::Single},
@@ -29,7 +28,14 @@ pub async fn get_link_result_workflow<'a>(
                 _ => link_entry_crud.2 == CrudStatus::Deleted
             }
         })
-                                    status : link.2
+        .map(|link_entry_crud|{
+            LinksResult
+            {
+                address : link_entry_crud.0.link().target().clone(),
+                headers : link_entry_crud.1.clone(),
+                status : link_entry_crud.2.clone(),
+                tag : link_entry_crud.0.link().tag().clone()
+            }
         })
         .collect::<Vec<LinksResult>>();
 
@@ -39,8 +45,7 @@ pub async fn get_link_result_workflow<'a>(
 pub async fn get_link_add_entries<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
-) -> Result<Vec<(LinkData, Vec<ChainHeader>)>, HolochainError> {
-) -> Result<Vec<(LinkData, Option<EntryWithMetaAndHeader>, CrudStatus)>, HolochainError> {
+) -> Result<Vec<(LinkData, Vec<ChainHeader>, CrudStatus)>, HolochainError> {
     let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
@@ -53,7 +58,7 @@ pub async fn get_link_add_entries<'a>(
         .iter()
         .map(|s| {
             let get_entry_args = GetEntryArgs {
-                address: s.clone(),
+                address: s.0.clone(),
                 options: GetEntryOptions {
                     entry: true,
                     headers: link_args.options.headers,
@@ -69,7 +74,7 @@ pub async fn get_link_add_entries<'a>(
                         .entry
                         .clone()
                         .map(|unwrapped_type| match unwrapped_type {
-                            Entry::LinkAdd(link_data) => Ok((link_data, entry_type.headers)),
+                            Entry::LinkAdd(link_data) => Ok((link_data, entry_type.headers,s.1.clone())),
                             _ => Err(HolochainError::ErrorGeneric(
                                 "Wrong entry type retrieved".to_string(),
                             )),
@@ -100,37 +105,4 @@ pub async fn get_link_add_entries<'a>(
     }
 }
 
-pub fn get_latest_entry(
-    context: Arc<Context>,
-    address: Address,
-    timeout: Timeout,
-) -> Result<Option<EntryWithMetaAndHeader>, HolochainError> {
-    let entry_with_meta_and_header =
-        context.block_on(get_entry_with_meta_workflow(&context, &address, &timeout))?;
-    entry_with_meta_and_header
-        .map(|entry_meta_header| {
-            if let Some(maybe_link_update) =
-                entry_meta_header.entry_with_meta.maybe_link_update_delete
-            {
-                get_latest_entry(context.clone(), maybe_link_update, timeout)
-            } else {
-                entry_meta_header
-                    .headers
-                    .first()
-                    .map(|first_chain_header| {
-                        first_chain_header
-                            .link_update_delete()
-                            .map(|link| {
-                                context.block_on(get_entry_with_meta_workflow(
-                                    &context, &link, &timeout,
-                                ))
-                            })
-                            .unwrap_or(Ok(Some(entry_meta_header.clone())))
-                    })
-                    .unwrap_or(Err(HolochainError::ErrorGeneric(
-                        "disjointed link update".to_string(),
-                    )))
-            }
-        })
-        .unwrap_or(Ok(None))
-}
+

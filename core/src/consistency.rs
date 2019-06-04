@@ -143,7 +143,7 @@ impl ConsistencyModel {
                 ConsistencyEvent::RemoveEntry(old.clone(), new.clone()),
             )),
             Action::AddLink(link) => Some(ConsistencySignal::new_terminal(
-                ConsistencyEvent::AddLink(link.0.clone()),
+                ConsistencyEvent::AddLink(link.clone()),
             )),
             Action::RemoveLink(entry) => Some(ConsistencySignal::new_terminal(
                 ConsistencyEvent::RemoveLink(entry.clone()),

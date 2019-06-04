@@ -113,7 +113,6 @@ pub mod tests {
                     &initialized_context
                 ))
                 .is_ok());
-            let link_data = LinkData::add_from_link(&link, 0, test_agent_id());
             assert!(initialized_context
                 .block_on(add_link(
                     &LinkData::add_from_link(

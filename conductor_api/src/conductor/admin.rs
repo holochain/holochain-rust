@@ -20,7 +20,8 @@ use std::{
     time::Duration,
 };
 
-const SWEET_SLEEP: u64 = 4257;
+/// how many milliseconds sleep all bugs under rugs
+const SWEET_SLEEP: u64 = 500;
 
 pub trait ConductorAdmin {
     fn install_dna_from_file(

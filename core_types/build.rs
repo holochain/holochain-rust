@@ -1,5 +1,9 @@
 use std::process::Command;
+use std::path::Path;
 fn main() {
+    if Path::new(".git/HEAD").exists() {
+        println!("cargo:rerun-if-changed=.git/HEAD");
+    }
     let output = Command::new("git")
         .args(&["rev-parse", "HEAD"])
         .output()

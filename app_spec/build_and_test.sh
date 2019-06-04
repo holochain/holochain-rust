@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 mkdir -p dist
 echo "===================================================================================="
 echo "RUNNING cargo test for zomes"

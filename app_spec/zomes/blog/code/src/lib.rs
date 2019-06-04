@@ -212,6 +212,12 @@ define_zome! {
             handler: blog::handle_my_posts
         }
 
+        my_posts_with_load: {
+            inputs: |tag: Option<String>|,
+            outputs: |post_hashes: ZomeApiResult<Vec<post::Post>>|,
+            handler: blog::handle_my_posts_with_load
+        }
+
         my_memos: {
             inputs: | |,
             outputs: |memo_hashes: ZomeApiResult<Vec<Address>>|,

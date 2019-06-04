@@ -8,7 +8,7 @@ use crate::{
 use std::sync::Arc;
 
 use super::dht_inner_reducers::{
-    reduce_add_link_inner, reduce_remove_entry_inner, reduce_store_entry_inner,
+    reduce_add_remove_link_inner, reduce_remove_entry_inner, reduce_store_entry_inner,
     reduce_update_entry_inner, LinkModification,
 };
 
@@ -84,11 +84,12 @@ pub(crate) fn reduce_add_link(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let (link, entry) = unwrap_to!(action_wrapper.action() => Action::AddLink);
+    let link_data = unwrap_to!(action_wrapper.action() => Action::AddLink);
     let mut new_store = (*old_store).clone();
-    let res = reduce_add_link_inner(
+    let entry = Entry::LinkAdd(link_data.clone());
+    let res = reduce_add_remove_link_inner(
         &mut new_store,
-        link.link(),
+        link_data.link(),
         &entry.address(),
         LinkModification::Add,
     );
@@ -100,19 +101,15 @@ pub(crate) fn reduce_remove_link(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let (link, entry) = unwrap_to!(action_wrapper.action() => Action::RemoveLink);
-    let links_to_remove = match entry {
-        Entry::LinkRemove((_, links)) => links.clone(),
-        _ => Vec::new(),
-    };
-
+    let entry = unwrap_to!(action_wrapper.action() => Action::RemoveLink);
+    let (link_data, links_to_remove) = unwrap_to!(entry => Entry::LinkRemove);
     let new_store = (*old_store).clone();
     let store = links_to_remove
         .iter()
         .fold(new_store, |mut store, link_addresses| {
-            let res = reduce_add_link_inner(
+            let res = reduce_add_remove_link_inner(
                 &mut store,
-                link.link(),
+                link_data.link(),
                 link_addresses,
                 LinkModification::Remove,
             );
@@ -166,11 +163,12 @@ pub mod tests {
         state::test_store,
     };
     use holochain_core_types::{
-        agent::test_agent_id,
+        agent::{test_agent_id, test_agent_id_with_name},
         cas::content::AddressableContent,
         chain_header::test_chain_header,
         eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
+        iso_dispatch::{ISODispatch, ISODispatcherMock},
         link::{link_data::LinkData, Link, LinkActionKind},
     };
     use std::convert::TryFrom;
@@ -221,9 +219,13 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
-        let link_data = LinkData::from_link(&link.clone(), LinkActionKind::ADD, 0, test_agent_id());
+        let link_data = LinkData::from_link(
         let link_entry = Entry::LinkAdd(link_data.clone());
         let action = ActionWrapper::new(Action::AddLink((link_data.clone(), link_entry.clone())));
+            ISODispatcherMock::default().now_dispatch(),
+        );
+        let link_entry = Entry::LinkAdd(link_data.clone());
+        let action = ActionWrapper::new(Action::AddLink(link_data));
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
@@ -258,20 +260,23 @@ pub mod tests {
 
         let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
         let test_tag = String::from("test-tag");
-        let link_data = LinkData::from_link(&link.clone(), LinkActionKind::ADD, 0, test_agent_id());
+        let link_data = LinkData::from_link(
         let entry_link_add = Entry::LinkAdd(link_data.clone());
-        let action_link_add =
-            ActionWrapper::new(Action::AddLink((link_data, entry_link_add.clone())));
+            ISODispatcherMock::default().now_dispatch(),
+        );
+        let entry_link_add = Entry::LinkAdd(link_data.clone());
+        let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         let link_remove_data =
-            LinkData::from_link(&link.clone(), LinkActionKind::REMOVE, 0, test_agent_id());
-        let entry_link_remove =
-            Entry::LinkRemove((link_remove_data.clone(), vec![entry_link_add.address()]));
-        let action_link_remove = ActionWrapper::new(Action::RemoveLink((
-            link_remove_data.clone(),
-            entry_link_remove,
+            LinkData::from_link(
+                &link.clone(),
+                LinkActionKind::REMOVE,
+                ISODispatcherMock::default().now_dispatch(),
+                test_agent_id(),
+            ),
         )));
+        let action_link_remove = ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         let storage = new_dht_store.meta_storage();
@@ -304,11 +309,59 @@ pub mod tests {
         assert_eq!(hash_set.len(), 1);
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        let link_entry = link.add_entry(0, test_agent_id());
+        let link_entry =
+            link.add_entry(ISODispatcherMock::default().now_dispatch(), test_agent_id());
         assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
             eav.attribute(),
             Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
+        );
+
+        let link_data = LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::ADD,
+            ISODispatcherMock::default().now_dispatch(),
+            test_agent_id_with_name("new_agent"),
+        );
+        let entry_link_add = Entry::LinkAdd(link_data.clone());
+        let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
+        let _new_dht_store = reduce(store.dht(), &action_link_add);
+        let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
+            Some(entry.address()).into(),
+            EavFilter::predicate(|attr: Attribute| match attr.clone() {
+                Attribute::LinkTag(query_link_type, query_tag)
+                | Attribute::RemovedLink(query_link_type, query_tag) => {
+                    match (&link.link_type().clone().into(), &link.tag().clone().into()) {
+                        (Some(link_type), Some(tag)) => {
+                            link_type == &query_link_type && tag == &query_tag
+                        }
+                        (Some(link_type), None) => link_type == &query_link_type,
+                        (None, Some(tag)) => tag == &query_tag,
+                        (None, None) => true,
+                    }
+                }
+                _ => false,
+            }),
+            None.into(),
+            IndexFilter::LatestByAttribute,
+            Some(EavFilter::single(Attribute::RemovedLink(
+                test_tag.clone(),
+                "test-link".to_string(),
+            ))),
+        ));
+
+        assert!(fetched.is_ok());
+        let hash_set = fetched.unwrap();
+        println!("hashset {:?}", hash_set.clone());
+        assert_eq!(hash_set.len(), 2);
+        let eav = hash_set.iter().nth(1).unwrap();
+        assert_eq!(eav.entity(), *link.base());
+        let _link_entry =
+            link.add_entry(ISODispatcherMock::default().now_dispatch(), test_agent_id());
+        assert_eq!(eav.value(), entry_link_add.address());
+        assert_eq!(
+            eav.attribute(),
+            Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string())
         );
     }
 
@@ -324,8 +377,13 @@ pub mod tests {
             "test-tag",
         );
 
-        let link_data = LinkData::from_link(&link.clone(), LinkActionKind::ADD, 0, test_agent_id());
-        let action = ActionWrapper::new(Action::AddLink((link_data.clone(), entry.clone())));
+        let link_data = LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::ADD,
+            ISODispatcherMock::default().now_dispatch(),
+            test_agent_id(),
+        );
+        let action = ActionWrapper::new(Action::AddLink(link_data));
 
         let new_dht_store = reduce(store.dht(), &action);
 

@@ -49,6 +49,7 @@ pub struct Configuration {
     /// List of interfaces any UI can use to access zome functions. Optional.
     #[serde(default)]
     pub interfaces: Vec<InterfaceConfiguration>,
+
     /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
@@ -81,6 +82,9 @@ pub struct Configuration {
     /// Which signals to emit
     #[serde(default)]
     pub signals: SignalConfig,
+
+    #[serde(default)]
+    pub iso_config: ISOConfiguration,
 }
 
 pub fn default_persistence_dir() -> PathBuf {
@@ -205,7 +209,6 @@ impl Configuration {
                     })?;
             }
         }
-
         if let Some(ref dpki_config) = self.dpki {
             self.instance_by_id(&dpki_config.instance_id)
                 .is_some()
@@ -380,6 +383,24 @@ pub struct DnaConfiguration {
     pub file: String,
     #[serde(default)]
     pub hash: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub enum ISOActive {
+    On,
+    Off,
+}
+
+impl Default for ISOActive {
+    fn default() -> ISOActive {
+        ISOActive::On
+    }
+}
+
+/// Configure if ISO generation should exist
+#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
+pub struct ISOConfiguration {
+    pub iso_active: ISOActive,
 }
 
 impl TryFrom<DnaConfiguration> for Dna {

@@ -38,7 +38,7 @@ pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> H
     }
 }
 
-pub(crate) fn reduce_add_link_inner(
+pub(crate) fn reduce_add_remove_link_inner(
     store: &mut DhtStore,
     link: &Link,
     address: &Address,

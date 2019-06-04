@@ -39,6 +39,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         context.agent_id.clone(),
     );
     let entry = Entry::LinkAdd(link_add);
+
     // Wait for future to be resolved
     // This is where the link entry actually gets created.
     let result: Result<Address, HolochainError> = context
@@ -155,7 +156,7 @@ pub mod tests {
         );
 
         let no_entry: Option<Address> = Some(HashString::from(
-            "QmZPcQA972xWc58w15zHk1hQz9RGXGx3ikjdayRKznXvC4",
+            "QmWDkz4nbxj2mYgkQoq7ZBFMZ1ZR3suFDGEae5yTjwsf5Y",
         ));
         let result = ZomeApiInternalResult::success(no_entry);
         assert_eq!(
@@ -202,7 +203,7 @@ pub mod tests {
         );
 
         let no_entry: Option<Address> = Some(HashString::from(
-            "QmRn5j3USemR7zpxH5Jepn8FEA4DSwGuoTa7bHHteBqxNt",
+            "QmPkkigiKKx9UcQEmyyBYRH2nw5Dk37mJaworsFXRJLSQB",
         ));
         let result = ZomeApiInternalResult::success(no_entry);
 

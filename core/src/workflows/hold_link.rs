@@ -94,7 +94,7 @@ pub async fn hold_link_workflow<'a>(
     context.log(format!("debug/workflow/hold_link: is valid!"));
 
     // 3. If valid store the entry in the local DHT shard
-    await!(add_link(entry, &link_add, &context))?;
+    await!(add_link(&link_add, &context))?;
     context.log(format!("debug/workflow/hold_link: added! {:?}", link));
     Ok(())
 }
@@ -109,7 +109,8 @@ pub mod tests {
     };
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, link::link_data::LinkData,
+        cas::content::AddressableContent, entry::test_entry, iso_dispatch::ISODispatcherMock,
+        link::link_data::LinkData,
     };
     use test_utils::*;
 
@@ -145,7 +146,7 @@ pub mod tests {
             &entry_address,
             &entry_address,
             "test-tag",
-            0,
+            ISODispatcherMock::default().now_dispatch(),
             test_agent_id(),
         );
         let link_entry = Entry::LinkAdd(link_add);

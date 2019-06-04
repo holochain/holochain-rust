@@ -225,21 +225,13 @@ impl Waiter {
                             Entry::LinkAdd(link_add) => {
                                 checker.add(num_instances, move |aw| {
                                     //println!("WAITER: Entry::LinkAdd -> Action::AddLink");
-                                    *aw.action()
-                                        == Action::AddLink((
-                                            link_add.clone(),
-                                            committed_entry.clone(),
-                                        ))
+                                    *aw.action() == Action::AddLink(link_add.clone())
                                 });
                             }
-                            Entry::LinkRemove((link_remove, _)) => {
+                            Entry::LinkRemove((_, _)) => {
                                 checker.add(num_instances, move |aw| {
                                     //println!("WAITER: Entry::LinkRemove -> Action::RemoveLink");
-                                    *aw.action()
-                                        == Action::RemoveLink((
-                                            link_remove.clone(),
-                                            committed_entry.clone(),
-                                        ))
+                                    *aw.action() == Action::RemoveLink(committed_entry.clone())
                                 });
                             }
                             _ => (),
@@ -377,9 +369,15 @@ mod tests {
     use super::{Action::*, *};
     use holochain_core::nucleus::actions::call_zome_function::ExecuteZomeFnResponse;
     use holochain_core_types::{
-        agent::test_agent_id, cas::content::Address, chain_header::test_chain_header,
-        dna::capabilities::CapabilityRequest, entry::Entry, json::JsonString,
-        link::link_data::LinkData, signature::Signature,
+        agent::test_agent_id,
+        cas::content::Address,
+        chain_header::test_chain_header,
+        dna::capabilities::CapabilityRequest,
+        entry::Entry,
+        iso_dispatch::{ISODispatch, ISODispatcherMock},
+        json::JsonString,
+        link::link_data::LinkData,
+        signature::Signature,
     };
     use std::sync::mpsc::sync_channel;
 
@@ -603,7 +601,7 @@ mod tests {
             &"target".to_string().into(),
             "link-type",
             "link-tag",
-            0,
+            ISODispatcherMock::default().now_dispatch(),
             test_agent_id(),
         );
         let entry = Entry::LinkAdd(link_add.clone());
@@ -623,7 +621,7 @@ mod tests {
         waiter.process_signal(sig(Hold(entry_wh)));
         assert_eq!(num_conditions(&waiter, &call), 2);
 
-        waiter.process_signal(sig(AddLink((link_add.clone(), entry.clone()))));
+        waiter.process_signal(sig(AddLink(link_add)));
         assert_eq!(num_conditions(&waiter, &call), 1);
         assert_eq!(waiter.checkers.len(), 1);
 

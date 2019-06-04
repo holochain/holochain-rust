@@ -7,7 +7,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{entry::Entry, error::HolochainError, link::link_data::LinkData};
+use holochain_core_types::{entry::Entry, error::HolochainError};
 use std::{pin::Pin, sync::Arc};
 
 /// RemoveLink Action Creator
@@ -18,8 +18,8 @@ use std::{pin::Pin, sync::Arc};
 /// if that is not the case.
 ///
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
-pub fn remove_link(entry: &Entry, link: &LinkData, context: &Arc<Context>) -> RemoveLinkFuture {
-    let action_wrapper = ActionWrapper::new(Action::RemoveLink((link.clone(), entry.clone())));
+pub fn remove_link(entry: &Entry, context: &Arc<Context>) -> RemoveLinkFuture {
+    let action_wrapper = ActionWrapper::new(Action::RemoveLink(entry.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     RemoveLinkFuture {

@@ -26,6 +26,7 @@ pub mod tests {
         cas::content::{Address, AddressableContent},
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
+        iso_dispatch::{ISODispatch, ISODispatcherMock},
         json::JsonString,
         link::link_data::LinkData,
     };
@@ -252,7 +253,7 @@ pub mod tests {
             &entry_addresses[1],
             "test-tag",
             "test-link",
-            0,
+            ISODispatcherMock::default().now_dispatch(),
             test_agent_id(),
         );
         let link2 = LinkData::new_add(
@@ -260,7 +261,7 @@ pub mod tests {
             &entry_addresses[2],
             "test-tag",
             "test-link",
-            0,
+            ISODispatcherMock::default().now_dispatch(),
             test_agent_id(),
         );
 

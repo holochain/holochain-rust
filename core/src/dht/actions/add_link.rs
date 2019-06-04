@@ -7,7 +7,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{entry::Entry, error::HolochainError, link::link_data::LinkData};
+use holochain_core_types::{error::HolochainError, link::link_data::LinkData};
 use std::{pin::Pin, sync::Arc};
 
 /// AddLink Action Creator
@@ -18,8 +18,8 @@ use std::{pin::Pin, sync::Arc};
 /// if that is not the case.
 ///
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
-pub fn add_link(entry: &Entry, link: &LinkData, context: &Arc<Context>) -> AddLinkFuture {
-    let action_wrapper = ActionWrapper::new(Action::AddLink((link.clone(), entry.clone())));
+pub fn add_link(link: &LinkData, context: &Arc<Context>) -> AddLinkFuture {
+    let action_wrapper = ActionWrapper::new(Action::AddLink(link.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     AddLinkFuture {
@@ -63,7 +63,8 @@ mod tests {
         agent::test_agent_id,
         cas::content::AddressableContent,
         entry::Entry,
-        link::{Link, LinkActionKind},
+        iso_dispatch::{ISODispatch, ISODispatcherMock},
+        link::{link_data::LinkData, Link, LinkActionKind},
     };
 
     #[cfg_attr(tarpaulin, skip)]
@@ -80,9 +81,13 @@ mod tests {
 
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
-        let link_data = LinkData::from_link(&link, LinkActionKind::ADD, 0, test_agent_id());
-
-        let result = context.block_on(add_link(&base.clone(), &link_data, &context.clone()));
+        let link_data = LinkData::from_link(
+            &link,
+            LinkActionKind::ADD,
+            ISODispatcherMock::default().now_dispatch(),
+            test_agent_id(),
+        );
+        let result = context.block_on(add_link(&link_data, &context.clone()));
 
         assert!(result.is_ok(), "result = {:?}", result);
     }
@@ -96,7 +101,13 @@ mod tests {
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
         let link_data = LinkData::from_link(&link, LinkActionKind::ADD, 0, test_agent_id());
 
-        let result = context.block_on(add_link(&base.clone(), &link_data, &context.clone()));
+        let link_data = LinkData::from_link(
+            &link,
+            LinkActionKind::ADD,
+            ISODispatcherMock::default().now_dispatch(),
+            test_agent_id(),
+        );
+        let result = context.block_on(add_link(&link_data, &context.clone()));
 
         assert!(result.is_err());
         assert_eq!(

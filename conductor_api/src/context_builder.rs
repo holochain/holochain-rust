@@ -14,7 +14,7 @@ use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
     eav::EntityAttributeValueStorage,
     error::HolochainError,
-    utc_dispatch::{UTCDispatch, UTCMock},
+    iso_dispatch::{ISODispatch, ISODispatcherMock},
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::IoHandler;
@@ -44,7 +44,7 @@ pub struct ContextBuilder {
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
-    utc: Option<Arc<UTCDispatch>>,
+    utc: Option<Arc<ISODispatch>>,
 }
 
 impl ContextBuilder {
@@ -68,7 +68,7 @@ impl ContextBuilder {
         self
     }
 
-    pub fn with_utc_dispatcher(mut self, utc: Arc<UTCDispatch>) -> Self {
+    pub fn with_utc_dispatcher(mut self, utc: Arc<ISODispatch>) -> Self {
         self.utc = Some(utc);
         self
     }
@@ -166,7 +166,7 @@ impl ContextBuilder {
                 .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
-            self.utc.unwrap_or(Arc::new(UTCMock::default())),
+            self.utc.unwrap_or(Arc::new(ISODispatcherMock::default())),
         )
     }
 }

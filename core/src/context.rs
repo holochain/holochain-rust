@@ -26,7 +26,7 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
-    utc_dispatch::UTCDispatch,
+    iso_dispatch::ISODispatch,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};
@@ -58,7 +58,7 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
-    pub utc_dispatch: Arc<UTCDispatch>,
+    pub utc_dispatch: Arc<ISODispatch>,
     signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
@@ -101,7 +101,7 @@ impl Context {
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
-        utc_dispatch: Arc<UTCDispatch>,
+        utc_dispatch: Arc<ISODispatch>,
     ) -> Self {
         Context {
             agent_id: agent_id.clone(),
@@ -133,7 +133,7 @@ impl Context {
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         p2p_config: P2pConfig,
-        utc_dispatch: Arc<UTCDispatch>,
+        utc_dispatch: Arc<ISODispatch>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id: agent_id.clone(),
@@ -331,7 +331,7 @@ pub mod tests {
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::{agent::AgentId, utc_dispatch::UTCMock};
+    use holochain_core_types::{agent::AgentId, iso_dispatch::ISODispatcherMock};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 
@@ -358,7 +358,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
-            Arc::new(UTCMock::default()),
+            Arc::new(ISODispatcherMock::default()),
         );
 
         assert!(maybe_context.state().is_none());
@@ -392,7 +392,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
-            Arc::new(UTCMock::default()),
+            Arc::new(ISODispatcherMock::default()),
         );
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

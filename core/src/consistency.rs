@@ -66,7 +66,7 @@ pub enum ConsistencyEvent {
     UpdateEntry(Address, Address),                        // <- Publish, entry_type=Update
     RemoveEntry(Address, Address),                        // <- Publish, entry_type=Deletion
     AddLink(LinkData),                                    // <- Publish, entry_type=LinkAdd
-    RemoveLink(LinkData),                                 // <- Publish, entry_type=LinkRemove
+    RemoveLink(Entry),                                    // <- Publish, entry_type=LinkRemove
     RemovePendingValidation(Address),                     // <- AddPendingValidation
     ReturnZomeFunctionResult(snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
@@ -106,7 +106,7 @@ impl ConsistencyModel {
                         Entry::App(_, _) => Some(UpdateEntry(crud, address.clone())),
                         Entry::Deletion(_) => Some(RemoveEntry(crud, address.clone())),
                         Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone())),
-                        Entry::LinkRemove(link_data) => Some(RemoveLink(link_data.0.clone())),
+                        Entry::LinkRemove(_) => Some(RemoveLink(entry.clone())),
                         // Question: Why does Entry::LinkAdd take LinkData instead of Link?
                         // as of now, link data contains more information than just the link
                         _ => None,
@@ -145,8 +145,8 @@ impl ConsistencyModel {
             Action::AddLink(link) => Some(ConsistencySignal::new_terminal(
                 ConsistencyEvent::AddLink(link.0.clone()),
             )),
-            Action::RemoveLink(link) => Some(ConsistencySignal::new_terminal(
-                ConsistencyEvent::RemoveLink(link.0.clone()),
+            Action::RemoveLink(entry) => Some(ConsistencySignal::new_terminal(
+                ConsistencyEvent::RemoveLink(entry.clone()),
             )),
 
             Action::AddPendingValidation(validation) => {

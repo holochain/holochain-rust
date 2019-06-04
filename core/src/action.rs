@@ -107,13 +107,13 @@ pub enum Action {
 
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.
-    AddLink((LinkData, Entry)),
+    AddLink(LinkData),
 
     //action for updating crudstatus
     CrudStatus((EntryWithHeader, CrudStatus)),
 
     //Removes a link for the local DHT
-    RemoveLink((LinkData, Entry)),
+    RemoveLink(Entry),
 
     // ----------------
     // Network actions:

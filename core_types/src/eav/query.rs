@@ -57,9 +57,11 @@ impl<'a> EaviQuery<'a> {
                 .filter_map(|eavi| {
                     let reduced_value =
                         iter2.clone().fold((None, false), |eavi_option, eavi_fold| {
+                            //if tombstone has been found do not reduce further. Maybe try a scan instead of a fold?
                             if eavi_option.1 {
                                 eavi_option
                             } else {
+                                //create eavi query without tombstone set
                                 let fold_query = EaviQuery::new(
                                     Some(eavi.entity()).into(),
                                     Some(eavi.attribute()).into(),
@@ -67,12 +69,14 @@ impl<'a> EaviQuery<'a> {
                                     IndexFilter::LatestByAttribute,
                                     None,
                                 );
+                                //check if value is part of set
                                 if EaviQuery::eav_check(
                                     &eavi_fold,
                                     &fold_query.entity,
                                     &self.attribute,
                                     &fold_query.value,
                                 ) {
+                                    //check if tombstone matches with attribute
                                     if *&self
                                         .tombstone()
                                         .as_ref()
@@ -80,6 +84,7 @@ impl<'a> EaviQuery<'a> {
                                         .unwrap_or(true)
                                         .clone()
                                     {
+                                        //if attrribute is found return type plus boolean that siginifies tombstone has been found
                                         (
                                             Some(eavi_fold),
                                             *&self
@@ -90,13 +95,17 @@ impl<'a> EaviQuery<'a> {
                                                 .clone(),
                                         )
                                     } else {
+                                        //return value that signifies value has been found but tuple hasnt been found
                                         (Some(eavi_fold), false)
                                     }
                                 } else {
+                                    //if set does not match, just return last value of eavi_option
                                     eavi_option
                                 }
                             }
                         });
+
+                    //reduce folded value
                     reduced_value.0
                 })
                 .collect(),

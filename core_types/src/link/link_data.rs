@@ -14,7 +14,7 @@ use crate::{
 pub struct LinkData {
     pub action_kind: LinkActionKind,
     pub link: Link,
-    timestamp: i64,
+    timestamp: String,
     agent_id: AgentId,
 }
 
@@ -24,7 +24,7 @@ impl LinkData {
         target: &Address,
         tag: &str,
         link_type: &str,
-        timestamp: i64,
+        timestamp: String,
         agent_id: AgentId,
     ) -> Self {
         LinkData {
@@ -40,7 +40,7 @@ impl LinkData {
         target: &Address,
         tag: &str,
         link_type: &str,
-        timestamp: i64,
+        timestamp: String,
         agent_id: AgentId,
     ) -> Self {
         LinkData {
@@ -62,7 +62,7 @@ impl LinkData {
     pub fn from_link(
         link: &Link,
         action_kind: LinkActionKind,
-        timestamp: i64,
+        timestamp: String,
         agent_id: AgentId,
     ) -> Self {
         LinkData {
@@ -73,11 +73,11 @@ impl LinkData {
         }
     }
 
-    pub fn add_from_link(link: &Link, timestamp: i64, agent_id: AgentId) -> Self {
+    pub fn add_from_link(link: &Link, timestamp: String, agent_id: AgentId) -> Self {
         Self::from_link(link, LinkActionKind::ADD, timestamp, agent_id)
     }
 
-    pub fn remove_from_link(link: &Link, timestamp: i64, agent_id: AgentId) -> Self {
+    pub fn remove_from_link(link: &Link, timestamp: String, agent_id: AgentId) -> Self {
         Self::from_link(link, LinkActionKind::REMOVE, timestamp, agent_id)
     }
 }
@@ -89,6 +89,7 @@ pub mod tests {
         agent::test_agent_id,
         cas::content::AddressableContent,
         entry::{test_entry_a, test_entry_b, Entry},
+        iso_dispatch::{ISODispatch, ISODispatcherMock},
         json::JsonString,
         link::{
             link_data::LinkData,
@@ -104,7 +105,7 @@ pub mod tests {
             link.target(),
             link.tag(),
             "foo-link-type",
-            0,
+            ISODispatcherMock::default().now_dispatch(),
             test_agent_id(),
         )
     }
@@ -115,9 +116,10 @@ pub mod tests {
 
     pub fn test_link_entry_json_string() -> JsonString {
         JsonString::from_json(&format!(
-            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}},\"timestamp\":0,\"agent_id\":{{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}",
+            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}},\"timestamp\":\"{}\",\"agent_id\":{{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}",
             test_entry_a().address(),
-            test_entry_b().address()
+            test_entry_b().address(),
+            ISODispatcherMock::default().now_dispatch()
         ))
     }
 

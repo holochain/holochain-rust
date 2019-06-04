@@ -172,6 +172,11 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
+    pub fn my_posts_with_load(tag: Option<String>) -> ZomeApiResult<Vec<post::Post>> {
+        blog::handle_my_posts_with_load(tag)
+    }
+
+    #[zome_fn("hc_public")]
     pub fn my_memos() -> ZomeApiResult<Vec<Address>> {
         blog::handle_my_memos()
     }

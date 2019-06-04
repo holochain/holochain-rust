@@ -588,19 +588,19 @@ fn can_link_entries() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmZxPKjvSKmLnTGMRHxuRKzbSEBCBsv2LdpFgAgJHtjZFF"}"#)
+        JsonString::from_json(r#"{"Ok":"QmUU1t9DFGFXk8CoKDvweW7tgMWfbJKwT9qdiqMCrsKrmx"}"#)
     );
 }
 
 #[test]
 fn can_remove_link() {
-    let (mut hc, _) = start_holochain_instance("can_link_entries", "alice");
+    let (mut hc, _) = start_holochain_instance("can_remove_link", "alice");
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmZxPKjvSKmLnTGMRHxuRKzbSEBCBsv2LdpFgAgJHtjZFF"}"#)
+        JsonString::from_json(r#"{"Ok":"QmUU1t9DFGFXk8CoKDvweW7tgMWfbJKwT9qdiqMCrsKrmx"}"#)
     );
 }
 

@@ -5,7 +5,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   cargo fmt -- --check
+  cargo fmt -- --check
   '';
 in
 script

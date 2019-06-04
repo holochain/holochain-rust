@@ -19,4 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Adding bridges dynamically via an admin interface works now without rebooting the conductor. [#1476](https://github.com/holochain/holochain-rust/pull/1476) 
+
 ### Security

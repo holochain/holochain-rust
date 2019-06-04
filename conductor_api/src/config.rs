@@ -169,7 +169,7 @@ impl Configuration {
                 for bridge in zome.bridges.iter() {
                     if bridge.presence == BridgePresence::Required {
                         let handle = bridge.handle.clone();
-                        let bridge_config = self
+                        let _ = self
                             .bridges
                             .iter()
                             .find(|b| b.handle == handle)
@@ -177,90 +177,11 @@ impl Configuration {
                                 "Required bridge '{}' for instance '{}' missing",
                                 handle, instance.id
                             ))?;
-
-                        let callee_config =
-                            self.instance_by_id(&bridge_config.callee_id)
-                                .ok_or(format!(
-                                    "Instance configuration \"{}\" not found, mentioned in bridge",
-                                    bridge_config.callee_id
-                                ))?;
-
-                        let callee_dna_config = self.dna_by_id(&callee_config.dna);
-                        callee_dna_config.is_some().ok_or_else(|| {
-                            format!(
-                                "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
-                                instance.dna, instance.id
-                            )
-                        })?;
-                        let callee_dna_config = callee_dna_config.unwrap();
-                        let callee_dna = Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(
-                            callee_dna_config.file,
-                        ))
-                        .map_err(|_| format!("Could not load DNA file \"{}\"", dna_config.file))?;
-
-                        match bridge.reference {
-                            BridgeReference::Address { ref dna_address } => {
-                                if *dna_address != callee_dna.address() {
-                                    return Err(format!(
-                                        "Bridge '{}' of instance '{}' requires callee to be DNA with hash '{}', but the configured instance '{}' runs DNA with hash '{}'.",
-                                        bridge.handle,
-                                        instance.id,
-                                        dna_address,
-                                        callee_config.id,
-                                        callee_dna.address(),
-                                    ));
-                                }
-                            }
-                            BridgeReference::Trait { ref traits } => {
-                                for (expected_trait_name, expected_trait) in traits {
-                                    let mut found = false;
-                                    for (_zome_name, zome) in callee_dna.zomes.iter() {
-                                        for (zome_trait_name, zome_trait_functions) in
-                                            zome.traits.iter()
-                                        {
-                                            if zome_trait_name == expected_trait_name {
-                                                let mut has_all_fns_exported = true;
-                                                for fn_def in expected_trait.functions.iter() {
-                                                    if !zome_trait_functions
-                                                        .functions
-                                                        .contains(&fn_def.name)
-                                                    {
-                                                        has_all_fns_exported = false;
-                                                    }
-                                                }
-
-                                                let mut has_matching_signatures = true;
-                                                if has_all_fns_exported {
-                                                    for fn_def in expected_trait.functions.iter() {
-                                                        if !zome.fn_declarations.contains(&fn_def) {
-                                                            has_matching_signatures = false;
-                                                        }
-                                                    }
-                                                }
-
-                                                if has_all_fns_exported && has_matching_signatures {
-                                                    found = true;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    if !found {
-                                        return Err(format!(
-                                            "Bridge '{}' of instance '{}' requires callee to to implement trait '{}' with functions: {:?}",
-                                            bridge.handle,
-                                            instance.id,
-                                            expected_trait_name,
-                                            expected_trait.functions,
-                                        ));
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }
         }
+
         for ref interface in self.interfaces.iter() {
             for ref instance in interface.instances.iter() {
                 self.instance_by_id(&instance.id).is_some().ok_or_else(|| {
@@ -272,23 +193,8 @@ impl Configuration {
             }
         }
 
-        for ref bridge in self.bridges.iter() {
-            self.instance_by_id(&bridge.callee_id)
-                .is_some()
-                .ok_or_else(|| {
-                    format!(
-                        "Instance configuration \"{}\" not found, mentioned in bridge",
-                        bridge.callee_id
-                    )
-                })?;
-            self.instance_by_id(&bridge.caller_id)
-                .is_some()
-                .ok_or_else(|| {
-                    format!(
-                        "Instance configuration \"{}\" not found, mentioned in bridge",
-                        bridge.caller_id
-                    )
-                })?;
+        for bridge in self.bridges.iter() {
+            self.check_bridge_requirements(bridge, dna_loader)?;
         }
 
         for ref ui_interface in self.ui_interfaces.iter() {
@@ -326,6 +232,130 @@ impl Configuration {
 
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
 
+        Ok(())
+    }
+
+    fn check_bridge_requirements(&self, bridge_config: &Bridge, mut dna_loader: &mut DnaLoader) -> Result<(), String> {
+        //
+        // Get caller's config. DNA config, and DNA:
+        //
+        let caller_config = self
+            .instance_by_id(&bridge_config.caller_id)
+            .ok_or(format!(
+                "Instance configuration \"{}\" not found, mentioned in bridge",
+                bridge_config.caller_id
+            ))?;
+
+        let caller_dna_config = self
+            .dna_by_id(&caller_config.dna)
+            .ok_or_else(|| {
+                format!(
+                    "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
+                    caller_config.dna, caller_config.id
+                )
+            })?;
+
+        let caller_dna_file = caller_dna_config.file.clone();
+        let caller_dna =
+            Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(caller_dna_file.clone()))
+                .map_err(|_| format!("Could not load DNA file \"{}\"", caller_dna_file))?;
+
+        //
+        // Get callee's config. DNA config, and DNA:
+        //
+        let callee_config = self
+            .instance_by_id(&bridge_config.callee_id)
+            .ok_or(format!(
+                "Instance configuration \"{}\" not found, mentioned in bridge",
+                bridge_config.callee_id
+            ))?;
+
+        let callee_dna_config = self
+            .dna_by_id(&callee_config.dna)
+            .ok_or_else(|| {
+                format!(
+                    "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
+                    callee_config.dna, callee_config.id
+                )
+            })?;
+
+        let callee_dna_file = callee_dna_config.file.clone();
+        let callee_dna =
+            Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(callee_dna_file.clone()))
+                .map_err(|_| format!("Could not load DNA file \"{}\"", callee_dna_file))?;
+
+        //
+        // Get matching bridge definition from caller's DNA:
+        //
+        let mut maybe_bridge = None;
+        for zome in caller_dna.zomes.values() {
+            for bridge_def in zome.bridges.iter() {
+                if bridge_def.handle == bridge_config.handle {
+                    maybe_bridge = Some(bridge_def.clone());
+                }
+            }
+        }
+
+        let bridge = maybe_bridge.ok_or(format!(
+            "No bridge definition with handle '{}' found in {}'s DNA",
+            bridge_config.handle,
+            bridge_config.caller_id,
+        ))?;
+
+        match bridge.reference {
+            BridgeReference::Address { ref dna_address } => {
+                if *dna_address != callee_dna.address() {
+                    return Err(format!(
+                        "Bridge '{}' of caller instance '{}' requires callee to be DNA with hash '{}', but the configured instance '{}' runs DNA with hash '{}'.",
+                        bridge.handle,
+                        bridge_config.caller_id,
+                        dna_address,
+                        callee_config.id,
+                        callee_dna.address(),
+                    ));
+                }
+            }
+            BridgeReference::Trait { ref traits } => {
+                for (expected_trait_name, expected_trait) in traits {
+                    let mut found = false;
+                    for (_zome_name, zome) in callee_dna.zomes.iter() {
+                        for (zome_trait_name, zome_trait_functions) in zome.traits.iter() {
+                            if zome_trait_name == expected_trait_name {
+                                let mut has_all_fns_exported = true;
+                                for fn_def in expected_trait.functions.iter() {
+                                    if !zome_trait_functions.functions.contains(&fn_def.name) {
+                                        has_all_fns_exported = false;
+                                    }
+                                }
+
+                                let mut has_matching_signatures = true;
+                                if has_all_fns_exported {
+                                    for fn_def in expected_trait.functions.iter() {
+                                        if !zome.fn_declarations.contains(&fn_def) {
+                                            has_matching_signatures = false;
+                                        }
+                                    }
+                                }
+
+                                if has_all_fns_exported && has_matching_signatures {
+                                    found = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if !found {
+                        return Err(format!(
+                            "Bridge '{}' of instance '{}' requires callee to to implement trait '{}' with functions: {:?}",
+                            bridge.handle,
+                            bridge_config.caller_id,
+                            expected_trait_name,
+                            expected_trait.functions,
+                        ));
+                    }
+                }
+            }
+        };
         Ok(())
     }
 
@@ -1061,13 +1091,13 @@ pub mod tests {
     keystore_file = "holo_tester.key"
 
     [[dnas]]
-    id = "app spec rust"
-    file = "app-spec-rust.dna.json"
+    id = "bridge caller"
+    file = "bridge/caller_without_required.dna"
     hash = "Qm328wyq38924y"
 
     [[instances]]
     id = "app1"
-    dna = "app spec rust"
+    dna = "bridge caller"
     agent = "test agent"
         [instances.storage]
         type = "file"
@@ -1075,7 +1105,7 @@ pub mod tests {
 
     [[instances]]
     id = "app2"
-    dna = "app spec rust"
+    dna = "bridge caller"
     agent = "test agent"
         [instances.storage]
         type = "file"
@@ -1083,7 +1113,7 @@ pub mod tests {
 
     [[instances]]
     id = "app3"
-    dna = "app spec rust"
+    dna = "bridge caller"
     agent = "test agent"
         [instances.storage]
         type = "file"
@@ -1144,7 +1174,7 @@ pub mod tests {
     [[bridges]]
     caller_id = "app3"
     callee_id = "app1"
-    handle = "something"
+    handle = "test-callee"
     "#,
         );
         let config = load_configuration::<Configuration>(&toml)

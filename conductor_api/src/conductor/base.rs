@@ -1062,6 +1062,7 @@ pub mod tests {
         fn_declarations::{FnDeclaration, Trait, TraitFns},
     };
     use test_utils::*;
+    use std::collections::BTreeMap;
 
     //    commented while test_signals_through_admin_websocket is broken
     //    extern crate ws;
@@ -1075,6 +1076,7 @@ pub mod tests {
                 "bridge/caller.dna" => caller_dna(),
                 "bridge/caller_dna_ref.dna" => caller_dna_with_dna_reference(),
                 "bridge/caller_bogus_trait_ref.dna" => caller_dna_with_bogus_trait_reference(),
+                "bridge/caller_without_required.dna" => caller_dna_without_required(),
                 _ => Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap(),
             })
         })
@@ -1215,7 +1217,7 @@ pub mod tests {
     id = "test-instance-2"
 
     [[bridges]]
-    caller_id = "test-instance-2"
+    caller_id = "bridge-caller"
     callee_id = "test-instance-1"
     handle = "DPKI"
 
@@ -1298,7 +1300,16 @@ pub mod tests {
                         ],
                         "code": {
                             "code": "AAECAw=="
-                        }
+                        },
+                        "bridges": [
+                            {
+                                "presence": "optional",
+                                "handle": "my favourite instance!",
+                                "reference": {
+                                    "traits": {}
+                                }
+                            }
+                        ]
                     }
                 }
             }"#
@@ -1535,18 +1546,35 @@ pub mod tests {
         ]);
         let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         dna.uuid = String::from("basic_bridge_call");
-        let bridge = Bridge {
-            presence: BridgePresence::Required,
-            handle: String::from("test-callee"),
-            reference: BridgeReference::Trait {
-                traits: btreemap! {
+        {
+            let zome = dna.zomes.get_mut("test_zome").unwrap();
+            zome.bridges.push(Bridge {
+                presence: BridgePresence::Required,
+                handle: String::from("test-callee"),
+                reference: BridgeReference::Trait {
+                    traits: btreemap! {
                     String::from("greetable") => Trait{
                         functions: vec![bridge_call_fn_declaration()]
                     }
                 },
-            },
-        };
-        dna.zomes.get_mut("test_zome").unwrap().bridges.push(bridge);
+                },
+            });
+            zome.bridges.push(Bridge {
+                presence: BridgePresence::Optional,
+                handle: String::from("DPKI"),
+                reference: BridgeReference::Trait {
+                    traits: BTreeMap::new(),
+                },
+            });
+            zome.bridges.push(Bridge {
+                presence: BridgePresence::Optional,
+                handle: String::from("happ-store"),
+                reference: BridgeReference::Trait {
+                    traits: BTreeMap::new(),
+                },
+            });
+        }
+
         dna
     }
 
@@ -1673,6 +1701,24 @@ pub mod tests {
         dna
     }
 
+    fn caller_dna_without_required() -> Dna {
+        let mut dna = caller_dna();
+        {
+            let bridge = dna
+                .zomes
+                .get_mut("test_zome")
+                .unwrap()
+                .bridges
+                .get_mut(0)
+                .unwrap();
+            bridge.presence = BridgePresence::Optional;
+            bridge.reference = BridgeReference::Trait {
+                traits: BTreeMap::new(),
+            };
+        }
+        dna
+    }
+
     pub fn bridge_dna_ref_test_toml(caller_dna: &str, callee_dna: &str) -> String {
         format!(
             r#"
@@ -1720,8 +1766,8 @@ pub mod tests {
     #[test]
     fn error_if_bridge_reference_dna_mismatch() {
         let config = load_configuration::<Configuration>(&bridge_dna_ref_test_toml(
-            "bridge/callee_dna.dna",
             "bridge/caller_dna_ref.dna",
+            "bridge/callee_dna.dna",
         ))
         .unwrap();
         let mut conductor = Conductor::from_config(config.clone());
@@ -1732,15 +1778,15 @@ pub mod tests {
         assert!(result.is_err());
         println!("{:?}", result);
         assert!(result.err().unwrap().starts_with(
-            "Bridge \'test-callee\' of instance \'bridge-callee\' requires callee to be DNA with hash \'fake bridge reference\', but the configured instance \'bridge-callee\' runs DNA with hash"
+            "Bridge \'test-callee\' of caller instance \'bridge-caller\' requires callee to be DNA with hash \'fake bridge reference\', but the configured instance \'bridge-callee\' runs DNA with hash"
         ));
     }
 
     #[test]
     fn error_if_bridge_reference_trait_mismatch() {
         let config = load_configuration::<Configuration>(&bridge_dna_ref_test_toml(
-            "bridge/callee_dna.dna",
             "bridge/caller_bogus_trait_ref.dna",
+            "bridge/callee_dna.dna",
         ))
         .unwrap();
         let mut conductor = Conductor::from_config(config.clone());
@@ -1752,7 +1798,7 @@ pub mod tests {
         println!("{:?}", result);
         assert_eq!(
             result.err().unwrap(),
-            "Bridge \'test-callee\' of instance \'bridge-callee\' requires callee to to implement trait \'greetable\' with functions: [FnDeclaration { name: \"hello\", inputs: [FnParameter { parameter_type: \"String\", name: \"additional_parameter\" }], outputs: [FnParameter { parameter_type: \"String\", name: \"greeting\" }] }]",
+            "Bridge \'test-callee\' of instance \'bridge-caller\' requires callee to to implement trait \'greetable\' with functions: [FnDeclaration { name: \"hello\", inputs: [FnParameter { parameter_type: \"String\", name: \"additional_parameter\" }], outputs: [FnParameter { parameter_type: \"String\", name: \"greeting\" }] }]",
         );
     }
 

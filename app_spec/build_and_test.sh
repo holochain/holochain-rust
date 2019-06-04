@@ -8,7 +8,8 @@ cargo test --manifest-path zomes/summer/code/Cargo.toml
 echo "===================================================================================="
 echo "BUILDING genome with 'hc package --output dist/app_spec.dna.json --strip-meta':"
 echo "------------------------------------------------------------------------------------"
-rm -f dist/app_spec.dna.json
+rm -rf dist
+mkdir dist
 hc package --output dist/app_spec.dna.json --strip-meta
 echo "DONE."
 echo "===================================================================================="

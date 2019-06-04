@@ -6,7 +6,7 @@ let
   # TODO - currently broken! nix doesn't play nice with rustup :'(
   script = pkgs.writeShellScriptBin name
   ''
-   rustup component add rustfmt
+  rustup component add rustfmt
   '';
 in
 script

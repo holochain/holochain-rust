@@ -5,7 +5,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   cargo fmt
+  cargo fmt
   '';
 in
 script

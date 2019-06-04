@@ -16,7 +16,11 @@ use std::{
     fs::{self, create_dir_all},
     path::PathBuf,
     sync::{Arc, RwLock},
+    thread::sleep,
+    time::Duration,
 };
+
+const SWEET_SLEEP: u64 = 4257;
 
 pub trait ConductorAdmin {
     fn install_dna_from_file(
@@ -342,6 +346,7 @@ impl ConductorAdmin for Conductor {
         self.save_config()?;
 
         let _ = self.stop_interface_by_id(interface_id);
+        sleep(Duration::from_millis(SWEET_SLEEP));
         self.start_interface_by_id(interface_id)?;
 
         Ok(())
@@ -390,6 +395,7 @@ impl ConductorAdmin for Conductor {
         self.save_config()?;
 
         let _ = self.stop_interface_by_id(interface_id);
+        sleep(Duration::from_millis(SWEET_SLEEP));
         self.start_interface_by_id(interface_id)?;
 
         Ok(())

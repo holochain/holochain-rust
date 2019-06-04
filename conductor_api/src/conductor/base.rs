@@ -38,6 +38,7 @@ use std::{
 
 use boolinator::Boolinator;
 use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
+use config::AgentConfiguration;
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     ipc::spawn::{ipc_spawn, SpawnResult},
@@ -509,7 +510,7 @@ impl Conductor {
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
             let instance = self
-                .instantiate_from_config(&id, &config)
+                .instantiate_from_config(&id, Some(&config))
                 .map_err(|error| {
                     format!(
                         "Error while trying to create instance \"{}\": {}",
@@ -555,8 +556,10 @@ impl Conductor {
     pub fn instantiate_from_config(
         &mut self,
         id: &String,
-        config: &Configuration,
+        maybe_config: Option<&Configuration>,
     ) -> Result<Holochain, String> {
+        let self_config = self.config.clone();
+        let config = maybe_config.unwrap_or(&self_config);
         let _ = config.check_consistency(&mut self.dna_loader)?;
 
         config
@@ -568,16 +571,7 @@ impl Conductor {
 
                 // Agent:
                 let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
-                let agent_id = if let Some(true) = agent_config.holo_remote_key {
-                    // !!!!!!!!!!!!!!!!!!!!!!!
-                    // Holo closed-alpha hack:
-                    // !!!!!!!!!!!!!!!!!!!!!!!
-                    AgentId::new(&agent_config.name, agent_config.public_address)
-                } else {
-                    let keybundle_arc = self.get_keybundle_for_agent(&instance_config.agent)?;
-                    let keybundle = keybundle_arc.lock().unwrap();
-                    AgentId::new(&agent_config.name, keybundle.get_id())
-                };
+                let agent_id = self.agent_config_to_id(&agent_config)?;
 
                 context_builder = context_builder.with_agent(agent_id.clone());
 
@@ -619,50 +613,8 @@ impl Conductor {
                 }
 
                 // Conductor API
-                let mut api_builder = ConductorApiBuilder::new();
-                // Signing callback:
-                if let Some(true) = agent_config.holo_remote_key {
-                    // !!!!!!!!!!!!!!!!!!!!!!!
-                    // Holo closed-alpha hack:
-                    // !!!!!!!!!!!!!!!!!!!!!!!
-                    api_builder = api_builder.with_outsource_signing_callback(
-                        agent_id.clone(),
-                        self.config
-                            .signing_service_uri
-                            .clone()
-                            .expect("holo_remote_key needs signing_service_uri set"),
-                    );
-                } else {
-                    api_builder = api_builder.with_agent_signature_callback(
-                        self.get_keybundle_for_agent(&instance_config.agent)?,
-                    );
-
-                    let keystore = self
-                        .get_keystore_for_agent(&instance_config.agent)
-                        .map_err(|err| format!("{}", err))?;
-                    api_builder = api_builder.with_agent_keystore_functions(keystore);
-                }
-
-                // Bridges:
-                let id = instance_config.id.clone();
-                for bridge in config.bridge_dependencies(id.clone()) {
-                    assert_eq!(bridge.caller_id, id.clone());
-                    let callee_config = config
-                        .instance_by_id(&bridge.callee_id)
-                        .expect("config.check_consistency()? jumps out if config is broken");
-                    let callee_instance = self.instances.get(&bridge.callee_id).expect(
-                        r#"
-                    We have to create instances ordered by bridge dependencies such that we
-                    can expect the callee to be present here because we need it to create
-                    the bridge API"#,
-                    );
-
-                    api_builder = api_builder
-                        .with_named_instance(bridge.handle.clone(), callee_instance.clone());
-                    api_builder = api_builder
-                        .with_named_instance_config(bridge.handle.clone(), callee_config);
-                }
-                context_builder = context_builder.with_conductor_api(api_builder.spawn());
+                let api = self.build_conductor_api(instance_config.id, config)?;
+                context_builder = context_builder.with_conductor_api(api);
 
                 // Spawn context
                 let context = context_builder.spawn();
@@ -702,6 +654,77 @@ impl Conductor {
                         Holochain::new(dna, context).map_err(|hc_err| hc_err.to_string())
                     })
             })
+    }
+
+    pub fn build_conductor_api(
+        &mut self,
+        instance_id: String,
+        config: &Configuration,
+    ) -> Result<IoHandler, HolochainError> {
+        let instance_config = config.instance_by_id(&instance_id)?;
+        let agent_id = instance_config.agent.clone();
+        let agent_config = config.agent_by_id(&agent_id)?;
+        let mut api_builder = ConductorApiBuilder::new();
+        // Signing callback:
+        if let Some(true) = agent_config.holo_remote_key {
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            // Holo closed-alpha hack:
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            api_builder = api_builder.with_outsource_signing_callback(
+                self.agent_config_to_id(&agent_config)?,
+                self.config
+                    .signing_service_uri
+                    .clone()
+                    .expect("holo_remote_key needs signing_service_uri set"),
+            );
+        } else {
+            api_builder = api_builder.with_agent_signature_callback(
+                self.get_keybundle_for_agent(&instance_config.agent)?,
+            );
+
+            let keystore = self
+                .get_keystore_for_agent(&instance_config.agent)
+                .map_err(|err| format!("{}", err))?;
+            api_builder = api_builder.with_agent_keystore_functions(keystore);
+        }
+
+        // Bridges:
+        let id = instance_config.id.clone();
+        for bridge in config.bridge_dependencies(id.clone()) {
+            assert_eq!(bridge.caller_id, id.clone());
+            let callee_config = config
+                .instance_by_id(&bridge.callee_id)
+                .expect("config.check_consistency()? jumps out if config is broken");
+            let callee_instance = self.instances.get(&bridge.callee_id).expect(
+                r#"
+                    We have to create instances ordered by bridge dependencies such that we
+                    can expect the callee to be present here because we need it to create
+                    the bridge API"#,
+            );
+
+            api_builder =
+                api_builder.with_named_instance(bridge.handle.clone(), callee_instance.clone());
+            api_builder =
+                api_builder.with_named_instance_config(bridge.handle.clone(), callee_config);
+        }
+
+        Ok(api_builder.spawn())
+    }
+
+    pub fn agent_config_to_id(
+        &mut self,
+        agent_config: &AgentConfiguration,
+    ) -> Result<AgentId, HolochainError> {
+        Ok(if let Some(true) = agent_config.holo_remote_key {
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            // Holo closed-alpha hack:
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            AgentId::new(&agent_config.name, agent_config.public_address.clone())
+        } else {
+            let keybundle_arc = self.get_keybundle_for_agent(&agent_config.id)?;
+            let keybundle = keybundle_arc.lock().unwrap();
+            AgentId::new(&agent_config.name, keybundle.get_id())
+        })
     }
 
     /// Checks if the key for the given agent can be loaded or was already loaded.
@@ -1506,7 +1529,10 @@ pub mod tests {
         path.push(wasm_path_component);
 
         let wasm = create_wasm_from_file(&path);
-        let defs = create_test_defs_with_fn_name("call_bridge");
+        let defs = create_test_defs_with_fn_names(vec![
+            "call_bridge".to_string(),
+            "call_bridge_error".to_string(),
+        ]);
         let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         dna.uuid = String::from("basic_bridge_call");
         let bridge = Bridge {
@@ -1554,6 +1580,36 @@ pub mod tests {
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
         assert_eq!(result, JsonString::from(RawString::from("Holo World")));
+    }
+
+    #[test]
+    fn basic_bridge_call_error() {
+        let config = load_configuration::<Configuration>(&test_toml(10041, 10042)).unwrap();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        conductor
+            .boot_from_config()
+            .expect("Test config must be sane");
+        conductor
+            .start_all_instances()
+            .expect("Instances must be spawnable");
+        let caller_instance = conductor.instances["bridge-caller"].clone();
+        let mut instance = caller_instance.write().unwrap();
+
+        let cap_call = {
+            let context = instance.context();
+            make_cap_request_for_call(
+                context.clone(),
+                Address::from(context.clone().agent_id.address()),
+                "call_bridge_error",
+                JsonString::empty_object(),
+            )
+        };
+        let result = instance.call("test_zome", cap_call, "call_bridge_error", "{}");
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("Holochain Instance Error: Zome function \'non-existent-function\' not found in Zome \'greeter\'"));
     }
 
     #[test]

@@ -1,5 +1,4 @@
-use std::process::Command;
-use std::path::Path;
+use std::{path::Path, process::Command};
 fn main() {
     if Path::new(".git/HEAD").exists() {
         println!("cargo:rerun-if-changed=.git/HEAD");

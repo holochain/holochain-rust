@@ -26,7 +26,7 @@ pub fn setup_three_nodes(
     alex.track_dna(dna_address, true)
         .expect("Failed sending TrackDna on alex");
     let connect_result_1 = alex
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     println!("self connected result 1: {:?}", connect_result_1);
     // billy
@@ -34,7 +34,7 @@ pub fn setup_three_nodes(
         .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     println!("self connected result 2: {:?}", connect_result_2);
     // camille
@@ -42,7 +42,7 @@ pub fn setup_three_nodes(
         .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on camille");
     let connect_result_3 = camille
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     println!("self connected result 2: {:?}", connect_result_3);
 
@@ -54,19 +54,19 @@ pub fn setup_three_nodes(
         alex.send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on alex");
         let alex_state = alex
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
         billy
             .send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on billy");
         let billy_state = billy
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
         camille
             .send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on camille");
         let camille_state = camille
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
 
         one_let!(JsonProtocol::GetStateResult(state) = alex_state {
@@ -93,14 +93,14 @@ pub fn setup_three_nodes(
         )?;
         // Make sure Peers are connected
         let result_a = alex
-            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
             .unwrap();
         println!("got connect result A: {:?}", result_a);
         one_let!(JsonProtocol::PeerConnected(d) = result_a {
             assert_eq!(d.agent_id, BILLY_AGENT_ID);
         });
         let result_b = billy
-            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
             .unwrap();
         println!("got connect result B: {:?}", result_b);
         one_let!(JsonProtocol::PeerConnected(d) = result_b {
@@ -119,7 +119,7 @@ pub fn setup_three_nodes(
         // Make sure Peers are connected
 
         let result_b = billy
-            .wait(Box::new(one_is_where!(
+            .wait_json(Box::new(one_is_where!(
                 JsonProtocol::PeerConnected(data),
                 { data.agent_id == CAMILLE_AGENT_ID }
             )))
@@ -127,7 +127,7 @@ pub fn setup_three_nodes(
         println!("got connect result on Billy: {:?}", result_b);
 
         let result_c = camille
-            .wait(Box::new(one_is_where!(
+            .wait_json(Box::new(one_is_where!(
                 JsonProtocol::PeerConnected(data),
                 { data.agent_id == BILLY_AGENT_ID }
             )))
@@ -135,7 +135,7 @@ pub fn setup_three_nodes(
         println!("got connect result on Camille: {:?}", result_c);
 
         let result_a = alex
-            .wait(Box::new(one_is_where!(
+            .wait_json(Box::new(one_is_where!(
                 JsonProtocol::PeerConnected(data),
                 { data.agent_id == CAMILLE_AGENT_ID }
             )))
@@ -181,37 +181,33 @@ pub fn hold_and_publish_test(
     // Alex: Look for the hold_list request received from network module and reply
     alex.reply_to_first_HandleGetPublishingEntryList();
 
-    // Might receive a HandleFetchEntry request from network module:
-    // hackmode would want the data right away
+    // Handle HandleFetchEntry request sent from network module
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(has_received);
 
-    // Have billy author the same data
+    // Have billy author some other data
     billy.author_entry(&ENTRY_ADDRESS_2, &ENTRY_CONTENT_2, true)?;
 
+    // Wait for gossip to process
     let _msg_count = camille.listen(3000);
 
-    // Camille requests that entry
+    // Camille requests Alex's entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());
-    // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    if !has_received {
-        let has_received = billy.wait_HandleFetchEntry_and_reply();
-        if !has_received {
-            let _has_received = camille.wait_HandleFetchEntry_and_reply();
-        }
-    }
+
+    // Have Alex respond
+    alex.reply_to_HandleFetchEntry(&fetch_entry)
+        .expect("Reply to HandleFetchEntry should work");
 
     // Camille should receive the data
     let req_id = fetch_entry.request_id.clone();
-    let mut result = camille.find_recv_msg(
+    let mut result = camille.find_recv_json_msg(
         0,
         Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
             entry_data.request_id == req_id
         })),
     );
     if result.is_none() {
-        result = camille.wait(Box::new(one_is_where!(
+        result = camille.wait_json(Box::new(one_is_where!(
             JsonProtocol::FetchEntryResult(entry_data),
             { entry_data.request_id == fetch_entry.request_id }
         )))
@@ -222,27 +218,25 @@ pub fn hold_and_publish_test(
     assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(entry_data.entry_content, ENTRY_CONTENT_1.clone());
 
-    // Camille requests that entry
+    // Camille requests Billy's Entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_2.clone());
     // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    if !has_received {
-        let has_received = billy.wait_HandleFetchEntry_and_reply();
-        if !has_received {
-            let _has_received = camille.wait_HandleFetchEntry_and_reply();
-        }
-    }
+
+    // Have Billy respond
+    billy
+        .reply_to_HandleFetchEntry(&fetch_entry)
+        .expect("Reply to HandleFetchEntry should work");
 
     // Camille should receive the data
     let req_id = fetch_entry.request_id.clone();
-    let mut result = camille.find_recv_msg(
+    let mut result = camille.find_recv_json_msg(
         0,
         Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
             entry_data.request_id == req_id
         })),
     );
     if result.is_none() {
-        result = camille.wait(Box::new(one_is_where!(
+        result = camille.wait_json(Box::new(one_is_where!(
             JsonProtocol::FetchEntryResult(entry_data),
             { entry_data.request_id == fetch_entry.request_id }
         )))
@@ -297,7 +291,7 @@ pub fn publish_entry_stress_test(
     let address_42_clone = address_42.clone();
     // #fulldht
     // wait for store entry request
-    let result = camille.wait_with_timeout(
+    let result = camille.wait_json_with_timeout(
         Box::new(one_is_where!(JsonProtocol::HandleStoreEntry(entry_data), {
             entry_data.entry_address == address_42_clone
         })),
@@ -325,14 +319,14 @@ pub fn publish_entry_stress_test(
     // Camille should receive the data
     log_i!("Waiting for fetch result...\n\n");
 
-    let mut result = camille.find_recv_msg(
+    let mut result = camille.find_recv_json_msg(
         0,
         Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
             entry_data.request_id == req_id
         })),
     );
     if result.is_none() {
-        result = camille.wait_with_timeout(
+        result = camille.wait_json_with_timeout(
             Box::new(one_is_where!(JsonProtocol::FetchEntryResult(entry_data), {
                 entry_data.request_id == fetch_entry.request_id
             })),

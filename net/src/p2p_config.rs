@@ -10,6 +10,7 @@ use std::{fs::File, io::prelude::*, str::FromStr};
 pub enum P2pBackendKind {
     MEMORY,
     IPC,
+    LIB3H,
 }
 
 impl FromStr for P2pBackendKind {
@@ -28,6 +29,7 @@ impl From<P2pBackendKind> for String {
         String::from(match kind {
             P2pBackendKind::MEMORY => "MEMORY",
             P2pBackendKind::IPC => "IPC",
+            P2pBackendKind::LIB3H => "LIB3H",
         })
     }
 }
@@ -90,6 +92,11 @@ impl P2pConfig {
             File::open(filepath).expect("Failed to open filepath on P2pConfig creation.");
         serde_json::from_reader(config_file)
             .expect("file is not a proper JSON of a P2pConfig struct")
+    }
+
+    pub fn default_lib3h() -> Self {
+        P2pConfig::from_str(P2pConfig::DEFAULT_LIB3H_CONFIG)
+            .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
     pub fn default_ipc_spawn() -> Self {
@@ -210,6 +217,15 @@ impl P2pConfig {
 
 /// statics
 impl P2pConfig {
+    pub const DEFAULT_LIB3H_CONFIG: &'static str = r#"
+    {
+      "backend_kind": "LIB3H",
+      "backend_config": {
+        "socketType": "ws",
+        "logLevel": "i"
+      }
+    }"#;
+
     pub const DEFAULT_IPC_SPAWN_CONFIG: &'static str = r#"
     {
       "backend_kind": "IPC",

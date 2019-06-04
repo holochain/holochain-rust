@@ -39,7 +39,7 @@ pub struct Env {
     dna_address: String,
     agent_id: String,
     agent_address: String,
-    cap_request: CapabilityRequest,
+    cap_request: Option<CapabilityRequest>,
     properties: JsonString,
 }
 
@@ -401,6 +401,10 @@ pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
 
 pub fn handle_my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&AGENT_ADDRESS, Some("authored_posts".into()), tag)
+}
+
+pub fn handle_my_posts_with_load(tag: Option<String>) -> ZomeApiResult<Vec<Post>> {
+    hdk::utils::get_links_and_load_type(&AGENT_ADDRESS, Some("authored_posts".into()), tag)
 }
 
 pub fn handle_my_memos() -> ZomeApiResult<Vec<Address>> {

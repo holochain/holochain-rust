@@ -71,10 +71,15 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
                 return ribosome_error_code!(RecursiveCallForbidden);
             }
         }
-
-        local_call(runtime, input)
+        local_call(runtime, input.clone()).map_err(|error| {
+            context.log(format!("err/zome-to-zome-call/[{:?}]: {:?}", input, error));
+            error
+        })
     } else {
-        bridge_call(runtime, input)
+        bridge_call(runtime, input.clone()).map_err(|error| {
+            context.log(format!("err/bridge-call/[{:?}]: {:?}", input, error));
+            error
+        })
     };
 
     runtime.store_result(result)

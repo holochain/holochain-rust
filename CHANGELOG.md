@@ -2,6 +2,23 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.18-alpha1] - 2019-06-03
+
+### Added
+
+### Changed
+
+- **Breaking change** - renames `emit_trace_signals` to `signals.trace` in conductor config [#1431](https://github.com/holochain/holochain-rust/pull/1431)
+- "Consistency" signals added, which aid determinism in end-to-end tests, configurable through `signals.consistency` conductor config [#1431](https://github.com/holochain/holochain-rust/pull/1431)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [0.0.17-alpha2] - 2019-05-27
 
 ### Added
@@ -394,7 +411,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - hc command-line tool: [#831](https://github.com/holochain/holochain-rust/pull/831)
     - `run --persist` flag for keeping state across runs [#729](https://github.com/holochain/holochain-rust/pull/729/files)
     - Added env variables to activate real networking [#826](https://github.com/holochain/holochain-rust/pull/826)
-- Groundwork for: capabilities & signals [#762](https://github.com/holochain/holochain-rust/pull/826) & [#732](https://github.com/holochain/holochain-rust/pull/732)
+- Groundwork for: capabilities & signals [#762](https://github.com/holochain/holochain-rust/pull/762) & [#732](https://github.com/holochain/holochain-rust/pull/732)
 - Improved debug logging with log rules and colorization [#819](https://github.com/holochain/holochain-rust/pull/819)
 - This change log! [#831](https://github.com/holochain/holochain-rust/pull/831)
 

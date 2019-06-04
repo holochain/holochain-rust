@@ -106,6 +106,7 @@ impl InMemoryServer {
             agent_id,
             JsonProtocol::HandleGetAuthoringEntryList(GetListData {
                 request_id,
+                provider_agent_id: agent_id.clone(),
                 dna_address: dna_address.clone(),
             })
             .into(),
@@ -118,6 +119,7 @@ impl InMemoryServer {
             agent_id,
             JsonProtocol::HandleGetGossipingEntryList(GetListData {
                 request_id,
+                provider_agent_id: agent_id.clone(),
                 dna_address: dna_address.clone(),
             })
             .into(),

@@ -113,7 +113,7 @@ pub struct EntryData {
 }
 
 impl EntryData {
-    /// get an EntryAspectData in an EntryData
+    /// get an EntryAspectData from an EntryData
     pub fn get(&self, aspect_address: &Address) -> Option<EntryAspectData> {
         for aspect in self.aspect_list.iter() {
             if aspect.aspect_address == *aspect_address {
@@ -186,6 +186,7 @@ pub struct StoreEntryAspectData {
 #[serde(rename_all = "camelCase")]
 pub struct FetchEntryData {
     pub dna_address: Address,
+    /// Request Entry from a specific Agent
     pub provider_agent_id: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
@@ -212,6 +213,8 @@ pub struct FetchEntryResultData {
 #[serde(rename_all = "camelCase")]
 pub struct GetListData {
     pub dna_address: Address,
+    /// Request List from a specific Agent
+    pub provider_agent_id: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
 }
@@ -220,6 +223,7 @@ pub struct GetListData {
 #[serde(rename_all = "camelCase")]
 pub struct EntryListData {
     pub dna_address: Address,
+    pub provider_agent_id: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
     pub address_map: std::collections::HashMap<Address, Vec<Address>>, // Aspect addresses per entry
@@ -562,6 +566,7 @@ mod tests {
         test_convert!(JsonProtocol::HandleGetAuthoringEntryList(GetListData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
+            provider_agent_id: "test_from".to_string(),
         }));
     }
     #[test]
@@ -571,6 +576,7 @@ mod tests {
                 dna_address: "test_dna".into(),
                 request_id: "test_id".to_string(),
                 entry_address_list: vec!["data1".into(), "data2".into()],
+                provider_agent_id: "test_from".to_string(),
             }
         ));
     }
@@ -579,6 +585,7 @@ mod tests {
         test_convert!(JsonProtocol::HandleGetGossipingEntryList(GetListData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
+            provider_agent_id: "test_from".to_string(),
         }));
     }
     #[test]
@@ -588,6 +595,7 @@ mod tests {
                 dna_address: "test_dna".into(),
                 request_id: "test_id".to_string(),
                 entry_address_list: vec!["data1".into(), "data2".into()],
+                provider_agent_id: "test_from".to_string(),
             }
         ));
     }

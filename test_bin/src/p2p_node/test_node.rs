@@ -521,6 +521,7 @@ impl TestNode {
                 request_id: request.request_id.clone(),
                 dna_address: request.dna_address.clone(),
                 address_map: entry_address_list,
+                provider_agent_id: self.agent_id.clone(),
             };
         }
         self.send(JsonProtocol::HandleGetAuthoringEntryListResult(msg).into())
@@ -562,6 +563,7 @@ impl TestNode {
                 request_id: request.request_id.clone(),
                 dna_address: request.dna_address.clone(),
                 address_map: entry_address_list,
+                provider_agent_id: self.agent_id.clone(),
             };
         }
         self.send(JsonProtocol::HandleGetGossipingEntryListResult(msg).into())

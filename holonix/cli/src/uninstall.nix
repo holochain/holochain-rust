@@ -5,8 +5,8 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-  echo "dropping hc binary from home directory"
-  rm -f ~/.cargo/bin/hc
+   echo "dropping hc binary from cargo home directory"
+   rm -f $CARGO_HOME/bin/hc
   '';
 in
 script

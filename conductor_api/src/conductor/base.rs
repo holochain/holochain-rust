@@ -1691,24 +1691,6 @@ pub mod tests {
     }
 
     #[test]
-    fn error_if_required_bridge_not_running() {
-        let mut config = load_configuration::<Configuration>(&test_toml(10061, 10062)).unwrap();
-        config.bridges.clear();
-        let mut conductor = Conductor::from_config(config.clone());
-        conductor.dna_loader = test_dna_loader();
-        conductor.key_loader = test_key_loader();
-        conductor
-            .boot_from_config()
-            .expect("Test config must be sane");
-        let result = conductor.start_all_instances();
-        assert!(result.is_err());
-        assert_eq!(
-            result.err().unwrap(),
-            HolochainInstanceError::RequiredBridgeMissing("test-callee".to_string())
-        );
-    }
-
-    #[test]
     fn fails_if_key_address_does_not_match() {
         // Config with well formatted public address but differing to the deterministic key
         // created by test_key_loader for "holo_tester1.key"

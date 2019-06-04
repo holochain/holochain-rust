@@ -212,7 +212,44 @@ impl Configuration {
                                 }
                             }
                             BridgeReference::Trait { ref traits } => {
-                                let _ = traits;
+                                for (expected_trait_name, expected_trait) in traits {
+                                    let mut found = false;
+                                    for (_zome_name, zome) in callee_dna.zomes.iter() {
+                                        for (zome_trait_name, zome_trait_functions) in zome.traits.iter() {
+                                            if zome_trait_name == expected_trait_name {
+                                                let mut has_all_fns_exported = true;
+                                                for fn_def in expected_trait.functions.iter() {
+                                                    if !zome_trait_functions.functions.contains(&fn_def.name) {
+                                                        has_all_fns_exported = false;
+                                                    }
+                                                }
+
+                                                let mut has_matching_signatures = true;
+                                                if has_all_fns_exported {
+                                                    for fn_def in expected_trait.functions.iter() {
+                                                        if !zome.fn_declarations.contains(&fn_def) {
+                                                            has_matching_signatures = false;
+                                                        }
+                                                    }
+                                                }
+
+                                                if has_all_fns_exported && has_matching_signatures {
+                                                    found = true;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if !found {
+                                        return Err(format!(
+                                            "Bridge '{}' of instance '{}' requires callee to to implement trait '{}' with functions: {:?}",
+                                            bridge.handle,
+                                            instance.id,
+                                            expected_trait_name,
+                                            expected_trait.functions,
+                                        ));
+                                    }
+                                }
                             }
                         }
                     }

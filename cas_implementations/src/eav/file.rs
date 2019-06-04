@@ -125,13 +125,12 @@ impl EavFileStorage {
             } else {
                  let eavs = paths
                 .into_iter()
-                .map(|p| p.unwrap())
+                .map(Result::unwrap)
                 .filter(|pathbuf| {
                     pathbuf
                         .iter()
                         .last()
                         .and_then(|v| {
-                            //todo should do deeper error handling here
                             let v = v.to_string_lossy();
                             v.to_string()
                                 .try_into()

@@ -113,11 +113,17 @@ impl EavFileStorage {
         if path.exists() {
             let full_path = path.join("*");
 
-            let paths = glob(full_path.to_str().unwrap())
+            let paths = glob(full_path.to_str()?)
                 .map_err(|_| HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
 
             let (paths, errors): (Vec<_>, Vec<_>) = paths.partition(Result::is_ok);
-            let eavs = paths
+           
+            if !errors.is_empty() {
+                Err(HolochainError::ErrorGeneric(
+                    "Could not read eavs from directory".to_string(),
+                ))
+            } else {
+                 let eavs = paths
                 .into_iter()
                 .map(|p| p.unwrap())
                 .filter(|pathbuf| {
@@ -125,6 +131,7 @@ impl EavFileStorage {
                         .iter()
                         .last()
                         .and_then(|v| {
+                            //todo should do deeper error handling here
                             let v = v.to_string_lossy();
                             v.to_string()
                                 .try_into()
@@ -135,11 +142,6 @@ impl EavFileStorage {
                         .unwrap_or_default()
                 })
                 .map(|pathbuf| read_eav(pathbuf.clone()));
-            if !errors.is_empty() {
-                Err(HolochainError::ErrorGeneric(
-                    "Could not read eavs from directory".to_string(),
-                ))
-            } else {
                 Ok(eavs.filter_map(|s| s.ok()).flatten().collect())
             }
         } else {

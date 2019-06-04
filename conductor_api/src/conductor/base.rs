@@ -1669,7 +1669,7 @@ pub mod tests {
         assert!(result.is_err());
         println!("{:?}", result);
         assert!(result.err().unwrap().starts_with(
-            "Bridge 'test-callee' of instance 'bridge-caller' requires callee to be DNA with hash 'fake bridge reference', but the configure instance 'bridge-callee' runs DNA with hash"
+            "Bridge \'test-callee\' of instance \'bridge-callee\' requires callee to be DNA with hash \'fake bridge reference\', but the configured instance \'bridge-callee\' runs DNA with hash"
         ));
     }
 

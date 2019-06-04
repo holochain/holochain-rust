@@ -202,7 +202,7 @@ impl Configuration {
                             BridgeReference::Address { ref dna_address } => {
                                 if *dna_address != callee_dna.address() {
                                     return Err(format!(
-                                        "Bridge '{}' of instance '{}' requires callee to be DNA with hash '{}', but the configure instance '{}' runs DNA with hash '{}'.",
+                                        "Bridge '{}' of instance '{}' requires callee to be DNA with hash '{}', but the configured instance '{}' runs DNA with hash '{}'.",
                                         bridge.handle,
                                         instance.id,
                                         dna_address,

@@ -55,7 +55,7 @@ pub mod tests {
         agent::test_agent_id,
         cas::content::Address,
         entry::{entry_type::test_app_entry_type, Entry},
-        iso_dispatch::{ISODispatch, ISODispatcherMock},
+        chain_header::test_chain_header,
         json::{JsonString, RawString},
         link::{link_data::LinkData, Link},
     };
@@ -108,7 +108,7 @@ pub mod tests {
         links.iter().for_each(|link| {
             assert!(initialized_context //commit the AddLink entry first
                 .block_on(commit_entry(
-                    link.add_entry(ISODispatcherMock::default().now_dispatch(), test_agent_id()),
+                    link.add_entry(test_chain_header(), test_agent_id()),
                     None,
                     &initialized_context
                 ))
@@ -117,7 +117,7 @@ pub mod tests {
                 .block_on(add_link(
                     &LinkData::add_from_link(
                         &link,
-                        ISODispatcherMock::default().now_dispatch(),
+                        test_chain_header(),
                         test_agent_id()
                     ),
                     &initialized_context

@@ -30,12 +30,30 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
+    let top_chain_header_option = context
+    .state()
+    .unwrap()
+    .agent()
+    .top_chain_header();
+
+    let top_chain_header = match top_chain_header_option
+    {
+        Some(top_chain) =>top_chain,
+        None => 
+        {
+            context.log(format!(
+                "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+                args_str
+            ));
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        } 
+    };
 
     let link = input.to_link();
     let link_add = LinkData::from_link(
         &link,
         LinkActionKind::ADD,
-        context.utc_dispatch.now_dispatch(),
+        top_chain_header,
         context.agent_id.clone(),
     );
     let entry = Entry::LinkAdd(link_add);

@@ -37,11 +37,30 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         }
     };
 
+    let top_chain_header_option = context
+    .state()
+    .unwrap()
+    .agent()
+    .top_chain_header();
+
+    let top_chain_header = match top_chain_header_option
+    {
+        Some(top_chain) =>top_chain,
+        None => 
+        {
+            context.log(format!(
+                "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+                args_str
+            ));
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        } 
+    };
+
     let link = input.to_link();
     let link_remove = LinkData::from_link(
         &link,
         LinkActionKind::REMOVE,
-        context.utc_dispatch.now_dispatch(),
+        top_chain_header,
         context.agent_id.clone(),
     );
     let links_result = context.block_on(get_links(

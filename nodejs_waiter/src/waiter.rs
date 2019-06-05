@@ -374,7 +374,6 @@ mod tests {
         chain_header::test_chain_header,
         dna::capabilities::CapabilityRequest,
         entry::Entry,
-        iso_dispatch::{ISODispatch, ISODispatcherMock},
         json::JsonString,
         link::link_data::LinkData,
         signature::Signature,
@@ -601,7 +600,7 @@ mod tests {
             &"target".to_string().into(),
             "link-type",
             "link-tag",
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id(),
         );
         let entry = Entry::LinkAdd(link_add.clone());

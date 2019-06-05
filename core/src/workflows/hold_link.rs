@@ -146,7 +146,7 @@ pub mod tests {
             &entry_address,
             &entry_address,
             "test-tag",
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id(),
         );
         let link_entry = Entry::LinkAdd(link_add);

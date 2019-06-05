@@ -22,19 +22,21 @@ in rec
 
   installPhase =
   ''
-    mkdir -p $out/bin
-    mv ${args.binary} $out/bin/${args.binary}
+  mkdir -p $out/bin
+  mv ${args.binary} $out/bin/${args.binary}
   '';
 
   postFixup =
     if
       pkgs.stdenv.isDarwin
     then
-      ""
+      ''
+      echo;
+      ''
     else
       ''
-        patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $out/bin/${args.binary}
-        patchelf --shrink-rpath $out/bin/${args.binary}
+      patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $out/bin/${args.binary}
+      patchelf --shrink-rpath $out/bin/${args.binary}
       '';
 
   };

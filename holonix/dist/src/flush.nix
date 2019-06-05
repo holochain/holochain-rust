@@ -7,7 +7,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   rm -rf ${dist.path}
+  rm -rf ${dist.path}
   '';
 in
 script

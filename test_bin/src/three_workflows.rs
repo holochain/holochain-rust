@@ -181,26 +181,22 @@ pub fn hold_and_publish_test(
     // Alex: Look for the hold_list request received from network module and reply
     alex.reply_to_first_HandleGetPublishingEntryList();
 
-    // Might receive a HandleFetchEntry request from network module:
-    // hackmode would want the data right away
+    // Handle HandleFetchEntry request sent from network module
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(has_received);
 
-    // Have billy author the same data
+    // Have billy author some other data
     billy.author_entry(&ENTRY_ADDRESS_2, &ENTRY_CONTENT_2, true)?;
 
+    // Wait for gossip to process
     let _msg_count = camille.listen(3000);
 
-    // Camille requests that entry
+    // Camille requests Alex's entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());
-    // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    if !has_received {
-        let has_received = billy.wait_HandleFetchEntry_and_reply();
-        if !has_received {
-            let _has_received = camille.wait_HandleFetchEntry_and_reply();
-        }
-    }
+
+    // Have Alex respond
+    alex.reply_to_HandleFetchEntry(&fetch_entry)
+        .expect("Reply to HandleFetchEntry should work");
 
     // Camille should receive the data
     let req_id = fetch_entry.request_id.clone();
@@ -222,16 +218,14 @@ pub fn hold_and_publish_test(
     assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(entry_data.entry_content, ENTRY_CONTENT_1.clone());
 
-    // Camille requests that entry
+    // Camille requests Billy's Entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_2.clone());
     // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    if !has_received {
-        let has_received = billy.wait_HandleFetchEntry_and_reply();
-        if !has_received {
-            let _has_received = camille.wait_HandleFetchEntry_and_reply();
-        }
-    }
+
+    // Have Billy respond
+    billy
+        .reply_to_HandleFetchEntry(&fetch_entry)
+        .expect("Reply to HandleFetchEntry should work");
 
     // Camille should receive the data
     let req_id = fetch_entry.request_id.clone();

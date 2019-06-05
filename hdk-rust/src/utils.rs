@@ -4,25 +4,23 @@ use crate::{
     holochain_core_types::{
         cas::content::{Address, AddressableContent},
         entry::{AppEntryValue, Entry},
-        json::{JsonString, default_to_json},
+        json::{default_to_json, JsonString},
     },
 };
-use std::convert::TryFrom;
 use serde::Serialize;
-use std::fmt::Debug;
-
+use std::{convert::TryFrom, fmt::Debug};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GetLinksLoadResult<T> {
     pub entry: T,
-    pub address: Address
+    pub address: Address,
 }
 
 impl<T: Into<JsonString> + Debug + Serialize> From<GetLinksLoadResult<T>> for JsonString {
     fn from(u: GetLinksLoadResult<T>) -> JsonString {
         default_to_json(u)
     }
-} 
+}
 
 ///
 /// Helper function that perfoms a try_from for every entry
@@ -34,7 +32,6 @@ pub fn get_links_and_load_type<R: TryFrom<AppEntryValue>>(
     link_type: Option<String>,
     tag: Option<String>,
 ) -> ZomeApiResult<Vec<GetLinksLoadResult<R>>> {
-
     let link_load_results = hdk::get_links_and_load(base, link_type, tag)?;
 
     Ok(link_load_results
@@ -58,12 +55,7 @@ pub fn get_links_and_load_type<R: TryFrom<AppEntryValue>>(
             )),
         })
         .filter_map(Result::ok)
-        .map(|(address, entry)| {
-            GetLinksLoadResult{
-                address,
-                entry,
-            }
-        })
+        .map(|(address, entry)| GetLinksLoadResult { address, entry })
         .collect())
 }
 

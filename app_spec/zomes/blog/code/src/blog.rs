@@ -404,7 +404,12 @@ pub fn handle_my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {
 }
 
 pub fn handle_my_posts_with_load(tag: Option<String>) -> ZomeApiResult<Vec<Post>> {
-    hdk::utils::get_links_and_load_type(&AGENT_ADDRESS, Some("authored_posts".into()), tag)
+    Ok(
+        hdk::utils::get_links_and_load_type::<Post>(&AGENT_ADDRESS, Some("authored_posts".into()), tag)?
+        .into_iter()
+        .map(|r| r.entry )
+        .collect()
+    )
 }
 
 pub fn handle_my_memos() -> ZomeApiResult<Vec<Address>> {

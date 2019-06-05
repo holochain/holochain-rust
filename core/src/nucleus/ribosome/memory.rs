@@ -81,6 +81,11 @@ impl WasmPageManager {
 
         self.wasm_memory
             .set(MemoryInt::from(mem_buf.offset()), &data)
+            .map_err(|e| {
+                // TODO: hook up to logger
+                println!("err/wasm: could not set memory: {:?}", e.to_string());
+                e
+            })
             .expect("memory should be writable");
 
         Ok(mem_buf)

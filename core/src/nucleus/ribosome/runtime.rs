@@ -69,6 +69,14 @@ impl WasmCallData {
             WasmCallData::DirectCall(name, _) => name.to_string(),
         }
     }
+
+    pub fn context(&self) -> Option<Arc<Context>> {
+        match self {
+            WasmCallData::ZomeCall(data) => Some(data.context.clone()),
+            WasmCallData::CallbackCall(data) => Some(data.context.clone()),
+            WasmCallData::DirectCall(_, _) => None,
+        }
+    }
 }
 
 impl fmt::Display for WasmCallData {
@@ -208,7 +216,15 @@ impl Runtime {
         s_bytes.push(0); // Add string terminate character (important)
 
         match self.memory_manager.write(&s_bytes) {
-            Err(_) => ribosome_error_code!(Unspecified),
+            Err(e) => {
+                if let Some(context) = self.data.context() {
+                    context.log(format!("err/wasm: {}", String::from(e)));
+                } else {
+                    // TODO: hook up to logger
+                    println!("err/wasm: Wasm memory error, but no context to log it");
+                }
+                ribosome_error_code!(Unspecified)
+            }
             Ok(allocation) => Ok(Some(RuntimeValue::I64(RibosomeEncodingBits::from(
                 RibosomeEncodedValue::Allocation(allocation.into()),
             )

@@ -3,17 +3,21 @@
 //! being used to define relationships between AddressableContent values.
 //! See [wikipedia](https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model) to learn more about this pattern.
 
-use crate::{
-    cas::content::{Address, AddressableContent, Content},
-    entry::{test_entry_a, test_entry_b, Entry},
-    error::{HcResult, HolochainError},
-    json::JsonString,
-};
 use chrono::offset::Utc;
-use eav::{
-    query::{EaviQuery, IndexFilter},
-    storage::{EntityAttributeValueStorage, ExampleEntityAttributeValueStorage},
+
+use lib3h_persistence::{
+    cas::content::{Address, AddressableContent, Content},
+    eav::query::{AttributeError, IndexFilter},
+    error::{PersistenceResult, PersistenceError},
+    json::JsonString,
+   storage::{EntityAttributeValueStorage, ExampleEntityAttributeValueStorage},
 };
+
+use crate::{
+    {error::HolochainError}, 
+    entry::{test_entry_a, test_entry_b, Entry}
+};
+ 
 use regex::{Regex, RegexBuilder};
 use std::{
     cmp::Ordering,
@@ -41,11 +45,7 @@ pub enum Attribute {
     PendingEntry,
 }
 
-#[derive(PartialEq, Debug)]
-pub enum AttributeError {
-    Unrecognized(String),
-    ParseError,
-}
+impl lib3h_persistence::eav::Attribute for Attribute {}
 
 impl From<AttributeError> for HolochainError {
     fn from(err: AttributeError) -> HolochainError {
@@ -135,36 +135,7 @@ pub type Index = i64;
 // type Source ...
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
-#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
-pub struct EntityAttributeValueIndex {
-    entity: Entity,
-    attribute: Attribute,
-    value: Value,
-    index: Index,
-    // source: Source,
-}
-
-impl PartialOrd for EntityAttributeValueIndex {
-    fn partial_cmp(&self, other: &EntityAttributeValueIndex) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for EntityAttributeValueIndex {
-    fn cmp(&self, other: &EntityAttributeValueIndex) -> Ordering {
-        self.index.cmp(&other.index())
-    }
-}
-
-impl AddressableContent for EntityAttributeValueIndex {
-    fn content(&self) -> Content {
-        self.to_owned().into()
-    }
-
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
-        content.to_owned().try_into()
-    }
-}
+pub type EntityAttributeValueIndex = lib3h_persistence::eav::EntityAttributeValueIndex<Attribute>;
 
 fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
     if let Attribute::LinkTag(name, _tag) | Attribute::RemovedLink(name, _tag) = attribute {

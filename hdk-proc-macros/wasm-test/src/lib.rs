@@ -10,7 +10,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate hdk;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate lib3h_persistence_derive;
 
 use hdk::{
     error::ZomeApiResult,

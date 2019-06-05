@@ -16,7 +16,7 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
+/// # extern crate lib3h_persistence_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;

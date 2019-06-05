@@ -13,7 +13,7 @@ lib3h = "=0.0.1-alpha1"
 lib3h_protocol = "=0.0.1-alpha1"
 holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }
-holochain_core_types_derive = { path = "../core_types_derive" }
+lib3h_persistence_derive = { path = "../../lib3h/crates/persistence_derive" }
 lazy_static = "=1.2.0"
 libc = "=0.2.50"
 reqwest = "=0.9.11"

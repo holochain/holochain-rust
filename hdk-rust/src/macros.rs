@@ -64,7 +64,7 @@ macro_rules! load_string {
 /// # extern crate boolinator;
 /// # extern crate holochain_core_types;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
+/// # extern crate lib3h_persistence_derive;
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::json::JsonString;
@@ -417,7 +417,7 @@ macro_rules! define_zome {
                     }
 
                     // Macro'd InputStruct
-                    #[derive(Deserialize, Serialize, Debug, $crate::holochain_core_types_derive::DefaultJson)]
+                    #[derive(Deserialize, Serialize, Debug, $crate::lib3h_persistence_derive::DefaultJson)]
                     struct InputStruct {
                         $($input_param_name : $input_param_type),*
                     }

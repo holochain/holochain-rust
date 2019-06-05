@@ -4,7 +4,6 @@
 
 use crate::{
     agent::test_agent_id,
-    cas::content::{Address, AddressableContent, Content},
     entry::{
         entry_type::{test_entry_type, EntryType},
         test_entry,
@@ -14,6 +13,8 @@ use crate::{
     signature::{Provenance, Signature},
     time::{test_iso_8601, Iso8601},
 };
+
+use lib3h_persistence::cas::content::{Address, AddressableContent, Content};
 use std::convert::TryInto;
 
 /// ChainHeader of a source chain "Item"

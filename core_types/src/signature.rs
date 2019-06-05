@@ -2,7 +2,10 @@
 //! a way of providing cryptographically verifiable proof of a given agent
 //! as having been the author of a given data entry.
 
-use crate::{cas::content::Address, error::HolochainError, json::JsonString};
+use crate::{error::HolochainError, json::JsonString};
+
+use lib3h_persistence::json::JsonString;
+use lib3h_persistence::cas::content::Address;
 
 /// Provenance is a tuple of initiating agent public key and signature of some item being signed
 /// this type is used in headers and in capability requests where the item being signed

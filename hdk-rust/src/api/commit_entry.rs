@@ -18,7 +18,7 @@ use holochain_wasm_utils::api_serialization::commit_entry::{
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
+/// # extern crate lib3h_persistence_derive;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;

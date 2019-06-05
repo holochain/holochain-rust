@@ -94,7 +94,7 @@ extern crate holochain_common;
 extern crate holochain_core;
 extern crate holochain_core_types;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate lib3h_persistence_derive;
 extern crate holochain_dpki;
 extern crate holochain_net;
 extern crate lib3h_sodium;

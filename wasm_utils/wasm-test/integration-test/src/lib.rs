@@ -5,7 +5,7 @@ extern crate holochain_wasm_utils;
 extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate lib3h_persistence_derive;
 extern crate wasmi;
 
 use holochain_wasm_utils::holochain_core_types::json::JsonString;

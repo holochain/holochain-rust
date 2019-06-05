@@ -11,7 +11,7 @@ extern crate serde_derive;
 extern crate hdk;
 extern crate holochain_wasm_utils;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate lib3h_persistence_derive;
 
 #[cfg(not(windows))]
 use hdk::error::ZomeApiError;

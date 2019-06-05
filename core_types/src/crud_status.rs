@@ -4,7 +4,6 @@
 //! even including an entry being marked as deleted.
 
 use crate::{
-    cas::content::{Address, AddressableContent, Content},
     eav::EntityAttributeValueIndex,
     error::{HcResult, HolochainError},
     hash::HashString,
@@ -13,6 +12,8 @@ use crate::{
 use eav::Attribute;
 use std::{convert::TryInto, str::FromStr};
 
+use lib3h_persistence::cas::content::{Address, AddressableContent, Content};
+  
 /// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an entry address as the Entity, [CrudStatus](../eav/Attribute.html) as the attribute
 /// and CrudStatus as the value.
 /// This will come to represent the lifecycle status of an entry, when it gets stored in an [EAV Storage](../eav/trait.EntityAttributeValueStorage.html)

@@ -49,7 +49,7 @@ impl ToTokens for ZomeFunction {
                 }
 
                 // Macro'd InputStruct
-                #[derive(Deserialize, Serialize, Debug, hdk::holochain_core_types_derive::DefaultJson)]
+                #[derive(Deserialize, Serialize, Debug, hdk::lib3h_persistence_derive::DefaultJson)]
                 struct InputStruct {
                     #(#input_params),*
                 }

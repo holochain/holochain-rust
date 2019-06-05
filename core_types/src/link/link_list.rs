@@ -1,4 +1,6 @@
-use crate::{error::HolochainError, json::JsonString, link::Link};
+use crate::{error::HolochainError, link::Link};
+use lib3h_persistence::json::JsonString;
+
 
 //-------------------------------------------------------------------------------------------------
 // LinkList

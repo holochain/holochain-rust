@@ -26,7 +26,8 @@ extern crate serde_json;
 extern crate serde_derive;
 extern crate snowflake;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate lib3h_persistence_derive;
+extern crate lib3h_persistence;
 extern crate lib3h_crypto_api;
 extern crate regex;
 #[cfg(test)]
@@ -36,7 +37,6 @@ extern crate hcid;
 extern crate uuid;
 extern crate wasmi;
 
-pub mod cas;
 pub mod chain_header;
 pub mod crud_status;
 pub mod eav;
@@ -48,8 +48,6 @@ pub mod agent;
 pub mod bits_n_pieces;
 pub mod chain_migrate;
 pub mod dna;
-pub mod hash;
-pub mod json;
 pub mod link;
 pub mod signature;
 pub mod time;

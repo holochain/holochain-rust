@@ -282,7 +282,7 @@ impl Configuration {
         let callee_dna_file = callee_dna_config.file.clone();
         let callee_dna =
             Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(callee_dna_file.clone()))
-                .map_err(|_| format!("Could not load DNA file \"{}\"", callee_dna_file))?;
+                .map_err(|err| format!("Could not load DNA file \"{}\"; error was: {}", callee_dna_file, err))?;
 
         //
         // Get matching bridge definition from caller's DNA:

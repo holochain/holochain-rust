@@ -260,7 +260,7 @@ impl Configuration {
         let caller_dna_file = caller_dna_config.file.clone();
         let caller_dna =
             Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(caller_dna_file.clone()))
-                .map_err(|_| format!("Could not load DNA file \"{}\"", caller_dna_file))?;
+                .map_err(|err| format!("Could not load DNA file \"{}\"; error was: {}", caller_dna_file, err))?;
 
         //
         // Get callee's config. DNA config, and DNA:

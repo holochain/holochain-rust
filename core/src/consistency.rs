@@ -1,6 +1,6 @@
 use crate::{
     action::Action, context::Context, entry::CanPublish,
-    network::entry_with_header::EntryWithHeader,
+    network::entry_with_header::EntryWithHeader, nucleus::ZomeFnCall,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -57,19 +57,21 @@ impl ConsistencySignal {
 #[derive(Clone, Debug, Serialize)]
 pub enum ConsistencyEvent {
     // CAUSES
-    Publish(Address),                                   // -> Hold
-    AddPendingValidation(Address),                      // -> RemovePendingValidation
-    SignalZomeFunctionCall(snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
+    Publish(Address),                      // -> Hold
+    AddPendingValidation(Address),         // -> RemovePendingValidation
+    SignalZomeFunctionCall(ZomeFnCallKey), // -> ReturnZomeFunctionResult
 
     // EFFECTS
-    Hold(Address),                                        // <- Publish
-    UpdateEntry(Address, Address),                        // <- Publish, entry_type=Update
-    RemoveEntry(Address, Address),                        // <- Publish, entry_type=Deletion
-    AddLink(Link),                                        // <- Publish, entry_type=LinkAdd
-    RemoveLink(Link),                                     // <- Publish, entry_type=LinkRemove
-    RemovePendingValidation(Address),                     // <- AddPendingValidation
-    ReturnZomeFunctionResult(snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
+    Hold(Address),                           // <- Publish
+    UpdateEntry(Address, Address),           // <- Publish, entry_type=Update
+    RemoveEntry(Address, Address),           // <- Publish, entry_type=Deletion
+    AddLink(Link),                           // <- Publish, entry_type=LinkAdd
+    RemoveLink(Link),                        // <- Publish, entry_type=LinkRemove
+    RemovePendingValidation(Address),        // <- AddPendingValidation
+    ReturnZomeFunctionResult(ZomeFnCallKey), // <- SignalZomeFunctionCall
 }
+
+type ZomeFnCallKey = (String, snowflake::ProcessUniqueId);
 
 #[derive(Clone, Debug, Serialize)]
 struct PendingConsistency {
@@ -161,14 +163,18 @@ impl ConsistencyModel {
             )),
 
             Action::SignalZomeFunctionCall(call) => Some(ConsistencySignal::new_pending(
-                SignalZomeFunctionCall(call.id()),
+                SignalZomeFunctionCall(self.collapse_call(&call)),
                 Source,
-                vec![ReturnZomeFunctionResult(call.id())],
+                vec![ReturnZomeFunctionResult(self.collapse_call(&call))],
             )),
             Action::ReturnZomeFunctionResult(result) => Some(ConsistencySignal::new_terminal(
-                ReturnZomeFunctionResult(result.call().id()),
+                ReturnZomeFunctionResult(self.collapse_call(&result.call())),
             )),
             _ => None,
         }
+    }
+
+    fn collapse_call(&self, call: &ZomeFnCall) -> ZomeFnCallKey {
+        (format!("{}/{}", call.zome_name, call.fn_name), call.id())
     }
 }

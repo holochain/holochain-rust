@@ -82,9 +82,6 @@ pub struct Configuration {
     /// Which signals to emit
     #[serde(default)]
     pub signals: SignalConfig,
-
-    #[serde(default)]
-    pub iso_config: ISOConfiguration,
 }
 
 pub fn default_persistence_dir() -> PathBuf {
@@ -385,23 +382,8 @@ pub struct DnaConfiguration {
     pub hash: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
-pub enum ISOActive {
-    On,
-    Off,
-}
 
-impl Default for ISOActive {
-    fn default() -> ISOActive {
-        ISOActive::On
-    }
-}
 
-/// Configure if ISO generation should exist
-#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
-pub struct ISOConfiguration {
-    pub iso_active: ISOActive,
-}
 
 impl TryFrom<DnaConfiguration> for Dna {
     type Error = HolochainError;

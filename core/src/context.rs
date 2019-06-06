@@ -25,8 +25,7 @@ use holochain_core_types::{
         entry_type::EntryType,
         Entry,
     },
-    error::{HcResult, HolochainError},
-    iso_dispatch::ISODispatch,
+    error::{HcResult, HolochainError}
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};
@@ -58,7 +57,6 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
-    pub utc_dispatch: Arc<ISODispatch>,
     signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
@@ -100,8 +98,7 @@ impl Context {
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
-        signal_tx: Option<SignalSender>,
-        utc_dispatch: Arc<ISODispatch>,
+        signal_tx: Option<SignalSender>
     ) -> Self {
         Context {
             agent_id: agent_id.clone(),
@@ -119,7 +116,7 @@ impl Context {
                 conductor_api,
                 agent_id,
             )),
-            utc_dispatch,
+     
         }
     }
 
@@ -132,8 +129,7 @@ impl Context {
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
-        p2p_config: P2pConfig,
-        utc_dispatch: Arc<ISODispatch>,
+        p2p_config: P2pConfig
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id: agent_id.clone(),
@@ -148,7 +144,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
-            utc_dispatch,
+
         })
     }
 

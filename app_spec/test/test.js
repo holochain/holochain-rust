@@ -342,73 +342,66 @@ scenario2.runTape('my_memos_are_private', async (t, { alice, bob }) => {
 })
 
 
-scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
+scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
-  //create by alice
-  await alice.callSync("blog", "create_post_with_agent",
-    { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
+  //creates a simple link with alice as author with chain header
+  let check = await alice.callSync("simple", "create_link",
+    { "base":alice.agentId, "content": "Posty" }
   )
 
-  //bob creates post with alice id
-  await bob.callSync("blog", "create_post_with_agent",
-    { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
+  console.log("alice posts" + JSON.stringify(check))
+
+  //creates a simple link with bob as author with chain header
+  await bob.callSync("simple", "create_link",
+    { "base":alice.agentId, "content": "Posty" }
   )
   
-  //create post by alice
-  const alice_posts = bob.call("blog", "posts_by_agent",
-    { "agent": alice.agentId }
+  //get all created links so far alice
+  const alice_posts = bob.call("simple", "get_my_links",
+    { "base": alice.agentId }
   )
 
+  console.log("check posts" + JSON.stringify(alice_posts))
+
+  //expect two links from alice
   t.ok(alice_posts.Ok)
   t.equal(alice_posts.Ok.links.length,2 );
 
-  //create post by alice
-  const bob_posts = alice.call("blog", "posts_by_agent",
-    { "agent": alice.agentId }
+  //get all created links so far for bob
+  const bob_posts = bob.call("simple", "get_my_links",
+    { "base": alice.agentId }
   )
- 
+
+
+  //expected two links from bob
   t.ok(bob_posts.Ok)
   t.equal(bob_posts.Ok.links.length,2 );
 
-  //remove link by alice
-  await alice.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
+  //alice removes both links
+  await alice.callSync("simple", "delete_link", { "base":alice.agentId, "content": "Posty" })
 
-  // get posts by bob
-  const bob_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
-
-  const alice_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
-
+  // get links from bob
+  const bob_agent_posts_expect_empty = bob.call("simple", "get_my_links",{ "base": alice.agentId })
+  //get links from alice
+  const alice_agent_posts_expect_empty = alice.call("simple", "get_my_links",{ "base": alice.agentId })
+  
+  //bob expects zero links
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
-
+  //alice expects zero alice
   t.ok(alice_agent_posts_expect_empty.Ok)
   t.equal(alice_agent_posts_expect_empty.Ok.links.length, 0);
 
-  //create by alice with same data
-  await alice.callSync("blog", "create_post_with_agent",
-    { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
-  )
 
-  // get posts by bob
-  const bob_agent_posts_expect_empty_again = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
+  //different chain hash up to this point so we should be able to create a link with the same data
+  await alice.callSync("simple", "create_link",{ "base":alice.agentId, "content": "Posty" })
 
-  //same time same author
-  t.ok(bob_agent_posts_expect_empty_again.Ok)
-  t.equal(bob_agent_posts_expect_empty_again.Ok.links.length, 0);
-
-  //time in the nodejs conductor is set to 0 so in order to set a different time we need to use a new author
-  await carol.callSync("blog", "create_post_with_agent",
-  { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
-  );
-
-  //get carol posts from bob
-  const carol_posts = carol.call("blog", "posts_by_agent",
-    { "agent": alice.agentId }
-  )
+  //get alice posts 
+  const alice_posts_not_empty = bob.call("simple", "get_my_links",{ "base": alice.agentId })
   
-
-  t.ok(carol_posts.Ok)
-  t.equal(carol_posts.Ok.links.length, 1);
+   //expect 1 post
+  t.ok(alice_posts_not_empty.Ok)
+  t.equal(alice_posts_not_empty.Ok.links.length, 1);
 
 
 })

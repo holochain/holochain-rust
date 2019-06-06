@@ -62,8 +62,8 @@ mod tests {
     use holochain_core_types::{
         agent::test_agent_id,
         cas::content::AddressableContent,
+        chain_header::test_chain_header,
         entry::Entry,
-        iso_dispatch::{ISODispatch, ISODispatcherMock},
         link::{link_data::LinkData, Link, LinkActionKind},
     };
 
@@ -84,7 +84,7 @@ mod tests {
         let link_data = LinkData::from_link(
             &link,
             LinkActionKind::ADD,
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id(),
         );
         let result = context.block_on(add_link(&link_data, &context.clone()));
@@ -102,7 +102,7 @@ mod tests {
         let link_data = LinkData::from_link(
             &link,
             LinkActionKind::ADD,
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id(),
         );
         let result = context.block_on(add_link(&link_data, &context.clone()));

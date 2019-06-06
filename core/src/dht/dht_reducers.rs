@@ -168,7 +168,6 @@ pub mod tests {
         chain_header::test_chain_header,
         eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
-        iso_dispatch::{ISODispatch, ISODispatcherMock},
         link::{link_data::LinkData, Link, LinkActionKind},
     };
     use std::convert::TryFrom;
@@ -222,7 +221,7 @@ pub mod tests {
         let link_data = LinkData::from_link(
             &link,
             LinkActionKind::ADD,
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id(),
         );
         let action = ActionWrapper::new(Action::AddLink(link_data.clone()));
@@ -264,7 +263,7 @@ pub mod tests {
         let link_data = LinkData::from_link(
             &link,
             LinkActionKind::ADD,
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id(),
         );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
@@ -274,7 +273,7 @@ pub mod tests {
         let link_remove_data = LinkData::from_link(
             &link.clone(),
             LinkActionKind::REMOVE,
-            ISODispatcherMock::default().now_dispatch(),
+                test_chain_header(),
             test_agent_id(),
         );
 
@@ -313,8 +312,7 @@ pub mod tests {
         assert_eq!(hash_set.len(), 1);
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        let link_entry =
-            link.add_entry(ISODispatcherMock::default().now_dispatch(), test_agent_id());
+        let link_entry = link.add_entry(test_chain_header(), test_agent_id());
         assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
             eav.attribute(),
@@ -324,7 +322,7 @@ pub mod tests {
         let link_data = LinkData::from_link(
             &link.clone(),
             LinkActionKind::ADD,
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id_with_name("new_agent"),
         );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
@@ -360,8 +358,7 @@ pub mod tests {
         assert_eq!(hash_set.len(), 2);
         let eav = hash_set.iter().nth(1).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        let _link_entry =
-            link.add_entry(ISODispatcherMock::default().now_dispatch(), test_agent_id());
+        let _link_entry = link.add_entry(test_chain_header(), test_agent_id());
         assert_eq!(eav.value(), entry_link_add.address());
         assert_eq!(
             eav.attribute(),
@@ -384,7 +381,7 @@ pub mod tests {
         let link_data = LinkData::from_link(
             &link.clone(),
             LinkActionKind::ADD,
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id(),
         );
         let action = ActionWrapper::new(Action::AddLink(link_data));

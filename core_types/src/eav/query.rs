@@ -3,10 +3,18 @@ use std::collections::BTreeSet;
 
 /// Represents a set of filtering operations on the EAVI store.
 pub struct EaviQuery<'a> {
+    ///represents a filter for the Entity
     pub entity: EntityFilter<'a>,
+    ///represents a filter for the Attribute
     pub attribute: AttributeFilter<'a>,
+    ///represents a filter for the Value
     pub value: ValueFilter<'a>,
+    ///For this query system we are able to provide a tombstone set on the query level which allows us to specify which Attribute match should take precedent over the others.
+    ///This is useful for some of the Link CRDT operations we are doing. Note that if no tombstone is found, the latest entry is returned
+    ///in the subset is obtained. The tombstone is optional so if it is not supplied, no tombstone check will be done.
+    ///Currently the Tombstone does not work on an IndexByRange IndexFilter and will operate as if the tombstone was not set
     pub tombstone: Option<AttributeFilter<'a>>,
+    ///represents a filter for the Index
     pub index: IndexFilter,
 }
 
@@ -26,6 +34,7 @@ impl<'a> Default for EaviQuery<'a> {
     }
 }
 
+///Creates a query for the EAVI system
 impl<'a> EaviQuery<'a> {
     pub fn new(
         entity: EntityFilter<'a>,
@@ -43,6 +52,7 @@ impl<'a> EaviQuery<'a> {
         }
     }
 
+    ///This runs the query based the query configuration we have given
     pub fn run<I>(&self, iter: I) -> BTreeSet<EntityAttributeValueIndex>
     where
         I: Clone + Iterator<Item = EntityAttributeValueIndex> + 'a,
@@ -55,13 +65,15 @@ impl<'a> EaviQuery<'a> {
         match self.index {
             IndexFilter::LatestByAttribute => filtered
                 .filter_map(|eavi| {
+                    // this fold reduces a set of matched (e,a,v) values but makes sure the tombstone value takes priority.
+                    //the starting point is a tuple (Option,bool) which translates to a cnodition in which we have found our tombstone value and it also matches our tombstone
                     let reduced_value =
                         iter2.clone().fold((None, false), |eavi_option, eavi_fold| {
-                            //if tombstone has been found do not reduce further. Maybe try a scan instead of a fold?
+                            //if tombstone match is found, do not check the rest
                             if eavi_option.1 {
                                 eavi_option
                             } else {
-                                //create eavi query without tombstone set
+                                //create eavi query without tombstone set, they are two levels here. we have to make sure that the values match our eav set but later on we check if that value given also matches our tombstone condition
                                 let fold_query = EaviQuery::new(
                                     Some(eavi.entity()).into(),
                                     Some(eavi.attribute()).into(),
@@ -69,14 +81,14 @@ impl<'a> EaviQuery<'a> {
                                     IndexFilter::LatestByAttribute,
                                     None,
                                 );
-                                //check if value is part of set
+                                //check if the value matches our initial condition
                                 if EaviQuery::eav_check(
                                     &eavi_fold,
                                     &fold_query.entity,
                                     &self.attribute,
                                     &fold_query.value,
                                 ) {
-                                    //check if tombstone matches with attribute
+                                    //check if tombstone condition is met
                                     if *&self
                                         .tombstone()
                                         .as_ref()
@@ -84,7 +96,7 @@ impl<'a> EaviQuery<'a> {
                                         .unwrap_or(true)
                                         .clone()
                                     {
-                                        //if attrribute is found return type plus boolean that siginifies tombstone has been found
+                                        //if attrribute is found return the value plus the tombstone boolean set to true
                                         (
                                             Some(eavi_fold),
                                             *&self
@@ -95,7 +107,7 @@ impl<'a> EaviQuery<'a> {
                                                 .clone(),
                                         )
                                     } else {
-                                        //return value that signifies value has been found but tuple hasnt been found
+                                        //return value that signifies value has been found but tombstone has not been found
                                         (Some(eavi_fold), false)
                                     }
                                 } else {
@@ -105,7 +117,7 @@ impl<'a> EaviQuery<'a> {
                             }
                         });
 
-                    //reduce folded value
+                    //at the end just return initial value of tombstone
                     reduced_value.0
                 })
                 .collect(),
@@ -144,6 +156,7 @@ impl<'a> EaviQuery<'a> {
     }
 }
 
+/// Represents a fitler type which takes in a function to match on
 pub struct EavFilter<'a, T: 'a + Eq>(Box<dyn Fn(T) -> bool + 'a>);
 
 impl<'a, T: 'a + Eq> EavFilter<'a, T> {

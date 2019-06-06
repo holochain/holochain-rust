@@ -1,7 +1,7 @@
 use holochain_conductor_api::{
     config::{
         AgentConfiguration, Bridge, Configuration, DnaConfiguration, DpkiConfiguration,
-        InstanceConfiguration, LoggerConfiguration, SignalConfig, StorageConfiguration,ISOConfiguration,ISOActive
+        InstanceConfiguration, LoggerConfiguration, SignalConfig, StorageConfiguration,
     },
     key_loaders::test_keystore,
     keystore::PRIMARY_KEYBUNDLE_ID,
@@ -132,10 +132,7 @@ fn make_config(
         trace: true,
         consistency: false,
     };
-    let iso_config = ISOConfiguration
-    {
-        iso_active : ISOActive::Off,
-    };
+ 
 
     let config = Configuration {
         agents: agent_configs.values().cloned().collect(),
@@ -145,7 +142,6 @@ fn make_config(
         dpki,
         logger,
         signals,
-        iso_config,
         ..Default::default()
     };
     config

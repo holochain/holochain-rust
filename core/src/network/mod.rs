@@ -24,9 +24,9 @@ pub mod tests {
     use holochain_core_types::{
         agent::test_agent_id,
         cas::content::{Address, AddressableContent},
+        chain_header::test_chain_header,
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
-        iso_dispatch::{ISODispatch, ISODispatcherMock},
         json::JsonString,
         link::link_data::LinkData,
     };
@@ -253,7 +253,7 @@ pub mod tests {
             &entry_addresses[1],
             "test-tag",
             "test-link",
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id(),
         );
         let link2 = LinkData::new_add(
@@ -261,7 +261,7 @@ pub mod tests {
             &entry_addresses[2],
             "test-tag",
             "test-link",
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id(),
         );
 

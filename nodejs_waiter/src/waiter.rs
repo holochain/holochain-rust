@@ -369,15 +369,9 @@ mod tests {
     use super::{Action::*, *};
     use holochain_core::nucleus::actions::call_zome_function::ExecuteZomeFnResponse;
     use holochain_core_types::{
-        agent::test_agent_id,
-        cas::content::Address,
-        chain_header::test_chain_header,
-        dna::capabilities::CapabilityRequest,
-        entry::Entry,
-        iso_dispatch::{ISODispatch, ISODispatcherMock},
-        json::JsonString,
-        link::link_data::LinkData,
-        signature::Signature,
+        agent::test_agent_id, cas::content::Address, chain_header::test_chain_header,
+        dna::capabilities::CapabilityRequest, entry::Entry, json::JsonString,
+        link::link_data::LinkData, signature::Signature,
     };
     use std::sync::mpsc::sync_channel;
 
@@ -601,7 +595,7 @@ mod tests {
             &"target".to_string().into(),
             "link-type",
             "link-tag",
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id(),
         );
         let entry = Entry::LinkAdd(link_add.clone());

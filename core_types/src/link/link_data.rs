@@ -1,6 +1,7 @@
 use crate::{
     agent::AgentId,
     cas::content::Address,
+    chain_header::ChainHeader,
     error::HolochainError,
     json::JsonString,
     link::{Link, LinkActionKind},
@@ -14,7 +15,7 @@ use crate::{
 pub struct LinkData {
     pub action_kind: LinkActionKind,
     pub link: Link,
-    timestamp: String,
+    pub top_chain_header: ChainHeader,
     agent_id: AgentId,
 }
 
@@ -24,13 +25,13 @@ impl LinkData {
         target: &Address,
         tag: &str,
         link_type: &str,
-        timestamp: String,
+        top_chain_header: ChainHeader,
         agent_id: AgentId,
     ) -> Self {
         LinkData {
             action_kind: LinkActionKind::ADD,
             link: Link::new(base, target, link_type, tag),
-            timestamp,
+            top_chain_header,
             agent_id,
         }
     }
@@ -40,13 +41,13 @@ impl LinkData {
         target: &Address,
         tag: &str,
         link_type: &str,
-        timestamp: String,
+        top_chain_header: ChainHeader,
         agent_id: AgentId,
     ) -> Self {
         LinkData {
             action_kind: LinkActionKind::REMOVE,
             link: Link::new(base, target, link_type, tag),
-            timestamp,
+            top_chain_header,
             agent_id,
         }
     }
@@ -62,23 +63,23 @@ impl LinkData {
     pub fn from_link(
         link: &Link,
         action_kind: LinkActionKind,
-        timestamp: String,
+        top_chain_header: ChainHeader,
         agent_id: AgentId,
     ) -> Self {
         LinkData {
             action_kind,
             link: link.clone(),
-            timestamp,
+            top_chain_header,
             agent_id,
         }
     }
 
-    pub fn add_from_link(link: &Link, timestamp: String, agent_id: AgentId) -> Self {
-        Self::from_link(link, LinkActionKind::ADD, timestamp, agent_id)
+    pub fn add_from_link(link: &Link, top_chain_header: ChainHeader, agent_id: AgentId) -> Self {
+        Self::from_link(link, LinkActionKind::ADD, top_chain_header, agent_id)
     }
 
-    pub fn remove_from_link(link: &Link, timestamp: String, agent_id: AgentId) -> Self {
-        Self::from_link(link, LinkActionKind::REMOVE, timestamp, agent_id)
+    pub fn remove_from_link(link: &Link, top_chain_header: ChainHeader, agent_id: AgentId) -> Self {
+        Self::from_link(link, LinkActionKind::REMOVE, top_chain_header, agent_id)
     }
 }
 
@@ -88,8 +89,8 @@ pub mod tests {
     use crate::{
         agent::test_agent_id,
         cas::content::AddressableContent,
+        chain_header::test_chain_header,
         entry::{test_entry_a, test_entry_b, Entry},
-        iso_dispatch::{ISODispatch, ISODispatcherMock},
         json::JsonString,
         link::{
             link_data::LinkData,
@@ -105,7 +106,7 @@ pub mod tests {
             link.target(),
             link.tag(),
             "foo-link-type",
-            ISODispatcherMock::default().now_dispatch(),
+            test_chain_header(),
             test_agent_id(),
         )
     }
@@ -116,10 +117,9 @@ pub mod tests {
 
     pub fn test_link_entry_json_string() -> JsonString {
         JsonString::from_json(&format!(
-            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}},\"timestamp\":\"{}\",\"agent_id\":{{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}",
+            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}},\"top_chain_header\":{{\"entry_type\":{{\"App\":\"testEntryType\"}},\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"provenances\":[[\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\",\"sig\"]],\"link\":null,\"link_same_type\":null,\"link_update_delete\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}},\"agent_id\":{{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}",
             test_entry_a().address(),
             test_entry_b().address(),
-            ISODispatcherMock::default().now_dispatch()
         ))
     }
 

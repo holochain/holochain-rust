@@ -32,7 +32,7 @@ impl ConductorTestAdmin for Conductor {
             holo_remote_key: None,
         };
         new_config.agents.push(new_agent);
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.add_agent_keystore(id.clone(), keystore);
         // self.save_config()?; we don't actually want to save it for tests

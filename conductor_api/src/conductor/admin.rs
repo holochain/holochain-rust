@@ -5,7 +5,6 @@ use crate::{
         InstanceReferenceConfiguration, InterfaceConfiguration, StorageConfiguration,
     },
     dpki_instance::DpkiInstance,
-    error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
 use holochain_core_types::{
@@ -41,8 +40,6 @@ pub trait ConductorAdmin {
         agent_id: &String,
     ) -> Result<(), HolochainError>;
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
-    fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
-    fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn add_interface(&mut self, new_instance: InterfaceConfiguration)
         -> Result<(), HolochainError>;
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError>;
@@ -137,7 +134,7 @@ impl ConductorAdmin for Conductor {
 
         let mut new_config = self.config.clone();
         new_config.dnas.push(new_dna.clone());
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
         notify(format!("Installed DNA from {} as \"{}\"", path_string, id));
@@ -167,7 +164,7 @@ impl ConductorAdmin for Conductor {
             new_config = new_config.save_remove_instance(id);
         }
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -211,7 +208,7 @@ impl ConductorAdmin for Conductor {
             },
         };
         new_config.instances.push(new_instance_config);
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         let instance = self.instantiate_from_config(id, Some(&new_config))?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
@@ -229,7 +226,7 @@ impl ConductorAdmin for Conductor {
 
         new_config = new_config.save_remove_instance(id);
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -247,19 +244,6 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
-    fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
-        let instance = self.instances.get(id)?;
-
-        notify(format!("Starting instance \"{}\"...", id));
-        instance.write().unwrap().start()
-    }
-
-    fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
-        let instance = self.instances.get(id)?;
-        notify(format!("Stopping instance \"{}\"...", id));
-        instance.write().unwrap().stop()
-    }
-
     fn add_interface(&mut self, interface: InterfaceConfiguration) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         if new_config.interfaces.iter().any(|i| i.id == interface.id) {
@@ -269,7 +253,7 @@ impl ConductorAdmin for Conductor {
             )));
         }
         new_config.interfaces.push(interface.clone());
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
         self.start_interface_by_id(&interface.id)?;
@@ -296,7 +280,7 @@ impl ConductorAdmin for Conductor {
             .filter(|interface| interface.id != *id)
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -342,7 +326,7 @@ impl ConductorAdmin for Conductor {
             })
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -391,7 +375,7 @@ impl ConductorAdmin for Conductor {
             })
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -462,7 +446,7 @@ impl ConductorAdmin for Conductor {
         };
 
         new_config.agents.push(new_agent);
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -497,7 +481,7 @@ impl ConductorAdmin for Conductor {
             new_config = new_config.save_remove_instance(id);
         }
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -531,7 +515,7 @@ impl ConductorAdmin for Conductor {
             )));
         }
         new_config.bridges.push(new_bridge.clone());
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config.clone();
         self.save_config()?;
 
@@ -572,7 +556,7 @@ impl ConductorAdmin for Conductor {
             .filter(|bridge| bridge.caller_id != *caller_id || bridge.callee_id != *callee_id)
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -827,7 +811,7 @@ pattern = '.*'"#
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
+hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
 id = 'new-dna'"#,
             ),
         );
@@ -1120,7 +1104,7 @@ id = 'new-dna'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
+hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
 id = 'new-dna'"#,
             ),
         );
@@ -1246,31 +1230,6 @@ type = 'websocket'"#,
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml,);
-    }
-
-    #[test]
-    fn test_start_stop_instance() {
-        let mut conductor = create_test_conductor("test_start_stop_instance", 3004);
-        assert_eq!(
-            conductor.start_instance(&String::from("test-instance-1")),
-            Ok(()),
-        );
-        assert_eq!(
-            conductor.start_instance(&String::from("test-instance-1")),
-            Err(HolochainInstanceError::InstanceAlreadyActive),
-        );
-        assert_eq!(
-            conductor.start_instance(&String::from("non-existant-id")),
-            Err(HolochainInstanceError::NoSuchInstance),
-        );
-        assert_eq!(
-            conductor.stop_instance(&String::from("test-instance-1")),
-            Ok(())
-        );
-        assert_eq!(
-            conductor.stop_instance(&String::from("test-instance-1")),
-            Err(HolochainInstanceError::InstanceNotActiveYet),
-        );
     }
 
     #[test]
@@ -1432,7 +1391,7 @@ type = 'http'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
+hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
 id = 'new-dna'"#,
             ),
         );

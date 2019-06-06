@@ -13,9 +13,9 @@ const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 const instanceCarol = Config.instance(agentCarol, dna)
 
-const scenario1 = new Scenario([instanceAlice], { debugLog:false })
-const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: false })
-const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: false })
+const scenario1 = new Scenario([instanceAlice], { debugLog:true })
+const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
+const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
 scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
 
@@ -344,58 +344,58 @@ scenario2.runTape('my_memos_are_private', async (t, { alice, bob }) => {
 
 scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
-  //create by alice
-  await alice.callSync("blog", "create_post_with_agent",
-    { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
+  //creates a simple link with alice as author with chain header
+  await alice.callSync("simple", "create_link",
+    { "base":alice.agentId, "target": "Posty" }
   )
 
-  //bob creates post with alice id
-  await bob.callSync("blog", "create_post_with_agent",
-    { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
+  //creates a simple link with bob as author with chain header
+  await bob.callSync("simple", "create_link",
+    { "base":alice.agentId, "target": "Posty" }
   )
   
-  //create post by alice
-  const alice_posts = bob.call("blog", "posts_by_agent",
-    { "agent": alice.agentId }
+  //get all created links so far alice
+  const alice_posts = bob.call("simple", "get_my_links",
+    { "base": alice.agentId }
   )
 
+  //expect two links from alice
   t.ok(alice_posts.Ok)
   t.equal(alice_posts.Ok.links.length,2 );
 
-  //create post by alice
-  const bob_posts = alice.call("blog", "posts_by_agent",
-    { "agent": alice.agentId }
+  //get all created links so far for bob
+  const bob_posts = bob.call("simple", "get_my_links",
+    { "base": alice.agentId }
   )
- 
+
+
+  //expected two links from bob
   t.ok(bob_posts.Ok)
   t.equal(bob_posts.Ok.links.length,2 );
 
-  //remove link by alice
-  await alice.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
+  //alice removes both links
+  await alice.callSync("simple", "delete_link", { "base":alice.agentId, "target": "Posty" })
 
-  // get posts by bob
-  const bob_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
-
-  const alice_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
-
+  // get links from bob
+  const bob_agent_posts_expect_empty = bob.call("simple", "get_my_links",{ "base": alice.agentId })
+  //get links from alice
+  const alice_agent_posts_expect_empty = alice.call("simple", "get_my_links",{ "base": alice.agentId })
+  
+  //bob expects zero links
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
-
+  //alice expects zero alice
   t.ok(alice_agent_posts_expect_empty.Ok)
   t.equal(alice_agent_posts_expect_empty.Ok.links.length, 0);
 
 
-  //different chain hash so we should be still able to add new posts
-  await alice.callSync("blog", "create_post_with_agent",
-  { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
-  );
+  //different chain hash up to this point so we should be able to create a link with the same data
+  await alice.callSync("simple", "create_link",{ "base":alice.agentId, "target": "Posty" })
 
-  //get carol posts from bob
-  const alice_posts_not_empty = alice.call("blog", "posts_by_agent",
-    { "agent": alice.agentId }
-  )
+  //get alice posts 
+  const alice_posts_not_empty = bob.call("simple", "get_my_links",{ "base": alice.agentId })
   
-
+   //expect 1 post
   t.ok(alice_posts_not_empty.Ok)
   t.equal(alice_posts_not_empty.Ok.links.length, 1);
 

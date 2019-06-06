@@ -218,7 +218,6 @@ id = 'test-bundle-id'
 root_dir = '.'"#,
             ),
         );
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -268,7 +267,6 @@ id = 'test-bundle-id'"#,
             ),
         );
         toml = add_line(toml, format!("root_dir = '{}'", dest.display()));
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -312,7 +310,6 @@ id = 'test-bundle-id'"#,
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3001));
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -382,7 +379,6 @@ id = 'test-ui-interface-id'
 port = 4000"#,
             ),
         );
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -450,7 +446,6 @@ id = 'test-bundle-id'
 root_dir = '.'"#,
             ),
         );
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);

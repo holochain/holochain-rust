@@ -142,7 +142,6 @@ fn make_config(
         dpki,
         logger,
         signals,
-        iso_config,
         ..Default::default()
     };
     config

@@ -623,12 +623,6 @@ pub mod tests {
         toml
     }
 
-    pub fn iso_config() -> String {
-        format!(
-            r#"[iso_config]
-iso_active = 'On'"#,
-        )
-    }
 
     pub fn agent1() -> String {
         format!(
@@ -821,7 +815,6 @@ id = 'new-dna'"#,
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3000));
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -1056,7 +1049,6 @@ id = 'new-instance'"#,
             ),
         );
         toml = add_block(toml, interface(3001));
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -1105,7 +1097,6 @@ port = 3002
 type = 'websocket'"#,
             ),
         );
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -1154,7 +1145,6 @@ port = 3003
 type = 'websocket'"#,
             ),
         );
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -1227,7 +1217,6 @@ port = 8080
 type = 'http'"#,
             ),
         );
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -1268,7 +1257,6 @@ type = 'http'"#,
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -1392,7 +1380,6 @@ port = 3007
 type = 'websocket'"#,
             ),
         );
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -1446,7 +1433,6 @@ port = 3308
 type = 'websocket'"#,
             ),
         );
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -1495,7 +1481,6 @@ public_address = '{}'"#,
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3009));
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -1541,7 +1526,6 @@ port = 3010
 type = 'websocket'"#,
             ),
         );
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -1587,7 +1571,6 @@ handle = 'my favourite instance!'"#,
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3011));
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
@@ -1615,7 +1598,6 @@ handle = 'my favourite instance!'"#,
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3011));
-        toml = add_block(toml, iso_config());
         toml = add_block(toml, logger());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);

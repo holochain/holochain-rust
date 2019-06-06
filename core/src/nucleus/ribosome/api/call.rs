@@ -8,11 +8,10 @@ use crate::{
 };
 use holochain_core_types::{
     error::HolochainError,
-    json::{JsonString, RawString},
+    json::{JsonString},
 };
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
-use serde_json::Value;
 use snowflake::ProcessUniqueId;
 use std::{convert::TryFrom, sync::Arc};
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -126,9 +125,6 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
 
     match response {
         JsonRpc::Success(_) => {
-            // The response contains a serialized ZomeApiResult which we need to map the native
-            // Result that this function returns..
-
             // First we try to unwrap a potential stringification:
             let value_response = response.get_result().unwrap().to_owned();
             let string_response = value_response.to_string();
@@ -139,32 +135,8 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
                 Err(_) => string_response,
             };
             // Below, sanitized_response is the same response but guaranteed without quotes.
-
-            // Now we unwrap the Result by parsing it into a Result<Value, _>:
-            let maybe_parsed_result: Result<
-                Result<Value, HolochainError>,
-                serde_json::error::Error,
-            > = serde_json::from_str(&sanitized_response);
-            maybe_parsed_result
-                .map_err(|e| HolochainError::SerializationError(e.to_string()))
-                .and_then(|result| match result {
-                    Ok(value) => Ok(JsonString::from(value)),
-                    Err(error) => Err(error),
-                })
-                .or_else(|_| {
-                    // If we could not parse the result into a Result, well then the called
-                    // zome function maybe returns a plain return value.
-                    // We don't want to make this impossible so we just return that as
-                    // JsonString.
-                    // We just need to make sure it is valid JSON, so we do try to parse
-                    // one last time:
-                    let maybe_parsed_value: Result<Value, serde_json::error::Error> =
-                        serde_json::from_str(&sanitized_response);
-                    match maybe_parsed_value {
-                        Ok(parsed_value) => Ok(JsonString::from(parsed_value)),
-                        Err(_) => Ok(JsonString::from(RawString::from(sanitized_response))),
-                    }
-                })
+            // This should be returned as a JsonString for handling in the zome code.
+            Ok(JsonString::from_json(&sanitized_response))
         }
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
             serde_json::to_string(&response.get_error().unwrap()).unwrap(),

@@ -7,6 +7,7 @@ use crate::{
     chain_header::ChainHeader
 };
 
+
 //-------------------------------------------------------------------------------------------------
 // LinkData
 //-------------------------------------------------------------------------------------------------
@@ -18,6 +19,8 @@ pub struct LinkData {
     pub top_chain_header : ChainHeader,
     agent_id: AgentId,
 }
+
+
 
 impl LinkData {
     pub fn new_add(
@@ -117,9 +120,9 @@ pub mod tests {
 
     pub fn test_link_entry_json_string() -> JsonString {
         JsonString::from_json(&format!(
-            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}},\"top_chain_header\":\"yeet\",\"agent_id\":{{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}",
+            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}},\"top_chain_header\":{{\"entry_type\":{{\"App\":\"testEntryType\"}},\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"provenances\":[[\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\",\"sig\"]],\"link\":null,\"link_same_type\":null,\"link_update_delete\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}},\"agent_id\":{{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}",
             test_entry_a().address(),
-            test_entry_b().address()
+            test_entry_b().address(),
         ))
     }
 

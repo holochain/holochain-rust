@@ -13,9 +13,9 @@ const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 const instanceCarol = Config.instance(agentCarol, dna)
 
-const scenario1 = new Scenario([instanceAlice], { debugLog:true })
-const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
-const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
+const scenario1 = new Scenario([instanceAlice], { debugLog:false })
+const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: false })
+const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: false })
 
 scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
 
@@ -342,7 +342,7 @@ scenario2.runTape('my_memos_are_private', async (t, { alice, bob }) => {
 })
 
 
-scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
+scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   //create by alice
   await alice.callSync("blog", "create_post_with_agent",
@@ -384,31 +384,20 @@ scenario3.runTape('delete_post', async (t, { alice, bob,carol }) => {
   t.ok(alice_agent_posts_expect_empty.Ok)
   t.equal(alice_agent_posts_expect_empty.Ok.links.length, 0);
 
-  //create by alice with same data
+
+  //different chain hash so we should be still able to add new posts
   await alice.callSync("blog", "create_post_with_agent",
-    { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
-  )
-
-  // get posts by bob
-  const bob_agent_posts_expect_empty_again = bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
-
-  //same time same author
-  t.ok(bob_agent_posts_expect_empty_again.Ok)
-  t.equal(bob_agent_posts_expect_empty_again.Ok.links.length, 0);
-
-  //time in the nodejs conductor is set to 0 so in order to set a different time we need to use a new author
-  await carol.callSync("blog", "create_post_with_agent",
   { "agent_id":alice.agentId, "content": "Posty", "in_reply_to": "" }
   );
 
   //get carol posts from bob
-  const carol_posts = carol.call("blog", "posts_by_agent",
+  const alice_posts_not_empty = alice.call("blog", "posts_by_agent",
     { "agent": alice.agentId }
   )
   
 
-  t.ok(carol_posts.Ok)
-  t.equal(carol_posts.Ok.links.length, 1);
+  t.ok(alice_posts_not_empty.Ok)
+  t.equal(alice_posts_not_empty.Ok.links.length, 1);
 
 
 })

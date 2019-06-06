@@ -59,7 +59,7 @@ impl DhtStore {
     ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
-    ///When that set is obtained, we filter based on the LinkTag attributes to only get the "live" links or links that are valid.
+    ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified
     pub fn get_links(
         &self,
         address: Address,

@@ -1,13 +1,14 @@
 {
   "devDependencies": {},
   "dependencies": {
-    "@holochain/diorama": "^0.1.0-rc4",
+    "@holochain/diorama": "^0.1.0-rc7",
     "faucet": "0.0.1",
     "json3": "*",
     "sleep": "^5.2.3",
     "tape": "^4.9.1"
   },
   "scripts": {
-    "test": "./run.sh"
+    "test": "./run.sh",
+    "test-ci": "./run-ci.sh"
   }
 }

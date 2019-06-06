@@ -273,7 +273,7 @@ pub mod tests {
         let link_remove_data = LinkData::from_link(
             &link.clone(),
             LinkActionKind::REMOVE,
-                test_chain_header(),
+            test_chain_header(),
             test_agent_id(),
         );
 

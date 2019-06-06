@@ -1,6 +1,6 @@
 * text=auto
 * text eol=lf
+* text eol=lf
 
 [core]
-autocrlf=false
-eol=lf
+autocrlf=input

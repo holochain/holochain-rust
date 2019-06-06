@@ -1,7 +1,19 @@
-use holochain_cas_implementations::{
-    cas::{file::FilesystemStorage, memory::MemoryStorage, pickle::PickleStorage},
-    eav::{file::EavFileStorage, memory::EavMemoryStorage, pickle::EavPickleStorage},
+use lib3h_persistence_file::{
+    cas::{file::FilesystemStorage},
+    eav::{file::EavFileStorage},
 };
+
+use lib3h_persistence_mem::{
+    cas::{memory::MemoryStorage},
+    eav::{memory::EavMemoryStorage},
+};
+
+use lib3h_persistence_pickle::{
+    cas::{pickle::PickleStorage},
+    eav::{pickle::EavPickleStorage},
+};
+
+use lib3h_persistence_api::{cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage};
 
 use holochain_core::{
     context::Context,
@@ -10,7 +22,7 @@ use holochain_core::{
     signal::SignalSender,
 };
 use holochain_core_types::{
-    agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
+    agent::AgentId,
     error::HolochainError,
 };
 use holochain_net::p2p_config::P2pConfig;

@@ -15,15 +15,10 @@ use boolinator::Boolinator;
 
 use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
-    error::HolochainError,
-    json::{JsonString},
     validation::EntryValidationData
 };
 
-
-
- 
-
+use hdk::lib3h_persistence_api::{error::PersistenceError, json::JsonString};
 
 #[derive(Serialize, Deserialize, DefaultJson, Debug,Clone)]
 struct TestEntryType {
@@ -72,7 +67,6 @@ define_zome! {
                 {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-                        
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }

@@ -12,8 +12,9 @@ use crate::{
     scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
     state::State,
 };
+
+use lib3h_persistence_api::cas::content::Address;
 use holochain_core_types::{
-    cas::content::Address,
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     dna::Dna,

@@ -12,12 +12,14 @@ use futures::{
     task::{noop_local_waker_ref, Poll},
     Future,
 };
+
+use lib3h_persistence_api::cas::{
+    content::{Address, AddressableContent},
+    storage::ContentAddressableStorage,
+};
+
 use holochain_core_types::{
     agent::AgentId,
-    cas::{
-        content::{Address, AddressableContent},
-        storage::ContentAddressableStorage,
-    },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
     entry::{

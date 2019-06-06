@@ -8,7 +8,6 @@ edition = "2018"
 holochain_net = { path = "../net" }
 holochain_core = { path = "../core" }
 holochain_conductor_api = { path = "../conductor_api" }
-holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
 lib3h_sodium = "=0.0.1-alpha1"

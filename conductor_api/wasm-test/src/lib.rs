@@ -8,15 +8,16 @@ extern crate holochain_wasm_utils;
 extern crate serde_json;
 
 use holochain_core_types::{
-    cas::content::Address,
     entry::Entry,
     error::{
-        HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
+        RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
         ZomeApiInternalResult,
     },
-    json::{JsonString, RawString},
     signature::Provenance
 };
+
+use holochain_wasm_utils::lib3h_persistence_api::{error::PersistenceError, json::{JsonString, RawString}, cas::content::Address};
+
 use holochain_wasm_utils::memory::{
     ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
     stack::WasmStack,

@@ -3,13 +3,17 @@ use crate::{
     agent::chain_store::{ChainStore, ChainStoreIterator},
     state::State,
 };
+use lib3h_persistence_api::{
+    cas::content::{Address, AddressableContent, Content},
+    json::*,
+    error::PersistenceError
+};
+
 use holochain_core_types::{
     agent::AgentId,
-    cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
-    json::*,
     signature::{Provenance, Signature},
     time::Iso8601,
 };

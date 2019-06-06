@@ -2,8 +2,8 @@ use crate::{
     action::Action, context::Context, entry::CanPublish,
     network::entry_with_header::EntryWithHeader,
 };
+use lib3h_persistence_api::cas::content::{Address, AddressableContent};
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     entry::Entry,
     link::Link,
 };

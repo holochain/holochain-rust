@@ -5,10 +5,11 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-use hdk::holochain_core_types::{
-    error::HolochainError,
-    json::JsonString,
+
+use hdk::lib3h_persistence_api::{
     cas::content::Address,
+    json::JsonString,
+    error::PersistenceError
 };
 
 fn handle_call_bridge() -> JsonString {

@@ -9,9 +9,9 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     error::HolochainError,
 };
+use lib3h_persistence_api::cas::content::{Address, AddressableContent};
 use std::{pin::Pin, sync::Arc};
 
 pub async fn hold_entry(

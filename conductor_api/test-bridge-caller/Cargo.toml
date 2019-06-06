@@ -18,3 +18,4 @@ serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 hdk = { path = "../../hdk-rust" }
 serde_derive = "=1.0.89"
 lib3h_persistence_derive = { path = "../../../lib3h/crates/persistence_derive" }
+lib3h_persistence_api = { path = "../../../lib3h/crates/persistence_api" }

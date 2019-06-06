@@ -7,7 +7,7 @@
 use serde_json;
 
 use failure::Error;
-use lib3h_persistence_api::{cas::content::Address, error::HolochainError, json::JsonString};
+use lib3h_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
 use std::convert::TryFrom;
 
 use super::protocol::Protocol;

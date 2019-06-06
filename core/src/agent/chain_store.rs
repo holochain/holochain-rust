@@ -1,13 +1,14 @@
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
-    cas::{
-        content::{Address, AddressableContent},
-        storage::ContentAddressableStorage,
-    },
-    chain_header::ChainHeader,
+   chain_header::ChainHeader,
     entry::entry_type::EntryType,
     error::RibosomeErrorCode::{self, *},
 };
+use lib3h_persistence_api::cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+};
+
 use std::{
     str::FromStr,
     sync::{Arc, RwLock},

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-mkdir diorama-storage
+mkdir -p diorama-storage
 
 if [ -z $1];
 then DIORAMA_STORAGE="`pwd`/diorama-storage" node index.js | tee test.out~ | faucet || ( cat test.out~; false );

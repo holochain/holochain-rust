@@ -1,4 +1,4 @@
-# Holochain-rust
+# Holochain-rustx
 
 <a href="http://holochain.org"><img align="right" width="200" src="https://github.com/holochain/org/blob/master/logo/holochain_logo.png?raw=true" alt="holochain logo" /></a>
 
@@ -47,7 +47,7 @@ Auto generated documentation for all of the code written in Rust is published on
 
 ### The Holochain Guidebook
 There is a guide for understanding and developing with Holochain. It is published online, with different versions to match the releases here: [https://developer.holochain.org/guide](https://developer.holochain.org/guide).
- 
+
  See instructions for how to contribute to the book at [doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
 
 

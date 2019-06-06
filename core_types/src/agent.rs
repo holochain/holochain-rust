@@ -1,8 +1,12 @@
 use crate::{
-    cas::content::{Address, AddressableContent, Content},
     entry::Entry,
     error::HcResult,
+};
+
+use lib3h_persistence_api::{
+    cas::content::{Address, AddressableContent, Content},
     json::JsonString,
+    error::{PersistenceResult, PersistenceError}
 };
 
 use crate::error::HolochainError;
@@ -73,7 +77,7 @@ impl AddressableContent for AgentId {
     }
 
     // build from entry content
-    fn try_from_content(content: &Content) -> HcResult<Self> {
+    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
         match Entry::try_from(content)? {
             Entry::AgentId(agent_id) => Ok(agent_id),
             _ => Err(HolochainError::SerializationError(

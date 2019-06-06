@@ -1,4 +1,4 @@
-use crate::{cas::content::Address, error::HolochainError, json::JsonString};
+use lib3h_persistence_api::{cas::content::Address, json::JsonString, error::PersistenceError};
 
 //-------------------------------------------------------------------------------------------------
 // DeletionEntry

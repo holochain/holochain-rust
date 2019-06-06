@@ -8,8 +8,10 @@ holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 lib3h_persistence_derive = { path = "../../lib3h/crates/persistence_derive" }
-lib3h_persistence = { path = "../../lib3h/crates/persistence" }
-lib3h_persistence_impl = { path = "../../lib3h/crates/persistence_impl" }
+lib3h_persistence_api= { path = "../../lib3h/crates/persistence_api" }
+lib3h_persistence_mem = { path = "../../lib3h/crates/persistence_mem" }
+lib3h_persistence_file = { path = "../../lib3h/crates/persistence_file" }
+lib3h_persistence_pickle = { path = "../../lib3h/crates/persistence_pickle" }
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
 lib3h_sodium = "=0.0.1-alpha1"

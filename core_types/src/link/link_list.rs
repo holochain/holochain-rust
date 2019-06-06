@@ -1,5 +1,8 @@
-use crate::{error::HolochainError, link::Link};
-use lib3h_persistence::json::JsonString;
+use crate::link::Link;
+use lib3h_persistence_api::{
+    json::JsonString,
+    error::PersistenceError
+};
 
 
 //-------------------------------------------------------------------------------------------------

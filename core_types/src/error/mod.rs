@@ -7,9 +7,8 @@ mod ribosome_error;
 pub use self::{dna_error::*, ribosome_error::*};
 
 use self::HolochainError::*;
-use crate::json::*;
+use lib3h_persistence_api::{hash::HashString, json::*, error::PersistenceError};
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use hash::HashString;
 use lib3h_crypto_api::CryptoError;
 use serde_json::Error as SerdeError;
 use std::{

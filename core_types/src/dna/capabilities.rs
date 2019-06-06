@@ -1,12 +1,15 @@
 /// capabilities implements the capability request functionality used to check
 /// that a given capability has been granted for actions like zome calls
 use crate::{
-    cas::content::Address,
-    error::HolochainError,
-    json::JsonString,
-    signature::{Provenance, Signature},
+   signature::{Provenance, Signature},
 };
 
+use lib3h_persistence_api::{
+    json::JsonString,
+    cas::content::Address,
+    error::PersistenceError
+};
+ 
 //--------------------------------------------------------------------------------------------------
 // CapabilityRequest
 //--------------------------------------------------------------------------------------------------

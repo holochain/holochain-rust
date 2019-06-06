@@ -1,4 +1,6 @@
-use crate::{cas::content::Address, dna::fn_declarations::Trait};
+use lib3h_persistence_api::cas::content::Address;
+use crate::dna::fn_declarations::Trait;
+
 use std::collections::BTreeMap;
 
 /// A bridge is the definition of a connection to another DNA that runs under the same agency,

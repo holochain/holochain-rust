@@ -8,13 +8,16 @@ use crate::{
         entry_type::{test_entry_type, EntryType},
         test_entry,
     },
-    error::HolochainError,
-    json::JsonString,
     signature::{Provenance, Signature},
-    time::{test_iso_8601, Iso8601},
+    time::{test_iso_8601, Iso8601}
 };
 
-use lib3h_persistence::cas::content::{Address, AddressableContent, Content};
+use lib3h_persistence_api::{
+    cas::content::{Address, AddressableContent, Content},
+    error::{PersistenceError, PersistenceResult},
+    json::JsonString,
+};
+ 
 use std::convert::TryInto;
 
 /// ChainHeader of a source chain "Item"
@@ -119,7 +122,7 @@ impl AddressableContent for ChainHeader {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
         content.to_owned().try_into()
     }
 }

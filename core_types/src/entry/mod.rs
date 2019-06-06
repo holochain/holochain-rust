@@ -12,14 +12,16 @@ use self::{
     deletion_entry::DeletionEntry,
 };
 use agent::{test_agent_id, AgentId};
-use cas::content::{Address, AddressableContent, Content};
 use chain_header::ChainHeader;
 use chain_migrate::ChainMigrate;
 use crud_status::CrudStatus;
 use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
-use error::{HcResult, HolochainError};
-use json::{default_to_json, default_try_from_json, JsonString, RawString};
+use lib3h_persistence_api::{
+    cas::content::{Address, AddressableContent, Content},
+    json::{/*default_to_json, default_try_from_json, */ JsonString, RawString},
+    error::{PersistenceError, PersistenceResult},
+};
 use link::{link_data::LinkData, link_list::LinkList};
 use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
@@ -75,7 +77,7 @@ pub enum Entry {
     CapTokenClaim(CapTokenClaim),
     CapTokenGrant(CapTokenGrant),
 }
-
+/*
 impl From<Option<Entry>> for JsonString {
     fn from(maybe_entry: Option<Entry>) -> Self {
         default_to_json(maybe_entry)
@@ -88,6 +90,7 @@ impl TryFrom<JsonString> for Option<Entry> {
         default_try_from_json(j)
     }
 }
+*/
 
 impl Entry {
     pub fn entry_type(&self) -> EntryType {
@@ -125,7 +128,7 @@ impl AddressableContent for Entry {
         self.into()
     }
 
-    fn try_from_content(content: &Content) -> HcResult<Entry> {
+    fn try_from_content(content: &Content) -> PersistenceResult<Entry> {
         Entry::try_from(content.to_owned())
     }
 }

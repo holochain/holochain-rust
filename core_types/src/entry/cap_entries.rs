@@ -1,9 +1,13 @@
 use crate::{
-    cas::content::{Address, AddressableContent},
-    entry::Entry,
-    error::HolochainError,
-    json::JsonString,
+   entry::Entry,
+   error::HolochainError,
 };
+
+use lib3h_persistence_api::{
+    cas::content::{Address, AddressableContent}, 
+    json::JsonString, error::PersistenceError
+};
+  
 use std::{collections::BTreeMap, str::FromStr};
 
 //--------------------------------------------------------------------------------------------------

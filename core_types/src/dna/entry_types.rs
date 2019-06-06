@@ -2,8 +2,10 @@
 
 use dna::zome::ZomeEntryTypes;
 use entry::entry_type::EntryType;
-use error::HolochainError;
-use json::JsonString;
+use lib3h_persistence_api::{
+    json::JsonString,
+    error::PersistenceError
+};
 use serde::{ser::SerializeMap, Deserialize, Deserializer, Serializer};
 use std::collections::BTreeMap;
 

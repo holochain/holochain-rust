@@ -5,22 +5,25 @@
 
 use crate::{
     eav::EntityAttributeValueIndex,
-    error::{HcResult, HolochainError},
-    hash::HashString,
-    json::JsonString,
 };
+
 use eav::Attribute;
 use std::{convert::TryInto, str::FromStr};
 
-use lib3h_persistence::cas::content::{Address, AddressableContent, Content};
-  
+use lib3h_persistence_api::{
+    cas::content::{Address, AddressableContent, Content},
+    error::{PersistenceError, PersistenceResult},
+    hash::HashString,
+    json::JsonString,
+};
+
 /// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an entry address as the Entity, [CrudStatus](../eav/Attribute.html) as the attribute
 /// and CrudStatus as the value.
 /// This will come to represent the lifecycle status of an entry, when it gets stored in an [EAV Storage](../eav/trait.EntityAttributeValueStorage.html)
 pub fn create_crud_status_eav(
     address: &Address,
     status: CrudStatus,
-) -> HcResult<EntityAttributeValueIndex> {
+) -> PersistenceResult<EntityAttributeValueIndex> {
     EntityAttributeValueIndex::new(
         address,
         &Attribute::CrudStatus,
@@ -30,7 +33,7 @@ pub fn create_crud_status_eav(
 
 /// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an old entry address as the Entity, [CrudLink](../eav/Attribute.html) as the attribute
 /// and a new entry address as the value
-pub fn create_crud_link_eav(from: &Address, to: &Address) -> HcResult<EntityAttributeValueIndex> {
+pub fn create_crud_link_eav(from: &Address, to: &Address) -> PersistenceResult<EntityAttributeValueIndex> {
     EntityAttributeValueIndex::new(from, &Attribute::CrudLink, to)
 }
 
@@ -78,7 +81,7 @@ impl AddressableContent for CrudStatus {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
         content.to_owned().try_into()
     }
 }

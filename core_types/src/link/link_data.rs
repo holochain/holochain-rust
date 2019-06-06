@@ -1,10 +1,13 @@
 use crate::{
-    cas::content::Address,
-    error::HolochainError,
-    json::JsonString,
-    link::{Link, LinkActionKind},
+   link::{Link, LinkActionKind},
 };
 
+use lib3h_persistence_api::{
+    cas::content::Address,
+    json::JsonString,
+    error::PersistenceError
+};
+ 
 //-------------------------------------------------------------------------------------------------
 // LinkData
 //-------------------------------------------------------------------------------------------------

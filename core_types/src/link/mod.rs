@@ -5,8 +5,11 @@
 pub mod link_data;
 pub mod link_list;
 
-use crate::error::HolochainError;
-use lib3h_persistence::{cas::content::Address, json::JsonString};
+use lib3h_persistence_api::{
+    cas::content::Address, 
+    error::PersistenceError,
+    json::JsonString
+};
 
 use entry::Entry;
 use link::link_data::LinkData;

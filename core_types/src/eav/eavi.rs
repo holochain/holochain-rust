@@ -3,28 +3,24 @@
 //! being used to define relationships between AddressableContent values.
 //! See [wikipedia](https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model) to learn more about this pattern.
 
-use chrono::offset::Utc;
-
-use lib3h_persistence::{
+use lib3h_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    eav::query::{AttributeError, IndexFilter},
-    error::{PersistenceResult, PersistenceError},
+    eav::{AttributeError, IndexFilter},
+    error::{PersistenceError},
     json::JsonString,
-   storage::{EntityAttributeValueStorage, ExampleEntityAttributeValueStorage},
+    eav::storage::{EntityAttributeValueStorage, ExampleEntityAttributeValueStorage},
 };
 
 use crate::{
-    {error::HolochainError}, 
+    error::{HolochainError, HcResult}, 
     entry::{test_entry_a, test_entry_b, Entry}
 };
  
 use regex::{Regex, RegexBuilder};
 use std::{
-    cmp::Ordering,
     collections::BTreeSet,
     convert::{TryFrom, TryInto},
     fmt,
-    option::NoneError,
 };
 
 /// Address of AddressableContent representing the EAV entity
@@ -45,7 +41,7 @@ pub enum Attribute {
     PendingEntry,
 }
 
-impl lib3h_persistence::eav::Attribute for Attribute {}
+impl lib3h_persistence_api::eav::Attribute for Attribute {}
 
 impl From<AttributeError> for HolochainError {
     fn from(err: AttributeError) -> HolochainError {
@@ -56,11 +52,6 @@ impl From<AttributeError> for HolochainError {
             }
         };
         HolochainError::ErrorGeneric(msg)
-    }
-}
-impl From<NoneError> for AttributeError {
-    fn from(_: NoneError) -> AttributeError {
-        AttributeError::ParseError
     }
 }
 
@@ -135,7 +126,7 @@ pub type Index = i64;
 // type Source ...
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
-pub type EntityAttributeValueIndex = lib3h_persistence::eav::EntityAttributeValueIndex<Attribute>;
+pub type EntityAttributeValueIndex = lib3h_persistence_api::eav::EntityAttributeValueIndex<Attribute>;
 
 fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
     if let Attribute::LinkTag(name, _tag) | Attribute::RemovedLink(name, _tag) = attribute {
@@ -154,55 +145,8 @@ fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
     }
 }
 
-impl EntityAttributeValueIndex {
-    pub fn new(
-        entity: &Entity,
-        attribute: &Attribute,
-        value: &Value,
-    ) -> HcResult<EntityAttributeValueIndex> {
-        validate_attribute(attribute)?;
-        Ok(EntityAttributeValueIndex {
-            entity: entity.clone(),
-            attribute: attribute.clone(),
-            value: value.clone(),
-            index: Utc::now().timestamp_nanos(),
-        })
-    }
-
-    pub fn new_with_index(
-        entity: &Entity,
-        attribute: &Attribute,
-        value: &Value,
-        timestamp: i64,
-    ) -> HcResult<EntityAttributeValueIndex> {
-        validate_attribute(attribute)?;
-        Ok(EntityAttributeValueIndex {
-            entity: entity.clone(),
-            attribute: attribute.clone(),
-            value: value.clone(),
-            index: timestamp,
-        })
-    }
-
-    pub fn entity(&self) -> Entity {
-        self.entity.clone()
-    }
-
-    pub fn attribute(&self) -> Attribute {
-        self.attribute.clone()
-    }
-
-    pub fn value(&self) -> Value {
-        self.value.clone()
-    }
-
-    pub fn index(&self) -> Index {
-        self.index
-    }
-
-    pub fn set_index(&mut self, new_index: i64) {
-        self.index = new_index
-    }
+fn new(entity:&Address, attr:&Attribute, value:&Value) -> EntityAttributeValueIndex {
+    EntityAttributeValueIndex::new(entity, attr, value)
 }
 
 pub fn test_eav_entity() -> Entry {
@@ -251,7 +195,7 @@ pub fn eav_round_trip_test_runner(
     assert_eq!(
         BTreeSet::new(),
         eav_storage
-            .fetch_eavi(&EaviQuery::new(
+            .fetch_eavi(&crate::eav::query::EaviQuery::new(
                 Some(entity_content.address()).into(),
                 Some(attribute.clone()).into(),
                 Some(value_content.address()).into(),
@@ -292,7 +236,7 @@ pub fn eav_round_trip_test_runner(
         assert_eq!(
             expected,
             eav_storage
-                .fetch_eavi(&EaviQuery::new(
+                .fetch_eavi(&crate::eav::query::EaviQuery::new(
                     e.into(),
                     a.into(),
                     v.into(),
@@ -306,16 +250,20 @@ pub fn eav_round_trip_test_runner(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{
+
+    use lib3h_persistence_api::json::RawString;
+
+    use lib3h_persistence_api::{
         cas::{
             content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
             storage::{
                 test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
             },
         },
-        eav::EntityAttributeValueIndex,
-        json::RawString,
     };
+
+
+    use crate::eav::EntityAttributeValueIndex;
 
     pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage {
         ExampleEntityAttributeValueStorage::new()

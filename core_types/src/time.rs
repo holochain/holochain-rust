@@ -3,7 +3,11 @@
 
 use chrono::{offset::FixedOffset, DateTime, TimeZone};
 use error::HolochainError;
-use lib3h_persistence::json::JsonString;
+use lib3h_persistence_api::{
+    error::PersistenceError,
+    json::JsonString
+};
+
 use regex::Regex;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::{

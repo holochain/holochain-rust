@@ -32,16 +32,21 @@ pub mod wasm;
 pub mod zome;
 
 use crate::{
-    cas::content::{AddressableContent, Content},
-    dna::{
+   dna::{
         bridges::Bridge,
         entry_types::EntryTypeDef,
         fn_declarations::{FnDeclaration, TraitFns},
     },
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
-    json::JsonString,
 };
+
+use lib3h_persistence_api::{
+    json::JsonString,
+    cas::content::{AddressableContent, Content},
+    error::{PersistenceError, PersistenceResult}
+};
+ 
 use entry::entry_type::AppEntryType;
 use multihash;
 use serde_json::{self, Value};
@@ -98,7 +103,7 @@ impl AddressableContent for Dna {
         Content::from(self.to_owned())
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
         Ok(Dna::try_from(content.to_owned())?)
     }
 }

@@ -1,4 +1,4 @@
-use holochain_core_types::{cas::content::Address, hash::HashString};
+use lib3h_persistence_api::{cas::content::Address, hash::HashString};
 
 use crate::connection::json_protocol::MetaTuple;
 

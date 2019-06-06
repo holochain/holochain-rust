@@ -2,20 +2,23 @@
 //! HDK exposed functions to access powerful Holochain functions.
 
 use crate::error::{ZomeApiError, ZomeApiResult};
-use holochain_core_types::{
+use lib3h_persistence_api::{
     cas::content::Address,
+    hash::HashString,
+    json::{default_to_json, JsonString, RawString},
+};
+
+use holochain_core_types::{
     dna::capabilities::CapabilityRequest,
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::ZomeApiGlobals,
-    holochain_core_types::{
-        hash::HashString,
-        json::{default_to_json, JsonString, RawString},
-    },
-    memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
+   memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
 };
+
+
 use init_globals::init_globals;
 use std::convert::{TryFrom, TryInto};
 

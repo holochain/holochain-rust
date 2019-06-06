@@ -16,8 +16,10 @@ use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
         dna::entry_types::Sharing,
+    },
+    lib3h_persistence_api::{
         json::JsonString,
-        error::{HolochainError},
+        error::PersistenceError,
     },
 };
 

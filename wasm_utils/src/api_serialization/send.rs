@@ -1,4 +1,5 @@
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::*, time::Timeout};
+use lib3h_persistence_api::{cas::content::Address, error::PersistenceError, json::*};
+use holochain_core_types::time::Timeout;
 
 /// Struct for input data received when Zome API function send() is invoked
 #[derive(Deserialize, Clone, PartialEq, Debug, Serialize, DefaultJson)]

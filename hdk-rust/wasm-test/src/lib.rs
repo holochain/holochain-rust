@@ -23,15 +23,18 @@ use holochain_wasm_utils::{
         query::{QueryArgsNames, QueryArgsOptions, QueryResult},
     },
     holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         dna::entry_types::Sharing,
         entry::{
             entry_type::{AppEntryType, EntryType},
             AppEntryValue, Entry,
         },
-        error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeErrorCode},
-        json::{JsonString, RawString},
+        error::{RibosomeEncodedValue, RibosomeEncodingBits, RibosomeErrorCode},
         validation::{EntryValidationData, LinkValidationData},
+    },
+    lib3h_persistence_api::{
+        cas::content::{Address, AddressableContent},
+        error::{PersistenceError},
+        json::{JsonString, RawString},
     },
     memory::{
         allocation::WasmAllocation,

@@ -53,7 +53,7 @@ pub mod tests {
             Defn,
         },
     };
-    use holochain_core_types::cas::content::Address;
+    use lib3h_persistence_api::cas::content::Address;
     use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
 
     #[test]

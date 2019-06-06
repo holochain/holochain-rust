@@ -8,7 +8,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
+use lib3h_persistence_api::{cas::content::Address, entry::Entry, error::HolochainError};
 use std::{pin::Pin, sync::Arc};
 //use core::mem::PinMut;
 

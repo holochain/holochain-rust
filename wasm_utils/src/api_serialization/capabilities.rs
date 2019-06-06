@@ -1,9 +1,10 @@
-use holochain_core_types::{
+use lib3h_persistence_api::{
     cas::content::Address,
-    entry::cap_entries::{CapFunctions, CapabilityType},
-    error::HolochainError,
+    error::PersistenceError,
     json::*,
 };
+
+use holochain_core_types::entry::cap_entries::{CapFunctions, CapabilityType};
 
 // arguments required for calling commit_capability_grant
 #[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]

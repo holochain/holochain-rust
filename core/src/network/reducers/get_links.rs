@@ -100,7 +100,7 @@ mod tests {
         );
     }
 
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use lib3h_persistence_api::{cas::content::AddressableContent, entry::test_entry};
 
     #[test]
     // This test needs to be refactored.

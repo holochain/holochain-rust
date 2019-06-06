@@ -5,7 +5,7 @@ use crate::{
     network::entry_with_header::EntryWithHeader,
     scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
 };
-use holochain_core_types::cas::content::Address;
+use lib3h_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 pub fn add_pending_validation(

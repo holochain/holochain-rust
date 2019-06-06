@@ -1,8 +1,11 @@
 use holochain_core_types::{
-    cas::content::Address,
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
-    error::HolochainError,
+};
+
+use lib3h_persistence_api::{
+    cas::content::Address,
+    error::PersistenceError,
     json::*,
 };
 

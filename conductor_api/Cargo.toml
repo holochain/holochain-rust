@@ -4,7 +4,6 @@ version = "0.0.18-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 lib3h_persistence_derive = { path = "../../lib3h/crates/persistence_derive" }

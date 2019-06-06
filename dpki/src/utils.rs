@@ -5,9 +5,11 @@ use crate::{
 use hcid::*;
 use holochain_core_types::{
     agent::Base32,
-    cas::content::Address,
     error::{HcResult, HolochainError},
     signature::{Provenance, Signature},
+};
+use lib3h_persistence_api::{
+    cas::content::Address,
 };
 use lib3h_sodium::{kdf, secbuf::SecBuf, sign};
 use std::str;

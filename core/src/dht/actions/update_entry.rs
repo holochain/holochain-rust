@@ -8,7 +8,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use lib3h_persistence_api::{cas::content::Address, error::HolochainError};
 use std::{pin::Pin, sync::Arc};
 
 /// Update Entry Action Creator

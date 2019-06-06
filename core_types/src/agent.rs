@@ -9,7 +9,6 @@ use lib3h_persistence_api::{
     error::{PersistenceResult, PersistenceError}
 };
 
-use crate::error::HolochainError;
 use std::{convert::TryFrom, str};
 
 use hcid::*;
@@ -80,7 +79,7 @@ impl AddressableContent for AgentId {
     fn try_from_content(content: &Content) -> PersistenceResult<Self> {
         match Entry::try_from(content)? {
             Entry::AgentId(agent_id) => Ok(agent_id),
-            _ => Err(HolochainError::SerializationError(
+            _ => Err(PersistenceError::SerializationError(
                 "Attempted to load AgentId from non AgentID entry".into(),
             )),
         }

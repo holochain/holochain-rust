@@ -2,7 +2,8 @@
 //! and serialization used throughout the HDK.
 
 use crate::api::G_MEM_STACK;
-use holochain_core_types::{error::RibosomeEncodingBits, json::JsonString};
+use holochain_core_types::{error::RibosomeEncodingBits};
+use lib3h_persistence_api::json::JsonString;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},

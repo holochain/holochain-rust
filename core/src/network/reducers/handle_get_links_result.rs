@@ -3,7 +3,7 @@ use crate::{
     network::state::NetworkState,
     state::State,
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use lib3h_persistence_api::{cas::content::Address, error::HolochainError};
 use holochain_net::connection::json_protocol::FetchMetaResultData;
 
 fn reduce_handle_get_links_result_inner(

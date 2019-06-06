@@ -8,7 +8,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError, time::Timeout};
+use lib3h_persistence_api::{cas::content::Address, error::HolochainError, time::Timeout};
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};
 

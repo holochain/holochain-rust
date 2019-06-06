@@ -2,7 +2,7 @@ use crate::{
     network::{actions::custom_send::custom_send, direct_message::CustomDirectMessage},
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
-use holochain_core_types::json::JsonString;
+use lib3h_persistence_api::json::JsonString;
 use holochain_wasm_utils::api_serialization::send::SendArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};

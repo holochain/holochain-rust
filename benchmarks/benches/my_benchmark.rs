@@ -9,7 +9,7 @@ use bencher::Bencher;
 use holochain_cas_implementations::eav::{
     file::EavFileStorage, memory::EavMemoryStorage, pickle::EavPickleStorage,
 };
-use holochain_core_types::cas::{content::ExampleAddressableContent, storage::EavTestSuite};
+use lib3h_persistence_api::cas::{content::ExampleAddressableContent, storage::EavTestSuite};
 
 fn bench_memory_eav_one_to_many(b: &mut Bencher) {
     b.iter(|| {

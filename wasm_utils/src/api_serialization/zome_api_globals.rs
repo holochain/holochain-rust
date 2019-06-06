@@ -1,5 +1,9 @@
 use holochain_core_types::{
-    cas::content::Address, dna::capabilities::CapabilityRequest, error::HolochainError,
+    dna::capabilities::CapabilityRequest,
+};
+
+use lib3h_persistence_api::{
+    cas::content::Address, error::PersistenceError,
     hash::HashString, json::*,
 };
 

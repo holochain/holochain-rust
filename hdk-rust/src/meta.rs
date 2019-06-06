@@ -1,5 +1,4 @@
-//! This file contains the "secret" functions that get added to Zomes, by the HDK.
-//! These functions match expectations that Holochain has... every Zome technically needs these functions,
+//! This file contains the "secret" functions that get added to Zomes, by the HDK.  These functions match expectations that Holochain has... every Zome technically needs these functions,
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
@@ -10,9 +9,11 @@ use holochain_core_types::{
         zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
     },
     entry::entry_type::{AppEntryType, EntryType},
-    error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
-    json::JsonString,
+    error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
+
+use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
+
 use holochain_wasm_utils::{
     api_serialization::validation::{
         EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,

@@ -995,7 +995,7 @@ pub mod tests {
         action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::signal_channel,
     };
-    use holochain_core_types::{cas::content::Address, dna, json::RawString};
+    use lib3h_persistence_api::{cas::content::Address, dna, json::RawString};
     use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
     use holochain_wasm_utils::wasm_target_dir;
     use lib3h_sodium::secbuf::SecBuf;

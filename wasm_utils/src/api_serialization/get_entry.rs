@@ -1,11 +1,14 @@
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     entry::{entry_type::EntryType, Entry, EntryWithMeta},
-    error::HolochainError,
-    json::*,
     time::Timeout,
+};
+
+use lib3h_persistence_api::{
+    cas::content::{Address, AddressableContent},
+    error::PersistenceError,
+    json::*,
 };
 use std::collections::HashMap;
 

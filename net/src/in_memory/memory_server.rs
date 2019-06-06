@@ -18,7 +18,7 @@ use crate::{
     error::NetworkError,
     tweetlog::*,
 };
-use holochain_core_types::cas::content::Address;
+use lib3h_persistence_api::cas::content::Address;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     convert::TryFrom,

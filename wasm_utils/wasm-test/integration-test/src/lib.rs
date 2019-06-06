@@ -8,8 +8,8 @@ extern crate serde_json;
 extern crate lib3h_persistence_derive;
 extern crate wasmi;
 
-use holochain_wasm_utils::holochain_core_types::json::JsonString;
-use holochain_wasm_utils::holochain_core_types::json::RawString;
+use holochain_wasm_utils::lib3h_persistence_api::json::JsonString;
+use holochain_wasm_utils::lib3h_persistence_api::json::RawString;
 use holochain_wasm_utils::memory::stack::WasmStack;
 use holochain_wasm_utils::memory::allocation::AllocationError;
 

@@ -6,8 +6,10 @@ use holochain_core_types::{
         HolochainError, RibosomeEncodedAllocation, RibosomeEncodedValue, RibosomeEncodingBits,
         RibosomeErrorCode,
     },
-    json::JsonString,
 };
+
+use lib3h_persistence_api::json::JsonString;
+
 use memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},
     stack::WasmStack,

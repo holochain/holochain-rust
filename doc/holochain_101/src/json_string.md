@@ -532,7 +532,7 @@ conveniences (e.g. for references) to your type.
 - `MyType` implements `Serialize`, `Deserialize` and `Debug` from serde/std
 
 ```rust
-use holochain_core_types::json::JsonString;
+use lib3h_persistence_api::json::JsonString;
 use holochain_core_types::error::HolochainError;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]

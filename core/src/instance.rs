@@ -9,7 +9,7 @@ use crate::{
 };
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 #[cfg(test)]
-use holochain_core_types::cas::content::Address;
+use lib3h_persistence_api::cas::content::Address;
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},

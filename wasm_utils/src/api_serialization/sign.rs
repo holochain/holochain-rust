@@ -1,4 +1,6 @@
-use holochain_core_types::{agent::Base32, error::HolochainError, json::*, signature::Signature};
+use holochain_core_types::{agent::Base32, signature::Signature};
+
+use lib3h_persistence_api::{error::PersistenceError, json::*};
 
 #[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize, DefaultJson)]
 pub struct SignArgs {

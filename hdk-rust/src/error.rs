@@ -2,8 +2,13 @@
 
 use crate::holochain_core_types::{
     error::{HolochainError, RibosomeErrorCode},
+};
+
+use crate::lib3h_persistence_api::{
+    error::PersistenceError,
     json::{JsonError, JsonString},
 };
+
 use holochain_wasm_utils::memory::allocation::AllocationError;
 use std::{error::Error, fmt};
 
@@ -100,7 +105,7 @@ pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
 mod tests {
 
     use error::{ZomeApiError, ZomeApiResult};
-    use holochain_core_types::json::JsonString;
+    use lib3h_persistence_api::json::JsonString;
 
     #[test]
     fn zome_api_result_json_result_round_trip_test() {

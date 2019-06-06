@@ -6,16 +6,16 @@
 use lib3h_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     eav::{AttributeError, IndexFilter},
-    error::{PersistenceError},
+    error::{PersistenceError, PersistenceResult},
     json::JsonString,
     eav::storage::{EntityAttributeValueStorage, ExampleEntityAttributeValueStorage},
 };
 
 use crate::{
-    error::{HolochainError, HcResult}, 
+    error::{HolochainError},
     entry::{test_entry_a, test_entry_b, Entry}
 };
- 
+
 use regex::{Regex, RegexBuilder};
 use std::{
     collections::BTreeSet,
@@ -39,6 +39,12 @@ pub enum Attribute {
     LinkTag(String, String),
     RemovedLink(String, String),
     PendingEntry,
+}
+
+impl Default for Attribute {
+    fn default() -> Self {
+        Attribute::EntryHeader
+    }
 }
 
 impl lib3h_persistence_api::eav::Attribute for Attribute {}
@@ -128,15 +134,15 @@ pub type Index = i64;
 /// including the necessary serialization inherited.
 pub type EntityAttributeValueIndex = lib3h_persistence_api::eav::EntityAttributeValueIndex<Attribute>;
 
-fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
+fn validate_attribute(attribute: &Attribute) -> PersistenceResult<()> {
     if let Attribute::LinkTag(name, _tag) | Attribute::RemovedLink(name, _tag) = attribute {
         let regex = RegexBuilder::new(r#"[/:*?<>"'\\|+]"#)
             .build()
-            .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
+            .map_err(|_| PersistenceError::ErrorGeneric("Could not create regex".to_string()))?;
         if !regex.is_match(name) {
             Ok(())
         } else {
-            Err(HolochainError::ErrorGeneric(
+            Err(PersistenceError::ErrorGeneric(
                 "Attribute name invalid".to_string(),
             ))
         }
@@ -145,8 +151,8 @@ fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
     }
 }
 
-fn new(entity:&Address, attr:&Attribute, value:&Value) -> EntityAttributeValueIndex {
-    EntityAttributeValueIndex::new(entity, attr, value)
+pub fn new(entity:&Address, attr:&Attribute, value:&Value) -> PersistenceResult<EntityAttributeValueIndex> {
+    validate_attribute(attr).and_then(|_| EntityAttributeValueIndex::new(entity, attr, value))
 }
 
 pub fn test_eav_entity() -> Entry {

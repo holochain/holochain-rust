@@ -1,5 +1,9 @@
 use holochain_core_types::{
-    cas::content::Address, entry::Entry, error::HolochainError, json::*, signature::Provenance,
+    entry::Entry, signature::Provenance,
+};
+
+use lib3h_persistence_api::{
+    cas::content::Address, error::PersistenceError, json::*,
 };
 
 /// Structure used to specify additional options to a commit_entry_result call.

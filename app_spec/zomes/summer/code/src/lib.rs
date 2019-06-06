@@ -6,7 +6,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate boolinator;
-use hdk::holochain_core_types::json::JsonString;
+use hdk::lib3h_persistence_api::json::JsonString;
 use hdk::holochain_core_types::error::HolochainError;
 
 fn handle_sum(num1: u32, num2: u32) -> u32 {

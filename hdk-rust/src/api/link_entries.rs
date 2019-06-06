@@ -1,6 +1,6 @@
 use super::Dispatch;
 use error::ZomeApiError;
-use holochain_core_types::cas::content::Address;
+use lib3h_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 
 /// Adds a named, tagged, directed link between two entries on the DHT.
@@ -25,11 +25,11 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 /// # extern crate holochain_core_types;
 /// # #[macro_use]
 /// # extern crate lib3h_persistence_derive;
-/// # use holochain_core_types::json::JsonString;
+/// # use lib3h_persistence_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
-/// # use holochain_core_types::cas::content::Address;
+/// # use lib3h_persistence_api::cas::content::Address;
 /// # use hdk::AGENT_ADDRESS;
 /// # use hdk::error::ZomeApiResult;
 /// # use hdk::holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;

@@ -1,5 +1,5 @@
 use constants::*;
-use holochain_core_types::cas::content::Address;
+use lib3h_persistence_api::cas::content::Address;
 use holochain_net::{
     connection::{net_connection::NetSend, NetResult},
     tweetlog::TWEETLOG,

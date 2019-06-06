@@ -9,10 +9,10 @@ serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 holochain_core_types = { path = "../core_types" }
 lib3h_persistence_derive = { path = "../../lib3h/crates/persistence_derive" }
+lib3h_persistence_api = { path = "../../lib3h/crates/persistence_api" }
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
 holochain_core = { path = "../core" }
 holochain_conductor_api = { path = "../conductor_api" }
-holochain_cas_implementations= {path="../cas_implementations"}
 tempfile = "=3.0.7"

@@ -18,7 +18,6 @@ extern crate futures;
 #[macro_use]
 extern crate lazy_static;
 extern crate multihash;
-extern crate rust_base58;
 extern crate serde;
 #[macro_use]
 extern crate serde_json;
@@ -34,7 +33,6 @@ extern crate regex;
 #[macro_use]
 extern crate maplit;
 extern crate hcid;
-extern crate uuid;
 extern crate wasmi;
 
 pub mod chain_header;

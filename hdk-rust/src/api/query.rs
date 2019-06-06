@@ -1,6 +1,6 @@
 use super::Dispatch;
 use error::{ZomeApiError, ZomeApiResult};
-use holochain_core_types::cas::content::Address;
+use lib3h_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::{
     QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult,
 };
@@ -29,8 +29,8 @@ use holochain_wasm_utils::api_serialization::{
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
 /// # use hdk::error::ZomeApiResult;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::cas::content::Address;
+/// # use lib3h_persistence_api::json::JsonString;
+/// # use lib3h_persistence_api::cas::content::Address;
 ///
 /// # fn main() {
 /// pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {

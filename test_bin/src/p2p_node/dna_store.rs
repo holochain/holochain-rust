@@ -1,4 +1,4 @@
-use holochain_core_types::cas::content::Address;
+use lib3h_persistence_api::cas::content::Address;
 use std::collections::HashMap;
 
 use super::meta_store::MetaStore;

@@ -5,7 +5,7 @@ use holochain_core::agent::{
     chain_store::ChainStore,
     state::{AgentState, AgentStateSnapshot},
 };
-use holochain_core_types::{cas::content::Address, chain_header::ChainHeader, entry::Entry};
+use lib3h_persistence_api::{cas::content::Address, chain_header::ChainHeader, entry::Entry};
 use std::{convert::TryFrom, fs, path::PathBuf};
 
 // TODO: use system-agnostic default path

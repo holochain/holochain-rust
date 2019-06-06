@@ -3,7 +3,7 @@ use crate::{
     nucleus::state::{NucleusState, PendingValidationKey},
     state::State,
 };
-use holochain_core_types::cas::content::AddressableContent;
+use lib3h_persistence_api::cas::content::AddressableContent;
 
 /// Reduce AddPendingValidation Action.
 /// Inserts boxed EntryWithHeader and dependencies into state, referenced with

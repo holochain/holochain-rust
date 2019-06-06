@@ -16,8 +16,10 @@ use holochain_conductor_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::{
     bits_n_pieces::U16_MAX,
     error::{CoreError, HolochainError},
-    json::{JsonString, RawString},
 };
+
+use lib3h_persistence_api::json::{JsonString, RawString};
+
 use holochain_wasm_utils::{memory::MemoryInt, wasm_target_dir};
 use std::{convert::TryFrom, path::PathBuf};
 use test_utils::hc_setup_and_call_zome_fn;

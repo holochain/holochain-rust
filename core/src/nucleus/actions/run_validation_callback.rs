@@ -11,7 +11,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError, hash::HashString};
+use lib3h_persistence_api::{cas::content::Address, error::HolochainError, hash::HashString};
 use snowflake;
 use std::{pin::Pin, sync::Arc, thread};
 

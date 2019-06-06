@@ -1,6 +1,6 @@
 use super::super::PROPERTIES;
 use error::{ZomeApiError, ZomeApiResult};
-use holochain_core_types::json::JsonString;
+use lib3h_persistence_api::json::JsonString;
 use serde_json::Value;
 
 // Returns a DNA property, which are defined by the DNA developer.

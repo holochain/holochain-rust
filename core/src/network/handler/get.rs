@@ -5,7 +5,7 @@ use crate::{
     instance::dispatch_action,
     nucleus,
 };
-use holochain_core_types::{cas::content::Address, eav::Attribute, entry::EntryWithMetaAndHeader};
+use lib3h_persistence_api::{cas::content::Address, eav::Attribute, entry::EntryWithMetaAndHeader};
 use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };

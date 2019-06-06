@@ -19,7 +19,7 @@ use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
 use lib3h_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    json::{/*default_to_json, default_try_from_json, */ JsonString, RawString},
+    json::{default_to_json, default_try_from_json, JsonString, RawString},
     error::{PersistenceError, PersistenceResult},
 };
 use link::{link_data::LinkData, link_list::LinkList};
@@ -77,7 +77,7 @@ pub enum Entry {
     CapTokenClaim(CapTokenClaim),
     CapTokenGrant(CapTokenGrant),
 }
-/*
+
 impl From<Option<Entry>> for JsonString {
     fn from(maybe_entry: Option<Entry>) -> Self {
         default_to_json(maybe_entry)
@@ -85,12 +85,12 @@ impl From<Option<Entry>> for JsonString {
 }
 
 impl TryFrom<JsonString> for Option<Entry> {
-    type Error = HolochainError;
+    type Error = PersistenceError;
     fn try_from(j: JsonString) -> Result<Self, Self::Error> {
         default_try_from_json(j)
     }
 }
-*/
+
 
 impl Entry {
     pub fn entry_type(&self) -> EntryType {

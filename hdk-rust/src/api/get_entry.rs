@@ -1,6 +1,7 @@
 use super::Dispatch;
 use error::{ZomeApiError, ZomeApiResult};
-use holochain_core_types::{cas::content::Address, entry::Entry};
+use lib3h_persistence_api::{cas::content::Address};
+use holochain_core_types::entry::Entry;
 use holochain_wasm_utils::api_serialization::get_entry::{
     EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
     StatusRequestKind,
@@ -19,8 +20,8 @@ use holochain_wasm_utils::api_serialization::get_entry::{
 /// # extern crate holochain_core_types;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::entry::Entry;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::cas::content::Address;
+/// # use lib3h_persistence_api::json::JsonString;
+/// # use lib3h_persistence_api::cas::content::Address;
 /// # fn main() {
 /// pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
 ///     // get_entry returns a Result<Option<T>, ZomeApiError>

@@ -1,6 +1,6 @@
 use super::Dispatch;
 use error::ZomeApiResult;
-use holochain_core_types::{cas::content::Address, json::JsonString};
+use lib3h_persistence_api::{cas::content::Address, json::JsonString};
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 
 /// Call an exposed function from another zome or another (bridged) instance running
@@ -20,7 +20,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # extern crate serde_derive;
 /// # #[macro_use]
 /// # extern crate serde_json;
-/// # use hdk::holochain_core_types::json::JsonString;
+/// # use hdk::lib3h_persistence_api::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
@@ -121,13 +121,13 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # extern crate lib3h_persistence_derive;
 ///
 /// # use hdk::holochain_core_types::hash::HashString;
-/// # use hdk::holochain_core_types::json::JsonString;
+/// # use hdk::lib3h_persistence_api::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::error::ZomeApiResult;
 /// # use std::convert::TryInto;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
-/// # use hdk::holochain_core_types::cas::content::Address;
+/// # use hdk::lib3h_persistence_api::cas::content::Address;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]

@@ -1,6 +1,6 @@
 use super::Dispatch;
 use error::ZomeApiResult;
-use holochain_core_types::json::JsonString;
+use lib3h_persistence_api::json::JsonString;
 use std::time::Duration;
 /// Lets the DNA runtime sleep for the given duration.
 /// # Examples

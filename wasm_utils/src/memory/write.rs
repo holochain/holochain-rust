@@ -3,7 +3,7 @@ use crate::memory::{
     stack::WasmStack,
     MemoryBits, MemoryInt,
 };
-use holochain_core_types::json::JsonString;
+use lib3h_persistence_api::json::JsonString;
 use memory::allocation::{AllocationResult, Length};
 use std::{convert::TryInto, os::raw::c_char, slice};
 

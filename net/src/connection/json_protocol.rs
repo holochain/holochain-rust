@@ -45,6 +45,7 @@ pub struct StateData {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct ConfigData {
     pub config: String,
 }
@@ -54,14 +55,14 @@ pub struct ConfigData {
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct ConnectData {
-    #[serde(rename = "address")]
     pub peer_address: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct PeerData {
-    #[serde(rename = "agentId")]
     pub agent_id: Address,
 }
 
@@ -132,7 +133,6 @@ impl EntryData {
 #[serde(rename_all = "camelCase")]
 pub struct QueryEntryData {
     pub dna_address: Address,
-    #[serde(rename = "address")]
     pub entry_address: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
@@ -144,7 +144,6 @@ pub struct QueryEntryData {
 #[serde(rename_all = "camelCase")]
 pub struct QueryEntryResultData {
     pub dna_address: Address,
-    #[serde(rename = "address")]
     pub entry_address: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
@@ -173,7 +172,6 @@ pub struct StoreEntryAspectData {
     pub request_id: String,
     pub dna_address: Address,
     pub provider_agent_id: Address,
-    #[serde(rename = "address")]
     pub entry_address: Address,
     pub entry_aspect: EntryAspectData,
 }
@@ -190,7 +188,6 @@ pub struct FetchEntryData {
     pub provider_agent_id: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
-    #[serde(rename = "address")]
     pub entry_address: Address,
     pub aspect_address_list: Option<Vec<Address>>, // None -> Get all, otherwise get specified aspects
 }

@@ -213,10 +213,14 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
-    // #fulldht
+    // #fullsync
     assert!(result_a.is_some());
     log_i!("got HandleStoreEntryAspect on node A: {:?}", result_a);
-
+    let maybe_fetch_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
+    if let Some(fetch_a) = maybe_fetch_a {
+        let fetch = unwrap_to!(fetch_a => JsonProtocol::HandleFetchEntry);
+        let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
+    }
     let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     assert!(result_b.is_some());
     log_i!("got HandleStoreEntryAspect on node B: {:?}", result_b);
@@ -224,20 +228,22 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
     // Billy asks for that data
     let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
-    // Alex sends that data back to the network
-    let _ = alex.reply_to_HandleQueryEntry(&query_data).unwrap();
+    // #fullsync
+    // Billy sends that data back to the network
+    let _ = billy.reply_to_HandleQueryEntry(&query_data).unwrap();
 
     // Billy should receive requested data
     let result = billy
         .wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
         .unwrap();
-    log_i!("got QueryEntryResult: {:?}", result);
+    log_i!("got QueryEntryResult: {:?}\n\n\n\n", result);
 
     // Billy asks for unknown data
     let query_data = billy.request_entry(ENTRY_ADDRESS_2.clone());
 
-    // Alex sends that data back to the network
-    let res = alex.reply_to_HandleQueryEntry(&query_data);
+    // #fullsync
+    // Billy sends that data back to the network
+    let res = billy.reply_to_HandleQueryEntry(&query_data);
     assert!(res.is_err());
     // Billy should receive FailureResult
     let result = billy
@@ -245,6 +251,10 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
         .unwrap();
     log_i!("got FailureResult: {:?}", result);
     let gen_res = unwrap_to!(result => JsonProtocol::FailureResult);
+    log_i!(
+        "Failure result_info: {}",
+        std::str::from_utf8(&gen_res.result_info).unwrap()
+    );
     assert_eq!(res.err().unwrap(), *gen_res);
 
     // Done
@@ -300,13 +310,18 @@ pub fn dht_two_aspects_test(
             || store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
     );
 
-    // TODO also check aspects on billy?
+    // #fullsync
+    // also check aspects on billy?
+    let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    assert!(result_b.is_some());
+    log_i!("got HandleStoreEntryAspect on node B: {:?}", result_b);
 
     // Billy asks for that data
     let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
-    // Alex sends that data back to the network
-    let _ = alex.reply_to_HandleQueryEntry(&query_data).unwrap();
+    // #fullsync
+    // Billy sends that data back to the network
+    let _ = billy.reply_to_HandleQueryEntry(&query_data).unwrap();
 
     // Billy should receive requested data
     let result = billy
@@ -400,6 +415,8 @@ pub fn untrack_billy_test(
 
     // Send a message from alex to billy
     alex.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_1.clone());
+
+    log_i!("waiting for FailureResult...");
 
     // Alex should receive FailureResult
     let result = alex

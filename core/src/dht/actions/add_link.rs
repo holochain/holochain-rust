@@ -62,8 +62,8 @@ mod tests {
     use holochain_core_types::{
         agent::test_agent_id,
         cas::content::AddressableContent,
-        entry::Entry,
         chain_header::test_chain_header,
+        entry::Entry,
         link::{link_data::LinkData, Link, LinkActionKind},
     };
 

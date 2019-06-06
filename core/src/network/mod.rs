@@ -24,9 +24,9 @@ pub mod tests {
     use holochain_core_types::{
         agent::test_agent_id,
         cas::content::{Address, AddressableContent},
+        chain_header::test_chain_header,
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
-        chain_header::test_chain_header,
         json::JsonString,
         link::link_data::LinkData,
     };

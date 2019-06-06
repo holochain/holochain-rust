@@ -25,7 +25,7 @@ use holochain_core_types::{
         entry_type::EntryType,
         Entry,
     },
-    error::{HcResult, HolochainError}
+    error::{HcResult, HolochainError},
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};
@@ -98,7 +98,7 @@ impl Context {
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
-        signal_tx: Option<SignalSender>
+        signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
             agent_id: agent_id.clone(),
@@ -116,7 +116,6 @@ impl Context {
                 conductor_api,
                 agent_id,
             )),
-     
         }
     }
 
@@ -129,7 +128,7 @@ impl Context {
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
-        p2p_config: P2pConfig
+        p2p_config: P2pConfig,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id: agent_id.clone(),
@@ -144,7 +143,6 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
-
         })
     }
 
@@ -386,7 +384,7 @@ pub mod tests {
             )),
             P2pConfig::new_with_unique_memory_backend(),
             None,
-            None
+            None,
         );
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

@@ -1,12 +1,11 @@
 use crate::{
     agent::AgentId,
     cas::content::Address,
+    chain_header::ChainHeader,
     error::HolochainError,
     json::JsonString,
     link::{Link, LinkActionKind},
-    chain_header::ChainHeader
 };
-
 
 //-------------------------------------------------------------------------------------------------
 // LinkData
@@ -16,11 +15,9 @@ use crate::{
 pub struct LinkData {
     pub action_kind: LinkActionKind,
     pub link: Link,
-    pub top_chain_header : ChainHeader,
+    pub top_chain_header: ChainHeader,
     agent_id: AgentId,
 }
-
-
 
 impl LinkData {
     pub fn new_add(
@@ -28,7 +25,7 @@ impl LinkData {
         target: &Address,
         tag: &str,
         link_type: &str,
-        top_chain_header : ChainHeader,
+        top_chain_header: ChainHeader,
         agent_id: AgentId,
     ) -> Self {
         LinkData {
@@ -44,7 +41,7 @@ impl LinkData {
         target: &Address,
         tag: &str,
         link_type: &str,
-        top_chain_header : ChainHeader,
+        top_chain_header: ChainHeader,
         agent_id: AgentId,
     ) -> Self {
         LinkData {
@@ -66,7 +63,7 @@ impl LinkData {
     pub fn from_link(
         link: &Link,
         action_kind: LinkActionKind,
-        top_chain_header : ChainHeader,
+        top_chain_header: ChainHeader,
         agent_id: AgentId,
     ) -> Self {
         LinkData {
@@ -77,11 +74,11 @@ impl LinkData {
         }
     }
 
-    pub fn add_from_link(link: &Link, top_chain_header : ChainHeader, agent_id: AgentId) -> Self {
+    pub fn add_from_link(link: &Link, top_chain_header: ChainHeader, agent_id: AgentId) -> Self {
         Self::from_link(link, LinkActionKind::ADD, top_chain_header, agent_id)
     }
 
-    pub fn remove_from_link(link: &Link, top_chain_header : ChainHeader, agent_id: AgentId) -> Self {
+    pub fn remove_from_link(link: &Link, top_chain_header: ChainHeader, agent_id: AgentId) -> Self {
         Self::from_link(link, LinkActionKind::REMOVE, top_chain_header, agent_id)
     }
 }
@@ -92,8 +89,8 @@ pub mod tests {
     use crate::{
         agent::test_agent_id,
         cas::content::AddressableContent,
-        entry::{test_entry_a, test_entry_b, Entry},
         chain_header::test_chain_header,
+        entry::{test_entry_a, test_entry_b, Entry},
         json::JsonString,
         link::{
             link_data::LinkData,

@@ -59,7 +59,7 @@ pub mod test {
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::AgentId,
-        cas::content::{Address, AddressableContent}
+        cas::content::{Address, AddressableContent},
     };
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use std::sync::{Mutex, RwLock};

@@ -312,8 +312,7 @@ pub mod tests {
         assert_eq!(hash_set.len(), 1);
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        let link_entry =
-            link.add_entry(test_chain_header(), test_agent_id());
+        let link_entry = link.add_entry(test_chain_header(), test_agent_id());
         assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
             eav.attribute(),
@@ -359,8 +358,7 @@ pub mod tests {
         assert_eq!(hash_set.len(), 2);
         let eav = hash_set.iter().nth(1).unwrap();
         assert_eq!(eav.entity(), *link.base());
-        let _link_entry =
-            link.add_entry(test_chain_header(), test_agent_id());
+        let _link_entry = link.add_entry(test_chain_header(), test_agent_id());
         assert_eq!(eav.value(), entry_link_add.address());
         assert_eq!(
             eav.attribute(),

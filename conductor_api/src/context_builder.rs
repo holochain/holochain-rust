@@ -10,9 +10,7 @@ use holochain_core::{
     signal::SignalSender,
 };
 use holochain_core_types::{
-    agent::AgentId,
-    cas::storage::ContentAddressableStorage,
-    eav::EntityAttributeValueStorage,
+    agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
     error::HolochainError,
 };
 use holochain_net::p2p_config::P2pConfig;
@@ -42,7 +40,7 @@ pub struct ContextBuilder {
     eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage>>>,
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
-    signal_tx: Option<SignalSender>
+    signal_tx: Option<SignalSender>,
 }
 
 impl ContextBuilder {
@@ -157,7 +155,7 @@ impl ContextBuilder {
             self.p2p_config
                 .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
-            self.signal_tx
+            self.signal_tx,
         )
     }
 }

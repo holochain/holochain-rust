@@ -30,23 +30,17 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
-    let top_chain_header_option = context
-    .state()
-    .unwrap()
-    .agent()
-    .top_chain_header();
+    let top_chain_header_option = context.state().unwrap().agent().top_chain_header();
 
-    let top_chain_header = match top_chain_header_option
-    {
-        Some(top_chain) =>top_chain,
-        None => 
-        {
+    let top_chain_header = match top_chain_header_option {
+        Some(top_chain) => top_chain,
+        None => {
             context.log(format!(
                 "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
             ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
-        } 
+        }
     };
 
     let link = input.to_link();
@@ -78,7 +72,7 @@ pub mod tests {
         nucleus::ribosome::{
             api::{tests::*, ZomeApiFunction},
             Defn,
-        }
+        },
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -90,8 +84,6 @@ pub mod tests {
 
     use serde_json;
     use std::{convert::TryFrom, sync::Arc};
-
-   
 
     pub fn test_entry_b() -> Entry {
         Entry::App("testEntryTypeB".into(), "test".into())
@@ -220,7 +212,6 @@ pub mod tests {
         let call_result = ZomeApiInternalResult::try_from(call_result_json);
 
         assert!(call_result.is_ok())
-
     }
 
     #[test]

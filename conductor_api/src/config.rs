@@ -382,9 +382,6 @@ pub struct DnaConfiguration {
     pub hash: Option<String>,
 }
 
-
-
-
 impl TryFrom<DnaConfiguration> for Dna {
     type Error = HolochainError;
     fn try_from(dna_config: DnaConfiguration) -> Result<Self, Self::Error> {

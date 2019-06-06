@@ -54,8 +54,8 @@ pub mod tests {
     use holochain_core_types::{
         agent::test_agent_id,
         cas::content::Address,
-        entry::{entry_type::test_app_entry_type, Entry},
         chain_header::test_chain_header,
+        entry::{entry_type::test_app_entry_type, Entry},
         json::{JsonString, RawString},
         link::{link_data::LinkData, Link},
     };
@@ -115,11 +115,7 @@ pub mod tests {
                 .is_ok());
             assert!(initialized_context
                 .block_on(add_link(
-                    &LinkData::add_from_link(
-                        &link,
-                        test_chain_header(),
-                        test_agent_id()
-                    ),
+                    &LinkData::add_from_link(&link, test_chain_header(), test_agent_id()),
                     &initialized_context
                 ))
                 .is_ok());

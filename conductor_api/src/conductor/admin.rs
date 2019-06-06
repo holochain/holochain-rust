@@ -623,7 +623,6 @@ pub mod tests {
         toml
     }
 
-
     pub fn agent1() -> String {
         format!(
             r#"[[agents]]

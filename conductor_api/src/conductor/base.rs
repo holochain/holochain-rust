@@ -18,10 +18,7 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::AgentId,
-    cas::content::AddressableContent,
-    dna::Dna,
-    error::HolochainError,
+    agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
     json::JsonString,
 };
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};

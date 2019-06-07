@@ -47,6 +47,9 @@ impl Default for Attribute {
     }
 }
 
+unsafe impl Sync for Attribute {}
+unsafe impl Send for Attribute {}
+
 impl lib3h_persistence_api::eav::Attribute for Attribute {}
 
 impl From<AttributeError> for HolochainError {

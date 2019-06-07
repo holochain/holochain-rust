@@ -141,6 +141,11 @@ impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
         lib3h_sodium::check_init();
+
+        let mut load_dna = 
+            |s| {Self::load_dna(s).map_err(|err| err.into())};
+        let dna_loader =
+            Arc::new(Box::new(load_dna));
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
@@ -151,7 +156,7 @@ impl Conductor {
             signal_multiplexer_kill_switch: None,
             config,
             key_loader: Arc::new(Box::new(Self::load_key)),
-            dna_loader: Arc::new(Box::new(Self::load_dna.into())),
+            dna_loader: dna_loader,
             ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
             signal_tx: None,
             logger: DebugLogger::new(rules),

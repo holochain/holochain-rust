@@ -25,7 +25,7 @@ use holochain_core::{
 use holochain_core_types::{
     agent::AgentId,
     error::HolochainError,
-    eav::EntityAttributeValueStorage
+    eav::{EntityAttributeValueStorage, Attribute}
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::IoHandler;
@@ -81,7 +81,8 @@ impl ContextBuilder {
     /// Chain and DHT storages get set to the same memory CAS.
     pub fn with_memory_storage(mut self) -> Self {
         let cas = Arc::new(RwLock::new(MemoryStorage::new()));
-        let eav = Arc::new(RwLock::new(EavMemoryStorage::new()));
+        let eav : Arc<RwLock<EavMemoryStorage<Attribute>>> =
+            Arc::new(RwLock::new(EavMemoryStorage::new()));
         self.chain_storage = Some(cas.clone());
         self.dht_storage = Some(cas);
         self.eav_storage = Some(eav);

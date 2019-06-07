@@ -66,7 +66,7 @@ impl EntryStore {
             return;
         }
         if let Some(map) = self.store.get_mut(&entry_address) {
-            map.insert(entry_address.clone(), aspect.clone());
+            map.insert(aspect.aspect_address.clone(), aspect.clone());
         }
     }
 

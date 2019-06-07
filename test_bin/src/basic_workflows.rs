@@ -216,6 +216,7 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
     // #fullsync
     assert!(result_a.is_some());
     log_i!("got HandleStoreEntryAspect on node A: {:?}", result_a);
+    // Gossip might ask us for the data
     let maybe_fetch_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
     if let Some(fetch_a) = maybe_fetch_a {
         let fetch = unwrap_to!(fetch_a => JsonProtocol::HandleFetchEntry);
@@ -297,7 +298,7 @@ pub fn dht_two_aspects_test(
     let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     assert!(result_a.is_some());
     let json = result_a.unwrap();
-    log_i!("got HandleStoreEntryAspect on node A: {:?}", json);
+    log_i!("got 2nd HandleStoreEntryAspect on node A: {:?}", json);
     let store_data_2 = unwrap_to!(json => JsonProtocol::HandleStoreEntryAspect);
     assert_ne!(store_data_1, store_data_2);
     assert_eq!(store_data_2.entry_address, ENTRY_ADDRESS_1.clone());
@@ -309,12 +310,20 @@ pub fn dht_two_aspects_test(
         store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1
             || store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
     );
-
+    // Gossip might ask us for the data
+    let maybe_fetch_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
+    if let Some(fetch_a) = maybe_fetch_a {
+        let fetch = unwrap_to!(fetch_a => JsonProtocol::HandleFetchEntry);
+        let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
+    }
     // #fullsync
     // also check aspects on billy?
     let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     assert!(result_b.is_some());
     log_i!("got HandleStoreEntryAspect on node B: {:?}", result_b);
+    let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    assert!(result_b.is_some());
+    log_i!("got 2nd HandleStoreEntryAspect on node B: {:?}", result_b);
 
     // Billy asks for that data
     let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
@@ -330,6 +339,7 @@ pub fn dht_two_aspects_test(
     log_i!("got QueryEntryResult: {:?}", result);
     let query_data = unwrap_to!(result => JsonProtocol::QueryEntryResult);
     let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
+    log_i!("got query_result: {:?}", query_result);
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 2);
@@ -527,7 +537,7 @@ pub fn shutdown_test(
     // kill alex manually
     alex.send(Protocol::Shutdown.into())?;
 
-    // alex should receive 'Terminated' which should set `is_network_ready`  to false
+    // alex should receive 'Terminated' which should set `is_network_ready` to false
     let _ = alex.wait_json_with_timeout(Box::new(|_| true), 200);
     assert_eq!(alex.is_network_ready(), false);
 
@@ -581,28 +591,40 @@ pub fn two_authors_test(
     // #fulldht
     let _ = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     // wait for broadcast
+    // Gossip might ask us for the data
+    let maybe_fetch_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
+    if let Some(fetch_a) = maybe_fetch_a {
+        let fetch = unwrap_to!(fetch_a => JsonProtocol::HandleFetchEntry);
+        let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
+    }
     // Check if billy is asked to store it
     let result = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     assert!(result.is_some());
-    log_i!("Billy got HandleStoreEntryAspect:\n{:?}", result.unwrap());
+    log_i!("Billy got HandleStoreEntryAspect: {:?}", result.unwrap());
 
     // Billy authors second aspect
     billy.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_2.clone()], true)?;
     // #fulldht
     let _ = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
-
-    // wait for broadcast
+    // Gossip might ask us for the data
+    let maybe_fetch_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
+    if let Some(fetch_b) = maybe_fetch_b {
+        let fetch = unwrap_to!(fetch_b => JsonProtocol::HandleFetchEntry);
+        let _ = billy.reply_to_HandleFetchEntry(&fetch).unwrap();
+    }
+    // wait for gossip / broadcast
     // Check if billy is asked to store it
     let result = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     // #fulldht
     assert!(result.is_some());
-    log_i!("Alex got HandleStoreEntryAspect:\n{:?}", result.unwrap());
+    log_i!("Alex got HandleStoreEntryAspect: {:?}", result.unwrap());
 
     // Billy asks for that data
     let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
-    // Alex sends that data back to the network
-    let _ = alex.reply_to_HandleQueryEntry(&query_data).unwrap();
+    // #fullsync
+    // Billy sends that data back to the network
+    let _ = billy.reply_to_HandleQueryEntry(&query_data).unwrap();
 
     // Billy should receive requested data
     let result = billy

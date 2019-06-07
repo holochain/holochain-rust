@@ -36,6 +36,7 @@ pub struct Instance {
     scheduler_handle: Option<Arc<ScheduleHandle>>,
     persister: Option<Arc<Mutex<Persister>>>,
     consistency_model: ConsistencyModel,
+    kill_switch: Option<crossbeam_channel::Sender<()>>,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -162,21 +163,35 @@ impl Instance {
         rx_action: Receiver<ActionWrapper>,
         rx_observer: Receiver<Observer>,
     ) {
+        self.stop_action_loop();
+
         let mut sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
+        let (kill_sender, kill_reciever ) = crossbeam_channel::unbounded();
+        self.kill_switch = Some(kill_sender);
+
         thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
-            for action_wrapper in rx_action {
-                state_observers = sync_self.process_action(
-                    &action_wrapper,
-                    state_observers,
-                    &rx_observer,
-                    &sub_context,
-                );
-                sync_self.emit_signals(&sub_context, &action_wrapper);
+            while !kill_reciever.try_recv().is_ok() {
+                if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
+                    state_observers = sync_self.process_action(
+                        &action_wrapper,
+                        state_observers,
+                        &rx_observer,
+                        &sub_context,
+                    );
+                    sync_self.emit_signals(&sub_context, &action_wrapper);
+                }
             }
+            println!("STOPPING ACTION LOOP");
         });
+    }
+
+    pub fn stop_action_loop(&self) {
+        if let Some(ref kill_switch) = self.kill_switch {
+            let _ = kill_switch.send(());
+        }
     }
 
     /// Calls the reducers for an action and calls the observers with the new state
@@ -263,6 +278,7 @@ impl Instance {
             scheduler_handle: None,
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
+            kill_switch: None,
         }
     }
 
@@ -274,6 +290,7 @@ impl Instance {
             scheduler_handle: None,
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
+            kill_switch: None,
         }
     }
 

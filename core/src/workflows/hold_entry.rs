@@ -13,10 +13,12 @@ use crate::{
     nucleus::validation::ValidationError, scheduled_jobs::pending_validations::ValidatingWorkflow,
 };
 use holochain_core_types::{
-    cas::content::AddressableContent,
-    error::HolochainError,
+   error::HolochainError,
     validation::{EntryLifecycle, ValidationData},
 };
+
+use lib3h_persistence_api::cas::content::AddressableContent;
+ 
 use std::sync::Arc;
 
 pub async fn hold_entry_workflow<'a>(

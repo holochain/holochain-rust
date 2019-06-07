@@ -8,8 +8,10 @@ use crate::{
 };
 use holochain_core_types::{
     error::HolochainError,
-    json::{JsonString, RawString},
 };
+
+use lib3h_persistence_api::json::{JsonString, RawString};
+
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use serde_json::Value;

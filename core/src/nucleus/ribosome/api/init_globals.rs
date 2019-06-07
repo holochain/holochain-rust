@@ -1,10 +1,14 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    entry::entry_type::EntryType,
+   entry::entry_type::EntryType,
+};
+
+use lib3h_persistence_api::{
     hash::HashString,
     json::JsonString,
+    cas::content::{Address, AddressableContent},
 };
+
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use wasmi::RuntimeArgs;
 

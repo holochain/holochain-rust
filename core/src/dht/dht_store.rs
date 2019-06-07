@@ -1,18 +1,19 @@
 use crate::action::ActionWrapper;
 use holochain_core_types::{
+    chain_header::ChainHeader,
+    entry::Entry,
+    error::HolochainError,
+};
+use lib3h_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
-    chain_header::ChainHeader,
-    eav::{
-        Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
-        IndexFilter,
-    },
-    entry::Entry,
-    error::HolochainError,
+    eav::{IndexFilter, EavFilter}
 };
-
+use holochain_core_types::eav::{
+    Attribute, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
+};
 use std::{
     collections::{BTreeSet, HashMap},
     sync::{Arc, RwLock},
@@ -115,7 +116,10 @@ impl DhtStore {
                     .flatten()
                     .map(|content| ChainHeader::try_from_content(&content))
                     .collect::<Result<Vec<_>, _>>()
-            })?
+            })
+            .map_err(|err|
+                     { let hc_error : HolochainError = err.into(); hc_error })
+            ?
     }
 
     /// Add an entry and header to the CAS and EAV, respectively

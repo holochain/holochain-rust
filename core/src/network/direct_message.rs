@@ -1,6 +1,11 @@
-use holochain_core_types::{
-    cas::content::Address, error::HolochainError, json::JsonString, validation::ValidationPackage,
+use lib3h_persistence_api::{
+    cas::content::Address, error::PersistenceError, json::JsonString
 };
+
+use holochain_core_types::{
+    validation::ValidationPackage,
+};
+
 
 /// This is direct message that got created by the zome code through hdk::send().
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, DefaultJson)]

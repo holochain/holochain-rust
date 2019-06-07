@@ -20,10 +20,15 @@ use crate::{
 };
 use holochain_core_types::{
     entry::Entry,
-    error::{HolochainError, RibosomeEncodedValue},
-    json::{default_to_json, JsonString},
+    error::{RibosomeEncodedValue},
     validation::ValidationPackageDefinition,
 };
+
+use lib3h_persistence_api::{
+    error::PersistenceError,
+    json::{default_to_json, JsonString}
+};
+
 use holochain_wasm_utils::{
     api_serialization::receive::ReceiveParams, memory::allocation::WasmAllocation,
 };

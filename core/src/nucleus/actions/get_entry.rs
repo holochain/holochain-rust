@@ -1,10 +1,14 @@
 use crate::context::Context;
 use holochain_core_types::{
+   crud_status::CrudStatus,
+   eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
+   entry::{Entry, EntryWithMeta},
+   error::HolochainError,
+};
+
+use lib3h_persistence_api::{
     cas::{content::Address, storage::ContentAddressableStorage},
-    crud_status::CrudStatus,
-    eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
-    entry::{Entry, EntryWithMeta},
-    error::HolochainError,
+    eav::IndexFilter
 };
 
 use std::{

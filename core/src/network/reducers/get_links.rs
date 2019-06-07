@@ -3,7 +3,8 @@ use crate::{
     network::{reducers::send, state::NetworkState},
     state::State,
 };
-use holochain_core_types::{error::HolochainError, hash::HashString};
+use holochain_core_types::{error::HolochainError};
+use lib3h_persistence_api::hash::HashString;
 use holochain_net::connection::json_protocol::{FetchMetaData, JsonProtocol};
 
 fn reduce_get_links_inner(

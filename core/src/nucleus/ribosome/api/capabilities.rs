@@ -3,14 +3,15 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
 use holochain_core_types::{
-    cas::content::Address,
-    entry::{
+   entry::{
         cap_entries::{CapTokenClaim, CapTokenGrant},
         Entry,
     },
     error::HolochainError,
 };
-use holochain_wasm_utils::api_serialization::capabilities::{
+use lib3h_persistence_api::cas::content::Address;
+
+ use holochain_wasm_utils::api_serialization::capabilities::{
     CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
 };
 use std::convert::TryFrom;

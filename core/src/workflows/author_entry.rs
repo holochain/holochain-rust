@@ -9,12 +9,13 @@ use crate::{
 };
 
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    entry::Entry,
-    error::HolochainError,
-    signature::Provenance,
-    validation::{EntryLifecycle, ValidationData},
+   entry::Entry,
+   error::HolochainError,
+   signature::Provenance,
+   validation::{EntryLifecycle, ValidationData},
 };
+
+use lib3h_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryResult;
 

@@ -10,7 +10,7 @@ use crate::{
         handler::{get::*, send::*, store::*},
     },
 };
-use holochain_core_types::hash::HashString;
+use lib3h_persistence_api::hash::HashString;
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 
 use std::{convert::TryFrom, sync::Arc};

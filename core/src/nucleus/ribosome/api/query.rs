@@ -7,8 +7,13 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
+    chain_header::ChainHeader, entry::Entry, error::HolochainError,
 };
+
+use lib3h_persistence_api::{
+    cas::content::Address
+};
+
 use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames, QueryResult};
 use std::{convert::TryFrom, sync::Arc};
 use wasmi::{RuntimeArgs, RuntimeValue};

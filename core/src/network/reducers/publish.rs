@@ -9,12 +9,14 @@ use crate::{
     state::State,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    crud_status::CrudStatus,
+   crud_status::CrudStatus,
     eav::Attribute,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
+
+use lib3h_persistence_api::cas::content::{Address, AddressableContent};
+
 use holochain_net::connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
 
 /// Send to network a PublishDhtData message

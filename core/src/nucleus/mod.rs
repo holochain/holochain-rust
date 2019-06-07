@@ -16,7 +16,11 @@ pub use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::Address, dna::capabilities::CapabilityRequest, error::HcResult, json::JsonString,
+    dna::capabilities::CapabilityRequest, error::HcResult
+};
+
+use lib3h_persistence_api::{
+    cas::content::Address, json::JsonString,
 };
 
 use snowflake;

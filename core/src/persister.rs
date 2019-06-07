@@ -5,12 +5,14 @@ use crate::{
     state::State,
 };
 use holochain_core_types::{
-    cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
-    },
     error::HolochainError,
 };
+
+use lib3h_persistence_api::cas::{
+    content::{Address, AddressableContent, Content},
+    storage::ContentAddressableStorage,
+};
+
 use std::sync::{Arc, RwLock};
 
 /// trait that defines the persistence functionality that holochain_core requires

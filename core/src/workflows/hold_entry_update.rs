@@ -6,11 +6,11 @@ use crate::{
     },
     nucleus::validation::validate_entry,
 };
+use lib3h_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    error::HolochainError,
-    validation::{EntryLifecycle, ValidationData},
+   error::HolochainError,
+   validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 

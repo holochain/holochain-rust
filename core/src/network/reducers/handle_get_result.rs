@@ -3,8 +3,12 @@ use crate::{
     network::state::NetworkState,
     state::State,
 };
+use lib3h_persistence_api::{
+    cas::content::Address
+};
+
 use holochain_core_types::{
-    cas::content::Address, entry::EntryWithMetaAndHeader, error::HolochainError,
+    entry::EntryWithMetaAndHeader, error::HolochainError,
 };
 use holochain_net::connection::json_protocol::FetchEntryResultData;
 

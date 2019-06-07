@@ -12,9 +12,11 @@ use crate::{
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
-    json::JsonString,
     validation::ValidationPackageDefinition,
 };
+
+use lib3h_persistence_api::{json::JsonString};
+
 use holochain_wasm_utils::api_serialization::validation::LinkValidationPackageArgs;
 use std::{convert::TryFrom, sync::Arc};
 

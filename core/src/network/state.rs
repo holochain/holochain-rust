@@ -4,9 +4,10 @@ use crate::{
 };
 use boolinator::*;
 use holochain_core_types::{
-    cas::content::Address, entry::EntryWithMetaAndHeader, error::HolochainError,
+    entry::EntryWithMetaAndHeader, error::HolochainError,
     validation::ValidationPackage,
 };
+use lib3h_persistence_api::cas::content::Address;
 use holochain_net::p2p_network::P2pNetwork;
 use snowflake;
 use std::{

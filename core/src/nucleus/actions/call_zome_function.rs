@@ -8,16 +8,20 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    dna::{capabilities::CapabilityRequest, wasm::DnaWasm},
+   dna::{capabilities::CapabilityRequest, wasm::DnaWasm},
     entry::{
         cap_entries::{CapTokenGrant, CapabilityType},
         Entry,
     },
     error::HolochainError,
-    json::JsonString,
-    signature::{Provenance, Signature},
+   signature::{Provenance, Signature},
 };
+
+use lib3h_persistence_api::{
+    cas::content::{Address, AddressableContent},
+    json::JsonString,
+};
+
 use holochain_dpki::utils::Verify;
 
 use base64;

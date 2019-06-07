@@ -1,12 +1,12 @@
 use crate::{context::Context, workflows::get_entry_result::get_entry_with_meta_workflow};
 use holochain_core_types::{
-    cas::content::Address,
-    chain_header::ChainHeader,
+   chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry, EntryWithMeta},
     error::HolochainError,
     time::Timeout,
     validation::{EntryValidationData, ValidationData},
 };
+use lib3h_persistence_api::cas::content::Address;
 
 use std::sync::Arc;
 

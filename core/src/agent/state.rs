@@ -6,7 +6,7 @@ use crate::{
 use lib3h_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     json::*,
-    error::PersistenceError
+    error::{PersistenceError, PersistenceResult}
 };
 
 use holochain_core_types::{
@@ -149,7 +149,7 @@ impl AddressableContent for AgentStateSnapshot {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
         Self::try_from(content.to_owned())
     }
 

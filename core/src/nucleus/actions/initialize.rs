@@ -13,14 +13,15 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-    cas::content::Address,
-    dna::{traits::ReservedTraitNames, Dna},
+   dna::{traits::ReservedTraitNames, Dna},
     entry::{
         cap_entries::{CapFunctions, CapTokenGrant, CapabilityType, ReservedCapabilityId},
         Entry,
     },
     error::HolochainError,
 };
+use lib3h_persistence_api::cas::content::Address;
+
 use std::{pin::Pin, sync::Arc, time::*};
 
 /// Initialization is the value returned by successful initialization of a DNA instance

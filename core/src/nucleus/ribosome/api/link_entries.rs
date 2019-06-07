@@ -3,11 +3,12 @@ use crate::{
     workflows::author_entry::author_entry,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
 };
+use lib3h_persistence_api::cas::content::{Address, AddressableContent};
+
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};

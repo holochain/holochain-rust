@@ -4,11 +4,15 @@ use crate::{
     state::State,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent, Content},
-    dna::Dna,
-    error::HolochainError,
+   dna::Dna,
+   error::HolochainError,
+   validation::ValidationPackage,
+};
+
+use lib3h_persistence_api::{
     json::JsonString,
-    validation::ValidationPackage,
+    error::{PersistenceError, PersistenceResult},
+    cas::content::{Address, AddressableContent, Content},
 };
 use snowflake;
 use std::{collections::HashMap, convert::TryFrom};
@@ -146,7 +150,7 @@ impl AddressableContent for NucleusStateSnapshot {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
         Self::try_from(content.to_owned())
     }
 }

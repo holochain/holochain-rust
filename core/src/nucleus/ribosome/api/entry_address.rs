@@ -1,11 +1,12 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{
     self,
-    cas::content::AddressableContent,
-    dna::Dna,
+   dna::Dna,
     entry::{entry_type::EntryType, Entry},
     error::RibosomeRuntimeBits,
 };
+use lib3h_persistence_api::cas::content::AddressableContent;
+
 use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue};
 

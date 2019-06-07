@@ -2,9 +2,10 @@ use crate::{context::Context, network, nucleus};
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
 use holochain_core_types::{
-    cas::content::Address, crud_status::CrudStatus, entry::EntryWithMetaAndHeader,
+    crud_status::CrudStatus, entry::EntryWithMetaAndHeader,
     error::HolochainError,
 };
+use lib3h_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_entry::{
     GetEntryArgs, GetEntryResult, StatusRequestKind,
 };

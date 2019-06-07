@@ -35,7 +35,9 @@ use crate::{
     },
     state::State,
 };
-use lib3h_persistence_api::{cas::content::Address, error::HolochainError};
+use lib3h_persistence_api::{cas::content::Address};
+use holochain_core_types::error::HolochainError;
+
 use holochain_net::connection::{
     json_protocol::{JsonProtocol, MessageData},
     net_connection::NetSend,

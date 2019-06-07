@@ -18,9 +18,15 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
-    json::JsonString,
+    agent::AgentId, dna::Dna, error::HolochainError,
 };
+
+use lib3h_persistence_api::{
+    cas::content::AddressableContent,
+    json::JsonString,
+    error::PersistenceResult
+};
+
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
@@ -145,7 +151,7 @@ impl Conductor {
             signal_multiplexer_kill_switch: None,
             config,
             key_loader: Arc::new(Box::new(Self::load_key)),
-            dna_loader: Arc::new(Box::new(Self::load_dna)),
+            dna_loader: Arc::new(Box::new(Self::load_dna.into())),
             ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
             signal_tx: None,
             logger: DebugLogger::new(rules),
@@ -771,7 +777,7 @@ impl Conductor {
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
-    fn load_dna(file: &PathBuf) -> Result<Dna, HolochainError> {
+    fn load_dna(file: &PathBuf) -> PersistenceResult<Dna> {
         notify(format!("Reading DNA from {}", file.display()));
         let mut f = File::open(file)?;
         let mut contents = String::new();

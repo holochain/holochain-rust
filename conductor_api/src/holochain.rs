@@ -100,8 +100,10 @@ use holochain_core::{
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, Dna},
     error::HolochainError,
-    json::JsonString,
 };
+
+use lib3h_persistence_api::json::JsonString;
+
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 

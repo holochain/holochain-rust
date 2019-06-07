@@ -8,9 +8,12 @@ use crate::{
     error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_core_types::{
-    cas::content::AddressableContent, error::HolochainError, hash::HashString,
+use holochain_core_types::error::HolochainError;
+
+use lib3h_persistence_api::{
+    cas::content::AddressableContent, hash::HashString,
 };
+
 use json_patch;
 use std::{
     fs::{self, create_dir_all},

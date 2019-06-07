@@ -116,10 +116,9 @@ impl DhtStore {
                     .flatten()
                     .map(|content| ChainHeader::try_from_content(&content))
                     .collect::<Result<Vec<_>, _>>()
-            })
+            })?
             .map_err(|err|
                      { let hc_error : HolochainError = err.into(); hc_error })
-            ?
     }
 
     /// Add an entry and header to the CAS and EAV, respectively

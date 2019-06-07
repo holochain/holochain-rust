@@ -1,7 +1,8 @@
 use boolinator::Boolinator;
 use holochain_core_types::{
-    agent::AgentId, cas::content::AddressableContent, error::HolochainError,
+    agent::AgentId, error::HolochainError,
 };
+use lib3h_persistence_api::cas::content::AddressableContent;
 
 pub fn request_signing_service(
     agent_id: &AgentId,

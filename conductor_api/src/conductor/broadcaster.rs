@@ -1,4 +1,5 @@
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_core_types::error::HolochainError;
+use lib3h_persistence_api::json::JsonString;
 use jsonrpc_ws_server::ws;
 
 /// An abstraction which represents the ability to (maybe) send a message to the client

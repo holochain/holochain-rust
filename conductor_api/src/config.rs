@@ -15,8 +15,10 @@ use holochain_core_types::{
     agent::{AgentId, Base32},
     dna::Dna,
     error::{HcResult, HolochainError},
-    json::JsonString,
 };
+
+use lib3h_persistence_api::json::JsonString;
+
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{

@@ -13,7 +13,8 @@ use lib3h_persistence_pickle::{
     eav::{pickle::EavPickleStorage},
 };
 
-use lib3h_persistence_api::{cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage};
+use lib3h_persistence_api::{cas::storage::ContentAddressableStorage};
+
 
 use holochain_core::{
     context::Context,
@@ -24,6 +25,7 @@ use holochain_core::{
 use holochain_core_types::{
     agent::AgentId,
     error::HolochainError,
+    eav::EntityAttributeValueStorage
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::IoHandler;

@@ -64,7 +64,7 @@ impl ExecuteZomeFnResponse {
 /// Use Context::block_on to wait for the call result.
 pub async fn call_zome_function(
     zome_call: ZomeFnCall,
-    context: &Arc<Context>,
+    context: Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
     context.log(format!(
         "debug/actions/call_zome_fn: Validating call: {:?}",

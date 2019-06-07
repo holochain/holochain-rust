@@ -1594,7 +1594,7 @@ pub mod tests {
         let mut instance = caller_instance.write().unwrap();
 
         let cap_call = {
-            let context = instance.context();
+            let context = instance.context().unwrap();
             make_cap_request_for_call(
                 context.clone(),
                 Address::from(context.clone().agent_id.address()),
@@ -1626,7 +1626,7 @@ pub mod tests {
         let mut instance = caller_instance.write().unwrap();
 
         let cap_call = {
-            let context = instance.context();
+            let context = instance.context().unwrap();
             make_cap_request_for_call(
                 context.clone(),
                 Address::from(context.clone().agent_id.address()),

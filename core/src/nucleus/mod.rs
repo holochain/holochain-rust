@@ -272,7 +272,7 @@ pub mod tests {
         let zome_call =
             ZomeFnCall::create(context.clone(), "test_zome", token, "public_test_fn", "");
 
-        let result = context.block_on(call_zome_function(zome_call, &context));
+        let result = context.block_on(call_zome_function(zome_call, context.clone()));
 
         assert!(result.is_ok());
         assert_eq!(JsonString::from(RawString::from(1337)), result.unwrap());
@@ -291,7 +291,7 @@ pub mod tests {
             "public_test_fn",
             "{}",
         );
-        let result = context.block_on(call_zome_function(call, &context));
+        let result = context.block_on(call_zome_function(call, context.clone()));
 
         match result {
             Err(HolochainError::DnaMissing) => {}
@@ -309,7 +309,7 @@ pub mod tests {
         // Create zome function call:
         let call = ZomeFnCall::new("test_zome", dummy_capability_request(), "xxx", "{}");
 
-        let result = context.block_on(call_zome_function(call, &context));
+        let result = context.block_on(call_zome_function(call, context.clone()));
 
         match result {
             Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(err))) => {
@@ -329,7 +329,7 @@ pub mod tests {
         // Create bad zome function call
         let call = ZomeFnCall::new("xxx", dummy_capability_request(), "public_test_fn", "{}");
 
-        let result = context.block_on(call_zome_function(call, &context));
+        let result = context.block_on(call_zome_function(call, context.clone()));
 
         match result {
             Err(HolochainError::Dna(err)) => assert_eq!(err.to_string(), "Zome 'xxx' not found"),

@@ -168,7 +168,7 @@ impl Instance {
         let mut sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
-        let (kill_sender, kill_reciever ) = crossbeam_channel::unbounded();
+        let (kill_sender, kill_reciever) = crossbeam_channel::unbounded();
         self.kill_switch = Some(kill_sender);
 
         thread::spawn(move || {
@@ -309,6 +309,12 @@ impl Instance {
             .try_lock()
             .map_err(|_| HolochainError::new("Could not get lock on persister"))?
             .save(&self.state())
+    }
+}
+
+impl Drop for Instance {
+    fn drop(&mut self) {
+        self.stop_action_loop();
     }
 }
 

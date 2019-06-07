@@ -238,7 +238,9 @@ impl ConductorAdmin for Conductor {
                 result.err().unwrap()
             ));
         }
-        self.instances.remove(id);
+        self.instances.remove(id).map(|instance| {
+            instance.write().unwrap().kill();
+        });
 
         notify(format!("Removed instance \"{}\".", id));
         Ok(())
@@ -523,7 +525,7 @@ impl ConductorAdmin for Conductor {
         let id = &new_bridge.caller_id;
         let new_conductor_api = self.build_conductor_api(id.clone(), &new_config)?;
         let mut instance = self.instances.get(id)?.write()?;
-        instance.set_conductor_api(new_conductor_api);
+        instance.set_conductor_api(new_conductor_api)?;
 
         notify(format!(
             "Added bridge from '{}' to '{}' as '{}'",

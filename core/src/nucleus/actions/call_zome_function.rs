@@ -17,6 +17,7 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
     signature::{Provenance, Signature},
+    ugly::lax_send_sync,
 };
 use holochain_dpki::utils::Verify;
 
@@ -102,12 +103,11 @@ pub async fn call_zome_function(
         let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);
         // Send ReturnZomeFunctionResult Action
         context_clone.log("debug/actions/call_zome_fn: sending ReturnZomeFunctionResult action.");
-        context_clone
-            .action_channel()
-            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
-                response,
-            )))
-            .expect("action channel to be open in reducer");
+        lax_send_sync(
+            context_clone.action_channel().clone(),
+            ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
+            "call_zome_function",
+        );
         context_clone.log("debug/actions/call_zome_fn: sent ReturnZomeFunctionResult action.");
     });
 

@@ -13,6 +13,7 @@ use holochain_core_types::cas::content::Address;
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
+    ugly::lax_send_sync,
 };
 use std::{
     sync::{
@@ -348,9 +349,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrapper: ActionWrapper) {
-    action_channel
-        .send(action_wrapper)
-        .expect(DISPATCH_WITHOUT_CHANNELS);
+    lax_send_sync(action_channel.clone(), action_wrapper, "dispatch_action");
 }
 
 #[cfg(test)]

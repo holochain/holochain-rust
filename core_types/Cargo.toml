@@ -30,7 +30,7 @@ holochain_core_types_derive = { path = "../core_types_derive" }
 lib3h_crypto_api = "=0.0.1-alpha1"
 uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
-shrinkwraprs = "0.2.1"
+shrinkwraprs = "=0.2.1"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

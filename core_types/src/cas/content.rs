@@ -4,15 +4,11 @@
 //! A test suite for AddressableContent is also implemented here.
 
 use crate::{
-    cas::storage::ContentAddressableStorage,
-    error::HolochainError,
-    hash::HashString,
-    json::{JsonString},
+    cas::storage::ContentAddressableStorage, error::HolochainError, hash::HashString,
+    json::JsonString,
 };
 use multihash::Hash;
-use std::{
-    fmt::{Debug, Write},
-};
+use std::fmt::{Debug, Write};
 
 /// an Address for some Content
 /// ideally would be the Content but pragmatically must be Address

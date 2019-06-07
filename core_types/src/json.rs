@@ -274,7 +274,7 @@ impl Display for JsonString {
 
 // The other issue is that option implements generic From<T> so you can do calls like
 // `let s: Option<&str> = "hi".into()`
-// To get around this we need an intermediate type and a conversion that understands null
+// To get around this we need to go through an intermediate type JsonStringOption
 
 #[derive(Shrinkwrap, Deserialize)]
 pub struct JsonStringOption<T>(Option<T>);
@@ -282,6 +282,12 @@ pub struct JsonStringOption<T>(Option<T>);
 impl<T> JsonStringOption<T> {
     pub fn to_option(self) -> Option<T> {
         self.0
+    }
+}
+
+impl<T> Into<Option<T>> for JsonStringOption<T> {
+    fn into(self) -> Option<T> {
+        self.to_option()
     }
 }
 
@@ -296,8 +302,7 @@ where
     }
 }
 
-impl TryInto<JsonStringOption<String>> for JsonString
-{
+impl TryInto<JsonStringOption<String>> for JsonString {
     type Error = HolochainError;
     fn try_into(self) -> Result<JsonStringOption<String>, Self::Error> {
         let o: Option<String> = default_try_from_json(self)?;
@@ -308,15 +313,15 @@ impl TryInto<JsonStringOption<String>> for JsonString
 // conversions from options to JsonString
 
 impl<T> From<Option<T>> for JsonString
-where T: Debug + Serialize + Into<JsonString>
+where
+    T: Debug + Serialize + Into<JsonString>,
 {
     fn from(o: Option<T>) -> JsonString {
         default_to_json(o)
     }
 }
 
-impl From<Option<String>> for JsonString
-{
+impl From<Option<String>> for JsonString {
     fn from(o: Option<String>) -> JsonString {
         default_to_json(o)
     }
@@ -428,7 +433,7 @@ impl TryFrom<JsonString> for RawString {
 pub mod tests {
     use crate::{
         error::HolochainError,
-        json::{JsonString, RawString, JsonStringOption},
+        json::{JsonString, JsonStringOption, RawString},
     };
     use serde_json;
     use std::convert::{TryFrom, TryInto};
@@ -585,7 +590,7 @@ pub mod tests {
         let o: Option<u32> = None;
         let j: JsonString = o.into();
         assert_eq!(j, JsonString::from_json("null"));
-    
+
         let o: Option<u32> = Some(10);
         let j: JsonString = o.into();
         assert_eq!(j, JsonString::from_json("10"));

@@ -1,6 +1,6 @@
 //! provides in-memory p2p "server" for use in scenario testing
 //! the server connects all the memory_workers together, so there is no real gossiping going around.
-//! Could have pluggable DHT strategy. Full-sync currently hard-coded: #fulldht
+//! Could have pluggable DHT strategy. Full-sync currently hard-coded: #fullsync
 
 #![allow(non_snake_case)]
 
@@ -535,7 +535,7 @@ impl InMemoryServer {
                 entry_address: msg.entry.entry_address.clone(),
                 entry_aspect: aspect,
             };
-            // #fulldht
+            // #fullsync
             // Broadcast: have everyone store it (including self)
             self.priv_send_all(
                 &msg.dna_address,
@@ -588,7 +588,7 @@ impl InMemoryServer {
         if !is_tracking {
             return Ok(());
         }
-        // #fulldht
+        // #fullsync
         // Have the first known chain registered to that DNA respond
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {

@@ -211,17 +211,19 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
     // Alex publish data on the network
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
 
-    // Check if both nodes are asked to store it
-    let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     // #fullsync
+    // Alex should receive the data
+    let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     assert!(result_a.is_some());
     log_i!("got HandleStoreEntryAspect on node A: {:?}", result_a);
-    // Gossip might ask us for the data
+    // Gossip should ask Alex for the data
     let maybe_fetch_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
     if let Some(fetch_a) = maybe_fetch_a {
         let fetch = unwrap_to!(fetch_a => JsonProtocol::HandleFetchEntry);
         let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
     }
+    // #fullsync
+    // Billy should receive the data
     let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     assert!(result_b.is_some());
     log_i!("got HandleStoreEntryAspect on node B: {:?}", result_b);
@@ -280,7 +282,7 @@ pub fn dht_two_aspects_test(
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
-    // #fulldht
+    // #fullsync
     assert!(result_a.is_some());
     let json = result_a.unwrap();
     log_i!("got HandleStoreEntryAspect on node A: {:?}", json);
@@ -588,7 +590,7 @@ pub fn two_authors_test(
     // Again but 'wait' at the end
     // Alex publishs data & meta on the network
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
-    // #fulldht
+    // #fullsync
     let _ = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     // wait for broadcast
     // Gossip might ask us for the data
@@ -604,7 +606,7 @@ pub fn two_authors_test(
 
     // Billy authors second aspect
     billy.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_2.clone()], true)?;
-    // #fulldht
+    // #fullsync
     let _ = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     // Gossip might ask us for the data
     let maybe_fetch_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
@@ -615,7 +617,7 @@ pub fn two_authors_test(
     // wait for gossip / broadcast
     // Check if billy is asked to store it
     let result = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
-    // #fulldht
+    // #fullsync
     assert!(result.is_some());
     log_i!("Alex got HandleStoreEntryAspect: {:?}", result.unwrap());
 

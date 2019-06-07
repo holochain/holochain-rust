@@ -328,7 +328,7 @@ pub fn publish_entry_stress_test(
     //
     let (address_42, entry_42) = generate_entry(91);
     let address_42_clone = address_42.clone();
-    // #fulldht
+    // #fullsync
     // wait for store entry request
     let result = camille.wait_json_with_timeout(
         Box::new(one_is_where!(

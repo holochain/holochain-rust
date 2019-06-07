@@ -1087,7 +1087,14 @@ impl TestNode {
                         .chain_store_list
                         .get_mut(&msg.dna_address)
                         .expect("No dna_store for this DNA");
-                    let _ = chain_store.hold_aspect(&msg.entry_address, &msg.entry_aspect);
+                    let res = chain_store.hold_aspect(&msg.entry_address, &msg.entry_aspect);
+                    self.logger.d(&format!(
+                        "({}) auto-store of aspect: {} - {} -> {}",
+                        self.agent_id,
+                        msg.entry_address,
+                        msg.entry_aspect.aspect_address,
+                        res.is_ok()
+                    ));
                 }
             }
 

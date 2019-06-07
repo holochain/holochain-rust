@@ -267,7 +267,7 @@ impl Display for JsonString {
 // ## Conversions from Option types ##
 
 // Options are a special case for several reasons. Firstly they are handled
-// in a special way be serde:
+// in a special way by serde:
 
 //     "Users tend to have different expectations around the Option enum compared to other enums.
 //     Serde JSON will serialize Option::None as null and Option::Some as just the contained value."

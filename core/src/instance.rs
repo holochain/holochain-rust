@@ -169,12 +169,12 @@ impl Instance {
         let mut sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
-        let (kill_sender, kill_reciever) = crossbeam_channel::unbounded();
+        let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch = Some(kill_sender);
 
         thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
-            while !kill_reciever.try_recv().is_ok() {
+            while !kill_receiver.try_recv().is_ok() {
                 if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
                     state_observers = sync_self.process_action(
                         &action_wrapper,
@@ -184,6 +184,7 @@ impl Instance {
                     );
                     sync_self.emit_signals(&sub_context, &action_wrapper);
                 }
+                thread::sleep(Duration::from_millis(100));
             }
             println!("STOPPING ACTION LOOP");
         });

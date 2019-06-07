@@ -17,6 +17,9 @@ const scenario1 = new Scenario([instanceAlice], { debugLog:true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
+const testBridge = Config.bridge('test-bridge', instanceAlice, instanceBob)
+const scenarioBridge = new Scenario([instanceAlice, instanceBob], { bridges: [testBridge], debugLog: true })
+
 scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
 
     // Ask for alice to grant a token for bob  (it's hard-coded for bob in re function for now)
@@ -52,9 +55,6 @@ scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
     t.deepEqual(create2_result, {Ok: "error: no matching grant for claim"})
 
 })
-
-const testBridge = Config.bridge('test-bridge', instanceAlice, instanceBob)
-const scenarioBridge = new Scenario([instanceAlice, instanceBob], { bridges: [testBridge], debugLog: true })
 
 scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";

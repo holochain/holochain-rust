@@ -145,12 +145,21 @@ pub fn dht_test(
 
     // Alex publish data on the network
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
+    // Gossip might ask us for the data
+    let maybe_fetch_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
+    if let Some(fetch_a) = maybe_fetch_a {
+        let fetch = unwrap_to!(fetch_a => JsonProtocol::HandleFetchEntry);
+        let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
+    }
+    // Check if both nodes are asked to store it
+    let _ = camille.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
 
     // Camille asks for that data
     let query_data = camille.request_entry(ENTRY_ADDRESS_1.clone());
 
-    // Alex sends that data back to the network
-    alex.reply_to_HandleQueryEntry(&query_data).unwrap();
+    // #fullsync
+    // camille sends that data back to the network
+    camille.reply_to_HandleQueryEntry(&query_data).unwrap();
 
     // Camille should receive requested data
     let result = camille
@@ -161,8 +170,9 @@ pub fn dht_test(
     // Billy asks for data on unknown DNA
     let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
-    // Alex sends that data back to the network
-    let _ = alex.reply_to_HandleQueryEntry(&query_data);
+    // #fullsync
+    // Billy sends that data back to the network
+    let _ = billy.reply_to_HandleQueryEntry(&query_data);
 
     // Billy might receive FailureResult
     let result =

@@ -180,27 +180,59 @@ pub fn hold_and_publish_test(
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], false)?;
     // Alex: Look for the hold_list request received from network module and reply
     alex.reply_to_first_HandleGetAuthoringEntryList();
-
     // Might receive a HandleFetchEntry request from network module:
     // hackmode would want the data right away
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(has_received);
+    // Maybe 2nd get for gossiping
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    log_d!("Alex has_received 2: {}", has_received);
+    // Maybe 3nd get for gossiping
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    log_d!("Alex has_received 3: {}", has_received);
+    // billy might receive HandleStoreEntryAspect
+    let res = billy.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+    log_i!("Billy got res 1: {:?}", res);
+    // Camille might receive HandleStoreEntryAspect
+    let res = camille.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+    log_i!("Camille got res 1: {:?}", res);
 
-    // Have billy author the same data
+    // -- Billy authors -- //
+
+    // Have billy author some other data
     billy.author_entry(&ENTRY_ADDRESS_2, vec![ASPECT_CONTENT_2.clone()], true)?;
+    // Maybe recv fetch for gossiping
+    let has_received = billy.wait_HandleFetchEntry_and_reply();
+    log_d!("Billy has_received: {}", has_received);
+    // Maybe recv fetch for gossiping
+    let has_received = billy.wait_HandleFetchEntry_and_reply();
+    log_d!("Billy has_received 2: {}", has_received);
+    // billy might receive HandleStoreEntryAspect
+    let res = alex.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+    log_i!("Alex got res 2: {:?}", res);
+    // Camille might receive HandleStoreEntryAspect
+    let res = camille.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+    log_i!("Camille got res 2: {:?}", res);
 
-    let _msg_count = camille.listen(3000);
+    // -- Camille requests -- //
 
-    // Camille requests that entry
+    // Camille requests 1st entry
     let query_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());
-    // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-    let has_received = alex.wait_HandleQueryEntry_and_reply();
-    if !has_received {
-        let has_received = billy.wait_HandleQueryEntry_and_reply();
-        if !has_received {
-            let _has_received = camille.wait_HandleQueryEntry_and_reply();
-        }
-    }
+    // #fullsync
+    // Camille might receive query request as this moment
+    let _ = camille.wait_HandleQueryEntry_and_reply();
 
     // Camille should receive the data
     let req_id = query_entry.request_id.clone();
@@ -225,16 +257,11 @@ pub fn hold_and_publish_test(
     assert_eq!(query_result.aspect_list.len(), 1);
     assert_eq!(query_result.aspect_list[0].aspect, ASPECT_CONTENT_1.clone());
 
-    // Camille requests that entry
+    // Camille requests 2nd entry
     let query_data = camille.request_entry(ENTRY_ADDRESS_2.clone());
-    // Alex or billy or Camille might receive HandleFetchEntry request as this moment
-    let has_received = alex.wait_HandleQueryEntry_and_reply();
-    if !has_received {
-        let has_received = billy.wait_HandleQueryEntry_and_reply();
-        if !has_received {
-            let _has_received = camille.wait_HandleQueryEntry_and_reply();
-        }
-    }
+    // #fullsync
+    // Camille might receive query request as this moment
+    let _ = camille.wait_HandleQueryEntry_and_reply();
 
     // Camille should receive the data
     let req_id = query_data.request_id.clone();

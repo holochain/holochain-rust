@@ -194,7 +194,7 @@ impl Instance {
                     }
                 }
             }
-            sub_context.log("info/action: STOPPING ACTION LOOP");
+            println!("info/action: STOPPING ACTION LOOP");
         });
     }
 

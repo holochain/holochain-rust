@@ -240,6 +240,10 @@ impl ConductorAdmin for Conductor {
         }
         self.instances.remove(id).map(|instance| {
             instance.write().unwrap().kill();
+            println!(
+                "@REFCOUNT@ : Number of references at time of drop is {}",
+                Arc::strong_count(&instance)
+            );
         });
 
         notify(format!("Removed instance \"{}\".", id));

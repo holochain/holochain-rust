@@ -66,7 +66,7 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
-    pub fn check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
+    pub fn check_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
         blog::handle_check_sum(num1, num2)
     }
 
@@ -158,6 +158,11 @@ pub mod blog {
     #[zome_fn("hc_public")]
     pub fn my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {
         blog::handle_my_posts(tag)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn my_posts_with_load(tag: Option<String>) -> ZomeApiResult<Vec<post::Post>> {
+        blog::handle_my_posts_with_load(tag)
     }
 
     #[zome_fn("hc_public")]

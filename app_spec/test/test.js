@@ -17,6 +17,9 @@ const scenario1 = new Scenario([instanceAlice], { debugLog:true })
 const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
+const testBridge = Config.bridge('test-bridge', instanceAlice, instanceBob)
+const scenarioBridge = new Scenario([instanceAlice, instanceBob], { bridges: [testBridge], debugLog: true })
+
 scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
 
     // Ask for alice to grant a token for bob  (it's hard-coded for bob in re function for now)
@@ -52,9 +55,6 @@ scenario2.runTape('capabilities grant and claim', async (t, { alice, bob }) => {
     t.deepEqual(create2_result, {Ok: "error: no matching grant for claim"})
 
 })
-
-const testBridge = Config.bridge('test-bridge', instanceAlice, instanceBob)
-const scenarioBridge = new Scenario([instanceAlice, instanceBob], { bridges: [testBridge], debugLog: true })
 
 scenario2.runTape('sign_and_verify_message', async (t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
@@ -364,6 +364,30 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
+})
+
+scenario1.runTape('get_links_and_load with a delete_post', async (t, { alice }) => {
+
+  //create post
+  const alice_create_post_result = await alice.callSync("blog", "create_post",
+    { "content": "Posty", "in_reply_to": "" }
+  )
+
+  const alice_get_post_result1 = await alice.callSync("blog", "my_posts_with_load",
+    { "tag": null }
+  )
+
+  t.ok(alice_get_post_result1.Ok)
+  t.equal(alice_get_post_result1.Ok.length, 1);
+
+  //remove link by alicce
+  await alice.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
+
+  const alice_get_post_result2 = await alice.callSync("blog", "my_posts_with_load",
+    { "tag": null }
+  )
+  t.ok(alice_get_post_result2.Ok)
+  t.equal(alice_get_post_result2.Ok.length, 0);
 })
 
 scenario2.runTape('delete_entry_post', async (t, { alice, bob }) => {

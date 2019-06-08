@@ -7,7 +7,10 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
+    cas::content::Address,
+    chain_header::ChainHeader,
+    entry::{entry_type::EntryType, Entry},
+    error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames, QueryResult};
 use std::{convert::TryFrom, sync::Arc};
@@ -111,6 +114,12 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                     .iter()
                     .map(|address| // -> Result<Entry, HolochainError>
                          Ok((address.to_owned(), get_entry_from_chain(&context, address)?)))
+                    .filter(|maybe_entry_address_pair| match maybe_entry_address_pair {
+                        // Don't include DNA entries since we are storing the result in WASM memory
+                        // and DNA entries are usually quite big (several MBs).
+                        Ok((_, entry)) => entry.entry_type() != EntryType::Dna,
+                        Err(_) => true,
+                    })
                     .collect();
 
                 match maybe_entries {
@@ -121,6 +130,9 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
             (true, ChainStoreQueryResult::Headers(headers)) => {
                 let maybe_headers_with_entries: Result<Vec<(ChainHeader,Entry)>,HolochainError> = headers
                     .iter()
+                    // Don't include DNA entries since we are storing the result in WASM memory
+                    // and DNA entries are usually quite big (several MBs).
+                    .filter(|header| *header.entry_type() != EntryType::Dna)
                     .map(|header| // -> Result<Entry, HolochainError>
                          Ok((header.to_owned(), get_entry_from_chain(&context,header.entry_address())?)))
                     .collect();

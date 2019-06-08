@@ -35,6 +35,8 @@ extern crate maplit;
 extern crate hcid;
 extern crate uuid;
 extern crate wasmi;
+#[macro_use]
+extern crate shrinkwraprs;
 
 pub mod cas;
 pub mod chain_header;

@@ -182,7 +182,7 @@ impl Instance {
             let mut state_observers: Vec<Observer> = Vec::new();
             while !kill_receiver.try_recv().is_ok() {
                 if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
-                    // Ping can happen often, and should be
+                    // Ping can happen often, and should be as lightweight as possible
                     if *action_wrapper.action() != Action::Ping {
                         state_observers = sync_self.process_action(
                             &action_wrapper,
@@ -194,7 +194,7 @@ impl Instance {
                     }
                 }
             }
-            println!("STOPPING ACTION LOOP");
+            sub_context.log("info/action: STOPPING ACTION LOOP");
         });
     }
 

@@ -138,7 +138,8 @@ pub mod tests {
 
     #[test]
     fn returns_ok_if_base_is_present() {
-        let (_, context) = create_test_instance_with_name(Some("returns_ok_if_base_present"));
+        let (_instance, context) =
+            create_test_instance_with_name(Some("returns_ok_if_base_present"));
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
@@ -161,7 +162,7 @@ pub mod tests {
 
     #[test]
     fn errors_with_wrong_type() {
-        let (_, context) = create_test_instance();
+        let (_instance, context) = create_test_instance();
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
@@ -181,7 +182,7 @@ pub mod tests {
 
     #[test]
     fn works_with_linked_from_defined_link() {
-        let (_, context) = create_test_instance();
+        let (_instance, context) = create_test_instance();
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
@@ -209,7 +210,7 @@ pub mod tests {
 
     #[test]
     fn test_different_tags_produces_different_hashes() {
-        let (_, context) = create_test_instance();
+        let (_instance, context) = create_test_instance();
 
         context
             .block_on(commit_entry(test_entry(), None, &context))

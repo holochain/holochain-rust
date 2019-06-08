@@ -1,5 +1,5 @@
 use crate::{
-    action::ActionWrapper,
+    action::{Action, ActionWrapper},
     conductor_api::ConductorApi,
     instance::Observer,
     logger::Logger,
@@ -211,6 +211,23 @@ impl Context {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
+    }
+
+    pub fn is_action_channel_open(&self) -> bool {
+        self.action_channel
+            .clone()
+            .map(|tx| tx.send(ActionWrapper::new(Action::Ping)).is_ok())
+            .unwrap_or(false)
+    }
+
+    pub fn action_channel_error(&self, msg: &str) -> Option<HolochainError> {
+        match &self.action_channel {
+            Some(tx) => match tx.send(ActionWrapper::new(Action::Ping)) {
+                Ok(()) => None,
+                Err(_) => Some(HolochainError::LifecycleError(msg.into())),
+            },
+            None => Some(HolochainError::InitializationFailed(msg.into())),
+        }
     }
 
     pub fn signal_tx(&self) -> Option<&crossbeam_channel::Sender<Signal>> {

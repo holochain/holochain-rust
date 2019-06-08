@@ -290,6 +290,9 @@ impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("CallResultFuture") {
+            return Poll::Ready(Err(err));
+        }
         // With our own executor implementation in Context::block_on we actually
         // wouldn't need the waker since this executor is attached to the redux loop
         // and re-polls after every State mutation.
@@ -381,7 +384,7 @@ pub mod tests {
     #[test]
     fn test_get_grant() {
         let dna = test_dna();
-        let (_, context) =
+        let (_instance, context) =
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         let mut cap_functions = CapFunctions::new();

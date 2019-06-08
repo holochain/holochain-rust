@@ -1,6 +1,12 @@
 use crate::{
-    action::ActionWrapper, consistency::ConsistencyModel, context::Context, persister::Persister,
-    scheduled_jobs, signal::Signal, state::State, workflows::application,
+    action::{Action, ActionWrapper},
+    consistency::ConsistencyModel,
+    context::Context,
+    persister::Persister,
+    scheduled_jobs,
+    signal::Signal,
+    state::State,
+    workflows::application,
 };
 #[cfg(test)]
 use crate::{
@@ -176,15 +182,17 @@ impl Instance {
             let mut state_observers: Vec<Observer> = Vec::new();
             while !kill_receiver.try_recv().is_ok() {
                 if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
-                    state_observers = sync_self.process_action(
-                        &action_wrapper,
-                        state_observers,
-                        &rx_observer,
-                        &sub_context,
-                    );
-                    sync_self.emit_signals(&sub_context, &action_wrapper);
+                    // Ping can happen often, and should be
+                    if *action_wrapper.action() != Action::Ping {
+                        state_observers = sync_self.process_action(
+                            &action_wrapper,
+                            state_observers,
+                            &rx_observer,
+                            &sub_context,
+                        );
+                        sync_self.emit_signals(&sub_context, &action_wrapper);
+                    }
                 }
-                thread::sleep(Duration::from_millis(100));
             }
             println!("STOPPING ACTION LOOP");
         });

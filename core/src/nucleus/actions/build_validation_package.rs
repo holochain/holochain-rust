@@ -154,7 +154,7 @@ pub async fn build_validation_package<'a>(
                     id,
                     maybe_validation_package,
                 ))),
-                "action channel to be open in reducer",
+                "build_validation_package",
             );
         });
     }
@@ -201,6 +201,9 @@ impl Future for ValidationPackageFuture {
     type Output = Result<ValidationPackage, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("ValidationPackageFuture") {
+            return Poll::Ready(Err(err));
+        }
         if let Some(ref error) = self.error {
             return Poll::Ready(Err(error.clone()));
         }

@@ -261,7 +261,7 @@ pub mod tests {
     fn test_call_zome_function() {
         let _netname = Some("test_call_zome_function");
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
-        //let (_, context) =
+        //let (_instance, context) =
         //    test_instance_and_context(dna, None).expect("Could not initialize test instance");
         //let context = instance.initialize_context(test_context("janet", netname));
         let test_setup = setup_test(dna, "test_call_zome_function");
@@ -303,7 +303,7 @@ pub mod tests {
     /// tests that calling a valid zome with invalid function returns the correct error
     fn call_ribosome_wrong_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
-        let (_, context) =
+        let (_instance, context) =
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         // Create zome function call:
@@ -323,7 +323,7 @@ pub mod tests {
     /// tests that calling the wrong zome/capability returns the correct errors
     fn call_wrong_zome_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
-        let (_, context) =
+        let (_instance, context) =
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         // Create bad zome function call

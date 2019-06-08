@@ -55,6 +55,9 @@ impl Future for GetEntryFuture {
     type Output = HcResult<Option<EntryWithMetaAndHeader>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("GetEntryFuture") {
+            return Poll::Ready(Err(err));
+        }
         if let Err(error) = self
             .context
             .state()

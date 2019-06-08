@@ -1,6 +1,12 @@
 use crate::{
-    action::ActionWrapper, consistency::ConsistencyModel, context::Context, persister::Persister,
-    scheduled_jobs, signal::Signal, state::State, workflows::application,
+    action::{Action, ActionWrapper},
+    consistency::ConsistencyModel,
+    context::Context,
+    persister::Persister,
+    scheduled_jobs,
+    signal::Signal,
+    state::State,
+    workflows::application,
 };
 #[cfg(test)]
 use crate::{
@@ -13,6 +19,7 @@ use holochain_core_types::cas::content::Address;
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
+    ugly::lax_send_sync,
 };
 use std::{
     sync::{
@@ -168,23 +175,26 @@ impl Instance {
         let mut sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
-        let (kill_sender, kill_reciever) = crossbeam_channel::unbounded();
+        let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch = Some(kill_sender);
 
         thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
-            while !kill_reciever.try_recv().is_ok() {
+            while !kill_receiver.try_recv().is_ok() {
                 if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
-                    state_observers = sync_self.process_action(
-                        &action_wrapper,
-                        state_observers,
-                        &rx_observer,
-                        &sub_context,
-                    );
-                    sync_self.emit_signals(&sub_context, &action_wrapper);
+                    // Ping can happen often, and should be as lightweight as possible
+                    if *action_wrapper.action() != Action::Ping {
+                        state_observers = sync_self.process_action(
+                            &action_wrapper,
+                            state_observers,
+                            &rx_observer,
+                            &sub_context,
+                        );
+                        sync_self.emit_signals(&sub_context, &action_wrapper);
+                    }
                 }
             }
-            println!("STOPPING ACTION LOOP");
+            println!("info/action: STOPPING ACTION LOOP");
         });
     }
 
@@ -348,9 +358,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrapper: ActionWrapper) {
-    action_channel
-        .send(action_wrapper)
-        .expect(DISPATCH_WITHOUT_CHANNELS);
+    lax_send_sync(action_channel.clone(), action_wrapper, "dispatch_action");
 }
 
 #[cfg(test)]

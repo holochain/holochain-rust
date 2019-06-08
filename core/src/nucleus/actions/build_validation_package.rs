@@ -16,6 +16,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     signature::Provenance,
+    ugly::lax_send_sync,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
@@ -147,13 +148,14 @@ pub async fn build_validation_package<'a>(
                     })
                 });
 
-            context
-                .action_channel()
-                .send(ActionWrapper::new(Action::ReturnValidationPackage((
+            lax_send_sync(
+                context.action_channel().clone(),
+                ActionWrapper::new(Action::ReturnValidationPackage((
                     id,
                     maybe_validation_package,
-                ))))
-                .expect("action channel to be open in reducer");
+                ))),
+                "build_validation_package",
+            );
         });
     }
 
@@ -199,6 +201,9 @@ impl Future for ValidationPackageFuture {
     type Output = Result<ValidationPackage, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("ValidationPackageFuture") {
+            return Poll::Ready(Err(err));
+        }
         if let Some(ref error) = self.error {
             return Poll::Ready(Err(error.clone()));
         }

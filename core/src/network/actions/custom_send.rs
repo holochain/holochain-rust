@@ -55,6 +55,9 @@ impl Future for SendResponseFuture {
     type Output = Result<String, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("SendResponseFuture") {
+            return Poll::Ready(Err(err));
+        }
         let state = self.context.state().unwrap().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(HolochainError::ErrorGeneric(error.to_string())));

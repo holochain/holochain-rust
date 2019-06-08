@@ -37,6 +37,9 @@ impl Future for AddLinkFuture {
     type Output = Result<(), HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("AddLinkFuture") {
+            return Poll::Ready(Err(err));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

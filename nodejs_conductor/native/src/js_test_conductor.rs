@@ -160,7 +160,7 @@ declare_types! {
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
                 let cap = {
-                    let context = instance.context();
+                    let context = instance.context().expect("Instance context not initialized");
                     let token = context.get_public_token().unwrap();
                     make_cap_request_for_call(
                         context.clone(),
@@ -224,7 +224,8 @@ declare_types! {
                 let instance = tc.conductor.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id))
                     .read().unwrap();
-                let out = instance.context().state().ok_or("No state?".to_string())
+                let context = instance.context().expect("instance not initialized");
+                let out = context.state().ok_or("No state?".to_string())
                     .and_then(|state| state
                         .agent().get_agent_address()
                         .map_err(|e| e.to_string()));
@@ -252,7 +253,8 @@ declare_types! {
                 let instance = tc.conductor.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id))
                     .read().unwrap();
-                let out = instance.context().state().ok_or("No state?".to_string())
+                let context = instance.context().expect("instance not initialized.");
+                let out = context.state().ok_or("No state?".to_string())
                     .and_then(|state| state
                         .nucleus()
                         .dna

@@ -164,7 +164,7 @@ impl ConductorApiBuilder {
 
             let cap_request = {
                 let context = hc.context()
-                    .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuild when an instance gets removed...");
+                    .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...");
                 // Get the token from the parameters.  If not there assume public token.
                 let maybe_token = Self::get_as_string("token", &params_map);
                 let token = match maybe_token {

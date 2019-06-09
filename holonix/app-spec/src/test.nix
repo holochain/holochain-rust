@@ -5,8 +5,8 @@ let
 
   script = pkgs.writeShellScriptBin name ''
   hc-cli-install;
-  hc-conductor-node-install;
-  (cd app_spec && . build_and_test.sh);
+  hc-conductor-rust-install;
+  (cd app_spec && ./build_and_test.sh);
   '';
 in
 script

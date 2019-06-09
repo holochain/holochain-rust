@@ -549,9 +549,12 @@ pub fn default_n3h_log_level() -> String {
 
 // note that this behaviour is documented within
 // holochain_common::env_vars module and should be updated
-// if this logic changes
-pub fn default_n3h_persistence_path() -> String {
-    env::temp_dir().to_string_lossy().to_string()
+// if this logic changes.  Results in a unique per-agent result.
+pub fn default_n3h_persistence_path(agent_unique: &str) -> String {
+    env::temp_dir()
+        .push(agent_unique)
+        .to_string_lossy()
+        .to_string()
 }
 
 /// Use this function to load a `Configuration` from a string.

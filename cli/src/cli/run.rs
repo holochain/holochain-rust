@@ -76,12 +76,14 @@ pub fn hc_run_configuration(
     interface_type: &String,
     logging: bool,
 ) -> DefaultResult<Configuration> {
+    let agent_config = agent_configuration();
+    let network = networking_configuration(networked, &agent_config.keystore_file);
     Ok(Configuration {
-        agents: vec![agent_configuration()],
+        agents: vec![agent_config],
         dnas: vec![dna_configuration(&dna_path)],
         instances: vec![instance_configuration(storage_configuration(persist)?)],
         interfaces: vec![interface_configuration(&interface_type, port)?],
-        network: networking_configuration(networked),
+        network: network,
         logger: logger_configuration(logging),
         ..Default::default()
     })
@@ -194,7 +196,7 @@ fn logger_configuration(logging: bool) -> LoggerConfiguration {
 }
 
 // NETWORKING
-fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
+fn networking_configuration(networked: bool, agent_unique: &str) -> Option<NetworkConfig> {
     // create an n3h network config if the --networked flag is set
     if !networked {
         return None;
@@ -221,7 +223,7 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
         n3h_persistence_path: EnvVar::N3hWorkDir
             .value()
             .ok()
-            .unwrap_or_else(default_n3h_persistence_path),
+            .unwrap_or_else(|| default_n3h_persistence_path(agent_unique)),
         n3h_ipc_uri: Default::default(),
         networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
     })

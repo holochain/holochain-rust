@@ -1046,7 +1046,7 @@ pub mod tests {
         action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::signal_channel,
     };
-    use holochain_core_types::{cas::content::Address, dna, json::RawString};
+    use holochain_core_types::{cas::content::Address, dna};
     use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
     use holochain_wasm_utils::wasm_target_dir;
     use lib3h_sodium::secbuf::SecBuf;
@@ -1607,7 +1607,7 @@ pub mod tests {
             .unwrap();
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
-        assert_eq!(result, JsonString::from(RawString::from("Holo World")));
+        assert_eq!(result, JsonString::from("Holo World"));
     }
 
     #[test]

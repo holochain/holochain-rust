@@ -74,7 +74,7 @@ impl<S: Into<String>> LinkMatch<S> {
     pub fn to_regex_string(self) -> Result<String, String> {
         let re_string: String = match self {
             LinkMatch::Any => ".*".into(),
-            LinkMatch::Exactly(s) => "^".to_owned() + &s.into() + "$",
+            LinkMatch::Exactly(s) => "^".to_owned() + &regex::escape(&s.into()) + "$",
             LinkMatch::Regex(s) => s.into(),
         };
         // check that it is a valid regex

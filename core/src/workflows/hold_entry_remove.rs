@@ -10,7 +10,7 @@ use crate::{
 use lib3h_persistence_api::cas::content::AddressableContent;
 
 use holochain_core_types::{
-   entry::Entry,
+    entry::Entry,
     error::HolochainError,
     validation::{EntryLifecycle, ValidationData},
 };

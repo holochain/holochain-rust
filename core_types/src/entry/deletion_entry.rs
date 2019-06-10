@@ -1,4 +1,4 @@
-use lib3h_persistence_api::{cas::content::Address, json::JsonString, error::PersistenceError};
+use lib3h_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
 
 //-------------------------------------------------------------------------------------------------
 // DeletionEntry
@@ -24,8 +24,8 @@ impl DeletionEntry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use lib3h_persistence_api::{cas::content::AddressableContent};
     use crate::entry::test_entry_a;
+    use lib3h_persistence_api::cas::content::AddressableContent;
 
     pub fn test_deletion_entry() -> DeletionEntry {
         let entry = test_entry_a();

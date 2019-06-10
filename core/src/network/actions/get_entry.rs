@@ -8,13 +8,9 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 
-use lib3h_persistence_api::{
-    cas::content::Address
-};
+use lib3h_persistence_api::cas::content::Address;
 
-use holochain_core_types::{
-    entry::EntryWithMetaAndHeader, error::HcResult, time::Timeout
-};
+use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HcResult, time::Timeout};
 
 use std::{pin::Pin, sync::Arc, thread};
 

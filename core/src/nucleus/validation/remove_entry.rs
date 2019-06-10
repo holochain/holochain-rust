@@ -8,11 +8,9 @@ use crate::{
         CallbackFnCall,
     },
 };
-use holochain_core_types::{
-    entry::Entry, validation::ValidationData,
-};
-use lib3h_persistence_api::cas::content::AddressableContent;
+use holochain_core_types::{entry::Entry, validation::ValidationData};
 use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
+use lib3h_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
 
 pub async fn validate_remove_entry(

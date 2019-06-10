@@ -3,7 +3,7 @@ use crate::{
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
 use holochain_core_types::{
-   entry::{deletion_entry::DeletionEntry, Entry},
+    entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
 };
 

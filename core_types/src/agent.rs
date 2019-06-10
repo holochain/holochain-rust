@@ -1,12 +1,9 @@
-use crate::{
-    entry::Entry,
-    error::HcResult,
-};
+use crate::{entry::Entry, error::HcResult};
 
 use lib3h_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
+    error::{PersistenceError, PersistenceResult},
     json::JsonString,
-    error::{PersistenceResult, PersistenceError}
 };
 
 use std::{convert::TryFrom, str};

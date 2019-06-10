@@ -390,8 +390,7 @@ impl TryFrom<DnaConfiguration> for Dna {
         let mut f = File::open(dna_config.file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from_json(&contents)).map_err
-            (|err| { err.into() })
+        Dna::try_from(JsonString::from_json(&contents)).map_err(|err| err.into())
     }
 }
 

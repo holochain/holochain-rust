@@ -15,13 +15,9 @@ pub use crate::{
         reducers::reduce,
     },
 };
-use holochain_core_types::{
-    dna::capabilities::CapabilityRequest, error::HcResult
-};
+use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HcResult};
 
-use lib3h_persistence_api::{
-    cas::content::Address, json::JsonString,
-};
+use lib3h_persistence_api::{cas::content::Address, json::JsonString};
 
 use snowflake;
 use std::sync::Arc;
@@ -126,13 +122,13 @@ pub mod tests {
     use test_utils;
 
     use holochain_core_types::{
-       dna::capabilities::CapabilityRequest,
+        dna::capabilities::CapabilityRequest,
         error::{DnaError, HolochainError},
-       signature::Signature,
+        signature::Signature,
     };
     use lib3h_persistence_api::{
-        json::{JsonString, RawString},
         cas::content::AddressableContent,
+        json::{JsonString, RawString},
     };
 
     /// dummy zome name compatible with ZomeFnCall

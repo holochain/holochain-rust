@@ -1,14 +1,10 @@
 use super::Dispatch;
 use error::ZomeApiResult;
-use lib3h_persistence_api::{
-    cas::content::Address,
-};
-use holochain_core_types::{
-    entry::cap_entries::{CapFunctions, CapabilityType},
-};
+use holochain_core_types::entry::cap_entries::{CapFunctions, CapabilityType};
 use holochain_wasm_utils::api_serialization::capabilities::{
     CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
 };
+use lib3h_persistence_api::cas::content::Address;
 
 /// Adds a capability grant to the local chain
 pub fn commit_capability_grant<S: Into<String>>(

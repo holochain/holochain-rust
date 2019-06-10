@@ -53,8 +53,8 @@ pub mod tests {
             Defn,
         },
     };
-    use lib3h_persistence_api::cas::content::Address;
     use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
+    use lib3h_persistence_api::cas::content::Address;
 
     #[test]
     fn receive_fail() {

@@ -1,13 +1,10 @@
 /// Defines a rust wrapper trait to match the Dpki exposed function trait definition
 /// for the conductor to use in the various dpki related flows, e.g. bootstrap and agent addition
 use crate::holochain::Holochain;
-use holochain_core_types::{
-    dna::capabilities::CapabilityRequest,
-    error::HolochainError,
-};
+use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HolochainError};
 use lib3h_persistence_api::{
-    json::JsonString,
     cas::content::{Address, AddressableContent},
+    json::JsonString,
 };
 
 use holochain_core::{

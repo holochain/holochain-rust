@@ -1,6 +1,6 @@
 use self::{RibosomeEncodedValue::*, RibosomeErrorCode::*};
-use crate::{error::HolochainError};
-use lib3h_persistence_api::{json::JsonString, error::PersistenceError};
+use crate::error::HolochainError;
+use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
 
 use bits_n_pieces::u64_split_bits;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};

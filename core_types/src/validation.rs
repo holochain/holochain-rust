@@ -3,21 +3,17 @@
 //! agent actions between Holochain and Zomes.
 
 use crate::{
-   chain_header::ChainHeader,
-   entry::{
+    chain_header::ChainHeader,
+    entry::{
         entry_type::{AppEntryType, EntryType},
         Entry,
-   },
-   error::HolochainError,
-   link::link_data::LinkData,
+    },
+    error::HolochainError,
+    link::link_data::LinkData,
 };
 
-use lib3h_persistence_api::{
-    cas::content::Address,
-    json::JsonString,
-    error::PersistenceError
-};
- 
+use lib3h_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
+
 use chain_header::test_chain_header;
 
 use std::convert::TryFrom;

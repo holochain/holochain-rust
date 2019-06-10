@@ -19,14 +19,12 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    entry::Entry,
-    error::{RibosomeEncodedValue},
-    validation::ValidationPackageDefinition,
+    entry::Entry, error::RibosomeEncodedValue, validation::ValidationPackageDefinition,
 };
 
 use lib3h_persistence_api::{
     error::PersistenceError,
-    json::{default_to_json, JsonString}
+    json::{default_to_json, JsonString},
 };
 
 use holochain_wasm_utils::{

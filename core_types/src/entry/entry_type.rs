@@ -1,5 +1,5 @@
 use error::HolochainError;
-use lib3h_persistence_api::{json::JsonString, error::PersistenceError};
+use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
 use std::{
     convert::TryFrom,
     fmt::{Display, Formatter, Result as FmtResult},

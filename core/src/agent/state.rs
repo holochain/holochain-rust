@@ -5,8 +5,8 @@ use crate::{
 };
 use lib3h_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
+    error::{PersistenceError, PersistenceResult},
     json::*,
-    error::{PersistenceError, PersistenceResult}
 };
 
 use holochain_core_types::{
@@ -277,16 +277,13 @@ pub mod tests {
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         instance::tests::test_context, state::State,
     };
-    use lib3h_persistence_api::{
-        json::JsonString,
-        cas::content::AddressableContent,
-    };
     use holochain_core_types::{
         chain_header::{test_chain_header, ChainHeader},
         entry::{expected_entry_address, test_entry, Entry},
         error::HolochainError,
         signature::Signature,
     };
+    use lib3h_persistence_api::{cas::content::AddressableContent, json::JsonString};
     use serde_json;
     use std::collections::HashMap;
     use test_utils::mock_signing::mock_signer;

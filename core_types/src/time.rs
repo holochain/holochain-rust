@@ -3,10 +3,7 @@
 
 use chrono::{offset::FixedOffset, DateTime, TimeZone};
 use error::HolochainError;
-use lib3h_persistence_api::{
-    error::PersistenceError,
-    json::JsonString
-};
+use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
 
 use regex::Regex;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
@@ -1073,8 +1070,7 @@ pub mod tests {
 
                     // JSON round-tripping w/o serde or intermediates
                     assert_eq!(
-                        Iso8601::try_from(JsonString::from(iso))
-                        .map_err(|err| err.into()),
+                        Iso8601::try_from(JsonString::from(iso)).map_err(|err| err.into()),
                         Iso8601::try_from("2018-10-11T03:23:38+00:00")
                     );
 

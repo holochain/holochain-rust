@@ -3,7 +3,7 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
 use holochain_core_types::{
-   entry::{
+    entry::{
         cap_entries::{CapTokenClaim, CapTokenGrant},
         Entry,
     },
@@ -66,16 +66,11 @@ pub mod tests {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::{
-       entry::cap_entries::CapabilityType, error::ZomeApiInternalResult,
-    };
-    use lib3h_persistence_api::{
-        cas::content::Address,
-        json::JsonString,
-    };
+    use holochain_core_types::{entry::cap_entries::CapabilityType, error::ZomeApiInternalResult};
     use holochain_wasm_utils::api_serialization::capabilities::{
         CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
     };
+    use lib3h_persistence_api::{cas::content::Address, json::JsonString};
     use std::collections::BTreeMap;
 
     /// dummy args

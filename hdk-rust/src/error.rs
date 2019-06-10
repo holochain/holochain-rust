@@ -1,8 +1,6 @@
 //! This file contains defitions for Zome errors and also Zome Results.
 
-use crate::holochain_core_types::{
-    error::{HolochainError, RibosomeErrorCode},
-};
+use crate::holochain_core_types::error::{HolochainError, RibosomeErrorCode};
 
 use crate::lib3h_persistence_api::{
     error::PersistenceError,

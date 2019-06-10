@@ -9,11 +9,9 @@ use crate::{
         CallbackFnCall, ZomeFnCall,
     },
 };
-use holochain_core_types::{
-    error::{
-        HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
-        ZomeApiInternalResult,
-    },
+use holochain_core_types::error::{
+    HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
+    ZomeApiInternalResult,
 };
 
 use lib3h_persistence_api::json::JsonString;

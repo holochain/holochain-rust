@@ -2,13 +2,12 @@ use crate::{context::Context, network, nucleus};
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
 use holochain_core_types::{
-    crud_status::CrudStatus, entry::EntryWithMetaAndHeader,
-    error::HolochainError,
+    crud_status::CrudStatus, entry::EntryWithMetaAndHeader, error::HolochainError,
 };
-use lib3h_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_entry::{
     GetEntryArgs, GetEntryResult, StatusRequestKind,
 };
+use lib3h_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 /// Get Entry workflow

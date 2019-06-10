@@ -7,9 +7,13 @@ mod ribosome_error;
 pub use self::{dna_error::*, ribosome_error::*};
 
 use self::HolochainError::*;
-use lib3h_persistence_api::{hash::HashString, json::*, error::{PersistenceError, PersistenceResult}};
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use lib3h_crypto_api::CryptoError;
+use lib3h_persistence_api::{
+    error::{PersistenceError, PersistenceResult},
+    hash::HashString,
+    json::*,
+};
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -61,12 +65,13 @@ impl ::std::convert::TryFrom<ZomeApiInternalResult> for CoreError {
                 "Attempted to deserialize CoreError from a non-error ZomeApiInternalResult".into(),
             ))
         } else {
-            let hc_error : JsonString =
-                JsonString::from_json(&zome_api_internal_result.error);
-            let ce : PersistenceResult<_> = CoreError::try_from(hc_error);
-            ce.map_err(|err: PersistenceError| { let hc_error : HolochainError = err.into(); hc_error })
+            let hc_error: JsonString = JsonString::from_json(&zome_api_internal_result.error);
+            let ce: PersistenceResult<_> = CoreError::try_from(hc_error);
+            ce.map_err(|err: PersistenceError| {
+                let hc_error: HolochainError = err.into();
+                hc_error
+            })
         }
-
     }
 }
 
@@ -160,18 +165,13 @@ impl From<HolochainError> for String {
 impl JsonError for HolochainError {}
 
 impl From<PersistenceError> for HolochainError {
-
     fn from(persistence_error: PersistenceError) -> Self {
         match persistence_error {
-            PersistenceError::ErrorGeneric(e) =>
-                { HolochainError::ErrorGeneric(e) }
-            PersistenceError::SerializationError(e) =>
-                { HolochainError::SerializationError(e) }
-            PersistenceError::IoError(e) =>
-                { HolochainError::IoError(e) }
+            PersistenceError::ErrorGeneric(e) => HolochainError::ErrorGeneric(e),
+            PersistenceError::SerializationError(e) => HolochainError::SerializationError(e),
+            PersistenceError::IoError(e) => HolochainError::IoError(e),
         }
     }
-
 }
 
 impl From<String> for HolochainError {

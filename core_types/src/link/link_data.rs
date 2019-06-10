@@ -1,13 +1,7 @@
-use crate::{
-   link::{Link, LinkActionKind},
-};
+use crate::link::{Link, LinkActionKind};
 
-use lib3h_persistence_api::{
-    cas::content::Address,
-    json::JsonString,
-    error::PersistenceError
-};
- 
+use lib3h_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
+
 //-------------------------------------------------------------------------------------------------
 // LinkData
 //-------------------------------------------------------------------------------------------------
@@ -60,17 +54,14 @@ impl LinkData {
 #[cfg(test)]
 pub mod tests {
 
-    use lib3h_persistence_api::{
-        json::JsonString,
-        cas::content::AddressableContent,
-    };
     use crate::{
-       entry::{test_entry_a, test_entry_b, Entry},
-       link::{
+        entry::{test_entry_a, test_entry_b, Entry},
+        link::{
             link_data::LinkData,
             tests::{example_link, example_link_action_kind, example_link_type},
-       },
+        },
     };
+    use lib3h_persistence_api::{cas::content::AddressableContent, json::JsonString};
     use std::convert::TryFrom;
 
     pub fn example_link_add() -> LinkData {

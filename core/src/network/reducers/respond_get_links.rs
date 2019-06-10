@@ -3,9 +3,9 @@ use crate::{
     network::{actions::ActionResponse, reducers::send, state::NetworkState},
     state::State,
 };
-use lib3h_persistence_api::{cas::content::Address};
 use holochain_core_types::error::HolochainError;
 use holochain_net::connection::json_protocol::{FetchMetaData, FetchMetaResultData, JsonProtocol};
+use lib3h_persistence_api::cas::content::Address;
 
 /// Send back to network a HandleFetchMetaResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.

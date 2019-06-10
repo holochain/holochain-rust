@@ -299,15 +299,13 @@ pub extern "C" fn __hdk_get_json_definition(
 pub mod tests {
     use crate as hdk;
     use crate::ValidationPackageDefinition;
-    use holochain_core_types::{
-        dna::{
-            entry_types::Sharing,
-            zome::{ZomeFnDeclarations, ZomeTraits},
-        },
-   };
-   use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
-   use meta::PartialZome;
-   use std::collections::BTreeMap;
+    use holochain_core_types::dna::{
+        entry_types::Sharing,
+        zome::{ZomeFnDeclarations, ZomeTraits},
+    };
+    use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
+    use meta::PartialZome;
+    use std::collections::BTreeMap;
 
     // Adding empty zome_setup() so that the cfg(test) build can link.
     #[no_mangle]

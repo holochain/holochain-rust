@@ -94,12 +94,12 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 #[macro_use]
 extern crate lib3h_persistence_derive;
-extern crate lib3h_persistence_api;
-extern crate lib3h_persistence_mem;
-extern crate lib3h_persistence_file;
-extern crate lib3h_persistence_pickle;
 extern crate holochain_dpki;
 extern crate holochain_net;
+extern crate lib3h_persistence_api;
+extern crate lib3h_persistence_file;
+extern crate lib3h_persistence_mem;
+extern crate lib3h_persistence_pickle;
 extern crate lib3h_sodium;
 
 extern crate chrono;

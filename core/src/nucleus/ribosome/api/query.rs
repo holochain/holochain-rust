@@ -6,13 +6,9 @@ use crate::{
         ribosome::{api::ZomeApiResult, Runtime},
     },
 };
-use holochain_core_types::{
-    chain_header::ChainHeader, entry::Entry, error::HolochainError,
-};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 
-use lib3h_persistence_api::{
-    cas::content::Address
-};
+use lib3h_persistence_api::cas::content::Address;
 
 use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames, QueryResult};
 use std::{convert::TryFrom, sync::Arc};

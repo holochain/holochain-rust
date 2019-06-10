@@ -1,10 +1,10 @@
 use super::Dispatch;
 use error::ZomeApiResult;
-use lib3h_persistence_api::{cas::content::Address};
 use holochain_core_types::entry::Entry;
 use holochain_wasm_utils::api_serialization::commit_entry::{
     CommitEntryArgs, CommitEntryOptions, CommitEntryResult,
 };
+use lib3h_persistence_api::cas::content::Address;
 
 /// Attempts to commit an entry to the local source chain. The entry
 /// will also be checked against the defined validation rules for that entry type.

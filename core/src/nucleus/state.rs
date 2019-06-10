@@ -3,16 +3,12 @@ use crate::{
     scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
     state::State,
 };
-use holochain_core_types::{
-   dna::Dna,
-   error::HolochainError,
-   validation::ValidationPackage,
-};
+use holochain_core_types::{dna::Dna, error::HolochainError, validation::ValidationPackage};
 
 use lib3h_persistence_api::{
-    json::JsonString,
-    error::{PersistenceError, PersistenceResult},
     cas::content::{Address, AddressableContent, Content},
+    error::{PersistenceError, PersistenceResult},
+    json::JsonString,
 };
 use snowflake;
 use std::{collections::HashMap, convert::TryFrom};

@@ -10,7 +10,6 @@ pub extern crate holochain_core_types;
 pub extern crate lib3h_persistence_derive;
 pub extern crate lib3h_persistence_api;
 
-
 /// ignore api_serialization because it is nothing but structs to hold serialization
 #[cfg_attr(tarpaulin, skip)]
 pub mod api_serialization;

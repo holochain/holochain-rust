@@ -46,10 +46,8 @@ impl CanPublish for EntryType {
 pub mod tests {
     use super::*;
 
+    use holochain_core_types::entry::entry_type::{AppEntryType, EntryType};
     use lib3h_persistence_api::cas::content::{Address, AddressableContent};
-     use holochain_core_types::{
-       entry::entry_type::{AppEntryType, EntryType},
-    };
 
     use test_utils::create_arbitrary_test_dna;
 

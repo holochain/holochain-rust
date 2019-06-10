@@ -8,9 +8,9 @@ use futures::{
     task::{LocalWaker, Poll},
     Future,
 };
+use holochain_core_types::error::HcResult;
 #[cfg(test)]
 use lib3h_persistence_api::cas::content::Address;
-use holochain_core_types::error::HcResult;
 use std::{pin::Pin, sync::Arc};
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.

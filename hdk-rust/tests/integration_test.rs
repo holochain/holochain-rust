@@ -21,7 +21,7 @@ use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 use holochain_core_types::{
-   dna::{
+    dna::{
         entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
         zome::{ZomeFnDeclarations, ZomeTraits},
@@ -34,10 +34,11 @@ use holochain_core_types::{
 };
 
 use holochain_wasm_utils::lib3h_persistence_api::{
-    error::PersistenceError,
     cas::content::{Address, AddressableContent},
+    error::PersistenceError,
     hash::HashString,
-    json::JsonString};
+    json::JsonString,
+};
 
 #[cfg(not(windows))]
 use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error::CoreError};

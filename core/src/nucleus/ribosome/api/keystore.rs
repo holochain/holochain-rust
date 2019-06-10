@@ -2,9 +2,7 @@ use crate::{
     context::Context,
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
-use holochain_core_types::{
-    error::{HcResult, HolochainError},
-};
+use holochain_core_types::error::{HcResult, HolochainError};
 
 use lib3h_persistence_api::json::JsonString;
 

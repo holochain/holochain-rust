@@ -1,12 +1,8 @@
 use crate::{
     self as hdk,
     error::{ZomeApiError, ZomeApiResult},
-    holochain_core_types::{
-        entry::{AppEntryValue, Entry},
-    },
-
+    holochain_core_types::entry::{AppEntryValue, Entry},
     lib3h_persistence_api::cas::content::Address,
-
 };
 use std::convert::TryFrom;
 

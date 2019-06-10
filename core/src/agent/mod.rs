@@ -5,9 +5,7 @@ pub mod chain_store;
 pub mod state;
 
 use crate::state::State;
-use holochain_core_types::{
-    chain_header::ChainHeader, entry::Entry,
-};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
 
 use lib3h_persistence_api::cas::content::AddressableContent;
 

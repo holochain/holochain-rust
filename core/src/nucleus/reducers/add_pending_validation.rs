@@ -35,8 +35,8 @@ pub mod tests {
         scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
         state::test_store,
     };
-    use holochain_core_types::{chain_header::test_chain_header, entry::Entry, };
-     use lib3h_persistence_api::{json::RawString};
+    use holochain_core_types::{chain_header::test_chain_header, entry::Entry};
+    use lib3h_persistence_api::json::RawString;
     use std::sync::Arc;
 
     #[test]

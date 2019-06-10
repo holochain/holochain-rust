@@ -3,9 +3,7 @@
 //! store such as "update" and "remove" (delete), metadata is created pointing entries forward to their 'latest' version,
 //! even including an entry being marked as deleted.
 
-use crate::{
-    eav::EntityAttributeValueIndex,
-};
+use crate::eav::EntityAttributeValueIndex;
 
 use eav::Attribute;
 use std::{convert::TryInto, str::FromStr};
@@ -33,7 +31,10 @@ pub fn create_crud_status_eav(
 
 /// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an old entry address as the Entity, [CrudLink](../eav/Attribute.html) as the attribute
 /// and a new entry address as the value
-pub fn create_crud_link_eav(from: &Address, to: &Address) -> PersistenceResult<EntityAttributeValueIndex> {
+pub fn create_crud_link_eav(
+    from: &Address,
+    to: &Address,
+) -> PersistenceResult<EntityAttributeValueIndex> {
     EntityAttributeValueIndex::new(from, &Attribute::CrudLink, to)
 }
 
@@ -89,9 +90,7 @@ impl AddressableContent for CrudStatus {
 #[cfg(test)]
 mod tests {
     use super::CrudStatus;
-    use crate::{
-        eav::{eav_round_trip_test_runner, Attribute},
-    };
+    use crate::eav::{eav_round_trip_test_runner, Attribute};
 
     use lib3h_persistence_api::{
         cas::{

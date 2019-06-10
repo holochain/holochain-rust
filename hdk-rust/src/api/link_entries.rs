@@ -1,7 +1,7 @@
 use super::Dispatch;
 use error::ZomeApiError;
-use lib3h_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
+use lib3h_persistence_api::cas::content::Address;
 
 /// Adds a named, tagged, directed link between two entries on the DHT.
 /// Consumes four values, two of which are the addresses of entries, and two of which are strings used to describe the link.

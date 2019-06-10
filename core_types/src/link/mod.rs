@@ -5,11 +5,7 @@
 pub mod link_data;
 pub mod link_list;
 
-use lib3h_persistence_api::{
-    cas::content::Address, 
-    error::PersistenceError,
-    json::JsonString
-};
+use lib3h_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
 
 use entry::Entry;
 use link::link_data::LinkData;
@@ -71,11 +67,11 @@ pub enum LinkActionKind {
 #[cfg(test)]
 pub mod tests {
 
-   use lib3h_persistence_api::cas::content::AddressableContent;
-     use crate::{
-       entry::{test_entry_a, test_entry_b},
+    use crate::{
+        entry::{test_entry_a, test_entry_b},
         link::{Link, LinkActionKind, LinkTag, LinkType},
     };
+    use lib3h_persistence_api::cas::content::AddressableContent;
 
     pub fn example_link_type() -> LinkType {
         LinkType::from("foo-link-type")

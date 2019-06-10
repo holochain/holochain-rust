@@ -1,9 +1,5 @@
 use crate::link::Link;
-use lib3h_persistence_api::{
-    json::JsonString,
-    error::PersistenceError
-};
-
+use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
 
 //-------------------------------------------------------------------------------------------------
 // LinkList

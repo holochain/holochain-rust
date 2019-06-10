@@ -8,12 +8,12 @@ use crate::{
     nucleus::actions::initialize::initialize_chain,
 };
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
-#[cfg(test)]
-use lib3h_persistence_api::cas::content::Address;
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
 };
+#[cfg(test)]
+use lib3h_persistence_api::cas::content::Address;
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, Sender, SyncSender},
@@ -343,17 +343,17 @@ pub mod tests {
         context::{test_memory_network_config, Context},
         logger::{test_logger, TestLogger},
     };
-    use lib3h_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::AgentId,
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
-   };
-    use lib3h_persistence_api::{
-        json::{JsonString, RawString},
-        cas::content::AddressableContent,
     };
+    use lib3h_persistence_api::{
+        cas::content::AddressableContent,
+        json::{JsonString, RawString},
+    };
+    use lib3h_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use tempfile;
     use test_utils;
 
@@ -367,10 +367,8 @@ pub mod tests {
 
     use test_utils::mock_signing::registered_test_agent;
 
-    use lib3h_persistence_mem::{
-        cas::memory::MemoryStorage, eav::memory::EavMemoryStorage,
-    };
     use holochain_core_types::entry::Entry;
+    use lib3h_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]

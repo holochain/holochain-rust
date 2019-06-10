@@ -1,19 +1,12 @@
-use lib3h_persistence_file::{
-    cas::{file::FilesystemStorage},
-    eav::{file::EavFileStorage},
-};
+use lib3h_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 
-use lib3h_persistence_mem::{
-    cas::{memory::MemoryStorage},
-    eav::{memory::EavMemoryStorage},
-};
+use lib3h_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 
-use lib3h_persistence_pickle::{
-    cas::{pickle::PickleStorage},
-    eav::{pickle::EavPickleStorage},
-};
+use lib3h_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
 
-use lib3h_persistence_api::{eav::EntityAttributeValueStorage, cas::storage::ContentAddressableStorage};
+use lib3h_persistence_api::{
+    cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
+};
 
 use holochain_core::{
     context::Context,
@@ -21,11 +14,7 @@ use holochain_core::{
     persister::SimplePersister,
     signal::SignalSender,
 };
-use holochain_core_types::{
-    agent::AgentId,
-    error::HolochainError,
-    eav::Attribute
-};
+use holochain_core_types::{agent::AgentId, eav::Attribute, error::HolochainError};
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::IoHandler;
 use std::{
@@ -99,7 +88,8 @@ impl ContextBuilder {
         fs::create_dir_all(&eav_path)?;
 
         let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
-        let eav_storage : Arc<RwLock<EntityAttributeValueStorage<Attribute>>> = Arc::new(RwLock::new(EavFileStorage::new(eav_path)?));
+        let eav_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>> =
+            Arc::new(RwLock::new(EavFileStorage::new(eav_path)?));
         self.chain_storage = Some(file_storage.clone());
         self.dht_storage = Some(file_storage);
         self.eav_storage = Some(eav_storage);

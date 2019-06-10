@@ -8,13 +8,13 @@ use crate::{
     },
 };
 use holochain_core_types::{
-   dna::{capabilities::CapabilityRequest, wasm::DnaWasm},
+    dna::{capabilities::CapabilityRequest, wasm::DnaWasm},
     entry::{
         cap_entries::{CapTokenGrant, CapabilityType},
         Entry,
     },
     error::HolochainError,
-   signature::{Provenance, Signature},
+    signature::{Provenance, Signature},
 };
 
 use lib3h_persistence_api::{
@@ -322,15 +322,15 @@ pub mod tests {
         nucleus::{actions::tests::test_dna, tests::*},
         workflows::author_entry::author_entry,
     };
-    use lib3h_persistence_api::cas::content::{Address, AddressableContent};
-     use holochain_core_types::{
-       dna::capabilities::CapabilityRequest,
+    use holochain_core_types::{
+        dna::capabilities::CapabilityRequest,
         entry::{
             cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
             Entry,
         },
         signature::Signature,
     };
+    use lib3h_persistence_api::cas::content::{Address, AddressableContent};
 
     #[test]
     fn test_agent_as_token() {

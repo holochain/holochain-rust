@@ -73,13 +73,9 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
-    use lib3h_persistence_api::{
-        cas::content::AddressableContent
-    };
+    use lib3h_persistence_api::cas::content::AddressableContent;
 
-    use holochain_core_types::{
-        entry::test_entry, error::HolochainError,
-    };
+    use holochain_core_types::{entry::test_entry, error::HolochainError};
 
     #[test]
     pub fn reduce_get_entry_without_network_initialized() {

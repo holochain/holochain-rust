@@ -9,7 +9,7 @@ use crate::{
         test_entry,
     },
     signature::{Provenance, Signature},
-    time::{test_iso_8601, Iso8601}
+    time::{test_iso_8601, Iso8601},
 };
 
 use lib3h_persistence_api::{
@@ -17,7 +17,7 @@ use lib3h_persistence_api::{
     error::{PersistenceError, PersistenceResult},
     json::JsonString,
 };
- 
+
 use std::convert::TryInto;
 
 /// ChainHeader of a source chain "Item"
@@ -154,15 +154,15 @@ pub fn test_provenances(sig: &'static str) -> Vec<Provenance> {
 
 #[cfg(test)]
 pub mod tests {
-    use lib3h_persistence_api::cas::content::{Address, AddressableContent};
-     use crate::{
-       chain_header::{test_chain_header, test_provenances, ChainHeader},
+    use crate::{
+        chain_header::{test_chain_header, test_provenances, ChainHeader},
         entry::{
             entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
             test_entry, test_entry_a, test_entry_b,
         },
         time::test_iso_8601,
     };
+    use lib3h_persistence_api::cas::content::{Address, AddressableContent};
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header_a() -> ChainHeader {

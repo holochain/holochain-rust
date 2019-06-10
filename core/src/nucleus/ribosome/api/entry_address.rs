@@ -1,7 +1,7 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{
     self,
-   dna::Dna,
+    dna::Dna,
     entry::{entry_type::EntryType, Entry},
     error::RibosomeRuntimeBits,
 };

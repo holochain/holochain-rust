@@ -4,8 +4,8 @@ use holochain_core::{
     nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
-use lib3h_persistence_api::cas::content::AddressableContent;
 use holochain_core_types::entry::Entry;
+use lib3h_persistence_api::cas::content::AddressableContent;
 use neon::{context::Context, prelude::*};
 use std::{
     cell::RefCell,
@@ -370,15 +370,11 @@ impl Task for MainBackgroundTask {
 mod tests {
     use super::{Action::*, *};
     use holochain_core::nucleus::actions::call_zome_function::ExecuteZomeFnResponse;
-    use lib3h_persistence_api::{
-        cas::content::Address,
-        json::JsonString
-    };
     use holochain_core_types::{
-            chain_header::test_chain_header,
-            dna::capabilities::CapabilityRequest, entry::Entry,
-            link::link_data::LinkData, signature::Signature,
+        chain_header::test_chain_header, dna::capabilities::CapabilityRequest, entry::Entry,
+        link::link_data::LinkData, signature::Signature,
     };
+    use lib3h_persistence_api::{cas::content::Address, json::JsonString};
     use std::sync::mpsc::sync_channel;
 
     fn sig(a: Action) -> Signal {

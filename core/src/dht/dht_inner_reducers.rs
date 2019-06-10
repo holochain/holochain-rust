@@ -18,7 +18,7 @@ use holochain_core_types::{
 
 use lib3h_persistence_api::{
     cas::content::{Address, AddressableContent},
-    eav::IndexFilter
+    eav::IndexFilter,
 };
 
 use std::{collections::BTreeSet, convert::TryInto, str::FromStr};

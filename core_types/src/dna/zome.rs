@@ -8,12 +8,9 @@ use crate::{
         wasm::DnaWasm,
     },
     entry::entry_type::EntryType,
- };
-
-use lib3h_persistence_api::{
-    json::JsonString,
-    error::PersistenceError
 };
+
+use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
 
 use dna::entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef};
 use std::collections::BTreeMap;

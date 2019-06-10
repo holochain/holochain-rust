@@ -142,15 +142,15 @@ pub mod tests {
         network::entry_with_header::EntryWithHeader,
         state::test_store,
     };
+    use holochain_core_types::{
+        chain_header::test_chain_header,
+        eav::{Attribute, EaviQuery},
+        entry::{test_entry, test_sys_entry, Entry},
+        link::{link_data::LinkData, Link, LinkActionKind},
+    };
     use lib3h_persistence_api::{
         cas::content::AddressableContent,
         eav::{EavFilter, IndexFilter},
-    };
-    use holochain_core_types::{
-       chain_header::test_chain_header,
-       eav::{Attribute, EaviQuery},
-       entry::{test_entry, test_sys_entry, Entry},
-       link::{link_data::LinkData, Link, LinkActionKind},
     };
     use std::convert::TryFrom;
 

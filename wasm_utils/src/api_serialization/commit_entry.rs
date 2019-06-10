@@ -1,10 +1,6 @@
-use holochain_core_types::{
-    entry::Entry, signature::Provenance,
-};
+use holochain_core_types::{entry::Entry, signature::Provenance};
 
-use lib3h_persistence_api::{
-    cas::content::Address, error::PersistenceError, json::*,
-};
+use lib3h_persistence_api::{cas::content::Address, error::PersistenceError, json::*};
 
 /// Structure used to specify additional options to a commit_entry_result call.
 #[derive(Deserialize, Debug, Serialize, DefaultJson, PartialEq, Clone)]

@@ -9,8 +9,8 @@ use crate::{
 use lib3h_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_core_types::{
-   error::HolochainError,
-   validation::{EntryLifecycle, ValidationData},
+    error::HolochainError,
+    validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 

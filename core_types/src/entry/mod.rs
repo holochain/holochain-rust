@@ -19,8 +19,8 @@ use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
 use lib3h_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    json::{JsonString, RawString},
     error::{PersistenceError, PersistenceResult},
+    json::{JsonString, RawString},
 };
 use link::{link_data::LinkData, link_list::LinkList};
 use multihash::Hash;
@@ -226,14 +226,12 @@ pub fn test_unpublishable_entry() -> Entry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use lib3h_persistence_api::{
-        cas::{
-            content::{AddressableContent, AddressableContentTestSuite},
-            storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
-        },
-    };
     use crate::entry::{expected_entry_address, Entry};
- 
+    use lib3h_persistence_api::cas::{
+        content::{AddressableContent, AddressableContentTestSuite},
+        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+    };
+
     #[test]
     /// tests for PartialEq
     fn eq() {

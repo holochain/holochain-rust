@@ -2,10 +2,7 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
-use holochain_core_types::{
-   entry::Entry,
-    error::HolochainError,
-};
+use holochain_core_types::{entry::Entry, error::HolochainError};
 
 use lib3h_persistence_api::cas::content::{Address, AddressableContent};
 

@@ -3,11 +3,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
 };
 
-use lib3h_persistence_api::{
-    cas::content::Address,
-    error::PersistenceError,
-    json::*,
-};
+use lib3h_persistence_api::{cas::content::Address, error::PersistenceError, json::*};
 
 // QueryArgsNames -- support querying single/multiple EntryType names
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]

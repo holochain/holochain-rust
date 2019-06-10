@@ -22,9 +22,9 @@ pub mod tests {
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
-       crud_status::CrudStatus,
+        crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
-       link::link_data::LinkData,
+        link::link_data::LinkData,
     };
     use lib3h_persistence_api::{
         cas::content::{Address, AddressableContent},

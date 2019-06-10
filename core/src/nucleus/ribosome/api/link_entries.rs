@@ -58,15 +58,15 @@ pub mod tests {
         },
     };
     use holochain_core_types::{
-       entry::{test_entry, Entry},
-       error::{CoreError, ZomeApiInternalResult},
-    };
-    use lib3h_persistence_api::{
-        hash::HashString,
-        json::JsonString,
-        cas::content::{Address, AddressableContent},
+        entry::{test_entry, Entry},
+        error::{CoreError, ZomeApiInternalResult},
     };
     use holochain_wasm_utils::api_serialization::link_entries::*;
+    use lib3h_persistence_api::{
+        cas::content::{Address, AddressableContent},
+        hash::HashString,
+        json::JsonString,
+    };
     use serde_json;
     use std::{convert::TryFrom, sync::Arc};
 

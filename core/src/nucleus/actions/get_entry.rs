@@ -1,14 +1,14 @@
 use crate::context::Context;
 use holochain_core_types::{
-   crud_status::CrudStatus,
-   eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
-   entry::{Entry, EntryWithMeta},
-   error::HolochainError,
+    crud_status::CrudStatus,
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
+    entry::{Entry, EntryWithMeta},
+    error::HolochainError,
 };
 
 use lib3h_persistence_api::{
     cas::{content::Address, storage::ContentAddressableStorage},
-    eav::IndexFilter
+    eav::IndexFilter,
 };
 
 use std::{
@@ -175,8 +175,8 @@ pub fn get_entry_with_meta<'a>(
 #[cfg(test)]
 pub mod tests {
     use crate::instance::tests::test_context_with_state;
-    use lib3h_persistence_api::{cas::content::AddressableContent};
     use holochain_core_types::entry::test_entry;
+    use lib3h_persistence_api::cas::content::AddressableContent;
 
     #[test]
     fn test_get_entry_from_dht_cas() {

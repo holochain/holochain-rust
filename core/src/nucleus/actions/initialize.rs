@@ -13,7 +13,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-   dna::{traits::ReservedTraitNames, Dna},
+    dna::{traits::ReservedTraitNames, Dna},
     entry::{
         cap_entries::{CapFunctions, CapTokenGrant, CapabilityType, ReservedCapabilityId},
         Entry,

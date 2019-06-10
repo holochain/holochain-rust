@@ -13,7 +13,6 @@ use crate::{
     state::State,
 };
 
-use lib3h_persistence_api::cas::content::Address;
 use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
@@ -31,6 +30,7 @@ use holochain_net::{
     },
     p2p_config::P2pConfig,
 };
+use lib3h_persistence_api::cas::content::Address;
 use snowflake;
 use std::{
     hash::{Hash, Hasher},

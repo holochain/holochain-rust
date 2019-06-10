@@ -1,6 +1,6 @@
 use crate::{context::Context, workflows::get_entry_result::get_entry_with_meta_workflow};
 use holochain_core_types::{
-   chain_header::ChainHeader,
+    chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry, EntryWithMeta},
     error::HolochainError,
     time::Timeout,

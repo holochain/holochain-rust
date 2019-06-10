@@ -14,19 +14,17 @@ use futures::{
 };
 
 use lib3h_persistence_api::{
-    eav::{
-       EntityAttributeValueStorage
-    },
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
+    eav::EntityAttributeValueStorage,
 };
 
 use holochain_core_types::{
     agent::AgentId,
-    eav::Attribute,
     dna::{wasm::DnaWasm, Dna},
+    eav::Attribute,
     entry::{
         cap_entries::{CapabilityType, ReservedCapabilityId},
         entry_type::EntryType,
@@ -331,8 +329,8 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};
-    use lib3h_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;
+    use lib3h_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 

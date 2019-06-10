@@ -15,9 +15,8 @@ use holochain_core_types::{
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::ZomeApiGlobals,
-   memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
+    memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
 };
-
 
 use init_globals::init_globals;
 use std::convert::{TryFrom, TryInto};

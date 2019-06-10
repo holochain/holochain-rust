@@ -27,8 +27,8 @@ extern crate lazy_static;
 pub extern crate holochain_core_types;
 #[macro_use]
 pub extern crate lib3h_persistence_derive;
-pub extern crate lib3h_persistence_api;
 pub extern crate holochain_wasm_utils;
+pub extern crate lib3h_persistence_api;
 // #[macro_use]
 pub extern crate pretty_assertions;
 

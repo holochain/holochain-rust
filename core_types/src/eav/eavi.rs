@@ -5,18 +5,19 @@
 
 use lib3h_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    eav::{AttributeError, IndexFilter},
+    eav::{
+        storage::{
+            EntityAttributeValueStorage as GenericStorage, ExampleEntityAttributeValueStorage,
+        },
+        AttributeError, IndexFilter,
+    },
     error::{PersistenceError, PersistenceResult},
     json::JsonString,
-    eav::storage::{
-        EntityAttributeValueStorage as GenericStorage,
-        ExampleEntityAttributeValueStorage
-    },
 };
 
 use crate::{
-    error::{HolochainError},
-    entry::{test_entry_a, test_entry_b, Entry}
+    entry::{test_entry_a, test_entry_b, Entry},
+    error::HolochainError,
 };
 
 use regex::{Regex, RegexBuilder};
@@ -138,7 +139,8 @@ pub type Index = i64;
 // type Source ...
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
-pub type EntityAttributeValueIndex = lib3h_persistence_api::eav::EntityAttributeValueIndex<Attribute>;
+pub type EntityAttributeValueIndex =
+    lib3h_persistence_api::eav::EntityAttributeValueIndex<Attribute>;
 
 pub type EntityAttributeValueStorage = GenericStorage<Attribute>;
 
@@ -159,7 +161,11 @@ fn validate_attribute(attribute: &Attribute) -> PersistenceResult<()> {
     }
 }
 
-pub fn new(entity:&Address, attr:&Attribute, value:&Value) -> PersistenceResult<EntityAttributeValueIndex> {
+pub fn new(
+    entity: &Address,
+    attr: &Attribute,
+    value: &Value,
+) -> PersistenceResult<EntityAttributeValueIndex> {
     validate_attribute(attr).and_then(|_| EntityAttributeValueIndex::new(entity, attr, value))
 }
 
@@ -267,15 +273,12 @@ pub mod tests {
 
     use lib3h_persistence_api::json::RawString;
 
-    use lib3h_persistence_api::{
-        cas::{
-            content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
-            storage::{
-                test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
-            },
+    use lib3h_persistence_api::cas::{
+        content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
+        storage::{
+            test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
         },
     };
-
 
     use crate::eav::EntityAttributeValueIndex;
 
@@ -289,8 +292,7 @@ pub mod tests {
         let entity =
             ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("foo")))
                 .unwrap();
-        let attribute = Attribute::LinkTag("abc".to_string(),
-                                           "favourite-color".to_string());
+        let attribute = Attribute::LinkTag("abc".to_string(), "favourite-color".to_string());
         let value =
             ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("blue")))
                 .unwrap();
@@ -312,16 +314,17 @@ pub mod tests {
         EavTestSuite::test_many_to_one::<
             ExampleAddressableContent,
             Attribute,
-            ExampleEntityAttributeValueStorage<Attribute>
+            ExampleEntityAttributeValueStorage<Attribute>,
         >(test_eav_storage(), &Attribute::default());
     }
 
     #[test]
     fn example_eav_range() {
-        EavTestSuite::test_range::<ExampleAddressableContent, Attribute, ExampleEntityAttributeValueStorage<Attribute>>(
-            test_eav_storage(),
-            &Attribute::default()
-        );
+        EavTestSuite::test_range::<
+            ExampleAddressableContent,
+            Attribute,
+            ExampleEntityAttributeValueStorage<Attribute>,
+        >(test_eav_storage(), &Attribute::default());
     }
 
     #[test]

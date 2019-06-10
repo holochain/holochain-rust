@@ -2,12 +2,7 @@
 //! a way of providing cryptographically verifiable proof of a given agent
 //! as having been the author of a given data entry.
 
-
-use lib3h_persistence_api::{
-    json::JsonString,
-    cas::content::Address,
-    error::PersistenceError
-};
+use lib3h_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
 
 /// Provenance is a tuple of initiating agent public key and signature of some item being signed
 /// this type is used in headers and in capability requests where the item being signed

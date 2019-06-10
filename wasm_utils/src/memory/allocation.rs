@@ -1,5 +1,5 @@
-use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
 use holochain_core_types::error::HolochainError;
+use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
 
 use memory::{MemoryBits, MemoryInt, MEMORY_INT_MAX};
 

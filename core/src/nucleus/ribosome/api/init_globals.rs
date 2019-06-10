@@ -1,12 +1,10 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::{
-   entry::entry_type::EntryType,
-};
+use holochain_core_types::entry::entry_type::EntryType;
 
 use lib3h_persistence_api::{
+    cas::content::{Address, AddressableContent},
     hash::HashString,
     json::JsonString,
-    cas::content::{Address, AddressableContent},
 };
 
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
@@ -78,14 +76,10 @@ pub mod tests {
         Defn,
     };
     use holochain_core_types::{
-        dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult,
-        signature::Signature,
-    };
-    use lib3h_persistence_api::{
-        cas::content::Address,
-        json::JsonString
+        dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult, signature::Signature,
     };
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
+    use lib3h_persistence_api::{cas::content::Address, json::JsonString};
     use std::convert::TryFrom;
     use test_utils::mock_signing::registered_test_agent;
 

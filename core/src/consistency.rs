@@ -2,11 +2,8 @@ use crate::{
     action::Action, context::Context, entry::CanPublish,
     network::entry_with_header::EntryWithHeader,
 };
+use holochain_core_types::{entry::Entry, link::Link};
 use lib3h_persistence_api::cas::content::{Address, AddressableContent};
-use holochain_core_types::{
-    entry::Entry,
-    link::Link,
-};
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Clone)]

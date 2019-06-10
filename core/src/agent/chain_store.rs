@@ -1,12 +1,12 @@
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
-   chain_header::ChainHeader,
+    chain_header::ChainHeader,
     entry::entry_type::EntryType,
     error::RibosomeErrorCode::{self, *},
 };
 use lib3h_persistence_api::cas::{
-        content::{Address, AddressableContent},
-        storage::ContentAddressableStorage,
+    content::{Address, AddressableContent},
+    storage::ContentAddressableStorage,
 };
 
 use std::{
@@ -301,19 +301,19 @@ impl Iterator for ChainStoreTypeIterator {
 pub mod tests {
     use self::tempfile::tempdir;
     use crate::agent::chain_store::{ChainStore, ChainStoreQueryOptions, ChainStoreQueryResult};
-    use lib3h_persistence_file::cas::file::FilesystemStorage;
     use holochain_core_types::{
-       chain_header::{test_chain_header, test_provenances, ChainHeader},
+        chain_header::{test_chain_header, test_provenances, ChainHeader},
         entry::{
             entry_type::{test_entry_type_b, AppEntryType},
             test_entry, test_entry_b, test_entry_c, Entry,
         },
-       time::test_iso_8601,
+        time::test_iso_8601,
     };
     use lib3h_persistence_api::{
         cas::content::AddressableContent,
         json::{JsonString, RawString},
     };
+    use lib3h_persistence_file::cas::file::FilesystemStorage;
     use tempfile;
 
     pub fn test_chain_store() -> ChainStore {

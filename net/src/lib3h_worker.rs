@@ -5,11 +5,11 @@ use crate::connection::{
     protocol::Protocol,
     NetResult,
 };
-use lib3h_persistence_api::json::JsonString;
 use lib3h::{
     real_engine::{RealEngine, RealEngineConfig},
     transport_wss::TransportWss,
 };
+use lib3h_persistence_api::json::JsonString;
 use lib3h_protocol::network_engine::NetworkEngine;
 
 /// A worker that makes use of lib3h / NetworkEngine.

@@ -164,8 +164,8 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
-    use lib3h_persistence_api::{cas::content::AddressableContent};
     use holochain_core_types::entry::test_entry;
+    use lib3h_persistence_api::cas::content::AddressableContent;
 
     #[test]
     pub fn reduce_publish_test() {

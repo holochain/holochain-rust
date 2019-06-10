@@ -8,7 +8,7 @@ use holochain_conductor_api::{context_builder::ContextBuilder, Holochain};
 use holochain_core::{context::Context, logger::Logger};
 use holochain_core_types::{
     agent::AgentId,
-   dna::{capabilities::CapabilityRequest, Dna},
+    dna::{capabilities::CapabilityRequest, Dna},
     error::HolochainError,
     signature::Signature,
 };

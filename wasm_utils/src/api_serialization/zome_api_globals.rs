@@ -1,10 +1,7 @@
-use holochain_core_types::{
-    dna::capabilities::CapabilityRequest,
-};
+use holochain_core_types::dna::capabilities::CapabilityRequest;
 
 use lib3h_persistence_api::{
-    cas::content::Address, error::PersistenceError,
-    hash::HashString, json::*,
+    cas::content::Address, error::PersistenceError, hash::HashString, json::*,
 };
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson)]

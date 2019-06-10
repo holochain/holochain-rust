@@ -6,7 +6,6 @@
 #[macro_use]
 extern crate lazy_static;
 
-
 pub const CONTEXT_SIZE: usize = 8;
 pub const SEED_SIZE: usize = 32;
 pub const AGENT_ID_CTX: [u8; 8] = *b"HCAGNTID";

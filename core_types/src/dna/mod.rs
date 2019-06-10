@@ -33,7 +33,7 @@ pub mod wasm;
 pub mod zome;
 
 use crate::{
-   dna::{
+    dna::{
         bridges::Bridge,
         entry_types::EntryTypeDef,
         fn_declarations::{FnDeclaration, TraitFns},
@@ -43,11 +43,11 @@ use crate::{
 };
 
 use lib3h_persistence_api::{
-    json::JsonString,
     cas::content::{AddressableContent, Content},
-    error::{PersistenceError, PersistenceResult}
+    error::{PersistenceError, PersistenceResult},
+    json::JsonString,
 };
- 
+
 use entry::entry_type::AppEntryType;
 use multihash;
 use serde_json::{self, Value};
@@ -285,10 +285,7 @@ pub mod tests {
         },
         entry::entry_type::{AppEntryType, EntryType},
     };
-    use lib3h_persistence_api::{
-        cas::content::Address,
-        json::JsonString,
-    };
+    use lib3h_persistence_api::{cas::content::Address, json::JsonString};
     use std::convert::TryFrom;
 
     fn test_dna() -> Dna {

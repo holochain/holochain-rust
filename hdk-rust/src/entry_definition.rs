@@ -3,10 +3,10 @@
 
 use crate::error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{
+    agent::AgentId,
     dna::entry_types::EntryTypeDef,
     entry::{entry_type::EntryType, AppEntryValue, Entry},
     validation::{EntryValidationData, LinkValidationData, ValidationPackageDefinition},
-    agent::AgentId,
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 use std::convert::TryFrom;

@@ -1,6 +1,6 @@
 use holochain_core_types::{
-    entry::Entry,
     agent::AgentId,
+    entry::Entry,
     error::HolochainError,
     json::*,
     link::Link,

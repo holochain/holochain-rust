@@ -217,11 +217,11 @@ macro_rules! define_zome {
             $genesis_expr:expr
         }
 
-        $(
-            validate_agent: |$agent_validation_param:ident : EntryValidationData::<AgentId>| {
-                $agent_validation_expr:expr
-            }
-        )*
+
+        validate_agent: |$agent_validation_param:ident : EntryValidationData::<AgentId>| {
+            $agent_validation_expr:expr
+        }
+
 
         $(
             receive : |$receive_from:ident, $receive_param:ident| {
@@ -256,14 +256,11 @@ macro_rules! define_zome {
                 zd.define($entry_expr);
             )*
 
-            $(
-                let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::agent::AgentId>| {
-                    let $agent_validation_param = validation_data;
-                    $agent_validation_expr     
-                });
-
-                zd.define_agent_validator(validator);
-            )*
+            let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::agent::AgentId>| {
+                let $agent_validation_param = validation_data;
+                $agent_validation_expr
+            });
+            zd.define_agent_validator(validator);
         }
 
         #[no_mangle]

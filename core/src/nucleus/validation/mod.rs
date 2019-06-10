@@ -10,12 +10,12 @@ use holochain_core_types::{
 
 use std::sync::Arc;
 
+mod agent_entry;
 mod app_entry;
 mod header_address;
 mod link_entry;
 mod provenances;
 mod remove_entry;
-mod agent_entry;
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 /// A failed validation.

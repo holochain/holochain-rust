@@ -3,7 +3,10 @@
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
-use crate::{api::G_MEM_STACK, entry_definition::{ValidatingEntryType, AgentValidator}};
+use crate::{
+    api::G_MEM_STACK,
+    entry_definition::{AgentValidator, ValidatingEntryType},
+};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
@@ -15,7 +18,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::{
     api_serialization::validation::{
-        EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs, AgentIdValidationArgs,
+        AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
     },
     holochain_core_types::error::RibosomeErrorCode,
     memory::{
@@ -158,14 +161,18 @@ pub extern "C" fn __hdk_validate_agent_entry(
 
     //get the validator code
     let mut validator = match zd.agent_entry_validator {
-        None => return return_code_for_allocation_result(
-            crate::global_fns::write_json(JsonString::from_json("No agent validation callback registered for zome.")),
-        ).into(),
+        None => {
+            return return_code_for_allocation_result(crate::global_fns::write_json(
+                JsonString::from_json("No agent validation callback registered for zome."),
+            ))
+            .into();
+        }
         Some(v) => v,
     };
 
     // Deserialize input
-    let input: AgentIdValidationArgs = match load_ribosome_encoded_json(encoded_allocation_of_input) {
+    let input: AgentIdValidationArgs = match load_ribosome_encoded_json(encoded_allocation_of_input)
+    {
         Ok(v) => v,
         Err(e) => return RibosomeEncodedValue::from(e).into(),
     };
@@ -174,9 +181,9 @@ pub extern "C" fn __hdk_validate_agent_entry(
 
     match validation_result {
         Ok(()) => RibosomeEncodedValue::Success.into(),
-        Err(fail_string) => return_code_for_allocation_result(
-            crate::global_fns::write_json(JsonString::from_json(&fail_string)),
-        )
+        Err(fail_string) => return_code_for_allocation_result(crate::global_fns::write_json(
+            JsonString::from_json(&fail_string),
+        ))
         .into(),
     }
 }

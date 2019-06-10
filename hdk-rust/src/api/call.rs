@@ -21,6 +21,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # use hdk::lib3h_persistence_api::json::JsonString;
+/// # use hdk::lib3h_persistence_api::error::PersistenceError;
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;

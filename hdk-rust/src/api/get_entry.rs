@@ -18,6 +18,7 @@ use holochain_wasm_utils::api_serialization::get_entry::{
 /// ```rust
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
+/// # extern crate lib3h_persistence_api;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::entry::Entry;
 /// # use lib3h_persistence_api::json::JsonString;

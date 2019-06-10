@@ -18,11 +18,13 @@
 //! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
 //! use holochain_core_types::{
-//!     cas::content::Address,
 //!     agent::AgentId,
 //!     dna::{Dna, capabilities::CapabilityRequest,},
-//!     json::JsonString,
 //!     signature::Signature,
+//! };
+//! use lib3h_persistence_api::{
+//!     cas::content::Address,
+//!     json::JsonString,
 //! };
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
 //! use lib3h_sodium::secbuf::SecBuf;

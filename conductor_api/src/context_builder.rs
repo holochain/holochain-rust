@@ -13,9 +13,7 @@ use lib3h_persistence_pickle::{
     eav::{pickle::EavPickleStorage},
 };
 
-use lib3h_persistence_api::{eav::EntityAttributeValueStorage,
-cas::storage::ContentAddressableStorage};
-
+use lib3h_persistence_api::{eav::EntityAttributeValueStorage, cas::storage::ContentAddressableStorage};
 
 use holochain_core::{
     context::Context,
@@ -82,7 +80,7 @@ impl ContextBuilder {
     /// Chain and DHT storages get set to the same memory CAS.
     pub fn with_memory_storage(mut self) -> Self {
         let cas = Arc::new(RwLock::new(MemoryStorage::new()));
-        let eav : Arc<RwLock<lib3h_persistence_api::eav::EntityAttributeValueStorage<Attribute>>> =
+        let eav = //Arc<RwLock<lib3h_persistence_api::eav::EntityAttributeValueStorage<Attribute>>> =
             Arc::new(RwLock::new(EavMemoryStorage::new()));
         self.chain_storage = Some(cas.clone());
         self.dht_storage = Some(cas);

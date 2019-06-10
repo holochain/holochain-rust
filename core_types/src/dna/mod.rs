@@ -8,6 +8,7 @@
 //! ```
 //! #![feature(try_from)]
 //! extern crate holochain_core_types;
+//! extern crate lib3h_persistence_api;
 //! use holochain_core_types::dna::Dna;
 //! use lib3h_persistence_api::json::JsonString;
 //! use std::convert::TryFrom;

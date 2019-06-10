@@ -58,6 +58,10 @@ define_zome! {
         }
     }
 
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+        Ok(())
+    }
+
     functions: [
         sign_message: {
             inputs: |key_id: String, message: String|,

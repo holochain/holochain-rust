@@ -56,6 +56,10 @@ impl ZomeDefinition {
     pub fn define(&mut self, entry_type: ValidatingEntryType) {
         self.entry_types.push(entry_type);
     }
+
+    pub fn define_agent_validator(&mut self, agent_validator: AgentValidator) {
+        self.agent_entry_validator = Some(agent_validator);
+    }
 }
 
 #[allow(improper_ctypes)]

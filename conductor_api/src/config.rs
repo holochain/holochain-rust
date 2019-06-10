@@ -23,7 +23,7 @@ use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
     env,
-    fs::File,
+    fs::{ File, create_dir_all},
     io::prelude::*,
     path::PathBuf,
 };
@@ -549,12 +549,17 @@ pub fn default_n3h_log_level() -> String {
 
 // note that this behaviour is documented within
 // holochain_common::env_vars module and should be updated
-// if this logic changes.  Results in a unique per-agent result.
+// if this logic changes.  Results in a unique directory per-agent
+// result, created and ready to use.
 pub fn default_n3h_persistence_path(agent_unique: &str) -> String {
-    env::temp_dir()
-        .push(agent_unique)
+    let mut temp_dir = env::temp_dir();
+    temp_dir.push(agent_unique);
+    let temp_str = temp_dir
         .to_string_lossy()
-        .to_string()
+        .to_string();
+    create_dir_all(&temp_str)
+        .expect(&format!("Unable to create {}", temp_str));
+    temp_str
 }
 
 /// Use this function to load a `Configuration` from a string.

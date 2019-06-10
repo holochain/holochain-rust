@@ -12,7 +12,7 @@ use holochain_wasm_utils::{
     api_serialization::ZomeApiGlobals,
     holochain_core_types::{
         hash::HashString,
-        json::{JsonString, RawString},
+        json::{default_to_json, JsonString, RawString},
     },
     memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
 };
@@ -110,7 +110,7 @@ macro_rules! def_api_fns {
                 if result.ok {
                     JsonString::from_json(&result.value)
                         .try_into()
-                        .map_err(|_| ZomeApiError::from(String::from("Failed to deserialize return value")))
+                        .map_err(|_| ZomeApiError::from(format!("Failed to deserialize return value: {}", result.value)))
                 } else {
                     Err(ZomeApiError::from(result.error))
                 }
@@ -223,7 +223,7 @@ lazy_static! {
     pub static ref PUBLIC_TOKEN: &'static Address = &GLOBALS.public_token;
 
     /// The CapabilityRequest under which this wasm function is executing
-    pub static ref CAPABILITY_REQ: &'static CapabilityRequest = &GLOBALS.cap_request;
+    pub static ref CAPABILITY_REQ: &'static Option<CapabilityRequest> = &GLOBALS.cap_request;
 
     /// The json string from the DNA top level properties field.
     /// Deserialize this into a serde_json::Value or a zome specific struct to access the fields
@@ -275,7 +275,7 @@ impl From<PUBLIC_TOKEN> for JsonString {
 
 impl From<CAPABILITY_REQ> for JsonString {
     fn from(cap_request: CAPABILITY_REQ) -> JsonString {
-        JsonString::from(*cap_request)
+        default_to_json(*cap_request)
     }
 }
 

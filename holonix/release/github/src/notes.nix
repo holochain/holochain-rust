@@ -54,20 +54,20 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   TEMPLATE=$( echo '${template}' )
+  TEMPLATE=$( echo '${template}' )
 
-   DATE_PLACEHOLDER='{{ release-date }}'
-   DATE=$( date --iso -u )
-   WITH_DATE=''${TEMPLATE/$DATE_PLACEHOLDER/$DATE}
+  DATE_PLACEHOLDER='{{ release-date }}'
+  DATE=$( date --iso -u )
+  WITH_DATE=''${TEMPLATE/$DATE_PLACEHOLDER/$DATE}
 
-   PULSE_PLACEHOLDER='{{ pulse-notes }}'
-   # magic
-   # gets a markdown version of pulse
-   # greps for everything from summary to details (not including details heading)
-   # deletes null characters that throw warnings in bash
-   PULSE_NOTES=$( curl -s https://md.unmediumed.com/${release-pulse.url} | grep -Pzo "(?s)(###\s+\**Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
-   WITH_NOTES=''${WITH_DATE/$PULSE_PLACEHOLDER/$PULSE_NOTES}
-   echo "$WITH_NOTES"
+  PULSE_PLACEHOLDER='{{ pulse-notes }}'
+  # magic
+  # gets a markdown version of pulse
+  # greps for everything from summary to details (not including details heading)
+  # deletes null characters that throw warnings in bash
+  PULSE_NOTES=$( curl -s https://md.unmediumed.com/${release-pulse.url} | grep -Pzo "(?s)(###\s+\**Summary.*)(?=###\s+\**Details)" | tr -d '\0' )
+  WITH_NOTES=''${WITH_DATE/$PULSE_PLACEHOLDER/$PULSE_NOTES}
+  echo "$WITH_NOTES"
   '';
 in
 script

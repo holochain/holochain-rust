@@ -5,7 +5,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   cargo build -p holochain --release && cargo install -f --path conductor
+  cargo build -p holochain --release && cargo install -f --path conductor
   '';
 in
 script

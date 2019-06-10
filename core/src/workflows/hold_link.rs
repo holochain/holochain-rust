@@ -80,16 +80,24 @@ pub async fn hold_link_workflow<'a>(
         &context
     ))
     .map_err(|err| {
-        context.log(format!("debug/workflow/hold_link: invalid! {:?}", err));
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
+            context.log(format!("debug/workflow/hold_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies));
             add_pending_validation(
                 entry_with_header.to_owned(),
                 dependencies.clone(),
                 ValidatingWorkflow::HoldLink,
                 &context,
             );
+            HolochainError::ValidationPending
+        } else {
+            context.log(format!(
+                "info/workflow/hold_link: Link {:?} is NOT valid! Validation error: {:?}",
+                entry_with_header.entry,
+                err,
+            ));
+            HolochainError::from(err)
         }
-        HolochainError::ValidationPending
+
     })?;
     context.log(format!("debug/workflow/hold_link: is valid!"));
 

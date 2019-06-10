@@ -2,6 +2,7 @@ extern crate proc_macro2;
 
 use crate::zome_code_def::{
     EntryDefCallbacks, FnDeclaration, FnParameter, GenesisCallback, ReceiveCallback, ZomeCodeDef,
+    ValidateAgentCallback,
     ZomeFunction, ZomeFunctions,
 };
 
@@ -9,6 +10,7 @@ use hdk::holochain_core_types::dna::{fn_declarations::TraitFns, zome::ZomeTraits
 use std::collections::BTreeMap;
 
 static GENESIS_ATTRIBUTE: &str = "genesis";
+static VALIDATE_AGENT_ATTRIBUTE: &str = "genesis";
 static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
 static ENTRY_DEF_ATTRIBUTE: &str = "entry_def";
 static RECEIVE_CALLBACK_ATTRIBUTE: &str = "receive";
@@ -17,6 +19,7 @@ pub trait IntoZome {
     fn extract_zome_fns(&self) -> ZomeFunctions;
     fn extract_entry_defs(&self) -> EntryDefCallbacks;
     fn extract_genesis(&self) -> GenesisCallback;
+    fn extract_validate_agent(&self) -> ValidateAgentCallback;
     fn extract_traits(&self) -> ZomeTraits;
     fn extract_receive_callback(&self) -> Option<ReceiveCallback>;
     fn extract_extra(&self) -> Vec<syn::Item>;
@@ -26,6 +29,7 @@ pub trait IntoZome {
             traits: self.extract_traits(),
             entry_def_fns: self.extract_entry_defs(),
             genesis: self.extract_genesis(),
+            validate_agent: self.extract_validate_agent(),
             receive_callback: self.extract_receive_callback(),
             zome_fns: self.extract_zome_fns(),
             extra: self.extract_extra(),
@@ -122,6 +126,53 @@ impl IntoZome for syn::ItemMod {
             _ => {
                 emit_error(&self.ident,
                     "Multiple functions tagged as genesis callback! Only one is permitted per zome definition.");
+                panic!()
+            }
+        }
+    }
+
+    fn extract_validate_agent(&self) -> ValidateAgentCallback {
+        // find all the functions tagged as the genesis callback
+        let callbacks: Vec<syn::ItemFn> = funcs_iter(self)
+            .filter(is_tagged_with(VALIDATE_AGENT_ATTRIBUTE))
+            .fold(Vec::new(), |mut acc, func| {
+                acc.push(func);
+                acc
+            });
+        // only a single function can be tagged as validate_agent in a valid Zome.
+        // Error if there is more than one
+        // Also error if tagged function
+        match callbacks.len() {
+            0 => {
+                emit_error(&self.ident,
+                    "No validate_agent function defined! A zome definition requires a callback tagged with #[validate_agent]");
+                panic!()
+            }
+            1 => {
+                let callback = callbacks[0].clone();
+                let fn_def = zome_fn_dec_from_syn(&callback);
+
+                // must have the valid function signature which is ($ident: EntryValidationData::<AgentId>)
+                let validation_data_param = match fn_def.inputs.len() {
+                    1 => {
+                        let param = fn_def.inputs[0].clone();
+                        param.ident
+                    },
+                    _ => {
+                        emit_error(&self.ident,
+                            "incorrect number of params for validate_agent callback. Must have a single param with type `EntryValidationData::<AgentId>`");
+                        panic!()
+                    }
+                };
+                    
+                ValidateAgentCallback{
+                    validation_data_param,
+                    code: (*callback.block)
+                }
+            },
+            _ => {
+                emit_error(&self.ident,
+                    "Multiple functions tagged as validate_agent callback! Only one is permitted per zome definition.");
                 panic!()
             }
         }

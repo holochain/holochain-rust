@@ -180,6 +180,10 @@ macro_rules! load_string {
 ///     genesis: || {
 ///         Ok(())
 ///     }
+///     
+///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+///         Ok(())
+///     }
 ///
 ///     receive: |from, payload| {
 ///       // just return what was received, but modified

@@ -10,7 +10,7 @@ use hdk::holochain_core_types::dna::{fn_declarations::TraitFns, zome::ZomeTraits
 use std::collections::BTreeMap;
 
 static GENESIS_ATTRIBUTE: &str = "genesis";
-static VALIDATE_AGENT_ATTRIBUTE: &str = "genesis";
+static VALIDATE_AGENT_ATTRIBUTE: &str = "validate_agent";
 static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
 static ENTRY_DEF_ATTRIBUTE: &str = "entry_def";
 static RECEIVE_CALLBACK_ATTRIBUTE: &str = "receive";
@@ -247,6 +247,7 @@ impl IntoZome for syn::ItemMod {
                                 && !is_tagged_with(GENESIS_ATTRIBUTE)(func)
                                 && !is_tagged_with(ENTRY_DEF_ATTRIBUTE)(func)
                                 && !is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE)(func)
+                                && !is_tagged_with(VALIDATE_AGENT_ATTRIBUTE)(func)
                         } else {
                             true // and anything that is not a function
                         }

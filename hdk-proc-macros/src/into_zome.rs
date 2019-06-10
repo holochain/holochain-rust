@@ -1,9 +1,8 @@
 extern crate proc_macro2;
 
 use crate::zome_code_def::{
-    EntryDefCallbacks, FnDeclaration, FnParameter, GenesisCallback, ReceiveCallback, ZomeCodeDef,
-    ValidateAgentCallback,
-    ZomeFunction, ZomeFunctions,
+    EntryDefCallbacks, FnDeclaration, FnParameter, GenesisCallback, ReceiveCallback,
+    ValidateAgentCallback, ZomeCodeDef, ZomeFunction, ZomeFunctions,
 };
 
 use hdk::holochain_core_types::dna::{fn_declarations::TraitFns, zome::ZomeTraits};
@@ -157,19 +156,19 @@ impl IntoZome for syn::ItemMod {
                     1 => {
                         let param = fn_def.inputs[0].clone();
                         param.ident
-                    },
+                    }
                     _ => {
                         emit_error(&self.ident,
                             "incorrect number of params for validate_agent callback. Must have a single param with type `EntryValidationData::<AgentId>`");
                         panic!()
                     }
                 };
-                    
-                ValidateAgentCallback{
+
+                ValidateAgentCallback {
                     validation_data_param,
-                    code: (*callback.block)
+                    code: (*callback.block),
                 }
-            },
+            }
             _ => {
                 emit_error(&self.ident,
                     "Multiple functions tagged as validate_agent callback! Only one is permitted per zome definition.");

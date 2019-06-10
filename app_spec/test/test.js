@@ -329,7 +329,6 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
     { "base":alice.agentId, "content": "Posty" }
   )
 
-  console.log("alice posts" + JSON.stringify(check))
 
   //creates a simple link with bob as author with chain header
   await bob.callSync("simple", "create_link",
@@ -337,18 +336,17 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   )
   
   //get all created links so far alice
-  const alice_posts = bob.call("simple", "get_my_links",
+  const alice_posts = await bob.call("simple", "get_my_links",
     { "base": alice.agentId }
   )
 
-  console.log("check posts" + JSON.stringify(alice_posts))
 
   //expect two links from alice
   t.ok(alice_posts.Ok)
   t.equal(alice_posts.Ok.links.length,2 );
 
   //get all created links so far for bob
-  const bob_posts = bob.call("simple", "get_my_links",
+  const bob_posts = await bob.call("simple", "get_my_links",
     { "base": alice.agentId }
   )
 
@@ -361,9 +359,9 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   await alice.callSync("simple", "delete_link", { "base":alice.agentId, "content": "Posty" })
 
   // get links from bob
-  const bob_agent_posts_expect_empty = bob.call("simple", "get_my_links",{ "base": alice.agentId })
+  const bob_agent_posts_expect_empty = await bob.call("simple", "get_my_links",{ "base": alice.agentId })
   //get links from alice
-  const alice_agent_posts_expect_empty = alice.call("simple", "get_my_links",{ "base": alice.agentId })
+  const alice_agent_posts_expect_empty = await alice.call("simple", "get_my_links",{ "base": alice.agentId })
   
   //bob expects zero links
   t.ok(bob_agent_posts_expect_empty.Ok)
@@ -377,7 +375,7 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   await alice.callSync("simple", "create_link",{ "base":alice.agentId, "content": "Posty" })
 
   //get alice posts 
-  const alice_posts_not_empty = bob.call("simple", "get_my_links",{ "base": alice.agentId })
+  const alice_posts_not_empty = await bob.call("simple", "get_my_links",{ "base": alice.agentId })
   
    //expect 1 post
   t.ok(alice_posts_not_empty.Ok)

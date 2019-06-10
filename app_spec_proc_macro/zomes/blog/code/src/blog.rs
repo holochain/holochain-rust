@@ -90,14 +90,16 @@ fn check_sum_args(num1: u32, num2: u32) -> SumInput {
     }
 }
 
-pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
-    hdk::call(
+pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
+    let call_json = hdk::call(
         hdk::THIS_INSTANCE,
         "summer",
         Address::from(PUBLIC_TOKEN.to_string()),
         "sum",
         check_sum_args(num1, num2).into(),
-    )
+    )?;
+    let result: ZomeApiResult<u32> = call_json.try_into()?;
+    result
 }
 
 pub fn handle_ping(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
@@ -557,14 +559,14 @@ pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<En
         raw_json
     ))?;
 
-    let entry: Option<Entry> = raw_json.try_into()?;
+    let entry: ZomeApiResult<Option<Entry>> = raw_json.try_into()?;
 
     hdk::debug(format!(
         "********DEBUG******** BRIDGING ACTUAL response from hosting-bridge {:?}",
         entry
     ))?;
 
-    Ok(entry)
+    entry
 }
 
 #[cfg(test)]

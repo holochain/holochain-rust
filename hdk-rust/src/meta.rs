@@ -3,7 +3,7 @@
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
-use crate::{api::G_MEM_STACK, entry_definition::ValidatingEntryType};
+use crate::{api::G_MEM_STACK, entry_definition::{ValidatingEntryType, AgentValidator}};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
@@ -15,7 +15,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::{
     api_serialization::validation::{
-        EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
+        EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs, AgentIdValidationArgs,
     },
     holochain_core_types::error::RibosomeErrorCode,
     memory::{
@@ -41,12 +41,14 @@ struct PartialZome {
 #[allow(improper_ctypes)]
 pub struct ZomeDefinition {
     pub entry_types: Vec<ValidatingEntryType>,
+    pub agent_entry_validator: Option<AgentValidator>,
 }
 
 impl ZomeDefinition {
     fn new() -> ZomeDefinition {
         ZomeDefinition {
             entry_types: Vec::new(),
+            agent_entry_validator: None,
         }
     }
 
@@ -139,9 +141,38 @@ pub extern "C" fn __hdk_validate_app_entry(
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_agent_entry(
-    _encoded_allocation_of_input: RibosomeEncodingBits,
+    encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+    if let Err(allocation_error) =
+        ::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+    {
+        return allocation_error.as_ribosome_encoding();
+    }
+
+    let mut zd = ZomeDefinition::new();
+    unsafe { zome_setup(&mut zd) };
+
+    // get the validator code
+    let mut validator = match zd.agent_entry_validator {
+        None => return RibosomeEncodedValue::from(HolochainError::from("Zome definition does not have a registered agent_id validation callback")).into(),
+        Some(v) => v,
+    };
+
+    // Deserialize input
+    let input: AgentIdValidationArgs = match load_ribosome_encoded_json(encoded_allocation_of_input) {
+        Ok(v) => v,
+        Err(e) => return RibosomeEncodedValue::from(e).into(),
+    };
+
+    let validation_result = (*validator)(input.validation_data);
+
+    match validation_result {
+        Ok(()) => RibosomeEncodedValue::Success.into(),
+        Err(fail_string) => return_code_for_allocation_result(
+            crate::global_fns::write_json(JsonString::from_json(&fail_string)),
+        )
+        .into(),
+    }
 }
 
 #[no_mangle]

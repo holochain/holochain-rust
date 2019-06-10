@@ -6,6 +6,7 @@ use holochain_core_types::{
     dna::entry_types::EntryTypeDef,
     entry::{entry_type::EntryType, AppEntryValue, Entry},
     validation::{EntryValidationData, LinkValidationData, ValidationPackageDefinition},
+    agent::AgentId,
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 use std::convert::TryFrom;
@@ -13,6 +14,8 @@ use std::convert::TryFrom;
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 
 pub type Validator = Box<FnMut(EntryValidationData<Entry>) -> Result<(), String> + Sync>;
+
+pub type AgentValidator = Box<FnMut(EntryValidationData<AgentId>) -> Result<(), String> + Sync>;
 
 pub type LinkValidator = Box<FnMut(LinkValidationData) -> Result<(), String> + Sync>;
 

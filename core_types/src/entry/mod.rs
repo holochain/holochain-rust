@@ -19,7 +19,7 @@ use crud_status::CrudStatus;
 use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
 use error::{HcResult, HolochainError};
-use json::{default_to_json, default_try_from_json, JsonString, RawString};
+use json::{JsonString, RawString};
 use link::{link_data::LinkData, link_list::LinkList};
 use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
@@ -74,19 +74,6 @@ pub enum Entry {
     ChainMigrate(ChainMigrate),
     CapTokenClaim(CapTokenClaim),
     CapTokenGrant(CapTokenGrant),
-}
-
-impl From<Option<Entry>> for JsonString {
-    fn from(maybe_entry: Option<Entry>) -> Self {
-        default_to_json(maybe_entry)
-    }
-}
-
-impl TryFrom<JsonString> for Option<Entry> {
-    type Error = HolochainError;
-    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
-        default_try_from_json(j)
-    }
 }
 
 impl Entry {

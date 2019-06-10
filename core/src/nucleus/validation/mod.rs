@@ -15,6 +15,7 @@ mod header_address;
 mod link_entry;
 mod provenances;
 mod remove_entry;
+mod agent_entry;
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 /// A failed validation.
@@ -116,13 +117,11 @@ pub async fn validate_entry(
         // a grant should always be private, so it should always pass
         EntryType::CapTokenGrant => Ok(()),
 
-        // TODO: actually check agent against app specific membrane validation rule
-        // like for instance: validate_agent_id(
-        //                      entry.clone(),
-        //                      validation_data,
-        //                      context,
-        //                    )?
-        EntryType::AgentId => Ok(()),
+        EntryType::AgentId => await!(agent_entry::validate_agent_entry(
+            entry.clone(),
+            validation_data,
+            context,
+        )),
 
         _ => Err(ValidationError::NotImplemented),
     }

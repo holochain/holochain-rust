@@ -374,49 +374,49 @@ pub mod tests {
 
     #[test]
     fn validate_attribute_paths() {
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("abc".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_ok());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("abc123".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_ok());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("123".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_ok());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("link_:{}".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("link_\"".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("link_/".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("link_\\".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("link_?".into(), "".into()),
             &test_eav_entity().address()

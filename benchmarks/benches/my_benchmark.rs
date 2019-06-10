@@ -1,14 +1,19 @@
 #[macro_use]
 extern crate bencher;
-extern crate holochain_cas_implementations;
+extern crate lib3h_persistence_file;
+extern crate lib3h_persistence_mem;
+extern crate lib3h_persistence_pickle;
 extern crate holochain_core_types;
 extern crate tempfile;
 
 use self::tempfile::tempdir;
 use bencher::Bencher;
-use holochain_cas_implementations::eav::{
-    file::EavFileStorage, memory::EavMemoryStorage, pickle::EavPickleStorage,
+use lib3h_persistence_file::eav::{
+    file::EavFileStorage
 };
+
+use lib3h_persistence_mem::eav::memory::EavMemoryStorage;
+use lib3h_persistence_pickle::eav::pickle::EavPickleStorage;
 use lib3h_persistence_api::cas::{content::ExampleAddressableContent, storage::EavTestSuite};
 
 fn bench_memory_eav_one_to_many(b: &mut Bencher) {

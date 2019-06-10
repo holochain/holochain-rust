@@ -152,9 +152,11 @@ pub extern "C" fn __hdk_validate_agent_entry(
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
 
-    // get the validator code
+    //get the validator code
     let mut validator = match zd.agent_entry_validator {
-        None => return RibosomeEncodedValue::from(HolochainError::from("Zome definition does not have a registered agent_id validation callback")).into(),
+        None => return return_code_for_allocation_result(
+            crate::global_fns::write_json(JsonString::from_json("No agent validation callback registered for zome.")),
+        ).into(),
         Some(v) => v,
     };
 

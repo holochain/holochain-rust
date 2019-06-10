@@ -1,5 +1,6 @@
 use holochain_core_types::{
     entry::Entry,
+    agent::AgentId,
     error::HolochainError,
     json::*,
     link::Link,
@@ -9,6 +10,11 @@ use holochain_core_types::{
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct EntryValidationArgs {
     pub validation_data: EntryValidationData<Entry>,
+}
+
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
+pub struct AgentIdValidationArgs {
+    pub validation_data: EntryValidationData<AgentId>,
 }
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, PartialEq, Clone)]

@@ -740,7 +740,7 @@ scenario('get_sources_after_same_link', async (s, t, { alice, bob }) => {
 })
 
 
-scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
+scenario('get_sources_crud', async (s, t, { alice, bob }) => {
 
    await alice.callSync("blog", "create_post_with_agent",
     { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
@@ -749,12 +749,12 @@ scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
   { "agent_id": alice.agentId ,"content": "Holo world 2", "in_reply_to": null }
   );
 
-  const alice_posts_live= alice.call("blog","posts_by_agent",
+  const alice_posts_live= await alice.call("blog","posts_by_agent",
   {
     "agent" : alice.agentId
   })
 
-  const bob_posts_live= bob.call("blog","posts_by_agent",
+  const bob_posts_live= await bob.call("blog","posts_by_agent",
   {
     "agent" : alice.agentId
   })
@@ -770,11 +770,11 @@ scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
     "content" : "Holo world"
   });
 
-  const bob_posts_deleted = bob.call("blog","posts_by_agent_deleted",
+  const bob_posts_deleted = await bob.call("blog","posts_by_agent_deleted",
   {
     "agent" : alice.agentId
   });
-  const alice_posts_deleted = alice.call("blog","posts_by_agent_deleted",
+  const alice_posts_deleted = await alice.call("blog","posts_by_agent_deleted",
   {
     "agent" : alice.agentId
   });
@@ -784,11 +784,11 @@ scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
   t.equal("deleted",alice_posts_deleted.Ok.links[0].status);
   t.equal("deleted",bob_posts_deleted.Ok.links[0].status);
 
-  const bob_posts_all = bob.call("blog","posts_by_agent_all",
+  const bob_posts_all = await bob.call("blog","posts_by_agent_all",
   {
     "agent" : alice.agentId
   });
-  const alice_posts_all = alice.call("blog","posts_by_agent_all",
+  const alice_posts_all = await alice.call("blog","posts_by_agent_all",
   {
     "agent" : alice.agentId
   });
@@ -803,7 +803,7 @@ scenario2.runTape('get_sources_crud', async (t, { alice, bob }) => {
 
 })
 
-
+scenario('create/get_post roundtrip', async (s, t, { alice }) => {
   const content = "Holo world"
   const in_reply_to = null
   const params = { content, in_reply_to }

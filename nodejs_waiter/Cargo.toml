@@ -9,7 +9,7 @@ colored = "=1.7.0"
 neon = "=0.2.0"
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
-lib3h_persistence_api = { path = "../../lib3h/crates/persistence_api" }
+lib3h_persistence_api = "=0.0.1-alpha1"
 holochain_dpki = { path = "../dpki" }
 lib3h_sodium = "=0.0.1-alpha1"
 crossbeam-channel = "=0.3.8"

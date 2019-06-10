@@ -12,6 +12,8 @@ Vagrant.configure("2") do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
+  # config.vm.box = "holochain-vagrant"
+  # config.vm.box_url = "https://holochain-vagrant-builds.s3-us-west-2.amazonaws.com/holochain-vagrant.zip"
   config.vm.box = "nixos/nixos-18.03-x86_64"
 
   # Disable automatic box update checking. If you disable this, then
@@ -54,10 +56,10 @@ Vagrant.configure("2") do |config|
   #
   config.vm.provider "virtualbox" do |vb|
   #   # Display the VirtualBox GUI when booting the machine
-    vb.gui = true
+    vb.gui = false
   #
     # Customize the amount of memory on the VM:
-    vb.memory = "10000"
+    vb.memory = "4096"
     vb.cpus = "4"
     vb.customize ["modifyvm", :id, "--hwvirtex", "off"]
   end
@@ -65,20 +67,21 @@ Vagrant.configure("2") do |config|
   # View the documentation for the provider you are using for more
   # information on available options.
 
-  # Enable provisioning with a shell script. Additional provisioners such as
-  # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
-  # documentation for more information about their specific syntax and use.
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   apt-get update
-  #   apt-get install -y apache2
-  # SHELL
+  # vagrant plugin install vagrant-nixos-plugin
+  # config.vm.provision :shell, inline: "fallocate -l 4G /swapfile && chmod 0600 /swapfile && mkswap /swapfile && swapon /swapfile"
+
+  # add some simple dev tools
+  config.vm.provision :nixos,
+    run: 'always',
+    expression: {
+      swapDevices: [ { device: "/swapfile", size: 16384 } ],
+      environment: {
+        systemPackages: [ :htop, :dos2unix, :vim ]
+      }
+    }
+
 
   # https://askubuntu.com/questions/317338/how-can-i-increase-disk-size-on-a-vagrant-vm
-  config.disksize.size = '50GB'
+  # config.disksize.size = '50GB'
 
-config.vm.provision "shell", inline: <<-SHELL
-  # curl https://nixos.org/nix/install | sh
-  # . /home/vagrant/.nix-profile/etc/profile.d/nix.sh
-  # ( cd /vagrant && nix-shell --run hc-test )
-SHELL
 end

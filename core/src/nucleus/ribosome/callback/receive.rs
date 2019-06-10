@@ -16,11 +16,7 @@ use std::sync::Arc;
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct ReceiveReturnValue(Result<String, String>);
 
-pub fn receive(
-    context: Arc<Context>,
-    zome: &str,
-    parameters: &CallbackParams,
-) -> CallbackResult {
+pub fn receive(context: Arc<Context>, zome: &str, parameters: &CallbackParams) -> CallbackResult {
     let params = match parameters {
         CallbackParams::Receive(params) => params,
         _ => return CallbackResult::NotImplemented("receive/1".into()),

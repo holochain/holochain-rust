@@ -4,8 +4,8 @@
 pub mod genesis;
 pub mod links_utils;
 pub mod receive;
-pub mod validation_package;
 pub mod validate_grant;
+pub mod validation_package;
 
 use crate::{
     context::Context,
@@ -26,7 +26,8 @@ use holochain_core_types::{
     validation::ValidationPackageDefinition,
 };
 use holochain_wasm_utils::{
-    api_serialization::{receive::ReceiveParams, validate_grant::ValidateGrantParams}, memory::allocation::WasmAllocation,
+    api_serialization::{receive::ReceiveParams, validate_grant::ValidateGrantParams},
+    memory::allocation::WasmAllocation,
 };
 use num_traits::FromPrimitive;
 use serde_json;
@@ -50,7 +51,6 @@ pub enum Callback {
 
     /// validate_grant(capability_id: String, assignees: Vec<Address>) -> Result<<Vec<String>,HolochainError>
     ValidateGrant,
-
 }
 
 impl FromStr for Callback {
@@ -140,7 +140,7 @@ pub enum CallbackResult {
     NotImplemented(String),
     ValidationPackageDefinition(ValidationPackageDefinition),
     ReceiveResult(String),
-    ValidateGrantResult(Result<Vec<String>,HolochainError>),
+    ValidateGrantResult(Result<Vec<String>, HolochainError>),
 }
 
 impl From<CallbackResult> for JsonString {
@@ -345,7 +345,12 @@ pub mod tests {
         }
 
         // str_to_index()
-        for (input, output) in vec![("", 0), ("genesis", 1), ("receive", 2), ("validate_grant", 3)] {
+        for (input, output) in vec![
+            ("", 0),
+            ("genesis", 1),
+            ("receive", 2),
+            ("validate_grant", 3),
+        ] {
             assert_eq!(output, Callback::str_to_index(input));
         }
 

@@ -5,7 +5,7 @@ use crate::error::{HcResult, HolochainError};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json;
 use std::{
-    convert::TryFrom,
+    convert::{TryFrom, TryInto},
     fmt::{Debug, Display, Formatter, Result as FmtResult},
 };
 
@@ -147,6 +147,8 @@ pub trait JsonError {}
 
 impl JsonError for HolochainError {}
 
+// conversions from result types
+
 fn result_to_json_string<T: Into<JsonString>, E: Into<JsonString>>(
     result: Result<T, E>,
 ) -> JsonString {
@@ -163,19 +165,29 @@ fn result_to_json_string<T: Into<JsonString>, E: Into<JsonString>>(
     ))
 }
 
-impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> for JsonString {
+impl<T, E> From<Result<T, E>> for JsonString
+where
+    T: Into<JsonString>,
+    E: Into<JsonString>,
+{
     fn from(result: Result<T, E>) -> JsonString {
         result_to_json_string(result)
     }
 }
 
-impl<T: Into<JsonString>> From<Result<T, String>> for JsonString {
+impl<T> From<Result<T, String>> for JsonString
+where
+    T: Into<JsonString>,
+{
     fn from(result: Result<T, String>) -> JsonString {
         result_to_json_string(result.map_err(|e| RawString::from(e)))
     }
 }
 
-impl<E: Into<JsonString>> From<Result<String, E>> for JsonString {
+impl<E> From<Result<String, E>> for JsonString
+where
+    E: Into<JsonString>,
+{
     fn from(result: Result<String, E>) -> JsonString {
         result_to_json_string(result.map(|v| RawString::from(v)))
     }
@@ -188,6 +200,46 @@ impl From<Result<String, String>> for JsonString {
                 .map(|v| RawString::from(v))
                 .map_err(|e| RawString::from(e)),
         )
+    }
+}
+
+// conversions to result types
+
+impl<T, E> TryInto<Result<T, E>> for JsonString
+where
+    T: Into<JsonString> + DeserializeOwned,
+    E: Into<JsonString> + DeserializeOwned,
+{
+    type Error = HolochainError;
+    fn try_into(self) -> Result<Result<T, E>, Self::Error> {
+        default_try_from_json(self)
+    }
+}
+
+impl<T> TryInto<Result<T, String>> for JsonString
+where
+    T: Into<JsonString> + DeserializeOwned,
+{
+    type Error = HolochainError;
+    fn try_into(self) -> Result<Result<T, String>, Self::Error> {
+        default_try_from_json(self)
+    }
+}
+
+impl<E> TryInto<Result<String, E>> for JsonString
+where
+    E: Into<JsonString> + DeserializeOwned,
+{
+    type Error = HolochainError;
+    fn try_into(self) -> Result<Result<String, E>, Self::Error> {
+        default_try_from_json(self)
+    }
+}
+
+impl TryInto<Result<String, String>> for JsonString {
+    type Error = HolochainError;
+    fn try_into(self) -> Result<Result<String, String>, Self::Error> {
+        default_try_from_json(self)
     }
 }
 
@@ -209,6 +261,69 @@ impl TryFrom<JsonString> for () {
 impl Display for JsonString {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{}", String::from(self),)
+    }
+}
+
+// ## Conversions from Option types ##
+
+// Options are a special case for several reasons. Firstly they are handled
+// in a special way by serde:
+
+//     "Users tend to have different expectations around the Option enum compared to other enums.
+//     Serde JSON will serialize Option::None as null and Option::Some as just the contained value."
+
+// The other issue is that option implements generic From<T> so you can do calls like
+// `let s: Option<&str> = "hi".into()`
+// To get around this we need to go through an intermediate type JsonStringOption
+
+#[derive(Shrinkwrap, Deserialize)]
+pub struct JsonStringOption<T>(Option<T>);
+
+impl<T> JsonStringOption<T> {
+    pub fn to_option(self) -> Option<T> {
+        self.0
+    }
+}
+
+impl<T> Into<Option<T>> for JsonStringOption<T> {
+    fn into(self) -> Option<T> {
+        self.to_option()
+    }
+}
+
+impl<T> TryInto<JsonStringOption<T>> for JsonString
+where
+    T: Into<JsonString> + DeserializeOwned,
+{
+    type Error = HolochainError;
+    fn try_into(self) -> Result<JsonStringOption<T>, Self::Error> {
+        let o: Option<T> = default_try_from_json(self)?;
+        Ok(JsonStringOption(o))
+    }
+}
+
+impl TryInto<JsonStringOption<String>> for JsonString {
+    type Error = HolochainError;
+    fn try_into(self) -> Result<JsonStringOption<String>, Self::Error> {
+        let o: Option<String> = default_try_from_json(self)?;
+        Ok(JsonStringOption(o))
+    }
+}
+
+// conversions from options to JsonString
+
+impl<T> From<Option<T>> for JsonString
+where
+    T: Debug + Serialize + Into<JsonString>,
+{
+    fn from(o: Option<T>) -> JsonString {
+        default_to_json(o)
+    }
+}
+
+impl From<Option<String>> for JsonString {
+    fn from(o: Option<String>) -> JsonString {
+        default_to_json(o)
     }
 }
 
@@ -318,10 +433,10 @@ impl TryFrom<JsonString> for RawString {
 pub mod tests {
     use crate::{
         error::HolochainError,
-        json::{JsonString, RawString},
+        json::{JsonString, JsonStringOption, RawString},
     };
     use serde_json;
-    use std::convert::TryFrom;
+    use std::convert::{TryFrom, TryInto};
 
     #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq, Clone)]
     struct DeriveTest {
@@ -448,5 +563,56 @@ pub mod tests {
             String::from("1.0"),
             String::from(JsonString::from(RawString::from(1))),
         );
+    }
+
+    #[test]
+    fn result_from_json_string() {
+        let j = JsonString::from_json(r#"{"Ok":"raw-string-content"}"#);
+        let r: Result<RawString, HolochainError> = j
+            .try_into()
+            .expect("Could not convert json string to result type");
+
+        assert_eq!(r.unwrap(), RawString::from("raw-string-content"),);
+    }
+
+    #[test]
+    fn result_from_json_string_with_strings() {
+        let j = JsonString::from_json(r#"{"Ok":"string-content"}"#);
+        let r: Result<String, String> = j
+            .try_into()
+            .expect("Could not convert json string to result type");
+
+        assert_eq!(r.unwrap(), String::from("string-content"),);
+    }
+
+    #[test]
+    fn options_are_converted_to_null_or_value_respectively() {
+        let o: Option<u32> = None;
+        let j: JsonString = o.into();
+        assert_eq!(j, JsonString::from_json("null"));
+
+        let o: Option<u32> = Some(10);
+        let j: JsonString = o.into();
+        assert_eq!(j, JsonString::from_json("10"));
+
+        let o: Option<String> = Some("test".to_string());
+        let j: JsonString = o.into();
+        assert_eq!(j, JsonString::from_json("\"test\""));
+    }
+
+    #[test]
+    fn json_string_to_option() {
+        let j = JsonString::from("10");
+        let o: JsonStringOption<u32> = j.try_into().expect("failed conversion from JsonString");
+        assert_eq!(o.to_option(), Some(10));
+
+        let j = JsonString::from("null");
+        let o: JsonStringOption<u32> = j.try_into().expect("failed conversion from JsonString");
+        assert_eq!(o.to_option(), None);
+
+        // tricky!
+        let j = JsonString::from("\"null\"");
+        let o: JsonStringOption<String> = j.try_into().expect("failed conversion from JsonString");
+        assert_eq!(o.to_option(), Some("null".to_string()));
     }
 }

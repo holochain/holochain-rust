@@ -71,9 +71,9 @@ pub enum LinkActionKind {
 #[cfg(test)]
 pub mod tests {
 
-    use crate::{
-        cas::content::AddressableContent,
-        entry::{test_entry_a, test_entry_b},
+   use lib3h_persistence_api::cas::content::AddressableContent;
+     use crate::{
+       entry::{test_entry_a, test_entry_b},
         link::{Link, LinkActionKind, LinkTag, LinkType},
     };
 

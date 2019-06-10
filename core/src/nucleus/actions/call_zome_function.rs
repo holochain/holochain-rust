@@ -322,9 +322,9 @@ pub mod tests {
         nucleus::{actions::tests::test_dna, tests::*},
         workflows::author_entry::author_entry,
     };
-    use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
-        dna::capabilities::CapabilityRequest,
+    use lib3h_persistence_api::cas::content::{Address, AddressableContent};
+     use holochain_core_types::{
+       dna::capabilities::CapabilityRequest,
         entry::{
             cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
             Entry,

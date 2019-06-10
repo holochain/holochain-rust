@@ -9,6 +9,8 @@ holochain_core = { path = "../core" }
 holochain_common = { path = "../common" }
 holochain_conductor_api = { path = "../conductor_api" }
 holochain_dpki = { path = "../dpki" }
+lib3h_persistence_api = { path = "../../lib3h/crates/persistence_api" }
+lib3h_persistence_file = { path = "../../lib3h/crates/persistence_file" }
 lib3h_sodium = "=0.0.1-alpha1"
 holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "=0.2.15"

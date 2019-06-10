@@ -78,8 +78,12 @@ pub mod tests {
         Defn,
     };
     use holochain_core_types::{
-        cas::content::Address, dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult,
-        json::JsonString, signature::Signature,
+        dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult,
+        signature::Signature,
+    };
+    use lib3h_persistence_api::{
+        cas::content::Address,
+        json::JsonString
     };
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use std::convert::TryFrom;

@@ -126,11 +126,13 @@ pub mod tests {
     use test_utils;
 
     use holochain_core_types::{
-        cas::content::AddressableContent,
-        dna::capabilities::CapabilityRequest,
+       dna::capabilities::CapabilityRequest,
         error::{DnaError, HolochainError},
+       signature::Signature,
+    };
+    use lib3h_persistence_api::{
         json::{JsonString, RawString},
-        signature::Signature,
+        cas::content::AddressableContent,
     };
 
     /// dummy zome name compatible with ZomeFnCall

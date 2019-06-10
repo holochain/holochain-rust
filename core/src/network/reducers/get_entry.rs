@@ -73,8 +73,12 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
+    use lib3h_persistence_api::{
+        cas::content::AddressableContent
+    };
+
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, error::HolochainError,
+        entry::test_entry, error::HolochainError,
     };
 
     #[test]

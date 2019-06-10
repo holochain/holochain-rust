@@ -13,12 +13,14 @@ pub mod tests {
         context::Context,
         instance::{tests::test_instance_and_context_by_name, Instance},
     };
-    use holochain_core_types::{
+    use lib3h_persistence_api::{
         cas::content::AddressableContent,
-        chain_header::ChainHeader,
-        dna::{entry_types::EntryTypeDef, Dna},
-        entry::Entry,
         json::RawString,
+    };
+    use holochain_core_types::{
+      chain_header::ChainHeader,
+       dna::{entry_types::EntryTypeDef, Dna},
+       entry::Entry,
     };
 
     use holochain_wasm_utils::wasm_target_dir;

@@ -2,7 +2,8 @@ use crate::{
     context::Context,
     instance::{tests::test_context, Instance},
 };
-use lib3h_persistence_api::{cas::content::Address, dna::Dna};
+use lib3h_persistence_api::cas::content::Address;
+use holochain_core_types::dna::Dna;
 use std::sync::Arc;
 
 /// create a test instance

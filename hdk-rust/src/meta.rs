@@ -304,11 +304,10 @@ pub mod tests {
             entry_types::Sharing,
             zome::{ZomeFnDeclarations, ZomeTraits},
         },
-        error::HolochainError,
-        json::JsonString,
-    };
-    use meta::PartialZome;
-    use std::collections::BTreeMap;
+   };
+   use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
+   use meta::PartialZome;
+   use std::collections::BTreeMap;
 
     // Adding empty zome_setup() so that the cfg(test) build can link.
     #[no_mangle]

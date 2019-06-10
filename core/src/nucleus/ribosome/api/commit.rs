@@ -47,11 +47,13 @@ pub mod tests {
         Defn,
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         entry::test_entry,
         error::ZomeApiInternalResult,
-        json::JsonString,
         signature::{Provenance, Signature},
+    };
+    use lib3h_persistence_api::{
+        cas::content::{Address, AddressableContent},
+        json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::commit_entry::{
         CommitEntryArgs, CommitEntryOptions, CommitEntryResult,

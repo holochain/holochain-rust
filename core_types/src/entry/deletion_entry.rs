@@ -24,7 +24,8 @@ impl DeletionEntry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{cas::content::AddressableContent, entry::test_entry_a};
+    use lib3h_persistence_api::{cas::content::AddressableContent};
+    use crate::entry::test_entry_a;
 
     pub fn test_deletion_entry() -> DeletionEntry {
         let entry = test_entry_a();

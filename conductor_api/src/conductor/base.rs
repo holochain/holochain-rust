@@ -18,13 +18,13 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::AgentId, dna::Dna, error::HolochainError,
+    agent::AgentId, dna::Dna, error::{HcResult, HolochainError},
 };
 
 use lib3h_persistence_api::{
     cas::content::AddressableContent,
     json::JsonString,
-    error::PersistenceResult
+//    error::PersistenceResult
 };
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
@@ -142,10 +142,6 @@ impl Conductor {
         let rules = config.logger.rules.clone();
         lib3h_sodium::check_init();
 
-        let mut load_dna = 
-            |s| {Self::load_dna(s).map_err(|err| err.into())};
-        let dna_loader =
-            Arc::new(Box::new(load_dna));
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
@@ -156,7 +152,7 @@ impl Conductor {
             signal_multiplexer_kill_switch: None,
             config,
             key_loader: Arc::new(Box::new(Self::load_key)),
-            dna_loader: dna_loader,
+            dna_loader: Arc::new(Box::new(Self::load_dna)),
             ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
             signal_tx: None,
             logger: DebugLogger::new(rules),
@@ -782,12 +778,13 @@ impl Conductor {
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
-    fn load_dna(file: &PathBuf) -> PersistenceResult<Dna> {
+    fn load_dna(file: &PathBuf) -> HcResult<Dna> {
         notify(format!("Reading DNA from {}", file.display()));
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
         Dna::try_from(JsonString::from_json(&contents))
+        .map_err(|err| err.into())
     }
 
     /// Default KeyLoader that actually reads files from the filesystem
@@ -1006,7 +1003,8 @@ pub mod tests {
         action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::signal_channel,
     };
-    use lib3h_persistence_api::{cas::content::Address, dna, json::RawString};
+    use lib3h_persistence_api::{cas::content::Address, json::RawString};
+    use holochain_core_types::dna;
     use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
     use holochain_wasm_utils::wasm_target_dir;
     use lib3h_sodium::secbuf::SecBuf;

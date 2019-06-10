@@ -276,7 +276,6 @@ pub mod tests {
     use super::*;
     extern crate base64;
     use crate::{
-        cas::content::Address,
         dna::{
             bridges::{Bridge, BridgePresence, BridgeReference},
             entry_types::EntryTypeDef,
@@ -284,6 +283,9 @@ pub mod tests {
             zome::tests::test_zome,
         },
         entry::entry_type::{AppEntryType, EntryType},
+    };
+    use lib3h_persistence_api::{
+        cas::content::Address,
         json::JsonString,
     };
     use std::convert::TryFrom;

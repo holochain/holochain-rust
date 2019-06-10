@@ -16,8 +16,7 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    cas::content::AddressableContent,
-    dna::{
+   dna::{
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo, Sharing},
         fn_declarations::{FnDeclaration, TraitFns},
         traits::ReservedTraitNames,
@@ -26,8 +25,12 @@ use holochain_core_types::{
         Dna,
     },
     entry::entry_type::{AppEntryType, EntryType},
+};
+use lib3h_persistence_api::{
+    cas::content::AddressableContent,
     json::JsonString,
 };
+
 use holochain_net::p2p_config::P2pConfig;
 
 use std::{

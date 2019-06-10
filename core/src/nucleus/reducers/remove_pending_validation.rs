@@ -36,7 +36,10 @@ pub mod tests {
         state::test_store,
     };
     use holochain_core_types::{
-        cas::content::AddressableContent, chain_header::test_chain_header, entry::Entry,
+        chain_header::test_chain_header, entry::Entry,
+    };
+    use lib3h_persistence_api::{
+        cas::content::AddressableContent,
         json::RawString,
     };
     use std::sync::Arc;

@@ -9,10 +9,10 @@ use lib3h_persistence_api::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
-    eav::{IndexFilter, EavFilter}
+    eav::{IndexFilter, EavFilter, EntityAttributeValueStorage}
 };
 use holochain_core_types::eav::{
-    Attribute, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
+    Attribute, EaviQuery, EntityAttributeValueIndex,
 };
 use std::{
     collections::{BTreeSet, HashMap},
@@ -25,7 +25,7 @@ use std::{
 pub struct DhtStore {
     // Storages holding local shard data
     content_storage: Arc<RwLock<ContentAddressableStorage>>,
-    meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+    meta_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -48,7 +48,7 @@ impl DhtStore {
     // =========
     pub fn new(
         content_storage: Arc<RwLock<ContentAddressableStorage>>,
-        meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+        meta_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
     ) -> Self {
         DhtStore {
             content_storage,
@@ -142,7 +142,7 @@ impl DhtStore {
     pub(crate) fn content_storage(&self) -> Arc<RwLock<ContentAddressableStorage>> {
         self.content_storage.clone()
     }
-    pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {
+    pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage<Attribute>>> {
         self.meta_storage.clone()
     }
     pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
@@ -159,8 +159,12 @@ impl DhtStore {
 pub mod tests {
     use super::*;
     use holochain_core_types::{
-        cas::storage::ExampleContentAddressableStorage, chain_header::test_chain_header_with_sig,
-        eav::ExampleEntityAttributeValueStorage, entry::test_entry,
+        chain_header::test_chain_header_with_sig,
+        entry::test_entry,
+    };
+
+    use lib3h_persistence_api::{
+        cas::storage::ExampleContentAddressableStorage, eav::ExampleEntityAttributeValueStorage, 
     };
 
     #[test]

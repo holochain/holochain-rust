@@ -90,6 +90,10 @@ impl AddressableContent for CrudStatus {
 mod tests {
     use super::CrudStatus;
     use crate::{
+        eav::{eav_round_trip_test_runner, Attribute},
+    };
+
+    use lib3h_persistence_api::{
         cas::{
             content::{
                 Address, AddressableContent, AddressableContentTestSuite, Content,
@@ -97,7 +101,6 @@ mod tests {
             },
             storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
         },
-        eav::{eav_round_trip_test_runner, Attribute},
         json::{JsonString, RawString},
     };
 

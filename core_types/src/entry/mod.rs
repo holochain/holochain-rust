@@ -226,14 +226,14 @@ pub fn test_unpublishable_entry() -> Entry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{
+    use lib3h_persistence_api::{
         cas::{
             content::{AddressableContent, AddressableContentTestSuite},
             storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
         },
-        entry::{expected_entry_address, Entry},
     };
-
+    use crate::entry::{expected_entry_address, Entry};
+ 
     #[test]
     /// tests for PartialEq
     fn eq() {

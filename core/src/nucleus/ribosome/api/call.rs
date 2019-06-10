@@ -206,8 +206,7 @@ pub mod tests {
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
-        dna::{
+       dna::{
             capabilities::CapabilityRequest,
             fn_declarations::{FnDeclaration, TraitFns},
             traits::ReservedTraitNames,
@@ -217,9 +216,12 @@ pub mod tests {
             cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
             Entry,
         },
-        error::{DnaError, HolochainError},
+       error::{DnaError, HolochainError},
+       signature::Signature,
+    };
+    use lib3h_persistence_api::{
+        cas::content::{Address, AddressableContent},
         json::JsonString,
-        signature::Signature,
     };
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use serde_json;

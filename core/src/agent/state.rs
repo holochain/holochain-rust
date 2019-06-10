@@ -277,12 +277,14 @@ pub mod tests {
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         instance::tests::test_context, state::State,
     };
-    use holochain_core_types::{
+    use lib3h_persistence_api::{
+        json::JsonString,
         cas::content::AddressableContent,
+    };
+    use holochain_core_types::{
         chain_header::{test_chain_header, ChainHeader},
         entry::{expected_entry_address, test_entry, Entry},
         error::HolochainError,
-        json::JsonString,
         signature::Signature,
     };
     use serde_json;

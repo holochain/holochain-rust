@@ -243,10 +243,12 @@ mod tests {
         nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
-        dna::capabilities::CapabilityRequest,
+    use lib3h_persistence_api::{
         json::RawString,
+        cas::content::{Address, AddressableContent}
+    };
+    use holochain_core_types::{
+       dna::capabilities::CapabilityRequest,
     };
     use holochain_wasm_utils::wasm_target_dir;
     use std::{

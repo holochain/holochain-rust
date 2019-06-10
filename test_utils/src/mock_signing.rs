@@ -1,7 +1,9 @@
 use holochain_core_types::{
     agent::AgentId,
-    cas::content::{Address, AddressableContent},
-};
+    };
+
+use lib3h_persistence_api::cas::content::{Address, AddressableContent};
+
 use holochain_dpki::{
     key_bundle::KeyBundle,
     SEED_SIZE,

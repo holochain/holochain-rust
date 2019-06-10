@@ -175,7 +175,8 @@ pub fn get_entry_with_meta<'a>(
 #[cfg(test)]
 pub mod tests {
     use crate::instance::tests::test_context_with_state;
-    use lib3h_persistence_api::{cas::content::AddressableContent, entry::test_entry};
+    use lib3h_persistence_api::{cas::content::AddressableContent};
+    use holochain_core_types::entry::test_entry;
 
     #[test]
     fn test_get_entry_from_dht_cas() {

@@ -2,7 +2,8 @@ use crate::{config_files::Build, error::DefaultResult, util};
 use base64;
 use colored::*;
 use holochain_core::nucleus::ribosome::{run_dna, WasmCallData};
-use lib3h_persistence_api::{cas::content::AddressableContent, dna::Dna, json::JsonString};
+use lib3h_persistence_api::{cas::content::AddressableContent,json::JsonString};
+use holochain_core_types::dna::Dna;
 use ignore::WalkBuilder;
 use serde_json::{self, Map, Value};
 use std::{

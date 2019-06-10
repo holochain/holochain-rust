@@ -51,10 +51,12 @@ pub mod tests {
             Defn,
         },
     };
-    use holochain_core_types::{
+    use lib3h_persistence_api::{
         cas::content::Address,
-        entry::{entry_type::test_app_entry_type, Entry},
         json::{JsonString, RawString},
+    };
+    use holochain_core_types::{
+        entry::{entry_type::test_app_entry_type, Entry},
         link::Link,
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;

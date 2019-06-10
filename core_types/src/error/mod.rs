@@ -157,6 +157,8 @@ impl From<HolochainError> for String {
     }
 }
 
+impl JsonError for HolochainError {}
+
 impl From<PersistenceError> for HolochainError {
 
     fn from(persistence_error: PersistenceError) -> Self {

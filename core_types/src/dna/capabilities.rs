@@ -35,7 +35,7 @@ impl CapabilityRequest {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::cas::content::Address;
+    use lib3h_persistence_api::cas::content::Address;
 
     #[test]
     fn test_capability_request_new() {

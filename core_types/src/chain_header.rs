@@ -154,9 +154,9 @@ pub fn test_provenances(sig: &'static str) -> Vec<Provenance> {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{
-        cas::content::{Address, AddressableContent},
-        chain_header::{test_chain_header, test_provenances, ChainHeader},
+    use lib3h_persistence_api::cas::content::{Address, AddressableContent};
+     use crate::{
+       chain_header::{test_chain_header, test_provenances, ChainHeader},
         entry::{
             entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
             test_entry, test_entry_a, test_entry_b,

@@ -1073,7 +1073,8 @@ pub mod tests {
 
                     // JSON round-tripping w/o serde or intermediates
                     assert_eq!(
-                        Iso8601::try_from(JsonString::from(iso)),
+                        Iso8601::try_from(JsonString::from(iso))
+                        .map_err(|err| err.into()),
                         Iso8601::try_from("2018-10-11T03:23:38+00:00")
                     );
 

@@ -52,12 +52,14 @@ pub mod tests {
             ZomeFnCall,
         },
     };
-    use holochain_core_types::{
+    use lib3h_persistence_api::{
         cas::content::{Address, AddressableContent},
+        json::JsonString,
+    };
+    use holochain_core_types::{
         crud_status::CrudStatus,
         entry::{test_entry, EntryWithMeta},
         error::ZomeApiInternalResult,
-        json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::{commit_entry::CommitEntryResult, get_entry::*};
 

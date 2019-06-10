@@ -56,12 +56,12 @@ pub mod test {
         persister::SimplePersister,
         state::{test_store, State},
     };
-    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use lib3h_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::AgentId,
-        cas::content::{Address, AddressableContent},
-    };
-    use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
+   };
+    use lib3h_persistence_api::cas::content::{Address, AddressableContent};
+     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use std::sync::{Mutex, RwLock};
     use tempfile;
 

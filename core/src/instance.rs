@@ -343,14 +343,16 @@ pub mod tests {
         context::{test_memory_network_config, Context},
         logger::{test_logger, TestLogger},
     };
-    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use lib3h_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::AgentId,
-        cas::content::AddressableContent,
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
+   };
+    use lib3h_persistence_api::{
         json::{JsonString, RawString},
+        cas::content::AddressableContent,
     };
     use tempfile;
     use test_utils;
@@ -365,7 +367,7 @@ pub mod tests {
 
     use test_utils::mock_signing::registered_test_agent;
 
-    use holochain_cas_implementations::{
+    use lib3h_persistence_mem::{
         cas::memory::MemoryStorage, eav::memory::EavMemoryStorage,
     };
     use holochain_core_types::entry::Entry;

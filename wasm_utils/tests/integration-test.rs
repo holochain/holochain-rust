@@ -6,6 +6,7 @@ extern crate holochain_core_types;
 extern crate serde_derive;
 #[macro_use]
 extern crate lib3h_persistence_derive;
+extern crate lib3h_persistence_api;
 extern crate holochain_wasm_utils;
 extern crate serde_json;
 extern crate tempfile;
@@ -17,7 +18,7 @@ use holochain_core_types::{
     error::{CoreError, HolochainError},
 };
 
-use lib3h_persistence_api::json::{JsonString, RawString};
+use lib3h_persistence_api::{error::PersistenceError, json::{JsonString, RawString}};
 
 use holochain_wasm_utils::{memory::MemoryInt, wasm_target_dir};
 use std::{convert::TryFrom, path::PathBuf};

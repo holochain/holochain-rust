@@ -59,7 +59,8 @@ mod tests {
     use super::*;
     use crate::nucleus;
 
-    use lib3h_persistence_api::{cas::content::AddressableContent, entry::Entry, link::Link};
+    use lib3h_persistence_api::{cas::content::AddressableContent};
+    use holochain_core_types::{entry::Entry, link::Link};
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry() -> Entry {

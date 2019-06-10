@@ -13,7 +13,8 @@ use lib3h_persistence_pickle::{
     eav::{pickle::EavPickleStorage},
 };
 
-use lib3h_persistence_api::{cas::storage::ContentAddressableStorage};
+use lib3h_persistence_api::{eav::EntityAttributeValueStorage,
+cas::storage::ContentAddressableStorage};
 
 
 use holochain_core::{
@@ -25,7 +26,7 @@ use holochain_core::{
 use holochain_core_types::{
     agent::AgentId,
     error::HolochainError,
-    eav::{EntityAttributeValueStorage, Attribute}
+    eav::Attribute
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::IoHandler;
@@ -51,7 +52,7 @@ pub struct ContextBuilder {
     //persister: Option<Arc<Mutex<Persister>>>,
     chain_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
     dht_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
-    eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage>>>,
+    eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage<Attribute>>>>,
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
@@ -81,7 +82,7 @@ impl ContextBuilder {
     /// Chain and DHT storages get set to the same memory CAS.
     pub fn with_memory_storage(mut self) -> Self {
         let cas = Arc::new(RwLock::new(MemoryStorage::new()));
-        let eav : Arc<RwLock<EavMemoryStorage<Attribute>>> =
+        let eav : Arc<RwLock<lib3h_persistence_api::eav::EntityAttributeValueStorage<Attribute>>> =
             Arc::new(RwLock::new(EavMemoryStorage::new()));
         self.chain_storage = Some(cas.clone());
         self.dht_storage = Some(cas);
@@ -100,7 +101,7 @@ impl ContextBuilder {
         fs::create_dir_all(&eav_path)?;
 
         let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
-        let eav_storage = Arc::new(RwLock::new(EavFileStorage::new(eav_path)?));
+        let eav_storage : Arc<RwLock<EntityAttributeValueStorage<Attribute>>> = Arc::new(RwLock::new(EavFileStorage::new(eav_path)?));
         self.chain_storage = Some(file_storage.clone());
         self.dht_storage = Some(file_storage);
         self.eav_storage = Some(eav_storage);

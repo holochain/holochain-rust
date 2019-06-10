@@ -8,10 +8,10 @@ pub mod tests {
         instance::{tests::test_context, Instance, Observer},
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
-        entry::{entry_type::EntryType, Entry},
-        link::{link_list::LinkList, Link},
+       entry::{entry_type::EntryType, Entry},
+       link::{link_list::LinkList, Link},
     };
+    use lib3h_persistence_api::cas::content::{Address, AddressableContent};
 
     use std::sync::mpsc::channel;
 

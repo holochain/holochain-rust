@@ -9,7 +9,7 @@ use crate::{
     state::State,
 };
 use holochain_core_types::{
-   crud_status::CrudStatus,
+    crud_status::CrudStatus,
     eav::Attribute,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
@@ -164,7 +164,8 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
-    use lib3h_persistence_api::{cas::content::AddressableContent, entry::test_entry};
+    use lib3h_persistence_api::{cas::content::AddressableContent};
+    use holochain_core_types::entry::test_entry;
 
     #[test]
     pub fn reduce_publish_test() {

@@ -8,7 +8,10 @@ use lib3h_persistence_api::{
     eav::{AttributeError, IndexFilter},
     error::{PersistenceError, PersistenceResult},
     json::JsonString,
-    eav::storage::{EntityAttributeValueStorage, ExampleEntityAttributeValueStorage},
+    eav::storage::{
+        EntityAttributeValueStorage as GenericStorage,
+        ExampleEntityAttributeValueStorage
+    },
 };
 
 use crate::{
@@ -136,6 +139,8 @@ pub type Index = i64;
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
 pub type EntityAttributeValueIndex = lib3h_persistence_api::eav::EntityAttributeValueIndex<Attribute>;
+
+pub type EntityAttributeValueStorage = GenericStorage<Attribute>;
 
 fn validate_attribute(attribute: &Attribute) -> PersistenceResult<()> {
     if let Attribute::LinkTag(name, _tag) | Attribute::RemovedLink(name, _tag) = attribute {
@@ -274,7 +279,7 @@ pub mod tests {
 
     use crate::eav::EntityAttributeValueIndex;
 
-    pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage {
+    pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage<Attribute> {
         ExampleEntityAttributeValueStorage::new()
     }
 
@@ -284,7 +289,8 @@ pub mod tests {
         let entity =
             ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("foo")))
                 .unwrap();
-        let attribute = "favourite-color".to_string();
+        let attribute = Attribute::LinkTag("abc".to_string(),
+                                           "favourite-color".to_string());
         let value =
             ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("blue")))
                 .unwrap();
@@ -296,22 +302,25 @@ pub mod tests {
     fn example_eav_one_to_many() {
         EavTestSuite::test_one_to_many::<
             ExampleAddressableContent,
-            ExampleEntityAttributeValueStorage,
-        >(test_eav_storage());
+            Attribute,
+            ExampleEntityAttributeValueStorage<Attribute>,
+        >(test_eav_storage(), &Attribute::default());
     }
 
     #[test]
     fn example_eav_many_to_one() {
         EavTestSuite::test_many_to_one::<
             ExampleAddressableContent,
-            ExampleEntityAttributeValueStorage,
-        >(test_eav_storage());
+            Attribute,
+            ExampleEntityAttributeValueStorage<Attribute>
+        >(test_eav_storage(), &Attribute::default());
     }
 
     #[test]
     fn example_eav_range() {
-        EavTestSuite::test_range::<ExampleAddressableContent, ExampleEntityAttributeValueStorage>(
+        EavTestSuite::test_range::<ExampleAddressableContent, Attribute, ExampleEntityAttributeValueStorage<Attribute>>(
             test_eav_storage(),
+            &Attribute::default()
         );
     }
 
@@ -319,7 +328,8 @@ pub mod tests {
     fn example_eav_prefixes() {
         EavTestSuite::test_multiple_attributes::<
             ExampleAddressableContent,
-            ExampleEntityAttributeValueStorage,
+            Attribute,
+            ExampleEntityAttributeValueStorage<Attribute>,
         >(
             test_eav_storage(),
             vec!["a_", "b_", "c_", "d_"]

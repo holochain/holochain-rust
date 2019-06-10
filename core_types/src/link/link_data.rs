@@ -60,14 +60,16 @@ impl LinkData {
 #[cfg(test)]
 pub mod tests {
 
-    use crate::{
-        cas::content::AddressableContent,
-        entry::{test_entry_a, test_entry_b, Entry},
+    use lib3h_persistence_api::{
         json::JsonString,
-        link::{
+        cas::content::AddressableContent,
+    };
+    use crate::{
+       entry::{test_entry_a, test_entry_b, Entry},
+       link::{
             link_data::LinkData,
             tests::{example_link, example_link_action_kind, example_link_type},
-        },
+       },
     };
     use std::convert::TryFrom;
 

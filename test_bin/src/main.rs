@@ -3,7 +3,9 @@
 
 #[macro_use]
 extern crate failure;
-extern crate holochain_core_types;
+
+extern crate lib3h_persistence_api;
+
 #[macro_use]
 extern crate holochain_net;
 extern crate lib3h_protocol;

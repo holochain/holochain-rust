@@ -46,6 +46,14 @@ pub fn test_wat_always_valid() -> String {
     )
 
     (func
+        (export "__hdk_validate_agent_entry")
+        (param $allocation i64)
+        (result i64)
+
+        (i64.const 0)
+    )
+
+    (func
         (export "__hdk_validate_link")
         (param $allocation i64)
         (result i64)

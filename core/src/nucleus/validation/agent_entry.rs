@@ -55,6 +55,7 @@ pub async fn validate_agent_entry(
         .collect();
 
     if errors.is_empty() {
+        context.log(format!("Validating agent entry success!: {:?}", results));
         Ok(())
     } else {
         Err(ValidationError::Error(

@@ -81,11 +81,6 @@ fn publish_link_meta(
     };
     let link = link_type.link().clone();
 
-    println!(
-        "debug/reduce/link_meta: Publishing link meta for link: {:?}",
-        link
-    );
-
     send(
         network_state,
         JsonProtocol::PublishMeta(DhtMetaData {

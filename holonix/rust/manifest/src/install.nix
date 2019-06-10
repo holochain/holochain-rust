@@ -5,7 +5,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-   cargo install cargo-edit
+  cargo install cargo-edit
   '';
 in
 script

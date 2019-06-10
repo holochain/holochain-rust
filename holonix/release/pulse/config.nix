@@ -3,9 +3,9 @@ let
   # the unique hash at the end of the medium post url
   # e.g. https://medium.com/@holochain/foos-and-bars-4867d777de94
   # would be 4867d777de94
-  url-hash = "4ba6cf8c2e0a";
+  url-hash = "7dce78d4ae66";
   # current dev-pulse iteration, as seen by general public
-  version = "31";
+  version = "32";
   hash-list = "https://bit.ly/2LiQuJk";
  };
 

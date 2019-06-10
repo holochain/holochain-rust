@@ -1,18 +1,19 @@
 let
+ holonix-release-tag = "expecting-bad-ozone";
+ holonix-release-sha256 = "0x6bma8p1kmlzsr2dd5zjyvw809hjmycdk8n8bknigx7vd88v52m";
 
-  pkgs = import ./holonix/nixpkgs/nixpkgs.nix;
-  darwin = import ./holonix/darwin/config.nix;
-  openssl = import ./holonix/openssl/config.nix;
-  rust = import ./holonix/rust/config.nix;
-
+ holonix = import (fetchTarball {
+  url = "https://github.com/holochain/holonix/archive/${holonix-release-tag}.tar.gz";
+  sha256 = "${holonix-release-sha256}";
+ });
 in
-with pkgs;
+with holonix.pkgs;
 {
- holonix-shell =
+ core-shell =
   stdenv.mkDerivation rec {
-    name = "holonix-shell";
+    name = "core-shell";
 
-    buildInputs = import ./holonix/build.nix;
+    buildInputs = holonix.buildInputs;
 
     # non-nixos OS can have a "dirty" setup with rustup installed for the current
     # user.
@@ -22,13 +23,13 @@ with pkgs;
     # rust version through this environment variable.
     # https://github.com/rust-lang/rustup.rs#environment-variables
     # https://github.com/NixOS/nix/issues/903
-    RUSTUP_TOOLCHAIN = rust.nightly.version;
-    RUSTFLAGS = rust.compile.flags;
-    CARGO_INCREMENTAL = rust.compile.incremental;
-    RUST_LOG = rust.log;
-    NUM_JOBS = rust.compile.jobs;
+    RUSTUP_TOOLCHAIN = holonix.rust.nightly.version;
+    RUSTFLAGS = holonix.rust.compile.flags;
+    CARGO_INCREMENTAL = holonix.rust.compile.incremental;
+    RUST_LOG = holonix.rust.log;
+    NUM_JOBS = holonix.rust.compile.jobs;
 
-    OPENSSL_STATIC = openssl.static;
+    OPENSSL_STATIC = holonix.openssl.static;
 
     shellHook = ''
      # cargo should install binaries into this repo rather than globally
@@ -38,10 +39,10 @@ with pkgs;
      export PATH="$CARGO_INSTALL_ROOT/bin:$PATH"
 
      export HC_TARGET_PREFIX=~/nix-holochain/
-     export NIX_LDFLAGS="${darwin.ld-flags}$NIX_LDFLAGS"
+     export NIX_LDFLAGS="${holonix.darwin.ld-flags}$NIX_LDFLAGS"
     '';
   };
 
-  hc = import ./holonix/dist/cli/build.nix;
-  holochain = import ./holonix/dist/conductor/build.nix;
+  hc = holonix.hc;
+  holochain = holonix.holochain;
 }

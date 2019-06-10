@@ -31,8 +31,12 @@ with pkgs;
     OPENSSL_STATIC = openssl.static;
 
     shellHook = ''
-     # cargo installs things to the user's home so we need it on the path
-     export PATH=~/.cargo/bin:$PATH
+     # cargo should install binaries into this repo rather than globally
+     # https://github.com/rust-lang/rustup.rs/issues/994
+     export CARGO_HOME=`pwd`/.cargo
+     export CARGO_INSTALL_ROOT=`pwd`/.cargo
+     export PATH="$CARGO_INSTALL_ROOT/bin:$PATH"
+
      export HC_TARGET_PREFIX=~/nix-holochain/
      export NIX_LDFLAGS="${darwin.ld-flags}$NIX_LDFLAGS"
 

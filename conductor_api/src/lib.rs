@@ -36,7 +36,7 @@
 ///     conductor::Conductor,
 /// };
 /// use holochain_core_types::error::HolochainError;
-/// use std::{fs::File, io::prelude::*, path::PathBuf};
+/// use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 /// use structopt::StructOpt;
 ///
 /// #[derive(StructOpt, Debug)]
@@ -75,7 +75,7 @@
 /// fn bootstrap_from_config(path: &str) -> Result<Conductor, HolochainError> {
 ///     let config = load_config_file(&String::from(path))?;
 ///     config
-///         .check_consistency()
+///         .check_consistency(&mut Arc::new(Box::new(Conductor::load_dna)))
 ///         .map_err(|string| HolochainError::ConfigError(string))?;
 ///     let mut conductor = Conductor::from_config(config);
 ///     conductor.boot_from_config()?;
@@ -97,7 +97,7 @@ extern crate holochain_core_types;
 extern crate holochain_core_types_derive;
 extern crate holochain_dpki;
 extern crate holochain_net;
-extern crate holochain_sodium;
+extern crate lib3h_sodium;
 
 extern crate chrono;
 extern crate crossbeam_channel;

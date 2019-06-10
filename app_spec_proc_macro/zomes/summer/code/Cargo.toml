@@ -1,0 +1,17 @@
+[package]
+name = "code"
+version = "0.0.19-alpha1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[dependencies]
+serde = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+hdk = { path = "../../../../hdk-rust" }
+hdk-proc-macros = { path = "../../../../hdk-proc-macros" }
+
+serde_derive = "=1.0.89"
+boolinator = "=2.4.0"
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]

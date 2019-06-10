@@ -5,8 +5,8 @@ extern crate holochain_common;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_sodium;
 extern crate holochain_wasm_utils;
+extern crate lib3h_sodium;
 extern crate structopt;
 #[macro_use]
 extern crate failure;
@@ -135,6 +135,12 @@ enum Cli {
         testfile: String,
         #[structopt(long = "skip-package", short = "s", help = "Skip packaging DNA")]
         skip_build: bool,
+        #[structopt(
+            long = "show-npm-output",
+            short = "n",
+            help = "Show NPM output when installing test dependencies"
+        )]
+        show_npm_output: bool,
     },
     #[structopt(
         name = "keygen",
@@ -165,7 +171,7 @@ enum Cli {
 }
 
 fn main() {
-    holochain_sodium::check_init();
+    lib3h_sodium::check_init();
     run().unwrap_or_else(|err| {
         eprintln!("{}", err);
 
@@ -224,10 +230,11 @@ fn run() -> HolochainResult<()> {
             dir,
             testfile,
             skip_build,
+            show_npm_output,
         } => {
             let current_path = std::env::current_dir()
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
-            cli::test(&current_path, &dir, &testfile, skip_build)
+            cli::test(&current_path, &dir, &testfile, skip_build, show_npm_output)
         }
         .map_err(HolochainError::Default)?,
 

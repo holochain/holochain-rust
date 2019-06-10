@@ -12,7 +12,7 @@
 //! extern crate holochain_net;
 //! extern crate holochain_cas_implementations;
 //! extern crate holochain_dpki;
-//! extern crate holochain_sodium;
+//! extern crate lib3h_sodium;
 //! extern crate tempfile;
 //! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
@@ -24,7 +24,7 @@
 //!     signature::Signature,
 //! };
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
-//! use holochain_sodium::secbuf::SecBuf;
+//! use lib3h_sodium::secbuf::SecBuf;
 //! use test_utils;
 //!
 //! use std::sync::{Arc, Mutex};
@@ -102,6 +102,7 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
+use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -164,7 +165,7 @@ impl Holochain {
             .ok_or(HolochainError::ErrorGeneric(
                 "State could not be loaded due to NoneError".to_string(),
             ))?;
-        let mut instance = Instance::from_state(loaded_state.clone());
+        let mut instance = Instance::from_state(loaded_state.clone(), context.clone());
         let new_context = instance.initialize(None, context.clone())?;
         Ok(Holochain {
             instance,
@@ -220,6 +221,10 @@ impl Holochain {
 
     pub fn context(&self) -> &Arc<Context> {
         &self.context
+    }
+
+    pub fn set_conductor_api(&mut self, api: IoHandler) {
+        self.context.conductor_api.reset(api);
     }
 }
 
@@ -726,12 +731,12 @@ mod tests {
             let msg_publish = signal_rx
                 .recv_timeout(Duration::from_millis(timeout))
                 .expect("no more signals to receive (outer)");
-            if let Signal::Internal(Action::Publish(address)) = msg_publish {
+            if let Signal::Trace(Action::Publish(address)) = msg_publish {
                 loop {
                     let msg_hold = signal_rx
                         .recv_timeout(Duration::from_millis(timeout))
                         .expect("no more signals to receive (inner)");
-                    if let Signal::Internal(Action::Hold(entry)) = msg_hold {
+                    if let Signal::Trace(Action::Hold(entry)) = msg_hold {
                         assert_eq!(address, entry.address());
                         break 'outer;
                     }

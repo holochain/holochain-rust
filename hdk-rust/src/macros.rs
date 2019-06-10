@@ -123,8 +123,12 @@ macro_rules! load_string {
 /// # pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]
-/// # pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -177,9 +181,9 @@ macro_rules! load_string {
 ///         Ok(())
 ///     }
 ///
-///     receive: |payload| {
+///     receive: |from, payload| {
 ///       // just return what was received, but modified
-///       format!("Received: {}", payload)
+///       format!("Received: {} from {}", payload, from)
 ///     }
 ///
 ///     functions: [
@@ -214,7 +218,7 @@ macro_rules! define_zome {
         }
 
         $(
-            receive : |$receive_param:ident| {
+            receive : |$receive_from:ident, $receive_param:ident| {
                 $receive_expr:expr
             }
         )*
@@ -291,10 +295,11 @@ macro_rules! define_zome {
                 }
 
                 // Deserialize input
-                let input = load_string!(encoded_allocation_of_input);
+                let input = load_json!(encoded_allocation_of_input);
 
-                fn execute(payload: String) -> String {
-                    let $receive_param = payload;
+                fn execute(input: $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams ) -> String {
+                    let $receive_param = input.payload;
+                    let $receive_from = input.from;
                     $receive_expr
                 }
 

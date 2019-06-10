@@ -108,8 +108,23 @@ jobs:
        command: nix-shell --run hc-app-spec-test
 
    - run:
+       name: proc macro app spec tests
+       command: nix-shell --run hc-app-spec-test-proc
+
+   - run:
        name: nodejs conductor tests
        command: nix-shell --run hc-conductor-node-test
+
+ cluster-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+
+   - run:
+       name: app spec cluster tests
+       command: nix-shell --run hc-app-spec-cluster-test
 
  cli-tests:
   docker:
@@ -124,6 +139,16 @@ jobs:
    - run:
       name: test cli
       command: nix-shell --run hc-cli-test
+
+ wasm-conductor-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  steps:
+   - checkout
+
+   - run:
+       name: wasm conductor tests
+       command: nix-shell --run hc-conductor-wasm-test
 
  # https://circleci.com/docs/2.0/building-docker-images/
  docker.start:
@@ -222,9 +247,11 @@ workflows:
    - build
    - fmt
    - app-spec-tests
+   - cluster-tests
    - cli-tests
    - scaffold-tests-linux
    - scaffold-tests-mac
+   - wasm-conductor-tests
 
  cold.ubuntu:
   jobs:

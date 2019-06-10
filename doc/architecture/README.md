@@ -11,7 +11,7 @@ This `holochain-rust` repository implements a number of distinct yet overlapping
 1. A sample application that we use to demonstrate the current functionality and drive development: [*app-spec*](#app-spec-driven-development)
 
 ## Core
-The [core](/core) folder contains the code that implements the core functionality of Holochain. It is the aspect that takes in an application DNA, and an agent, and "securely" (NOT secure during alpha) runs peer-to-peer applications by exposing the API functions to Zomes. It draws on other top level definitions and functions such as [dna](/dna), [cas_implementations](/cas_implementations), [agent](/agent), and [core_types](/core_types).
+The [core](/core) folder contains the code that implements the core functionality of Holochain. It is the aspect that takes in an application DNA, and an agent, and "securely" (NOT secure during alpha) runs peer-to-peer applications by exposing the API functions to Zomes. It draws on other top level definitions and functions such as [dna](/dna), [cas_implementations](/cas_implementations) and [core_types](/core_types).
 
 ## HDK Rust
 Holochain applications have been designed to consist at the low-level of WebAssembly (WASM) running in a virtual machine environment. Most languages will be easiest to use with some stub code to connect into the WASM runtime environment due to the nature of WASM. That is the main reason why a "Developer Kit" for a language exists. It is a library, and a syntax, for writing Zome code in that language.

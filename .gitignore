@@ -1,9 +1,12 @@
 .qmake.stash
 target
 .cargo
+.vagrant
+node_modules
 **/*.sock
 package-lock.json
 **/*.rs.bk
+*.log
 net_ipc/tests/node-p2p-ipc
 build_docs_key
 *.orig
@@ -31,6 +34,9 @@ conductor_api/tmp-storage/*
 conductor_api/tmp-test/*
 tmp-test-conductor-config.toml
 tmp-*-conductor-config.toml
+
+app_spec_proc_macro/test/*
+**/diorama-storage
 
 Cargo.lock
 dist/**

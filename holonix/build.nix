@@ -14,6 +14,7 @@ in
 ]
 
 ++ import ./app-spec/build.nix
+++ import ./app-spec-cluster/build.nix
 ++ import ./cli/build.nix
 ++ import ./conductor/build.nix
 ++ import ./darwin/build.nix

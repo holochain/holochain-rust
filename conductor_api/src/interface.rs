@@ -9,7 +9,7 @@ use holochain_core_types::{
     signature::Provenance,
 };
 use holochain_dpki::key_bundle::KeyBundle;
-use holochain_sodium::secbuf::SecBuf;
+use lib3h_sodium::secbuf::SecBuf;
 use Holochain;
 
 use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
@@ -27,7 +27,7 @@ use config::{
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
 use holochain_dpki::utils::SeedContext;
-use keystore::{KeyType, Keystore};
+use keystore::{KeyType, Keystore, Secret};
 use serde_json::{self, map::Map};
 
 pub type InterfaceError = String;
@@ -345,6 +345,9 @@ impl ConductorApiBuilder {
     ///     * `id`: [string] internal handle/name of the newly created DNA config
     ///     * `path`: [string] local file path to DNA file
     ///     * `expected_hash`: [string] (optional) the hash of this DNA. If this does not match the actual hash, installation will fail.
+    ///     * `properties`: [object] (optional) extra data to include in the "properties" section of the DNA
+    ///     * `uuid`: [string] (optional) value to override "uuid" section of the DNA
+    ///     * `copy`: [bool] (optional) copy DNA file to storage directory
     ///
     ///  * `admin/dna/uninstall`
     ///     Uninstalls a DNA from the conductor config. Recursively also removes (and stops)
@@ -473,12 +476,17 @@ impl ConductorApiBuilder {
                     None => None,
                 };
                 let properties = params_map.get("properties");
+                let uuid = params_map
+                    .get("uuid")
+                    .and_then(|v| v.as_str())
+                    .map(|v| v.to_string());
                 let dna_hash = conductor_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
                     id.to_string(),
                     copy,
                     expected_hash,
-                    properties
+                    properties,
+                    uuid,
                 ))?;
                 Ok(json!({ "success": true, "dna_hash": dna_hash }))
             });
@@ -1005,6 +1013,33 @@ impl ConductorApiBuilder {
 
             Ok(json!({ "signature": String::from(signature) }))
         });
+
+        let k = keystore.clone();
+        self.io
+            .add_method("agent/keystore/get_public_key", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let src_id = Self::get_as_string("src_id", &params_map)?;
+
+                let secret = k.lock().unwrap().get(&src_id).map_err(|err| {
+                    jsonrpc_core::Error::invalid_params(format!(
+                        r#"error getting "{}": {}"#,
+                        src_id, err
+                    ))
+                })?;
+
+                let pub_key = match *secret.lock().unwrap() {
+                    Secret::SigningKey(ref mut keypair) => keypair.public.to_owned(),
+                    Secret::EncryptingKey(ref mut keypair) => keypair.public.to_owned(),
+                    _ => {
+                        return Err(jsonrpc_core::Error::invalid_params(format!(
+                            r#""{}" must be a signing or encrypting key"#,
+                            src_id
+                        )));
+                    }
+                };
+
+                Ok(json!({ "pub_key": pub_key }))
+            });
 
         self
     }

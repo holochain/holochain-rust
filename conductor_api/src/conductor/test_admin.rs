@@ -32,8 +32,9 @@ impl ConductorTestAdmin for Conductor {
             holo_remote_key: None,
         };
         new_config.agents.push(new_agent);
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
+        self.add_agent_keystore(id.clone(), keystore);
         // self.save_config()?; we don't actually want to save it for tests
         notify(format!("Added agent \"{}\"", id));
         Ok(public_address)
@@ -48,10 +49,12 @@ pub mod tests {
     #[test]
     fn test_add_test_agent() {
         let test_name = "test_add_test_agent";
+        let agent_id = "testAgent1".to_string();
         let mut conductor = create_test_conductor(test_name, 5001);
         let agent_address = conductor
-            .add_test_agent("testAgent1".to_string(), "Test Agent 1".to_string())
+            .add_test_agent(agent_id.clone(), "Test Agent 1".to_string())
             .expect("Could not add test agent");
-        assert_eq!(agent_address.len(), 63,)
+        assert_eq!(agent_address.len(), 63,);
+        assert!(conductor.get_keystore_for_agent(&agent_id).is_ok());
     }
 }

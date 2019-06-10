@@ -1,11 +1,10 @@
 use crate::{
     action::{ActionWrapper, GetEntryKey},
-    context::Context,
     network::{reducers::send, state::NetworkState},
+    state::State,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_net::connection::json_protocol::{FetchEntryData, JsonProtocol};
-use std::sync::Arc;
 
 fn reduce_fetch_entry_inner(
     network_state: &mut NetworkState,
@@ -25,8 +24,8 @@ fn reduce_fetch_entry_inner(
 }
 
 pub fn reduce_get_entry(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -43,8 +42,8 @@ pub fn reduce_get_entry(
 }
 
 pub fn reduce_get_entry_timeout(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -91,7 +90,7 @@ mod tests {
         };
         let action_wrapper = ActionWrapper::new(Action::FetchEntry(key.clone()));
 
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = store.reduce(action_wrapper);
         let maybe_get_entry_result = store
             .network()
             .get_entry_with_meta_results

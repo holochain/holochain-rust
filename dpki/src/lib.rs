@@ -13,9 +13,9 @@ pub(crate) const SIGNATURE_SIZE: usize = 64;
 
 lazy_static! {
     pub static ref CODEC_HCS0: hcid::HcidEncoding =
-        hcid::with_hcs0().expect("HCID failed miserably with hcs0.");
+        hcid::HcidEncoding::with_kind("hcs0").expect("HCID failed miserably with hcs0.");
     pub static ref CODEC_HCK0: hcid::HcidEncoding =
-        hcid::with_hck0().expect("HCID failed miserably with_hck0.");
+        hcid::HcidEncoding::with_kind("hck0").expect("HCID failed miserably with_hck0.");
 }
 
 pub mod key_blob;

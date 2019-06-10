@@ -59,7 +59,7 @@ Vagrant.configure("2") do |config|
     vb.gui = false
   #
     # Customize the amount of memory on the VM:
-    vb.memory = "10000"
+    vb.memory = "4096"
     vb.cpus = "4"
     vb.customize ["modifyvm", :id, "--hwvirtex", "off"]
   end
@@ -74,7 +74,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision :nixos,
     run: 'always',
     expression: {
-      swapDevices: [ { device: "/swapfile", size: 10000 } ],
+      swapDevices: [ { device: "/swapfile", size: 16384 } ],
       environment: {
         systemPackages: [ :htop, :dos2unix, :vim ]
       }

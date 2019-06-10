@@ -95,14 +95,18 @@ pub struct ValidatingLinkDefinition {
 /// # extern crate hdk;
 /// # #[macro_use]
 /// # extern crate lib3h_persistence_derive;
+/// # extern crate lib3h_persistence_api;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # use boolinator::*;
 /// # use hdk::entry_definition::ValidatingEntryType;
-/// # use hdk::holochain_core_types::{
+/// # use lib3h_persistence_api::{
 /// #   cas::content::Address,
-/// #   dna::entry_types::Sharing,
 /// #   json::JsonString,
+/// #   error::PersistenceError,
+/// # };
+/// # use hdk::holochain_core_types::{
+/// #   dna::entry_types::Sharing,
 /// #   error::HolochainError,
 /// #   validation::EntryValidationData
 /// # };

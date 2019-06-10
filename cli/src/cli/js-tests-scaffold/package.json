@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@holochain/holochain-nodejs": "0.4.17-alpha1",
+    "@holochain/holochain-nodejs": "0.4.18-alpha1",
     "json3": "*",
     "tape": "^4.9.1"
   }

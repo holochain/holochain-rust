@@ -176,7 +176,7 @@ impl Holochain {
 
     fn check_instance(&self) -> Result<(), HolochainInstanceError> {
         if self.instance.is_none() || self.context.is_none() {
-            Err(HolochainInstanceError::InstanceNotActiveYet)
+            Err(HolochainInstanceError::InstanceNotInitialized)
         } else {
             Ok(())
         }

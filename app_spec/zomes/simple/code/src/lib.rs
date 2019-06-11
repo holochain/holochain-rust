@@ -48,14 +48,14 @@ fn simple_entry(content: String) -> Entry {
 
 
 pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()> {
-    let _address = hdk::commit_entry(&simple_entry(target))?;
-    hdk::link_entries(&base, &HashString::from(content), "authored_posts", "")?;
+    let address = hdk::commit_entry(&simple_entry(target))?;
+    hdk::link_entries(&base, &HashString::from(address), "authored_posts", "")?;
     Ok(())
 }
 
 pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()> {
-    let _address = hdk::entry_address(&simple_entry(target))?;
-    hdk::remove_link(&base, &HashString::from(content), "authored_posts", "")?;
+    let address = hdk::entry_address(&simple_entry(target))?;
+    hdk::remove_link(&base, &HashString::from(address), "authored_posts", "")?;
     Ok(())
 }
 
@@ -83,13 +83,9 @@ pub fn definition() -> ValidatingEntryType {
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
-                validation: | validation_data: hdk::LinkValidationData | {
+                validation: | _validation_data: hdk::LinkValidationData | {
                     // test validation of links based on their tag
-                    if let hdk::LinkValidationData::LinkAdd{link, ..} = validation_data {
-                        Ok(())
-                    } else {
-                        Ok(())
-                    }
+                    Ok(())
                 }
             )]
         

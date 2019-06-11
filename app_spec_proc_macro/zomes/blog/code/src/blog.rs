@@ -8,6 +8,7 @@ use hdk::{
         error::HolochainError,
         json::JsonString,
         signature::{Provenance, Signature},
+        link::LinkMatch,
     },
     holochain_wasm_utils::api_serialization::{
         commit_entry::CommitEntryOptions,
@@ -398,15 +399,17 @@ pub fn handle_delete_post(content: String) -> ZomeApiResult<Address> {
 }
 
 pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&agent, Some("authored_posts".into()), None)
+    hdk::get_links(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any)
 }
 
 pub fn handle_my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&AGENT_ADDRESS, Some("authored_posts".into()), tag)
+    let tag = match tag {Some(ref s) => LinkMatch::Regex(s.as_ref()), None => LinkMatch::Any};
+    hdk::get_links(&AGENT_ADDRESS, LinkMatch::Exactly("authored_posts"), tag)
 }
 
 pub fn handle_my_posts_with_load(tag: Option<String>) -> ZomeApiResult<Vec<Post>> {
-    hdk::utils::get_links_and_load_type(&AGENT_ADDRESS, Some("authored_posts".into()), tag)
+    let tag = match tag {Some(ref s) => LinkMatch::Exactly(s.as_ref()), None => LinkMatch::Any};
+    hdk::utils::get_links_and_load_type(&AGENT_ADDRESS, LinkMatch::Exactly("authored_posts"), tag)
 }
 
 pub fn handle_my_memos() -> ZomeApiResult<Vec<Address>> {
@@ -421,8 +424,8 @@ pub fn handle_get_memo(address: Address) -> ZomeApiResult<Option<Entry>> {
 pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links_with_options(
         &AGENT_ADDRESS,
-        Some("authored_posts".into()),
-        None,
+        LinkMatch::Exactly("authored_posts"),
+        LinkMatch::Any,
         GetLinksOptions {
             timeout: 0.into(),
             ..Default::default()
@@ -433,8 +436,8 @@ pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
 pub fn handle_my_posts_get_my_sources(agent: Address) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links_with_options(
         &agent,
-        Some("authored_posts".into()),
-        None,
+        LinkMatch::Exactly("authored_posts"),
+        LinkMatch::Any,
         GetLinksOptions {
             headers: true,
             ..Default::default()
@@ -520,7 +523,7 @@ pub fn handle_recommend_post(
 }
 
 pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&AGENT_ADDRESS, Some("recommended_posts".into()), None)
+    hdk::get_links(&AGENT_ADDRESS, LinkMatch::Exactly("recommended_posts"), LinkMatch::Any)
 }
 
 pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<Entry>> {

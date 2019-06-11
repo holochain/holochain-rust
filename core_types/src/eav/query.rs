@@ -11,7 +11,7 @@ pub struct EaviQuery<'a> {
     pub value: ValueFilter<'a>,
     ///For this query system we are able to provide a tombstone set on the query level which allows us to specify which Attribute match should take precedent over the others.
     ///This is useful for some of the Link CRDT operations we are doing. Note that if no tombstone is found, the latest entry is returned
-    ///in the subset is obtained. The tombstone is optional so if it is not supplied, no tombstone check will be done.
+    ///from the subset that is obtained. The tombstone is optional so if it is not supplied, no tombstone check will be done.
     ///Currently the Tombstone does not work on an IndexByRange IndexFilter and will operate as if the tombstone was not set
     pub tombstone: Option<AttributeFilter<'a>>,
     ///represents a filter for the Index

@@ -10,6 +10,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate lib3h_persistence_derive;
 
+
 pub mod blog;
 pub mod memo;
 pub mod post;

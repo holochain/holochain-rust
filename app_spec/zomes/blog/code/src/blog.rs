@@ -3,7 +3,7 @@ use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     lib3h_persistence_api::{
         cas::content::Address,
-        json::JsonString,
+        json::{JsonStringOption, JsonString},
         error::PersistenceError
     },
     holochain_core_types::{
@@ -542,8 +542,9 @@ pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<En
         raw_json
     ))?;
 
-    let entry: Option<Entry> = raw_json.try_into()?;
+    let json_entry: JsonStringOption<Entry> = raw_json.try_into()?;
 
+    let entry = json_entry.into();
     hdk::debug(format!(
         "********DEBUG******** BRIDGING ACTUAL response from hosting-bridge {:?}",
         entry

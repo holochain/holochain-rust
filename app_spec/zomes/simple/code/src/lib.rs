@@ -17,7 +17,8 @@ use hdk::holochain_core_types::{
     error::HolochainError,
     json::JsonString,
     entry::Entry,
-    link::LinkMatch
+    link::LinkMatch,
+    hash::HashString
 };
 
 use hdk::holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
@@ -46,15 +47,15 @@ fn simple_entry(content: String) -> Entry {
 }
 
 
-pub fn handle_create_my_link(base: Address,content : String) -> ZomeApiResult<()> {
-    let address = hdk::commit_entry(&simple_entry(content))?;
-    hdk::link_entries(&base, &address, "authored_posts", "")?;
+pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()> {
+    let _address = hdk::commit_entry(&simple_entry(target))?;
+    hdk::link_entries(&base, &HashString::from(content), "authored_posts", "")?;
     Ok(())
 }
 
-pub fn handle_delete_my_link(base: Address,content : String) -> ZomeApiResult<()> {
-    let address = hdk::entry_address(&simple_entry(content))?;
-    hdk::remove_link(&base, &address, "authored_posts", "")?;
+pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()> {
+    let _address = hdk::entry_address(&simple_entry(target))?;
+    hdk::remove_link(&base, &HashString::from(content), "authored_posts", "")?;
     Ok(())
 }
 
@@ -85,11 +86,7 @@ pub fn definition() -> ValidatingEntryType {
                 validation: | validation_data: hdk::LinkValidationData | {
                     // test validation of links based on their tag
                     if let hdk::LinkValidationData::LinkAdd{link, ..} = validation_data {
-                        if link.link.tag() == "muffins" {
-                            Err("This is the one tag that is not allowed!".into())
-                        } else {
-                            Ok(())
-                        }
+                        Ok(())
                     } else {
                         Ok(())
                     }
@@ -114,12 +111,12 @@ define_zome! {
     functions: [
 
         create_link: {
-            inputs: |base : Address,content:String|,
+            inputs: |base : Address,target:String|,
             outputs: |result: ZomeApiResult<()>|,
             handler: handle_create_my_link
         }
         delete_link: {
-            inputs: |base : Address,content:String|,
+            inputs: |base : Address,target:String|,
             outputs: |result: ZomeApiResult<()>|,
             handler: handle_delete_my_link
         }

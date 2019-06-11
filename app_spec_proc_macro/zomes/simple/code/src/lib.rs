@@ -97,15 +97,15 @@ pub mod simple {
     }
 
     #[zome_fn("hc_public")]
-    pub fn create_link(base: Address,content : String) -> ZomeApiResult<()> 
+    pub fn create_link(base: Address,target : String) -> ZomeApiResult<()> 
     {
-        let address = hdk::commit_entry(&simple_entry(content))?;
+        let address = hdk::commit_entry(&simple_entry(target))?;
         hdk::link_entries(&base, &address, "authored_posts", "")?;
         Ok(())
     }
     #[zome_fn("hc_public")]
-    pub fn delete_link(base: Address,content : String) -> ZomeApiResult<()> {
-        let address = hdk::entry_address(&simple_entry(content))?;
+    pub fn delete_link(base: Address,target : String) -> ZomeApiResult<()> {
+        let address = hdk::entry_address(&simple_entry(target))?;
         hdk::remove_link(&base, &address, "authored_posts", "")?;
         Ok(())
     }

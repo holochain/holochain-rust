@@ -556,6 +556,8 @@ impl EavTestSuite {
         assert_eq!(&new_eavi.unwrap().unwrap(), results.iter().last().unwrap())
     }
 
+
+    
     pub fn test_many_to_one<A, S>(mut eav_storage: S)
     where
         A: AddressableContent + Clone,
@@ -639,6 +641,10 @@ impl EavTestSuite {
         }
     }
 
+
+    //this tests tombstone functionality in the sense of , if there is a tombstone variable set that matches the predicate it should take precedent over everything else that is found
+    //and if there isn't it should get the latest. This test will test both scenarios in which a tombstone is set and a match is found and a tombstone is set and a match is not found.
+    //no need to test the case in which a tombstone is not set because it is has been applied in previous tests already
     pub fn test_tombstone<A, S>(mut eav_storage: S)
     where
         A: AddressableContent + Clone,

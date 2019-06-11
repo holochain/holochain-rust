@@ -267,8 +267,10 @@ pub mod tests {
             test_chain_header(),
             test_agent_id(),
         );
+
+        //add link to dht
         let entry_link_add = Entry::LinkAdd(link_data.clone());
-        let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
+        let action_link_add = ActionWrapper::new(Action::AddLink(link_data.clone()));
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         let entry_link_remove = Entry::LinkRemove((
@@ -280,12 +282,15 @@ pub mod tests {
             ),
             vec![entry_link_add.address()],
         ));
+
+        //remove added link from dht
         let action_link_remove = ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         let link_type_regex = Regex::new("test-link").expect("Could not create link_type");
         let tag_regex = Regex::new("test-tag").expect("Could not create link_type");
 
+        //fetch from dht and when tombstone is found return tombstone
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
@@ -299,11 +304,12 @@ pub mod tests {
             None.into(),
             IndexFilter::LatestByAttribute,
             Some(EavFilter::single(Attribute::RemovedLink(
-                test_tag.clone(),
                 "test-link".to_string(),
+                test_tag.clone()
             ))),
         ));
 
+        //fetch call should be okay and remove_link tombstone should be the one that should be returned
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 1);
@@ -316,15 +322,13 @@ pub mod tests {
             Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
         );
 
-        let link_data = LinkData::from_link(
-            &link.clone(),
-            LinkActionKind::ADD,
-            test_chain_header(),
-            test_agent_id_with_name("new_agent"),
-        );
-        let entry_link_add = Entry::LinkAdd(link_data.clone());
+        //add new link with same chain header
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
-        let _new_dht_store = reduce(store.dht(), &action_link_add);
+        let new_dht_store = reduce(store.dht(), &action_link_add);
+
+
+        //fetch from dht after link with same chain header is added
+        let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
             EavFilter::predicate(|attr: Attribute| match attr.clone() {
@@ -337,14 +341,58 @@ pub mod tests {
             None.into(),
             IndexFilter::LatestByAttribute,
             Some(EavFilter::single(Attribute::RemovedLink(
-                test_tag.clone(),
                 "test-link".to_string(),
+                test_tag.clone()
             ))),
         ));
 
+
+        //fetch call should be okay and remove_link tombstone should be the one that should be returned since tombstone is applied to target hashes that are the same
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
-        println!("hashset {:?}", hash_set.clone());
+        assert_eq!(hash_set.len(), 1);
+        let eav = hash_set.iter().nth(0).unwrap();
+        assert_eq!(eav.entity(), *link.base());
+        let link_entry = link.add_entry(test_chain_header(), test_agent_id());
+        assert_eq!(eav.value(), link_entry.address());
+        assert_eq!(
+            eav.attribute(),
+            Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
+        );
+
+        //add new link after tombstone has been added with different chain_header which will produce same hash
+        let link_data = LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::ADD,
+            test_chain_header(),
+            test_agent_id_with_name("new_agent"),
+        );
+        let entry_link_add = Entry::LinkAdd(link_data.clone());
+        let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
+        let _new_dht_store = reduce(store.dht(), &action_link_add);
+
+        //after new link has been added return from fetch and make sure tombstone and new link is added
+        let storage = new_dht_store.meta_storage();
+        let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
+            Some(entry.address()).into(),
+            EavFilter::predicate(|attr: Attribute| match attr.clone() {
+                Attribute::LinkTag(query_link_type, query_tag)
+                | Attribute::RemovedLink(query_link_type, query_tag) => {
+                    link_type_regex.is_match(&query_link_type) && tag_regex.is_match(&query_tag)
+                }
+                _ => false,
+            }),
+            None.into(),
+            IndexFilter::LatestByAttribute,
+            Some(EavFilter::single(Attribute::RemovedLink(
+                "test-link".to_string(),
+                test_tag.clone()
+            ))),
+        ));
+
+        //two entries should be returned which is the new_link and the tombstone since the tombstone doesn't apply for the new link
+        assert!(fetched.is_ok());
+        let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 2);
         let eav = hash_set.iter().nth(1).unwrap();
         assert_eq!(eav.entity(), *link.base());

@@ -16,7 +16,8 @@ use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
     error::HolochainError,
     json::JsonString,
-    entry::Entry
+    entry::Entry,
+    link::LinkMatch
 };
 
 use hdk::holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
@@ -58,7 +59,7 @@ pub fn handle_delete_my_link(base: Address,content : String) -> ZomeApiResult<()
 }
 
 pub fn handle_get_my_links(base: Address) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&base, Some("authored_posts".into()), None)
+    hdk::get_links(&base, LinkMatch::Exactly("authored_posts"), LinkMatch::Any)
 }
 
 pub fn definition() -> ValidatingEntryType {

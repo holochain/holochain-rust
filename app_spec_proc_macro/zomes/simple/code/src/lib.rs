@@ -20,7 +20,8 @@ use hdk::{
         entry::Entry,
         dna::entry_types::Sharing,
         error::HolochainError,
-        json::JsonString
+        json::JsonString,
+        link::LinkMatch
     },
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult
 };
@@ -110,7 +111,7 @@ pub mod simple {
     }
     #[zome_fn("hc_public")]
     pub fn get_my_links(base: Address) -> ZomeApiResult<GetLinksResult> {
-        hdk::get_links(&base, Some("authored_posts".into()), None)
+        hdk::get_links(&base, LinkMatch::exact("authored_posts"), LinkMatch::Any)
     }
 
 }

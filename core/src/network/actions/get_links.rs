@@ -18,8 +18,8 @@ use std::{pin::Pin, sync::Arc, thread};
 pub async fn get_links(
     context: Arc<Context>,
     address: Address,
-    link_type: Option<String>,
-    tag: Option<String>,
+    link_type: String,
+    tag: String,
     timeout: Timeout,
 ) -> HcResult<Vec<Address>> {
     let key = GetLinksKey {

@@ -30,6 +30,7 @@ use holochain_wasm_utils::{
         },
         error::{RibosomeEncodedValue, RibosomeEncodingBits, RibosomeErrorCode},
         validation::{EntryValidationData, LinkValidationData},
+        link::LinkMatch,
     },
     lib3h_persistence_api::{
         cas::content::{Address, AddressableContent},
@@ -207,13 +208,13 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
 }
 
 fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&address, Some("test".into()), Some("test-tag".into()))
+    hdk::get_links(&address, LinkMatch::Exactly("test"), LinkMatch::Exactly("test-tag"))
 }
 
 fn handle_links_roundtrip_get_and_load(
     address: Address,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
-    hdk::get_links_and_load(&address, Some("test".into()), Some("test-tag".into()))
+    hdk::get_links_and_load(&address, LinkMatch::Exactly("test"), LinkMatch::Exactly("test-tag"))
 }
 
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {

@@ -68,7 +68,7 @@ define_zome! {
 
         check_sum: {
             inputs: |num1: u32, num2: u32|,
-            outputs: |sum: ZomeApiResult<JsonString>|,
+            outputs: |sum: ZomeApiResult<u32>|,
             handler: blog::handle_check_sum
         }
 

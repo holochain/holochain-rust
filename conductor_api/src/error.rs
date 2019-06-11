@@ -10,6 +10,7 @@ pub enum HolochainInstanceError {
     InstanceNotActiveYet,
     InstanceAlreadyActive,
     NoSuchInstance,
+    RequiredBridgeMissing(String),
 }
 
 impl Error for HolochainInstanceError {
@@ -21,6 +22,7 @@ impl Error for HolochainInstanceError {
             HolochainInstanceError::InstanceNotActiveYet => None,
             HolochainInstanceError::InstanceAlreadyActive => None,
             HolochainInstanceError::NoSuchInstance => None,
+            HolochainInstanceError::RequiredBridgeMissing(_) => None,
         }
     }
 }
@@ -39,6 +41,11 @@ impl fmt::Display for HolochainInstanceError {
             HolochainInstanceError::NoSuchInstance => {
                 write!(f, "{}: Instance does not exist", prefix)
             }
+            HolochainInstanceError::RequiredBridgeMissing(handle) => write!(
+                f,
+                "{}: Required bridge is not present/started: {}",
+                prefix, handle
+            ),
         }
     }
 }
@@ -86,6 +93,10 @@ pub mod tests {
             (
                 HolochainInstanceError::NoSuchInstance,
                 "Instance does not exist",
+            ),
+            (
+                HolochainInstanceError::RequiredBridgeMissing(String::from("handle")),
+                &format!("Required bridge is not present/started: handle"),
             ),
         ] {
             assert_eq!(

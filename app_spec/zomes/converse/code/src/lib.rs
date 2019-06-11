@@ -54,8 +54,9 @@ define_zome! {
         {
             hdk::keystore_new_random("app_root_seed", 32)
                 .map_err(|err|
-                         format!("new seed generation failed: {}",err)
-            )
+                    hdk::debug(format!("ignoring new seed generation because of error: {}",err))
+                ).unwrap_or(());
+            Ok(())
         }
     }
 

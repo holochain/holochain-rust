@@ -34,6 +34,8 @@ extern crate regex;
 extern crate maplit;
 extern crate hcid;
 extern crate wasmi;
+#[macro_use]
+extern crate shrinkwraprs;
 
 pub mod chain_header;
 pub mod crud_status;

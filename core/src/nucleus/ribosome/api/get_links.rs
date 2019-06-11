@@ -57,7 +57,7 @@ pub mod tests {
         chain_header::test_chain_header,
         entry::{entry_type::test_app_entry_type, Entry},
         json::{JsonString, RawString},
-        link::{Link, LinkMatch,link_data::LinkData},
+        link::{link_data::LinkData, Link, LinkMatch},
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use serde_json;

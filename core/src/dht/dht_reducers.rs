@@ -170,6 +170,7 @@ pub mod tests {
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
     };
+    use regex::Regex;
     use std::convert::TryFrom;
 
     #[test]
@@ -282,20 +283,16 @@ pub mod tests {
         let action_link_remove = ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
+        let link_type_regex = Regex::new("test-link").expect("Could not create link_type");
+        let tag_regex = Regex::new("test-tag").expect("Could not create link_type");
+
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
             EavFilter::predicate(|attr: Attribute| match attr.clone() {
                 Attribute::LinkTag(query_link_type, query_tag)
                 | Attribute::RemovedLink(query_link_type, query_tag) => {
-                    match (&link.link_type().clone().into(), &link.tag().clone().into()) {
-                        (Some(link_type), Some(tag)) => {
-                            link_type == &query_link_type && tag == &query_tag
-                        }
-                        (Some(link_type), None) => link_type == &query_link_type,
-                        (None, Some(tag)) => tag == &query_tag,
-                        (None, None) => true,
-                    }
+                    link_type_regex.is_match(&query_link_type) && tag_regex.is_match(&query_tag)
                 }
                 _ => false,
             }),
@@ -333,14 +330,7 @@ pub mod tests {
             EavFilter::predicate(|attr: Attribute| match attr.clone() {
                 Attribute::LinkTag(query_link_type, query_tag)
                 | Attribute::RemovedLink(query_link_type, query_tag) => {
-                    match (&link.link_type().clone().into(), &link.tag().clone().into()) {
-                        (Some(link_type), Some(tag)) => {
-                            link_type == &query_link_type && tag == &query_tag
-                        }
-                        (Some(link_type), None) => link_type == &query_link_type,
-                        (None, Some(tag)) => tag == &query_tag,
-                        (None, None) => true,
-                    }
+                    link_type_regex.is_match(&query_link_type) && tag_regex.is_match(&query_tag)
                 }
                 _ => false,
             }),

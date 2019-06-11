@@ -151,7 +151,7 @@ impl IntoZome for syn::ItemMod {
                 let callback = callbacks[0].clone();
                 let fn_def = zome_fn_dec_from_syn(&callback);
 
-                // must have the valid function signature which is ($ident: EntryValidationData::<AgentId>)
+                // must have the valid function signature which is ($ident: EntryValidationData<AgentId>)
                 let validation_data_param = match fn_def.inputs.len() {
                     1 => {
                         let param = fn_def.inputs[0].clone();
@@ -159,7 +159,7 @@ impl IntoZome for syn::ItemMod {
                     }
                     _ => {
                         emit_error(&self.ident,
-                            "incorrect number of params for validate_agent callback. Must have a single param with type `EntryValidationData::<AgentId>`");
+                            "incorrect number of params for validate_agent callback. Must have a single param with type `EntryValidationData<AgentId>`");
                         panic!()
                     }
                 };
@@ -327,7 +327,7 @@ mod tests {
                 }
 
                 #[validate_agent]
-                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
             }
@@ -345,7 +345,7 @@ mod tests {
                 }
 
                 #[validate_agent]
-                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -379,7 +379,7 @@ mod tests {
                 }
 
                 #[validate_agent]
-                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -431,7 +431,7 @@ mod tests {
                 }
 
                 #[validate_agent]
-                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -467,7 +467,7 @@ mod tests {
                 }
 
                 #[validate_agent]
-                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -499,7 +499,7 @@ mod tests {
                 }
 
                 #[validate_agent]
-                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -536,7 +536,7 @@ mod tests {
                 }
 
                 #[validate_agent]
-                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -569,7 +569,7 @@ mod tests {
                 }
 
                 #[validate_agent]
-                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
             }
@@ -588,7 +588,7 @@ mod tests {
                 }
 
                 #[validate_agent]
-                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 

@@ -35,7 +35,7 @@ pub mod someZome {
     }
     
     #[validate_agent]
-    fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+    fn validate_agent(validation_data: EntryValidationData<AgentId>) {
         Ok(())
     }
 
@@ -65,7 +65,7 @@ pub mod someZome {
     }
 
     #[receive]
-    fn glerp_glerp(message: String) -> String {
+    fn glerp_glerp(_from: Address, message: String) -> String {
         message
     }
     

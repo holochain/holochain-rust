@@ -29,7 +29,6 @@ use hdk::{
     lib3h_persistence_api::{
         cas::content::Address,
         json::JsonString,
-        error::PersistenceError,
     },
     holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}}
 };

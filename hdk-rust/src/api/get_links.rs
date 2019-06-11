@@ -1,9 +1,7 @@
 use super::Dispatch;
 use api::get_entry::get_entry_result;
 use error::{ZomeApiError, ZomeApiResult};
-use holochain_core_types::{
-    entry::Entry, link::LinkMatch,
-};
+use holochain_core_types::{entry::Entry, link::LinkMatch};
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultItem, GetEntryResultType},
     get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},

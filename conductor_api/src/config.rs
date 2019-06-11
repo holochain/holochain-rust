@@ -14,7 +14,6 @@ use boolinator::*;
 use conductor::base::DnaLoader;
 use holochain_core_types::{
     agent::{AgentId, Base32},
-    cas::content::AddressableContent,
     dna::{
         bridges::{BridgePresence, BridgeReference},
         Dna,
@@ -22,7 +21,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 
-use lib3h_persistence_api::json::JsonString;
+use lib3h_persistence_api::{cas::content::AddressableContent, json::JsonString};
 
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;

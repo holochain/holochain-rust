@@ -50,7 +50,7 @@ impl From<HolochainError> for ZomeApiError {
 
 impl From<PersistenceError> for ZomeApiError {
     fn from(persistence_error: PersistenceError) -> Self {
-        let holochain_error : HolochainError = persistence_error.into();
+        let holochain_error: HolochainError = persistence_error.into();
         holochain_error.into()
     }
 }

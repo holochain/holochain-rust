@@ -111,7 +111,7 @@ pub mod simple {
     }
     #[zome_fn("hc_public")]
     pub fn get_my_links(base: Address) -> ZomeApiResult<GetLinksResult> {
-        hdk::get_links(&base, LinkMatch::exact("authored_posts"), LinkMatch::Any)
+        hdk::get_links(&base, LinkMatch::Exact("authored_posts"), LinkMatch::Any)
     }
 
 }

@@ -565,7 +565,7 @@ define_zome! {
         )
     ]
 
-    genesis: || { Ok(()) }
+    init: || { Ok(()) }
 
     receive: |_from, payload| {
         {

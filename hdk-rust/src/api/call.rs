@@ -87,7 +87,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// define_zome! {
 ///     entries: []
 ///
-///     genesis: || {
+///     init: || {
 ///         Ok(())
 ///     }
 ///
@@ -199,7 +199,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// define_zome! {
 ///     entries: []
 ///
-///     genesis: || {
+///     init: || {
 ///         Ok(())
 ///     }
 ///

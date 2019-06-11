@@ -70,9 +70,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
 
     // Perform query
     let agent = context.state().unwrap().agent();
-    let top = agent
-        .top_chain_header()
-        .expect("Should have genesis entries.");
+    let top = agent.top_chain_header().expect("Should have init entries.");
     let maybe_result = match query.entry_type_names {
         // Result<ChainStoreQueryResult,...>
         QueryArgsNames::QueryList(pats) => {

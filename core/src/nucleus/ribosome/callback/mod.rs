@@ -1,7 +1,7 @@
 //! Module for ZomeCallbacks
 //! ZomeCallbacks are functions in a Zome that are callable by the ribosome.
 
-pub mod genesis;
+pub mod init;
 pub mod links_utils;
 pub mod receive;
 pub mod validation_package;
@@ -11,7 +11,7 @@ use crate::{
     nucleus::{
         ribosome::{
             self,
-            callback::{genesis::genesis, receive::receive},
+            callback::{init::init, receive::receive},
             runtime::WasmCallData,
             Defn,
         },
@@ -33,7 +33,7 @@ use std::{convert::TryFrom, str::FromStr, sync::Arc};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
-// @TODO should each one be an action, e.g. Action::Genesis(Zome)?
+// @TODO should each one be an action, e.g. Action::Init(Zome)?
 // @see https://github.com/holochain/holochain-rust/issues/200
 
 #[derive(FromPrimitive, Debug, PartialEq)]
@@ -41,8 +41,8 @@ pub enum Callback {
     /// Error index for unimplemented functions
     MissingNo = 0,
 
-    /// genesis() -> bool
-    Genesis,
+    /// init() -> bool
+    Init,
 
     /// receive(from: Address, message: String) -> String
     Receive,
@@ -52,7 +52,7 @@ impl FromStr for Callback {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "genesis" => Ok(Callback::Genesis),
+            "init" => Ok(Callback::Init),
             "receive" => Ok(Callback::Receive),
             other if other.is_empty() => Ok(Callback::MissingNo),
             _ => Err("Cannot convert string to Callback"),
@@ -72,7 +72,7 @@ impl Callback {
 
         match *self {
             Callback::MissingNo => noop,
-            Callback::Genesis => genesis,
+            Callback::Init => init,
             // @TODO call this from somewhere
             // @see https://github.com/holochain/holochain-rust/issues/201
             Callback::Receive => receive,
@@ -84,7 +84,7 @@ impl Defn for Callback {
     fn as_str(&self) -> &'static str {
         match *self {
             Callback::MissingNo => "",
-            Callback::Genesis => "genesis",
+            Callback::Init => "init",
             Callback::Receive => "receive",
         }
     }
@@ -106,7 +106,7 @@ impl Defn for Callback {
 
 #[derive(Debug, Serialize, Deserialize, DefaultJson)]
 pub enum CallbackParams {
-    Genesis,
+    Init,
     ValidateCommit(Entry),
     Receive(ReceiveParams),
 }
@@ -114,7 +114,7 @@ pub enum CallbackParams {
 impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
-            CallbackParams::Genesis => String::new(),
+            CallbackParams::Init => String::new(),
             CallbackParams::ValidateCommit(serialized_entry) => {
                 String::from(JsonString::from(serialized_entry.to_owned()))
             }
@@ -303,8 +303,8 @@ pub mod tests {
     /// test the FromStr implementation for Lifecycle Function
     fn test_from_str() {
         assert_eq!(
-            Callback::Genesis,
-            Callback::from_str("genesis").expect("string literal should be valid callback")
+            Callback::Init,
+            Callback::from_str("init").expect("string literal should be valid callback")
         );
         assert_eq!(
             Callback::Receive,
@@ -322,21 +322,21 @@ pub mod tests {
         // as_str()
         for (input, output) in vec![
             (Callback::MissingNo, ""),
-            (Callback::Genesis, "genesis"),
+            (Callback::Init, "init"),
             (Callback::Receive, "receive"),
         ] {
             assert_eq!(output, input.as_str());
         }
 
         // str_to_index()
-        for (input, output) in vec![("", 0), ("genesis", 1), ("receive", 2)] {
+        for (input, output) in vec![("", 0), ("init", 1), ("receive", 2)] {
             assert_eq!(output, Callback::str_to_index(input));
         }
 
         // from_index()
         for (input, output) in vec![
             (0, Callback::MissingNo),
-            (1, Callback::Genesis),
+            (1, Callback::Init),
             (2, Callback::Receive),
         ] {
             assert_eq!(output, Callback::from_index(input));

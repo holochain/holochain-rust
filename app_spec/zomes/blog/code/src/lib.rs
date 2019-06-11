@@ -34,7 +34,7 @@ define_zome! {
         memo::definition()
     ]
 
-    genesis: || {
+    init: || {
         Ok(())
     }
 

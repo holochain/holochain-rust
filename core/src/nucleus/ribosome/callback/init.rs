@@ -45,7 +45,7 @@ pub mod tests {
         let netname = Some("init::not_implemented");
         let instance = test_callback_instance(
             zome,
-            // anything other than Init is fine here
+            // anything other than init is fine here
             Callback::Receive.as_str(),
             0,
             netname,

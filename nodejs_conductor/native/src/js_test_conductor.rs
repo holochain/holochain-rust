@@ -19,7 +19,8 @@ use holochain_core::{
     nucleus::actions::call_zome_function::make_cap_request_for_call,
     signal::{signal_channel, Signal, SignalReceiver},
 };
-use lib3h_persistence_api::{cas::content::AddressableContent, entry::Entry, json::JsonString};
+use holochain_core_types::entry::Entry;
+use lib3h_persistence_api::{cas::content::AddressableContent, json::JsonString};
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
 /// Block until Hold(agent.public_address) is seen for each agent in the conductor.

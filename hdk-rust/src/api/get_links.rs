@@ -22,6 +22,7 @@ use lib3h_persistence_api::{cas::content::Address, hash::HashString};
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_wasm_utils;
+/// # extern crate lib3h_persistence_api;
 /// # use lib3h_persistence_api::json::JsonString;
 /// # use lib3h_persistence_api::cas::content::Address;
 /// # use hdk::error::ZomeApiResult;

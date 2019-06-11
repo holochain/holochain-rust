@@ -46,6 +46,7 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
+/// # extern crate lib3h_persistence_api;
 /// # #[macro_use]
 /// # extern crate lib3h_persistence_derive;
 /// # use lib3h_persistence_api::json::JsonString;

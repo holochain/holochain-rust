@@ -632,16 +632,18 @@ impl Conductor {
                 {
                     let dna_hash_from_conductor_config =
                         HashString::from(dna_config.hash.clone()
-                                         // .unwrap_or("Missing DNA hash from Conductor config.".to_string()))
                                          .unwrap_or("".to_string()))
                                          .to_owned();
+                    if dna_hash_from_conductor_config.to_string() == "" {
+                        // Let's warn the user that we encountered an empty DNA hash in the Conductor
+                        // config that is meant to be skipped by the consistency checking mechanisim
+                        context.log("warn/Conductor: Empty DNA hash encountered in the Conductor configuration.");
+                    }
+
                     let dna_hash_computed = &dna.address();
 
-                    // Let's warn the user that we encounter an empty DNA hash in the Conductor
-                    // config that is mmeant to be skipped by the consistency checking mechanisim
-                    context.log("warn/Conductor: Empty DNA hash encountered in the Conductor configuration.");
 
-                    match Conductor::load_dna(&dna_file) {
+                    match Arc::get_mut(&mut self.dna_loader).expect("Fail to get a mutable 'dna loader'.")(&dna_file) {
                         // If the file is correctly loaded, meaning it exists in the file system,
                         // we can operate on its computed DNA hash
                         Ok(dna) => {
@@ -1226,7 +1228,7 @@ pub mod tests {
     [[dnas]]
     id = "bridge-caller"
     file = "bridge/caller.dna"
-    hash = ""
+    hash = "QmaxFoQiVziSdELCxgQvmDbLGxNPEDiQSnm6aKHijMSI4k"
 
     [[instances]]
     id = "test-instance-1"
@@ -1423,7 +1425,7 @@ pub mod tests {
         [[dnas]]
         id = "bridge-caller"
         file = "bridge/caller.dna"
-        hash = ""
+        hash = "QmaxFoQiVziSdELCxgQvmDbLGxNPEDiQSnm6aKHijMSI4k"
 
         [[instances]]
         id = "test-instance-1"

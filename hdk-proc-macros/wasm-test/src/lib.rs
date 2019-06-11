@@ -33,6 +33,11 @@ pub mod someZome {
     fn genisis() {
         Ok(())
     }
+    
+    #[validate_agent]
+    fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+        Ok(())
+    }
 
     #[zome_fn("hc_public", "trait2")]
     fn test_zome_fn(_input: i32, _next: bool, _another: JsonString) -> JsonString {

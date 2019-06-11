@@ -325,6 +325,11 @@ mod tests {
                 fn genesis() {
                     Ok(())
                 }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                    Ok(())
+                }
             }
         };
         let _ = module.extract_zome();
@@ -336,6 +341,11 @@ mod tests {
             mod zome {
                 #[genesis]
                 fn genesis() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
                     Ok(())
                 }
 
@@ -365,6 +375,11 @@ mod tests {
             mod zome {
                 #[genesis]
                 fn genesis() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
                     Ok(())
                 }
 
@@ -415,6 +430,11 @@ mod tests {
                     Ok(())
                 }
 
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                    Ok(())
+                }
+
                 #[zome_fn("test_trait")]
                 fn a_fn(param1: i32, param2: String, param3: bool) -> String {
                     "test".into()
@@ -446,6 +466,11 @@ mod tests {
                     Ok(())
                 }
 
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                    Ok(())
+                }
+
                 #[zome_fn("hc_public")]
                 fn a_fn() -> ZomeApiResult<String> {
                     Ok("test".into())
@@ -470,6 +495,11 @@ mod tests {
             mod zome {
                 #[genesis]
                 fn genesis() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
                     Ok(())
                 }
 
@@ -505,6 +535,11 @@ mod tests {
                     Ok(())
                 }
 
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                    Ok(())
+                }
+
                  const SOME_CONST: u32 = 123;
 
                 fn non_zome_func() {
@@ -532,6 +567,11 @@ mod tests {
                 fn genesis() {
                     Ok(())
                 }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
+                    Ok(())
+                }
             }
         };
         let zome_def = module.extract_zome();
@@ -544,6 +584,11 @@ mod tests {
             mod zome {
                 #[genesis]
                 fn genesis() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData::<AgentId>) {
                     Ok(())
                 }
 

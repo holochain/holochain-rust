@@ -350,7 +350,6 @@ pub mod tests {
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
-        json::{JsonString, RawString},
     };
     use tempfile;
     use test_utils;
@@ -739,7 +738,9 @@ pub mod tests {
         assert!(instance.is_err());
         assert_eq!(
             instance.err().unwrap(),
-            String::from(JsonString::from(RawString::from("Init")))
+            String::from(
+                "At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]"
+            )
         );
     }
 

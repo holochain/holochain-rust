@@ -12,7 +12,12 @@ extern crate holochain_core_types_derive;
 
 use boolinator::Boolinator;
 use hdk::{
+<<<<<<< HEAD
+    AGENT_ADDRESS,
+    DNA_ADDRESS,
+=======
     api::G_MEM_STACK,
+>>>>>>> 2bfdf915c112afadf43fa0223eaacdfd9f5f2fb0
     error::{ZomeApiError, ZomeApiResult},
     global_fns::init_global_memory,
 };
@@ -565,7 +570,41 @@ define_zome! {
         )
     ]
 
-    init: || { Ok(()) }
+    init: || {{
+        // should be able to commit an entry
+        let entry = Entry::App(
+            "testEntryType".into(),
+            EntryStruct {
+                stuff: "called from init".into(),
+            }
+            .into(),
+        );
+        let addr = hdk::commit_entry(&entry)?;
+
+        // should be able to get the entry
+        let get_result = hdk::get_entry(&addr)?.unwrap();
+        if !(entry == get_result) {
+            return Err("Could not retrieve the same entry in init".into());
+        }
+        
+        // should be able to access globals
+        let agent_addr: Address = AGENT_ADDRESS.to_string().into();
+        let _dna_hash: Address = DNA_ADDRESS.to_string().into();
+
+        // should be able to call hdk::send, will timeout immedietly but that is ok
+        let _send_result = hdk::send(agent_addr, "".to_string(), 10000.into())?;
+
+        // should be able to call other zome funcs
+        let _call_result = hdk::call(
+            hdk::THIS_INSTANCE,
+            "test_zome",
+            Address::from(hdk::PUBLIC_TOKEN.to_string()),
+            "check_app_entry_address",
+            JsonString::empty_object(),
+        )?;
+
+        Ok(())
+    }}
 
     receive: |_from, payload| {
         {

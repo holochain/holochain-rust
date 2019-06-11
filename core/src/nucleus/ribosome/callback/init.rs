@@ -70,7 +70,10 @@ pub mod tests {
         let instance = test_callback_instance(zome, Callback::Init.as_str(), 1, netname);
         assert!(instance.is_err());
         let error = instance.err().unwrap();
-        assert_eq!("\"".to_string(), error);
+        assert_eq!(
+            "At least one zome init returned error: [(\"test_zome\", \"\\\"\")]".to_string(),
+            error
+        );
     }
 
 }

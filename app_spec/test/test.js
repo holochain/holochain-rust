@@ -207,6 +207,26 @@ scenario('create_tagged_post and retrieve exact tag match', async (s, t, { alice
   t.ok(tags.includes("fishing"))
 })
 
+scenario('create_tagged_post and retrieve regex tag match', async (s, t, { alice }) => {
+  const result1 = await alice.callSync("blog", "create_tagged_post", {
+    content: "A post made on the 10th of October",
+    tag: "10/10/2019"
+  })
+  t.ok(result1.Ok)
+
+  const result2 = await alice.callSync("blog", "create_tagged_post", {
+    content: "A post made on the 10th of September",
+    tag: "10/9/2019"
+  })
+  t.ok(result2.Ok)
+
+  const getResult = await alice.callSync("blog", "my_posts", {tag: "^10\/[0-9]+\/2019$"})
+  t.equal(getResult.Ok.links.length, 2)
+  let tags = getResult.Ok.links.map(l => l.tag)
+  t.ok(tags.includes("10/10/2019"))
+  t.ok(tags.includes("10/9/2019"))
+})
+
 scenario('tagged link validation', async (s, t, { alice }) => {
   const result1 = await alice.callSync("blog", "create_tagged_post", {
     content: "Achieving a light and fluffy texture",

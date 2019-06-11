@@ -23,10 +23,13 @@ use hdk::{
     error::ZomeApiResult,
     entry_definition::ValidatingEntryType,
     holochain_core_types::{
-        cas::content::Address,
         entry::Entry,
-        json::JsonString,
         signature::Provenance,
+    },
+    lib3h_persistence_api::{
+        cas::content::Address,
+        json::JsonString,
+        error::PersistenceError,
     },
     holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}}
 };

@@ -3,8 +3,12 @@
 /// published on the dht.
 use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_core_types::{
-    dna::entry_types::Sharing, error::HolochainError, json::JsonString,
+    dna::entry_types::Sharing
 };
+use hdk::lib3h_persistence_api::{
+    error::PersistenceError, json::JsonString,
+};
+
 
 /// We declare the structure of our entry type with this Rust struct.
 /// It will be checked automatically by the macro below, similar

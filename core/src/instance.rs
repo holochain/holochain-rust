@@ -194,7 +194,6 @@ impl Instance {
                     }
                 }
             }
-            println!("info/action: STOPPING ACTION LOOP");
         });
     }
 

@@ -17,8 +17,11 @@ pub mod post;
 use blog::Env;
 use hdk::{
     error::ZomeApiResult,
+    lib3h_persistence_api::{
+        cas::content::Address, error::PersistenceError, json::JsonString,
+    },
     holochain_core_types::{
-        cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
+        entry::Entry,
         signature::Provenance
     },
     holochain_wasm_utils::api_serialization::{

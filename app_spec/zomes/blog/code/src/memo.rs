@@ -2,8 +2,13 @@
 /// a Memo is essentially a private post that should never be publically
 /// published on the dht.
 use hdk::entry_definition::ValidatingEntryType;
-use hdk::holochain_core_types::{
-    dna::entry_types::Sharing, error::HolochainError, json::JsonString,
+use hdk::{
+    holochain_core_types::{
+        dna::entry_types::Sharing
+    },
+    lib3h_persistence_api::{
+        error::PersistenceError, json::JsonString,
+    }
 };
 
 /// We declare the structure of our entry type with this Rust struct.

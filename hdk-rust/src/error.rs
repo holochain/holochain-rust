@@ -48,6 +48,13 @@ impl From<HolochainError> for ZomeApiError {
     }
 }
 
+impl From<PersistenceError> for ZomeApiError {
+    fn from(persistence_error: PersistenceError) -> Self {
+        let holochain_error : HolochainError = persistence_error.into();
+        holochain_error.into()
+    }
+}
+
 impl From<!> for ZomeApiError {
     fn from(_: !) -> Self {
         unreachable!();

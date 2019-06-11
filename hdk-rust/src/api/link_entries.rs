@@ -23,9 +23,11 @@ use lib3h_persistence_api::cas::content::Address;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
+/// # extern crate lib3h_persistence_api;
 /// # #[macro_use]
 /// # extern crate lib3h_persistence_derive;
 /// # use lib3h_persistence_api::json::JsonString;
+/// # use lib3h_persistence_api::error::PersistenceError;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;

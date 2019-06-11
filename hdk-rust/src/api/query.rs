@@ -28,6 +28,7 @@ use lib3h_persistence_api::cas::content::Address;
 /// ```rust
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
+/// # extern crate lib3h_persistence_api;
 /// # use hdk::error::ZomeApiResult;
 /// # use lib3h_persistence_api::json::JsonString;
 /// # use lib3h_persistence_api::cas::content::Address;

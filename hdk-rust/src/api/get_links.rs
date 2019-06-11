@@ -64,6 +64,7 @@ pub fn get_links(
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_wasm_utils;
+/// # extern crate lib3h_persistence_api;
 /// # use hdk::error::ZomeApiResult;
 /// # use lib3h_persistence_api::cas::content::Address;
 /// # use holochain_wasm_utils::api_serialization::{

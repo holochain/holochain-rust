@@ -17,6 +17,7 @@ use lib3h_persistence_api::cas::content::Address;
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
+/// # extern crate lib3h_persistence_api;
 /// # extern crate serde;
 /// # #[macro_use]
 /// # extern crate serde_derive;
@@ -24,6 +25,7 @@ use lib3h_persistence_api::cas::content::Address;
 /// # extern crate serde_json;
 /// # use hdk::error::ZomeApiResult;
 /// # use lib3h_persistence_api::cas::content::Address;
+/// # use lib3h_persistence_api::error::PersistenceError;
 /// # use lib3h_persistence_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::error::RibosomeEncodingBits;

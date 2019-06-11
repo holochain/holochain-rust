@@ -121,7 +121,8 @@ use lib3h_persistence_api::{cas::content::Address, json::JsonString};
 /// # #[macro_use]
 /// # extern crate lib3h_persistence_derive;
 ///
-/// # use hdk::holochain_core_types::hash::HashString;
+/// # use hdk::lib3h_persistence_api::hash::HashString;
+/// # use hdk::lib3h_persistence_api::error::PersistenceError;
 /// # use hdk::lib3h_persistence_api::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::error::ZomeApiResult;

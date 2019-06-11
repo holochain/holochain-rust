@@ -17,6 +17,7 @@ use super::Dispatch;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
+/// # extern crate lib3h_persistence_api;
 /// # #[macro_use]
 /// # extern crate lib3h_persistence_derive;
 /// # use lib3h_persistence_api::json::JsonString;
@@ -77,6 +78,7 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
+/// # extern crate lib3h_persistence_api;
 /// # #[macro_use]
 /// # extern crate lib3h_persistence_derive;
 /// # use lib3h_persistence_api::json::JsonString;

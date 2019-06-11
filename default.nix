@@ -1,6 +1,6 @@
 let
- holonix-release-tag = "expecting-bad-ozone";
- holonix-release-sha256 = "0x6bma8p1kmlzsr2dd5zjyvw809hjmycdk8n8bknigx7vd88v52m";
+ holonix-release-tag = "eighth-projected-luggage";
+ holonix-release-sha256 = "03gpy2n1bdc8dza678lcg8qkj2l8jl3jnyakwipb4dlf59sbc83y";
 
  holonix = import (fetchTarball {
   url = "https://github.com/holochain/holonix/archive/${holonix-release-tag}.tar.gz";

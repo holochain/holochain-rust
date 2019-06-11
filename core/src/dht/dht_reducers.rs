@@ -305,7 +305,7 @@ pub mod tests {
             IndexFilter::LatestByAttribute,
             Some(EavFilter::single(Attribute::RemovedLink(
                 "test-link".to_string(),
-                test_tag.clone()
+                test_tag.clone(),
             ))),
         ));
 
@@ -326,7 +326,6 @@ pub mod tests {
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
-
         //fetch from dht after link with same chain header is added
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
@@ -342,10 +341,9 @@ pub mod tests {
             IndexFilter::LatestByAttribute,
             Some(EavFilter::single(Attribute::RemovedLink(
                 "test-link".to_string(),
-                test_tag.clone()
+                test_tag.clone(),
             ))),
         ));
-
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned since tombstone is applied to target hashes that are the same
         assert!(fetched.is_ok());
@@ -386,7 +384,7 @@ pub mod tests {
             IndexFilter::LatestByAttribute,
             Some(EavFilter::single(Attribute::RemovedLink(
                 "test-link".to_string(),
-                test_tag.clone()
+                test_tag.clone(),
             ))),
         ));
 

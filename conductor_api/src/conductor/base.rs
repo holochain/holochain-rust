@@ -630,20 +630,23 @@ impl Conductor {
                 // the hash provided in the TOML Conductor config file with the computed hash of
                 // the loaded dna.
                 {
-                    let dna_hash_from_conductor_config =
-                        HashString::from(dna_config.hash.clone()
-                                         .unwrap_or("".to_string()))
-                                         .to_owned();
-                    if dna_hash_from_conductor_config.to_string() == "" {
-                        // Let's warn the user that we encountered an empty DNA hash in the Conductor
-                        // config that is meant to be skipped by the consistency checking mechanisim
-                        context.log("warn/Conductor: Empty DNA hash encountered in the Conductor configuration.");
-                    }
+                    let dna_hash_from_conductor_config = HashString::from({
+                        match dna_config.hash {
+                            Some(v) => v,
+                            None => {
+                                // Let's warn the user that we encountered an empty DNA hash in the Conductor
+                                // config that is meant to be skipped by the consistency checking mechanisim
+                                context.log("warn/Conductor: Empty DNA hash encountered in the Conductor configuration.");
+                                String::from("")
+                            }
+                        }
+                    }).to_owned();
 
                     let dna_hash_computed = &dna.address();
 
 
-                    match Arc::get_mut(&mut self.dna_loader).expect("Fail to get a mutable 'dna loader'.")(&dna_file) {
+                    match Arc::get_mut(&mut self.dna_loader)
+                        .expect("Fail to get a mutable reference to 'dna loader'.")(&dna_file) {
                         // If the file is correctly loaded, meaning it exists in the file system,
                         // we can operate on its computed DNA hash
                         Ok(dna) => {

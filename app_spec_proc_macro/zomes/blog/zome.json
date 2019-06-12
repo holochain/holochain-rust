@@ -1,0 +1,11 @@
+{
+  "bridges": [
+    {
+      "presence": "optional",
+      "handle": "test-bridge",
+      "reference": {
+        "traits": {}
+      }
+    }
+  ]
+}

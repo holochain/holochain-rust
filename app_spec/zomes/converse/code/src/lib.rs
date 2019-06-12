@@ -9,7 +9,7 @@ use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
         error::HolochainError,
-        json::{JsonString},
+        json::JsonString,
         signature::{Provenance, Signature},
     },
     holochain_wasm_utils::api_serialization::keystore::KeyType,
@@ -52,8 +52,9 @@ define_zome! {
         {
             hdk::keystore_new_random("app_root_seed", 32)
                 .map_err(|err|
-                         format!("new seed generation failed: {}",err)
-            )
+                    hdk::debug(format!("ignoring new seed generation because of error: {}",err))
+                ).unwrap_or(());
+            Ok(())
         }
     }
 

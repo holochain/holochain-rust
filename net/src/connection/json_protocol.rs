@@ -456,7 +456,7 @@ mod tests {
             request_id: "test_id".to_string(),
             to_agent_id: Address::from("test_to"),
             from_agent_id: Address::from("test_from"),
-            content: "hello".as_bytes(),
+            content: "hello".into(),
         }));
     }
 
@@ -495,10 +495,10 @@ mod tests {
 
     #[test]
     fn it_can_convert_FetchEntry() {
-        test_convert!(JsonProtocol::FetchEntry(FetchEntryData {
+        test_convert!(JsonProtocol::HandleFetchEntry(FetchEntryData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            requester_agent_id: Address::from("test_to"),
+            provider_agent_id: Address::from("test_from"),
             entry_address: "Hk42".into(),
             aspect_address_list: None,
         }));
@@ -508,7 +508,7 @@ mod tests {
         test_convert!(JsonProtocol::HandleFetchEntry(FetchEntryData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            requester_agent_id: Address::from("test_to"),
+            provider_agent_id: Address::from("test_from"),
             entry_address: "Hk42".into(),
             aspect_address_list: None,
         }));
@@ -518,6 +518,7 @@ mod tests {
         test_convert!(JsonProtocol::HandleFetchEntryResult(FetchEntryResultData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
+            provider_agent_id: Address::from("test_from"),
             entry: test_entry(),
         }));
     }
@@ -530,7 +531,7 @@ mod tests {
         }));
     }
     #[test]
-    fn it_can_convert_HandleStoreEntry() {
+    fn it_can_convert_HandleStoreEntryAspect() {
         test_convert!(JsonProtocol::HandleStoreEntryAspect(StoreEntryAspectData {
             request_id: "req_id".to_string(),
             dna_address: "test_dna".into(),
@@ -543,8 +544,8 @@ mod tests {
     // -- Query -- //
 
     #[test]
-    fn it_can_convert_Query() {
-        test_convert!(JsonProtocol::QueryEntry(QueryData {
+    fn it_can_convert_QueryEntry() {
+        test_convert!(JsonProtocol::QueryEntry(QueryEntryData {
             dna_address: "test_dna".into(),
             entry_address: "Hk42".into(),
             request_id: "test_id".to_string(),
@@ -553,13 +554,13 @@ mod tests {
         }));
     }
     #[test]
-    fn it_can_convert_QueryResult() {
-        test_convert!(JsonProtocol::QueryEntryResult(QueryResultData {
+    fn it_can_convert_QueryEntryResult() {
+        test_convert!(JsonProtocol::QueryEntryResult(QueryEntryResultData {
             dna_address: "test_dna".into(),
             entry_address: "Hk42".into(),
             request_id: "test_id".to_string(),
             requester_agent_id: Address::from("test_from"),
-            requester_agent_id: Address::from("test_to"),
+            responder_agent_id: Address::from("test_to"),
             query_result: vec![4, 3, 2, 1],
         }));
     }

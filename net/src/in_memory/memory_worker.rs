@@ -168,7 +168,7 @@ mod tests {
 
     use crate::connection::json_protocol::{JsonProtocol, TrackDnaData};
     use crossbeam_channel::unbounded;
-    use holochain_core_types::cas::content::Address;
+    use holochain_core_types::{cas::content::Address, hash::HashString};
 
     fn example_dna_address() -> Address {
         "blabladnaAddress".into()
@@ -204,7 +204,7 @@ mod tests {
             .receive(
                 JsonProtocol::TrackDna(TrackDnaData {
                     dna_address: example_dna_address(),
-                    agent_id: AGENT_ID_1.to_string(),
+                    agent_id: HashString::from(AGENT_ID_1),
                 })
                 .into(),
             )
@@ -219,7 +219,7 @@ mod tests {
             .receive(
                 JsonProtocol::TrackDna(TrackDnaData {
                     dna_address: example_dna_address(),
-                    agent_id: AGENT_ID_1.to_string(),
+                    agent_id: HashString::from(AGENT_ID_1),
                 })
                 .into(),
             )

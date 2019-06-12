@@ -352,6 +352,14 @@ impl From<JsonProtocol> for Protocol {
 mod tests {
     use super::*;
 
+    macro_rules! hashmap {
+        ($( $key: expr => $val: expr ),*) => {{
+            let mut map = ::std::collections::HashMap::new();
+            $( map.insert($key, $val); )*
+                map
+        }}
+    }
+
     macro_rules! test_convert {
         ($e:expr) => {
             let orig = $e;
@@ -437,7 +445,7 @@ mod tests {
     #[test]
     fn it_can_convert_PeerConnected() {
         test_convert!(JsonProtocol::PeerConnected(PeerData {
-            agent_id: "test_id".to_string(),
+            agent_id: Address::from("test_id"),
         }));
     }
 
@@ -446,8 +454,8 @@ mod tests {
         test_convert!(JsonProtocol::SendMessage(MessageData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            to_agent_id: "test_to".to_string(),
-            from_agent_id: "test_from".to_string(),
+            to_agent_id: Address::from("test_to"),
+            from_agent_id: Address::from("test_from"),
             content: "hello".as_bytes(),
         }));
     }
@@ -457,8 +465,8 @@ mod tests {
         test_convert!(JsonProtocol::SendMessageResult(MessageData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            to_agent_id: "test_to".to_string(),
-            from_agent_id: "test_from".to_string(),
+            to_agent_id: Address::from("test_to"),
+            from_agent_id: Address::from("test_from"),
             content: "hello".into(),
         }));
     }
@@ -468,8 +476,8 @@ mod tests {
         test_convert!(JsonProtocol::HandleSendMessage(MessageData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            to_agent_id: "test_to".to_string(),
-            from_agent_id: "test_from".to_string(),
+            to_agent_id: Address::from("test_to"),
+            from_agent_id: Address::from("test_from"),
             content: "hello".into(),
         }));
     }
@@ -479,8 +487,8 @@ mod tests {
         test_convert!(JsonProtocol::HandleSendMessageResult(MessageData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            to_agent_id: "test_to".to_string(),
-            from_agent_id: "test_from".to_string(),
+            to_agent_id: Address::from("test_to"),
+            from_agent_id: Address::from("test_from"),
             content: "hello".into(),
         }));
     }
@@ -490,7 +498,7 @@ mod tests {
         test_convert!(JsonProtocol::FetchEntry(FetchEntryData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            requester_agent_id: "test_to".to_string(),
+            requester_agent_id: Address::from("test_to"),
             entry_address: "Hk42".into(),
             aspect_address_list: None,
         }));
@@ -500,7 +508,7 @@ mod tests {
         test_convert!(JsonProtocol::HandleFetchEntry(FetchEntryData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            requester_agent_id: "test_to".to_string(),
+            requester_agent_id: Address::from("test_to"),
             entry_address: "Hk42".into(),
             aspect_address_list: None,
         }));
@@ -517,7 +525,7 @@ mod tests {
     fn it_can_convert_PublishEntry() {
         test_convert!(JsonProtocol::PublishEntry(ProvidedEntryData {
             dna_address: "test_dna".into(),
-            provider_agent_id: "test_from".to_string(),
+            provider_agent_id: Address::from("test_from"),
             entry: test_entry(),
         }));
     }
@@ -526,7 +534,7 @@ mod tests {
         test_convert!(JsonProtocol::HandleStoreEntryAspect(StoreEntryAspectData {
             request_id: "req_id".to_string(),
             dna_address: "test_dna".into(),
-            provider_agent_id: "test_from".to_string(),
+            provider_agent_id: Address::from("test_from"),
             entry_address: "Hk42".into(),
             entry_aspect: test_aspect(),
         }));
@@ -540,7 +548,7 @@ mod tests {
             dna_address: "test_dna".into(),
             entry_address: "Hk42".into(),
             request_id: "test_id".to_string(),
-            requester_agent_id: "test_from".to_string(),
+            requester_agent_id: Address::from("test_from"),
             query: vec![4, 3, 2, 1],
         }));
     }
@@ -550,8 +558,8 @@ mod tests {
             dna_address: "test_dna".into(),
             entry_address: "Hk42".into(),
             request_id: "test_id".to_string(),
-            requester_agent_id: "test_from".to_string(),
-            requester_agent_id: "test_to".to_string(),
+            requester_agent_id: Address::from("test_from"),
+            requester_agent_id: Address::from("test_to"),
             query_result: vec![4, 3, 2, 1],
         }));
     }
@@ -563,7 +571,7 @@ mod tests {
         test_convert!(JsonProtocol::HandleGetAuthoringEntryList(GetListData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            provider_agent_id: "test_from".to_string(),
+            provider_agent_id: Address::from("test_from"),
         }));
     }
     #[test]
@@ -572,8 +580,8 @@ mod tests {
             EntryListData {
                 dna_address: "test_dna".into(),
                 request_id: "test_id".to_string(),
-                entry_address_list: vec!["data1".into(), "data2".into()],
-                provider_agent_id: "test_from".to_string(),
+                address_map: hashmap![Address::from("test_address") => vec!["data1".into(), "data2".into()]],
+                provider_agent_id: Address::from("test_from"),
             }
         ));
     }
@@ -582,7 +590,7 @@ mod tests {
         test_convert!(JsonProtocol::HandleGetGossipingEntryList(GetListData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            provider_agent_id: "test_from".to_string(),
+            provider_agent_id: Address::from("test_from"),
         }));
     }
     #[test]
@@ -591,8 +599,8 @@ mod tests {
             EntryListData {
                 dna_address: "test_dna".into(),
                 request_id: "test_id".to_string(),
-                entry_address_list: vec!["data1".into(), "data2".into()],
-                provider_agent_id: "test_from".to_string(),
+                address_map: hashmap![Address::from("test_address") => vec!["data1".into(), "data2".into()]],
+                provider_agent_id: Address::from("test_from"),
             }
         ));
     }

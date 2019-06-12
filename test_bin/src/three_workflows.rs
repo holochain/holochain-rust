@@ -390,7 +390,7 @@ pub fn publish_entry_stress_test(
         time_end.duration_since(time_start).unwrap().as_millis() as f32 / 1000.0
     );
     println!(
-        "  - startup   : {:?}s",
+        "  - startup    : {:?}s",
         time_after_startup
             .duration_since(time_start)
             .unwrap()
@@ -398,7 +398,7 @@ pub fn publish_entry_stress_test(
             / 1000.0
     );
     println!(
-        "  - Authoring : {:?}s",
+        "  - Authoring  : {:?}s",
         time_after_authoring
             .duration_since(time_after_startup)
             .unwrap()
@@ -406,7 +406,7 @@ pub fn publish_entry_stress_test(
             / 1000.0
     );
     println!(
-        "  - Handling  : {:?}s",
+        "  - Handling   : {:?}s",
         time_after_handle_query
             .duration_since(time_after_authoring)
             .unwrap()
@@ -414,7 +414,7 @@ pub fn publish_entry_stress_test(
             / 1000.0
     );
     println!(
-        "  - Fetching  : {:?}s",
+        "  - Fetching   : {:?}s",
         time_end
             .duration_since(time_after_handle_query)
             .unwrap()

@@ -70,24 +70,12 @@ jobs:
    - checkout
 
    - run:
-       name: install cli
-       command: nix-shell --run hc-cli-install
-
-   - run:
-       name: install node conductor
-       command: nix-shell --run hc-conductor-node-install
-
-   - run:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test
 
    - run:
        name: proc macro app spec tests
        command: nix-shell --run hc-app-spec-test-proc
-
-   - run:
-       name: nodejs conductor tests
-       command: nix-shell --run hc-conductor-node-test
 
  cluster-tests:
   docker:

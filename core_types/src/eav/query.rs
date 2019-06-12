@@ -156,7 +156,7 @@ impl<'a> EaviQuery<'a> {
     }
 }
 
-/// Represents a fitler type which takes in a function to match on
+/// Represents a filter type which takes in a function to match on
 pub struct EavFilter<'a, T: 'a + Eq>(Box<dyn Fn(T) -> bool + 'a>);
 
 impl<'a, T: 'a + Eq> EavFilter<'a, T> {

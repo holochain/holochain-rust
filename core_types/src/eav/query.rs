@@ -52,7 +52,7 @@ impl<'a> EaviQuery<'a> {
         }
     }
 
-    ///This runs the query based the query configuration we have given
+    ///This runs the query based the query configuration we have given.
     pub fn run<I>(&self, iter: I) -> BTreeSet<EntityAttributeValueIndex>
     where
         I: Clone + Iterator<Item = EntityAttributeValueIndex> + 'a,

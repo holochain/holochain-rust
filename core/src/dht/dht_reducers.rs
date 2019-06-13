@@ -157,7 +157,10 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
-        dht::{dht_reducers::{reduce, reduce_hold_entry},dht_store::create_get_links_eavi_query},
+        dht::{
+            dht_reducers::{reduce, reduce_hold_entry},
+            dht_store::create_get_links_eavi_query,
+        },
         instance::tests::test_context,
         network::entry_with_header::EntryWithHeader,
         state::test_store,
@@ -166,7 +169,7 @@ pub mod tests {
         agent::{test_agent_id, test_agent_id_with_name},
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        eav::{Attribute},
+        eav::Attribute,
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
     };
@@ -218,7 +221,12 @@ pub mod tests {
         let _ = (storage.write().unwrap()).add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
-        let link = Link::new(&entry.address(), &entry.address(), &test_link.clone(), &test_tag.clone());
+        let link = Link::new(
+            &entry.address(),
+            &entry.address(),
+            &test_link.clone(),
+            &test_tag.clone(),
+        );
         let link_data = LinkData::from_link(
             &link.clone(),
             LinkActionKind::ADD,
@@ -231,7 +239,8 @@ pub mod tests {
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
         let storage = new_dht_store.meta_storage();
-        let get_links_query = create_get_links_eavi_query(entry.address(),test_link,test_tag).expect("supposed to create link query");
+        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
+            .expect("supposed to create link query");
         let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
@@ -254,7 +263,12 @@ pub mod tests {
         let _ = store.dht().content_storage().write().unwrap().add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
-        let link = Link::new(&entry.address(), &entry.address(), &test_link.clone(), &test_tag.clone());
+        let link = Link::new(
+            &entry.address(),
+            &entry.address(),
+            &test_link.clone(),
+            &test_tag.clone(),
+        );
         let link_data = LinkData::from_link(
             &link.clone(),
             LinkActionKind::ADD,
@@ -283,9 +297,10 @@ pub mod tests {
 
         //fetch from dht and when tombstone is found return tombstone
         let storage = new_dht_store.meta_storage();
-        let get_links_query = create_get_links_eavi_query(entry.address(),test_link.clone(),test_tag.clone()).expect("supposed to create link query");
+        let get_links_query =
+            create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
+                .expect("supposed to create link query");
         let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
-
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned
         assert!(fetched.is_ok());
@@ -306,7 +321,9 @@ pub mod tests {
 
         //fetch from dht after link with same chain header is added
         let storage = new_dht_store.meta_storage();
-        let get_links_query = create_get_links_eavi_query(entry.address(),test_link.clone(),test_tag.clone()).expect("supposed to create link query");
+        let get_links_query =
+            create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
+                .expect("supposed to create link query");
         let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned since tombstone is applied to target hashes that are the same
@@ -334,7 +351,8 @@ pub mod tests {
         let _new_dht_store = reduce(store.dht(), &action_link_add);
 
         //after new link has been added return from fetch and make sure tombstone and new link is added
-        let get_links_query = create_get_links_eavi_query(entry.address(),test_link,test_tag).expect("supposed to create link query");
+        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
+            .expect("supposed to create link query");
         let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
 
         //two entries should be returned which is the new_link and the tombstone since the tombstone doesn't apply for the new link
@@ -376,7 +394,8 @@ pub mod tests {
         let new_dht_store = reduce(store.dht(), &action);
 
         let storage = new_dht_store.meta_storage();
-        let get_links_query = create_get_links_eavi_query(entry.address(),test_link,test_tag).expect("supposed to create link query");
+        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
+            .expect("supposed to create link query");
         let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();

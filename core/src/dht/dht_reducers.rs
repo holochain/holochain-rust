@@ -288,7 +288,7 @@ pub mod tests {
             test_agent_id(),
         );
 
-        let entry_link_remove =
+        let entry_link_remove = Entry::LinkRemove((link_remove_data,vec![entry_link_add.clone().address()]));
 
         //remove added link from dht
         let action_link_remove = ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));

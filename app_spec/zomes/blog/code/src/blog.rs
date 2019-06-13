@@ -408,7 +408,7 @@ pub fn handle_posts_by_agent_all(agent : Address) ->ZomeApiResult<GetLinksResult
         status_request : LinksStatusRequestKind::All,
         ..GetLinksOptions::default()
     };
-    hdk::get_links_with_options(&agent, Some("authored_posts".into()), None,options)
+    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
 }
 
 pub fn handle_posts_by_agent_deleted(agent : Address) ->ZomeApiResult<GetLinksResult>
@@ -417,7 +417,7 @@ pub fn handle_posts_by_agent_deleted(agent : Address) ->ZomeApiResult<GetLinksRe
         status_request : LinksStatusRequestKind::Deleted,
         ..GetLinksOptions::default()
     };
-    hdk::get_links_with_options(&agent, Some("authored_posts".into()), None,options)
+    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
 }
 
 pub fn handle_my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {

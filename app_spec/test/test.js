@@ -760,24 +760,29 @@ scenario('get_sources_after_same_link', async (s, t, { alice, bob }) => {
 })
 
 
-scenario('get_sources_crud', async (s, t, { alice, bob }) => {
+scenario('get_links_crud', async (s, t, { alice, bob }) => {
 
-   await alice.callSync("blog", "create_post_with_agent",
+  //commits an entry and creates two links for alice
+  await alice.callSync("blog", "create_post_with_agent",
     { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
   );
   const alice_result = await alice.callSync("blog", "create_post_with_agent",
   { "agent_id": alice.agentId ,"content": "Holo world 2", "in_reply_to": null }
   );
 
+  //get posts for alice from alice
   const alice_posts_live= await alice.call("blog","posts_by_agent",
   {
     "agent" : alice.agentId
   })
 
+  //get posts for alice from bob
   const bob_posts_live= await bob.call("blog","posts_by_agent",
   {
     "agent" : alice.agentId
   })
+
+  //make sure all our links are live and they are two of them
   t.equal(2,alice_posts_live.Ok.links.length);
   t.equal("live",alice_posts_live.Ok.links[0].status);
   t.equal("live",alice_posts_live.Ok.links[1].status);
@@ -785,25 +790,31 @@ scenario('get_sources_crud', async (s, t, { alice, bob }) => {
   t.equal("live",bob_posts_live.Ok.links[0].status);
   t.equal("live",bob_posts_live.Ok.links[1].status);
 
+  ////delete the holo world post from the links alice created
   await alice.callSync("blog","delete_post",
   {
     "content" : "Holo world"
   });
 
+  //get all posts with a deleted status from bob
   const bob_posts_deleted = await bob.call("blog","posts_by_agent_deleted",
   {
     "agent" : alice.agentId
   });
+
+  // get all posts with a deleted status from alice
   const alice_posts_deleted = await alice.call("blog","posts_by_agent_deleted",
   {
     "agent" : alice.agentId
   });
 
+  //make sure only 1 is returned and it has a status of deleted
   t.equal(1,alice_posts_deleted.Ok.links.length);
   t.equal(1,bob_posts_deleted.Ok.links.length);
   t.equal("deleted",alice_posts_deleted.Ok.links[0].status);
   t.equal("deleted",bob_posts_deleted.Ok.links[0].status);
 
+  //get all posts from the agent
   const bob_posts_all = await bob.call("blog","posts_by_agent_all",
   {
     "agent" : alice.agentId
@@ -813,6 +824,7 @@ scenario('get_sources_crud', async (s, t, { alice, bob }) => {
     "agent" : alice.agentId
   });
 
+  //make sure we get two links with the first one being a live link and the second one being a deleted link
   t.equal(2,alice_posts_all.Ok.links.length);
   t.equal("live",alice_posts_all.Ok.links[0].status);
   t.equal("deleted",alice_posts_all.Ok.links[1].status);

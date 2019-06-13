@@ -28,7 +28,7 @@ use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
     env,
-    fs::{ File, create_dir_all},
+    fs::{create_dir_all, File},
     io::prelude::*,
     path::PathBuf,
     sync::Arc,
@@ -700,11 +700,8 @@ pub fn default_n3h_log_level() -> String {
 pub fn default_n3h_persistence_path(agent_unique: &str) -> String {
     let mut temp_dir = env::temp_dir();
     temp_dir.push(agent_unique);
-    let temp_str = temp_dir
-        .to_string_lossy()
-        .to_string();
-    create_dir_all(&temp_str)
-        .expect(&format!("Unable to create {}", temp_str));
+    let temp_str = temp_dir.to_string_lossy().to_string();
+    create_dir_all(&temp_str).expect(&format!("Unable to create {}", temp_str));
     temp_str
 }
 

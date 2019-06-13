@@ -651,7 +651,7 @@ public_address = '{}'"#,
     pub fn dna() -> String {
         r#"[[dnas]]
 file = 'app_spec.dna.json'
-hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
+hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
 id = 'test-dna'"#
             .to_string()
     }
@@ -787,7 +787,7 @@ pattern = '.*'"#
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
                     hash: Some(String::from(
-                        "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
+                        "QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J"
                     )),
                 },
                 DnaConfiguration {
@@ -868,7 +868,7 @@ id = 'new-dna'"#,
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
                     hash: Some(String::from(
-                        "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
+                        "QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J"
                     )),
                 },
                 DnaConfiguration {
@@ -975,7 +975,7 @@ id = 'new-dna'"#,
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
                     hash: Some(String::from(
-                        "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
+                        "QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J"
                     )),
                 },
                 DnaConfiguration {
@@ -1042,7 +1042,7 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: Some(String::from("QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J")),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-1"),

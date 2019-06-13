@@ -1042,7 +1042,9 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J")),
+                    hash: Some(String::from(
+                        "QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J"
+                    )),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-1"),

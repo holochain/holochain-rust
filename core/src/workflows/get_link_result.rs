@@ -18,6 +18,7 @@ pub async fn get_link_result_workflow<'a>(
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResult, HolochainError> {
     let links = await!(get_link_add_entries(context, link_args))?;
+    //get links based on status request, all for everything, deleted for deleted links and live for active links
     let link_results = links
         .into_iter()
         .filter(|link_entry_crud| match link_args.options.status_request {
@@ -40,6 +41,8 @@ pub async fn get_link_add_entries<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<Vec<(LinkData, Vec<ChainHeader>, CrudStatus)>, HolochainError> {
+
+    //get link add entries 
     let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
@@ -48,9 +51,12 @@ pub async fn get_link_add_entries<'a>(
         link_args.options.timeout.clone()
     ))?;
 
+    //iterate over link add entries
     let (links_result, get_links_error): (Vec<_>, Vec<_>) = links_caches
         .iter()
         .map(|s| {
+
+            //create get entry args
             let get_entry_args = GetEntryArgs {
                 address: s.0.clone(),
                 options: GetEntryOptions {
@@ -60,6 +66,7 @@ pub async fn get_link_add_entries<'a>(
                     ..GetEntryOptions::default()
                 },
             };
+            //get entry for the link_add
             let entry_result =
                 context.block_on(get_entry_result_workflow(&context.clone(), &get_entry_args));
             entry_result
@@ -69,6 +76,7 @@ pub async fn get_link_add_entries<'a>(
                         .clone()
                         .map(|unwrapped_type| match unwrapped_type {
                             Entry::LinkAdd(link_data) => {
+                                //return link, header and crud_status
                                 Ok((link_data, entry_type.headers, s.1.clone()))
                             }
                             _ => Err(HolochainError::ErrorGeneric(

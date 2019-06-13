@@ -43,6 +43,33 @@ impl PartialEq for DhtStore {
     }
 }
 
+pub fn create_get_links_eavi_query<'a>(
+    address: Address,
+    link_type: String,
+    tag: String,
+) -> Result<EaviQuery<'a>, HolochainError> {
+    let link_type_regex = Regex::new(&link_type)
+        .map_err(|_| HolochainError::from("Invalid regex passed for type"))?;
+    let tag_regex =
+        Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
+    Ok(EaviQuery::new(
+        Some(address).into(),
+        EavFilter::predicate(move |attr: Attribute| match attr.clone() {
+            Attribute::LinkTag(query_link_type, query_tag)
+            | Attribute::RemovedLink(query_link_type, query_tag) => {
+                link_type_regex.is_match(&query_link_type) && tag_regex.is_match(&query_tag)
+            }
+            _ => false,
+        }),
+        None.into(),
+        IndexFilter::LatestByAttribute,
+        Some(EavFilter::single(Attribute::RemovedLink(
+            link_type.clone(),
+            tag.clone(),
+        ))),
+    ))
+}
+
 impl DhtStore {
     // LifeCycle
     // =========
@@ -56,32 +83,18 @@ impl DhtStore {
             actions: HashMap::new(),
         }
     }
-
+    ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
+    ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
+    ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
+    ///When that set is obtained, we filter based on the LinkTag attributes to only get the "live" links or links that are valid.
     pub fn get_links(
         &self,
         address: Address,
         link_type: String,
         tag: String,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
-        // interpret link tags and types as regex
-        let link_type = Regex::new(&link_type)
-            .map_err(|_| HolochainError::from("Invalid regex passed for type"))?;
-        let tag =
-            Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
-
-        let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
-            Some(address).into(),
-            EavFilter::predicate(move |attr| match attr {
-                Attribute::LinkTag(query_link_type, query_tag)
-                | Attribute::RemovedLink(query_link_type, query_tag) => {
-                    link_type.is_match(&query_link_type) && tag.is_match(&query_tag)
-                }
-                _ => false,
-            }),
-            None.into(),
-            IndexFilter::LatestByAttribute,
-        ))?;
-
+        let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
+        let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
         Ok(filtered
             .into_iter()
             .filter(|eav| match eav.attribute() {
@@ -103,6 +116,7 @@ impl DhtStore {
                 Some(Attribute::EntryHeader).into(),
                 None.into(),
                 IndexFilter::LatestByAttribute,
+                None,
             ))?
             .into_iter()
             // get the header addresses

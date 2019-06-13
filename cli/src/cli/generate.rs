@@ -47,11 +47,17 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
     // match against all supported languages
     match language {
         "rust" => scaffold(
-            &scaffold::rust::RustScaffold::new(&zome_name_string, scaffold::rust::HdkMacroStyle::Declerative),
+            &scaffold::rust::RustScaffold::new(
+                &zome_name_string,
+                scaffold::rust::HdkMacroStyle::Declerative,
+            ),
             code_dir,
         )?,
         "rust-proc" => scaffold(
-            &scaffold::rust::RustScaffold::new(&zome_name_string, scaffold::rust::HdkMacroStyle::Procedural),
+            &scaffold::rust::RustScaffold::new(
+                &zome_name_string,
+                scaffold::rust::HdkMacroStyle::Procedural,
+            ),
             code_dir,
         )?,
         "assemblyscript" => scaffold(

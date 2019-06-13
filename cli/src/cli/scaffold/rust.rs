@@ -25,7 +25,7 @@ pub enum HdkMacroStyle {
 pub struct RustScaffold {
     build_template: Build,
     package_name: String,
-    macro_style: HdkMacroStyle
+    macro_style: HdkMacroStyle,
 }
 
 /// Given existing Cargo.toml string, pull out some values and return a new
@@ -120,7 +120,8 @@ impl RustScaffold {
         };
 
         // create new Cargo.toml using pieces of the original
-        let new_toml = generate_cargo_toml(self.package_name.as_str(), contents.as_str(), template)?;
+        let new_toml =
+            generate_cargo_toml(self.package_name.as_str(), contents.as_str(), template)?;
         cargo_file.seek(SeekFrom::Start(0))?;
         cargo_file.write_all(new_toml.as_bytes())?;
         Ok(())
@@ -136,7 +137,7 @@ impl RustScaffold {
         let contents = match self.macro_style {
             HdkMacroStyle::Declerative => include_str!("./rust/lib.rs"),
             HdkMacroStyle::Procedural => include_str!("./rust-proc-macro/lib.rs"),
-        };        
+        };
         cargo_file.write_all(contents.as_bytes())?;
         Ok(())
     }

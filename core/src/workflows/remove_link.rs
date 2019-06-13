@@ -1,9 +1,12 @@
 use crate::{
-    context::Context, dht::actions::remove_link::remove_link,
-    network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
+    context::Context,
+    dht::actions::remove_link::remove_link,
+    network::{
+        actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
+    },
+    nucleus::validation::validate_entry,
 };
 
-use crate::workflows::validation_package;
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
@@ -15,7 +18,9 @@ pub async fn remove_link_workflow<'a>(
     entry_with_header: &'a EntryWithHeader,
     context: &'a Arc<Context>,
 ) -> Result<(), HolochainError> {
-    let link_remove = match &entry_with_header.entry {
+    let EntryWithHeader { entry, header } = &entry_with_header;
+
+    let link_remove = match entry {
         Entry::LinkRemove((link_remove, _)) => link_remove,
         _ => Err(HolochainError::ErrorGeneric(
             "remove_link_workflow expects entry to be an Entry::LinkRemove".to_string(),
@@ -24,11 +29,11 @@ pub async fn remove_link_workflow<'a>(
     let link = link_remove.link().clone();
 
     context.log(format!("debug/workflow/remove_link: {:?}", link));
-    // 1. Get hold of validation package
+    // 1. Get validation package from source
     context.log(format!(
         "debug/workflow/remove_link: getting validation package..."
     ));
-    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))?;
+    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
     context.log(format!(
@@ -44,7 +49,7 @@ pub async fn remove_link_workflow<'a>(
     // 3. Validate the entry
     context.log(format!("debug/workflow/remove_link: validate..."));
     await!(validate_entry(
-        entry_with_header.entry.clone(),
+        entry.clone(),
         None,
         validation_data,
         &context
@@ -56,7 +61,7 @@ pub async fn remove_link_workflow<'a>(
     context.log(format!("debug/workflow/remove_link: is valid!"));
 
     // 3. If valid store remove the entry in the local DHT shard
-    await!(remove_link(&entry_with_header.entry, &context))?;
+    await!(remove_link(&entry, &context))?;
     context.log(format!("debug/workflow/remove_link: added! {:?}", link));
     Ok(())
 }

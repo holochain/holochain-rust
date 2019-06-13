@@ -1,9 +1,12 @@
 use crate::{
-    context::Context, dht::actions::update_entry::update_entry,
-    network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
+    context::Context,
+    dht::actions::update_entry::update_entry,
+    network::{
+        actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
+    },
+    nucleus::validation::validate_entry,
 };
 
-use crate::workflows::validation_package;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     error::HolochainError,
@@ -17,8 +20,8 @@ pub async fn hold_update_workflow<'a>(
 ) -> Result<Address, HolochainError> {
     let EntryWithHeader { entry, header } = &entry_with_header;
 
-    // 1. Get hold of validation package
-    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))?;
+    // 1. Get validation package from source
+    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
 

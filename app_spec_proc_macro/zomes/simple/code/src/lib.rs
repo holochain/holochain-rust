@@ -117,7 +117,7 @@ pub mod simple {
             status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
             ..GetLinksOptions::default()
         };
-        hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
+        hdk::get_links_with_options(&base, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
     }
 
 }

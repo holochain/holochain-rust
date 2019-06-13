@@ -55,6 +55,7 @@ pub struct Configuration {
     /// List of interfaces any UI can use to access zome functions. Optional.
     #[serde(default)]
     pub interfaces: Vec<InterfaceConfiguration>,
+
     /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
@@ -221,7 +222,6 @@ impl Configuration {
                     })?;
             }
         }
-
         if let Some(ref dpki_config) = self.dpki {
             self.instance_by_id(&dpki_config.instance_id)
                 .is_some()

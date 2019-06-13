@@ -517,7 +517,7 @@ impl Configuration {
 
         // Here we don't use the already implemented 'detect_dupes' function because we don't need
         // to keep track of all the duplicated values of storage instances. But instead we use the
-        // return value of 'HashSet.insert()' conbined with the short-circuiting propiety of
+        // return value of 'HashSet.insert()' conbined with the short-circuiting propriety of
         // 'iter().all()' so we don't iterate on all the possible value once we found a duplicated
         // storage entry.
         let mut path_set: HashSet<&str> = HashSet::new();
@@ -525,8 +525,7 @@ impl Configuration {
 
         if !has_uniq_values {
             Err(String::from(
-                "Forbidden duplicated file storage value encountered.\
-                 Please fix this in the 'TOML Conductor configuration file'.",
+                "Forbidden duplicated file storage value encountered.",
             ))
         } else {
             Ok(())

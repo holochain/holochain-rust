@@ -339,7 +339,7 @@ pub mod tests {
             Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
         );
 
-        //add new link after tombstone has been added with different chain_header which will produce same hash
+        //add new link after tombstone has been added with different chain_header which will produce different hash
         let link_data = LinkData::from_link(
             &link.clone(),
             LinkActionKind::ADD,

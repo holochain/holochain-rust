@@ -15,7 +15,7 @@ use hdk::{
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
-        get_links::{GetLinksOptions, GetLinksResult,LinksStatusRequestKind},
+        get_links::{GetLinksOptions, GetLinksResult},
         QueryArgsOptions, QueryResult,
     },
     AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN,

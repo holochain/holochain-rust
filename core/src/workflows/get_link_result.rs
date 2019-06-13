@@ -1,15 +1,14 @@
 use crate::{
     context::Context, network::actions::get_links::get_links,
-    workflows::get_entry_result::get_entry_with_meta_workflow,
+    workflows::get_entry_result::get_entry_result_workflow,
 };
 
-use futures_util::future::FutureExt;
 use holochain_core_types::{
-    entry::{Entry, EntryWithMeta, EntryWithMetaAndHeader},
-    error::HolochainError,
+    chain_header::ChainHeader, entry::Entry, error::HolochainError, link::link_data::LinkData,
 };
-use holochain_wasm_utils::api_serialization::get_links::{
-    GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind,
+use holochain_wasm_utils::api_serialization::{
+    get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResultType::Single},
+    get_links::{GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind},
 };
 use std::sync::Arc;
 
@@ -26,7 +25,24 @@ pub async fn get_link_result_workflow<'a>(
         Ok(())
     }?;
     //get links
-    let links = await!(get_links(
+    let links = await!(get_link_add_entries(context, link_args))?;
+    let link_results = links
+        .into_iter()
+        .map(|link_data| LinksResult {
+            address: link_data.0.link().target().clone(),
+            headers: link_data.1,
+            tag: link_data.0.link().tag().to_string(),
+        })
+        .collect::<Vec<LinksResult>>();
+
+    Ok(GetLinksResult::new(link_results))
+}
+
+pub async fn get_link_add_entries<'a>(
+    context: &'a Arc<Context>,
+    link_args: &'a GetLinksArgs,
+) -> Result<Vec<(LinkData, Vec<ChainHeader>)>, HolochainError> {
+    let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
         link_args.link_type.clone(),
@@ -34,58 +50,53 @@ pub async fn get_link_result_workflow<'a>(
         link_args.options.timeout.clone()
     ))?;
 
-    let (link_results, errors): (Vec<_>, Vec<_>) = links
+    let (links_result, get_links_error): (Vec<_>, Vec<_>) = links_caches
         .iter()
-        .map(|link| {
-            //we should probably replace this with get_entry_result_workflow, it does all the work needed
-            context.block_on(
-                get_entry_with_meta_workflow(&context, &link, &link_args.options.timeout).map(
-                    |link_entry_result| {
-                        match link_entry_result {
-                            Ok(Some(EntryWithMetaAndHeader {
-                                entry_with_meta: EntryWithMeta{entry: Entry::LinkAdd(link_data), ..},
-                                headers,
-                            })) => {
-                                let headers = match link_args.options.headers {
-                                    true => headers,
-                                    false => Vec::new(),
-                                };
-                                Ok(LinksResult {
-                                    address: link_data.link().target().clone(),
-                                    headers,
-                                    tag: link_data.link().tag().to_string(),
-                                })
-                            },
-                            Ok(None) => {
-                                Err(HolochainError::ErrorGeneric(
-                                    format!("Could not get link entry for address stored in the EAV entry {}", link),
-                                ))
-                            }
-                            Err(e) => {
-                                Err(HolochainError::ErrorGeneric(
-                                    format!("Error retrieveing link: {:?}", e),
-                                ))
-                            },
-                            _ => {
-                                Err(HolochainError::ErrorGeneric(
-                                    format!("Unknown Error retrieveing link. Most likely EAV entry points to non-link entry type"),
-                                ))
-                            }
-                        }
-                    },
-                ),
-            )
+        .map(|s| {
+            let get_entry_args = GetEntryArgs {
+                address: s.clone(),
+                options: GetEntryOptions {
+                    entry: true,
+                    headers: link_args.options.headers,
+                    timeout: link_args.options.timeout.clone(),
+                    ..GetEntryOptions::default()
+                },
+            };
+            let entry_result =
+                context.block_on(get_entry_result_workflow(&context.clone(), &get_entry_args));
+            entry_result
+                .map(|link_entry_result| match link_entry_result.result {
+                    Single(entry_type) => entry_type
+                        .entry
+                        .clone()
+                        .map(|unwrapped_type| match unwrapped_type {
+                            Entry::LinkAdd(link_data) => Ok((link_data, entry_type.headers)),
+                            _ => Err(HolochainError::ErrorGeneric(
+                                "Wrong entry type retrieved".to_string(),
+                            )),
+                        })
+                        .unwrap_or(Err(HolochainError::ErrorGeneric(
+                            "Could not obtain Entry".to_string(),
+                        ))),
+                    _ => Err(HolochainError::ErrorGeneric(
+                        "Status Kind Of Lastest Requested".to_string(),
+                    )),
+                })
+                .unwrap_or(Err(HolochainError::ErrorGeneric(
+                    "expected entry of type link".to_string(),
+                )))
         })
         .partition(Result::is_ok);
 
-    if errors.is_empty() {
-        Ok(GetLinksResult::new(
-            link_results.into_iter().map(|s| s.unwrap()).collect(),
-        ))
+    if get_links_error.is_empty() {
+        Ok(links_result
+            .into_iter()
+            .map(|s| s.unwrap())
+            .collect::<Vec<_>>())
     } else {
         Err(HolochainError::ErrorGeneric(format!(
             "Could not get links: {:?}",
-            errors
+            get_links_error
         )))
     }
 }

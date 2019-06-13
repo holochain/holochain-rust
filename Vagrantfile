@@ -12,9 +12,9 @@ Vagrant.configure("2") do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
-  # config.vm.box = "holochain-vagrant"
-  # config.vm.box_url = "https://holochain-vagrant-builds.s3-us-west-2.amazonaws.com/holochain-vagrant.zip"
-  config.vm.box = "nixos/nixos-18.03-x86_64"
+  config.vm.box = "holochain-vagrant"
+  config.vm.box_url = "https://holochain-vagrant-builds.s3-us-west-2.amazonaws.com/holochain-dev.box"
+  # config.vm.box = "nixos/nixos-18.03-x86_64"
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs

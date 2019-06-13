@@ -402,23 +402,6 @@ pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any)
 }
 
-pub fn handle_posts_by_agent_all(agent : Address) ->ZomeApiResult<GetLinksResult>
-{
-    let options = GetLinksOptions{
-        status_request : LinksStatusRequestKind::All,
-        ..GetLinksOptions::default()
-    };
-    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
-}
-
-pub fn handle_posts_by_agent_deleted(agent : Address) ->ZomeApiResult<GetLinksResult>
-{
-    let options = GetLinksOptions{
-        status_request : LinksStatusRequestKind::Deleted,
-        ..GetLinksOptions::default()
-    };
-    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
-}
 
 pub fn handle_my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {
     let tag = match tag {Some(ref s) => LinkMatch::Regex(s.as_ref()), None => LinkMatch::Any};

@@ -136,17 +136,6 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
-    pub fn posts_by_agent_all(agent: Address) -> ZomeApiResult<GetLinksResult> {
-        blog::handle_posts_by_agent_all(agent)
-    }
-
-    #[zome_fn("hc_public")]
-    pub fn posts_by_agent_deleted(agent: Address) -> ZomeApiResult<GetLinksResult> {
-        blog::handle_posts_by_agent_deleted(agent)
-    }
-
-
-    #[zome_fn("hc_public")]
     pub fn get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
         blog::handle_get_post(post_address)
     }

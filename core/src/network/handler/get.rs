@@ -61,20 +61,14 @@ pub fn handle_fetch_entry_result(dht_data: FetchEntryResultData, context: Arc<Co
 
 pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) {
     if let Ok(Attribute::LinkTag(link_type, tag)) = fetch_meta_data.attribute.as_str().try_into() {
-        let unwrapped_tag: Option<String> = if &tag == "*" { None } else { Some(tag) };
-        let unwrapped_link_type: Option<String> = if &link_type == "*" {
-            None
-        } else {
-            Some(link_type)
-        };
         let links = context
             .state()
             .unwrap()
             .dht()
             .get_links(
                 Address::from(fetch_meta_data.entry_address.clone()),
-                unwrapped_link_type.clone(),
-                unwrapped_tag.clone(),
+                link_type.clone(),
+                tag.clone(),
             )
             .unwrap_or(BTreeSet::new())
             .into_iter()

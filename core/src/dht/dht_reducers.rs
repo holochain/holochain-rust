@@ -157,7 +157,10 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
-        dht::dht_reducers::{reduce, reduce_hold_entry},
+        dht::{
+            dht_reducers::{reduce, reduce_hold_entry},
+            dht_store::create_get_links_eavi_query,
+        },
         instance::tests::test_context,
         network::entry_with_header::EntryWithHeader,
         state::test_store,
@@ -166,7 +169,7 @@ pub mod tests {
         agent::{test_agent_id, test_agent_id_with_name},
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
+        eav::Attribute,
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
     };
@@ -216,8 +219,14 @@ pub mod tests {
 
         let storage = store.dht().content_storage();
         let _ = (storage.write().unwrap()).add(&entry);
-
-        let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
+        let test_link = String::from("test_link");
+        let test_tag = String::from("test-tag");
+        let link = Link::new(
+            &entry.address(),
+            &entry.address(),
+            &test_link.clone(),
+            &test_tag.clone(),
+        );
         let link_data = LinkData::from_link(
             &link,
             LinkActionKind::ADD,
@@ -230,14 +239,9 @@ pub mod tests {
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
         let storage = new_dht_store.meta_storage();
-        let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
-            Some(entry.address()).into(),
-            None.into(),
-            None.into(),
-            IndexFilter::LatestByAttribute,
-            None,
-        ));
-
+        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
+            .expect("supposed to create link query");
+        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 1);
@@ -257,17 +261,24 @@ pub mod tests {
         let entry = test_entry();
 
         let _ = store.dht().content_storage().write().unwrap().add(&entry);
-
-        let link = Link::new(&entry.address(), &entry.address(), "test-link", "test-tag");
+        let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
+        let link = Link::new(
+            &entry.address(),
+            &entry.address(),
+            &test_link.clone(),
+            &test_tag.clone(),
+        );
         let link_data = LinkData::from_link(
             &link,
             LinkActionKind::ADD,
             test_chain_header(),
             test_agent_id(),
         );
+
+        //add link to dht
         let entry_link_add = Entry::LinkAdd(link_data.clone());
-        let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
+        let action_link_add = ActionWrapper::new(Action::AddLink(link_data.clone()));
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         let link_remove_data = LinkData::from_link(
@@ -278,35 +289,19 @@ pub mod tests {
         );
 
         let entry_link_remove =
-            Entry::LinkRemove((link_remove_data, vec![entry_link_add.address()]));
+
+        //remove added link from dht
         let action_link_remove = ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
+        //fetch from dht and when tombstone is found return tombstone
         let storage = new_dht_store.meta_storage();
-        let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
-            Some(entry.address()).into(),
-            EavFilter::predicate(|attr: Attribute| match attr.clone() {
-                Attribute::LinkTag(query_link_type, query_tag)
-                | Attribute::RemovedLink(query_link_type, query_tag) => {
-                    match (&link.link_type().clone().into(), &link.tag().clone().into()) {
-                        (Some(link_type), Some(tag)) => {
-                            link_type == &query_link_type && tag == &query_tag
-                        }
-                        (Some(link_type), None) => link_type == &query_link_type,
-                        (None, Some(tag)) => tag == &query_tag,
-                        (None, None) => true,
-                    }
-                }
-                _ => false,
-            }),
-            None.into(),
-            IndexFilter::LatestByAttribute,
-            Some(EavFilter::single(Attribute::RemovedLink(
-                test_tag.clone(),
-                "test-link".to_string(),
-            ))),
-        ));
+        let get_links_query =
+            create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
+                .expect("supposed to create link query");
+        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
 
+        //fetch call should be okay and remove_link tombstone should be the one that should be returned
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 1);
@@ -319,6 +314,31 @@ pub mod tests {
             Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
         );
 
+        //add new link with same chain header
+        let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
+        let new_dht_store = reduce(store.dht(), &action_link_add);
+
+        //fetch from dht after link with same chain header is added
+        let storage = new_dht_store.meta_storage();
+        let get_links_query =
+            create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
+                .expect("supposed to create link query");
+        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+
+        //fetch call should be okay and remove_link tombstone should be the one that should be returned since tombstone is applied to target hashes that are the same
+        assert!(fetched.is_ok());
+        let hash_set = fetched.unwrap();
+        assert_eq!(hash_set.len(), 1);
+        let eav = hash_set.iter().nth(0).unwrap();
+        assert_eq!(eav.entity(), *link.base());
+        let link_entry = link.add_entry(test_chain_header(), test_agent_id());
+        assert_eq!(eav.value(), link_entry.address());
+        assert_eq!(
+            eav.attribute(),
+            Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
+        );
+
+        //add new link after tombstone has been added with different chain_header which will produce different hash
         let link_data = LinkData::from_link(
             &link.clone(),
             LinkActionKind::ADD,
@@ -328,33 +348,15 @@ pub mod tests {
         let entry_link_add = Entry::LinkAdd(link_data.clone());
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
         let _new_dht_store = reduce(store.dht(), &action_link_add);
-        let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
-            Some(entry.address()).into(),
-            EavFilter::predicate(|attr: Attribute| match attr.clone() {
-                Attribute::LinkTag(query_link_type, query_tag)
-                | Attribute::RemovedLink(query_link_type, query_tag) => {
-                    match (&link.link_type().clone().into(), &link.tag().clone().into()) {
-                        (Some(link_type), Some(tag)) => {
-                            link_type == &query_link_type && tag == &query_tag
-                        }
-                        (Some(link_type), None) => link_type == &query_link_type,
-                        (None, Some(tag)) => tag == &query_tag,
-                        (None, None) => true,
-                    }
-                }
-                _ => false,
-            }),
-            None.into(),
-            IndexFilter::LatestByAttribute,
-            Some(EavFilter::single(Attribute::RemovedLink(
-                test_tag.clone(),
-                "test-link".to_string(),
-            ))),
-        ));
 
+        //after new link has been added return from fetch and make sure tombstone and new link is added
+        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
+            .expect("supposed to create link query");
+        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+
+        //two entries should be returned which is the new_link and the tombstone since the tombstone doesn't apply for the new link
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
-        println!("hashset {:?}", hash_set.clone());
         assert_eq!(hash_set.len(), 2);
         let eav = hash_set.iter().nth(1).unwrap();
         assert_eq!(eav.entity(), *link.base());
@@ -371,11 +373,13 @@ pub mod tests {
         let context = test_context("bob", None);
         let store = test_store(context.clone());
         let entry = test_entry();
+        let test_link = String::from("test-link-type");
+        let test_tag = String::from("test-tag");
         let link = Link::new(
             &entry.address(),
             &entry.address(),
-            "test-link_type",
-            "test-tag",
+            &test_link.clone(),
+            &test_tag.clone(),
         );
 
         let link_data = LinkData::from_link(
@@ -389,14 +393,9 @@ pub mod tests {
         let new_dht_store = reduce(store.dht(), &action);
 
         let storage = new_dht_store.meta_storage();
-        let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
-            Some(entry.address()).into(),
-            None.into(),
-            None.into(),
-            IndexFilter::LatestByAttribute,
-            None,
-        ));
-
+        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
+            .expect("supposed to create link query");
+        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 0);

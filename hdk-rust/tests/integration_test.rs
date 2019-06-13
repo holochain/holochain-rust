@@ -648,13 +648,13 @@ fn can_roundtrip_links() {
             LinksResult {
                 address: entry_address_3.clone(),
                 headers: Vec::new(),
-                tag: "".into(),
+                tag: "test-tag".into(),
                 status: CrudStatus::Live,
             },
             LinksResult {
                 address: entry_address_2.clone(),
                 headers: Vec::new(),
-                tag: "".into(),
+                tag: "test-tag".into(),
                 status: CrudStatus::Live,
             },
         ]));

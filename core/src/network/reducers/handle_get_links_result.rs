@@ -41,17 +41,9 @@ pub fn reduce_handle_get_links_result(
     );
 
     let result = reduce_handle_get_links_result_inner(network_state, dht_meta_data);
-    // map back from "*" to option
-    let tag = if tag == "*" {
-        None
-    } else {
+
         Some(tag.to_string())
-    };
-    let link_type = if link_type == "*" {
-        None
-    } else {
         Some(link_type.to_string())
-    };
     let key = GetLinksKey {
         base_address: Address::from(dht_meta_data.entry_address.clone()),
         link_type: link_type.clone(),

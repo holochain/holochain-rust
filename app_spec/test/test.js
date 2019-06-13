@@ -207,6 +207,26 @@ scenario('create_tagged_post and retrieve exact tag match', async (s, t, { alice
   t.ok(tags.includes("fishing"))
 })
 
+scenario('create_tagged_post and retrieve regex tag match', async (s, t, { alice }) => {
+  const result1 = await alice.callSync("blog", "create_tagged_post", {
+    content: "A post made on the 10th of October",
+    tag: "10/10/2019"
+  })
+  t.ok(result1.Ok)
+
+  const result2 = await alice.callSync("blog", "create_tagged_post", {
+    content: "A post made on the 10th of September",
+    tag: "10/9/2019"
+  })
+  t.ok(result2.Ok)
+
+  const getResult = await alice.callSync("blog", "my_posts", {tag: "^10\/[0-9]+\/2019$"})
+  t.equal(getResult.Ok.links.length, 2)
+  let tags = getResult.Ok.links.map(l => l.tag)
+  t.ok(tags.includes("10/10/2019"))
+  t.ok(tags.includes("10/9/2019"))
+})
+
 scenario('tagged link validation', async (s, t, { alice }) => {
   const result1 = await alice.callSync("blog", "create_tagged_post", {
     content: "Achieving a light and fluffy texture",
@@ -324,15 +344,15 @@ scenario('my_memos_are_private', async (s, t, { alice, bob }) => {
 
 scenario('delete_post', async (s, t, { alice, bob }) => {
 
-  //creates a simple link with alice as author with chain header
+  //creates a simple link with alice as author with initial chain header
   let check = await alice.callSync("simple", "create_link",
-    { "base":alice.agentId, "content": "Posty" }
+    { "base":alice.agentId, "target": "Posty" }
   )
 
 
-  //creates a simple link with bob as author with chain header
+  //creates a simple link with bob as author with different chain header
   await bob.callSync("simple", "create_link",
-    { "base":alice.agentId, "content": "Posty" }
+    { "base":alice.agentId, "target": "Posty" }
   )
   
   //get all created links so far alice
@@ -356,7 +376,7 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   t.equal(bob_posts.Ok.links.length,2 );
 
   //alice removes both links
-  await alice.callSync("simple", "delete_link", { "base":alice.agentId, "content": "Posty" })
+  await alice.callSync("simple", "delete_link", { "base":alice.agentId, "target": "Posty" })
 
   // get links from bob
   const bob_agent_posts_expect_empty = await bob.call("simple", "get_my_links",{ "base": alice.agentId })
@@ -372,7 +392,7 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
 
 
   //different chain hash up to this point so we should be able to create a link with the same data
-  await alice.callSync("simple", "create_link",{ "base":alice.agentId, "content": "Posty" })
+  await alice.callSync("simple", "create_link",{ "base":alice.agentId, "target": "Posty" })
 
   //get alice posts 
   const alice_posts_not_empty = await bob.call("simple", "get_my_links",{ "base": alice.agentId })

@@ -11,6 +11,7 @@ use crate::{
 };
 use entry::Entry;
 use link::link_data::LinkData;
+use regex::Regex;
 
 type LinkType = String;
 type LinkTag = String;
@@ -64,6 +65,27 @@ impl Link {
 pub enum LinkActionKind {
     ADD,
     REMOVE,
+}
+
+pub enum LinkMatch<S: Into<String>> {
+    Any,
+    Exactly(S),
+    Regex(S),
+}
+
+impl<S: Into<String>> LinkMatch<S> {
+    pub fn to_regex_string(self) -> Result<String, String> {
+        let re_string: String = match self {
+            LinkMatch::Any => ".*".into(),
+            LinkMatch::Exactly(s) => "^".to_owned() + &regex::escape(&s.into()) + "$",
+            LinkMatch::Regex(s) => s.into(),
+        };
+        // check that it is a valid regex
+        match Regex::new(&re_string) {
+            Ok(_) => Ok(re_string),
+            Err(_) => Err("Invalid regex passed to get_links".into()),
+        }
+    }
 }
 
 #[cfg(test)]

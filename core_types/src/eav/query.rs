@@ -11,7 +11,7 @@ pub struct EaviQuery<'a> {
     pub value: ValueFilter<'a>,
     ///For this query system we are able to provide a tombstone set on the query level which allows us to specify which Attribute match should take precedent over the others.
     ///This is useful for some of the Link CRDT operations we are doing. Note that if no tombstone is found, the latest entry is returned
-    ///in the subset is obtained. The tombstone is optional so if it is not supplied, no tombstone check will be done.
+    ///from the subset that is obtained. The tombstone is optional so if it is not supplied, no tombstone check will be done.
     ///Currently the Tombstone does not work on an IndexByRange IndexFilter and will operate as if the tombstone was not set
     pub tombstone: Option<AttributeFilter<'a>>,
     ///represents a filter for the Index
@@ -52,7 +52,7 @@ impl<'a> EaviQuery<'a> {
         }
     }
 
-    ///This runs the query based the query configuration we have given
+    ///This runs the query based the query configuration we have given.
     pub fn run<I>(&self, iter: I) -> BTreeSet<EntityAttributeValueIndex>
     where
         I: Clone + Iterator<Item = EntityAttributeValueIndex> + 'a,
@@ -156,7 +156,7 @@ impl<'a> EaviQuery<'a> {
     }
 }
 
-/// Represents a fitler type which takes in a function to match on
+/// Represents a filter type which takes in a function to match on
 pub struct EavFilter<'a, T: 'a + Eq>(Box<dyn Fn(T) -> bool + 'a>);
 
 impl<'a, T: 'a + Eq> EavFilter<'a, T> {

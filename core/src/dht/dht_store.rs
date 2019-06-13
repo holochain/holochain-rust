@@ -13,6 +13,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
 };
+use regex::Regex;
 
 use std::{
     collections::{BTreeSet, HashMap},
@@ -43,6 +44,33 @@ impl PartialEq for DhtStore {
     }
 }
 
+pub fn create_get_links_eavi_query<'a>(
+    address: Address,
+    link_type: String,
+    tag: String,
+) -> Result<EaviQuery<'a>, HolochainError> {
+    let link_type_regex = Regex::new(&link_type)
+        .map_err(|_| HolochainError::from("Invalid regex passed for type"))?;
+    let tag_regex =
+        Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
+    Ok(EaviQuery::new(
+        Some(address).into(),
+        EavFilter::predicate(move |attr: Attribute| match attr.clone() {
+            Attribute::LinkTag(query_link_type, query_tag)
+            | Attribute::RemovedLink(query_link_type, query_tag) => {
+                link_type_regex.is_match(&query_link_type) && tag_regex.is_match(&query_tag)
+            }
+            _ => false,
+        }),
+        None.into(),
+        IndexFilter::LatestByAttribute,
+        Some(EavFilter::single(Attribute::RemovedLink(
+            link_type.clone(),
+            tag.clone(),
+        ))),
+    ))
+}
+
 impl DhtStore {
     // LifeCycle
     // =========
@@ -63,32 +91,11 @@ impl DhtStore {
     pub fn get_links(
         &self,
         address: Address,
-        link_type: Option<String>,
-        tag: Option<String>,
+        link_type: String,
+        tag: String,
     ) -> Result<BTreeSet<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
-        let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
-            Some(address).into(),
-            EavFilter::predicate(|attr: Attribute| match attr.clone() {
-                Attribute::LinkTag(query_link_type, query_tag)
-                | Attribute::RemovedLink(query_link_type, query_tag) => {
-                    match (&link_type.clone(), &tag.clone()) {
-                        (Some(link_type), Some(tag)) => {
-                            link_type == &query_link_type && tag == &query_tag
-                        }
-                        (Some(link_type), None) => link_type == &query_link_type,
-                        (None, Some(tag)) => tag == &query_tag,
-                        (None, None) => true,
-                    }
-                }
-                _ => false,
-            }),
-            None.into(),
-            IndexFilter::LatestByAttribute,
-            Some(EavFilter::single(Attribute::RemovedLink(
-                link_type.clone().unwrap_or_default(),
-                tag.clone().unwrap_or_default(),
-            ))),
-        ))?;
+        let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
+        let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
         Ok(filtered
             .into_iter()
             .map(|s| match s.attribute() {

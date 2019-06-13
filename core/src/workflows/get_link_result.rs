@@ -41,8 +41,7 @@ pub async fn get_link_add_entries<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<Vec<(LinkData, Vec<ChainHeader>, CrudStatus)>, HolochainError> {
-
-    //get link add entries 
+    //get link add entries
     let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
@@ -55,7 +54,6 @@ pub async fn get_link_add_entries<'a>(
     let (links_result, get_links_error): (Vec<_>, Vec<_>) = links_caches
         .iter()
         .map(|s| {
-
             //create get entry args
             let get_entry_args = GetEntryArgs {
                 address: s.0.clone(),

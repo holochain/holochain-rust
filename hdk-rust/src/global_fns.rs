@@ -8,7 +8,7 @@ use holochain_wasm_utils::memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},
     stack::WasmStack,
 };
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 use std::convert::{TryFrom, TryInto};
 
 /// Init global memory stack

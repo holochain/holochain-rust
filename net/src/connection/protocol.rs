@@ -6,7 +6,7 @@ use failure::Error;
 use serde_bytes;
 use std::convert::TryFrom;
 
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 use protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 
 /// Low-level interface spec for communicating with the p2p abstraction

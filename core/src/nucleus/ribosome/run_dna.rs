@@ -12,7 +12,7 @@ use holochain_core_types::{
         HcResult, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
     },
 };
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 
 use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
 use std::convert::TryFrom;

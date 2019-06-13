@@ -26,7 +26,7 @@ use persistence_api::cas::content::Address;
 /// # use hdk::error::ZomeApiResult;
 /// # use persistence_api::cas::content::Address;
 /// # use persistence_api::error::PersistenceError;
-/// # use persistence_api::json::JsonString;
+/// # use json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::error::RibosomeEncodingBits;
 /// # use holochain_core_types::error::RibosomeEncodedValue;

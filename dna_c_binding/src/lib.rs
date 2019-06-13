@@ -16,7 +16,7 @@ use std::{
     panic::catch_unwind,
 };
 
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 
 #[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]

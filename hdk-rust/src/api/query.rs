@@ -30,7 +30,7 @@ use persistence_api::cas::content::Address;
 /// # extern crate holochain_core_types;
 /// # extern crate lib3h_persistence_api;
 /// # use hdk::error::ZomeApiResult;
-/// # use persistence_api::json::JsonString;
+/// # use json_api::json::JsonString;
 /// # use persistence_api::cas::content::Address;
 ///
 /// # fn main() {

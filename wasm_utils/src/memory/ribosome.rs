@@ -8,7 +8,7 @@ use holochain_core_types::{
     },
 };
 
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 
 use memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},

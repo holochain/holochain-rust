@@ -23,7 +23,7 @@ use persistence_api::{cas::content::Address, hash::HashString};
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_wasm_utils;
 /// # extern crate lib3h_persistence_api;
-/// # use persistence_api::json::JsonString;
+/// # use json_api::json::JsonString;
 /// # use persistence_api::cas::content::Address;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, GetLinksOptions};

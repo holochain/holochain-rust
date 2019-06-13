@@ -97,7 +97,7 @@ pub mod tests {
     use super::author_entry;
     use crate::nucleus::actions::tests::*;
     use holochain_core_types::entry::test_entry_with_value;
-    use persistence_api::json::JsonString;
+    use json_api::json::JsonString;
     use std::{thread, time};
 
     #[test]

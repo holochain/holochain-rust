@@ -15,7 +15,7 @@ use holochain_core_types::{
     validation::ValidationPackageDefinition,
 };
 
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 
 use holochain_wasm_utils::api_serialization::validation::LinkValidationPackageArgs;
 use std::{convert::TryFrom, sync::Arc};

@@ -1,6 +1,6 @@
 use super::super::PROPERTIES;
 use error::{ZomeApiError, ZomeApiResult};
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 use serde_json::Value;
 
 // Returns a DNA property, which are defined by the DNA developer.

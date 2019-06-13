@@ -105,7 +105,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;

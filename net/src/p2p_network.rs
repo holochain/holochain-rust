@@ -16,7 +16,7 @@ use crate::{
     tweetlog::*,
 };
 use crossbeam_channel;
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
 
 const P2P_READY_TIMEOUT_MS: u64 = 5000;

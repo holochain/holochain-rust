@@ -4,7 +4,7 @@ use crate::{
 };
 use holochain_core_types::error::{HcResult, HolochainError};
 
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 
 use holochain_wasm_utils::api_serialization::keystore::KeystoreListResult;
 use jsonrpc_lite::JsonRpc;

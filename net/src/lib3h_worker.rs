@@ -9,7 +9,7 @@ use lib3h::{
     real_engine::{RealEngine, RealEngineConfig},
     transport_wss::TransportWss,
 };
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 use protocol::network_engine::NetworkEngine;
 
 /// A worker that makes use of lib3h / NetworkEngine.

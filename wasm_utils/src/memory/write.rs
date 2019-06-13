@@ -3,7 +3,7 @@ use crate::memory::{
     stack::WasmStack,
     MemoryBits, MemoryInt,
 };
-use persistence_api::json::JsonString;
+use json_api::json::JsonString;
 use memory::allocation::{AllocationResult, Length};
 use std::{convert::TryInto, os::raw::c_char, slice};
 

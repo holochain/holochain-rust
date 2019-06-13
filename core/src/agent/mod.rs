@@ -7,7 +7,7 @@ pub mod state;
 use crate::state::State;
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
 
-use lib3h_persistence_api::cas::content::AddressableContent;
+use persistence_api::cas::content::AddressableContent;
 
 pub fn find_chain_header(entry: &Entry, state: &State) -> Option<ChainHeader> {
     let chain = state.agent().chain_store();

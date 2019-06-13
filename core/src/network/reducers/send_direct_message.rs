@@ -78,7 +78,7 @@ mod tests {
         state::test_store,
     };
     use holochain_core_types::error::HolochainError;
-    use lib3h_persistence_api::cas::content::Address;
+    use persistence_api::cas::content::Address;
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {

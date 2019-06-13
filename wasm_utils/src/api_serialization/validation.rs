@@ -4,7 +4,7 @@ use holochain_core_types::{
     validation::{EntryValidationData, LinkValidationData},
 };
 
-use lib3h_persistence_api::{error::PersistenceError, json::*};
+use persistence_api::{error::PersistenceError, json::*};
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct EntryValidationArgs {

@@ -2,7 +2,7 @@
 
 use dna::zome::ZomeEntryTypes;
 use entry::entry_type::EntryType;
-use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
+use persistence_api::{error::PersistenceError, json::JsonString};
 use serde::{ser::SerializeMap, Deserialize, Deserializer, Serializer};
 use std::collections::BTreeMap;
 

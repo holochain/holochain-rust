@@ -18,7 +18,7 @@ pub mod tests {
         dna::{entry_types::EntryTypeDef, Dna},
         entry::Entry,
     };
-    use lib3h_persistence_api::{cas::content::AddressableContent, json::RawString};
+    use persistence_api::{cas::content::AddressableContent, json::RawString};
 
     use holochain_wasm_utils::wasm_target_dir;
     use std::{collections::BTreeMap, path::PathBuf, sync::Arc};

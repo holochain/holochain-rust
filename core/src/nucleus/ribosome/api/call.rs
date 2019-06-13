@@ -7,7 +7,7 @@ use crate::{
     },
 };
 use holochain_core_types::error::HolochainError;
-use lib3h_persistence_api::json::JsonString;
+use persistence_api::json::JsonString;
 
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
@@ -189,7 +189,7 @@ pub mod tests {
         signature::Signature,
     };
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
-    use lib3h_persistence_api::{
+    use persistence_api::{
         cas::content::{Address, AddressableContent},
         json::JsonString,
     };

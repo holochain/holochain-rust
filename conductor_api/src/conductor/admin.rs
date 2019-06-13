@@ -9,7 +9,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 
-use lib3h_persistence_api::{cas::content::AddressableContent, hash::HashString};
+use persistence_api::{cas::content::AddressableContent, hash::HashString};
 
 use json_patch;
 use std::{
@@ -584,7 +584,7 @@ pub mod tests {
     };
     use holochain_common::paths::DNA_EXTENSION;
     use holochain_core_types::dna::Dna;
-    use lib3h_persistence_api::json::JsonString;
+    use persistence_api::json::JsonString;
     use std::{
         convert::TryFrom,
         env::current_dir,

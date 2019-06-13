@@ -58,7 +58,7 @@ pub mod tests {
         error::ZomeApiInternalResult,
     };
     use holochain_wasm_utils::api_serialization::{commit_entry::CommitEntryResult, get_entry::*};
-    use lib3h_persistence_api::{
+    use persistence_api::{
         cas::content::{Address, AddressableContent},
         json::JsonString,
     };

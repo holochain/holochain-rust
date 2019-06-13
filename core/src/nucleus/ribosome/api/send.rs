@@ -3,7 +3,7 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
 use holochain_wasm_utils::api_serialization::send::SendArgs;
-use lib3h_persistence_api::json::JsonString;
+use persistence_api::json::JsonString;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 

@@ -8,7 +8,7 @@ use crate::{
 
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
-use lib3h_persistence_api::cas::content::Address;
+use persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 /// handles receiving a message from an api send call

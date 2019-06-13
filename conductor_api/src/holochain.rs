@@ -22,7 +22,7 @@
 //!     dna::{Dna, capabilities::CapabilityRequest,},
 //!     signature::Signature,
 //! };
-//! use lib3h_persistence_api::{
+//! use persistence_api::{
 //!     cas::content::Address,
 //!     json::JsonString,
 //! };
@@ -105,7 +105,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 
-use lib3h_persistence_api::json::JsonString;
+use persistence_api::json::JsonString;
 
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;
@@ -248,7 +248,7 @@ mod tests {
     };
     use holochain_core_types::dna::capabilities::CapabilityRequest;
     use holochain_wasm_utils::wasm_target_dir;
-    use lib3h_persistence_api::{
+    use persistence_api::{
         cas::content::{Address, AddressableContent},
         json::RawString,
     };

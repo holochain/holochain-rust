@@ -4,7 +4,7 @@ use holochain_core_types::{
     entry::entry_type::EntryType,
     error::RibosomeErrorCode::{self, *},
 };
-use lib3h_persistence_api::cas::{
+use persistence_api::cas::{
     content::{Address, AddressableContent},
     storage::ContentAddressableStorage,
 };
@@ -309,11 +309,11 @@ pub mod tests {
         },
         time::test_iso_8601,
     };
-    use lib3h_persistence_api::{
+    use persistence_api::{
         cas::content::AddressableContent,
         json::{JsonString, RawString},
     };
-    use lib3h_persistence_file::cas::file::FilesystemStorage;
+    use persistence_file::cas::file::FilesystemStorage;
     use tempfile;
 
     pub fn test_chain_store() -> ChainStore {

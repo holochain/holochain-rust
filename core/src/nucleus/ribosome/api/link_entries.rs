@@ -7,7 +7,7 @@ use holochain_core_types::{
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
 };
-use lib3h_persistence_api::cas::content::{Address, AddressableContent};
+use persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
@@ -62,7 +62,7 @@ pub mod tests {
         error::{CoreError, ZomeApiInternalResult},
     };
     use holochain_wasm_utils::api_serialization::link_entries::*;
-    use lib3h_persistence_api::{
+    use persistence_api::{
         cas::content::{Address, AddressableContent},
         hash::HashString,
         json::JsonString,

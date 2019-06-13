@@ -18,7 +18,7 @@ use holochain_core_types::{
     error::{CoreError, HolochainError},
 };
 
-use lib3h_persistence_api::{
+use persistence_api::{
     error::PersistenceError,
     json::{JsonString, RawString},
 };

@@ -7,7 +7,7 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::get_entry::{
     GetEntryArgs, GetEntryResult, StatusRequestKind,
 };
-use lib3h_persistence_api::cas::content::Address;
+use persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 /// Get Entry workflow

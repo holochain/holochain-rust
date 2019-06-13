@@ -6,7 +6,7 @@ pub mod initialize_network;
 pub mod publish;
 
 use holochain_core_types::error::HcResult;
-use lib3h_persistence_api::cas::content::Address;
+use persistence_api::cas::content::Address;
 
 #[derive(Clone, Debug)]
 pub enum ActionResponse {

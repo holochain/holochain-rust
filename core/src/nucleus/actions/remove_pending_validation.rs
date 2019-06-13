@@ -4,7 +4,7 @@ use crate::{
     instance::dispatch_action,
     scheduled_jobs::pending_validations::ValidatingWorkflow,
 };
-use lib3h_persistence_api::cas::content::Address;
+use persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 pub fn remove_pending_validation(

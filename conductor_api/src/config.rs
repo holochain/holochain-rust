@@ -21,7 +21,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 
-use lib3h_persistence_api::{cas::content::AddressableContent, json::JsonString};
+use persistence_api::{cas::content::AddressableContent, json::JsonString};
 
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;

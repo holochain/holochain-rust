@@ -12,7 +12,7 @@ use crate::{
     time::{test_iso_8601, Iso8601},
 };
 
-use lib3h_persistence_api::{
+use persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     error::{PersistenceError, PersistenceResult},
     json::JsonString,
@@ -162,7 +162,7 @@ pub mod tests {
         },
         time::test_iso_8601,
     };
-    use lib3h_persistence_api::cas::content::{Address, AddressableContent};
+    use persistence_api::cas::content::{Address, AddressableContent};
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header_a() -> ChainHeader {

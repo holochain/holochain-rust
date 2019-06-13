@@ -5,7 +5,7 @@ use holochain_wasm_utils::api_serialization::get_entry::{
     EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
     StatusRequestKind,
 };
-use lib3h_persistence_api::cas::content::Address;
+use persistence_api::cas::content::Address;
 
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
 /// the specified address.
@@ -21,8 +21,8 @@ use lib3h_persistence_api::cas::content::Address;
 /// # extern crate lib3h_persistence_api;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::entry::Entry;
-/// # use lib3h_persistence_api::json::JsonString;
-/// # use lib3h_persistence_api::cas::content::Address;
+/// # use persistence_api::json::JsonString;
+/// # use persistence_api::cas::content::Address;
 /// # fn main() {
 /// pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
 ///     // get_entry returns a Result<Option<T>, ZomeApiError>

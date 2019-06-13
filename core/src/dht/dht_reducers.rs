@@ -148,7 +148,7 @@ pub mod tests {
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
     };
-    use lib3h_persistence_api::{
+    use persistence_api::{
         cas::content::AddressableContent,
         eav::{EavFilter, IndexFilter},
     };

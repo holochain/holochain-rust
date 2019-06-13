@@ -1,4 +1,4 @@
-use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
+use persistence_api::{error::PersistenceError, json::JsonString};
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
 

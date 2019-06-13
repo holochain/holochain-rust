@@ -22,7 +22,7 @@ use holochain_core_types::{
     entry::Entry, error::RibosomeEncodedValue, validation::ValidationPackageDefinition,
 };
 
-use lib3h_persistence_api::{
+use persistence_api::{
     error::PersistenceError,
     json::{default_to_json, JsonString},
 };

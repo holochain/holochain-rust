@@ -5,7 +5,7 @@ use holochain_core_types::{
     time::Timeout,
 };
 
-use lib3h_persistence_api::{
+use persistence_api::{
     cas::content::{Address, AddressableContent},
     error::PersistenceError,
     json::*,

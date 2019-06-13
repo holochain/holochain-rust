@@ -12,7 +12,7 @@ use holochain_core_types::{
     validation::{LinkValidationData, ValidationData},
 };
 
-use lib3h_persistence_api::cas::content::AddressableContent;
+use persistence_api::cas::content::AddressableContent;
 
 use holochain_wasm_utils::api_serialization::validation::LinkValidationArgs;
 use std::sync::Arc;

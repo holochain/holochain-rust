@@ -1,6 +1,6 @@
 use crate::{action::ActionWrapper, consistency::ConsistencySignal};
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
+use persistence_api::{error::PersistenceError, json::JsonString};
 use serde::{Deserialize, Deserializer};
 use std::thread;
 

@@ -7,7 +7,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use lib3h_persistence_api::cas::content::Address;
+use persistence_api::cas::content::Address;
 
 use holochain_core_types::error::HolochainError;
 

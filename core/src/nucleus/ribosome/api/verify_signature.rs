@@ -45,7 +45,7 @@ mod test_super {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use lib3h_persistence_api::{cas::content::AddressableContent, json::JsonString};
+    use persistence_api::{cas::content::AddressableContent, json::JsonString};
 
     #[test]
     fn test_zome_api_function_verify() {

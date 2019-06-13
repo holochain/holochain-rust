@@ -2,7 +2,7 @@ use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{error::HcResult, signature::Signature};
 use holochain_dpki::keypair::generate_random_sign_keypair;
 use holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignArgs, SignOneTimeResult};
-use lib3h_persistence_api::json::JsonString;
+use persistence_api::json::JsonString;
 use lib3h_sodium::secbuf::SecBuf;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -93,7 +93,7 @@ mod test_super {
         Defn,
     };
     use holochain_dpki::utils::verify;
-    use lib3h_persistence_api::{cas::content::Address, json::JsonString};
+    use persistence_api::{cas::content::Address, json::JsonString};
 
     /// test that bytes passed to debug end up in the log
     #[test]

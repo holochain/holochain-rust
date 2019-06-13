@@ -12,7 +12,7 @@ use crate::{
     link::link_data::LinkData,
 };
 
-use lib3h_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
+use persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
 
 use chain_header::test_chain_header;
 

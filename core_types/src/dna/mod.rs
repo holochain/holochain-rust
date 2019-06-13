@@ -10,7 +10,7 @@
 //! extern crate holochain_core_types;
 //! extern crate lib3h_persistence_api;
 //! use holochain_core_types::dna::Dna;
-//! use lib3h_persistence_api::json::JsonString;
+//! use persistence_api::json::JsonString;
 //! use std::convert::TryFrom;
 //!
 //! let name = String::from("My Holochain DNA");
@@ -42,7 +42,7 @@ use crate::{
     error::{DnaError, HolochainError},
 };
 
-use lib3h_persistence_api::{
+use persistence_api::{
     cas::content::{AddressableContent, Content},
     error::{PersistenceError, PersistenceResult},
     json::JsonString,
@@ -285,7 +285,7 @@ pub mod tests {
         },
         entry::entry_type::{AppEntryType, EntryType},
     };
-    use lib3h_persistence_api::{cas::content::Address, json::JsonString};
+    use persistence_api::{cas::content::Address, json::JsonString};
     use std::convert::TryFrom;
 
     fn test_dna() -> Dna {

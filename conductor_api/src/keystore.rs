@@ -545,7 +545,7 @@ pub mod tests {
     use base64;
     use conductor::passphrase_manager::PassphraseServiceMock;
     use holochain_dpki::utils;
-    use lib3h_persistence_api::cas::content::Address;
+    use persistence_api::cas::content::Address;
 
     fn mock_passphrase_manager(passphrase: String) -> Arc<PassphraseManager> {
         Arc::new(PassphraseManager::new(Arc::new(Mutex::new(

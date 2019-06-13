@@ -5,7 +5,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_net::connection::json_protocol::{FetchMetaData, JsonProtocol};
-use lib3h_persistence_api::hash::HashString;
+use persistence_api::hash::HashString;
 
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
@@ -100,7 +100,7 @@ mod tests {
     }
 
     use holochain_core_types::entry::test_entry;
-    use lib3h_persistence_api::cas::content::AddressableContent;
+    use persistence_api::cas::content::AddressableContent;
 
     #[test]
     // This test needs to be refactored.

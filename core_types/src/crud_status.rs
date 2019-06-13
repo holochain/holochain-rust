@@ -8,7 +8,7 @@ use crate::eav::EntityAttributeValueIndex;
 use eav::Attribute;
 use std::{convert::TryInto, str::FromStr};
 
-use lib3h_persistence_api::{
+use persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     error::{PersistenceError, PersistenceResult},
     hash::HashString,
@@ -92,7 +92,7 @@ mod tests {
     use super::CrudStatus;
     use crate::eav::{eav_round_trip_test_runner, Attribute};
 
-    use lib3h_persistence_api::{
+    use persistence_api::{
         cas::{
             content::{
                 Address, AddressableContent, AddressableContentTestSuite, Content,

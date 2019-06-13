@@ -30,7 +30,7 @@ use holochain_net::{
     },
     p2p_config::P2pConfig,
 };
-use lib3h_persistence_api::cas::content::Address;
+use persistence_api::cas::content::Address;
 use snowflake;
 use std::{
     hash::{Hash, Hasher},

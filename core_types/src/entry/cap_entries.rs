@@ -1,6 +1,6 @@
 use crate::{entry::Entry, error::HolochainError};
 
-use lib3h_persistence_api::{
+use persistence_api::{
     cas::content::{Address, AddressableContent},
     error::PersistenceError,
     json::JsonString,

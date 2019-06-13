@@ -10,7 +10,7 @@ use crate::{
         CallbackFnCall,
     },
 };
-use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
+use persistence_api::{error::PersistenceError, json::JsonString};
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -54,7 +54,7 @@ pub mod tests {
         },
     };
     use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
-    use lib3h_persistence_api::cas::content::Address;
+    use persistence_api::cas::content::Address;
 
     #[test]
     fn receive_fail() {

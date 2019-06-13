@@ -3,7 +3,7 @@
 //! being used to define relationships between AddressableContent values.
 //! See [wikipedia](https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model) to learn more about this pattern.
 
-use lib3h_persistence_api::{
+use persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     eav::{
         storage::{
@@ -271,9 +271,9 @@ pub fn eav_round_trip_test_runner(
 pub mod tests {
     use super::*;
 
-    use lib3h_persistence_api::json::RawString;
+    use persistence_api::json::RawString;
 
-    use lib3h_persistence_api::cas::{
+    use persistence_api::cas::{
         content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
         storage::{
             test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,

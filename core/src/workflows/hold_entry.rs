@@ -17,7 +17,7 @@ use holochain_core_types::{
     validation::{EntryLifecycle, ValidationData},
 };
 
-use lib3h_persistence_api::cas::content::AddressableContent;
+use persistence_api::cas::content::AddressableContent;
 
 use std::sync::Arc;
 

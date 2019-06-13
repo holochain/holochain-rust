@@ -7,7 +7,7 @@ use holochain_net::{
     },
     tweetlog::*,
 };
-use lib3h_persistence_api::cas::content::Address;
+use persistence_api::cas::content::Address;
 use p2p_node::test_node::TestNode;
 use std::time::SystemTime;
 

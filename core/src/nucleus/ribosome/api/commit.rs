@@ -54,7 +54,7 @@ pub mod tests {
     use holochain_wasm_utils::api_serialization::commit_entry::{
         CommitEntryArgs, CommitEntryOptions, CommitEntryResult,
     };
-    use lib3h_persistence_api::{
+    use persistence_api::{
         cas::content::{Address, AddressableContent},
         json::JsonString,
     };

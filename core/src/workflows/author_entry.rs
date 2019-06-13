@@ -15,7 +15,7 @@ use holochain_core_types::{
     validation::{EntryLifecycle, ValidationData},
 };
 
-use lib3h_persistence_api::cas::content::{Address, AddressableContent};
+use persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryResult;
 
@@ -97,7 +97,7 @@ pub mod tests {
     use super::author_entry;
     use crate::nucleus::actions::tests::*;
     use holochain_core_types::entry::test_entry_with_value;
-    use lib3h_persistence_api::json::JsonString;
+    use persistence_api::json::JsonString;
     use std::{thread, time};
 
     #[test]

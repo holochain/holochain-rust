@@ -15,7 +15,7 @@ use holochain_net::{
     p2p_network::P2pNetwork,
     tweetlog::{TweetProxy, *},
 };
-use lib3h_persistence_api::cas::content::Address;
+use persistence_api::cas::content::Address;
 
 use super::{
     create_config::{create_ipc_config, create_lib3h_config},
@@ -23,7 +23,7 @@ use super::{
 };
 use crossbeam_channel::{unbounded, Receiver};
 use holochain_net::connection::net_connection::NetHandler;
-use lib3h_protocol::{
+use protocol::{
     data_types::DirectMessageData, protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
 };

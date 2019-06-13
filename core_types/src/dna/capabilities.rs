@@ -2,7 +2,7 @@
 /// that a given capability has been granted for actions like zome calls
 use crate::signature::{Provenance, Signature};
 
-use lib3h_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
+use persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
 
 //--------------------------------------------------------------------------------------------------
 // CapabilityRequest
@@ -29,7 +29,7 @@ impl CapabilityRequest {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use lib3h_persistence_api::cas::content::Address;
+    use persistence_api::cas::content::Address;
 
     #[test]
     fn test_capability_request_new() {

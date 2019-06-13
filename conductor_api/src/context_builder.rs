@@ -1,10 +1,10 @@
-use lib3h_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 
-use lib3h_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
+use persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 
-use lib3h_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
+use persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
 
-use lib3h_persistence_api::{
+use persistence_api::{
     cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
 };
 

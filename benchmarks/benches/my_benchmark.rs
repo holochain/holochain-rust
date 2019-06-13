@@ -8,11 +8,11 @@ extern crate tempfile;
 
 use self::tempfile::tempdir;
 use bencher::Bencher;
-use lib3h_persistence_file::eav::file::EavFileStorage;
+use persistence_file::eav::file::EavFileStorage;
 
-use lib3h_persistence_api::cas::{content::ExampleAddressableContent, storage::EavTestSuite};
-use lib3h_persistence_mem::eav::memory::EavMemoryStorage;
-use lib3h_persistence_pickle::eav::pickle::EavPickleStorage;
+use persistence_api::cas::{content::ExampleAddressableContent, storage::EavTestSuite};
+use persistence_mem::eav::memory::EavMemoryStorage;
+use persistence_pickle::eav::pickle::EavPickleStorage;
 
 fn bench_memory_eav_one_to_many(b: &mut Bencher) {
     b.iter(|| {

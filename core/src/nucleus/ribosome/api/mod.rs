@@ -153,7 +153,7 @@ pub mod tests {
             ZomeFnCall,
         },
     };
-    use lib3h_persistence_api::json::JsonString;
+    use persistence_api::json::JsonString;
     use std::sync::Arc;
     use test_utils;
     use wabt;

@@ -9,7 +9,7 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
-use lib3h_persistence_api::cas::content::Address;
+use persistence_api::cas::content::Address;
 
 use holochain_wasm_utils::api_serialization::capabilities::{
     CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
@@ -70,7 +70,7 @@ pub mod tests {
     use holochain_wasm_utils::api_serialization::capabilities::{
         CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
     };
-    use lib3h_persistence_api::{cas::content::Address, json::JsonString};
+    use persistence_api::{cas::content::Address, json::JsonString};
     use std::collections::BTreeMap;
 
     /// dummy args

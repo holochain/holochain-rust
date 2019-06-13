@@ -6,7 +6,7 @@ use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultItem, GetEntryResultType},
     get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
 };
-use lib3h_persistence_api::{cas::content::Address, hash::HashString};
+use persistence_api::{cas::content::Address, hash::HashString};
 
 /// Consumes four values; the address of an entry get get links from (the base), the type of the links
 /// to be retrieved, an optional tag to match, and an options struct for selecting what meta data and crud status links to retrieve.
@@ -23,8 +23,8 @@ use lib3h_persistence_api::{cas::content::Address, hash::HashString};
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_wasm_utils;
 /// # extern crate lib3h_persistence_api;
-/// # use lib3h_persistence_api::json::JsonString;
-/// # use lib3h_persistence_api::cas::content::Address;
+/// # use persistence_api::json::JsonString;
+/// # use persistence_api::cas::content::Address;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, GetLinksOptions};
 /// # use holochain_core_types::link::LinkMatch;
@@ -71,7 +71,7 @@ pub fn get_links(
 /// # extern crate holochain_wasm_utils;
 /// # extern crate lib3h_persistence_api;
 /// # use hdk::error::ZomeApiResult;
-/// # use lib3h_persistence_api::cas::content::Address;
+/// # use persistence_api::cas::content::Address;
 /// # use holochain_wasm_utils::api_serialization::{
 /// #    get_entry::{GetEntryOptions, GetEntryResult},
 /// #    get_links::GetLinksOptions};

@@ -16,7 +16,7 @@ use holochain_core_types::{
     link::Link,
 };
 
-use lib3h_persistence_api::{
+use persistence_api::{
     cas::content::{Address, AddressableContent},
     eav::IndexFilter,
 };

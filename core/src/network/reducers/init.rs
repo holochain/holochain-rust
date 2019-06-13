@@ -58,8 +58,8 @@ pub mod test {
     };
     use holochain_core_types::agent::AgentId;
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
-    use lib3h_persistence_api::cas::content::{Address, AddressableContent};
-    use lib3h_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use persistence_api::cas::content::{Address, AddressableContent};
+    use persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Mutex, RwLock};
     use tempfile;
 

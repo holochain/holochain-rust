@@ -3,7 +3,7 @@ use crate::{
     instance::{tests::test_context, Instance},
 };
 use holochain_core_types::dna::Dna;
-use lib3h_persistence_api::cas::content::Address;
+use persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 /// create a test instance

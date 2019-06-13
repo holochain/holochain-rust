@@ -100,7 +100,7 @@ pub struct ValidatingLinkDefinition {
 /// # extern crate serde_derive;
 /// # use boolinator::*;
 /// # use hdk::entry_definition::ValidatingEntryType;
-/// # use lib3h_persistence_api::{
+/// # use persistence_api::{
 /// #   cas::content::Address,
 /// #   json::JsonString,
 /// #   error::PersistenceError,

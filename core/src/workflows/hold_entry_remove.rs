@@ -7,7 +7,7 @@ use crate::{
     nucleus::validation::validate_entry,
 };
 
-use lib3h_persistence_api::cas::content::AddressableContent;
+use persistence_api::cas::content::AddressableContent;
 
 use holochain_core_types::{
     entry::Entry,

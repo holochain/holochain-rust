@@ -2,7 +2,7 @@
 //! HDK exposed functions to access powerful Holochain functions.
 
 use crate::error::{ZomeApiError, ZomeApiResult};
-use lib3h_persistence_api::{
+use persistence_api::{
     cas::content::Address,
     hash::HashString,
     json::{default_to_json, JsonString, RawString},

@@ -12,7 +12,7 @@ use holochain_core_types::{
     entry::{entry_type::AppEntryType, Entry},
     validation::ValidationData,
 };
-use lib3h_persistence_api::cas::content::{Address, AddressableContent};
+use persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
 use std::sync::Arc;

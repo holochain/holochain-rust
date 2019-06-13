@@ -2,7 +2,7 @@ use crate::nucleus::validation::{ValidationError, ValidationResult};
 use boolinator::Boolinator;
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
 
-use lib3h_persistence_api::cas::content::AddressableContent;
+use persistence_api::cas::content::AddressableContent;
 
 pub fn validate_header_address(entry: &Entry, header: &ChainHeader) -> ValidationResult {
     (entry.address() == *header.entry_address())

@@ -68,7 +68,7 @@ macro_rules! load_string {
 /// # extern crate lib3h_persistence_api;
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
-/// # use lib3h_persistence_api::{error::PersistenceError, json::JsonString};
+/// # use persistence_api::{error::PersistenceError, json::JsonString};
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::error::RibosomeEncodedValue;
 /// # use boolinator::Boolinator;
@@ -77,7 +77,7 @@ macro_rules! load_string {
 ///     dna::entry_types::Sharing,
 ///     validation::EntryValidationData
 /// };
-/// # use lib3h_persistence_api::cas::content::Address;
+/// # use persistence_api::cas::content::Address;
 /// # use holochain_core_types::error::RibosomeEncodingBits;
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]

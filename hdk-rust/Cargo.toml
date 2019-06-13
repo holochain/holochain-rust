@@ -11,8 +11,8 @@ bitflags = "=1.0.4"
 lazy_static = "=1.2.0"
 holochain_wasm_utils = { path = "../wasm_utils" }
 holochain_core_types = { path = "../core_types" }
-lib3h_persistence_derive = "=0.0.1-alpha1"
-lib3h_persistence_api = "=0.0.1-alpha2"
+json_derive = "=0.0.1-alpha1"
+persistence_api = "=0.0.1-alpha2"
 pretty_assertions = "=0.6.1"
 
 [dev-dependencies]

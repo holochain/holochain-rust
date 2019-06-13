@@ -11,7 +11,7 @@ use crate::{
     },
 };
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
-use lib3h_persistence_api::hash::HashString;
+use persistence_api::hash::HashString;
 
 use std::{convert::TryFrom, sync::Arc};
 

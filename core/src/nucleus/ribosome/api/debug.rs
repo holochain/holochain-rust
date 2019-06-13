@@ -22,7 +22,7 @@ pub mod tests {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use lib3h_persistence_api::json::JsonString;
+    use persistence_api::json::JsonString;
 
     /// dummy string for testing print zome API function
     pub fn test_debug_string() -> String {

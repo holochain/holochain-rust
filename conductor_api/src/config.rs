@@ -1473,8 +1473,7 @@ pub mod tests {
         assert_eq!(
             config.check_instances_storage(),
             Err(String::from(
-                "Forbidden duplicated file storage value encountered.\
-                 Please fix this in the 'TOML Conductor configuration file'."
+                "Forbidden duplicated file storage value encountered."
             ))
         );
         Ok(())

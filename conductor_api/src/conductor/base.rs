@@ -1285,77 +1285,77 @@ pub mod tests {
     [[agents]]
     id = "test-agent-1"
     name = "Holo Tester 1"
-    public_address = "{}"
+    public_address = "{tkb1}"
     keystore_file = "holo_tester1.key"
 
     [[agents]]
     id = "test-agent-2"
     name = "Holo Tester 2"
-    public_address = "{}"
+    public_address = "{tkb2}"
     keystore_file = "holo_tester2.key"
 
     [[agents]]
     id = "test-agent-3"
     name = "Holo Tester 3"
-    public_address = "{}"
+    public_address = "{tkb3}"
     keystore_file = "holo_tester3.key"
 
     [[dnas]]
     id = "test-dna"
     file = "app_spec.dna.json"
-    hash = "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
+    hash = "QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J"
 
     [[dnas]]
     id = "bridge-callee"
     file = "bridge/callee.dna"
-    hash = "QmaxFoQiVziSdELCxgQvmDbLGxNPEDiQSnm6aKHijMwsZg"
+    hash = "{bridge_callee_hash}"
 
     [[dnas]]
     id = "bridge-caller"
     file = "bridge/caller.dna"
-    hash = ""
+    hash = "{bridge_caller_hash}"
 
     [[instances]]
     id = "test-instance-1"
     dna = "bridge-callee"
     agent = "test-agent-1"
-    [instances.storage]
-    type = "memory"
+        [instances.storage]
+        type = "memory"
 
     [[instances]]
     id = "test-instance-2"
     dna = "test-dna"
     agent = "test-agent-2"
-    [instances.storage]
-    type = "memory"
+        [instances.storage]
+        type = "memory"
 
     [[instances]]
     id = "bridge-caller"
     dna = "bridge-caller"
     agent = "test-agent-3"
-    [instances.storage]
-    type = "memory"
+        [instances.storage]
+        type = "memory"
 
     [[interfaces]]
     id = "test-interface-1"
     admin = true
-    [interfaces.driver]
-    type = "websocket"
-    port = {}
-    [[interfaces.instances]]
-    id = "test-instance-1"
-    [[interfaces.instances]]
-    id = "test-instance-2"
+        [interfaces.driver]
+        type = "websocket"
+        port = {ws_port}
+        [[interfaces.instances]]
+        id = "test-instance-1"
+        [[interfaces.instances]]
+        id = "test-instance-2"
 
     [[interfaces]]
     id = "test-interface-2"
     [interfaces.driver]
     type = "http"
-    port = {}
-    [[interfaces.instances]]
-    id = "test-instance-1"
-    [[interfaces.instances]]
-    id = "test-instance-2"
+    port = {http_port}
+        [[interfaces.instances]]
+        id = "test-instance-1"
+        [[interfaces.instances]]
+        id = "test-instance-2"
 
     [[bridges]]
     caller_id = "bridge-caller"
@@ -1372,11 +1372,13 @@ pub mod tests {
     callee_id = "test-instance-1"
     handle = "test-callee"
     "#,
-            test_keybundle(1).get_id(),
-            test_keybundle(2).get_id(),
-            test_keybundle(3).get_id(),
-            websocket_port,
-            http_port,
+            tkb1 = test_keybundle(1).get_id(),
+            tkb2 = test_keybundle(2).get_id(),
+            tkb3 = test_keybundle(3).get_id(),
+            ws_port = websocket_port,
+            http_port = http_port,
+            bridge_callee_hash = callee_dna().address(),
+            bridge_caller_hash = caller_dna().address(),
         )
     }
 
@@ -1486,69 +1488,8 @@ pub mod tests {
     /// - DNA hash from Conductor configuration
     /// - computed DNA hash from loaded instance
     fn test_check_dna_consistency() {
-        let toml = format!(
-            r#"
-        [[agents]]
-        id = "test-agent-1"
-        name = "Holo Tester 1"
-        public_address = "{}"
-        keystore_file = "holo_tester1.key"
+        let toml = test_toml(10041, 10042);
 
-        [[agents]]
-        id = "test-agent-2"
-        name = "Holo Tester 2"
-        public_address = "{}"
-        keystore_file = "holo_tester2.key"
-
-        [[agents]]
-        id = "test-agent-3"
-        name = "Holo Tester 3"
-        public_address = "{}"
-        keystore_file = "holo_tester3.key"
-
-        [[dnas]]
-        id = "test-dna"
-        file = "app_spec.dna.json"
-        hash = "QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a"
-
-        [[dnas]]
-        id = "bridge-callee"
-        file = "bridge/callee.dna"
-        hash = "QmaxFoQiVziSdELCxgQvmDbLGxNPEDiQSnm6aKHijMwsZg"
-
-        [[dnas]]
-        id = "bridge-caller"
-        file = "bridge/caller.dna"
-        hash = ""
-
-        [[instances]]
-        id = "test-instance-1"
-        dna = "bridge-callee"
-        agent = "test-agent-1"
-
-            [instances.storage]
-            type = "memory"
-
-        [[instances]]
-        id = "test-instance-2"
-        dna = "test-dna"
-        agent = "test-agent-2"
-
-            [instances.storage]
-            type = "memory"
-
-        [[instances]]
-        id = "bridge-caller"
-        dna = "bridge-caller"
-        agent = "test-agent-3"
-
-            [instances.storage]
-            type = "memory"
-        "#,
-            test_keybundle(1).get_id(),
-            test_keybundle(2).get_id(),
-            test_keybundle(3).get_id(),
-        );
         let config = load_configuration::<Configuration>(&toml).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
@@ -1559,6 +1500,7 @@ pub mod tests {
             "Conductor failed to boot from config"
         );
 
+        // Tests equality
         let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
         let b = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
         assert_eq!(
@@ -1567,6 +1509,7 @@ pub mod tests {
             "DNA consistency check Fail."
         );
 
+        // Tests INequality
         let b = HashString::from("QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a");
         assert_ne!(
             Conductor::check_dna_consistency(&a, &b),

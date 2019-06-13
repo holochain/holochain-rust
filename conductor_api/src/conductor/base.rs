@@ -639,7 +639,7 @@ impl Conductor {
                             None => {
                                 // Let's warn the user that we encountered an empty DNA hash in the Conductor
                                 // config that is meant to be skipped by the consistency checking mechanisim
-                                context.log("warn/Conductor: Empty DNA hash encountered in the Conductor configuration.");
+                                context.log("warn/Conductor: Invalid DNA hash encountered in the Conductor configuration.");
                                 String::from("")
                             }
                         }
@@ -869,16 +869,11 @@ impl Conductor {
 
     /// This is where we check for DNA's hashes consistency.
     /// Only a simple equality check between DNA hashes is currently performed.
-    /// N.B.: Empty hashes are skipped for debugging purposes.
     fn check_dna_consistency(
         dna_hash_a: &HashString,
         dna_hash_b: &HashString,
     ) -> Result<(), HolochainError> {
-        // Here we skip empty DNA hashes for debugging purpose to help Zome developers
-        let empty_hash = HashString::from("");
-        if *dna_hash_a == empty_hash || *dna_hash_b == empty_hash {
-            Ok(())
-        } else if *dna_hash_a == *dna_hash_b {
+        if *dna_hash_a == *dna_hash_b {
             Ok(())
         } else {
             Err(HolochainError::DnaHashMismatch(

@@ -4,8 +4,8 @@
       "build",
       "--release",
       "--target=wasm32-unknown-unknown",
-      "--target-dir=/home/ashantimutinta/nix-holochain/simple/target"
+      "--target-dir=target"
     ]
   },
-  "artifact": "/home/ashantimutinta/nix-holochain/simple/target/wasm32-unknown-unknown/release/simple.wasm"
+  "artifact": "target/wasm32-unknown-unknown/release/simple.wasm"
 }

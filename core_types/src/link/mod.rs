@@ -5,7 +5,9 @@
 pub mod link_data;
 pub mod link_list;
 
-use holochain_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
+use holochain_persistence_api::cas::content::Address;
+use holochain_json_api::{error::JsonError, json::JsonString};
+
 
 use entry::Entry;
 use link::link_data::LinkData;

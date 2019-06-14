@@ -44,7 +44,10 @@ use crate::{
 
 use holochain_persistence_api::{
     cas::content::{AddressableContent, Content},
-    error::{PersistenceError, PersistenceResult},
+};
+
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
     json::JsonString,
 };
 
@@ -104,7 +107,7 @@ impl AddressableContent for Dna {
         Content::from(self.to_owned())
     }
 
-    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         Ok(Dna::try_from(content.to_owned())?)
     }
 }

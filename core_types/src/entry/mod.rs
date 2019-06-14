@@ -19,7 +19,9 @@ use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    error::{PersistenceError, PersistenceResult},
+};
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
     json::{JsonString, RawString},
 };
 use link::{link_data::LinkData, link_list::LinkList};
@@ -114,7 +116,7 @@ impl AddressableContent for Entry {
         self.into()
     }
 
-    fn try_from_content(content: &Content) -> PersistenceResult<Entry> {
+    fn try_from_content(content: &Content) -> JsonResult<Entry> {
         Entry::try_from(content.to_owned())
     }
 }

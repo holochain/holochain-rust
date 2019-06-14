@@ -1,6 +1,8 @@
 use crate::link::{Link, LinkActionKind};
 
-use holochain_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
+use holochain_persistence_api::{cas::content::Address};
+use holochain_json_api::{error::JsonError, json::JsonString};
+
 
 //-------------------------------------------------------------------------------------------------
 // LinkData

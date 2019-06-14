@@ -125,7 +125,7 @@ impl AddressableContent for ChainHeader {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         content.to_owned().try_into()
     }
 }

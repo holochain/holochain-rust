@@ -15,8 +15,8 @@ use holochain_persistence_api::{
 };
 
 use holochain_json_api::{
-    error::{JsonError},
-    json::JsonString,
+    error::{JsonResult, JsonError},
+    json::JsonString
 };
 
 /// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an entry address as the Entity, [CrudStatus](../eav/Attribute.html) as the attribute
@@ -86,7 +86,7 @@ impl AddressableContent for CrudStatus {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         content.to_owned().try_into()
     }
 }

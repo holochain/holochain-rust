@@ -2,7 +2,10 @@ use crate::{entry::Entry, error::HcResult};
 
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    error::{PersistenceError, PersistenceResult},
+};
+
+use holochain_json_api::{
+    error::{JsonResult, JsonError},
     json::JsonString,
 };
 
@@ -73,10 +76,10 @@ impl AddressableContent for AgentId {
     }
 
     // build from entry content
-    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         match Entry::try_from(content)? {
             Entry::AgentId(agent_id) => Ok(agent_id),
-            _ => Err(PersistenceError::SerializationError(
+            _ => Err(JsonError::SerializationError(
                 "Attempted to load AgentId from non AgentID entry".into(),
             )),
         }

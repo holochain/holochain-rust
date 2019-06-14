@@ -10,10 +10,12 @@ use self::HolochainError::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use lib3h_crypto_api::CryptoError;
 use holochain_persistence_api::{
-    error::{PersistenceError, PersistenceResult},
     hash::HashString,
-    json::*,
+    error::{PersistenceError},
 };
+
+use holochain_json_api::{error::{JsonResult, JsonError}, json::*};
+
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -66,8 +68,8 @@ impl ::std::convert::TryFrom<ZomeApiInternalResult> for CoreError {
             ))
         } else {
             let hc_error: JsonString = JsonString::from_json(&zome_api_internal_result.error);
-            let ce: PersistenceResult<_> = CoreError::try_from(hc_error);
-            ce.map_err(|err: PersistenceError| {
+            let ce: JsonResult<_> = CoreError::try_from(hc_error);
+            ce.map_err(|err: JsonError| {
                 let hc_error: HolochainError = err.into();
                 hc_error
             })
@@ -162,8 +164,6 @@ impl From<HolochainError> for String {
     }
 }
 
-impl JsonError for HolochainError {}
-
 impl From<PersistenceError> for HolochainError {
     fn from(persistence_error: PersistenceError) -> Self {
         match persistence_error {
@@ -173,6 +173,17 @@ impl From<PersistenceError> for HolochainError {
         }
     }
 }
+
+impl From<JsonError> for HolochainError {
+    fn from(json_error: JsonError) -> Self {
+        match json_error {
+            JsonError::ErrorGeneric(e) => HolochainError::ErrorGeneric(e),
+            JsonError::SerializationError(e) => HolochainError::SerializationError(e),
+            JsonError::IoError(e) => HolochainError::IoError(e),
+        }
+    }
+}
+
 
 impl From<String> for HolochainError {
     fn from(error: String) -> Self {

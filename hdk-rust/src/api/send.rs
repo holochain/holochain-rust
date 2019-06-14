@@ -18,6 +18,7 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # extern crate serde;
 /// # #[macro_use]
 /// # extern crate serde_derive;

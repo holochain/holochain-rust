@@ -29,6 +29,7 @@ use holochain_wasm_utils::api_serialization::{
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_json_api::json::JsonString;
 /// # use holochain_persistence_api::cas::content::Address;

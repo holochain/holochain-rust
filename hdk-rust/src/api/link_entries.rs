@@ -24,6 +24,7 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # #[macro_use]
 /// # extern crate holochain_json_derive;
 /// # use holochain_json_api::json::JsonString;

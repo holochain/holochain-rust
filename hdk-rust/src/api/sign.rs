@@ -18,6 +18,7 @@ use super::Dispatch;
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # #[macro_use]
 /// # extern crate holochain_json_derive;
 /// # use holochain_json_api::json::JsonString;
@@ -47,6 +48,7 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # #[macro_use]
 /// # extern crate holochain_json_derive;
 /// # use holochain_json_api::json::JsonString;
@@ -80,6 +82,7 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # #[macro_use]
 /// # extern crate holochain_json_derive;
 /// # use holochain_json_api::json::JsonString;

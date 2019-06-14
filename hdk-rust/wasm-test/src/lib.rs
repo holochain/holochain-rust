@@ -34,9 +34,8 @@ use holochain_wasm_utils::{
     },
     holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
-        error::{PersistenceError},
-        json::{JsonString, RawString},
     },
+    holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
     memory::{
         allocation::WasmAllocation,
         ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},

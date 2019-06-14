@@ -25,7 +25,7 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # extern crate serde_json;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_persistence_api::cas::content::Address;
-/// # use holochain_json_api::error::PersistenceError;
+/// # use holochain_json_api::error::JsonError;
 /// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::error::RibosomeEncodingBits;

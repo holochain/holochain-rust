@@ -10,6 +10,7 @@
 //! extern crate holochain_core_types;
 //! extern crate holochain_core;
 //! extern crate holochain_net;
+//! extern crate holochain_json_api;
 //! extern crate holochain_persistence_api;
 //! extern crate holochain_persistence_mem;
 //! extern crate holochain_dpki;
@@ -24,8 +25,8 @@
 //! };
 //! use holochain_persistence_api::{
 //!     cas::content::Address,
-//!     json::JsonString,
 //! };
+//! use holochain_json_api::json::JsonString;
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
 //! use lib3h_sodium::secbuf::SecBuf;
 //! use test_utils;

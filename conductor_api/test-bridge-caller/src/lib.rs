@@ -8,8 +8,11 @@ extern crate serde_json;
 
 use hdk::holochain_persistence_api::{
     cas::content::Address,
+};
+
+use hdk::holochain_json_api::{
     json::JsonString,
-    error::PersistenceError
+    error::JsonError
 };
 
 fn handle_call_bridge() -> JsonString {

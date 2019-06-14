@@ -3,8 +3,10 @@ use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     holochain_persistence_api::{
         cas::content::Address,
+    },
+    holochain_json_api::{
         json::JsonString,
-        error::PersistenceError
+        error::JsonError
     },
     holochain_core_types::{
         dna::capabilities::CapabilityRequest,

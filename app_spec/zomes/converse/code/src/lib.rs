@@ -10,8 +10,8 @@ use hdk::{
     holochain_core_types::{
         signature::{Provenance, Signature},
     },
-    holochain_persistence_api::{
-        error::PersistenceError,
+    holochain_json_api::{
+        error::JsonError,
         json::JsonString,
     },
     holochain_wasm_utils::api_serialization::keystore::KeyType,

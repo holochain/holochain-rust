@@ -30,9 +30,9 @@ impl ToTokens for ZomeFunction {
             #[no_mangle]
             pub extern "C" fn #zome_function_name(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
                 use hdk::{
-                    holochain_persistence_api::{
+                    holochain_json_api::{
                         json::JsonString,
-                        error::PersistenceError
+                        error::JsonError
                     },
                 };
 

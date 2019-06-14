@@ -6,7 +6,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate boolinator;
-use hdk::holochain_json_api::error::PersistenceError;
+use hdk::holochain_json_api::error::JsonError;
 use hdk::holochain_json_api::json::JsonString;
 use hdk::error::ZomeApiResult;
 

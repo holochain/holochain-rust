@@ -16,7 +16,10 @@ use holochain_core_types::{
     signature::Provenance
 };
 
-use holochain_wasm_utils::holochain_persistence_api::{error::PersistenceError, json::{JsonString, RawString}, cas::content::Address};
+use holochain_wasm_utils::{
+    holochain_persistence_api::cas::content::Address,
+    holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
+};
 
 use holochain_wasm_utils::memory::{
     ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},

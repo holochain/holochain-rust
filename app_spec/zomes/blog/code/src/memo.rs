@@ -6,8 +6,8 @@ use hdk::{
     holochain_core_types::{
         dna::entry_types::Sharing
     },
-    holochain_persistence_api::{
-        error::PersistenceError, json::JsonString,
+    holochain_json_api::{
+        error::JsonError, json::JsonString,
     }
 };
 

@@ -18,7 +18,7 @@ use hdk::holochain_core_types::{
     validation::EntryValidationData
 };
 
-use hdk::holochain_persistence_api::{error::PersistenceError, json::JsonString};
+use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 
 #[derive(Serialize, Deserialize, DefaultJson, Debug,Clone)]
 struct TestEntryType {
@@ -74,7 +74,7 @@ define_zome! {
                        Err("Failed to validate with wrong entry type".to_string())
                    }
                 }
-               
+
             }
         ),
 
@@ -92,7 +92,7 @@ define_zome! {
                 {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-                        
+
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }
@@ -117,7 +117,7 @@ define_zome! {
                 {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-                        
+
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }
@@ -142,7 +142,7 @@ define_zome! {
                 {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-                        
+
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }

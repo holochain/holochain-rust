@@ -9,6 +9,7 @@
 //! #![feature(try_from)]
 //! extern crate holochain_core_types;
 //! extern crate holochain_persistence_api;
+//! extern crate holochain_json_api;
 //! use holochain_core_types::dna::Dna;
 //! use holochain_json_api::json::JsonString;
 //! use std::convert::TryFrom;

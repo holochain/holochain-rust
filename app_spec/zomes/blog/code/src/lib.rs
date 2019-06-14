@@ -19,7 +19,10 @@ use blog::Env;
 use hdk::{
     error::ZomeApiResult,
     holochain_persistence_api::{
-        cas::content::Address, error::PersistenceError, json::JsonString,
+        cas::content::Address
+    },
+    holochain_json_api::{
+        error::JsonError, json::JsonString,
     },
     holochain_core_types::{
         entry::Entry,

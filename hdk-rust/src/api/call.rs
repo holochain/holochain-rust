@@ -22,7 +22,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # use hdk::holochain_json_api::json::JsonString;
-/// # use hdk::holochain_json_api::error::PersistenceError;
+/// # use hdk::holochain_json_api::error::JsonError;
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
@@ -123,7 +123,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # extern crate holochain_json_derive;
 ///
 /// # use hdk::holochain_persistence_api::hash::HashString;
-/// # use hdk::holochain_json_api::error::PersistenceError;
+/// # use hdk::holochain_json_api::error::JsonError;
 /// # use hdk::holochain_json_api::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::error::ZomeApiResult;

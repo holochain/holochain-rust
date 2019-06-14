@@ -17,9 +17,9 @@ use hdk::{
     holochain_core_types::{
         dna::entry_types::Sharing,
     },
-    holochain_persistence_api::{
+    holochain_json_api::{
         json::JsonString,
-        error::PersistenceError,
+        error::JsonError,
     },
 };
 
@@ -30,7 +30,7 @@ pub mod someZome {
     struct TestEntryType {
         stuff: String,
     }
-    
+
     #[genesis]
     fn genisis() {
         Ok(())
@@ -65,5 +65,5 @@ pub mod someZome {
     fn glerp_glerp(message: String) -> String {
         message
     }
-    
+
 }

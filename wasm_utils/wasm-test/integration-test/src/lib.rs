@@ -8,8 +8,8 @@ extern crate serde_json;
 extern crate holochain_json_derive;
 extern crate wasmi;
 
-use holochain_wasm_utils::holochain_persistence_api::{
-    json::{JsonString, RawString}, error::PersistenceError
+use holochain_wasm_utils::holochain_json_api::{
+    json::{JsonString, RawString}, error::JsonError
 };
 
 use holochain_wasm_utils::memory::stack::WasmStack;

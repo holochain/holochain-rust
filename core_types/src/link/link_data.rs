@@ -1,5 +1,7 @@
 use crate::{
+    agent::AgentId,
     cas::content::Address,
+    chain_header::ChainHeader,
     error::HolochainError,
     json::JsonString,
     link::{Link, LinkActionKind},
@@ -13,20 +15,40 @@ use crate::{
 pub struct LinkData {
     pub action_kind: LinkActionKind,
     pub link: Link,
+    pub top_chain_header: ChainHeader,
+    agent_id: AgentId,
 }
 
 impl LinkData {
-    pub fn new_add(base: &Address, target: &Address, link_type: &str, tag: &str) -> Self {
+    pub fn new_add(
+        base: &Address,
+        target: &Address,
+        tag: &str,
+        link_type: &str,
+        top_chain_header: ChainHeader,
+        agent_id: AgentId,
+    ) -> Self {
         LinkData {
             action_kind: LinkActionKind::ADD,
             link: Link::new(base, target, link_type, tag),
+            top_chain_header,
+            agent_id,
         }
     }
 
-    pub fn new_delete(base: &Address, target: &Address, link_type: &str, tag: &str) -> Self {
+    pub fn new_delete(
+        base: &Address,
+        target: &Address,
+        tag: &str,
+        link_type: &str,
+        top_chain_header: ChainHeader,
+        agent_id: AgentId,
+    ) -> Self {
         LinkData {
             action_kind: LinkActionKind::REMOVE,
             link: Link::new(base, target, link_type, tag),
+            top_chain_header,
+            agent_id,
         }
     }
 
@@ -38,19 +60,26 @@ impl LinkData {
         &self.link
     }
 
-    pub fn from_link(link: &Link, action_kind: LinkActionKind) -> Self {
+    pub fn from_link(
+        link: &Link,
+        action_kind: LinkActionKind,
+        top_chain_header: ChainHeader,
+        agent_id: AgentId,
+    ) -> Self {
         LinkData {
             action_kind,
             link: link.clone(),
+            top_chain_header,
+            agent_id,
         }
     }
 
-    pub fn add_from_link(link: &Link) -> Self {
-        Self::from_link(link, LinkActionKind::ADD)
+    pub fn add_from_link(link: &Link, top_chain_header: ChainHeader, agent_id: AgentId) -> Self {
+        Self::from_link(link, LinkActionKind::ADD, top_chain_header, agent_id)
     }
 
-    pub fn remove_from_link(link: &Link) -> Self {
-        Self::from_link(link, LinkActionKind::REMOVE)
+    pub fn remove_from_link(link: &Link, top_chain_header: ChainHeader, agent_id: AgentId) -> Self {
+        Self::from_link(link, LinkActionKind::REMOVE, top_chain_header, agent_id)
     }
 }
 
@@ -58,7 +87,9 @@ impl LinkData {
 pub mod tests {
 
     use crate::{
+        agent::test_agent_id,
         cas::content::AddressableContent,
+        chain_header::test_chain_header,
         entry::{test_entry_a, test_entry_b, Entry},
         json::JsonString,
         link::{
@@ -70,7 +101,14 @@ pub mod tests {
 
     pub fn example_link_add() -> LinkData {
         let link = example_link();
-        LinkData::new_add(link.base(), link.target(), link.link_type(), link.tag())
+        LinkData::new_add(
+            link.base(),
+            link.target(),
+            link.tag(),
+            "foo-link-type",
+            test_chain_header(),
+            test_agent_id(),
+        )
     }
 
     pub fn test_link_entry() -> Entry {
@@ -79,7 +117,7 @@ pub mod tests {
 
     pub fn test_link_entry_json_string() -> JsonString {
         JsonString::from_json(&format!(
-            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}}}}}}",
+            "{{\"LinkAdd\":{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"link_type\":\"foo-link-type\",\"tag\":\"foo-link-tag\"}},\"top_chain_header\":{{\"entry_type\":{{\"App\":\"testEntryType\"}},\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"provenances\":[[\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\",\"sig\"]],\"link\":null,\"link_same_type\":null,\"link_update_delete\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}},\"agent_id\":{{\"nick\":\"bob\",\"pub_sign_key\":\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\"}}}}}}",
             test_entry_a().address(),
             test_entry_b().address(),
         ))

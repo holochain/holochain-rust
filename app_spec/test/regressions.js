@@ -10,8 +10,7 @@ scenario('calling get_links before link_entries makes no difference', async (s, 
 
   const get2 = await alice.call("blog", "my_posts", {})
   t.ok(get2.Ok)
-
-  t.equal(get2.Ok.links.length, 1)
+  t.equal(get2.Ok.links.length,1)
 })
 
 scenario('calling get_links twice in a row is no different than calling it once', async (s, t, {alice}) => {
@@ -27,7 +26,6 @@ scenario('calling get_links twice in a row is no different than calling it once'
   await alice.call("blog", "my_posts", {})
   const get2 = await alice.call("blog", "my_posts", {})
   t.ok(get2.Ok)
-
   t.equal(get2.Ok.links.length, 1)
 })
 
@@ -38,7 +36,6 @@ scenario('not calling get_links in the beginning is also ok', async (s, t, {alic
 
   const get1 = await alice.call("blog", "my_posts", {})
   t.ok(get1.Ok)
-
   t.equal(get1.Ok.links.length, 1)
 })
 
@@ -58,12 +55,11 @@ scenario('alice create & publish post -> recommend own post to self', async (s, 
     agent_address: alice.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "QmZr5F34uGZjAEwmU574VwiRtXGHQmvbUnNgA2MJz7YcTr")
+  t.ok(linked.Ok);
 
   const recommendedPosts = await alice.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, alice.agentId)
-
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
@@ -82,12 +78,11 @@ scenario('alice create & publish post -> bob recommend to self', async (s, t, {a
     agent_address: bob.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "QmaLKGRgSHv6z73FaseCgudGt9uZ9fPhBREUy3gZ1C8s2K")
+  t.ok(linked.Ok);
 
   const recommendedPosts = await bob.call("blog", "my_recommended_posts", {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, bob.agentId)
-
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
@@ -106,12 +101,11 @@ scenario('create & publish post -> recommend to other agent', async (s, t, {alic
     agent_address: bob.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "QmWBQCMdgZURpxa7WsbxnnVNZcFxdaTV7mxVdgh9nHnVwT")
+  t.ok(linked.Ok);
 
   const recommendedPosts = await bob.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, bob.agentId)
-
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
 

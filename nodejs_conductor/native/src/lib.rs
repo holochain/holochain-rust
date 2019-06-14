@@ -10,6 +10,7 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_node_test_waiter;
 extern crate holochain_persistence_api;
+extern crate holochain_json_api;
 mod config;
 pub mod js_test_conductor;
 

@@ -20,7 +20,8 @@ use holochain_core::{
     signal::{signal_channel, Signal, SignalReceiver},
 };
 use holochain_core_types::entry::Entry;
-use holochain_persistence_api::{cas::content::AddressableContent, json::JsonString};
+use holochain_persistence_api::cas::content::AddressableContent;
+use holochain_json_api::json::JsonString;
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
 /// Block until Hold(agent.public_address) is seen for each agent in the conductor.

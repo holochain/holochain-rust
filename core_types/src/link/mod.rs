@@ -88,12 +88,6 @@ impl<S: Into<String>> LinkMatch<S> {
     }
 }
 
-impl From<LinkMatch<&str>> for LinkMatch<String> {
-    fn from(l: LinkMatch<&str>) -> Self {
-        l.into()
-    }
-}
-
 #[cfg(test)]
 pub mod tests {
 

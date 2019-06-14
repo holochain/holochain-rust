@@ -6,7 +6,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-use hdk::lib3h_persistence_api::{
+use hdk::holochain_persistence_api::{
     cas::content::Address,
     json::JsonString,
     error::PersistenceError

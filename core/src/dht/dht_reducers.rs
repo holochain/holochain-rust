@@ -148,7 +148,7 @@ pub mod tests {
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
     };
-    use persistence_api::{
+    use holochain_persistence_api::{
         cas::content::AddressableContent,
         eav::{EavFilter, IndexFilter},
     };

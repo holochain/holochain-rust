@@ -4,7 +4,7 @@ use colored::*;
 use holochain_core::nucleus::ribosome::{run_dna, WasmCallData};
 use holochain_core_types::dna::Dna;
 use ignore::WalkBuilder;
-use persistence_api::{cas::content::AddressableContent, json::JsonString};
+use holochain_persistence_api::{cas::content::AddressableContent, json::JsonString};
 use serde_json::{self, Map, Value};
 use std::{
     convert::TryFrom,

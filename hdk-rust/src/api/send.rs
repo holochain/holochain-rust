@@ -2,7 +2,7 @@ use super::Dispatch;
 use error::ZomeApiResult;
 use holochain_core_types::time::Timeout;
 use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 
 /// Sends a node-to-node message to the given agent, specified by their address.
 /// Addresses of agents can be accessed using [hdk::AGENT_ADDRESS](struct.AGENT_ADDRESS.html).
@@ -17,15 +17,15 @@ use persistence_api::cas::content::Address;
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
-/// # extern crate lib3h_persistence_api;
+/// # extern crate holochain_persistence_api;
 /// # extern crate serde;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # use hdk::error::ZomeApiResult;
-/// # use persistence_api::cas::content::Address;
-/// # use persistence_api::error::PersistenceError;
+/// # use holochain_persistence_api::cas::content::Address;
+/// # use holochain_json_api::error::PersistenceError;
 /// # use json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::error::RibosomeEncodingBits;

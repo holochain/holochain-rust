@@ -17,7 +17,7 @@ use holochain_core_types::{
     signature::{Provenance, Signature},
 };
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     json::JsonString,
 };
@@ -330,7 +330,7 @@ pub mod tests {
         },
         signature::Signature,
     };
-    use persistence_api::cas::content::{Address, AddressableContent};
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
     #[test]
     fn test_agent_as_token() {

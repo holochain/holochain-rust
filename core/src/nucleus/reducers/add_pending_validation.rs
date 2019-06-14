@@ -3,7 +3,7 @@ use crate::{
     nucleus::state::{NucleusState, PendingValidationKey},
     state::State,
 };
-use persistence_api::cas::content::AddressableContent;
+use holochain_persistence_api::cas::content::AddressableContent;
 
 /// Reduce AddPendingValidation Action.
 /// Inserts boxed EntryWithHeader and dependencies into state, referenced with
@@ -36,7 +36,7 @@ pub mod tests {
         state::test_store,
     };
     use holochain_core_types::{chain_header::test_chain_header, entry::Entry};
-    use persistence_api::json::RawString;
+    use holochain_json_api::json::RawString;
     use std::sync::Arc;
 
     #[test]

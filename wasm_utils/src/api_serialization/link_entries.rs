@@ -1,6 +1,6 @@
 use holochain_core_types::link::Link;
 
-use persistence_api::{cas::content::Address, error::PersistenceError, json::*};
+use holochain_persistence_api::{cas::content::Address, error::PersistenceError, json::*};
 
 #[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
 pub struct LinkEntriesArgs {

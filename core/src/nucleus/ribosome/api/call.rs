@@ -189,7 +189,7 @@ pub mod tests {
         signature::Signature,
     };
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
-    use persistence_api::{
+    use holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
         json::JsonString,
     };

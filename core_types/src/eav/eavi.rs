@@ -3,7 +3,7 @@
 //! being used to define relationships between AddressableContent values.
 //! See [wikipedia](https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model) to learn more about this pattern.
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     eav::{
         storage::{
@@ -12,7 +12,11 @@ use persistence_api::{
         AttributeError, IndexFilter,
     },
     error::{PersistenceError, PersistenceResult},
+};
+
+use holochain_json_api::{
     json::JsonString,
+    error::JsonError,
 };
 
 use crate::{
@@ -54,7 +58,7 @@ impl Default for Attribute {
 unsafe impl Sync for Attribute {}
 unsafe impl Send for Attribute {}
 
-impl lib3h_persistence_api::eav::Attribute for Attribute {}
+impl holochain_persistence_api::eav::Attribute for Attribute {}
 
 impl From<AttributeError> for HolochainError {
     fn from(err: AttributeError) -> HolochainError {
@@ -140,7 +144,7 @@ pub type Index = i64;
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
 pub type EntityAttributeValueIndex =
-    lib3h_persistence_api::eav::EntityAttributeValueIndex<Attribute>;
+    holochain_persistence_api::eav::EntityAttributeValueIndex<Attribute>;
 
 pub type EntityAttributeValueStorage = GenericStorage<Attribute>;
 
@@ -271,9 +275,9 @@ pub fn eav_round_trip_test_runner(
 pub mod tests {
     use super::*;
 
-    use persistence_api::json::RawString;
+    use holochain_json_api::json::RawString;
 
-    use persistence_api::cas::{
+    use holochain_persistence_api::cas::{
         content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
         storage::{
             test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,

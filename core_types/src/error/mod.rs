@@ -9,7 +9,7 @@ pub use self::{dna_error::*, ribosome_error::*};
 use self::HolochainError::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use lib3h_crypto_api::CryptoError;
-use persistence_api::{
+use holochain_persistence_api::{
     error::{PersistenceError, PersistenceResult},
     hash::HashString,
     json::*,

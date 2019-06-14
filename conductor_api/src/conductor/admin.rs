@@ -9,7 +9,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 
-use persistence_api::{cas::content::AddressableContent, hash::HashString};
+use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
 
 use json_patch;
 use std::{

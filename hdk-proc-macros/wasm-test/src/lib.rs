@@ -10,14 +10,14 @@ extern crate serde_derive;
 #[macro_use]
 extern crate hdk;
 #[macro_use]
-extern crate lib3h_persistence_derive;
+extern crate holochain_json_derive;
 
 use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
         dna::entry_types::Sharing,
     },
-    lib3h_persistence_api::{
+    holochain_persistence_api::{
         json::JsonString,
         error::PersistenceError,
     },

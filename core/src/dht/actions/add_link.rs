@@ -60,7 +60,7 @@ mod tests {
     use crate::nucleus;
 
     use holochain_core_types::{entry::Entry, link::Link};
-    use persistence_api::cas::content::AddressableContent;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry() -> Entry {

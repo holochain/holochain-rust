@@ -8,10 +8,14 @@ use crate::eav::EntityAttributeValueIndex;
 use eav::Attribute;
 use std::{convert::TryInto, str::FromStr};
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    error::{PersistenceError, PersistenceResult},
+    error::{PersistenceResult},
     hash::HashString,
+};
+
+use holochain_json_api::{
+    error::{JsonError},
     json::JsonString,
 };
 
@@ -92,7 +96,7 @@ mod tests {
     use super::CrudStatus;
     use crate::eav::{eav_round_trip_test_runner, Attribute};
 
-    use persistence_api::{
+    use holochain_persistence_api::{
         cas::{
             content::{
                 Address, AddressableContent, AddressableContentTestSuite, Content,

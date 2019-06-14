@@ -4,7 +4,7 @@ use holochain_net::{
     connection::{json_protocol::JsonProtocol, NetResult},
     tweetlog::TWEETLOG,
 };
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use p2p_node::test_node::TestNode;
 
 /// Have multiple nodes track multiple dnas

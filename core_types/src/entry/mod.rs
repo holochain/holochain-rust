@@ -17,7 +17,7 @@ use chain_migrate::ChainMigrate;
 use crud_status::CrudStatus;
 use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     error::{PersistenceError, PersistenceResult},
     json::{JsonString, RawString},
@@ -227,7 +227,7 @@ pub fn test_unpublishable_entry() -> Entry {
 pub mod tests {
     use super::*;
     use crate::entry::{expected_entry_address, Entry};
-    use persistence_api::cas::{
+    use holochain_persistence_api::cas::{
         content::{AddressableContent, AddressableContentTestSuite},
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };

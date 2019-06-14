@@ -1,6 +1,6 @@
 use holochain_core_types::dna::capabilities::CapabilityRequest;
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::Address, error::PersistenceError, hash::HashString, json::*,
 };
 

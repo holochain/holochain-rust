@@ -5,7 +5,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::RibosomeRuntimeBits,
 };
-use persistence_api::cas::content::AddressableContent;
+use holochain_persistence_api::cas::content::AddressableContent;
 
 use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue};

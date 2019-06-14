@@ -2,7 +2,7 @@ use holochain_core_types::{
     agent::AgentId,
     };
 
-use persistence_api::cas::content::{Address, AddressableContent};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_dpki::{
     key_bundle::KeyBundle,

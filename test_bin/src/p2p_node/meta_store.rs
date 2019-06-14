@@ -2,7 +2,7 @@ use holochain_net::{
     connection::json_protocol::{MetaKey, MetaTuple},
     tweetlog::*,
 };
-use persistence_api::{cas::content::Address, hash::HashString};
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use multihash::Hash;
 use std::collections::HashMap;
 

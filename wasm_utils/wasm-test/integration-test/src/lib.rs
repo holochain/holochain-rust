@@ -5,10 +5,10 @@ extern crate holochain_wasm_utils;
 extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
-extern crate lib3h_persistence_derive;
+extern crate holochain_json_derive;
 extern crate wasmi;
 
-use holochain_wasm_utils::lib3h_persistence_api::{
+use holochain_wasm_utils::holochain_persistence_api::{
     json::{JsonString, RawString}, error::PersistenceError
 };
 

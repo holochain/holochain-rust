@@ -10,8 +10,8 @@
 //! extern crate holochain_core_types;
 //! extern crate holochain_core;
 //! extern crate holochain_net;
-//! extern crate lib3h_persistence_api;
-//! extern crate lib3h_persistence_mem;
+//! extern crate holochain_persistence_api;
+//! extern crate holochain_persistence_mem;
 //! extern crate holochain_dpki;
 //! extern crate lib3h_sodium;
 //! extern crate tempfile;
@@ -22,7 +22,7 @@
 //!     dna::{Dna, capabilities::CapabilityRequest,},
 //!     signature::Signature,
 //! };
-//! use persistence_api::{
+//! use holochain_persistence_api::{
 //!     cas::content::Address,
 //!     json::JsonString,
 //! };
@@ -248,7 +248,7 @@ mod tests {
     };
     use holochain_core_types::dna::capabilities::CapabilityRequest;
     use holochain_wasm_utils::wasm_target_dir;
-    use persistence_api::{
+    use holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
         json::RawString,
     };

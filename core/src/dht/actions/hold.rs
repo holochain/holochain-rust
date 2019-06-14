@@ -9,7 +9,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::error::HolochainError;
-use persistence_api::cas::content::{Address, AddressableContent};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{pin::Pin, sync::Arc};
 
 pub async fn hold_entry(

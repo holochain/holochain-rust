@@ -1,5 +1,5 @@
 use holochain_core_types::error::HolochainError;
-use persistence_api::{error::PersistenceError, json::JsonString};
+use holochain_persistence_api::{error::PersistenceError, json::JsonString};
 
 use memory::{MemoryBits, MemoryInt, MEMORY_INT_MAX};
 

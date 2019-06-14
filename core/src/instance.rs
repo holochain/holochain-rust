@@ -13,7 +13,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 #[cfg(test)]
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, Sender, SyncSender},
@@ -349,11 +349,11 @@ pub mod tests {
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
     };
-    use persistence_api::{
+    use holochain_persistence_api::{
         cas::content::AddressableContent,
         json::{JsonString, RawString},
     };
-    use persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use tempfile;
     use test_utils;
 
@@ -368,7 +368,7 @@ pub mod tests {
     use test_utils::mock_signing::registered_test_agent;
 
     use holochain_core_types::entry::Entry;
-    use persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
+    use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]

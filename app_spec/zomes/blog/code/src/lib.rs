@@ -8,7 +8,7 @@ extern crate boolinator;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
-extern crate lib3h_persistence_derive;
+extern crate holochain_json_derive;
 
 
 pub mod blog;
@@ -18,7 +18,7 @@ pub mod post;
 use blog::Env;
 use hdk::{
     error::ZomeApiResult,
-    lib3h_persistence_api::{
+    holochain_persistence_api::{
         cas::content::Address, error::PersistenceError, json::JsonString,
     },
     holochain_core_types::{

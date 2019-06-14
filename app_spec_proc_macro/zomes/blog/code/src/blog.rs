@@ -8,7 +8,7 @@ use hdk::{
         signature::{Provenance, Signature},
         link::LinkMatch,
     },
-    lib3h_persistence_api::{
+    holochain_persistence_api::{
         cas::content::Address,
         error::PersistenceError,
         json::JsonString,

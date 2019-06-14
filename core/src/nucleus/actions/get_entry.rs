@@ -6,7 +6,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::{content::Address, storage::ContentAddressableStorage},
     eav::IndexFilter,
 };
@@ -176,7 +176,7 @@ pub fn get_entry_with_meta<'a>(
 pub mod tests {
     use crate::instance::tests::test_context_with_state;
     use holochain_core_types::entry::test_entry;
-    use persistence_api::cas::content::AddressableContent;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     fn test_get_entry_from_dht_cas() {

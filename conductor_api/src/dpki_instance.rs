@@ -2,7 +2,7 @@
 /// for the conductor to use in the various dpki related flows, e.g. bootstrap and agent addition
 use crate::holochain::Holochain;
 use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HolochainError};
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     json::JsonString,
 };

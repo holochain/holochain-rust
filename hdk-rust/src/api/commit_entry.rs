@@ -4,7 +4,7 @@ use holochain_core_types::entry::Entry;
 use holochain_wasm_utils::api_serialization::commit_entry::{
     CommitEntryArgs, CommitEntryOptions, CommitEntryResult,
 };
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 
 /// Attempts to commit an entry to the local source chain. The entry
 /// will also be checked against the defined validation rules for that entry type.
@@ -18,16 +18,16 @@ use persistence_api::cas::content::Address;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
-/// # extern crate lib3h_persistence_api;
+/// # extern crate holochain_persistence_api;
 /// # #[macro_use]
-/// # extern crate lib3h_persistence_derive;
+/// # extern crate holochain_json_derive;
 /// # use hdk::error::ZomeApiResult;
 /// # use json_api::json::JsonString;
-/// # use persistence_api::error::PersistenceError;
+/// # use holochain_json_api::error::PersistenceError;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
-/// # use persistence_api::cas::content::Address;
+/// # use holochain_persistence_api::cas::content::Address;
 /// # use holochain_core_types::error::RibosomeEncodingBits;
 ///
 /// # #[no_mangle]

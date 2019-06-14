@@ -2,7 +2,7 @@
 
 use crate::holochain_core_types::error::{HolochainError, RibosomeErrorCode};
 
-use crate::lib3h_persistence_api::{
+use crate::holochain_persistence_api::{
     error::PersistenceError,
     json::{JsonError, JsonString},
 };

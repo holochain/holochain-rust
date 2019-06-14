@@ -29,7 +29,7 @@ impl ZomeCodeDef {
                     Ok(_) => hdk::holochain_core_types::error::RibosomeEncodedValue::Success.into(),
                     Err(e) => hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
                         hdk::global_fns::write_json(
-                            hdk::holochain_wasm_utils::lib3h_persistence_api::json::RawString::from(e)
+                            hdk::holochain_wasm_utils::holochain_json_api::json::RawString::from(e)
                         )
                     ).into(),
                 }

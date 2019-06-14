@@ -73,7 +73,7 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
-    use persistence_api::cas::content::AddressableContent;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     use holochain_core_types::{entry::test_entry, error::HolochainError};
 

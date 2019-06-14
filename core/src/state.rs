@@ -18,7 +18,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,

@@ -1,7 +1,7 @@
 use super::Dispatch;
 use error::ZomeApiResult;
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
-use persistence_api::{cas::content::Address, json::JsonString};
+use holochain_persistence_api::{cas::content::Address, json::JsonString};
 
 /// Call an exposed function from another zome or another (bridged) instance running
 /// in the same conductor.
@@ -20,8 +20,8 @@ use persistence_api::{cas::content::Address, json::JsonString};
 /// # extern crate serde_derive;
 /// # #[macro_use]
 /// # extern crate serde_json;
-/// # use hdk::lib3h_persistence_api::json::JsonString;
-/// # use hdk::lib3h_persistence_api::error::PersistenceError;
+/// # use hdk::holochain_json_api::json::JsonString;
+/// # use hdk::holochain_json_api::error::PersistenceError;
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
@@ -119,17 +119,17 @@ use persistence_api::{cas::content::Address, json::JsonString};
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # #[macro_use]
-/// # extern crate lib3h_persistence_derive;
+/// # extern crate holochain_json_derive;
 ///
-/// # use hdk::lib3h_persistence_api::hash::HashString;
-/// # use hdk::lib3h_persistence_api::error::PersistenceError;
-/// # use hdk::lib3h_persistence_api::json::JsonString;
+/// # use hdk::holochain_persistence_api::hash::HashString;
+/// # use hdk::holochain_json_api::error::PersistenceError;
+/// # use hdk::holochain_json_api::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::error::ZomeApiResult;
 /// # use std::convert::TryInto;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
-/// # use hdk::lib3h_persistence_api::cas::content::Address;
+/// # use hdk::holochain_persistence_api::cas::content::Address;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]

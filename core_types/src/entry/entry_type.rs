@@ -1,5 +1,5 @@
 use error::HolochainError;
-use persistence_api::{error::PersistenceError, json::JsonString};
+use holochain_persistence_api::{error::PersistenceError, json::JsonString};
 use std::{
     convert::TryFrom,
     fmt::{Display, Formatter, Result as FmtResult},

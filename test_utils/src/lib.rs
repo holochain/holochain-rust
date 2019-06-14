@@ -26,7 +26,7 @@ use holochain_core_types::{
     },
     entry::entry_type::{AppEntryType, EntryType},
 };
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::AddressableContent,
     json::JsonString,
 };

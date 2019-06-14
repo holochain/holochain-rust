@@ -1,6 +1,6 @@
 use crate::link::{Link, LinkActionKind};
 
-use persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
+use holochain_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
 
 //-------------------------------------------------------------------------------------------------
 // LinkData
@@ -61,7 +61,7 @@ pub mod tests {
             tests::{example_link, example_link_action_kind, example_link_type},
         },
     };
-    use persistence_api::{cas::content::AddressableContent, json::JsonString};
+    use holochain_persistence_api::{cas::content::AddressableContent, json::JsonString};
     use std::convert::TryFrom;
 
     pub fn example_link_add() -> LinkData {

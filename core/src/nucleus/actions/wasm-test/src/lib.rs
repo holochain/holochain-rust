@@ -6,7 +6,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate lib3h_persistence_derive;
+extern crate holochain_json_derive;
 
 extern crate boolinator;
 
@@ -18,7 +18,7 @@ use hdk::holochain_core_types::{
     validation::EntryValidationData
 };
 
-use hdk::lib3h_persistence_api::{error::PersistenceError, json::JsonString};
+use hdk::holochain_persistence_api::{error::PersistenceError, json::JsonString};
 
 #[derive(Serialize, Deserialize, DefaultJson, Debug,Clone)]
 struct TestEntryType {

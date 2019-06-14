@@ -12,9 +12,12 @@ use crate::{
     time::{test_iso_8601, Iso8601},
 };
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    error::{PersistenceError, PersistenceResult},
+};
+
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
     json::JsonString,
 };
 
@@ -162,7 +165,7 @@ pub mod tests {
         },
         time::test_iso_8601,
     };
-    use persistence_api::cas::content::{Address, AddressableContent};
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header_a() -> ChainHeader {

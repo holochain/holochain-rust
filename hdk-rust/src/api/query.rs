@@ -3,7 +3,7 @@ use error::{ZomeApiError, ZomeApiResult};
 use holochain_wasm_utils::api_serialization::{
     QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult,
 };
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 
 /// Returns a list of entries from your local source chain that match a given entry type name or names.
 ///
@@ -28,10 +28,10 @@ use persistence_api::cas::content::Address;
 /// ```rust
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
-/// # extern crate lib3h_persistence_api;
+/// # extern crate holochain_persistence_api;
 /// # use hdk::error::ZomeApiResult;
 /// # use json_api::json::JsonString;
-/// # use persistence_api::cas::content::Address;
+/// # use holochain_persistence_api::cas::content::Address;
 ///
 /// # fn main() {
 /// pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {

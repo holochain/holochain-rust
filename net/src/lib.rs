@@ -11,9 +11,9 @@
 extern crate failure;
 extern crate holochain_common;
 #[macro_use]
-pub extern crate lib3h_persistence_derive;
+pub extern crate holochain_json_derive;
 
-extern crate lib3h_persistence_api;
+extern crate holochain_persistence_api;
 
 #[macro_use]
 extern crate lazy_static;

@@ -17,9 +17,9 @@ use super::Dispatch;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
-/// # extern crate lib3h_persistence_api;
+/// # extern crate holochain_persistence_api;
 /// # #[macro_use]
-/// # extern crate lib3h_persistence_derive;
+/// # extern crate holochain_json_derive;
 /// # use json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::{Provenance, Signature};
@@ -46,9 +46,9 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
-/// # extern crate lib3h_persistence_api;
+/// # extern crate holochain_persistence_api;
 /// # #[macro_use]
-/// # extern crate lib3h_persistence_derive;
+/// # extern crate holochain_json_derive;
 /// # use json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::{Provenance, Signature};
@@ -79,9 +79,9 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
-/// # extern crate lib3h_persistence_api;
+/// # extern crate holochain_persistence_api;
 /// # #[macro_use]
-/// # extern crate lib3h_persistence_derive;
+/// # extern crate holochain_json_derive;
 /// # use json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::Provenance;

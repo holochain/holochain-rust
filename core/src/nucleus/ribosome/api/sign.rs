@@ -93,7 +93,7 @@ mod test_super {
         Defn,
     };
     use holochain_dpki::utils::verify;
-    use persistence_api::{cas::content::Address, json::JsonString};
+    use holochain_persistence_api::{cas::content::Address, json::JsonString};
 
     /// test that bytes passed to debug end up in the log
     #[test]

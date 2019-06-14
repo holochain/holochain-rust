@@ -8,7 +8,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 
 use holochain_core_types::{
     chain_header::ChainHeader, error::HcResult, validation::ValidationPackage,

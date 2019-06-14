@@ -1,8 +1,11 @@
 use crate::{entry::Entry, error::HolochainError};
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
-    error::PersistenceError,
+};
+
+use holochain_json_api::{
+    error::JsonError,
     json::JsonString,
 };
 

@@ -13,7 +13,7 @@ use futures::{
     Future,
 };
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
@@ -330,7 +330,7 @@ pub mod tests {
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};
     use holochain_core_types::agent::AgentId;
-    use persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 

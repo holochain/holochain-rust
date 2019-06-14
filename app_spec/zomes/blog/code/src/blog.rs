@@ -1,7 +1,7 @@
 use hdk::{
     self,
     error::{ZomeApiError, ZomeApiResult},
-    lib3h_persistence_api::{
+    holochain_persistence_api::{
         cas::content::Address,
         json::JsonString,
         error::PersistenceError

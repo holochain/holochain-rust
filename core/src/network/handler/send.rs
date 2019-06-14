@@ -8,7 +8,7 @@ use crate::{
         respond_validation_package_request::respond_validation_package_request,
     },
 };
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, thread};
 
 use holochain_net::connection::json_protocol::MessageData;

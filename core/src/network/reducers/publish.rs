@@ -15,7 +15,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 
-use persistence_api::cas::content::{Address, AddressableContent};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_net::connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
 
@@ -165,7 +165,7 @@ mod tests {
         state::test_store,
     };
     use holochain_core_types::entry::test_entry;
-    use persistence_api::cas::content::AddressableContent;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     pub fn reduce_publish_test() {

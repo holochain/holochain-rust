@@ -5,7 +5,7 @@ use holochain_core_types::{
     time::Timeout,
 };
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     error::PersistenceError,
     json::*,

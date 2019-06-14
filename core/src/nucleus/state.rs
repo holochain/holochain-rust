@@ -5,7 +5,7 @@ use crate::{
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, validation::ValidationPackage};
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     error::{PersistenceError, PersistenceResult},
     json::JsonString,

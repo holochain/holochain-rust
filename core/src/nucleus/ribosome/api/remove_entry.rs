@@ -7,7 +7,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 
-use persistence_api::cas::content::{Address, AddressableContent};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::get_entry::*;
 use std::convert::TryFrom;

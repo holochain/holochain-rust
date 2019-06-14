@@ -11,7 +11,7 @@ pub mod tests {
         entry::{entry_type::EntryType, Entry},
         link::{link_list::LinkList, Link},
     };
-    use persistence_api::cas::content::{Address, AddressableContent};
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
     use std::sync::mpsc::channel;
 

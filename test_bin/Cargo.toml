@@ -7,7 +7,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 holochain_core = { path = "../core" }
 holochain_conductor_api = { path = "../conductor_api" }
 holochain_core_types = { path = "../core_types" }
-persistence_api = "=0.0.1-alpha2"
+holochain_persistence_api = "=0.0.1-alpha1"
 holochain_net = { path = "../net" }
 lib3h = "=0.0.1-alpha1"
 lib3h_protocol = "=0.0.1-alpha1"

@@ -1,5 +1,5 @@
 use crate::link::Link;
-use persistence_api::{error::PersistenceError, json::JsonString};
+use holochain_persistence_api::{error::PersistenceError, json::JsonString};
 
 //-------------------------------------------------------------------------------------------------
 // LinkList

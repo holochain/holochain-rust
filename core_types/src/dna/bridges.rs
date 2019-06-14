@@ -1,5 +1,5 @@
 use crate::dna::fn_declarations::Trait;
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 
 use std::collections::BTreeMap;
 

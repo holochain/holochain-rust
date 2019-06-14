@@ -6,7 +6,7 @@
 #![feature(try_from)]
 #![warn(unused_extern_crates)]
 extern crate holochain_core_types;
-extern crate lib3h_persistence_api;
+extern crate holochain_persistence_api;
 
 use holochain_core_types::dna::Dna;
 use std::{

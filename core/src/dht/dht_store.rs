@@ -5,7 +5,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
 };
-use persistence_api::{
+use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
@@ -163,7 +163,7 @@ pub mod tests {
     use super::*;
     use holochain_core_types::{chain_header::test_chain_header_with_sig, entry::test_entry};
 
-    use persistence_api::{
+    use holochain_persistence_api::{
         cas::storage::ExampleContentAddressableStorage, eav::ExampleEntityAttributeValueStorage,
     };
 

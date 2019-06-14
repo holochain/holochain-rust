@@ -26,7 +26,7 @@ pub mod tests {
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
         link::link_data::LinkData,
     };
-    use persistence_api::{
+    use holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
         json::JsonString,
     };

@@ -8,7 +8,7 @@ use holochain_net::{
     },
     tweetlog::TWEETLOG,
 };
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use p2p_node::test_node::TestNode;
 
 /// Tests if we can get back data published on the network

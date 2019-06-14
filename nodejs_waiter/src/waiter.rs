@@ -5,7 +5,7 @@ use holochain_core::{
     signal::{Signal, SignalReceiver},
 };
 use holochain_core_types::entry::Entry;
-use persistence_api::cas::content::AddressableContent;
+use holochain_persistence_api::cas::content::AddressableContent;
 use neon::{context::Context, prelude::*};
 use std::{
     cell::RefCell,
@@ -374,7 +374,7 @@ mod tests {
         chain_header::test_chain_header, dna::capabilities::CapabilityRequest, entry::Entry,
         link::link_data::LinkData, signature::Signature,
     };
-    use persistence_api::{cas::content::Address, json::JsonString};
+    use holochain_persistence_api::{cas::content::Address, json::JsonString};
     use std::sync::mpsc::sync_channel;
 
     fn sig(a: Action) -> Signal {

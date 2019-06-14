@@ -1,6 +1,6 @@
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
-use persistence_api::{cas::content::Address, error::PersistenceError, json::*};
+use holochain_persistence_api::{cas::content::Address, error::PersistenceError, json::*};
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
 pub struct GetLinksArgs {

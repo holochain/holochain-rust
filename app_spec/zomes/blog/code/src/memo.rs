@@ -6,7 +6,7 @@ use hdk::{
     holochain_core_types::{
         dna::entry_types::Sharing
     },
-    lib3h_persistence_api::{
+    holochain_persistence_api::{
         error::PersistenceError, json::JsonString,
     }
 };

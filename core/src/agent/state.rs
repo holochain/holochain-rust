@@ -3,7 +3,7 @@ use crate::{
     agent::chain_store::{ChainStore, ChainStoreIterator},
     state::State,
 };
-use persistence_api::{
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     error::{PersistenceError, PersistenceResult},
     json::*,
@@ -283,7 +283,7 @@ pub mod tests {
         error::HolochainError,
         signature::Signature,
     };
-    use persistence_api::{cas::content::AddressableContent, json::JsonString};
+    use holochain_persistence_api::{cas::content::AddressableContent, json::JsonString};
     use serde_json;
     use std::collections::HashMap;
     use test_utils::mock_signing::mock_signer;

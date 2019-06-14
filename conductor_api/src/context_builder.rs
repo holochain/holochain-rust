@@ -1,10 +1,10 @@
-use persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 
-use persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
+use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 
-use persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
+use holochain_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
 
-use persistence_api::{
+use holochain_persistence_api::{
     cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
 };
 
@@ -69,7 +69,7 @@ impl ContextBuilder {
     /// Chain and DHT storages get set to the same memory CAS.
     pub fn with_memory_storage(mut self) -> Self {
         let cas = Arc::new(RwLock::new(MemoryStorage::new()));
-        let eav = //Arc<RwLock<lib3h_persistence_api::eav::EntityAttributeValueStorage<Attribute>>> =
+        let eav = //Arc<RwLock<holochain_persistence_api::eav::EntityAttributeValueStorage<Attribute>>> =
             Arc::new(RwLock::new(EavMemoryStorage::new()));
         self.chain_storage = Some(cas.clone());
         self.dht_storage = Some(cas);

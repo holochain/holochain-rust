@@ -11,7 +11,7 @@ extern crate serde_derive;
 extern crate hdk;
 extern crate holochain_wasm_utils;
 #[macro_use]
-extern crate lib3h_persistence_derive;
+extern crate holochain_json_derive;
 
 #[cfg(not(windows))]
 use hdk::error::ZomeApiError;
@@ -33,7 +33,7 @@ use holochain_core_types::{
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
-use holochain_wasm_utils::lib3h_persistence_api::{
+use holochain_wasm_utils::holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     error::PersistenceError,
     hash::HashString,

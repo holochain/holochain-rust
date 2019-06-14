@@ -1,4 +1,4 @@
-use persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
+use holochain_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
 
 use holochain_core_types::validation::ValidationPackage;
 

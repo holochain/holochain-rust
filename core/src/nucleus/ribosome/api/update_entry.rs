@@ -4,7 +4,7 @@ use crate::{
 };
 use holochain_core_types::{entry::Entry, error::HolochainError};
 
-use persistence_api::cas::content::{Address, AddressableContent};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
 use std::convert::TryFrom;

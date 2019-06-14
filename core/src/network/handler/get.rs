@@ -9,7 +9,7 @@ use holochain_core_types::{eav::Attribute, entry::EntryWithMetaAndHeader};
 use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 
 /// The network has requested a DHT entry from us.

@@ -9,7 +9,7 @@ use crate::{
 };
 
 use holochain_core_types::signature::Provenance;
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, vec::Vec};
 
 pub async fn respond_validation_package_request(

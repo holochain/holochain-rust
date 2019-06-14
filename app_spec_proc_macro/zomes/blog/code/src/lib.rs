@@ -13,7 +13,7 @@ extern crate boolinator;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
-extern crate lib3h_persistence_derive;
+extern crate holochain_json_derive;
 
 pub mod blog;
 pub mod post;
@@ -26,7 +26,7 @@ use hdk::{
         entry::Entry,
         signature::Provenance,
     },
-    lib3h_persistence_api::{
+    holochain_persistence_api::{
         cas::content::Address,
         json::JsonString,
     },

@@ -10,7 +10,7 @@ use hdk::{
     holochain_core_types::{
         signature::{Provenance, Signature},
     },
-    lib3h_persistence_api::{
+    holochain_persistence_api::{
         error::PersistenceError,
         json::JsonString,
     },

@@ -8,7 +8,7 @@ extern crate serde_json;
 extern crate serde_derive;
 extern crate boolinator;
 #[macro_use]
-extern crate lib3h_persistence_derive;
+extern crate holochain_json_derive;
 
 use boolinator::Boolinator;
 use hdk::{
@@ -32,7 +32,7 @@ use holochain_wasm_utils::{
         validation::{EntryValidationData, LinkValidationData},
         link::LinkMatch,
     },
-    lib3h_persistence_api::{
+    holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
         error::{PersistenceError},
         json::{JsonString, RawString},

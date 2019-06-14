@@ -6,8 +6,8 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate boolinator;
-use hdk::lib3h_persistence_api::error::PersistenceError;
-use hdk::lib3h_persistence_api::json::JsonString;
+use hdk::holochain_json_api::error::PersistenceError;
+use hdk::holochain_json_api::json::JsonString;
 use hdk::error::ZomeApiResult;
 
 fn handle_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {

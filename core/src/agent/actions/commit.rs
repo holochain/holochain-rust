@@ -9,7 +9,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{entry::Entry, error::HolochainError};
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use std::{pin::Pin, sync::Arc};
 
 /// Commit Action Creator

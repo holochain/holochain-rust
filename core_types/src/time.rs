@@ -3,7 +3,7 @@
 
 use chrono::{offset::FixedOffset, DateTime, TimeZone};
 use error::HolochainError;
-use persistence_api::{error::PersistenceError, json::JsonString};
+use holochain_json_api::{error::JsonError, json::JsonString};
 
 use regex::Regex;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};

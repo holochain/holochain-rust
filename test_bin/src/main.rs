@@ -4,7 +4,7 @@
 #[macro_use]
 extern crate failure;
 
-extern crate lib3h_persistence_api;
+extern crate holochain_persistence_api;
 
 #[macro_use]
 extern crate holochain_net;

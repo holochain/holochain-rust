@@ -1,4 +1,4 @@
-use persistence_api::{cas::content::Address, error::PersistenceError, json::*};
+use holochain_persistence_api::{cas::content::Address, error::PersistenceError, json::*};
 
 use holochain_core_types::entry::cap_entries::{CapFunctions, CapabilityType};
 

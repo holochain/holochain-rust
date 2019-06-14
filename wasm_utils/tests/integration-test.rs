@@ -5,9 +5,9 @@ extern crate holochain_core_types;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate lib3h_persistence_derive;
+extern crate holochain_json_derive;
 extern crate holochain_wasm_utils;
-extern crate lib3h_persistence_api;
+extern crate holochain_persistence_api;
 extern crate serde_json;
 extern crate tempfile;
 extern crate test_utils;
@@ -18,7 +18,7 @@ use holochain_core_types::{
     error::{CoreError, HolochainError},
 };
 
-use persistence_api::{
+use holochain_persistence_api::{
     error::PersistenceError,
     json::{JsonString, RawString},
 };

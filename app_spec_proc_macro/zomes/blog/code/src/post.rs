@@ -4,7 +4,7 @@ use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_core_types::{
     dna::entry_types::Sharing, validation::EntryValidationData,
 };
-use hdk::lib3h_persistence_api::{
+use hdk::holochain_persistence_api::{
     error::PersistenceError, json::JsonString,
 };
 

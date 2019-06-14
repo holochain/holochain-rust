@@ -56,7 +56,7 @@ pub mod tests {
         link::{Link, LinkMatch},
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
-    use persistence_api::{
+    use holochain_persistence_api::{
         cas::content::Address,
         json::{JsonString, RawString},
     };

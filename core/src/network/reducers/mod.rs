@@ -36,7 +36,7 @@ use crate::{
     state::State,
 };
 use holochain_core_types::error::HolochainError;
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 
 use holochain_net::connection::{
     json_protocol::{JsonProtocol, MessageData},

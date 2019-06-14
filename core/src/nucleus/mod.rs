@@ -17,7 +17,7 @@ pub use crate::{
 };
 use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HcResult};
 
-use persistence_api::{cas::content::Address, json::JsonString};
+use holochain_persistence_api::{cas::content::Address, json::JsonString};
 
 use snowflake;
 use std::sync::Arc;
@@ -126,7 +126,7 @@ pub mod tests {
         error::{DnaError, HolochainError},
         signature::Signature,
     };
-    use persistence_api::{
+    use holochain_persistence_api::{
         cas::content::AddressableContent,
         json::{JsonString, RawString},
     };

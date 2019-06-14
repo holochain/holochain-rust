@@ -16,7 +16,7 @@ extern crate num_derive;
 #[macro_use]
 extern crate holochain_wasm_utils;
 #[macro_use]
-extern crate lib3h_persistence_derive;
+extern crate holochain_json_derive;
 #[macro_use]
 extern crate pretty_assertions;
 

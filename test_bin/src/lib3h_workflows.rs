@@ -3,7 +3,7 @@ use holochain_net::{
     connection::{net_connection::NetSend, NetResult},
     tweetlog::TWEETLOG,
 };
-use persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 use p2p_node::test_node::TestNode;
 use std::str;

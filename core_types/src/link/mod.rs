@@ -5,7 +5,7 @@
 pub mod link_data;
 pub mod link_list;
 
-use persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
+use holochain_persistence_api::{cas::content::Address, error::PersistenceError, json::JsonString};
 
 use entry::Entry;
 use link::link_data::LinkData;
@@ -93,7 +93,7 @@ pub mod tests {
         entry::{test_entry_a, test_entry_b},
         link::{Link, LinkActionKind, LinkTag, LinkType},
     };
-    use persistence_api::cas::content::AddressableContent;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     pub fn example_link_type() -> LinkType {
         LinkType::from("foo-link-type")

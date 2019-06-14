@@ -7,7 +7,7 @@ use crate::connection::{
     protocol::Protocol,
     NetResult,
 };
-use persistence_api::{cas::content::Address, json::JsonString};
+use holochain_persistence_api::{cas::content::Address, json::JsonString};
 use std::{
     collections::{hash_map::Entry, HashMap},
     convert::TryFrom,
@@ -167,7 +167,7 @@ mod tests {
 
     use crate::connection::json_protocol::{JsonProtocol, TrackDnaData};
     use crossbeam_channel::unbounded;
-    use persistence_api::cas::content::Address;
+    use holochain_persistence_api::cas::content::Address;
 
     fn example_dna_address() -> Address {
         "blabladnaAddress".into()

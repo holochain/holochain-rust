@@ -12,7 +12,7 @@ use holochain_core_types::{
     error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
-use persistence_api::{error::PersistenceError, json::JsonString};
+use holochain_persistence_api::{error::PersistenceError, json::JsonString};
 
 use holochain_wasm_utils::{
     api_serialization::validation::{
@@ -303,7 +303,7 @@ pub mod tests {
         entry_types::Sharing,
         zome::{ZomeFnDeclarations, ZomeTraits},
     };
-    use persistence_api::{error::PersistenceError, json::JsonString};
+    use holochain_persistence_api::{error::PersistenceError, json::JsonString};
     use meta::PartialZome;
     use std::collections::BTreeMap;
 

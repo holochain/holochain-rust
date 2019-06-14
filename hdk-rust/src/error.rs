@@ -58,7 +58,6 @@ impl From<JsonError> for ZomeApiError {
     }
 }
 
-
 impl From<!> for ZomeApiError {
     fn from(_: !) -> Self {
         unreachable!();

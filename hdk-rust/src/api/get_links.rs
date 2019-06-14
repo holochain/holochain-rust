@@ -35,14 +35,14 @@ use holochain_wasm_utils::api_serialization::{
 /// }
 /// # }
 /// ```
-pub fn get_links_with_options<T1: Into<LinkMatch<String>>, T2: Into<LinkMatch<String>>>(
+pub fn get_links_with_options(
     base: &Address,
-    link_type: T1,
-    tag: T2,
+    link_type: LinkMatch<&str>,
+    tag: LinkMatch<&str>,
     options: &GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
-    let type_re = link_type.into().to_regex_string()?;
-    let tag_re = tag.into().to_regex_string()?;
+    let type_re = link_type.to_regex_string()?;
+    let tag_re = tag.to_regex_string()?;
 
     Dispatch::GetLinks.with_input(GetLinksArgs {
         entry_address: base.clone(),
@@ -53,10 +53,10 @@ pub fn get_links_with_options<T1: Into<LinkMatch<String>>, T2: Into<LinkMatch<St
 }
 
 /// Helper function for get_links. Returns a vector with the default return results.
-pub fn get_links<T1: Into<LinkMatch<String>>, T2: Into<LinkMatch<String>>>(
+pub fn get_links(
     base: &Address,
-    link_type: T1,
-    tag: T2,
+    link_type: LinkMatch<&str>,
+    tag: LinkMatch<&str>,
 ) -> ZomeApiResult<GetLinksResult> {
     get_links_with_options(
         base,
@@ -87,10 +87,10 @@ pub fn get_links<T1: Into<LinkMatch<String>>, T2: Into<LinkMatch<String>>>(
 /// }
 /// # }
 /// ```
-pub fn get_links_result<T1: Into<LinkMatch<String>>, T2: Into<LinkMatch<String>>>(
+pub fn get_links_result(
     base: &Address,
-    link_type: T1,
-    tag: T2,
+    link_type: LinkMatch<&str>,
+    tag: LinkMatch<&str>,
     options: &GetLinksOptions,
     get_entry_options: &GetEntryOptions,
 ) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
@@ -104,10 +104,10 @@ pub fn get_links_result<T1: Into<LinkMatch<String>>, T2: Into<LinkMatch<String>>
 }
 
 /// Helper function for get_links. Returns a vector of the entries themselves
-pub fn get_links_and_load<T1: Into<LinkMatch<String>>, T2: Into<LinkMatch<String>>>(
+pub fn get_links_and_load(
     base: &Address,
-    link_type: T1,
-    tag: T2,
+    link_type: LinkMatch<&str>,
+    tag: LinkMatch<&str>,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
     let get_links_result = get_links_result(
         base,
@@ -130,19 +130,4 @@ pub fn get_links_and_load<T1: Into<LinkMatch<String>>, T2: Into<LinkMatch<String
     .collect();
 
     Ok(entries)
-}
-
-
-#[cfg(test)]
-pub mod tests {
-    use super::*;
-    use holochain_core_types::{
-        link::LinkMatch,
-    };
-
-    #[test]
-    fn can_call_with_string_variations() {
-        get_links(&Address::from("x"), LinkMatch::Exactly(""), LinkMatch::Any);
-    }
-
 }

@@ -28,6 +28,8 @@ use hdk::{
     },
     holochain_persistence_api::{
         cas::content::Address,
+    },
+    holochain_json_api::{
         json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}}

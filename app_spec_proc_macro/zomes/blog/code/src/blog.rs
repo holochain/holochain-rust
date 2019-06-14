@@ -10,7 +10,9 @@ use hdk::{
     },
     holochain_persistence_api::{
         cas::content::Address,
-        error::PersistenceError,
+    },
+    holochain_json_api::{
+        error::JsonError,
         json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{

@@ -1,6 +1,6 @@
 use crate::{action::ActionWrapper, consistency::ConsistencySignal};
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use holochain_persistence_api::{error::PersistenceError, json::JsonString};
+use holochain_json_api::{error::JsonError, json::JsonString};
 use serde::{Deserialize, Deserializer};
 use std::thread;
 

@@ -153,7 +153,7 @@ pub mod tests {
             ZomeFnCall,
         },
     };
-    use json_api::json::JsonString;
+    use holochain_json_api::json::JsonString;
     use std::sync::Arc;
     use test_utils;
     use wabt;

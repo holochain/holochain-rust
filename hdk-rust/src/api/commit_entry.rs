@@ -22,7 +22,7 @@ use holochain_persistence_api::cas::content::Address;
 /// # #[macro_use]
 /// # extern crate holochain_json_derive;
 /// # use hdk::error::ZomeApiResult;
-/// # use json_api::json::JsonString;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_json_api::error::PersistenceError;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;

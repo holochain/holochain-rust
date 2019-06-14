@@ -21,7 +21,7 @@ use holochain_persistence_api::cas::content::Address;
 /// # extern crate holochain_persistence_api;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::entry::Entry;
-/// # use json_api::json::JsonString;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_persistence_api::cas::content::Address;
 /// # fn main() {
 /// pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {

@@ -22,8 +22,8 @@ use holochain_core_types::{
     entry::Entry, error::RibosomeEncodedValue, validation::ValidationPackageDefinition,
 };
 
-use holochain_persistence_api::{
-    error::PersistenceError,
+use holochain_json_api::{
+    error::JsonError,
     json::{default_to_json, JsonString},
 };
 

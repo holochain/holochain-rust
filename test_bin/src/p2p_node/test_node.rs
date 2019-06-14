@@ -23,7 +23,7 @@ use super::{
 };
 use crossbeam_channel::{unbounded, Receiver};
 use holochain_net::connection::net_connection::NetHandler;
-use protocol::{
+use lib3h_protocol::{
     data_types::DirectMessageData, protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
 };

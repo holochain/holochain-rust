@@ -584,7 +584,7 @@ pub mod tests {
     };
     use holochain_common::paths::DNA_EXTENSION;
     use holochain_core_types::dna::Dna;
-    use json_api::json::JsonString;
+    use holochain_json_api::json::JsonString;
     use std::{
         convert::TryFrom,
         env::current_dir,

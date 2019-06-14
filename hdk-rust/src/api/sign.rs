@@ -20,7 +20,7 @@ use super::Dispatch;
 /// # extern crate holochain_persistence_api;
 /// # #[macro_use]
 /// # extern crate holochain_json_derive;
-/// # use json_api::json::JsonString;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::{Provenance, Signature};
 /// # use hdk::error::ZomeApiResult;
@@ -49,7 +49,7 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
 /// # extern crate holochain_persistence_api;
 /// # #[macro_use]
 /// # extern crate holochain_json_derive;
-/// # use json_api::json::JsonString;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::{Provenance, Signature};
 /// # use hdk::error::ZomeApiResult;
@@ -82,7 +82,7 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
 /// # extern crate holochain_persistence_api;
 /// # #[macro_use]
 /// # extern crate holochain_json_derive;
-/// # use json_api::json::JsonString;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::Provenance;
 /// # use hdk::error::ZomeApiResult;

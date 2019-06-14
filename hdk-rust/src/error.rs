@@ -4,8 +4,8 @@ use crate::holochain_core_types::error::{HolochainError, RibosomeErrorCode};
 
 use crate::holochain_persistence_api::{
     error::PersistenceError,
-    json::{JsonError, JsonString},
 };
+use holochain_json_api::{error::JsonError, json::JsonString};
 
 use holochain_wasm_utils::memory::allocation::AllocationError;
 use std::{error::Error, fmt};
@@ -21,7 +21,6 @@ pub enum ZomeApiError {
     Timeout,
 }
 
-impl JsonError for ZomeApiError {}
 
 impl From<ZomeApiError> for HolochainError {
     fn from(zome_api_error: ZomeApiError) -> Self {
@@ -110,7 +109,7 @@ pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
 mod tests {
 
     use error::{ZomeApiError, ZomeApiResult};
-    use json_api::json::JsonString;
+    use holochain_json_api::json::JsonString;
 
     #[test]
     fn zome_api_result_json_result_round_trip_test() {

@@ -4,8 +4,10 @@ use holochain_core_types::entry::entry_type::EntryType;
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     hash::HashString,
-    json::JsonString,
 };
+
+use holochain_json_api::{json::JsonString};
+
 
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use wasmi::RuntimeArgs;

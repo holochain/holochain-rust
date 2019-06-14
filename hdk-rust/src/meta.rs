@@ -12,7 +12,7 @@ use holochain_core_types::{
     error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
-use holochain_persistence_api::{error::PersistenceError, json::JsonString};
+use holochain_json_api::{error::JsonError, json::JsonString};
 
 use holochain_wasm_utils::{
     api_serialization::validation::{

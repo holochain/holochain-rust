@@ -29,6 +29,7 @@ pub extern crate holochain_core_types;
 pub extern crate holochain_json_derive;
 pub extern crate holochain_wasm_utils;
 pub extern crate holochain_persistence_api;
+pub extern crate holochain_json_api;
 // #[macro_use]
 pub extern crate pretty_assertions;
 

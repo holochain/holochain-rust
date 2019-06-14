@@ -23,7 +23,9 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 
-use holochain_persistence_api::{cas::content::AddressableContent, json::JsonString};
+use holochain_persistence_api::cas::content::AddressableContent;
+use holochain_json_api::json::JsonString;
+
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;

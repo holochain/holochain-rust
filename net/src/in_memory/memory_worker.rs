@@ -7,7 +7,8 @@ use crate::connection::{
     protocol::Protocol,
     NetResult,
 };
-use holochain_persistence_api::{cas::content::Address, json::JsonString};
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::Address;
 use std::{
     collections::{hash_map::Entry, HashMap},
     convert::TryFrom,

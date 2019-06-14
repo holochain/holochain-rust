@@ -5,8 +5,8 @@ use crate::error::{ZomeApiError, ZomeApiResult};
 use holochain_persistence_api::{
     cas::content::Address,
     hash::HashString,
-    json::{default_to_json, JsonString, RawString},
 };
+use holochain_json_api::json::{default_to_json, JsonString, RawString};
 
 use holochain_core_types::{
     dna::capabilities::CapabilityRequest,

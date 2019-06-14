@@ -17,7 +17,9 @@ pub use crate::{
 };
 use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HcResult};
 
-use holochain_persistence_api::{cas::content::Address, json::JsonString};
+use holochain_persistence_api::cas::content::Address;
+
+use holochain_json_api::json::JsonString;
 
 use snowflake;
 use std::sync::Arc;

@@ -7,7 +7,9 @@ use holochain_core_types::{dna::Dna, error::HolochainError, validation::Validati
 
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    error::{PersistenceError, PersistenceResult},
+};
+use holochain_json_api::{
+    error::{JsonResult, JsonError},
     json::JsonString,
 };
 use snowflake;
@@ -146,7 +148,7 @@ impl AddressableContent for NucleusStateSnapshot {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         Self::try_from(content.to_owned())
     }
 }

@@ -14,7 +14,7 @@ use holochain_core_types::error::{
     ZomeApiInternalResult,
 };
 
-use json_api::json::JsonString;
+use holochain_json_api::json::JsonString;
 
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use std::{convert::TryFrom, fmt, sync::Arc};

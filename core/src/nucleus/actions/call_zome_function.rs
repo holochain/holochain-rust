@@ -19,8 +19,9 @@ use holochain_core_types::{
 
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
-    json::JsonString,
 };
+
+use holochain_json_api::json::JsonString;
 
 use holochain_dpki::utils::Verify;
 

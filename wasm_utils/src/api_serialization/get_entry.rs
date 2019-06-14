@@ -4,11 +4,10 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry, EntryWithMeta},
     time::Timeout,
 };
+use holochain_json_api::{error::JsonError, json::*};
 
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
-    error::PersistenceError,
-    json::*,
 };
 use std::collections::HashMap;
 

@@ -8,7 +8,8 @@ use holochain_core_types::{
     },
 };
 
-use json_api::json::JsonString;
+use holochain_json_api::json::JsonString;
+
 
 use memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},

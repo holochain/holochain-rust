@@ -10,7 +10,8 @@ use crate::{
         CallbackFnCall,
     },
 };
-use holochain_persistence_api::{error::PersistenceError, json::JsonString};
+
+use holochain_json_api::{error::JsonError, json::JsonString};
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]

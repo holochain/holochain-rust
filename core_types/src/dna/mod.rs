@@ -10,7 +10,7 @@
 //! extern crate holochain_core_types;
 //! extern crate holochain_persistence_api;
 //! use holochain_core_types::dna::Dna;
-//! use json_api::json::JsonString;
+//! use holochain_json_api::json::JsonString;
 //! use std::convert::TryFrom;
 //!
 //! let name = String::from("My Holochain DNA");

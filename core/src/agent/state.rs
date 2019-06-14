@@ -5,10 +5,9 @@ use crate::{
 };
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    error::{PersistenceError, PersistenceResult},
-    json::*,
 };
 
+use holochain_json_api::{json::JsonString, error::{JsonResult, JsonError}};
 use holochain_core_types::{
     agent::AgentId,
     chain_header::ChainHeader,
@@ -149,7 +148,7 @@ impl AddressableContent for AgentStateSnapshot {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> PersistenceResult<Self> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         Self::try_from(content.to_owned())
     }
 

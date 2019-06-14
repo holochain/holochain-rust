@@ -247,11 +247,11 @@ mod tests {
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::dna::capabilities::CapabilityRequest;
-    use holochain_wasm_utils::wasm_target_dir;
     use holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
         json::RawString,
     };
+    use holochain_wasm_utils::wasm_target_dir;
     use std::{
         path::PathBuf,
         sync::{Arc, Mutex},

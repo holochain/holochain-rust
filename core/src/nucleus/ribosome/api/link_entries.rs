@@ -61,12 +61,12 @@ pub mod tests {
         entry::{test_entry, Entry},
         error::{CoreError, ZomeApiInternalResult},
     };
-    use holochain_wasm_utils::api_serialization::link_entries::*;
     use holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
         hash::HashString,
         json::JsonString,
     };
+    use holochain_wasm_utils::api_serialization::link_entries::*;
     use serde_json;
     use std::{convert::TryFrom, sync::Arc};
 

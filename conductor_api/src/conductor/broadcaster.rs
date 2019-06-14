@@ -1,6 +1,6 @@
 use holochain_core_types::error::HolochainError;
-use jsonrpc_ws_server::ws;
 use holochain_json_api::json::JsonString;
+use jsonrpc_ws_server::ws;
 
 /// An abstraction which represents the ability to (maybe) send a message to the client
 /// over the existing connection.

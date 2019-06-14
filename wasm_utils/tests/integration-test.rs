@@ -6,8 +6,8 @@ extern crate holochain_core_types;
 extern crate serde_derive;
 #[macro_use]
 extern crate holochain_json_derive;
-extern crate holochain_wasm_utils;
 extern crate holochain_persistence_api;
+extern crate holochain_wasm_utils;
 extern crate serde_json;
 extern crate tempfile;
 extern crate test_utils;

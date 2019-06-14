@@ -26,9 +26,9 @@ extern crate serde_derive;
 extern crate snowflake;
 #[macro_use]
 extern crate holochain_json_derive;
-extern crate lib3h_crypto_api;
-extern crate holochain_persistence_api;
 extern crate holochain_json_api;
+extern crate holochain_persistence_api;
+extern crate lib3h_crypto_api;
 extern crate regex;
 #[cfg(test)]
 #[macro_use]

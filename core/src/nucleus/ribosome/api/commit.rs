@@ -51,12 +51,12 @@ pub mod tests {
         error::ZomeApiInternalResult,
         signature::{Provenance, Signature},
     };
-    use holochain_wasm_utils::api_serialization::commit_entry::{
-        CommitEntryArgs, CommitEntryOptions, CommitEntryResult,
-    };
     use holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
         json::JsonString,
+    };
+    use holochain_wasm_utils::api_serialization::commit_entry::{
+        CommitEntryArgs, CommitEntryOptions, CommitEntryResult,
     };
 
     /// dummy commit with provenance args from standard test entry

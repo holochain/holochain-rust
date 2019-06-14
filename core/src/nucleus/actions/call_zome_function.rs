@@ -17,9 +17,7 @@ use holochain_core_types::{
     signature::{Provenance, Signature},
 };
 
-use holochain_persistence_api::{
-    cas::content::{Address, AddressableContent},
-};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_json_api::json::JsonString;
 

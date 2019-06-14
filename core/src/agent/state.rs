@@ -3,11 +3,8 @@ use crate::{
     agent::chain_store::{ChainStore, ChainStoreIterator},
     state::State,
 };
-use holochain_persistence_api::{
-    cas::content::{Address, AddressableContent, Content},
-};
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 
-use holochain_json_api::{json::JsonString, error::{JsonResult, JsonError}};
 use holochain_core_types::{
     agent::AgentId,
     chain_header::ChainHeader,
@@ -15,6 +12,10 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     signature::{Provenance, Signature},
     time::Iso8601,
+};
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
+    json::JsonString,
 };
 use serde_json;
 use std::{

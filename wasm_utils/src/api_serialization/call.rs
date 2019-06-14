@@ -1,6 +1,5 @@
-use holochain_persistence_api::cas::content::Address;
 use holochain_json_api::{error::JsonError, json::*};
-
+use holochain_persistence_api::cas::content::Address;
 
 pub const THIS_INSTANCE: &str = "__hdk_this_instance";
 

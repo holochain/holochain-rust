@@ -6,7 +6,6 @@ use holochain_persistence_api::cas::content::Address;
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 
-
 /// Provenance is a tuple of initiating agent public key and signature of some item being signed
 /// this type is used in headers and in capability requests where the item being signed
 /// is implicitly known by context

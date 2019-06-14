@@ -2,9 +2,7 @@
 
 use crate::holochain_core_types::error::{HolochainError, RibosomeErrorCode};
 
-use crate::holochain_persistence_api::{
-    error::PersistenceError,
-};
+use crate::holochain_persistence_api::error::PersistenceError;
 use holochain_json_api::{error::JsonError, json::JsonString};
 
 use holochain_wasm_utils::memory::allocation::AllocationError;
@@ -20,7 +18,6 @@ pub enum ZomeApiError {
     ValidationFailed(String),
     Timeout,
 }
-
 
 impl From<ZomeApiError> for HolochainError {
     fn from(zome_api_error: ZomeApiError) -> Self {

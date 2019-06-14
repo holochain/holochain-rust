@@ -8,13 +8,13 @@ pub use self::{dna_error::*, ribosome_error::*};
 
 use self::HolochainError::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
+use holochain_persistence_api::{error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
-use holochain_persistence_api::{
-    hash::HashString,
-    error::{PersistenceError},
-};
 
-use holochain_json_api::{error::{JsonResult, JsonError}, json::*};
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
+    json::*,
+};
 
 use serde_json::Error as SerdeError;
 use std::{
@@ -183,7 +183,6 @@ impl From<JsonError> for HolochainError {
         }
     }
 }
-
 
 impl From<String> for HolochainError {
     fn from(error: String) -> Self {

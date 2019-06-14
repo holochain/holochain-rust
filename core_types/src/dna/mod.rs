@@ -42,9 +42,7 @@ use crate::{
     error::{DnaError, HolochainError},
 };
 
-use holochain_persistence_api::{
-    cas::content::{AddressableContent, Content},
-};
+use holochain_persistence_api::cas::content::{AddressableContent, Content};
 
 use holochain_json_api::{
     error::{JsonError, JsonResult},

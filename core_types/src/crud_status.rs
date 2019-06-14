@@ -10,13 +10,13 @@ use std::{convert::TryInto, str::FromStr};
 
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    error::{PersistenceResult},
+    error::PersistenceResult,
     hash::HashString,
 };
 
 use holochain_json_api::{
-    error::{JsonResult, JsonError},
-    json::JsonString
+    error::{JsonError, JsonResult},
+    json::JsonString,
 };
 
 /// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an entry address as the Entity, [CrudStatus](../eav/Attribute.html) as the attribute

@@ -6,7 +6,6 @@ use holochain_core_types::{
 
 use holochain_json_api::{error::JsonError, json::*};
 
-
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct EntryValidationArgs {
     pub validation_data: EntryValidationData<Entry>,

@@ -10,7 +10,6 @@ use holochain_core_types::{
 
 use holochain_json_api::json::JsonString;
 
-
 use memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},
     stack::WasmStack,

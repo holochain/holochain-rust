@@ -6,13 +6,8 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 
-use holochain_persistence_api::{
-    cas::content::{Address, AddressableContent},
-};
-use holochain_json_api::{
-    error::JsonError,
-    json::JsonString,
-};
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{fmt, sync::Arc, thread};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;

@@ -4,10 +4,10 @@ use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 use holochain_core_types::{
     crud_status::CrudStatus, entry::EntryWithMetaAndHeader, error::HolochainError,
 };
+use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_entry::{
     GetEntryArgs, GetEntryResult, StatusRequestKind,
 };
-use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 /// Get Entry workflow

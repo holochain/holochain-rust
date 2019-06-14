@@ -57,11 +57,11 @@ pub mod tests {
         entry::{test_entry, EntryWithMeta},
         error::ZomeApiInternalResult,
     };
-    use holochain_wasm_utils::api_serialization::{commit_entry::CommitEntryResult, get_entry::*};
     use holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
         json::JsonString,
     };
+    use holochain_wasm_utils::api_serialization::{commit_entry::CommitEntryResult, get_entry::*};
 
     use std::sync::Arc;
 

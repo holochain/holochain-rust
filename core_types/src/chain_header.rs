@@ -12,9 +12,7 @@ use crate::{
     time::{test_iso_8601, Iso8601},
 };
 
-use holochain_persistence_api::{
-    cas::content::{Address, AddressableContent, Content},
-};
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 
 use holochain_json_api::{
     error::{JsonError, JsonResult},

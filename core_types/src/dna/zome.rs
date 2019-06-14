@@ -12,7 +12,6 @@ use crate::{
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 
-
 use dna::entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef};
 use std::collections::BTreeMap;
 

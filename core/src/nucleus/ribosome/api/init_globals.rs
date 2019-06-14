@@ -6,8 +6,7 @@ use holochain_persistence_api::{
     hash::HashString,
 };
 
-use holochain_json_api::{json::JsonString};
-
+use holochain_json_api::json::JsonString;
 
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use wasmi::RuntimeArgs;
@@ -80,8 +79,8 @@ pub mod tests {
     use holochain_core_types::{
         dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult, signature::Signature,
     };
-    use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use holochain_persistence_api::{cas::content::Address, json::JsonString};
+    use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use std::convert::TryFrom;
     use test_utils::mock_signing::registered_test_agent;
 

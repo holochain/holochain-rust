@@ -1,11 +1,11 @@
 use super::Dispatch;
 use error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::entry::Entry;
+use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_entry::{
     EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
     StatusRequestKind,
 };
-use holochain_persistence_api::cas::content::Address;
 
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
 /// the specified address.

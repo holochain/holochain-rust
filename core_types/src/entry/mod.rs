@@ -17,13 +17,11 @@ use chain_migrate::ChainMigrate;
 use crud_status::CrudStatus;
 use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
-use holochain_persistence_api::{
-    cas::content::{Address, AddressableContent, Content},
-};
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::{JsonString, RawString},
 };
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 use link::{link_data::LinkData, link_list::LinkList};
 use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};

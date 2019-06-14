@@ -3,12 +3,12 @@
 
 use crate::api::G_MEM_STACK;
 use holochain_core_types::error::RibosomeEncodingBits;
+use holochain_json_api::json::JsonString;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},
     stack::WasmStack,
 };
-use holochain_json_api::json::JsonString;
 use std::convert::{TryFrom, TryInto};
 
 /// Init global memory stack

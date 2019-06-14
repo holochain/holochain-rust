@@ -188,11 +188,11 @@ pub mod tests {
         error::{DnaError, HolochainError},
         signature::Signature,
     };
-    use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
         json::JsonString,
     };
+    use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use serde_json;
     use std::{
         collections::BTreeMap,

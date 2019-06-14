@@ -12,9 +12,8 @@ use crate::{
     link::link_data::LinkData,
 };
 
-use holochain_persistence_api::{cas::content::Address};
 use holochain_json_api::{error::JsonError, json::JsonString};
-
+use holochain_persistence_api::cas::content::Address;
 
 use chain_header::test_chain_header;
 

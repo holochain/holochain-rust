@@ -1,9 +1,9 @@
 use super::Dispatch;
 use error::{ZomeApiError, ZomeApiResult};
+use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::{
     QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult,
 };
-use holochain_persistence_api::cas::content::Address;
 
 /// Returns a list of entries from your local source chain that match a given entry type name or names.
 ///

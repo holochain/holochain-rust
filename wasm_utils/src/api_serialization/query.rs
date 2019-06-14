@@ -3,8 +3,8 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
 };
 
-use holochain_persistence_api::cas::content::Address;
 use holochain_json_api::{error::JsonError, json::*};
+use holochain_persistence_api::cas::content::Address;
 
 // QueryArgsNames -- support querying single/multiple EntryType names
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]

@@ -2,11 +2,11 @@ use super::Dispatch;
 use api::get_entry::get_entry_result;
 use error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{entry::Entry, link::LinkMatch};
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultItem, GetEntryResultType},
     get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
 };
-use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
 /// Consumes four values; the address of an entry get get links from (the base), the type of the links
 /// to be retrieved, an optional tag to match, and an options struct for selecting what meta data and crud status links to retrieve.

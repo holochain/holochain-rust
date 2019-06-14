@@ -1,7 +1,7 @@
 use super::Dispatch;
 use error::ZomeApiError;
-use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use holochain_persistence_api::cas::content::Address;
+use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 
 /// Commits a LinkRemove entry to your local source chain that marks a link as 'deleted' by setting
 /// its status metadata to `Deleted` which gets published to the DHT.

@@ -8,8 +8,8 @@ use holochain_core_types::{
     agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
 };
 use holochain_dpki::key_bundle::KeyBundle;
-use holochain_persistence_api::cas::content::Address;
 use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::Address;
 use lib3h_sodium::secbuf::SecBuf;
 use Holochain;
 

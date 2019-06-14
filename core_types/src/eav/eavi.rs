@@ -14,10 +14,7 @@ use holochain_persistence_api::{
     error::{PersistenceError, PersistenceResult},
 };
 
-use holochain_json_api::{
-    json::JsonString,
-    error::JsonError,
-};
+use holochain_json_api::{error::JsonError, json::JsonString};
 
 use crate::{
     entry::{test_entry_a, test_entry_b, Entry},

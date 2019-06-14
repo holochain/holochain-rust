@@ -5,11 +5,11 @@ use crate::connection::{
     protocol::Protocol,
     NetResult,
 };
+use holochain_json_api::json::JsonString;
 use lib3h::{
     real_engine::{RealEngine, RealEngineConfig},
     transport_wss::TransportWss,
 };
-use holochain_json_api::json::JsonString;
 use lib3h_protocol::network_engine::NetworkEngine;
 
 /// A worker that makes use of lib3h / NetworkEngine.

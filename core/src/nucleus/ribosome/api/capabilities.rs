@@ -67,10 +67,10 @@ pub mod tests {
         Defn,
     };
     use holochain_core_types::{entry::cap_entries::CapabilityType, error::ZomeApiInternalResult};
+    use holochain_persistence_api::{cas::content::Address, json::JsonString};
     use holochain_wasm_utils::api_serialization::capabilities::{
         CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
     };
-    use holochain_persistence_api::{cas::content::Address, json::JsonString};
     use std::collections::BTreeMap;
 
     /// dummy args

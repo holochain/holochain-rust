@@ -23,9 +23,8 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 
-use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_json_api::json::JsonString;
-
+use holochain_persistence_api::cas::content::AddressableContent;
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -1055,8 +1054,8 @@ pub mod tests {
     };
     use holochain_core_types::dna;
     use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
-    use holochain_wasm_utils::wasm_target_dir;
     use holochain_persistence_api::cas::content::Address;
+    use holochain_wasm_utils::wasm_target_dir;
     use lib3h_sodium::secbuf::SecBuf;
     use std::{
         fs::{File, OpenOptions},

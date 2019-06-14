@@ -5,13 +5,11 @@ use crate::{
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, validation::ValidationPackage};
 
-use holochain_persistence_api::{
-    cas::content::{Address, AddressableContent, Content},
-};
 use holochain_json_api::{
-    error::{JsonResult, JsonError},
+    error::{JsonError, JsonResult},
     json::JsonString,
 };
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 use snowflake;
 use std::{collections::HashMap, convert::TryFrom};
 

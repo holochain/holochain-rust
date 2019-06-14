@@ -54,7 +54,7 @@ use holochain_wasm_utils::api_serialization::commit_entry::{
 /// # }
 /// ```
 pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
-    commit_entry_result(entry, CommitEntryOptions::default()).map(|result| result.address())
+    commit_entry_result(entry, &CommitEntryOptions::default()).map(|result| result.address())
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
@@ -65,10 +65,10 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 /// Returns a CommitEntryResult which contains the address of the committed entry.
 pub fn commit_entry_result(
     entry: &Entry,
-    options: CommitEntryOptions,
+    options: &CommitEntryOptions,
 ) -> ZomeApiResult<CommitEntryResult> {
     Dispatch::CommitEntry.with_input(CommitEntryArgs {
         entry: entry.clone(),
-        options,
+        options: options.to_owned(),
     })
 }

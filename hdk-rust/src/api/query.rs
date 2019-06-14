@@ -66,16 +66,16 @@ use holochain_wasm_utils::api_serialization::{
 /// // }
 /// ```
 pub fn query(
-    entry_type_names: QueryArgsNames,
-    start: usize,
-    limit: usize,
+    entry_type_names: &QueryArgsNames,
+    start: &usize,
+    limit: &usize,
 ) -> ZomeApiResult<Vec<Address>> {
     // The hdk::query API always returns a simple Vec<Address>
     query_result(
         entry_type_names,
-        QueryArgsOptions {
-            start,
-            limit,
+        &QueryArgsOptions {
+            start: start.to_owned(),
+            limit: limit.to_owned(),
             headers: false,
             entries: false,
         },
@@ -87,11 +87,11 @@ pub fn query(
 }
 
 pub fn query_result(
-    entry_type_names: QueryArgsNames,
-    options: QueryArgsOptions,
+    entry_type_names: &QueryArgsNames,
+    options: &QueryArgsOptions,
 ) -> ZomeApiResult<QueryResult> {
     Dispatch::Query.with_input(QueryArgs {
-        entry_type_names,
-        options,
+        entry_type_names: entry_type_names.to_owned(),
+        options: options.to_owned(),
     })
 }

@@ -58,13 +58,9 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
 /// }
 /// # }
 /// ```
-pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOneTimeResult> {
-    let mut converted_payloads = Vec::new();
-    for p in payloads {
-        converted_payloads.push(p.into());
-    }
+pub fn sign_one_time<S: Into<String> + Clone>(payloads: &[S]) -> ZomeApiResult<SignOneTimeResult> {
     Dispatch::SignOneTime.with_input(OneTimeSignArgs {
-        payloads: converted_payloads,
+        payloads: Vec::from(payloads).into_iter().map(|s| s.into()).collect(),
     })
 }
 
@@ -90,11 +86,11 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
 /// # }
 /// ```
 pub fn verify_signature<S: Into<String>>(
-    provenance: Provenance,
+    provenance: &Provenance,
     payload: S,
 ) -> ZomeApiResult<bool> {
     Dispatch::VerifySignature.with_input(VerifySignatureArgs {
-        provenance,
+        provenance: provenance.to_owned(),
         payload: payload.into(),
     })
 }

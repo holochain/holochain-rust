@@ -32,7 +32,7 @@ use holochain_wasm_utils::api_serialization::get_entry::{
 /// # }
 /// ```
 pub fn get_entry(address: &Address) -> ZomeApiResult<Option<Entry>> {
-    let entry_result = get_entry_result(address, GetEntryOptions::default())?;
+    let entry_result = get_entry_result(address, &GetEntryOptions::default())?;
 
     let entry = if !entry_result.found() {
         None
@@ -48,7 +48,7 @@ pub fn get_entry(address: &Address) -> ZomeApiResult<Option<Entry>> {
 pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(
         address,
-        GetEntryOptions::new(StatusRequestKind::Initial, true, false, Default::default()),
+        &GetEntryOptions::new(StatusRequestKind::Initial, true, false, Default::default()),
     )?;
     Ok(entry_result.latest())
 }
@@ -59,7 +59,7 @@ pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
 pub fn get_entry_history(address: &Address) -> ZomeApiResult<Option<EntryHistory>> {
     let entry_result = get_entry_result(
         address,
-        GetEntryOptions::new(StatusRequestKind::All, true, false, Default::default()),
+        &GetEntryOptions::new(StatusRequestKind::All, true, false, Default::default()),
     )?;
     if !entry_result.found() {
         return Ok(None);
@@ -75,10 +75,10 @@ pub fn get_entry_history(address: &Address) -> ZomeApiResult<Option<EntryHistory
 /// The data returned is configurable with the GetEntryOptions argument.
 pub fn get_entry_result(
     address: &Address,
-    options: GetEntryOptions,
+    options: &GetEntryOptions,
 ) -> ZomeApiResult<GetEntryResult> {
     Dispatch::GetEntry.with_input(GetEntryArgs {
         address: address.clone(),
-        options,
+        options: options.to_owned(),
     })
 }

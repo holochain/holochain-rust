@@ -9,10 +9,10 @@ use holochain_wasm_utils::api_serialization::UpdateEntryArgs;
 /// entry's address in the previous entry's metadata.
 /// The updated entry will hold the previous entry's address in its header,
 /// which will be used by validation routes.
-pub fn update_entry(new_entry: Entry, address: &Address) -> ZomeApiResult<Address> {
+pub fn update_entry(new_entry: &Entry, address: &Address) -> ZomeApiResult<Address> {
     Dispatch::UpdateEntry.with_input(UpdateEntryArgs {
-        new_entry,
-        address: address.clone(),
+        new_entry: new_entry.to_owned(),
+        address: address.to_owned(),
     })
 }
 

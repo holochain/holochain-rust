@@ -58,7 +58,7 @@ pub struct QueryArgs {
     pub options: QueryArgsOptions,
 }
 
-#[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
+#[derive(Deserialize, Default, Debug, Serialize, DefaultJson, Clone)]
 pub struct QueryArgsOptions {
     pub start: usize,
     pub limit: usize,

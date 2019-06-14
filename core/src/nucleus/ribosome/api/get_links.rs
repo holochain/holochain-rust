@@ -55,10 +55,8 @@ pub mod tests {
         entry::{entry_type::test_app_entry_type, Entry},
         link::{Link, LinkMatch},
     };
-    use holochain_persistence_api::{
-        cas::content::Address,
-        json::{JsonString, RawString},
-    };
+    use holochain_json_api::json::{JsonString, RawString};
+    use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use serde_json;
 

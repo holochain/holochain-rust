@@ -309,10 +309,8 @@ pub mod tests {
         },
         time::test_iso_8601,
     };
-    use holochain_persistence_api::{
-        cas::content::AddressableContent,
-        json::{JsonString, RawString},
-    };
+    use holochain_json_api::json::{JsonString, RawString};
+    use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::cas::file::FilesystemStorage;
     use tempfile;
 

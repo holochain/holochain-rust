@@ -303,7 +303,7 @@ pub mod tests {
         entry_types::Sharing,
         zome::{ZomeFnDeclarations, ZomeTraits},
     };
-    use holochain_persistence_api::{error::PersistenceError, json::JsonString};
+    use holochain_json_api::{error::JsonError, json::JsonString};
     use meta::PartialZome;
     use std::collections::BTreeMap;
 

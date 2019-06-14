@@ -286,7 +286,8 @@ pub mod tests {
         },
         entry::entry_type::{AppEntryType, EntryType},
     };
-    use holochain_persistence_api::{cas::content::Address, json::JsonString};
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::Address;
     use std::convert::TryFrom;
 
     fn test_dna() -> Dna {

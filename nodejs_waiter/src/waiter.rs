@@ -374,7 +374,8 @@ mod tests {
         chain_header::test_chain_header, dna::capabilities::CapabilityRequest, entry::Entry,
         link::link_data::LinkData, signature::Signature,
     };
-    use holochain_persistence_api::{cas::content::Address, json::JsonString};
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::Address;
     use std::sync::mpsc::sync_channel;
 
     fn sig(a: Action) -> Signal {

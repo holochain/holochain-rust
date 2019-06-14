@@ -51,10 +51,8 @@ pub mod tests {
         error::ZomeApiInternalResult,
         signature::{Provenance, Signature},
     };
-    use holochain_persistence_api::{
-        cas::content::{Address, AddressableContent},
-        json::JsonString,
-    };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::api_serialization::commit_entry::{
         CommitEntryArgs, CommitEntryOptions, CommitEntryResult,
     };

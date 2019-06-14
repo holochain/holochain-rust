@@ -283,7 +283,8 @@ pub mod tests {
         error::HolochainError,
         signature::Signature,
     };
-    use holochain_persistence_api::{cas::content::AddressableContent, json::JsonString};
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::AddressableContent;
     use serde_json;
     use std::collections::HashMap;
     use test_utils::mock_signing::mock_signer;

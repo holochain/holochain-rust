@@ -2,6 +2,8 @@
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_json_api;
+extern crate holochain_persistence_api;
 extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
@@ -33,11 +35,10 @@ use holochain_core_types::{
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
-use holochain_wasm_utils::holochain_persistence_api::{
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
-    error::PersistenceError,
     hash::HashString,
-    json::JsonString,
 };
 
 #[cfg(not(windows))]

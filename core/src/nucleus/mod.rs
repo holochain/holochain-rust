@@ -128,10 +128,8 @@ pub mod tests {
         error::{DnaError, HolochainError},
         signature::Signature,
     };
-    use holochain_persistence_api::{
-        cas::content::AddressableContent,
-        json::{JsonString, RawString},
-    };
+    use holochain_json_api::json::{JsonString, RawString};
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     /// dummy zome name compatible with ZomeFnCall
     pub fn test_zome() -> String {

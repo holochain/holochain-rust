@@ -96,15 +96,13 @@ mod tests {
     use super::CrudStatus;
     use crate::eav::{eav_round_trip_test_runner, Attribute};
 
-    use holochain_persistence_api::{
-        cas::{
-            content::{
-                Address, AddressableContent, AddressableContentTestSuite, Content,
-                ExampleAddressableContent,
-            },
-            storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+    use holochain_json_api::json::{JsonString, RawString};
+    use holochain_persistence_api::cas::{
+        content::{
+            Address, AddressableContent, AddressableContentTestSuite, Content,
+            ExampleAddressableContent,
         },
-        json::{JsonString, RawString},
+        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
 
     #[test]

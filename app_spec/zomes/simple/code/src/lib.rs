@@ -63,6 +63,10 @@ pub fn handle_get_my_links(base: Address) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&base, LinkMatch::Exactly("authored_posts"), LinkMatch::Any)
 }
 
+pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
+    hdk::emit_signal("test-signal", JsonString::from_json(&format!("{{\"message\": {}}}", message)))
+}
+
 pub fn definition() -> ValidatingEntryType {
     entry!(
         name: "simple",
@@ -120,6 +124,11 @@ define_zome! {
             inputs: |base: Address|,
             outputs: |result: ZomeApiResult<GetLinksResult>|,
             handler: handle_get_my_links
+        }
+        test_emit_signal: {
+            inputs: |message: String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_test_emit_signal
         }
     ]
 

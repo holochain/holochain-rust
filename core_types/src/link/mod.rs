@@ -8,6 +8,9 @@ pub mod link_list;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
 
+use crate::{
+    agent::AgentId, chain_header::ChainHeader
+};
 use entry::Entry;
 use link::link_data::LinkData;
 use regex::Regex;
@@ -50,12 +53,12 @@ impl Link {
         &self.tag
     }
 
-    pub fn add_entry(&self) -> Entry {
-        Entry::LinkAdd(LinkData::add_from_link(self))
+    pub fn add_entry(&self, top_chain_header: ChainHeader, agent_id: AgentId) -> Entry {
+        Entry::LinkAdd(LinkData::add_from_link(self, top_chain_header, agent_id))
     }
 
-    pub fn remove_entry(&self) -> Entry {
-        Entry::LinkAdd(LinkData::remove_from_link(self))
+    pub fn remove_entry(&self, top_chain_header: ChainHeader, agent_id: AgentId) -> Entry {
+        Entry::LinkAdd(LinkData::remove_from_link(self, top_chain_header, agent_id))
     }
 }
 

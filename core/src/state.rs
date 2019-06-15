@@ -189,6 +189,7 @@ impl State {
                 Some(Attribute::EntryHeader).into(),
                 None.into(),
                 IndexFilter::LatestByAttribute,
+                None,
             ))?
             .into_iter()
             // get the header addresses

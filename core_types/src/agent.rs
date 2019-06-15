@@ -94,6 +94,10 @@ pub fn test_agent_id() -> AgentId {
     AgentId::new("bob", GOOD_ID.to_string())
 }
 
+pub fn test_agent_id_with_name(name: &str) -> AgentId {
+    AgentId::new(name, name.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

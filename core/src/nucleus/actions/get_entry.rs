@@ -89,6 +89,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         Some(Attribute::CrudStatus).into(),
         None.into(),
         IndexFilter::LatestByAttribute,
+        None,
     ))?;
     if status_eavs.len() == 0 {
         return Ok(None);
@@ -127,6 +128,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         Some(Attribute::CrudLink).into(),
         None.into(),
         IndexFilter::LatestByAttribute,
+        None,
     ))?;
     assert!(
         link_eavs.len() <= 1,

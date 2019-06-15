@@ -220,7 +220,8 @@ pub fn eav_round_trip_test_runner(
                 Some(entity_content.address()).into(),
                 Some(attribute.clone()).into(),
                 Some(value_content.address()).into(),
-                IndexFilter::LatestByAttribute
+                IndexFilter::LatestByAttribute,
+                None
             ))
             .expect("could not fetch eav"),
     );
@@ -261,7 +262,8 @@ pub fn eav_round_trip_test_runner(
                     e.into(),
                     a.into(),
                     v.into(),
-                    IndexFilter::LatestByAttribute
+                    IndexFilter::LatestByAttribute,
+                    None
                 ))
                 .expect("could not fetch eav")
         );

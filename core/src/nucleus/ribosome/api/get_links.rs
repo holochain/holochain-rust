@@ -52,8 +52,11 @@ pub mod tests {
         },
     };
     use holochain_core_types::{
+        agent::test_agent_id,
+        chain_header::test_chain_header,
         entry::{entry_type::test_app_entry_type, Entry},
-        link::{Link, LinkMatch},
+        json::{JsonString, RawString},
+        link::{link_data::LinkData, Link, LinkMatch},
     };
     use holochain_json_api::json::{JsonString, RawString};
     use holochain_persistence_api::cas::content::Address;
@@ -95,7 +98,6 @@ pub mod tests {
     fn initialize_context(netname: &str) -> Arc<Context> {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
-
         let netname = Some(netname);
         let instance = test_instance(dna, netname).expect("Could not create test instance");
 
@@ -106,10 +108,17 @@ pub mod tests {
     fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
         links.iter().for_each(|link| {
             assert!(initialized_context //commit the AddLink entry first
-                .block_on(commit_entry(link.add_entry(), None, &initialized_context))
+                .block_on(commit_entry(
+                    link.add_entry(test_chain_header(), test_agent_id()),
+                    None,
+                    &initialized_context
+                ))
                 .is_ok());
             assert!(initialized_context
-                .block_on(add_link(&link, &initialized_context))
+                .block_on(add_link(
+                    &LinkData::add_from_link(&link, test_chain_header(), test_agent_id()),
+                    &initialized_context
+                ))
                 .is_ok());
         });
     }

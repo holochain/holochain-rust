@@ -40,7 +40,7 @@ pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             "err/zome: invoke_emit_signal() could not send signal because signal channel is not set up!",
         ));
     }
-    
+
     // We only log this case but still return Ok(()) since the semantic of sending a signal
     // is all about decoupling sender and receiver - if nobody is listening, the sender
     // should not care..

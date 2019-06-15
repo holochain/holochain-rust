@@ -850,7 +850,7 @@ scenario('request grant', async (s, t, { alice, bob }) => {
   scenario('emit signal', async (s, t, { alice }) => {
 
     const result = await alice.callSync("simple", "test_emit_signal", {message: "test message"})
-    // TODO: Here we need some to read all the received UserSignals...
+    // TODO: Here we need some way to read all the received UserSignals...
     t.ok(result.Ok)
     t.notOk(result.Err)
 

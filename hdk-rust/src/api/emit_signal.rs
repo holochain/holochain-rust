@@ -29,13 +29,13 @@ use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 /// # extern crate hdk;
 /// # use hdk::error::ZomeApiResult;
 /// # use std::time::Duration;
-/// # use holochain_core_types::json::JsonString;
+/// # use hdk::holochain_core_types::json::JsonString;
 ///
 /// # fn main() {
 /// pub fn handle_receive_chat_message(message: String) -> ZomeApiResult<()> {
 ///     // ...
 ///     hdk::emit_signal("message_received", JsonString::from_json(format!(
-///         "{message: {}}", message
+///         "{{message: {}}}", message
 ///     )));
 ///     // ...
 ///     Ok(())

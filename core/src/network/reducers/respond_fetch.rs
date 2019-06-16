@@ -5,49 +5,48 @@ use crate::{
 };
 use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError};
 use holochain_net::connection::json_protocol::{
-    QueryEntryData, FetchEntryResultData, JsonProtocol,
+    FetchEntryData, FetchEntryResultData, JsonProtocol,
 };
 
+
+//CLEANUP need to convert the param to Vec<EntryAspect> instead of maybe_entry
 /// Send back to network a HandleFetchEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
-fn reduce_respond_get_inner(
+fn reduce_respond_fetch_data_inner(
     network_state: &mut NetworkState,
-    query_data: &QueryEntryData,
+    fetch_data: &FetchEntryData,
     maybe_entry: &Option<EntryWithMetaAndHeader>,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let query_result_json: JsonString = NetworkQueryResult::Entry(maybe_entry.clone()).into();
+    let aspect_list = match maybe_entry {
+        Some(entry) => vec![EntryAspcetData::from(entry)],
+        None => vec![],
+    };
     send(
         network_state,
-        JsonProtocol::HandleQueryEntryResult(QueryEntryResultData {
-            request_id: query_data.request_id.clone(),
-            requester_agent_id: query_data.requester_agent_id.clone(),
+        JsonProtocol::HandleFetchEntryResult(FetchEntryResultData {
+            request_id: fetch_data.request_id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
-            responder_agent_id: network_state.agent_id.clone().unwrap().into(),
-            entry_address: query_data.entry_address.clone().into(),
-            query_result: query_result_json.to_string().into_bytes(),
+            provider_agent_id: network_state.agent_id.clone().unwrap().into(),
+            entry: EntryData {
+                entry_address: fetch_data.entry_address.clone(),
+                aspect_list
+            }
         }),
     )
 }
 
-pub fn reduce_respond_get(
+pub fn reduce_respond_fetch_data(
     network_state: &mut NetworkState,
     _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (query_data, maybe_entry) = unwrap_to!(action => crate::action::Action::RespondGet);
-    let result = reduce_respond_get_inner(network_state, query_data, maybe_entry);
-
-    println!(
-        "debug/reduce/respond_get: Responding to GET request from {} with {:?}",
-        query_data.requester_agent_id, links
-    );
-
-
+    let (fetch_data, maybe_entry) = unwrap_to!(action => crate::action::Action::RespondFetch);
+    let result = reduce_respond_fetch_data_inner(network_state, fetch_data, maybe_entry);
     network_state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::RespondGet(match result {
+        ActionResponse::RespondFetch(match result {
             Ok(_) => Ok(()),
             Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
         }),

@@ -1,24 +1,25 @@
 use crate::{
     action::{ActionWrapper, GetEntryKey},
-    network::{reducers::send, state::NetworkState},
+    network::{reducers::send, state::NetworkState, query::NetworkQuery},
     state::State,
 };
-use holochain_core_types::error::HolochainError;
-use holochain_net::connection::json_protocol::{FetchEntryData, JsonProtocol};
+use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_net::connection::json_protocol::{QueryEntryData, JsonProtocol};
 
-fn reduce_fetch_entry_inner(
+fn reduce_get_entry_inner(
     network_state: &mut NetworkState,
     key: &GetEntryKey,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-
+    let query_json: JsonString = NetworkQuery::GetEntry.into();
     send(
         network_state,
-        JsonProtocol::FetchEntry(FetchEntryData {
-            requester_agent_id: network_state.agent_id.clone().unwrap(),
+        JsonProtocol::QueryEntry(QueryEntryData {
+            requester_agent_id: network_state.agent_id.clone().unwrap().into(),
             request_id: key.id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             entry_address: key.address.clone(),
+            query: query_json.to_string().into_bytes(),
         }),
     )
 }
@@ -29,9 +30,9 @@ pub fn reduce_get_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let key = unwrap_to!(action => crate::action::Action::FetchEntry);
+    let key = unwrap_to!(action => crate::action::Action::GetEntry);
 
-    let result = match reduce_fetch_entry_inner(network_state, &key) {
+    let result = match reduce_get_entry_inner(network_state, &key) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };
@@ -88,7 +89,7 @@ mod tests {
             address: entry.address(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let action_wrapper = ActionWrapper::new(Action::FetchEntry(key.clone()));
+        let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
 
         let store = store.reduce(action_wrapper);
         let maybe_get_entry_result = store
@@ -126,7 +127,7 @@ mod tests {
             address: entry.address(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let action_wrapper = ActionWrapper::new(Action::FetchEntry(key.clone()));
+        let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
@@ -166,7 +167,7 @@ mod tests {
             address: entry.address(),
             id: "req_alice_1".to_string(),
         };
-        let action_wrapper = ActionWrapper::new(Action::FetchEntry(key.clone()));
+        let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
 
         {
             let mut new_store = store.write().unwrap();
@@ -208,7 +209,7 @@ mod tests {
             address: entry.address(),
             id: "req_alice_2".to_string(),
         };
-        let dht_data = DhtData {
+        let dht_data = QueryEntryResultData {
             msg_id: new_key.id.clone(),
             address: new_key.address.to_string(),
             content: serde_json::from_str(
@@ -218,7 +219,7 @@ mod tests {
             ..Default::default()
         };
 
-        let action_wrapper = ActionWrapper::new(Action::HandleFetchResult(dht_data));
+        let action_wrapper = ActionWrapper::new(Action::HandleGetResult(dht_data));
         {
             let mut new_store = store.write().unwrap();
             *new_store = new_store.reduce(context.clone(), action_wrapper);

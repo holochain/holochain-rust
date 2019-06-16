@@ -25,7 +25,7 @@ use holochain_core_types::{
 };
 use holochain_net::{
     connection::{
-        json_protocol::{FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData},
+        json_protocol::{QueryEntryData, QueryEntryResultData, FetchEntryData,},
         net_connection::NetHandler,
     },
     p2p_config::P2pConfig,
@@ -127,17 +127,23 @@ pub enum Action {
     /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
 
-    /// Fetch an Entry on the network by address
-    FetchEntry(GetEntryKey),
+    /// Get an Entry on the network by address
+    GetEntry(GetEntryKey),
+
+    /// Lets the network module respond to a Get request.
+    /// Triggered from the corresponding workflow after retrieving the
+    /// requested entry from our local DHT shard.
+    RespondGet((QueryEntryData, Option<EntryWithMetaAndHeader>)),
 
     /// Lets the network module respond to a FETCH request.
     /// Triggered from the corresponding workflow after retrieving the
     /// requested entry from our local DHT shard.
+//    RespondFetch((FetchEntryData, Vec<EntryAspect>)),
     RespondFetch((FetchEntryData, Option<EntryWithMetaAndHeader>)),
 
-    /// We got a response for our FETCH request which needs to be added to the state.
+    /// We got a response for our get request which needs to be added to the state.
     /// Triggered from the network handler.
-    HandleFetchResult(FetchEntryResultData),
+    HandleGetResult(QueryEntryResultData),
 
     ///
     UpdateEntry((Address, Address)),
@@ -150,8 +156,8 @@ pub enum Action {
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
-    RespondGetLinks((FetchMetaData, Vec<Address>)),
-    HandleGetLinksResult((FetchMetaResultData, String, String)),
+    RespondGetLinks((QueryEntryData, Vec<Address>)),
+    HandleGetLinksResult((QueryEntryResultData, String, String)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -309,7 +315,7 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::FetchEntry(GetEntryKey {
+        Action::GetEntry(GetEntryKey {
             address: expected_entry_address(),
             id: String::from("test-id"),
         })
@@ -327,7 +333,7 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::FetchEntry(GetEntryKey {
+        ActionWrapper::new(Action::GetEntry(GetEntryKey {
             address: expected_entry_address(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         }))

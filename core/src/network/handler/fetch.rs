@@ -3,13 +3,15 @@ use crate::{
     context::Context,
     entry::CanPublish,
     instance::dispatch_action,
+    network::query::NetworkQuery,
     nucleus,
 };
-use holochain_core_types::{cas::content::Address, eav::Attribute, entry::EntryWithMetaAndHeader};
+use holochain_core_types::{cas::content::Address, eav::Attribute, entry::EntryWithMetaAndHeader, json::JsonString};
 use holochain_net::connection::json_protocol::{
-    FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
+    QueryEntryData, FetchEntryData, FetchEntryResultData, QueryEntryResultData,
 };
 use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
+
 
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
@@ -57,36 +59,4 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
 pub fn handle_fetch_entry_result(dht_data: FetchEntryResultData, context: Arc<Context>) {
     let action_wrapper = ActionWrapper::new(Action::HandleFetchResult(dht_data));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-}
-
-pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) {
-    if let Ok(Attribute::LinkTag(link_type, tag)) = fetch_meta_data.attribute.as_str().try_into() {
-        let links = context
-            .state()
-            .unwrap()
-            .dht()
-            .get_links(
-                Address::from(fetch_meta_data.entry_address.clone()),
-                link_type.clone(),
-                tag.clone(),
-            )
-            .unwrap_or(BTreeSet::new())
-            .into_iter()
-            .map(|eav| eav.value())
-            .collect::<Vec<_>>();
-        let action_wrapper = ActionWrapper::new(Action::RespondGetLinks((fetch_meta_data, links)));
-        dispatch_action(context.action_channel(), action_wrapper.clone());
-    }
-}
-
-/// The network comes back with a result to our previous GET META request.
-pub fn handle_fetch_meta_result(dht_meta_data: FetchMetaResultData, context: Arc<Context>) {
-    if let Ok(Attribute::LinkTag(link_type, tag)) = dht_meta_data.attribute.as_str().try_into() {
-        let action_wrapper = ActionWrapper::new(Action::HandleGetLinksResult((
-            dht_meta_data,
-            link_type,
-            tag,
-        )));
-        dispatch_action(context.action_channel(), action_wrapper.clone());
-    }
 }

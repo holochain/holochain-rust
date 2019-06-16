@@ -6,11 +6,11 @@ use crate::{
 use holochain_core_types::{
     cas::content::Address, entry::EntryWithMetaAndHeader, error::HolochainError,
 };
-use holochain_net::connection::json_protocol::FetchEntryResultData;
+use holochain_net::connection::json_protocol::QueryEntryResultData;
 
 fn reduce_handle_get_result_inner(
     network_state: &mut NetworkState,
-    dht_data: &FetchEntryResultData,
+    dht_data: &QueryEntryResultData,
 ) -> Result<Option<EntryWithMetaAndHeader>, HolochainError> {
     network_state.initialized()?;
     let content = serde_json::to_string(&dht_data.entry_content).map_err(|_| {

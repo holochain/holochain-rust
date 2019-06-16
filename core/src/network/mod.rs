@@ -1,7 +1,9 @@
 pub mod actions;
 pub mod direct_message;
+pub mod entry_aspect;
 pub mod entry_with_header;
 pub mod handler;
+pub mod query;
 pub mod reducers;
 pub mod state;
 #[cfg(test)]

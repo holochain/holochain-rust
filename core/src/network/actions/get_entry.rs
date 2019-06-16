@@ -27,7 +27,7 @@ pub async fn get_entry(
         id: snowflake::ProcessUniqueId::new().to_string(),
     };
 
-    let action_wrapper = ActionWrapper::new(Action::FetchEntry(key.clone()));
+    let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let key_inner = key.clone();

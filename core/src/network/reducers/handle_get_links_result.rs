@@ -4,11 +4,11 @@ use crate::{
     state::State,
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
-use holochain_net::connection::json_protocol::FetchMetaResultData;
+use holochain_net::connection::json_protocol::QueryEntryResultData;
 
 fn reduce_handle_get_links_result_inner(
     network_state: &mut NetworkState,
-    dht_meta_data: &FetchMetaResultData,
+    dht_meta_data: &QueryEntryResultData,
 ) -> Result<Vec<Address>, HolochainError> {
     network_state.initialized()?;
     // expecting dht_meta_data.content_list to be a jsonified array of EntryWithHeader or Address

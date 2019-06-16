@@ -8,6 +8,7 @@ pub mod handle_get_validation_package;
 pub mod init;
 pub mod publish;
 pub mod resolve_direct_connection;
+pub mod respond_fetch;
 pub mod respond_get;
 pub mod respond_get_links;
 pub mod send_direct_message;
@@ -27,7 +28,8 @@ use crate::{
             init::reduce_init,
             publish::reduce_publish,
             resolve_direct_connection::reduce_resolve_direct_connection,
-            respond_get::reduce_respond_fetch_data,
+            respond_fetch::reduce_respond_fetch_data,
+            respond_get::reduce_respond_get,
             respond_get_links::reduce_respond_get_links,
             send_direct_message::{reduce_send_direct_message, reduce_send_direct_message_timeout},
         },
@@ -46,19 +48,20 @@ use std::sync::Arc;
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
-        Action::FetchEntry(_) => Some(reduce_get_entry),
+        Action::GetEntry(_) => Some(reduce_get_entry),
         Action::GetEntryTimeout(_) => Some(reduce_get_entry_timeout),
         Action::GetLinks(_) => Some(reduce_get_links),
         Action::GetLinksTimeout(_) => Some(reduce_get_links_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
         Action::HandleCustomSendResponse(_) => Some(reduce_handle_custom_send_response),
-        Action::HandleFetchResult(_) => Some(reduce_handle_get_result),
+        Action::HandleGetResult(_) => Some(reduce_handle_get_result),
         Action::HandleGetLinksResult(_) => Some(reduce_handle_get_links_result),
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),
         Action::ResolveDirectConnection(_) => Some(reduce_resolve_direct_connection),
         Action::RespondFetch(_) => Some(reduce_respond_fetch_data),
+        Action::RespondGet(_) => Some(reduce_respond_get),
         Action::RespondGetLinks(_) => Some(reduce_respond_get_links),
         Action::SendDirectMessage(_) => Some(reduce_send_direct_message),
         Action::SendDirectMessageTimeout(_) => Some(reduce_send_direct_message_timeout),

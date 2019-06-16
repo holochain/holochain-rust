@@ -1,4 +1,5 @@
-pub mod get;
+pub mod fetch;
+pub mod query;
 pub mod send;
 pub mod store;
 
@@ -7,7 +8,7 @@ use crate::{
     entry::CanPublish,
     network::{
         actions::publish::publish,
-        handler::{get::*, send::*, store::*},
+        handler::{fetch::*, query::*, send::*, store::*},
     },
 };
 use holochain_core_types::hash::HashString;
@@ -66,17 +67,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "debug/net/handle: HandleStoreEntryAspect: {:?}",
                     dht_entry_data
                 ));
-                handle_store_entry(dht_entry_data, context.clone())
-            }
-            JsonProtocol::HandleStoreMeta(dht_meta_data) => {
-                if !is_my_dna(&my_dna_address, &dht_meta_data.dna_address.to_string()) {
-                    return Ok(());
-                }
-                context.log(format!(
-                    "debug/net/handle: HandleStoreMeta: {:?}",
-                    dht_meta_data
-                ));
-                handle_store_meta(dht_meta_data, context.clone())
+                handle_store(dht_entry_data, context.clone())
             }
             JsonProtocol::HandleFetchEntry(fetch_entry_data) => {
                 if !is_my_dna(&my_dna_address, &fetch_entry_data.dna_address.to_string()) {
@@ -88,73 +79,57 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_fetch_entry(fetch_entry_data, context.clone())
             }
-            JsonProtocol::FetchEntryResult(fetch_result_data) => {
+            JsonProtocol::HandleFetchEntryResult(fetch_result_data) => {
                 if !is_my_dna(&my_dna_address, &fetch_result_data.dna_address.to_string()) {
                     return Ok(());
                 }
+
+                // CLEANUP: requester_agent_id was dropped when we moved from FetchMetaResultData
+                // to FetchEntryResultData, so I'm not sure if there is some other check we
+                // should be doing here...
                 // ignore if I'm not the requester
-                if !is_my_id(&context, &fetch_result_data.requester_agent_id) {
-                    return Ok(());
-                }
+                //if !is_my_id(&context, &fetch_result_data.requester_agent_id.to_string()) {
+                //    return Ok(());
+                //}
                 context.log(format!(
                     "debug/net/handle: FetchEntryResult: {:?}",
                     fetch_result_data
                 ));
                 handle_fetch_entry_result(fetch_result_data, context.clone())
             }
-            JsonProtocol::HandleFetchMeta(fetch_meta_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_meta_data.dna_address.to_string()) {
+            JsonProtocol::HandleQueryEntry(query_entry_data) => {
+                if !is_my_dna(&my_dna_address, &query_entry_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
-                    "debug/net/handle: HandleFetchMeta: {:?}",
-                    fetch_meta_data
+                    "debug/net/handle: HandleQueryEntry: {:?}",
+                    query_entry_data
                 ));
-                handle_fetch_meta(fetch_meta_data, context.clone())
+                handle_query_entry_data(query_entry_data, context.clone())
             }
-            JsonProtocol::FetchMetaResult(fetch_meta_result_data) => {
+            JsonProtocol::HandleQueryEntryResult(query_entry_result_data) => {
                 if !is_my_dna(
                     &my_dna_address,
-                    &fetch_meta_result_data.dna_address.to_string(),
+                    &query_entry_result_data.dna_address.to_string(),
                 ) {
                     return Ok(());
                 }
                 // ignore if I'm not the requester
-                if !is_my_id(&context, &fetch_meta_result_data.requester_agent_id) {
+                if !is_my_id(&context, &query_entry_result_data.requester_agent_id.to_string()) {
                     return Ok(());
                 }
-                // TODO: Find a proper solution for selecting DHT meta responses.
-                // Current network implementation broadcasts messages to all nodes which means
-                // we respond to ourselves first in most cases.
-                // Eric and I thought the filter below (ignoring messages from ourselves)
-                // would fix this but that breaks several tests since in most tests
-                // we only have one instance and have to rely on the nodes local knowledge.
-                // A proper solution has to implement some aspects of what we call the
-                // "world model". A node needs to know what context it's in: if we are the only
-                // node we know about (like in these tests) we can not ignore our local knowledge
-                // but in other cases we should rather rely on the network's response.
-                // In the end this needs a full CRDT implemention.
-                //if is_me(
-                //    &context,
-                //    &get_dht_meta_data.dna_address,
-                //    &get_dht_meta_data.from_agent_id,
-                //) {
-                //    context.log("debug/net/handle: Got DHT meta result from myself. Ignoring.");
-                //    return Ok(());
-                //} else {
                 context.log(format!(
-                    "debug/net/handle: FetchMetaResult: {:?}",
-                    fetch_meta_result_data
+                    "debug/net/handle: HandleQueryEntryResult: {:?}",
+                    query_entry_result_data
                 ));
-                handle_fetch_meta_result(fetch_meta_result_data, context.clone())
-                //}
+                handle_query_entry_result(query_entry_result_data, context.clone())
             }
             JsonProtocol::HandleSendMessage(message_data) => {
                 if !is_my_dna(&my_dna_address, &message_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
-                if !is_my_id(&context, &message_data.to_agent_id) {
+                if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -168,7 +143,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
-                if !is_my_id(&context, &message_data.to_agent_id) {
+                if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -179,7 +154,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             }
             JsonProtocol::PeerConnected(peer_data) => {
                 // ignore peer connection of myself
-                if is_my_id(&context, &peer_data.agent_id) {
+                if is_my_id(&context, &peer_data.agent_id.to_string()) {
                     return Ok(());
                 }
 

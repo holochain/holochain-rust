@@ -15,30 +15,28 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net::connection::json_protocol::{DhtMetaData, JsonProtocol, ProvidedEntryData};
+use holochain_net::connection::json_protocol::{EntryData, JsonProtocol, ProvidedEntryData};
 
 /// Send to network a PublishDhtData message
 fn publish_entry(
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
+    let aspect_list = AspectList::from(EntryWithHeader);
     send(
         network_state,
         JsonProtocol::PublishEntry(ProvidedEntryData {
             dna_address: network_state.dna_address.clone().unwrap(),
-            provider_agent_id: network_state.agent_id.clone().unwrap(),
-            entry_address: entry_with_header.entry.address().clone(),
-            entry_content: serde_json::from_str(
-                &serde_json::to_string(&entry_with_header).unwrap(),
-            )
-            .unwrap(),
+            provider_agent_id: network_state.agent_id.clone().unwrap().into(),
+            entry: EntryData {
+                entry_address: entry_with_header.entry.address().clone(),
+                aspect_list,
+            },
         }),
     )
 }
 
-/// Send to network:
-///  - a PublishDhtMeta message for the crud-status
-///  - a PublishDhtMeta message for the crud-link
+/// Send to network a publish request for either delete or update
 fn publish_update_delete_meta(
     network_state: &mut NetworkState,
     entry_address: Address,

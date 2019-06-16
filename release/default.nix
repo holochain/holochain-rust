@@ -7,6 +7,10 @@ let
    release = config;
    github = github;
   };
+
+  rust = pkgs.callPackage ./rust {
+   release = config;
+  };
 in
 {
  buildInputs = [
@@ -21,6 +25,7 @@ in
    })
  ]
  ++ pulse.buildInputs
+ ++ rust.buildInputs
  ;
 
  config = config;

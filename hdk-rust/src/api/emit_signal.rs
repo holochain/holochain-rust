@@ -30,6 +30,10 @@ use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 /// # use hdk::error::ZomeApiResult;
 /// # use std::time::Duration;
 /// # use hdk::holochain_core_types::json::JsonString;
+/// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
+/// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
+/// # #[no_mangle]
+/// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 /// pub fn handle_receive_chat_message(message: String) -> ZomeApiResult<()> {

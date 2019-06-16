@@ -6,6 +6,7 @@ use crate::{
         entry::{AppEntryValue, Entry},
     },
 };
+use holochain_core_types::link::LinkMatch;
 use std::convert::TryFrom;
 
 ///
@@ -15,8 +16,8 @@ use std::convert::TryFrom;
 ///
 pub fn get_links_and_load_type<R: TryFrom<AppEntryValue>>(
     base: &Address,
-    link_type: Option<String>,
-    tag: Option<String>,
+    link_type: LinkMatch<&str>,
+    tag: LinkMatch<&str>,
 ) -> ZomeApiResult<Vec<R>> {
     let link_load_results = hdk::get_links_and_load(base, link_type, tag)?;
 

@@ -12,7 +12,6 @@ members = [
   "hdk-rust",
   "hdk-proc-macros",
   "net",
-  "nodejs_waiter",
   "dpki",
   "test_bin",
   "benchmarks"

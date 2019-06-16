@@ -19,7 +19,7 @@ use holochain_core_types::{
     dna::Dna,
     entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
-    link::Link,
+    link::link_data::LinkData,
     signature::Provenance,
     validation::ValidationPackage,
 };
@@ -107,13 +107,13 @@ pub enum Action {
 
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.
-    AddLink(Link),
+    AddLink(LinkData),
 
     //action for updating crudstatus
     CrudStatus((EntryWithHeader, CrudStatus)),
 
     //Removes a link for the local DHT
-    RemoveLink(Link),
+    RemoveLink(Entry),
 
     // ----------------
     // Network actions:
@@ -238,10 +238,10 @@ pub struct GetLinksKey {
     pub base_address: Address,
 
     /// The link type
-    pub link_type: Option<String>,
+    pub link_type: String,
 
     /// The link tag, None means get all the tags for a given type
-    pub tag: Option<String>,
+    pub tag: String,
 
     /// A unique ID that is used to pair the eventual result to this request
     pub id: String,

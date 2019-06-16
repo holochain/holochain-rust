@@ -114,5 +114,10 @@ pub mod simple {
         hdk::get_links(&base, LinkMatch::Exactly("authored_posts"), LinkMatch::Any)
     }
 
+    #[zome_fn("hc_public")]
+    pub fn test_emit_signal(message: String) -> ZomeApiResult<()> {
+        hdk::emit_signal("test-signal", JsonString::from_json(&format!("{{\"message\": {}}}", message)))
+    }
+
 }
 

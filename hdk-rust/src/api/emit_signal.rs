@@ -34,7 +34,7 @@ use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 /// # fn main() {
 /// pub fn handle_receive_chat_message(message: String) -> ZomeApiResult<()> {
 ///     // ...
-///     hdk::emit_signal("message_received", JsonString::from_json(format!(
+///     hdk::emit_signal("message_received", JsonString::from_json(&format!(
 ///         "{{message: {}}}", message
 ///     )));
 ///     // ...

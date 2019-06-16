@@ -20,7 +20,7 @@ let
     git pull;
    else git checkout ${release.commit}
     git checkout -b ${release.branch}
-    git push -u ${github.upstream} ${release.branch};
+    git push -u ${github.config.upstream} ${release.branch};
   fi;
   echo
   '';

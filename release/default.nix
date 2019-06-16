@@ -1,7 +1,9 @@
 { pkgs }:
 let
   config = import ./nix/config.nix;
-  github = import ./github;
+  github = pkgs.callPackage ./github {
+   release = config;
+  };
 
   pulse = pkgs.callPackage ./pulse {
    release = config;
@@ -9,6 +11,10 @@ let
   };
 
   rust = pkgs.callPackage ./rust {
+   release = config;
+  };
+
+  docs = pkgs.callPackage ./docs {
    release = config;
   };
 in
@@ -26,6 +32,8 @@ in
  ]
  ++ pulse.buildInputs
  ++ rust.buildInputs
+ ++ docs.buildInputs
+ ++ github.buildInputs
  ;
 
  config = config;

@@ -21,10 +21,10 @@ let
   case "$response" in
    [yY][eE][sS]|[yY])
     hc-release-pulse-tag \
-    && hc-release-github-branch \
-    && hc-release-rust-manifest-version-sync \
-    && hc-release-docs-changelog-version-sync \
-    && hc-release-github-pr \
+    && hc-release-branch \
+    && hc-release-rust-manifest-versions \
+    && hc-release-docs-changelog-versions \
+    && hc-release-github-merge \
     ;;
    *)
     exit 1

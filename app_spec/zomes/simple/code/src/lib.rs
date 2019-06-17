@@ -64,7 +64,12 @@ pub fn handle_get_my_links(base: Address) -> ZomeApiResult<GetLinksResult> {
 }
 
 pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
-    hdk::emit_signal("test-signal", JsonString::from_json(&format!("{{\"message\": {}}}", message)))
+    #[derive(Debug, Serialize, Deserialize, DefaultJson)]
+    struct SignalPayload {
+        message: String
+    }
+
+    hdk::emit_signal("test-signal", SignalPayload{message})
 }
 
 pub fn definition() -> ValidatingEntryType {

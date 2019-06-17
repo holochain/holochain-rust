@@ -116,7 +116,12 @@ pub mod simple {
 
     #[zome_fn("hc_public")]
     pub fn test_emit_signal(message: String) -> ZomeApiResult<()> {
-        hdk::emit_signal("test-signal", JsonString::from_json(&format!("{{\"message\": {}}}", message)))
+        #[derive(Debug, Serialize, Deserialize, DefaultJson)]
+        struct SignalPayload {
+            message: String
+        }
+
+        hdk::emit_signal("test-signal", SignalPayload{message})
     }
 
 }

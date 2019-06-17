@@ -1,7 +1,4 @@
-use holochain_core_types::{
-    chain_header::ChainHeader, crud_status::CrudStatus,
-    time::Timeout,
-};
+use holochain_core_types::{chain_header::ChainHeader, crud_status::CrudStatus, time::Timeout};
 use holochain_json_api::{error::JsonError, json::*};
 use holochain_persistence_api::cas::content::Address;
 

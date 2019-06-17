@@ -10,16 +10,11 @@ use std::{
 #[derive(Clone)]
 pub struct ConductorApi(Arc<RwLock<IoHandler>>);
 
-impl ConductorApi {
-    pub fn new(conductor_api: Arc<RwLock<IoHandler>>) -> ConductorApi {
-        ConductorApi(conductor_api)
-    }
-
-    pub fn sign(&self, payload: String) -> Result<String, HolochainError> {
-        let handler = self.0.write().unwrap();
+pub fn send_json_rpc(handle : Arc<RwLock<IoHandler>>, payload: String, request_reponse:(String,String)) -> Result<String, HolochainError> {
+        let handler = handle.write().unwrap();
         let request = format!(
-            r#"{{"jsonrpc": "2.0", "method": "agent/sign", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
-            payload, ProcessUniqueId::new(),
+            r#"{{"jsonrpc": "2.0", "method": "agent/{}", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
+            request_reponse.0,payload, ProcessUniqueId::new(),
         );
 
         let response = handler
@@ -29,7 +24,7 @@ impl ConductorApi {
         let response = JsonRpc::parse(&response)?;
 
         match response {
-            JsonRpc::Success(_) => Ok(String::from(response.get_result()?["signature"].as_str()?)),
+            JsonRpc::Success(_) => Ok(String::from(response.get_result()?[request_reponse.1].as_str()?)),
             JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(serde_json::to_string(
                 &response.get_error()?,
             )?)),
@@ -37,6 +32,21 @@ impl ConductorApi {
         }
     }
 
+
+impl ConductorApi {
+    pub fn new(conductor_api: Arc<RwLock<IoHandler>>) -> ConductorApi {
+        ConductorApi(conductor_api)
+    }
+
+    pub fn sign(&self, payload: String) -> Result<String, HolochainError> {
+        send_json_rpc(self.0.clone(), payload, ("sign".to_string(),"signature".to_string()))
+    }
+
+    pub fn encrypt(&self, payload: String) -> Result<String, HolochainError> {
+        send_json_rpc(self.0.clone(), payload,("encrypt".to_string(),"message".to_string()))
+    }
+
+     
     pub fn get(&self) -> &Arc<RwLock<IoHandler>> {
         &self.0
     }

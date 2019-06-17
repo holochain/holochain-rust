@@ -254,6 +254,11 @@ impl Context {
         self.conductor_api.sign(payload)
     }
 
+    pub fn encrypt(&self, payload : String) ->Result<String,HolochainError>
+    {
+        self.conductor_api.encrypt(payload)
+    }
+
     /// returns the public capability token (if any)
     pub fn get_public_token(&self) -> Result<Address, HolochainError> {
         let state = self.state().ok_or("State uninitialized!")?;

@@ -22,6 +22,7 @@ pub mod sign;
 mod update_entry;
 pub mod validation;
 pub mod verify_signature;
+pub mod encrypt;
 mod zome_api_globals;
 
 pub use self::{call::*, query::*, update_entry::*, zome_api_globals::*};

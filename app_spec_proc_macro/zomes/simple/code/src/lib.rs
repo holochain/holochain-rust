@@ -16,12 +16,17 @@ use hdk::{
     error::ZomeApiResult,
     entry_definition::ValidatingEntryType,
     holochain_core_types::{
-        cas::content::Address,
         entry::Entry,
         dna::entry_types::Sharing,
         error::HolochainError,
-        json::JsonString,
         link::LinkMatch
+    },
+    holochain_persistence_api::{
+        cas::content::Address,
+    },
+    holochain_json_api::{
+       json::JsonString,
+       json::JsonError
     },
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult
 };
@@ -64,16 +69,16 @@ pub mod simple {
                     }
                 }
             )]
-        
+
     )
 }
 
-    #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
+    #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
     pub struct Simple {
         content: String,
     }
 
-    impl Simple 
+    impl Simple
     {
         pub fn new(content:String) -> Simple
         {
@@ -97,7 +102,7 @@ pub mod simple {
     }
 
     #[zome_fn("hc_public")]
-    pub fn create_link(base: Address,target : String) -> ZomeApiResult<()> 
+    pub fn create_link(base: Address,target : String) -> ZomeApiResult<()>
     {
         let address = hdk::commit_entry(&simple_entry(target))?;
         hdk::link_entries(&base, &address, "authored_posts", "")?;

@@ -5,21 +5,26 @@ extern crate hdk;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 use hdk::{
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
 };
 use hdk::holochain_core_types::{
-    cas::content::Address,
     dna::entry_types::Sharing,
-    error::HolochainError,
-    json::JsonString,
     entry::Entry,
     link::LinkMatch,
+};
+use hdk::holochain_persistence_api::{
+    cas::content::Address,
     hash::HashString
 };
+use hdk::holochain_json_api::{
+    json::JsonString,
+    error::JsonError
+};
+
 
 use hdk::holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
 
@@ -34,7 +39,7 @@ pub struct Simple {
     content: String,
 }
 
-impl Simple 
+impl Simple
 {
     pub fn new(content:String) -> Simple
     {
@@ -88,7 +93,6 @@ pub fn definition() -> ValidatingEntryType {
                     Ok(())
                 }
             )]
-        
     )
 }
 
@@ -102,7 +106,7 @@ define_zome! {
         Ok(())
     }
 
-  
+
 
     functions: [
 

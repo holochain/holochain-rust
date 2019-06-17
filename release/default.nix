@@ -34,6 +34,8 @@ in
     release = config;
     github = github;
    })
+
+   (pkgs.callPackage ./nix/prepare.nix { })
  ]
  ++ pulse.buildInputs
  ++ rust.buildInputs

@@ -1,11 +1,14 @@
 let
- holonix-release-tag = "eighth-projected-luggage";
- holonix-release-sha256 = "03gpy2n1bdc8dza678lcg8qkj2l8jl3jnyakwipb4dlf59sbc83y";
+ holonix-release-tag = "next-merging-division";
+ holonix-release-sha256 = "0dg0wlpy5z4w00dc6x7n624ymd0gss168hdr70gi2f7yh0mnxpla";
 
+ # holonix = import ../holonix;
  holonix = import (fetchTarball {
   url = "https://github.com/holochain/holonix/archive/${holonix-release-tag}.tar.gz";
   sha256 = "${holonix-release-sha256}";
  });
+
+ release = holonix.pkgs.callPackage ./release/default.nix { pkgs = holonix.pkgs; };
 in
 with holonix.pkgs;
 {
@@ -13,7 +16,10 @@ with holonix.pkgs;
   stdenv.mkDerivation rec {
     name = "core-shell";
 
-    buildInputs = holonix.buildInputs;
+    buildInputs =
+     holonix.buildInputs
+     ++ release.buildInputs
+    ;
 
     # non-nixos OS can have a "dirty" setup with rustup installed for the current
     # user.

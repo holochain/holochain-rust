@@ -1,11 +1,10 @@
-
-use holochain_json_api::{error::JsonError, json::JsonString};
-use holochain_persistence_api::cas::content::Address;
 use crate::{
     agent::AgentId,
     chain_header::ChainHeader,
     link::{Link, LinkActionKind},
 };
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::Address;
 
 //-------------------------------------------------------------------------------------------------
 // LinkData

@@ -8,9 +8,7 @@ pub mod link_list;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
 
-use crate::{
-    agent::AgentId, chain_header::ChainHeader
-};
+use crate::{agent::AgentId, chain_header::ChainHeader};
 use entry::Entry;
 use link::link_data::LinkData;
 use regex::Regex;

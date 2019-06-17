@@ -229,13 +229,13 @@ pub mod tests {
             &test_tag.clone(),
         );
         let link_data = LinkData::from_link(
-            &link.clone(),
+            &link,
             LinkActionKind::ADD,
             test_chain_header(),
             test_agent_id(),
         );
+        let action = ActionWrapper::new(Action::AddLink(link_data.clone()));
         let link_entry = Entry::LinkAdd(link_data.clone());
-        let action = ActionWrapper::new(Action::AddLink(link_data));
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
@@ -271,7 +271,7 @@ pub mod tests {
             &test_tag.clone(),
         );
         let link_data = LinkData::from_link(
-            &link.clone(),
+            &link,
             LinkActionKind::ADD,
             test_chain_header(),
             test_agent_id(),
@@ -282,15 +282,15 @@ pub mod tests {
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data.clone()));
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
-        let entry_link_remove = Entry::LinkRemove((
-            LinkData::from_link(
-                &link.clone(),
-                LinkActionKind::REMOVE,
-                test_chain_header(),
-                test_agent_id(),
-            ),
-            vec![entry_link_add.address()],
-        ));
+        let link_remove_data = LinkData::from_link(
+            &link.clone(),
+            LinkActionKind::REMOVE,
+            test_chain_header(),
+            test_agent_id(),
+        );
+
+        let entry_link_remove =
+            Entry::LinkRemove((link_remove_data, vec![entry_link_add.clone().address()]));
 
         //remove added link from dht
         let action_link_remove = ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));

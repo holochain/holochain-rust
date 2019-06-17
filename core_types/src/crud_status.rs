@@ -43,7 +43,9 @@ pub fn create_crud_link_eav(
 }
 
 /// the CRUD status of a Pair is stored using an EAV, NOT in the entry itself
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, DefaultJson)]
+#[derive(
+    Copy, Clone, PartialEq, Debug, Serialize, Deserialize, DefaultJson, PartialOrd, Ord, Eq,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum CrudStatus {
     Live,

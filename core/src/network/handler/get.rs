@@ -73,7 +73,7 @@ pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) 
             )
             .unwrap_or(BTreeSet::new())
             .into_iter()
-            .map(|eav| eav.value())
+            .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
             .collect::<Vec<_>>();
         let action_wrapper = ActionWrapper::new(Action::RespondGetLinks((fetch_meta_data, links)));
         dispatch_action(context.action_channel(), action_wrapper.clone());

@@ -4,6 +4,14 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::HolochainError,
+    crud_status::CrudStatus,
+    eav::{
+        Attribute, EavFilter, EaviQuery,
+        EntityAttributeValueIndex
+    },
+    entry::Entry,
+    error::HolochainError,
+
 };
 use holochain_persistence_api::{
     cas::{
@@ -86,20 +94,20 @@ impl DhtStore {
     ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
-    ///When that set is obtained, we filter based on the LinkTag attributes to only get the "live" links or links that are valid.
+    ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified
     pub fn get_links(
         &self,
         address: Address,
         link_type: String,
         tag: String,
-    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+    ) -> Result<BTreeSet<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
         let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
         Ok(filtered
             .into_iter()
-            .filter(|eav| match eav.attribute() {
-                Attribute::LinkTag(_, _) => true,
-                _ => false,
+            .map(|s| match s.attribute() {
+                Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
+                _ => (s, CrudStatus::Deleted),
             })
             .collect())
     }

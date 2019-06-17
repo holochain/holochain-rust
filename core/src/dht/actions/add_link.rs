@@ -98,7 +98,6 @@ mod tests {
         let base = test_entry();
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
-
         let link_data = LinkData::from_link(
             &link,
             LinkActionKind::ADD,

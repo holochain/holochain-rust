@@ -3,7 +3,7 @@ use crate::{
     network::{actions::ActionResponse, reducers::send, state::NetworkState},
     state::State,
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{crud_status::CrudStatus, error::HolochainError};
 use holochain_net::connection::json_protocol::{FetchMetaData, FetchMetaResultData, JsonProtocol};
 use holochain_persistence_api::cas::content::Address;
 
@@ -12,7 +12,7 @@ use holochain_persistence_api::cas::content::Address;
 fn reduce_respond_get_links_inner(
     network_state: &mut NetworkState,
     get_dht_meta_data: &FetchMetaData,
-    links: &Vec<Address>,
+    links: &Vec<(Address, CrudStatus)>,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 

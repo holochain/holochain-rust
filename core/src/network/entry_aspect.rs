@@ -6,7 +6,9 @@ use holochain_core_types::{
     link::link_data::LinkData,
     json::JsonString,
 };
-use std::convert::TryFrom;
+use std::convert::{TryFrom, Into};
+use holochain_net::connection::json_protocol::{EntryAspectData};
+use chrono::{offset::FixedOffset,DateTime};
 
 impl AddressableContent for EntryAspect {
     fn content(&self) -> Content {
@@ -70,4 +72,46 @@ pub enum EntryAspect {
   // `Entry::Deletion(address)`.
     // Deletion(Address, ChainHeader),
     Deletion(ChainHeader),
+}
+
+impl EntryAspect {
+    pub fn type_hint(&self) -> String {
+        match self {
+            EntryAspect::Content(_,_) => String::from("content"),
+            EntryAspect::Header(_) => String::from("header"),
+            EntryAspect::LinkAdd(_,_) => String::from("link_add"),
+            EntryAspect::LinkRemove(_,_) => String::from("link_remove"),
+            EntryAspect::Update(_) => String::from("update"),
+            EntryAspect::Deletion(_) => String::from("update"),
+        }
+    }
+    pub fn header(&self) -> ChainHeader {
+        match self {
+            EntryAspect::Content(_,header) => header.clone(),
+            EntryAspect::Header(header) => header.clone(),
+            EntryAspect::LinkAdd(_,header) => header.clone(),
+            EntryAspect::LinkRemove(_,header) => header.clone(),
+            EntryAspect::Update(header) => header.clone(),
+            EntryAspect::Deletion(header) => header.clone(),
+    }
+}}
+
+impl Into<EntryAspectData> for EntryAspect {
+    fn into(self) -> EntryAspectData {
+        let aspect_json = JsonString::from(self);
+        let ts : DateTime<FixedOffset> = self.header().timestamp().into();
+        EntryAspectData {
+            type_hint: self.type_hint(),
+            aspect_address: self.address(),
+            aspect: aspect_json.to_string().into(),
+            publish_ts: ts.timestamp() as u64,
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+
 }

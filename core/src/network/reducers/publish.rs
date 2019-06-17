@@ -30,7 +30,7 @@ fn publish_entry(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: entry_with_header.entry.address().clone(),
-                aspect_list: vec![EntryAspectData::new_content_from(entry_with_header)],
+                aspect_list: vec![EntryAspect::Content(entry_with_header.entry.clone(),entry_with_header.header.clone()).into()],
             },
         }),
     )
@@ -57,7 +57,7 @@ fn publish_update_delete_meta(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: orig_entry_address,
-                aspect_list: vec![EntryAspectData::from(aspect)],
+                aspect_list: vec![aspect.into()],
             },
         }),
     )?;
@@ -90,7 +90,7 @@ fn publish_link_meta(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: base,
-                aspect_list: vec![EntryAspectData::from(aspect)],
+                aspect_list: vec![aspect.into()],
             },
         }),
     )

@@ -873,6 +873,30 @@ impl ConductorApiBuilder {
         self
     }
 
+    pub fn with_agent_encryption_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
+        self.io.add_method("agent/encrypt", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+            // Convert payload string into a SecBuf
+            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+
+            // Get write lock on the key since we need a mutuble reference to lock the
+            // secure memory the key is in:
+            let mut message_signature = keybundle
+                .lock()
+                .unwrap()
+                .encrypt(&mut message)
+                .expect("Failed to sign with keybundle.");
+
+            let message_signature = message_signature.read_lock();
+            // Return as base64 encoded string
+            let signature = base64::encode(&**message_signature);
+
+            Ok(json!({ "signature": signature }))
+        });
+        self
+    }
+
     /// Adds extra functionality for running tests via the RPC interface
     ///
     /// - `test/agent/add`

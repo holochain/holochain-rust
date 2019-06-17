@@ -3,7 +3,7 @@
 use crate::{
     key_bundle,
     password_encryption::{self, PwHashConfig},
-    utils, CODEC_HCK0, CODEC_HCS0, SEED_SIZE, SIGNATURE_SIZE,
+    utils, CODEC_HCK0, CODEC_HCS0, SEED_SIZE, SIGNATURE_SIZE,ENCRYPT_SIZE
 };
 use hcid::*;
 use holochain_core_types::{agent::Base32, error::HcResult};
@@ -174,6 +174,15 @@ impl EncryptingKeyPair {
     }
 
     // TODO: Encrypt and decrypt functions
+
+    /// encrypt some arbitrary data with the signing private key
+    /// @param {SecBuf} data - the data to sign
+    /// @return {SecBuf} signature - Empty SecBuf to be filled with the signature
+    pub fn encrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
+        let mut message = SecBuf::with_insecure(ENCRYPT_SIZE);
+        lib3h_sodium::aead::enc(data, &mut self.private, &mut signature)?;
+        Ok(signature)
+    }
 }
 
 pub fn generate_random_sign_keypair() -> HcResult<SigningKeyPair> {

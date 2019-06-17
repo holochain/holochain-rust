@@ -59,6 +59,11 @@ impl KeyBundle {
         self.sign_keys.sign(data)
     }
 
+    pub fn encrypt(&mut self, data : &mut SecBuf) -> HcResult<SecBuf>
+    {
+        self.enc_keys.encrypt(data)
+    }
+
     /// verify data that was signed with our private signing key
     /// @param {SecBuf} data buffer to verify
     /// @param {SecBuf} signature candidate for that data buffer

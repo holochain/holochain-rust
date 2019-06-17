@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Crypto Functions](#crypto-functions)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Crypto Functions
 
 Holochain DNA instances are designed to function in the context of a [Distributed Public Key Insfrastructure (DPKI)](./dpki.md) which:

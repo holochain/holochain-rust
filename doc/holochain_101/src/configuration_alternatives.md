@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Configuration Alternatives](#configuration-alternatives)
+      - [Using a Plain Old Javascript Object](#using-a-plain-old-javascript-object)
+      - [Using TOML](#using-toml)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Configuration Alternatives
 
 It is possible to use the same configuration as you would for the [`holochain` Conductor](./production_conductor.md), and pass it to the constructor for `Conductor`. The configuration may be a string of valid TOML, or a JavaScript object with the equivalent structure. To review the configuration, [go here](./intro_to_toml_config.md).

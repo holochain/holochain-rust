@@ -1,9 +1,32 @@
-# Planning a dApp
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
 
-## What is a dApp?
-A dApp is a distributed application. This means that the data associated with the application is stored by each user rather than in a central database.
+- [Planning a happ](#planning-a-happ)
+  - [Basic expectations for happs](#basic-expectations-for-happs)
+  - [Cryptography in Holochain dApps](#cryptography-in-holochain-dapps)
+    - [Hashes](#hashes)
+    - [Signatures](#signatures)
+    - [Encryption](#encryption)
+    - [Key Management](#key-management)
+  - [Data access paradigms](#data-access-paradigms)
+    - [Public, shared data on a public network](#public-shared-data-on-a-public-network)
+    - [Public, shared data on a private network](#public-shared-data-on-a-private-network)
+    - [Encrypted data on a public or private network](#encrypted-data-on-a-public-or-private-network)
+    - [Private, local only data](#private-local-only-data)
+    - [Hybrid model with servers](#hybrid-model-with-servers)
+  - [Security - best practices](#security---best-practices)
+    - [Membranes](#membranes)
+    - [Immune system](#immune-system)
+  - [Scenarios to consider](#scenarios-to-consider)
 
-## Basic expectations for dApps
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+# Planning a happ
+
+This article discusses how to plan, design and build a Holochain app, known as a [happ](faq.md#what-is-the-difference-between-a-happ-and-a-blockchain-dapp).
+
+## Basic expectations for happs
 Generally speaking, you need to know the following in order to build a Holochain dApp:
 
    how to install Holochain
@@ -36,21 +59,21 @@ Distributed systems rely more heavily on cryptographic patterns and techniques t
 ### Hashes
 Hashes ensure the reliability of information by representing any given piece of data with a unique, consistent string of random looking characters. This makes changes to data visible because one can see that a hash has changed without needing to inspect the data itself.
 
-However, it is impossible to get the original data from a hash -- its purpose is to prove that the data to which it corresponds has not been altered. The same data consistently gives the same hash, and different data always give a completely different hash.
+However, it is impossible to get the original data from a hash—its purpose is to prove that the data to which it corresponds has not been altered. The same data consistently gives the same hash, and different data always gives a completely different hash.
 
 These features imply that one can use small, portable hashes to verify data. One could also use a database containing data and their hashes as a table of contents, indexing (though not reading) data associated with a given hash.
 
-In the context of Holochain hashes are frequently used to look up content, both in our internal implementations as well as on the DHT.  Therefore we frequently refer to the hash of some item (i.e. an entry on the chain) as its *Address*.
+In the context of Holochain, hashes are frequently used to look up content, both in our internal implementations as well as on the DHT.  Therefore we frequently refer to the hash of some item (i.e. an entry on the chain) as its *Address*. For more information (FMI), see e.g. [Wikipedia: Cryptographic hash function](https://en.wikipedia.org/wiki/Cryptographic_hash_function).
 
 ### Signatures
 Signatures provide an additional type of data verification, answering the question "who created this data?" Signatures look like hashes. They are unique, reliable, and like hashes, cannot be used to retrieve the data to which they correspond. Signatures also come with a pair of keys. One is public, and the other private.
 
-The private key designates a unique author (or device), and the public key lets anyone verify a signature made by one specific private key. This key infrastructure addresses the problem of single points of failure associated with centralized systems by making authors responsible for securing their unique private key.
+The private key designates a unique author (or device), and the public key lets anyone verify a signature made by one specific private key. This key infrastructure addresses the problem of single points of failure associated with centralized systems by making authors responsible for securing their unique private key. For more information, see e.g. [Wikipedia: Digital signature](https://en.wikipedia.org/wiki/Digital_signature).
 
 ### Encryption
 What if one needs to restrict access in addition to verifying data? Two types of encryption are possible. _Symmetric_ encryption has one key for reading and writing data. _Asymmetric_ encryption has two keys, where one creates messages and the other reads them.
 
-Encryption is a two way process, so the right key enables one to decrypt an encrypted message. With this added benefit come the drawbacks of the size of encrypted messages (at least as large as the original data) and broken encryption stripping the author of control of the original data.
+Encryption is a two way process, so the right key enables one to decrypt an encrypted message. With this added benefit come the drawbacks of the size of encrypted messages (at least as large as the original data) and broken encryption stripping the author of control of the original data. FMI, see e.g. https://en.wikipedia.org/wiki/Encryption.
 
 ### Key Management
 Once you are using cryptographic functions, either signing or encrypting, managing and securing the keys that unlock these functions, becomes a huge challenge to maintaining the overall system's integrity because there have to be safe ways to generate and store keys and also verify the provenance of the keys being used.  In Holochain we have designed for a Distributed Public Key Infrastructure (DPKI) in which we leverage the distributed nature of Holochain itself to help manage all the aspects of this challenge.
@@ -58,9 +81,9 @@ Once you are using cryptographic functions, either signing or encrypting, managi
 ## Data access paradigms
 The following are five data access paradigms. Note that in real-world scenarios it is common to mix these options by combining separate dApps.
 In instances when many separate dApps are needed to share data, Holochain supports bridging between dApps.
-Bridges between two networks with different data privacy models specify who can use the bridge, what data crosses the bridge, and tasks that might run in response to the bridge (e.g. notifications)
+Bridges between two networks with different data privacy models specify who can use the bridge, what data crosses the bridge, and tasks that might run in response to the bridge (e.g. notifications).
 
-The default model for Holochain data is public data shared on a public network, and every Holochain dApp has its own network and data, and creates networks for user-participants as soon as they join a dApp.
+The default model for Holochain data is public data shared on a public network, and again, every Holochain dApp/happ has its own network and data, and creates networks for user-participants as soon as they join a dApp.
 The dApp code sets sharing and verification rules.
 
 ### Public, shared data on a public network

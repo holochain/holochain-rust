@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Internal actors](#internal-actors)
+  - [Actor model](#actor-model)
+  - [Riker](#riker)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Internal actors
 
 Actors are discussed in two contexts:

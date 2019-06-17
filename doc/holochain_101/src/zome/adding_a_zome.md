@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Adding a Zome](#adding-a-zome)
+  - [What's in a Zome?](#whats-in-a-zome)
+    - [Rust crate Zomes](#rust-crate-zomes)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Adding a Zome
 
 After [creating a new project](../new_project.md), in the resulting folder there is an empty folder called 'zomes'. The name of this folder is important and should not be changed. It will serve as the root folder for the one or more Zomes in a project.

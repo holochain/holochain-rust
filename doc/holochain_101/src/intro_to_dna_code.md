@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Intro to DNA: Code](#intro-to-dna-code)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Intro to DNA: Code
 
 The functionality of Holochain applications is written as a collection of logical modules called "Zomes".

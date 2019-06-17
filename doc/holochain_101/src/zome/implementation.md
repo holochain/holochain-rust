@@ -1,3 +1,18 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Zome implementation](#zome-implementation)
+  - [Zome API functions](#zome-api-functions)
+    - [Zome API function definition](#zome-api-function-definition)
+    - [Zome API function ribosome module](#zome-api-function-ribosome-module)
+      - [Zome API function arguments](#zome-api-function-arguments)
+      - [Zome API function action dispatch](#zome-api-function-action-dispatch)
+      - [Zome API function return values](#zome-api-function-return-values)
+    - [Zome API function agent action](#zome-api-function-agent-action)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Zome implementation
 
 ## Zome API functions

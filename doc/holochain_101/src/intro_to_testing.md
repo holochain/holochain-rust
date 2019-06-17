@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Building Holochain Apps: Testing](#building-holochain-apps-testing)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Building Holochain Apps: Testing
 
 In order to provide a familiar testing framework, a [nodejs](https://nodejs.org) version of the Holochain framework has been compiled using Rust to nodejs bindings. It is called ["holochain-nodejs"](https://www.npmjs.com/package/@holochain/holochain-nodejs) and is a publicly installable package on the NPM package manager for nodejs. It enables the execution of Holochain and DNA instances from nodejs.

@@ -1,3 +1,18 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Distributed Public Key Infrastructure (DPKI)](#distributed-public-key-infrastructure-dpki)
+  - [Context](#context)
+  - [Requirements](#requirements)
+  - [DeepKey](#deepkey)
+  - [DPKI Implementation Technical Details](#dpki-implementation-technical-details)
+    - [Keystore](#keystore)
+    - [Standalone Mode](#standalone-mode)
+    - [DPKI Mode](#dpki-mode)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Distributed Public Key Infrastructure (DPKI)
 
 ## Context

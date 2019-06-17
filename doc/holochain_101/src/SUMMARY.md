@@ -1,9 +1,17 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Summary](#summary)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Summary
 
 - [Welcome](./welcome.md)
   - [Overview](./overview.md)
   - [How to contribute](./how_to_contribute.md)
-- [Planning a dApp](./planning_a_dapp.md)
+- [Planning a happ](./planning_a_happ.md)
 - [Building Holochain Apps: Intro](./building_apps.md)
   - [Intro to DNA: Configuration](./intro_to_dna_config.md)
   - [Intro to DNA: Code](./intro_to_dna_code.md)

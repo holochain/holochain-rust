@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Handling Asynchronous Network Effects](#handling-asynchronous-network-effects)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Handling Asynchronous Network Effects
 
 In the previous example, we used `alice.call()` to call a zome function. This returns immediately with a value, even though the test network created by the conductor is still running, sending messages back and forth between agents for purposes of validation and replication, etc. In many test cases, you will want to wait until all of this network activity has died down to advance to the next step.

@@ -1,3 +1,32 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Configuration](#configuration)
+      - [Import Example](#import-example)
+  - [Agent](#agent)
+    - [`Config.agent(agentName)` => `object`](#configagentagentname--object)
+      - [Example](#example)
+  - [DNA](#dna)
+    - [`Config.dna(dnaPath, [dnaName])` => `object`](#configdnadnapath-dnaname--object)
+      - [Example](#example-1)
+  - [Instances](#instances)
+    - [`Config.instance(agentConfig, dnaConfig, [name])` => `object`](#configinstanceagentconfig-dnaconfig-name--object)
+      - [Example](#example-2)
+  - [Bridges](#bridges)
+    - [`Config.bridge(handle, callerInstanceConfig, calleeInstanceConfig)` => `object`](#configbridgehandle-callerinstanceconfig-calleeinstanceconfig--object)
+      - [Example](#example-3)
+  - [DPKI](#dpki)
+    - [`Config.dpki(instanceConfig, initParams)` => `object`](#configdpkiinstanceconfig-initparams--object)
+  - [Full Conductor Configuration](#full-conductor-configuration)
+    - [`Config.conductor(conductorOptions)` => `object`](#configconductorconductoroptions--object)
+    - [`Config.conductor(instancesArray, [conductorOptions])` => `object`](#configconductorinstancesarray-conductoroptions--object)
+      - [Example](#example-4)
+      - [Example With conductorOptions](#example-with-conductoroptions)
+  - [Multiple Instances Example, with Bridges](#multiple-instances-example-with-bridges)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Configuration
 
 `Config` is an object with helper functions for configuration that is exported from `holochain-nodejs` and can be imported into your code. The functions can be combined to produce a valid configuration object to instantiate a Conductor instance with.

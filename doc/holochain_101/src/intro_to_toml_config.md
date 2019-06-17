@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Intro to TOML Config Files](#intro-to-toml-config-files)
+  - [`holochain` Config Files](#holochain-config-files)
+  - [Examples](#examples)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Intro to TOML Config Files
 
 To configure the `holochain` Conductor, a configuration file format called TOML is used. It stands for "Tom's Obvious Minimal Language" and was created by Tom Preston-Werner, one of the original founders of GitHub. The [documentation on GitHub](https://github.com/toml-lang/toml) for it is very good.

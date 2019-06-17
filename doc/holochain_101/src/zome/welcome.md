@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Building Holochain Apps: Zome Code](#building-holochain-apps-zome-code)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Building Holochain Apps: Zome Code
 
 Recall that for the DNA of a hApp, there can be many Zomes, and each one will have their own source code. Think of Zomes as the fundamental unit of composability for DNA.  As a DNA developer you can think of Zomes as modules. We expect developers to reuse Zomes written by others, and thus Zomes can call one another's functionality, using the `call` API function. Though currently Rust is the only available language for writing Zomes, note that these Zomes could be written in different languages (any language that compiles to WebAssembly) from one another in the future, and still access one another's functionality.

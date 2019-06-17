@@ -1,3 +1,30 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Zome API Functions](#zome-api-functions)
+  - [Overview](#overview)
+    - [Property](#property)
+    - [Entry Address](#entry-address)
+    - [Debug](#debug)
+    - [Call](#call)
+    - [Sign](#sign)
+    - [Verify Signature](#verify-signature)
+    - [Commit Entry](#commit-entry)
+    - [Update Entry](#update-entry)
+    - [Update Agent](#update-agent)
+    - [Remove Entry](#remove-entry)
+    - [Get Entry](#get-entry)
+    - [Get Links](#get-links)
+    - [Link Entries](#link-entries)
+    - [Query](#query)
+    - [Send](#send)
+    - [Grant Capability](#grant-capability)
+    - [Start Bundle](#start-bundle)
+    - [Close Bundle](#close-bundle)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Zome API Functions
 
 ## Overview

@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Intro to JSON-RPC Interfaces](#intro-to-json-rpc-interfaces)
+  - [JSON-RPC](#json-rpc)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Intro to JSON-RPC Interfaces
 
 The JSON-RPC interface will expose, via a port on your device, a WebSocket or an HTTP server, via which you can make function calls to the Zomes of your DNA.

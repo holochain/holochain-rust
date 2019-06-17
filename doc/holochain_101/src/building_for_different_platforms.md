@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Building for Different Platforms](#building-for-different-platforms)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Building for Different Platforms
 
 Holochain is designed to run on many different platforms.  Essentially it can run on any platform that Rust and the Rust WASM interpreter targets.  Thus Holochain DNA's will be able to run on platforms ranging from Raspberry Pis to Android smartphones once the tools have been fully developed.

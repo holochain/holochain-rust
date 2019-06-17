@@ -1,3 +1,18 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Writing a Development Kit](#writing-a-development-kit)
+    - [Why Development Kits](#why-development-kits)
+    - [The Rust Development Kit WASM Solution](#the-rust-development-kit-wasm-solution)
+    - [Crafting the API](#crafting-the-api)
+    - [Working with WASM Memory](#working-with-wasm-memory)
+      - [WASM Single Page Stack](#wasm-single-page-stack)
+    - [App Globals](#app-globals)
+    - [Publish It and Get In Touch](#publish-it-and-get-in-touch)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Writing a Development Kit
 
 The end goal of a Development Kit is to simplify the experience of writing Zomes that compile to WASM for Holochain apps.

@@ -1,3 +1,17 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Agents](#agents)
+    - [Properties](#properties)
+      - [`id`: `string`](#id-string)
+      - [`name`: `string`](#name-string)
+      - [`public_address`: `string`](#public_address-string)
+      - [`keystore_file`: `string`](#keystore_file-string)
+    - [Example](#example)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Agents
 
 `agents` is an array of configurations for "agents". This means that you can define, and later reference, multiple distinct agents in this single config file. An "agent" has a name, ID, public address and is defined by a private key that resides in a file on their device.

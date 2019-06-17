@@ -1,3 +1,17 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Development Conductor](#development-conductor)
+    - [Packaging](#packaging)
+    - [Storage](#storage)
+    - [Interfaces](#interfaces)
+    - [Port](#port)
+    - [Networking](#networking)
+    - [Stopping the Server](#stopping-the-server)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Development Conductor
 
 The easiest Conductor to run is built right into the [development command line tools](./intro_to_command_line_tools.md). It has no required configuration and is launched via the `hc run` command. Meant primarily for accelerating the development process it is useful for testing APIs or prototyping user interfaces.  The `hc run` command expects to be executed from inside a directory with valid DNA source files: The command is simply:

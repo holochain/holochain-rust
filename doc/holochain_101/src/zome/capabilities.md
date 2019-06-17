@@ -1,3 +1,16 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Capabilities](#capabilities)
+  - [Overview](#overview)
+  - [Using Capabilities](#using-capabilities)
+    - [Public Capabilities](#public-capabilities)
+    - [Grant Capabilities](#grant-capabilities)
+    - [Capabilities in Bridging](#capabilities-in-bridging)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Capabilities
 
 ## Overview

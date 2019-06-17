@@ -1,23 +1,31 @@
-# Frequently Asked Questions
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
 
-1. [How is Holochain different from blockchain?](#how-is-holochain-different-from-blockchain)
-2. [Why do you call it "Holochain"?](#why-do-you-call-it-holochain)
-3. [How is Holochain different from a DHT (Distributed Hash Table)?](#how-is-holochain-different-from-a-dht-distributed-hash-table)
-4. [What kind of projects is Holochain good for?](#what-kind-of-projects-is-holochain-good-for)
- [What is Holochain _not_ good for?](#what-is-holochain-not-good-for)
-5. [What is Holochain's consensus algorithm?](#what-is-holochains-consensus-algorithm)
-6. [Can you run a cryptocurrency on Holochain?](#can-you-run-a-cryptocurrency-on-holochain)
-7. [How is Holochain different from __________?](#how-is-holochain-different-from-__________)
-8. [What language is Holochain written in? What languages can I use to make Holochain apps?](#what-language-is-holochain-written-in-what-languages-can-i-use-to-make-holochain-apps)
-9. [Is Holochain open source?](#is-holochain-open-source)
-10 [How is Holochain more environmentally ethical than blockchain?](#how-is-holochain-more-environmentally-ethical-than-blockchain)
-11. [How are data validated on Holochain?](#how-are-data-validated-on-holochain)
-12. [What happens to data when a node leaves the network?](#what-happens-to-data-when-a-node-leaves-the-network)
-13. [Should I build my coin/token on Holochain?](#should-i-build-my-cointoken-on-holochain)
-14. [What does “agent-centric” mean? How is this different from “data-centric”?](#what-does-agent-centric-mean-how-is-this-different-from-data-centric)
-15. [What is the TPS (Transactions Per Second) on Holochain?](#what-is-the-tps-transactions-per-second-on-holochain)
+- [Frequently Asked Questions](#frequently-asked-questions)
+  - [How is Holochain different from blockchain?](#how-is-holochain-different-from-blockchain)
+  - [Why do you call it "Holochain"?](#why-do-you-call-it-holochain)
+    - [A unified cryptographic _whole_](#a-unified-cryptographic-_whole_)
+    - [*Holo*graphic storage](#holographic-storage)
+    - [*Hol*archy](#holarchy)
+  - [How is Holochain different from a DHT (Distributed Hash Table)?](#how-is-holochain-different-from-a-dht-distributed-hash-table)
+  - [What kind of projects is Holochain good for?](#what-kind-of-projects-is-holochain-good-for)
+  - [What is Holochain _not_ good for?](#what-is-holochain-_not_-good-for)
+  - [What is Holochain's consensus algorithm?](#what-is-holochains-consensus-algorithm)
+  - [How is Holochain more environmentally ethical than blockchain?](#how-is-holochain-more-environmentally-ethical-than-blockchain)
+  - [How is Holochain different from __________?](#how-is-holochain-different-from-__________)
+  - [What language is Holochain written in? What languages can I use to make Holochain apps?](#what-language-is-holochain-written-in-what-languages-can-i-use-to-make-holochain-apps)
+  - [Is Holochain open source?](#is-holochain-open-source)
+  - [Can you run a cryptocurrency on Holochain?](#can-you-run-a-cryptocurrency-on-holochain)
+  - [How are data validated on Holochain?](#how-are-data-validated-on-holochain)
+  - [What happens to data when a node leaves the network?](#what-happens-to-data-when-a-node-leaves-the-network)
+  - [Should I build my coin/token on Holochain?](#should-i-build-my-cointoken-on-holochain)
+  - [What does “agent-centric” mean? How is this different from “data-centric?”](#what-does-agent-centric-mean-how-is-this-different-from-data-centric)
+  - [What is the TPS (Transactions Per Second) on Holochain?](#what-is-the-tps-transactions-per-second-on-holochain)
+  - [What is a dApp?](#what-is-a-dapp)
+  - [What is the difference between a happ and a blockchain dapp?](#what-is-the-difference-between-a-happ-and-a-blockchain-dapp)
 
-
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## How is Holochain different from blockchain?
 
@@ -201,3 +209,12 @@ Why are we seeing a transaction limit with blockchain networks? Because blockcha
 Holochain is not forcing such a model. Instead it allows for building applications that are like email. The application is rather like a protocol, or grammar, or (I prefer this language) like a dance. If you know the dance (If you have a copy of the validation rules of the app) you can tell who else is dancing that dance and who is not. The difference between Holochain and something like email is that (similarly to blockhain) Holochain is applying 1. cryptographic signatures and 2. tamper proof hash-chains (hence Holo*chain*) so that you can build a distributed system you can trust in. You know it is impossible (I'd rather say: very very hard) to game somebody. This so far was only possible by having trusted authorities like banks or Facebook.
 
 So, Holochain as an app framework does not pose any limit of transactions per second because there is no place where all transactions have to go through. It is like asking, "how many words can humanity speak per second?" Well, with every human being born, that number increases. Same for Holochain.
+
+## What is a dApp?
+A dApp is a distributed application. This means that the data associated with the application is stored by each user rather than in a central database. 
+
+## What is the difference between a happ and a blockchain dapp?
+
+Note that in the case of Ethereum, the first dapp platform, it is only possible to run a smart contract in a distributed way, not all of the code and data for the dapp. In this sense, an Ethereum dapp is not fully decentralised, not until all of the code to run the full app are decentralised, as well as fully decentralising the ways to store all data, transmit and receive it over the network, and read, write and compute it. Every Holochain happ has its own network and data (like each blockchain), and creates networks for user-participants as soon as they join a dApp. By distinction, a blockchain is itself a dapp, and may enable other dapps to run on top of it, as is the case with Ethereum. Bitcoin is the first blockchain, that is also a dapp, and provides a cryptocurrency, bitcoin, for decentralised financial transactions. Note that there are also multichains like Cosmos and Polkadot, that are also blockchains, and platforms for building new blockchains, and bridging to existing ones, which can then all interconnect and interoperate via Polkadot. Furthermore, and as noted elsewhere, it should be possible to build (or bridge to) any dapp, blockchain or multichain on Holochain, by enforcing universal consensus as a validation rule, and other implementation details specific to each blockchain.
+
+> However, if your system is designed around data having one absolute true state, not one which is dynamic and varied based on vantage point, we would suggest you rethink your design.—faq.md#what-is-holochains-consensus-algorithm, last para.

@@ -1,3 +1,17 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [State & Actions](#state--actions)
+  - [Actions](#actions)
+    - [Reduce](#reduce)
+    - [Resolve an appropriate handler](#resolve-an-appropriate-handler)
+    - [Implement the handlers](#implement-the-handlers)
+  - [Global state](#global-state)
+  - [Local state](#local-state)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # State & Actions
 
 Holochain uses a hybrid global/local state model.

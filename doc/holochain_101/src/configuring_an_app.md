@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Configuring an App](#configuring-an-app)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Configuring an App
 
 As mentioned in [Intro to DNA: Configuration](./intro_to_dna_config.md) at the top level of a Holochain app source code folder there should be a file named `app.json`. This file is useful for two primary things:

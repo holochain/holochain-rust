@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Ignoring Files Using A .hcignore File](#ignoring-files-using-a-hcignore-file)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Ignoring Files Using A .hcignore File
 
 Sometimes, you'll want to exclude files and folders in your project directory to get a straight `.dna.json` file that can be understood by Holochain. In order to do that, just create a `.hcignore` file. It has a similar structure to `.gitignore` files:

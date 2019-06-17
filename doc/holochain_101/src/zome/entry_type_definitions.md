@@ -1,3 +1,15 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [App Entry Type Definitions](#app-entry-type-definitions)
+  - [Defining App Entry Types](#defining-app-entry-types)
+  - [Building in Rust: Defining an Entry Type](#building-in-rust-defining-an-entry-type)
+    - [Putting It All Together](#putting-it-all-together)
+      - [Summary](#summary)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # App Entry Type Definitions
 
 An "entry" is a data element that an agent authors to their source-chain (stored on their local device), which is then propagated to peers. The entry is backed by a "chain header", which is the data element used for verification of the integrity of itself, as well as the entry.

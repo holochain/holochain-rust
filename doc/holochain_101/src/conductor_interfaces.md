@@ -1,3 +1,21 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Interfaces](#interfaces)
+    - [Properties](#properties)
+      - [`id`: `string`](#id-string)
+      - [`driver`: `InterfaceDriver`](#driver-interfacedriver)
+      - [`InterfaceDriver.type`: `enum`](#interfacedrivertype-enum)
+      - [`InterfaceDriver.port`: `u16`](#interfacedriverport-u16)
+      - [`admin`: `bool` Optional](#admin-bool-optional)
+      - [`instances`: `array of InstanceReferenceConfiguration`](#instances-array-of-instancereferenceconfiguration)
+      - [`InstanceReferenceConfiguration.id`: `string`](#instancereferenceconfigurationid-string)
+    - [Example Without Admin](#example-without-admin)
+    - [Example With Admin](#example-with-admin)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Interfaces
 `interfaces` is an array of configurations of the channels (e.g. http or websockets) that the Conductor will use to send information to and from instances and users. Interfaces are user facing and make Zome functions, info, and optionally admin functions available to GUIs, browser based web UIs, local native UIs, and other local applications and scripts.
 The following implementations are already developed:

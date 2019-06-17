@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Other Test Harnesses](#other-test-harnesses)
+    - [`scenario.run(runner)` => `null`](#scenariorunrunner--null)
+      - [Example](#example)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Other Test Harnesses
 
 Only [tape](https://github.com/substack/tape) is currently supported as a fully integrated test harness, but you can also run tests with more manual control using `scenario.run`. Using `run` allows you to manage the test yourself, only providing you with the basic help of starting and stopping a fresh Conductor instance.

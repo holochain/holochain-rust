@@ -1,3 +1,19 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Logging](#logging)
+    - [Properties](#properties)
+      - [`type`: `enum` Optional](#type-enum-optional)
+      - [`rules`: `LogRules` Optional](#rules-logrules-optional)
+      - [`LogRules.rules`: `LogRule`](#logrulesrules-logrule)
+      - [`LogRule.pattern`: `Regex string`](#logrulepattern-regex-string)
+      - [`LogRule.exclude`: `bool` Optional](#logruleexclude-bool-optional)
+      - [`LogRule.color`: `enum` Optional](#logrulecolor-enum-optional)
+    - [Example](#example)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Logging
 
 `logger` is a table for the configuration of how logging should behave in the Conductor. Select between types of loggers and setup rules for nicer display of the logs. There is only one logger per Conductor.

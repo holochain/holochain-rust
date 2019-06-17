@@ -1,3 +1,23 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Managing the Conductor](#managing-the-conductor)
+      - [Import Example](#import-example)
+  - [Simple Use](#simple-use)
+    - [`Conductor.run(conductorConfig, runner)` => `Promise`](#conductorrunconductorconfig-runner--promise)
+      - [Example](#example)
+  - [Manually Instantiating a Conductor](#manually-instantiating-a-conductor)
+    - [`constructor(conductorConfig)` => `Conductor`](#constructorconductorconfig--conductor)
+      - [Example](#example-1)
+  - [Manually Starting and Stopping a Conductor](#manually-starting-and-stopping-a-conductor)
+    - [`conductor.start()` => null](#conductorstart--null)
+      - [Example](#example-2)
+    - [`conductor.stop()` => `Promise`](#conductorstop--promise)
+      - [Example](#example-3)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Managing the Conductor
 
 `Conductor` is a class that is exported from `holochain-nodejs`, and can be imported into your code.

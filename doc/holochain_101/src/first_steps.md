@@ -1,3 +1,18 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [First steps writing Holochain hApps with Rust](#first-steps-writing-holochain-happs-with%C2%A0rust)
+  - [Requirements](#requirements)
+  - [First steps](#first-steps)
+  - [Writing the lists zome](#writing-the-lists%C2%A0zome)
+  - [Adding some Entries](#adding-some%C2%A0entries)
+  - [Adding Functions](#adding-functions)
+  - [Writing tests](#writing-tests)
+  - [Conclusion](#conclusion)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # First steps writing Holochain hApps with Rust
 
 ___

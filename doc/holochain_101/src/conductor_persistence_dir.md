@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Persistence Directory](#persistence-directory)
+    - [Example](#example)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Persistence Directory
 
 This is a simple key/value pair specifying a directory on the device to persist the config file, DNAs, and UI bundles, if changes are made dynamically over the JSON-RPC admin API. This is only relevant if you are running one of the [interfaces](./conductor_interfaces.md) with `admin = true`. The default value is in a subdirectory of the $HOME directory, `$HOME/.holochain/conductor`.

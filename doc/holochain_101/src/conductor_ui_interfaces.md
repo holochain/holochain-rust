@@ -1,3 +1,17 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [UI Interfaces](#ui-interfaces)
+    - [Properties](#properties)
+      - [`id`: `string`](#id-string)
+      - [`bundle`: `string`](#bundle-string)
+      - [`port`: `u16`](#port-u16)
+      - [`dna_interface`: `string` Optional](#dna_interface-string-optional)
+    - [Example](#example)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # UI Interfaces
 `ui_interfaces` is an array of configurations for "UI Interfaces", meaning there can be multiple within one Conductor. UI Interfaces serve [UI Bundles](./conductor_ui_bundles.md) over HTTP.
 

@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Calling Zome Functions](#calling-zome-functions)
+    - [`dnaInstance.call(zomeName, functionName, callParams)` => `object`](#dnainstancecallzomename-functionname-callparams--object)
+      - [Example](#example)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Calling Zome Functions
 
 ### `dnaInstance.call(zomeName, functionName, callParams)` => `object`

@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Writing in Rust](#writing-in-rust)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Writing in Rust
 
 It has always been in the designs for Holochain to support programming in multiple languages. In the prototype of Holochain, Zomes could be written in variants of Javascript (ES5) and Lisp (Zygomys). In the new version of Holochain the primary "Ribosome", where there was a JS one and Lisp one before, interprets WebAssembly code.

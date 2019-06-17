@@ -1,3 +1,14 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Intro to Language HDKs](#intro-to-language-hdks)
+    - [The Rust HDK](#the-rust-hdk)
+      - [Setting the version of the HDK](#setting-the-version-of-the-hdk)
+      - [Use of the HDK in Rust code](#use-of-the-hdk-in-rust-code)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Intro to Language HDKs
 
 Within any Zome, there are a number of conventions that must be followed by the WASM code, in order to work with Holochain core. For example parameters are passed using a specific memory allocation scheme that needs to be followed to access the parameters that a Zome function receives.  Although it would be possible for Zome authors to code directly to the Holochain core API, it makes more sense to provide a software library for each language to make it as easy as possible to use those standard functions and behaviours. We call such a library a "Holochain Development Kit", or HDK.

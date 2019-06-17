@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Updating from holochain-proto to holochain-rust](#updating-from-holochain-proto-to-holochain-rust)
+    - [Updating Validation](#updating-validation)
+    - [Yet to cover:](#yet-to-cover)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Updating from holochain-proto to holochain-rust
 
 If you wrote an application for [holochain-proto](https://github.com/holochain/holochain-proto), you are likely wondering what it may take to port your app to the new [holochain-rust](https://github.com/holochain/holochain-proto) version of Holochain.

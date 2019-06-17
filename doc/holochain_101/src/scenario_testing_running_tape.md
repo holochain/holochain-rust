@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Run Tests With Tape](#run-tests-with-tape)
+  - [`scenario.runTape(description, runner)` => `null`](#scenarioruntapedescription-runner--null)
+    - [Example](#example)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Run Tests With Tape
 
 ### `scenario.runTape(description, runner)` => `null`

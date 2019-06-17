@@ -1,3 +1,20 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [DNA Instances](#dna-instances)
+      - [Import Example](#import-example)
+  - [Instantiate A DnaInstance](#instantiate-a-dnainstance)
+    - [`constructor(instanceId, conductor)` => `DnaInstance`](#constructorinstanceid-conductor--dnainstance)
+      - [Example](#example)
+  - [DnaInstance Attributes](#dnainstance-attributes)
+    - [`dnaInstance.agentId`](#dnainstanceagentid)
+      - [Example](#example-1)
+    - [`dnaInstance.dnaAddress`](#dnainstancednaaddress)
+      - [Example](#example-2)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # DNA Instances
 
 `DnaInstance` is a class that is exported from `holochain-nodejs` and can be imported into your code.

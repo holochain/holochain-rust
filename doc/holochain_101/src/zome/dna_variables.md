@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [API DNA Variables](#api-dna-variables)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # API DNA Variables
 
 Note: Full reference is available in language-specific API Reference documentation.

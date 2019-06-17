@@ -1,3 +1,16 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Bridges](#bridges)
+    - [Properties](#properties)
+      - [`caller_id`: `string`](#caller_id-string)
+      - [`callee_id`: `string`](#callee_id-string)
+      - [`handle`: `string`](#handle-string)
+    - [Example](#example)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Bridges
 `bridges` is an array of configuration instances that are configured to be able to make calls to Zome functions of another instance. You can think of this of as configuring an internal direct interface between DNA instances.  The [section on bridging](./bridging.md) provides more information on how this ability is used to to compose complex applications out of many DNA instances.
 

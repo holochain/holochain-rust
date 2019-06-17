@@ -1,3 +1,18 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [WebSockets](#websockets)
+  - [Starting a WebSocket Server with `hc run`](#starting-a-websocket-server-with-hc-run)
+  - [Starting a WebSocket Server with `holochain`](#starting-a-websocket-server-with-holochain)
+  - [WebSocket Example](#websocket-example)
+    - [info/instances](#infoinstances)
+    - [Calling Zome Functions](#calling-zome-functions)
+    - [Closing the WebSocket Connection](#closing-the-websocket-connection)
+  - [hc-web-client](#hc-web-client)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # WebSockets
 
 Any coding language which has WebSockets support can communicate with the WebSocket server interface for Holochain. Based on the API exposed by Holochain, the messages must follow the JSON-RPC standard.

@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Building Holochain Apps: Bridging](#building-holochain-apps-bridging)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Building Holochain Apps: Bridging
 
 As you saw in [Building Apps](./building_apps.md) each **DNA** has a unique hash that spawns a brand new **DHT network** and creates isolated **source chains** for each agent. Even when you change the DNA, releasing a new version of the app, it will spawn a brand new DHT network and source chains.

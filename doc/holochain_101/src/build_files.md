@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [.hcbuild Files](#hcbuild-files)
+  - [Building in Rust: Rust -> WASM compilation tools](#building-in-rust-rust---wasm-compilation-tools)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # .hcbuild Files
 
 In the process of building a `.dna.json` file during packaging, here is what Holochain does:

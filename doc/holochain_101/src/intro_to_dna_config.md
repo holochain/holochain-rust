@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Introduction to DNA: Configuration](#introduction-to-dna-configuration)
+  - [Configuration](#configuration)
+    - [app.json Properties](#appjson-properties)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Introduction to DNA: Configuration
 
 As a developer, you won't have to interact directly with the contents of a DNA file that often. However, it is quite important to grasp its role and structure.

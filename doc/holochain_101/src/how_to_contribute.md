@@ -1,3 +1,24 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [How to contribute](#how-to-contribute)
+  - [Writing Guidelines](#writing-guidelines)
+  - [How the Book Works](#how-the-book-works)
+  - [What to Contribute](#what-to-contribute)
+  - [Contributing via GitHub](#contributing-via-github)
+    - [Getting there](#getting-there)
+    - [Access Rights](#access-rights)
+    - [Making a new article](#making-a-new-article)
+    - [Editing an article](#editing-an-article)
+    - [Making Multiple Edits On One Branch & Pull Request](#making-multiple-edits-on-one-branch--pull-request)
+    - [Opening a Pull Request](#opening-a-pull-request)
+    - [Reviewing a Pull Request](#reviewing-a-pull-request)
+    - [Merging a Pull Request](#merging-a-pull-request)
+  - [Contributing by Cloning and Running Mdbook (advanced)](#contributing-by-cloning-and-running-mdbook-advanced)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # How to contribute
 
 This book uses a tool that builds HTML files from markdown files called ['mdbook'](https://github.com/rust-lang-nursery/mdBook). The markdown files are stored on GitHub, in the main `holochain-rust` repository. Because they are on GitHub, they have built-in version control, meaning that it's easy for anyone to contribute, and to propose, track and merge changes.

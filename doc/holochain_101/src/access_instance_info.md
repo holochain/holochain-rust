@@ -1,3 +1,15 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Access Instance Info](#access-instance-info)
+    - [`conductor.agent_id(instanceId)` => `string`](#conductoragent_idinstanceid--string)
+      - [Example](#example)
+    - [`conductor.dna_address(instanceId)` => `string`](#conductordna_addressinstanceid--string)
+      - [Example](#example-1)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Access Instance Info
 
 Other info about running Instances in the Conductor can be retrieved via functions on a Conductor.

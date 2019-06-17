@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Project Source Folders](#project-source-folders)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Project Source Folders
 
 The source code folder for a Holochain DNA project looks something like this, where the ellipses (...) indicate a folder

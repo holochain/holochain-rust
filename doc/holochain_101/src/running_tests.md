@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Running Tests](#running-tests)
+  - [hc test](#hc-test)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Running Tests
 
 By default, when you use `hc init` to [create a new project folder](./new_project.md), it creates a sub-directory called `test`. The files in that folder are equipped for testing your project. The contents of the folder represent a simple nodejs package (in that they have a `index.js` file and a `package.json` file).

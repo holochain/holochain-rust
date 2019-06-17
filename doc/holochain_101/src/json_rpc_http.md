@@ -1,3 +1,16 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [HTTP](#http)
+  - [Starting an HTTP Server with `hc run`](#starting-an-http-server-with-hc-run)
+  - [Starting an HTTP Server with `holochain`](#starting-an-http-server-with-holochain)
+  - [HTTP Example](#http-example)
+    - [info/instances](#infoinstances)
+    - [Calling Zome Functions](#calling-zome-functions)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # HTTP
 
 Any coding language, or tool, which can make HTTP requests can make requests to a running DNA instance. Based on the API exposed by Holochain, these must be `POST` requests, use the "application/json" Content-Type, and follow the JSON-RPC standard.

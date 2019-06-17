@@ -1,3 +1,18 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Scenario Testing Setup](#scenario-testing-setup)
+    - [`constructor(instancesArray, conductorOptions)` => `Scenario`](#constructorinstancesarray-conductoroptions--scenario)
+      - [Example](#example)
+      - [With conductorOptions Example](#with-conductoroptions-example)
+  - [Inject Tape Version](#inject-tape-version)
+    - [`Scenario.setTape(tape)` => `null`](#scenariosettapetape--null)
+      - [Example](#example-1)
+  - [Full Multiple Instances Example](#full-multiple-instances-example)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Scenario Testing Setup
 
 ### `constructor(instancesArray, conductorOptions)` => `Scenario`

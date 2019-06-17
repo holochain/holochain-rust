@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Intro to Zome Definition](#intro-to-zome-definition)
+  - [Building in Rust: define_zome!](#building-in-rust-define_zome)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Intro to Zome Definition
 
 The [adding a zome](./adding_a_zome.md) section explored the file structure of a Zome. [Intro to HDK](./intro_to_hdk.md) covered Holochain Development Kit libraries for languages that Zomes can be written in. Once a Zome has been generated, and the HDK imported, it is time to start adding definitions to it.

@@ -1,3 +1,15 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Conductor JSON-RPC API](#conductor-json-rpc-api)
+  - [Querying Running DNA Instances](#querying-running-dna-instances)
+    - [Example](#example)
+  - [Calling Zome Functions](#calling-zome-functions)
+    - [Example Request](#example-request)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Conductor JSON-RPC API
 
 

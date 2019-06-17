@@ -1,3 +1,15 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Configuring Networking for `hc run`](#configuring-networking-for-hc-run)
+    - [Starting A Second Node](#starting-a-second-node)
+      - [Step 1](#step-1)
+      - [Step 2](#step-2)
+      - [Step 3](#step-3)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Configuring Networking for `hc run`
 
 `hc run` uses mock networking by default and therefore doesn't talk to any other nodes.

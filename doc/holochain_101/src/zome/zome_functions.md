@@ -1,3 +1,20 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Zome Functions](#zome-functions)
+  - [DNA, Zomes, Functions, Traits, and Capabilities](#dna-zomes-functions-traits-and-capabilities)
+  - [Function Declarations](#function-declarations)
+  - [Traits](#traits)
+  - [Data Interchange - Inputs and Outputs](#data-interchange---inputs-and-outputs)
+  - [How Zome Functions Are Called](#how-zome-functions-are-called)
+  - [Building in Rust: Zome Functions](#building-in-rust-zome-functions)
+    - [Adding Traits:](#adding-traits)
+    - [Adding a Zome Function](#adding-a-zome-function)
+    - [Adding Traits:](#adding-traits-1)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Zome Functions
 
 It is time to address the core application logic of Zomes.

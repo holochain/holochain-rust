@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Building For Android](#building-for-android)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Building For Android
 
 Note: These instructions for building Holochain on Android are adapted from [here](https://mozilla.github.io/firefox-browser-architecture/experiments/2017-09-21-rust-on-android.html).

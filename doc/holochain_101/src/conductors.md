@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Running Holochain Apps: Conductors](#running-holochain-apps-conductors)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Running Holochain Apps: Conductors
 
 To introduce Conductors, it is useful to zoom out for a moment to the level of how Holochain runs on devices.

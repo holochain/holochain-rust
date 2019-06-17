@@ -1,3 +1,33 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Serialization and JsonString](#serialization-and-jsonstring)
+  - [Why serialize anything? Why JSON?](#why-serialize-anything-why-json)
+    - [Holochain zomes are written in WASM.](#holochain-zomes-are-written-in-wasm)
+    - [Holochain aims to support all WASM languages not just Rust/JS](#holochain-aims-to-support-all-wasm-languages-not-just-rustjs)
+    - [JSON serialization only pertains to communication with core](#json-serialization-only-pertains-to-communication-with-core)
+  - [Serialization through Rust types](#serialization-through-rust-types)
+    - [How Rust serializes: serde from 1000m](#how-rust-serializes-serde-from-1000m)
+    - [JSON structure, the Rust compiler and you](#json-structure-the-rust-compiler-and-you)
+    - [Binary data as base64](#binary-data-as-base64)
+    - [JSON is lame! Can Holochain support `<my favourite serialization format>`?](#json-is-lame-can-holochain-support-my-favourite-serialization-format)
+  - [JsonString](#jsonstring)
+    - [The problem and our solution](#the-problem-and-our-solution)
+      - [String handling](#string-handling)
+    - [String serialization](#string-serialization)
+    - [Implementing `JsonString` for custom types](#implementing-jsonstring-for-custom-types)
+      - [Boilerplate](#boilerplate)
+      - [Automatic derive](#automatic-derive)
+    - [Using JsonString as the property of a struct/enum](#using-jsonstring-as-the-property-of-a-structenum)
+      - [Swap `JsonString` with `String`](#swap-jsonstring-with-string)
+      - [Using serde attributes](#using-serde-attributes)
+      - [Skip the attribute](#skip-the-attribute)
+      - [Wrap/convert to a new type or struct](#wrapconvert-to-a-new-type-or-struct)
+  - [Hiding JsonString with `Into<JsonString>`](#hiding-jsonstring-with-intojsonstring)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Serialization and JsonString
 
 ## Why serialize anything? Why JSON?

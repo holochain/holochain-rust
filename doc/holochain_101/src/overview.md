@@ -1,3 +1,15 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Overview](#overview)
+    - [Planning a dApp](#planning-a-dapp)
+    - [Building Holochain Apps](#building-holochain-apps)
+    - [Going Live with Holochain Apps](#going-live-with-holochain-apps)
+    - [Extending the Holochain Platform](#extending-the-holochain-platform)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Overview
 
 Depending on whether your interest is specific, or general, you may wish to read it front to back, or skip to specific sections of the book. If the summary of a section describes you, then it's a section for you!

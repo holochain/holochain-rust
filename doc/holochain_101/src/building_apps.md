@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Building Apps](#building-apps)
+  - [Holochain and DNA](#holochain-and-dna)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Building Apps
 
 If you're looking to build a Holochain app, it is important to first know what a Holochain app is.

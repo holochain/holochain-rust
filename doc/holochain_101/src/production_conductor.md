@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Production Conductor](#production-conductor)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Production Conductor
 
 In addition to the zero config development Conductor using `hc run`, there is a highly configurable sophisticated Conductor for running DNA instances long term.

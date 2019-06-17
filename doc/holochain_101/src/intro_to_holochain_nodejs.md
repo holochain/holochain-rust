@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Intro to holochain-nodejs](#intro-to-holochain-nodejs)
+  - [Simple, Single Node Integration Tests](#simple-single-node-integration-tests)
+  - [Scenario Tests](#scenario-tests)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Intro to holochain-nodejs
 
 The purpose of the [holochain-nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs) module is to make integration tests and scenario tests able to be written simply and with as little boilerplate as possible. However, the module also provides even more basic functionality, making it possible to build tests with whatever tradeoff between convenience and customization is right for your project.

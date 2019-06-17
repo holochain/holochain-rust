@@ -1,3 +1,17 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Contents**
+
+- [Networking](#networking)
+    - [Properties](#properties)
+      - [`n3h_persistence_path`: `string`](#n3h_persistence_path-string)
+      - [`bootstrap_nodes`: `array of string` Optional](#bootstrap_nodes-array-of-string-optional)
+      - [`n3h_log_level`: `char`](#n3h_log_level-char)
+      - [`n3h_ipc_uri`: `string` Optional](#n3h_ipc_uri-string-optional)
+    - [Example](#example)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Networking
 
 `network` is a table for the configuration of how networking should behave in the Conductor. The Conductor currently uses mock networking by default. To network with other nodes Holochain will automatically setup the [n3h networking component](https://github.com/holochain/n3h). How `n3h` behaves can be configured with the following properties in a Conductor configuration file.

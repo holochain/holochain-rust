@@ -1,5 +1,5 @@
 use holochain_core_types::{
-    chain_header::ChainHeader, crud_status::CrudStatus, error::HolochainError, json::*,
+    chain_header::ChainHeader, crud_status::CrudStatus,
     time::Timeout,
 };
 use holochain_json_api::{error::JsonError, json::*};

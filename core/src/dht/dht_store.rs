@@ -2,7 +2,7 @@ use crate::action::ActionWrapper;
 use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
-    eav::{Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex},
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::HolochainError,
 };

@@ -6,7 +6,7 @@ use crate::{
     network::query::{NetworkQuery,NetworkQueryResult},
     nucleus,
 };
-use holochain_core_types::{cas::content::Address, eav::Attribute, entry::EntryWithMetaAndHeader, json::JsonString};
+use holochain_core_types::{cas::content::Address, entry::EntryWithMetaAndHeader, json::JsonString};
 use holochain_net::connection::json_protocol::{
     QueryEntryData, QueryEntryResultData,
 };
@@ -29,7 +29,7 @@ fn get_links(context: &Arc<Context>, base: Address, link_type: String, tag: Stri
 }
 
 fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
-    nucleus::actions::get_entry::get_entry_with_meta(&context, address)
+    nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone())
         .map(|entry_with_meta_opt| {
             let state = context
                 .state()
@@ -65,8 +65,8 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 /// The network has sent us a query for entry data, so we need to examine
 /// the query and create appropriate actions for the different variants
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
-    let query_json = JsonString::from(query_data.query);
-    let action_wrapper = match query_json.try_into() {
+    let query_json = JsonString::from(query_data.query.clone());
+    let action_wrapper = match query_json.clone().try_into() {
         Ok(NetworkQuery::GetLinks(link_type, tag)) => {
             let links = get_links(&context,query_data.entry_address.clone(), link_type.clone(), tag.clone());
             ActionWrapper::new(Action::RespondGetLinks((query_data, links, link_type.clone(), tag.clone())))
@@ -74,8 +74,11 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
         Ok(NetworkQuery::GetEntry) => {
             let maybe_entry = get_entry(&context, query_data.entry_address.clone());
             ActionWrapper::new(Action::RespondGet((query_data, maybe_entry)))
+        },
+        err => {
+            context.log(format!("err/net: Error ({:?}) deserializing Query {:?}", err, query_json));
+            return
         }
-        _ => panic!(format!("handle query entry data variant not implemented: {:?}",query_json)),
     };
     dispatch_action(context.action_channel(), action_wrapper);
 }
@@ -84,7 +87,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
 /// examine the query result for its type and dispatch different actions according to variant
 pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, context: Arc<Context>) {
     let query_result_json = JsonString::from(query_result_data.query_result);
-    let action_wrapper = match query_result_json.try_into() {
+    let action_wrapper = match query_result_json.clone().try_into() {
         Ok(NetworkQueryResult::Entry(maybe_entry)) => {
             ActionWrapper::new(Action::HandleGetResult(
                 (maybe_entry, GetEntryKey {
@@ -104,7 +107,10 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
                 }
             )))
         },
-        _ => panic!(format!("handle query entry result variant not implemented: {:?}",query_result_json)),
+        err => {
+            context.log(format!("err/net: Error ({:?}) deserializing QueryResult {:?}", err, query_result_json));
+            return
+        }
     };
     dispatch_action(context.action_channel(), action_wrapper.clone());
 }

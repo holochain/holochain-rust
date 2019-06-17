@@ -82,7 +82,7 @@ impl EntryAspect {
             EntryAspect::LinkAdd(_,_) => String::from("link_add"),
             EntryAspect::LinkRemove(_,_) => String::from("link_remove"),
             EntryAspect::Update(_) => String::from("update"),
-            EntryAspect::Deletion(_) => String::from("update"),
+            EntryAspect::Deletion(_) => String::from("deletion"),
         }
     }
     pub fn header(&self) -> ChainHeader {
@@ -98,7 +98,7 @@ impl EntryAspect {
 
 impl Into<EntryAspectData> for EntryAspect {
     fn into(self) -> EntryAspectData {
-        let aspect_json = JsonString::from(self);
+        let aspect_json = JsonString::from(self.clone());
         let ts : DateTime<FixedOffset> = self.header().timestamp().into();
         EntryAspectData {
             type_hint: self.type_hint(),
@@ -109,9 +109,11 @@ impl Into<EntryAspectData> for EntryAspect {
     }
 }
 
+/*
 #[cfg(test)]
 pub mod tests {
     use super::*;
 
 
 }
+*/

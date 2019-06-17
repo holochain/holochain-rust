@@ -11,7 +11,7 @@ fn reduce_get_links_inner(
     key: &GetLinksKey,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let query_json: JsonString = NetworkQuery::GetLinks(key.link_type, key.tag).into();
+    let query_json: JsonString = NetworkQuery::GetLinks(key.link_type.clone(), key.tag.clone()).into();
     send(
         network_state,
         JsonProtocol::QueryEntry(QueryEntryData {

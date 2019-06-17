@@ -92,10 +92,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 //    return Ok(());
                 //}
                 context.log(format!(
-                    "debug/net/handle: FetchEntryResult: {:?}",
+                    "err/net/handle: unexpected HandleFetchEntryResult: {:?}",
                     fetch_result_data
                 ));
-                handle_fetch_entry_result(fetch_result_data, context.clone())
+                //   handle_fetch_entry_result(fetch_result_data, context.clone())
             }
             JsonProtocol::HandleQueryEntry(query_entry_data) => {
                 if !is_my_dna(&my_dna_address, &query_entry_data.dna_address.to_string()) {

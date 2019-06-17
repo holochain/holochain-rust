@@ -15,8 +15,8 @@ fn inner(
     let data = MessageData {
         request_id: direct_message_data.msg_id.clone(),
         dna_address: network_state.dna_address.clone().unwrap(),
-        to_agent_id: direct_message_data.address.to_string(),
-        from_agent_id: network_state.agent_id.clone().unwrap(),
+        to_agent_id: direct_message_data.address.clone(),
+        from_agent_id: network_state.agent_id.clone().unwrap().into(),
         content: serde_json::from_str(
             &serde_json::to_string(&direct_message_data.message).unwrap(),
         )

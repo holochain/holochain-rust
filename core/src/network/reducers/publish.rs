@@ -12,7 +12,6 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
-//    eav::Attribute,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
@@ -48,6 +47,9 @@ fn publish_update_delete_meta(
     let aspect = match crud_status {
         CrudStatus::Modified => EntryAspect::Update(entry_with_header.header.clone()),
         CrudStatus::Deleted => EntryAspect::Deletion(entry_with_header.header.clone()),
+        crud => return  Err(HolochainError::ErrorGeneric(format!(
+            "Unexpeced CRUD variant {:?}",crud
+        )))
     };
 
     send(

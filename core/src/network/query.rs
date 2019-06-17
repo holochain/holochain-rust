@@ -15,9 +15,10 @@ pub enum NetworkQueryResult {
     Entry(Option<EntryWithMetaAndHeader>),
     Links(Vec<Address>, String, String),
 }
-
+/*
 #[cfg(test)]
 pub mod tests {
+    use super::*;
     fn test_roudtrip_network_query_get_entry_encoding() {
         let query = NetworkQuery::GetEntry;
         let encoded_query: Vec<u8> = query.into();
@@ -33,3 +34,4 @@ pub mod tests {
     }
 
 }
+*/

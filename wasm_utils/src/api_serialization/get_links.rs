@@ -1,12 +1,9 @@
-<<<<<<< HEAD
-use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
-
+use holochain_core_types::{
+    chain_header::ChainHeader, crud_status::CrudStatus, error::HolochainError, json::*,
+    time::Timeout,
+};
 use holochain_json_api::{error::JsonError, json::*};
 use holochain_persistence_api::cas::content::Address;
-use holochain_core_types::{
-    chain_header::ChainHeader, crud_status::CrudStatus,
-    error::HolochainError, json::*, time::Timeout,
-};
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
 pub struct GetLinksArgs {

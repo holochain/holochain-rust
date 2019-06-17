@@ -1,17 +1,10 @@
 use crate::action::ActionWrapper;
 use holochain_core_types::{
     chain_header::ChainHeader,
-    eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
-    entry::Entry,
-    error::HolochainError,
     crud_status::CrudStatus,
-    eav::{
-        Attribute, EavFilter, EaviQuery,
-        EntityAttributeValueIndex
-    },
+    eav::{Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::HolochainError,
-
 };
 use holochain_persistence_api::{
     cas::{

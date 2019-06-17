@@ -1,4 +1,4 @@
-{ pkgs, release, pulse }:
+{ pkgs }:
 let
   name = "hc-release-prepare";
 

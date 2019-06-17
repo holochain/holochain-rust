@@ -9,8 +9,8 @@ let
     process-url = "https://hackmd.io/LTG8XfU4Q_6VB98tXz8Gag";
 
     version = {
-     previous = "0.0.20-alpha1";
-     current = "0.0.20-alpha2";
+     previous = "0.0.20-alpha2";
+     current = "0.0.20-alpha3";
     };
 
   };

@@ -1,11 +1,3 @@
-# https://docs.travis-ci.com/user/customizing-the-build/#safelisting-or-blocklisting-branches
-# we build all PRs already, don't need redundant branch builds
-branches:
-  only:
-    - master
-    - develop
-    - /^release-v\d+\.\d+\.\d+-alpha\d+$/
-
 # holochain-cli deploy template
 _cli_deploy_template: &_cli_deploy_template
   dist: bionic

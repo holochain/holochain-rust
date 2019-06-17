@@ -4,7 +4,8 @@ use crate::{
 };
 
 use holochain_core_types::{
-    chain_header::ChainHeader, entry::Entry, error::HolochainError, link::link_data::LinkData,
+    chain_header::ChainHeader, crud_status::CrudStatus, entry::Entry, error::HolochainError,
+    link::link_data::LinkData,
 };
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResultType::Single},
@@ -16,22 +17,20 @@ pub async fn get_link_result_workflow<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResult, HolochainError> {
-    // will tackle this when it is some to work with crud_status, refraining from using return because not idiomatic rust
-    if link_args.options.status_request != LinksStatusRequestKind::Live {
-        Err(HolochainError::ErrorGeneric(
-            "Status rather than live not implemented".to_string(),
-        ))
-    } else {
-        Ok(())
-    }?;
-    //get links
     let links = await!(get_link_add_entries(context, link_args))?;
+    //get links based on status request, all for everything, deleted for deleted links and live for active links
     let link_results = links
         .into_iter()
-        .map(|link_data| LinksResult {
-            address: link_data.0.link().target().clone(),
-            headers: link_data.1,
-            tag: link_data.0.link().tag().to_string(),
+        .filter(|link_entry_crud| match link_args.options.status_request {
+            LinksStatusRequestKind::All => true,
+            LinksStatusRequestKind::Live => link_entry_crud.2 == CrudStatus::Live,
+            _ => link_entry_crud.2 == CrudStatus::Deleted,
+        })
+        .map(|link_entry_crud| LinksResult {
+            address: link_entry_crud.0.link().target().clone(),
+            headers: link_entry_crud.1.clone(),
+            status: link_entry_crud.2.clone(),
+            tag: link_entry_crud.0.link().tag().clone(),
         })
         .collect::<Vec<LinksResult>>();
 
@@ -41,7 +40,8 @@ pub async fn get_link_result_workflow<'a>(
 pub async fn get_link_add_entries<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
-) -> Result<Vec<(LinkData, Vec<ChainHeader>)>, HolochainError> {
+) -> Result<Vec<(LinkData, Vec<ChainHeader>, CrudStatus)>, HolochainError> {
+    //get link add entries
     let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
@@ -50,11 +50,13 @@ pub async fn get_link_add_entries<'a>(
         link_args.options.timeout.clone()
     ))?;
 
+    //iterate over link add entries
     let (links_result, get_links_error): (Vec<_>, Vec<_>) = links_caches
         .iter()
         .map(|s| {
+            //create get entry args
             let get_entry_args = GetEntryArgs {
-                address: s.clone(),
+                address: s.0.clone(),
                 options: GetEntryOptions {
                     entry: true,
                     headers: link_args.options.headers,
@@ -62,6 +64,7 @@ pub async fn get_link_add_entries<'a>(
                     ..GetEntryOptions::default()
                 },
             };
+            //get entry for the link_add
             let entry_result =
                 context.block_on(get_entry_result_workflow(&context.clone(), &get_entry_args));
             entry_result
@@ -70,7 +73,10 @@ pub async fn get_link_add_entries<'a>(
                         .entry
                         .clone()
                         .map(|unwrapped_type| match unwrapped_type {
-                            Entry::LinkAdd(link_data) => Ok((link_data, entry_type.headers)),
+                            Entry::LinkAdd(link_data) => {
+                                //return link, header and crud_status
+                                Ok((link_data, entry_type.headers, s.1.clone()))
+                            }
                             _ => Err(HolochainError::ErrorGeneric(
                                 "Wrong entry type retrieved".to_string(),
                             )),

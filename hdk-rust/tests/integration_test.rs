@@ -22,6 +22,7 @@ use holochain_core::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
+    crud_status::CrudStatus,
     dna::{
         entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
@@ -36,7 +37,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 #[cfg(not(windows))]
-use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error::CoreError};
+use holochain_core_types::{entry::EntryWithMeta, error::CoreError};
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
@@ -633,11 +634,13 @@ fn can_roundtrip_links() {
             address: entry_address_2.clone(),
             headers: Vec::new(),
             tag: "test-tag".into(),
+            status: CrudStatus::Live,
         },
         LinksResult {
             address: entry_address_3.clone(),
             headers: Vec::new(),
             tag: "test-tag".into(),
+            status: CrudStatus::Live,
         },
     ]));
     let expected_links = JsonString::from(expected_links);
@@ -651,11 +654,13 @@ fn can_roundtrip_links() {
                 address: entry_address_3.clone(),
                 headers: Vec::new(),
                 tag: "test-tag".into(),
+                status: CrudStatus::Live,
             },
             LinksResult {
                 address: entry_address_2.clone(),
                 headers: Vec::new(),
                 tag: "test-tag".into(),
+                status: CrudStatus::Live,
             },
         ]));
     let expected_links_reversed = JsonString::from(expected_links_reversed);

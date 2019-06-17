@@ -21,7 +21,7 @@ use hdk::holochain_core_types::{
     hash::HashString
 };
 
-use hdk::holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
+use hdk::holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions};
 
 
 // see https://developer.holochain.org/api/0.0.18-alpha1/hdk/ for info on using the hdk library
@@ -59,8 +59,14 @@ pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()>
     Ok(())
 }
 
-pub fn handle_get_my_links(base: Address) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&base, LinkMatch::Exactly("authored_posts"), LinkMatch::Any)
+
+pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequestKind>) ->ZomeApiResult<GetLinksResult>
+{
+    let options = GetLinksOptions{
+        status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
+        ..GetLinksOptions::default()
+    };
+    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
 }
 
 pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
@@ -126,7 +132,7 @@ define_zome! {
             handler: handle_delete_my_link
         }
         get_my_links: {
-            inputs: |base: Address|,
+            inputs: |base: Address,status_request:Option<LinksStatusRequestKind>|,
             outputs: |result: ZomeApiResult<GetLinksResult>|,
             handler: handle_get_my_links
         }

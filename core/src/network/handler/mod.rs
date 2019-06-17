@@ -115,7 +115,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
                 // ignore if I'm not the requester
-                if !is_my_id(&context, &query_entry_result_data.requester_agent_id.to_string()) {
+                if !is_my_id(
+                    &context,
+                    &query_entry_result_data.requester_agent_id.to_string(),
+                ) {
                     return Ok(());
                 }
                 context.log(format!(

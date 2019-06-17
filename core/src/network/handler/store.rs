@@ -1,38 +1,29 @@
 use crate::{
     context::Context,
-    network::{
-        entry_with_header::EntryWithHeader,
-        entry_aspect::EntryAspect,
-    },
-    workflows::{
-        hold_entry::hold_entry_workflow,
-        //hold_entry_remove::hold_remove_workflow,
-       // hold_entry_update::hold_update_workflow, hold_link::hold_link_workflow,
-        //remove_link::remove_link_workflow,
-    },
+    network::{entry_aspect::EntryAspect, entry_with_header::EntryWithHeader},
+    workflows::hold_entry::hold_entry_workflow,
 };
 //use holochain_core_types::{crud_status::CrudStatus, eav::Attribute, json::JsonString};
-use holochain_core_types::{json::JsonString};
-use holochain_net::connection::json_protocol::{StoreEntryAspectData};
+use holochain_core_types::json::JsonString;
+use holochain_net::connection::json_protocol::StoreEntryAspectData;
 //use std::{str::FromStr, sync::Arc, thread, convert::TryInto};
-use std::{sync::Arc, thread, convert::TryInto};
+use std::{convert::TryInto, sync::Arc, thread};
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
     let aspect_json = JsonString::from(dht_data.entry_aspect.aspect);
     if let Ok(aspect) = aspect_json.try_into() {
         match aspect {
-            EntryAspect::Content(entry,header) => {
-                let entry_with_header = EntryWithHeader{
-                    entry,header
-                };
+            EntryAspect::Content(entry, header) => {
+                let entry_with_header = EntryWithHeader { entry, header };
                 thread::spawn(move || {
-                    match context.block_on(hold_entry_workflow(&entry_with_header, context.clone())) {
+                    match context.block_on(hold_entry_workflow(&entry_with_header, context.clone()))
+                    {
                         Err(error) => context.log(format!("err/net/dht: {}", error)),
                         _ => (),
                     }
                 });
-            },
+            }
             _ => {
                 panic!(format!("unimplemented store aspect {:?}", aspect));
             }

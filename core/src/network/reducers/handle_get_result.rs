@@ -1,8 +1,4 @@
-use crate::{
-    action::{ActionWrapper},
-    network::state::NetworkState,
-    state::State,
-};
+use crate::{action::ActionWrapper, network::state::NetworkState, state::State};
 
 pub fn reduce_handle_get_result(
     network_state: &mut NetworkState,

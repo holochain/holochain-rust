@@ -1,14 +1,14 @@
 use crate::{
     action::ActionWrapper,
-    network::{actions::ActionResponse, reducers::send, state::NetworkState,
-              entry_aspect::EntryAspect,},
+    network::{
+        actions::ActionResponse, entry_aspect::EntryAspect, reducers::send, state::NetworkState,
+    },
     state::State,
 };
-use holochain_core_types::{error::HolochainError};
+use holochain_core_types::error::HolochainError;
 use holochain_net::connection::json_protocol::{
-    FetchEntryData, FetchEntryResultData, JsonProtocol, EntryData,
+    EntryData, FetchEntryData, FetchEntryResultData, JsonProtocol,
 };
-
 
 /// Send back to network a HandleFetchEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.

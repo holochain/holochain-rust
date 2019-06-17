@@ -1,10 +1,14 @@
 use crate::{
     action::ActionWrapper,
-    network::{actions::ActionResponse, reducers::send, state::NetworkState, query::NetworkQueryResult},
+    network::{
+        actions::ActionResponse, query::NetworkQueryResult, reducers::send, state::NetworkState,
+    },
     state::State,
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
-use holochain_net::connection::json_protocol::{JsonProtocol, QueryEntryData, QueryEntryResultData};
+use holochain_net::connection::json_protocol::{
+    JsonProtocol, QueryEntryData, QueryEntryResultData,
+};
 
 /// Send back to network a HandleQueryEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
@@ -16,7 +20,8 @@ fn reduce_respond_get_links_inner(
     tag: String,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let query_result_json: JsonString = NetworkQueryResult::Links(links.clone(), link_type, tag).into();
+    let query_result_json: JsonString =
+        NetworkQueryResult::Links(links.clone(), link_type, tag).into();
     send(
         network_state,
         JsonProtocol::HandleQueryEntryResult(QueryEntryResultData {
@@ -36,8 +41,15 @@ pub fn reduce_respond_get_links(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (query_data, links, link_type, tag) = unwrap_to!(action => crate::action::Action::RespondGetLinks);
-    let result = reduce_respond_get_links_inner(network_state, query_data, links, link_type.clone(), tag.clone());
+    let (query_data, links, link_type, tag) =
+        unwrap_to!(action => crate::action::Action::RespondGetLinks);
+    let result = reduce_respond_get_links_inner(
+        network_state,
+        query_data,
+        links,
+        link_type.clone(),
+        tag.clone(),
+    );
 
     println!(
         "debug/reduce/respond_get_links: Responding to GET LINKS request from {} with {:?}",

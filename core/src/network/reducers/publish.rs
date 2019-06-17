@@ -2,8 +2,8 @@ use crate::{
     action::ActionWrapper,
     network::{
         actions::ActionResponse,
-        entry_with_header::{fetch_entry_with_header, EntryWithHeader},
         entry_aspect::EntryAspect,
+        entry_with_header::{fetch_entry_with_header, EntryWithHeader},
         reducers::send,
         state::NetworkState,
     },
@@ -29,7 +29,11 @@ fn publish_entry(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: entry_with_header.entry.address().clone(),
-                aspect_list: vec![EntryAspect::Content(entry_with_header.entry.clone(),entry_with_header.header.clone()).into()],
+                aspect_list: vec![EntryAspect::Content(
+                    entry_with_header.entry.clone(),
+                    entry_with_header.header.clone(),
+                )
+                .into()],
             },
         }),
     )
@@ -47,9 +51,12 @@ fn publish_update_delete_meta(
     let aspect = match crud_status {
         CrudStatus::Modified => EntryAspect::Update(entry_with_header.header.clone()),
         CrudStatus::Deleted => EntryAspect::Deletion(entry_with_header.header.clone()),
-        crud => return  Err(HolochainError::ErrorGeneric(format!(
-            "Unexpeced CRUD variant {:?}",crud
-        )))
+        crud => {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Unexpeced CRUD variant {:?}",
+                crud
+            )));
+        }
     };
 
     send(
@@ -73,10 +80,15 @@ fn publish_link_meta(
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
-
     let (base, aspect) = match entry_with_header.entry.clone() {
-        Entry::LinkAdd(link_data) => (link_data.link().base().clone(), EntryAspect::LinkAdd(link_data, entry_with_header.header.clone())),
-        Entry::LinkRemove((link_data, _)) => (link_data.link().base().clone(), EntryAspect::LinkRemove(link_data, entry_with_header.header.clone())),
+        Entry::LinkAdd(link_data) => (
+            link_data.link().base().clone(),
+            EntryAspect::LinkAdd(link_data, entry_with_header.header.clone()),
+        ),
+        Entry::LinkRemove((link_data, _)) => (
+            link_data.link().base().clone(),
+            EntryAspect::LinkRemove(link_data, entry_with_header.header.clone()),
+        ),
         _ => {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Received bad entry type. Expected Entry::LinkAdd/Remove received {:?}",
@@ -110,16 +122,13 @@ fn reduce_publish_inner(
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
             match entry_with_header.header.link_update_delete() {
-                Some(modified_entry) =>
-                    publish_update_delete_meta(
-                        network_state,
-                        modified_entry,
-                        CrudStatus::Modified,
-                        &entry_with_header.clone(),
-                    ),
-                None => {
-                    Ok(())
-                }
+                Some(modified_entry) => publish_update_delete_meta(
+                    network_state,
+                    modified_entry,
+                    CrudStatus::Modified,
+                    &entry_with_header.clone(),
+                ),
+                None => Ok(()),
             }
         }),
         EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)

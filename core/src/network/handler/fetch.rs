@@ -3,21 +3,16 @@ use crate::{
     context::Context,
     entry::CanPublish,
     instance::dispatch_action,
-    network::{
-              entry_aspect::EntryAspect,
-    },
+    network::entry_aspect::EntryAspect,
     nucleus,
 };
 use holochain_core_types::{cas::content::Address, entry::EntryWithMetaAndHeader};
-use holochain_net::connection::json_protocol::{
-    FetchEntryData, };
-use std::{ sync::Arc};
-
+use holochain_net::connection::json_protocol::FetchEntryData;
+use std::sync::Arc;
 
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
-
     //CLEANUP, currently just using the old code from get to find the single content aspect
     // need to find all the other aspects too
     let address = Address::from(get_dht_data.entry_address.clone());
@@ -51,15 +46,16 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
             context.log(format!("err/net: Error trying to find entry {:?}", error));
             None::<EntryWithMetaAndHeader>
         })
-        .unwrap_or(Ok(None)).unwrap_or(None);
+        .unwrap_or(Ok(None))
+        .unwrap_or(None);
     let mut aspects = vec![];
     if let Some(entry) = get_entry {
-        aspects.push(EntryAspect::Content(entry.entry_with_meta.entry.clone(),entry.headers[0].clone()))
+        aspects.push(EntryAspect::Content(
+            entry.entry_with_meta.entry.clone(),
+            entry.headers[0].clone(),
+        ))
     }
-    let action_wrapper = ActionWrapper::new(Action::RespondFetch((
-        get_dht_data,
-        aspects,
-    )));
+    let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data, aspects)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 }
 

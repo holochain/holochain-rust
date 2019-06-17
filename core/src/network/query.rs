@@ -1,13 +1,11 @@
 use holochain_core_types::{
-    cas::content::Address,
-    entry::{EntryWithMetaAndHeader},
-    error::HolochainError, json::JsonString,
+    cas::content::Address, entry::EntryWithMetaAndHeader, error::HolochainError, json::JsonString,
 };
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum NetworkQuery {
     GetEntry,
-    GetLinks(String,String),
+    GetLinks(String, String),
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]

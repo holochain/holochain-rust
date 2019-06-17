@@ -1,11 +1,15 @@
 use crate::{
     action::ActionWrapper,
-    network::{actions::ActionResponse, reducers::send, state::NetworkState, query::NetworkQueryResult},
+    network::{
+        actions::ActionResponse, query::NetworkQueryResult, reducers::send, state::NetworkState,
+    },
     state::State,
 };
-use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    entry::EntryWithMetaAndHeader, error::HolochainError, json::JsonString,
+};
 use holochain_net::connection::json_protocol::{
-    QueryEntryData, QueryEntryResultData, JsonProtocol,
+    JsonProtocol, QueryEntryData, QueryEntryResultData,
 };
 
 /// Send back to network a HandleQueryEntryResult, no matter what.

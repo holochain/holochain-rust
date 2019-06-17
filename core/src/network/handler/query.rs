@@ -3,25 +3,26 @@ use crate::{
     context::Context,
     entry::CanPublish,
     instance::dispatch_action,
-    network::query::{NetworkQuery,NetworkQueryResult},
+    network::query::{NetworkQuery, NetworkQueryResult},
     nucleus,
 };
-use holochain_core_types::{cas::content::Address, entry::EntryWithMetaAndHeader, json::JsonString};
-use holochain_net::connection::json_protocol::{
-    QueryEntryData, QueryEntryResultData,
+use holochain_core_types::{
+    cas::content::Address, entry::EntryWithMetaAndHeader, json::JsonString,
 };
+use holochain_net::connection::json_protocol::{QueryEntryData, QueryEntryResultData};
 use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 
-fn get_links(context: &Arc<Context>, base: Address, link_type: String, tag: String) -> Vec<Address> {
+fn get_links(
+    context: &Arc<Context>,
+    base: Address,
+    link_type: String,
+    tag: String,
+) -> Vec<Address> {
     context
         .state()
         .unwrap()
         .dht()
-        .get_links(
-            base,
-            link_type,
-            tag,
-        )
+        .get_links(base, link_type, tag)
         .unwrap_or(BTreeSet::new())
         .into_iter()
         .map(|eav| eav.value())
@@ -59,7 +60,8 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
             context.log(format!("err/net: Error trying to find entry {:?}", error));
             None::<EntryWithMetaAndHeader>
         })
-        .unwrap_or(Ok(None)).unwrap_or(None)
+        .unwrap_or(Ok(None))
+        .unwrap_or(None)
 }
 
 /// The network has sent us a query for entry data, so we need to examine
@@ -68,16 +70,29 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
     let query_json = JsonString::from(query_data.query.clone());
     let action_wrapper = match query_json.clone().try_into() {
         Ok(NetworkQuery::GetLinks(link_type, tag)) => {
-            let links = get_links(&context,query_data.entry_address.clone(), link_type.clone(), tag.clone());
-            ActionWrapper::new(Action::RespondGetLinks((query_data, links, link_type.clone(), tag.clone())))
-        },
+            let links = get_links(
+                &context,
+                query_data.entry_address.clone(),
+                link_type.clone(),
+                tag.clone(),
+            );
+            ActionWrapper::new(Action::RespondGetLinks((
+                query_data,
+                links,
+                link_type.clone(),
+                tag.clone(),
+            )))
+        }
         Ok(NetworkQuery::GetEntry) => {
             let maybe_entry = get_entry(&context, query_data.entry_address.clone());
             ActionWrapper::new(Action::RespondGet((query_data, maybe_entry)))
-        },
+        }
         err => {
-            context.log(format!("err/net: Error ({:?}) deserializing Query {:?}", err, query_json));
-            return
+            context.log(format!(
+                "err/net: Error ({:?}) deserializing Query {:?}",
+                err, query_json
+            ));
+            return;
         }
     };
     dispatch_action(context.action_channel(), action_wrapper);
@@ -89,27 +104,31 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
     let query_result_json = JsonString::from(query_result_data.query_result);
     let action_wrapper = match query_result_json.clone().try_into() {
         Ok(NetworkQueryResult::Entry(maybe_entry)) => {
-            ActionWrapper::new(Action::HandleGetResult(
-                (maybe_entry, GetEntryKey {
+            ActionWrapper::new(Action::HandleGetResult((
+                maybe_entry,
+                GetEntryKey {
                     address: query_result_data.entry_address.clone(),
-                    id: query_result_data.request_id.clone()
-                })
-            ))
-        },
-        Ok(NetworkQueryResult::Links(links,link_type,tag)) => {
+                    id: query_result_data.request_id.clone(),
+                },
+            )))
+        }
+        Ok(NetworkQueryResult::Links(links, link_type, tag)) => {
             ActionWrapper::new(Action::HandleGetLinksResult((
                 links,
                 GetLinksKey {
                     base_address: query_result_data.entry_address.clone(),
                     link_type: link_type.clone(),
                     tag: tag.clone(),
-                    id: query_result_data.request_id.clone()
-                }
+                    id: query_result_data.request_id.clone(),
+                },
             )))
-        },
+        }
         err => {
-            context.log(format!("err/net: Error ({:?}) deserializing QueryResult {:?}", err, query_result_json));
-            return
+            context.log(format!(
+                "err/net: Error ({:?}) deserializing QueryResult {:?}",
+                err, query_result_json
+            ));
+            return;
         }
     };
     dispatch_action(context.action_channel(), action_wrapper.clone());

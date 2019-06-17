@@ -1,8 +1,8 @@
 use crate::{
     agent::state::AgentState,
     network::{
-        direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
-        entry_aspect::EntryAspect,
+        direct_message::DirectMessage, entry_aspect::EntryAspect,
+        entry_with_header::EntryWithHeader, state::NetworkState,
     },
     nucleus::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
@@ -26,7 +26,7 @@ use holochain_core_types::{
 };
 use holochain_net::{
     connection::{
-        json_protocol::{QueryEntryData, FetchEntryData,},
+        json_protocol::{FetchEntryData, QueryEntryData},
         net_connection::NetHandler,
     },
     p2p_config::P2pConfig,
@@ -143,7 +143,7 @@ pub enum Action {
 
     /// We got a response for our get request which needs to be added to the state.
     /// Triggered from the network handler.
-    HandleGetResult((Option<EntryWithMetaAndHeader>,GetEntryKey)),
+    HandleGetResult((Option<EntryWithMetaAndHeader>, GetEntryKey)),
 
     ///
     UpdateEntry((Address, Address)),
@@ -157,7 +157,7 @@ pub enum Action {
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
     RespondGetLinks((QueryEntryData, Vec<Address>, String, String)),
-    HandleGetLinksResult((Vec<Address>,GetLinksKey)),
+    HandleGetLinksResult((Vec<Address>, GetLinksKey)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)

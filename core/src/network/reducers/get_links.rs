@@ -1,17 +1,18 @@
 use crate::{
     action::{ActionWrapper, GetLinksKey},
-    network::{reducers::send, state::NetworkState, query::NetworkQuery},
+    network::{query::NetworkQuery, reducers::send, state::NetworkState},
     state::State,
 };
 use holochain_core_types::{error::HolochainError, hash::HashString, json::JsonString};
-use holochain_net::connection::json_protocol::{QueryEntryData, JsonProtocol};
+use holochain_net::connection::json_protocol::{JsonProtocol, QueryEntryData};
 
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
     key: &GetLinksKey,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let query_json: JsonString = NetworkQuery::GetLinks(key.link_type.clone(), key.tag.clone()).into();
+    let query_json: JsonString =
+        NetworkQuery::GetLinks(key.link_type.clone(), key.tag.clone()).into();
     send(
         network_state,
         JsonProtocol::QueryEntry(QueryEntryData {

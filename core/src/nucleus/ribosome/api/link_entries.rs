@@ -80,9 +80,7 @@ pub mod tests {
         error::{CoreError, ZomeApiInternalResult},
     };
     use holochain_json_api::json::JsonString;
-    use holochain_persistence_api::{
-        cas::content::AddressableContent,
-    };
+    use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_wasm_utils::api_serialization::link_entries::*;
 
     use serde_json;

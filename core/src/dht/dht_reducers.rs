@@ -173,9 +173,7 @@ pub mod tests {
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
     };
-    use holochain_persistence_api::{
-        cas::content::AddressableContent,
-    };
+    use holochain_persistence_api::cas::content::AddressableContent;
     use std::convert::TryFrom;
 
     #[test]

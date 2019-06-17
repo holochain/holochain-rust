@@ -19,7 +19,7 @@ fn reduce_respond_fetch_data_inner(
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
     let aspect_list = match maybe_entry {
-        Some(entry) => vec![EntryAspcetData::from(entry)],
+        Some(entry) => vec![EntryAspectData::from(entry)],
         None => vec![],
     };
     send(

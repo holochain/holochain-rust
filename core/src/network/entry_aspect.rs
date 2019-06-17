@@ -1,5 +1,5 @@
 use holochain_core_types::{
-    cas::content::Address,
+ //   cas::content::Address,
     chain_header::ChainHeader,
     entry::{Entry},
     error::HolochainError,
@@ -37,17 +37,27 @@ pub enum EntryAspect {
   // Same as LinkAdd but for removal of links
   LinkRemove(LinkData, ChainHeader),
 
+
+    // CLEANUP this looks wrong to me.  I don't think we actually want to
+    // send the updated Entry as part of the meta item.  That would mean the
+    // new entry is getting stored two places on the dht.  I think this
+    // should look the same same as Deletion
+    // AND, we don't actually need to even have the Address as part of the
+    // Variant because the correct value is already in the Chain Header
+    // as the link_update_delete attribute
   // Meta item for updating an entry.
   // The given Entry is the new version and ChainHeader
   // the header of the new version.
   // The header's CRUD link must reference the base address
   // of the EntryData this is in.
-  Update(Entry, ChainHeader),
+  //  Update(Entry, ChainHeader),
+  Update(ChainHeader),
 
   // Meta item for removing an entry.
   // Address is the address of the deleted entry.
   // ChainHeader is the header of that deletion entry that
   // could be assembled by putting the address in an
   // `Entry::Deletion(address)`.
-  Deletion(Address, ChainHeader),
+    // Deletion(Address, ChainHeader),
+    Deletion(ChainHeader),
 }

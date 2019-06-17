@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core"
-version = "0.0.19-alpha1"
+version = "0.0.20-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -48,3 +48,4 @@ regex = "=1.1.2"
 wabt = "=0.7.4"
 test_utils = { path = "../test_utils"}
 tempfile = "=3.0.7"
+

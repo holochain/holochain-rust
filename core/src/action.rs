@@ -19,7 +19,7 @@ use holochain_core_types::{
     dna::Dna,
     entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
-    link::Link,
+    link::link_data::LinkData,
     signature::Provenance,
     validation::ValidationPackage,
 };
@@ -107,13 +107,13 @@ pub enum Action {
 
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.
-    AddLink(Link),
+    AddLink(LinkData),
 
     //action for updating crudstatus
     CrudStatus((EntryWithHeader, CrudStatus)),
 
     //Removes a link for the local DHT
-    RemoveLink(Link),
+    RemoveLink(Entry),
 
     // ----------------
     // Network actions:
@@ -150,7 +150,7 @@ pub enum Action {
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
-    RespondGetLinks((FetchMetaData, Vec<Address>)),
+    RespondGetLinks((FetchMetaData, Vec<(Address, CrudStatus)>)),
     HandleGetLinksResult((FetchMetaResultData, String, String)),
 
     /// Makes the network module send a direct (node-to-node) message

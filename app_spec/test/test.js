@@ -344,26 +344,64 @@ scenario('my_memos_are_private', async (s, t, { alice, bob }) => {
 
 scenario('delete_post', async (s, t, { alice, bob }) => {
 
-  //create post
-  const alice_create_post_result = await alice.callSync("blog", "create_post",
-    { "content": "Posty", "in_reply_to": "" }
+  //creates a simple link with alice as author with initial chain header
+  await alice.callSync("simple", "create_link",
+    { "base":alice.agentId, "target": "Posty" }
   )
 
-  const bob_create_post_result = await bob.callSync("blog", "posts_by_agent",
-    { "agent": alice.agentId }
+
+  //creates a simple link with bob as author with different chain header
+  await bob.callSync("simple", "create_link",
+    { "base":alice.agentId, "target": "Posty" }
+  )
+  
+  //get all created links so far alice
+  const alice_posts = await bob.call("simple", "get_my_links",
+    { "base": alice.agentId,"status_request" : "Live" }
   )
 
-  t.ok(bob_create_post_result.Ok)
-  t.equal(bob_create_post_result.Ok.links.length, 1);
 
-  //remove link by alicce
-  await alice.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
+  //expect two links from alice
+  t.ok(alice_posts.Ok)
+  t.equal(alice_posts.Ok.links.length,2 );
 
-  // get posts by bob
-  const bob_agent_posts_expect_empty = await bob.call("blog", "posts_by_agent", { "agent": alice.agentId })
+  //get all created links so far for bob
+  const bob_posts = await bob.call("simple", "get_my_links",
+    { "base": alice.agentId,"status_request" : "Live" }
+  )
 
+
+  //expected two links from bob
+  t.ok(bob_posts.Ok)
+  t.equal(bob_posts.Ok.links.length,2 );
+
+  //alice removes both links
+  await alice.callSync("simple", "delete_link", { "base":alice.agentId, "target": "Posty" })
+
+  // get links from bob
+  const bob_agent_posts_expect_empty = await bob.call("simple", "get_my_links",{ "base": alice.agentId,"status_request" : "Live" })
+  //get links from alice
+  const alice_agent_posts_expect_empty = await alice.call("simple", "get_my_links",{ "base": alice.agentId,"status_request" : "Live" })
+  
+  //bob expects zero links
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
+  //alice expects zero alice
+  t.ok(alice_agent_posts_expect_empty.Ok)
+  t.equal(alice_agent_posts_expect_empty.Ok.links.length, 0);
+
+
+  //different chain hash up to this point so we should be able to create a link with the same data
+  await alice.callSync("simple", "create_link",{ "base":alice.agentId, "target": "Posty" })
+
+  //get alice posts 
+  const alice_posts_not_empty = await bob.call("simple", "get_my_links",{ "base": alice.agentId,"status_request" : "Live" })
+  
+   //expect 1 post
+  t.ok(alice_posts_not_empty.Ok)
+  t.equal(alice_posts_not_empty.Ok.links.length, 1);
+
+
 })
 
 scenario('get_links_and_load with a delete_post', async (s, t, { alice }) => {
@@ -691,7 +729,9 @@ scenario('get_sources_from_link', async (s, t, { alice, bob }) => {
     "agent" : bob.agentId
   });
 
+  t.equal(bob_posts.Ok.links.length, 1)
   t.equal(bob.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
+  t.equal(alice_posts.Ok.links.length, 1)
   t.equal(alice.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
 
 })
@@ -701,7 +741,7 @@ scenario('get_sources_after_same_link', async (s, t, { alice, bob }) => {
   await bob.callSync("blog", "create_post_with_agent",
     { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
   );
-  await alice.callSync("blog", "create_post_with_agent",
+  await bob.callSync("blog", "create_post_with_agent",
   { "agent_id": alice.agentId ,"content": "Holo world", "in_reply_to": null }
   );
 
@@ -715,14 +755,95 @@ scenario('get_sources_after_same_link', async (s, t, { alice, bob }) => {
   });
 
   t.equal(bob.agentId,alice_posts.Ok.links[0].headers[0].provenances[0][0]);
-  t.equal(alice.agentId,alice_posts.Ok.links[0].headers[1].provenances[0][0]);
-  t.equal(bob.agentId,bob_posts.Ok.links[0].headers[1].provenances[0][0]);
-  t.equal(alice.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
+  t.equal(bob.agentId,bob_posts.Ok.links[0].headers[0].provenances[0][0]);
+
+})
+
+
+scenario('get_links_crud', async (s, t, { alice, bob }) => {
+
+  //commits an entry and creates two links for alice
+  await alice.callSync("simple", "create_link",
+    { "base": alice.agentId ,"target": "Holo world" }
+  );
+  const alice_result = await alice.callSync("simple", "create_link",
+  { "base": alice.agentId ,"target": "Holo world 2" }
+  );
+
+  //get posts for alice from alice
+  const alice_posts_live= await alice.call("simple","get_my_links",
+  {
+    "base" : alice.agentId,"status_request":"Live"
+  })
+  console.log("alice posts" + JSON.stringify(alice_posts_live));
+
+  //get posts for alice from bob
+  const bob_posts_live= await bob.call("simple","get_my_links",
+  {
+    "base" : alice.agentId,
+    "status_request":"Live"
+  })
+
+  //make sure all our links are live and they are two of them
+  t.equal(2,alice_posts_live.Ok.links.length);
+  t.equal("live",alice_posts_live.Ok.links[0].status);
+  t.equal("live",alice_posts_live.Ok.links[1].status);
+  t.equal(2,bob_posts_live.Ok.links.length);
+  t.equal("live",bob_posts_live.Ok.links[0].status);
+  t.equal("live",bob_posts_live.Ok.links[1].status);
+
+  ////delete the holo world post from the links alice created
+  await alice.callSync("simple","delete_link",
+  {
+    "base" : alice.agentId,
+    "target" : "Holo world"
+  });
+
+  //get all posts with a deleted status from bob
+  const bob_posts_deleted = await bob.call("simple","get_my_links",
+  {
+    "base" : alice.agentId,
+    "status_request" : "Deleted"
+  });
+
+  // get all posts with a deleted status from alice
+  const alice_posts_deleted = await alice.call("simple","get_my_links",
+  {
+    "base" : alice.agentId,
+    "status_request" : "Deleted"
+  });
+
+  //make sure only 1 is returned and it has a status of deleted
+  t.equal(1,alice_posts_deleted.Ok.links.length);
+  t.equal(1,bob_posts_deleted.Ok.links.length);
+  t.equal("deleted",alice_posts_deleted.Ok.links[0].status);
+  t.equal("deleted",bob_posts_deleted.Ok.links[0].status);
+
+  //get all posts from the agent
+  const bob_posts_all = await bob.call("simple","get_my_links",
+  {
+    "base" : alice.agentId,
+    "status_request" : "All"
+
+  });
+  const alice_posts_all = await alice.call("simple","get_my_links",
+  {
+    "base" : alice.agentId,
+    "status_request" : "All"
+  });
+
+  //make sure we get two links with the first one being a live link and the second one being a deleted link
+  t.equal(2,alice_posts_all.Ok.links.length);
+  t.equal("live",alice_posts_all.Ok.links[0].status);
+  t.equal("deleted",alice_posts_all.Ok.links[1].status);
+  t.equal(2,bob_posts_all.Ok.links.length);
+  t.equal("live",bob_posts_all.Ok.links[0].status);
+  t.equal("deleted",bob_posts_all.Ok.links[1].status);
+
 
 })
 
 scenario('create/get_post roundtrip', async (s, t, { alice }) => {
-
   const content = "Holo world"
   const in_reply_to = null
   const params = { content, in_reply_to }

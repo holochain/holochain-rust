@@ -11,7 +11,7 @@
 8. [What language is Holochain written in? What languages can I use to make Holochain apps?](#what-language-is-holochain-written-in-what-languages-can-i-use-to-make-holochain-apps)
 9. [Is Holochain open source?](#is-holochain-open-source)
 10 [How is Holochain more environmentally ethical than blockchain?](#how-is-holochain-more-environmentally-ethical-than-blockchain)
-11. [How are data validated on Holochain?](#how-are-data-validated-on-holochain)
+11. [How is data validated on Holochain?](#how-is-data-validated-on-holochain)
 12. [What happens to data when a node leaves the network?](#what-happens-to-data-when-a-node-leaves-the-network)
 13. [Should I build my coin/token on Holochain?](#should-i-build-my-cointoken-on-holochain)
 14. [What does “agent-centric” mean? How is this different from “data-centric”?](#what-does-agent-centric-mean-how-is-this-different-from-data-centric)
@@ -156,7 +156,7 @@ However, you probably shouldn't try to do it in the way everyone is used to buil
 
 Unfortunately, this is a hotly contested topic by many who often don't have a deep understanding of currency design nor cryptography, so we're not going to go too deep in this FAQ. We intend to publish a white paper on this topic soon, as well as launch some currencies built this way.
 
-## How are data validated on Holochain?
+## How is data validated on Holochain?
 
 > On Holochain, each node that receives a record of a transaction validates it against the shared application rules and gossips it to their peers. If the rules are broken, that transaction is rejected by the validator.
 

@@ -55,7 +55,6 @@ pub mod tests {
         agent::test_agent_id,
         chain_header::test_chain_header,
         entry::{entry_type::test_app_entry_type, Entry},
-        json::{JsonString, RawString},
         link::{link_data::LinkData, Link, LinkMatch},
     };
     use holochain_json_api::json::{JsonString, RawString};

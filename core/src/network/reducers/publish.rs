@@ -30,7 +30,7 @@ fn publish_entry(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: entry_with_header.entry.address().clone(),
-                aspect_list: vec![EntryAspectData::from(entry_with_header)],
+                aspect_list: vec![EntryAspectData::new_content_from(entry_with_header)],
             },
         }),
     )

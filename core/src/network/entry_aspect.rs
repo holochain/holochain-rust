@@ -1,12 +1,22 @@
 use holochain_core_types::{
- //   cas::content::Address,
+    cas::content::{AddressableContent, Content},
     chain_header::ChainHeader,
     entry::{Entry},
     error::HolochainError,
     link::link_data::LinkData,
     json::JsonString,
 };
+use std::convert::TryFrom;
 
+impl AddressableContent for EntryAspect {
+    fn content(&self) -> Content {
+        self.to_owned().into()
+    }
+
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Self::try_from(content.to_owned())
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum EntryAspect {

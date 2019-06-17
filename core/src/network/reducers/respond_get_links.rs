@@ -12,9 +12,11 @@ fn reduce_respond_get_links_inner(
     network_state: &mut NetworkState,
     query_data: &QueryEntryData,
     links: &Vec<Address>,
+    link_type: String,
+    tag: String,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let query_result_json: JsonString = NetworkQueryResult::Links(links.clone()).into();
+    let query_result_json: JsonString = NetworkQueryResult::Links(links.clone(), link_type, tag).into();
     send(
         network_state,
         JsonProtocol::HandleQueryEntryResult(QueryEntryResultData {
@@ -34,8 +36,8 @@ pub fn reduce_respond_get_links(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (query_data, links) = unwrap_to!(action => crate::action::Action::RespondGetLinks);
-    let result = reduce_respond_get_links_inner(network_state, query_data, links);
+    let (query_data, links, link_type, tag) = unwrap_to!(action => crate::action::Action::RespondGetLinks);
+    let result = reduce_respond_get_links_inner(network_state, query_data, links, link_type.clone(), tag.clone());
 
     println!(
         "debug/reduce/respond_get_links: Responding to GET LINKS request from {} with {:?}",

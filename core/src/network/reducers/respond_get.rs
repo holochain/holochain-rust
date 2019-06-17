@@ -1,14 +1,14 @@
 use crate::{
     action::ActionWrapper,
-    network::{actions::ActionResponse, reducers::send, state::NetworkState},
+    network::{actions::ActionResponse, reducers::send, state::NetworkState, query::NetworkQueryResult},
     state::State,
 };
-use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError};
+use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError, json::JsonString};
 use holochain_net::connection::json_protocol::{
-    QueryEntryData, FetchEntryResultData, JsonProtocol,
+    QueryEntryData, QueryEntryResultData, JsonProtocol,
 };
 
-/// Send back to network a HandleFetchEntryResult, no matter what.
+/// Send back to network a HandleQueryEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
 fn reduce_respond_get_inner(
     network_state: &mut NetworkState,
@@ -41,9 +41,8 @@ pub fn reduce_respond_get(
 
     println!(
         "debug/reduce/respond_get: Responding to GET request from {} with {:?}",
-        query_data.requester_agent_id, links
+        query_data.requester_agent_id, maybe_entry
     );
-
 
     network_state.actions.insert(
         action_wrapper.clone(),

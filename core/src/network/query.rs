@@ -13,7 +13,7 @@ pub enum NetworkQuery {
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum NetworkQueryResult {
     Entry(Option<EntryWithMetaAndHeader>),
-    Links(Vec<Address>),
+    Links(Vec<Address>, String, String),
 }
 
 #[cfg(test)]

@@ -26,7 +26,7 @@ use holochain_core_types::{
 };
 use holochain_net::{
     connection::{
-        json_protocol::{QueryEntryData, QueryEntryResultData, FetchEntryData,},
+        json_protocol::{QueryEntryData, FetchEntryData,},
         net_connection::NetHandler,
     },
     p2p_config::P2pConfig,
@@ -143,7 +143,7 @@ pub enum Action {
 
     /// We got a response for our get request which needs to be added to the state.
     /// Triggered from the network handler.
-    HandleGetResult(QueryEntryResultData),
+    HandleGetResult((Option<EntryWithMetaAndHeader>,GetEntryKey)),
 
     ///
     UpdateEntry((Address, Address)),
@@ -156,8 +156,8 @@ pub enum Action {
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
-    RespondGetLinks((QueryEntryData, Vec<Address>)),
-    HandleGetLinksResult((QueryEntryResultData, String, String)),
+    RespondGetLinks((QueryEntryData, Vec<Address>, String, String)),
+    HandleGetLinksResult((Vec<Address>,GetLinksKey)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)

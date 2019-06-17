@@ -1,56 +1,110 @@
 use crate::{
-    action::{Action, ActionWrapper},
+    action::{Action, ActionWrapper, GetEntryKey, GetLinksKey},
     context::Context,
     entry::CanPublish,
     instance::dispatch_action,
-    network::query::NetworkQuery,
+    network::query::{NetworkQuery,NetworkQueryResult},
     nucleus,
 };
 use holochain_core_types::{cas::content::Address, eav::Attribute, entry::EntryWithMetaAndHeader, json::JsonString};
 use holochain_net::connection::json_protocol::{
-    QueryEntryData, FetchEntryData, FetchEntryResultData, QueryEntryResultData,
+    QueryEntryData, QueryEntryResultData,
 };
 use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 
+fn get_links(context: &Arc<Context>, base: Address, link_type: String, tag: String) -> Vec<Address> {
+    context
+        .state()
+        .unwrap()
+        .dht()
+        .get_links(
+            base,
+            link_type,
+            tag,
+        )
+        .unwrap_or(BTreeSet::new())
+        .into_iter()
+        .map(|eav| eav.value())
+        .collect::<Vec<_>>()
+}
+
+fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
+    nucleus::actions::get_entry::get_entry_with_meta(&context, address)
+        .map(|entry_with_meta_opt| {
+            let state = context
+                .state()
+                .expect("Could not get state for handle_fetch_entry");
+            state
+                .get_headers(address)
+                .map(|headers| {
+                    entry_with_meta_opt
+                        .map(|entry_with_meta| {
+                            if entry_with_meta.entry.entry_type().can_publish(&context) {
+                                Some(EntryWithMetaAndHeader {
+                                    entry_with_meta: entry_with_meta.clone(),
+                                    headers,
+                                })
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or(None)
+                })
+                .map_err(|error| {
+                    context.log(format!("err/net: Error trying to get headers {:?}", error));
+                    None::<EntryWithMetaAndHeader>
+                })
+        })
+        .map_err(|error| {
+            context.log(format!("err/net: Error trying to find entry {:?}", error));
+            None::<EntryWithMetaAndHeader>
+        })
+        .unwrap_or(Ok(None)).unwrap_or(None)
+}
+
 /// The network has sent us a query for entry data, so we need to examine
 /// the query and create appropriate actions for the different variants
-pub fn handle_query_entry_data(fetch_meta_data: QueryEntryData, context: Arc<Context>) {
-    let query_json = JsonString::from(fetch_meta_data.query);
-    match query_json.try_into() {
+pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
+    let query_json = JsonString::from(query_data.query);
+    let action_wrapper = match query_json.try_into() {
         Ok(NetworkQuery::GetLinks(link_type, tag)) => {
-            let links = context
-                .state()
-                .unwrap()
-                .dht()
-                .get_links(
-                    Address::from(fetch_meta_data.entry_address.clone()),
-                    link_type.clone(),
-                    tag.clone(),
-                )
-                .unwrap_or(BTreeSet::new())
-                .into_iter()
-                .map(|eav| eav.value())
-                .collect::<Vec<_>>();
-            let action_wrapper = ActionWrapper::new(Action::RespondGetLinks((fetch_meta_data, links)));
-            dispatch_action(context.action_channel(), action_wrapper.clone());
+            let links = get_links(&context,query_data.entry_address.clone(), link_type.clone(), tag.clone());
+            ActionWrapper::new(Action::RespondGetLinks((query_data, links, link_type.clone(), tag.clone())))
         },
+        Ok(NetworkQuery::GetEntry) => {
+            let maybe_entry = get_entry(&context, query_data.entry_address.clone());
+            ActionWrapper::new(Action::RespondGet((query_data, maybe_entry)))
+        }
         _ => panic!(format!("handle query entry data variant not implemented: {:?}",query_json)),
-    }
+    };
+    dispatch_action(context.action_channel(), action_wrapper);
 }
 
 /// The network comes back with a result to our previous query with a result, so we
 /// examine the query result for its type and dispatch different actions according to variant
-pub fn handle_query_entry_result(dht_meta_data: QueryEntryResultData, context: Arc<Context>) {
-    let query_result_json = JsonString::from(dht_meta_data.query_result);
-    match query_result_json.try_into() {
-        Ok(Attribute::LinkTag(link_type, tag)) => {
-            let action_wrapper = ActionWrapper::new(Action::HandleGetLinksResult((
-                dht_meta_data,
-                link_type,
-                tag,
-            )));
-            dispatch_action(context.action_channel(), action_wrapper.clone());
+pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, context: Arc<Context>) {
+    let query_result_json = JsonString::from(query_result_data.query_result);
+    let action_wrapper = match query_result_json.try_into() {
+        Ok(NetworkQueryResult::Entry(maybe_entry)) => {
+            ActionWrapper::new(Action::HandleGetResult(
+                (maybe_entry, GetEntryKey {
+                    address: query_result_data.entry_address.clone(),
+                    id: query_result_data.request_id.clone()
+                })
+            ))
+        },
+        Ok(NetworkQueryResult::Links(links,link_type,tag)) => {
+            ActionWrapper::new(Action::HandleGetLinksResult((
+                links,
+                GetLinksKey {
+                    base_address: query_result_data.entry_address.clone(),
+                    link_type: link_type.clone(),
+                    tag: tag.clone(),
+                    id: query_result_data.request_id.clone()
+                }
+            )))
         },
         _ => panic!(format!("handle query entry result variant not implemented: {:?}",query_result_json)),
-    }
+    };
+    dispatch_action(context.action_channel(), action_wrapper.clone());
 }

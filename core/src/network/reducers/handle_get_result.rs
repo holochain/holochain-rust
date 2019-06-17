@@ -1,31 +1,8 @@
 use crate::{
-    action::{ActionWrapper, GetEntryKey},
+    action::{ActionWrapper},
     network::state::NetworkState,
     state::State,
 };
-use holochain_core_types::{
-    cas::content::Address, entry::EntryWithMetaAndHeader, error::HolochainError,
-};
-use holochain_net::connection::json_protocol::QueryEntryResultData;
-
-fn reduce_handle_get_result_inner(
-    network_state: &mut NetworkState,
-    dht_data: &QueryEntryResultData,
-) -> Result<Option<EntryWithMetaAndHeader>, HolochainError> {
-    network_state.initialized()?;
-    let content = serde_json::to_string(&dht_data.entry_content).map_err(|_| {
-        HolochainError::ErrorGeneric("Could not serialize entry content".to_string())
-    })?;
-
-    let entry_with_meta = serde_json::from_str(&content).map_err(|_| {
-        HolochainError::ErrorGeneric(
-            "Failed to deserialize EntryWithMeta from HandleFetchResult action argument"
-                .to_string(),
-        )
-    })?;
-
-    Ok(entry_with_meta)
-}
 
 pub fn reduce_handle_get_result(
     network_state: &mut NetworkState,
@@ -33,16 +10,9 @@ pub fn reduce_handle_get_result(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let dht_data = unwrap_to!(action => crate::action::Action::HandleFetchResult);
-
-    let result = reduce_handle_get_result_inner(network_state, dht_data);
-
-    let key = GetEntryKey {
-        address: Address::from(dht_data.entry_address.clone()),
-        id: dht_data.request_id.clone(),
-    };
+    let (maybe_entry, key) = unwrap_to!(action => crate::action::Action::HandleGetResult);
 
     network_state
         .get_entry_with_meta_results
-        .insert(key, Some(result));
+        .insert(key.clone(), Some(Ok(maybe_entry.clone())));
 }

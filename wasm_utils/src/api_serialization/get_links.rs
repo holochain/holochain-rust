@@ -1,5 +1,6 @@
 use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, error::HolochainError, json::*, time::Timeout,
+    cas::content::Address, chain_header::ChainHeader, crud_status::CrudStatus,
+    error::HolochainError, json::*, time::Timeout,
 };
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
@@ -43,6 +44,7 @@ pub struct LinksResult {
     pub address: Address,
     pub headers: Vec<ChainHeader>,
     pub tag: String,
+    pub status: CrudStatus,
 }
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]

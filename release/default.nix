@@ -29,6 +29,11 @@ in
     release = config;
     github = github;
    })
+
+   (pkgs.callPackage ./nix/deploy.nix {
+    release = config;
+    github = github;
+   })
  ]
  ++ pulse.buildInputs
  ++ rust.buildInputs

@@ -2,6 +2,7 @@ use crate::{
     agent::state::AgentState,
     network::{
         direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
+        entry_aspect::EntryAspect,
     },
     nucleus::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
@@ -138,8 +139,7 @@ pub enum Action {
     /// Lets the network module respond to a FETCH request.
     /// Triggered from the corresponding workflow after retrieving the
     /// requested entry from our local DHT shard.
-//    RespondFetch((FetchEntryData, Vec<EntryAspect>)),
-    RespondFetch((FetchEntryData, Option<EntryWithMetaAndHeader>)),
+    RespondFetch((FetchEntryData, Vec<EntryAspect>)),
 
     /// We got a response for our get request which needs to be added to the state.
     /// Triggered from the network handler.

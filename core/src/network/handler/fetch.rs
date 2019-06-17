@@ -8,8 +8,7 @@ use crate::{
 };
 use holochain_core_types::{cas::content::Address, eav::Attribute, entry::EntryWithMetaAndHeader, json::JsonString};
 use holochain_net::connection::json_protocol::{
-    QueryEntryData, FetchEntryData, FetchEntryResultData, QueryEntryResultData,
-};
+    FetchEntryData, FetchEntryResultData, };
 use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 
 

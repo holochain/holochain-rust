@@ -1,27 +1,23 @@
 use crate::{
     action::ActionWrapper,
-    network::{actions::ActionResponse, reducers::send, state::NetworkState},
+    network::{actions::ActionResponse, reducers::send, state::NetworkState,
+              entry_aspect::EntryAspect,},
     state::State,
 };
-use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError};
+use holochain_core_types::{error::HolochainError};
 use holochain_net::connection::json_protocol::{
-    FetchEntryData, FetchEntryResultData, JsonProtocol,
+    FetchEntryData, FetchEntryResultData, JsonProtocol, EntryData,
 };
 
 
-//CLEANUP need to convert the param to Vec<EntryAspect> instead of maybe_entry
 /// Send back to network a HandleFetchEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
 fn reduce_respond_fetch_data_inner(
     network_state: &mut NetworkState,
     fetch_data: &FetchEntryData,
-    maybe_entry: &Option<EntryWithMetaAndHeader>,
+    aspects: &Vec<EntryAspect>,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let aspect_list = match maybe_entry {
-        Some(entry) => vec![EntryAspectData::from(entry)],
-        None => vec![],
-    };
     send(
         network_state,
         JsonProtocol::HandleFetchEntryResult(FetchEntryResultData {
@@ -30,8 +26,8 @@ fn reduce_respond_fetch_data_inner(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: fetch_data.entry_address.clone(),
-                aspect_list
-            }
+                aspect_list: aspects.iter().map(|a| a.to_owned().into()).collect(),
+            },
         }),
     )
 }

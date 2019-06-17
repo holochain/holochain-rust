@@ -16,7 +16,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net::connection::json_protocol::{EntryData, JsonProtocol, ProvidedEntryData, EntryAspectData};
+use holochain_net::connection::json_protocol::{EntryData, JsonProtocol, ProvidedEntryData};
 
 /// Send to network a PublishDhtData message
 fn publish_entry(

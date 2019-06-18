@@ -69,11 +69,11 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 /// }
 /// # }
 /// ```
-pub fn link_entries<S: Into<String>>(
+pub fn link_entries<S1: Into<String>, S2: Into<String>>(
     base: &Address,
     target: &Address,
-    link_type: S,
-    tag: S,
+    link_type: S1,
+    tag: S2,
 ) -> Result<Address, ZomeApiError> {
     Dispatch::LinkEntries.with_input(LinkEntriesArgs {
         base: base.clone(),

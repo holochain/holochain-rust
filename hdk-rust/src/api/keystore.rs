@@ -24,13 +24,13 @@ pub fn keystore_derive_seed<S: Into<String>>(
     src_id: S,
     dst_id: S,
     context: S,
-    index: u64,
+    index: &u64,
 ) -> ZomeApiResult<()> {
     Dispatch::KeystoreDeriveSeed.with_input(KeystoreDeriveSeedArgs {
         src_id: src_id.into(),
         dst_id: dst_id.into(),
         context: context.into(),
-        index,
+        index: index.to_owned(),
     })
 }
 
@@ -39,12 +39,12 @@ pub fn keystore_derive_seed<S: Into<String>>(
 pub fn keystore_derive_key<S: Into<String>>(
     src_id: S,
     dst_id: S,
-    key_type: KeyType,
+    key_type: &KeyType,
 ) -> ZomeApiResult<String> {
     Dispatch::KeystoreDeriveKey.with_input(KeystoreDeriveKeyArgs {
         src_id: src_id.into(),
         dst_id: dst_id.into(),
-        key_type,
+        key_type: key_type.to_owned(),
     })
 }
 

@@ -72,7 +72,7 @@ pub enum LinkMatch<S: Into<String>> {
     Exactly(S),
     Regex(S),
 }
-
+ 
 impl<S: Into<String>> LinkMatch<S> {
     pub fn to_regex_string(self) -> Result<String, String> {
         let re_string: String = match self {

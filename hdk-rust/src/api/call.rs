@@ -218,18 +218,18 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///
 /// # }
 /// ```
-pub fn call<S: Into<String>>(
-    instance_handle: S,
-    zome_name: S,
-    cap_token: Address,
-    fn_name: S,
-    fn_args: JsonString,
+pub fn call<S1: Into<String>, S2: Into<String>, S3: Into<String>, J: Into<JsonString> + Clone>(
+    instance_handle: S1,
+    zome_name: S2,
+    cap_token: &Address,
+    fn_name: S3,
+    fn_args: &J,
 ) -> ZomeApiResult<JsonString> {
     Dispatch::Call.with_input(ZomeFnCallArgs {
         instance_handle: instance_handle.into(),
         zome_name: zome_name.into(),
-        cap_token,
+        cap_token: cap_token.to_owned(),
         fn_name: fn_name.into(),
-        fn_args: String::from(fn_args),
+        fn_args: fn_args.to_owned().into().to_string(),
     })
 }

@@ -11,27 +11,27 @@ use holochain_wasm_utils::api_serialization::capabilities::{
 /// Adds a capability grant to the local chain
 pub fn commit_capability_grant<S: Into<String>>(
     id: S,
-    cap_type: CapabilityType,
-    assignees: Option<Vec<Address>>,
-    functions: CapFunctions,
+    cap_type: &CapabilityType,
+    assignees: Option<&[Address]>,
+    functions: &CapFunctions,
 ) -> ZomeApiResult<Address> {
     Dispatch::CommitCapabilityGrant.with_input(CommitCapabilityGrantArgs {
         id: id.into(),
-        cap_type,
-        assignees,
-        functions,
+        cap_type: cap_type.to_owned(),
+        assignees: assignees.map(|v| Vec::from(v)),
+        functions: functions.to_owned(),
     })
 }
 
 /// Adds a capability claim to the local chain
 pub fn commit_capability_claim<S: Into<String>>(
     id: S,
-    grantor: Address,
-    token: Address,
+    grantor: &Address,
+    token: &Address,
 ) -> ZomeApiResult<Address> {
     Dispatch::CommitCapabilityClaim.with_input(CommitCapabilityClaimArgs {
         id: id.into(),
-        grantor,
-        token,
+        grantor: grantor.to_owned(),
+        token: token.to_owned(),
     })
 }

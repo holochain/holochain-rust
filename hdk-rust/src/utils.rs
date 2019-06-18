@@ -48,7 +48,7 @@ pub fn get_links_and_load_type<R: TryFrom<AppEntryValue>>(
 ///
 /// Helper function for loading an entry and converting to a given type
 ///
-pub fn get_as_type<R: TryFrom<AppEntryValue>>(address: Address) -> ZomeApiResult<R> {
+pub fn get_as_type<R: TryFrom<AppEntryValue>>(address: &Address) -> ZomeApiResult<R> {
     let get_result = hdk::get_entry(&address)?;
     let entry =
         get_result.ok_or_else(|| ZomeApiError::Internal("No entry at this address".into()))?;
@@ -66,13 +66,18 @@ pub fn get_as_type<R: TryFrom<AppEntryValue>>(address: Address) -> ZomeApiResult
 
 /// Creates two links:
 /// From A to B, and from B to A, with given link_types.
-pub fn link_entries_bidir<S: Into<String>>(
+pub fn link_entries_bidir<
+    S1: Into<String>,
+    S2: Into<String>,
+    S3: Into<String>,
+    S4: Into<String>,
+>(
     a: &Address,
     b: &Address,
-    link_type_a_b: S,
-    link_type_b_a: S,
-    link_tag_a_b: S,
-    link_tag_b_a: S,
+    link_type_a_b: S1,
+    link_type_b_a: S2,
+    link_tag_a_b: S3,
+    link_tag_b_a: S4,
 ) -> ZomeApiResult<()> {
     hdk::link_entries(a, b, link_type_a_b, link_tag_a_b)?;
     hdk::link_entries(b, a, link_type_b_a, link_tag_b_a)?;
@@ -81,11 +86,14 @@ pub fn link_entries_bidir<S: Into<String>>(
 
 /// Commits the given entry and links it from the base
 /// with the given link_type.
-pub fn commit_and_link<S: Into<String>>(
+pub fn commit_and_link<
+    S1: Into<String>,
+    S2: Into<String>,
+>(
     entry: &Entry,
     base: &Address,
-    link_type: S,
-    tag: S,
+    link_type: S1,
+    tag: S2,
 ) -> ZomeApiResult<Address> {
     let entry_addr = hdk::commit_entry(entry)?;
     hdk::link_entries(base, &entry_addr, link_type, tag)?;

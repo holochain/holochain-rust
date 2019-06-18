@@ -113,10 +113,10 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 ///}
 /// # }
 /// ```
-pub fn send(to_agent: Address, payload: String, timeout: Timeout) -> ZomeApiResult<String> {
+pub fn send<S: Into<String>>(to_agent: &Address, payload: S, timeout: &Timeout) -> ZomeApiResult<String> {
     Dispatch::Send.with_input(SendArgs {
-        to_agent,
-        payload,
-        options: SendOptions(timeout),
+        to_agent: to_agent.to_owned(),
+        payload: payload.into(),
+        options: SendOptions(timeout.to_owned()),
     })
 }

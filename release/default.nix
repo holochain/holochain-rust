@@ -1,4 +1,4 @@
-{ pkgs }:
+{ holonix, pkgs }:
 let
   release = import ./config.nix;
 
@@ -6,13 +6,14 @@ let
    release = release;
   };
 
-  pulse = pkgs.callPackage ./pulse {
-   release = release;
-   github = github;
-  };
-
   rust = pkgs.callPackage ./rust {
    release = release;
+  };
+
+  pulse = pkgs.callPackage ./pulse {
+   holonix = holonix;
+   release = release;
+   github = github;
   };
 
   docs = pkgs.callPackage ./docs {

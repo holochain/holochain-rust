@@ -29,4 +29,6 @@ let
   done
   '';
 in
-script
+{
+ buildInputs = [ script ];
+}

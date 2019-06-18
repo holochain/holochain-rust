@@ -14,11 +14,13 @@ let
   echo
   echo "tagging ${release.tag}"
   git tag -a ${release.tag} -m "Version ${release.tag}"
-  git push ${github.config.upstream} ${release.tag}
+  git push ${github.upstream} ${release.tag}
   echo
   echo "release tags pushed"
   echo "travis builds: https://travis-ci.com/holochain/holochain-rust/branches"
   echo "core artifacts: https://github.com/holochain/holochain-rust/releases/tag/${release.tag}"
   '';
 in
-script
+{
+ buildInputs = [ script ];
+}

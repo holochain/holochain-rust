@@ -108,6 +108,7 @@ impl ConsistencyModel {
                         Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone())),
                         Entry::LinkRemove(_) => Some(RemoveLink(entry.clone())),
                         // Question: Why does Entry::LinkAdd take LinkData instead of Link?
+                        // as of now, link data contains more information than just the link
                         _ => None,
                     });
                     let mut pending = vec![hold];

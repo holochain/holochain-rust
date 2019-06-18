@@ -1,6 +1,6 @@
 let
- holonix-release-tag = "predicted-betting-match";
- holonix-release-sha256 = "19pigw9ys14hfx5n5icbnr7bwgvjirr6x7yd3p46jph43h0rx9ih";
+ holonix-release-tag = "further-bad-assigning";
+ holonix-release-sha256 = "1mhrp677p45ihajnjanav7cjvfhb2qn4g262vr06wy1zkj20mm0g";
 
  holonix = import (fetchTarball {
   url = "https://github.com/holochain/holonix/archive/${holonix-release-tag}.tar.gz";
@@ -16,6 +16,7 @@ with holonix.pkgs;
   buildInputs = []
    ++ holonix.shell.buildInputs
    ++ (holonix.pkgs.callPackage ./release {
+    holonix = holonix;
     pkgs = holonix.pkgs;
    }).buildInputs
   ;

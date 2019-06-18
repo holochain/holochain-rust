@@ -203,6 +203,8 @@ impl From<HolochainError> for RibosomeErrorCode {
             HolochainError::Timeout => RibosomeErrorCode::Unspecified,
             HolochainError::InitializationFailed(_) => RibosomeErrorCode::Unspecified,
             HolochainError::DnaHashMismatch(_, _) => RibosomeErrorCode::Unspecified,
+            HolochainError::EntryNotFoundLocally => RibosomeErrorCode::Unspecified,
+            HolochainError::EntryIsPrivate => RibosomeErrorCode::Unspecified,
         }
     }
 }

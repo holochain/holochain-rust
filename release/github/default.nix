@@ -5,12 +5,12 @@ in
 github // {
  buildInputs = []
 
- ++ (pkgs.callPackage ./merge {
-  github = github;
+ ++ (pkgs.callPackage ./check-artifacts {
   release = release;
  }).buildInputs
 
- ++ (pkgs.callPackage ./check-artifacts {
+ ++ (pkgs.callPackage ./merge {
+  github = github;
   release = release;
  }).buildInputs
  ;

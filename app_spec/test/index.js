@@ -11,7 +11,7 @@ process.on('unhandledRejection', error => {
 const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
 const dna = Diorama.dna(dnaPath, 'app-spec')
 
-const diorama = new Diorama({
+const dioramaMain = new Diorama({
   instances: {
     alice: dna,
     bob: dna,
@@ -25,7 +25,26 @@ const diorama = new Diorama({
   middleware: backwardCompatibilityMiddleware,
 })
 
-require('./regressions')(diorama.registerScenario)
-require('./test')(diorama.registerScenario)
+const numInstances = 10
+const manyInstances = {}
+for (let i = 0; i < numInstances; i++) {
+  manyInstances['Agent ' + i] = dna
+}
 
-diorama.run()
+const dioramaMany = new Diorama({
+  instances: manyInstances,
+  debugLog: true,
+  executor: tapeExecutor(require('tape')),
+})
+
+require('./regressions')(dioramaMain.registerScenario)
+require('./test')(dioramaMain.registerScenario)
+
+require('./many-agent-tests')(dioramaMany.registerScenario)
+
+const run = async () => {
+  await dioramaMain.run()
+  await dioramaMany.run()
+}
+
+run()

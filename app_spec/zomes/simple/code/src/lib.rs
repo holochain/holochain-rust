@@ -10,35 +10,29 @@ extern crate holochain_core_types_derive;
 use hdk::{
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
-};
-use hdk::holochain_core_types::{
-    cas::content::Address,
-    dna::entry_types::Sharing,
-    error::HolochainError,
-    json::JsonString,
-    entry::Entry,
-    link::LinkMatch,
-    hash::HashString
+    holochain_core_types::{
+        cas::content::Address, dna::entry_types::Sharing, entry::Entry, error::HolochainError,
+        hash::HashString, json::JsonString, link::LinkMatch,
+    },
 };
 
-use hdk::holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions};
-
+use hdk::holochain_wasm_utils::api_serialization::get_links::{
+    GetLinksOptions, GetLinksResult, LinksStatusRequestKind,
+};
 
 // see https://developer.holochain.org/api/0.0.18-alpha1/hdk/ for info on using the hdk library
 
 // This is a sample zome that defines an entry type "MyEntry" that can be committed to the
 // agent's chain via the exposed function create_my_entry
 
-#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Simple {
     content: String,
 }
 
-impl Simple 
-{
-    pub fn new(content:String) -> Simple
-    {
-        Simple{content}
+impl Simple {
+    pub fn new(content: String) -> Simple {
+        Simple { content }
     }
 }
 
@@ -46,27 +40,32 @@ fn simple_entry(content: String) -> Entry {
     Entry::App("simple".into(), Simple::new(content).into())
 }
 
-
-pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()> {
+pub fn handle_create_my_link(base: Address, target: String) -> ZomeApiResult<()> {
     let address = hdk::commit_entry(&simple_entry(target))?;
     hdk::link_entries(&base, &HashString::from(address), "authored_posts", "")?;
     Ok(())
 }
 
-pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()> {
+pub fn handle_delete_my_link(base: Address, target: String) -> ZomeApiResult<()> {
     let address = hdk::entry_address(&simple_entry(target))?;
     hdk::remove_link(&base, &HashString::from(address), "authored_posts", "")?;
     Ok(())
 }
 
-
-pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequestKind>) ->ZomeApiResult<GetLinksResult>
-{
-    let options = GetLinksOptions{
-        status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
+pub fn handle_get_my_links(
+    agent: Address,
+    status_request: Option<LinksStatusRequestKind>,
+) -> ZomeApiResult<GetLinksResult> {
+    let options = GetLinksOptions {
+        status_request: status_request.unwrap_or(LinksStatusRequestKind::All),
         ..GetLinksOptions::default()
     };
-    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
+    hdk::get_links_with_options(
+        &agent,
+        LinkMatch::Exactly("authored_posts"),
+        LinkMatch::Any,
+        options,
+    )
 }
 
 pub fn definition() -> ValidatingEntryType {
@@ -94,7 +93,7 @@ pub fn definition() -> ValidatingEntryType {
                     Ok(())
                 }
             )]
-        
+
     )
 }
 
@@ -108,7 +107,7 @@ define_zome! {
         Ok(())
     }
 
-  
+
 
     functions: [
 
@@ -133,4 +132,3 @@ define_zome! {
         hc_public [create_link,delete_link,get_my_links]
     }
 }
-

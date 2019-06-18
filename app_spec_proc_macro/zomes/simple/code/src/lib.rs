@@ -10,7 +10,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate hdk;
 #[macro_use]
-extern holochain_json_api;
+extern crate holochain_json_api;
 
 use hdk::{
     error::ZomeApiResult,

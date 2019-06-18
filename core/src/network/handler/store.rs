@@ -8,6 +8,9 @@ use holochain_core_types::json::JsonString;
 use holochain_net::connection::json_protocol::StoreEntryAspectData;
 //use std::{str::FromStr, sync::Arc, thread, convert::TryInto};
 use std::{convert::TryInto, sync::Arc, thread};
+use holochain_core_types::entry::Entry;
+use holochain_core_types::cas::content::AddressableContent;
+use crate::workflows::hold_link::hold_link_workflow;
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
@@ -19,6 +22,21 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 thread::spawn(move || {
                     match context.block_on(hold_entry_workflow(&entry_with_header, context.clone()))
                     {
+                        Err(error) => context.log(format!("err/net/dht: {}", error)),
+                        _ => (),
+                    }
+                });
+            }
+            EntryAspect::LinkAdd(link_data, header) => {
+                context.log("debug/net/handle: handle_store: Got EntryAspect::LinkAdd. processing...");
+                let entry = Entry::LinkAdd(link_data);
+                if entry.address() != *header.entry_address() {
+                    context.log("err/net/handle: handle_store: Got EntryAspect::LinkAdd with non-matching LinkData and ChainHeader! Hash of content in header does not match content! Ignoring.");
+                    return;
+                }
+                let entry_with_header = EntryWithHeader{entry, header};
+                thread::spawn(move || {
+                    match context.block_on(hold_link_workflow(&entry_with_header, &context.clone())) {
                         Err(error) => context.log(format!("err/net/dht: {}", error)),
                         _ => (),
                     }

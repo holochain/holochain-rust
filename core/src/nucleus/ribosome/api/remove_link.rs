@@ -5,6 +5,7 @@ use crate::{
 };
 
 use holochain_core_types::{
+    crud_status::CrudStatus,
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
@@ -71,6 +72,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         let links = links_result.expect("This is supposed to not fail");
         let filtered_links = links
             .into_iter()
+            .filter(|link_crud| link_crud.1 == CrudStatus::Live)
+            .map(|link_crud| link_crud.0)
             .filter(|link_address| {
                 context
                     .block_on(get_entry_result_workflow(

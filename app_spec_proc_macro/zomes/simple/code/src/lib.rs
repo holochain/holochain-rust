@@ -23,7 +23,7 @@ use hdk::{
         json::JsonString,
         link::LinkMatch
     },
-    holochain_wasm_utils::api_serialization::get_links::GetLinksResult
+    holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions}
 };
 
 
@@ -109,9 +109,15 @@ pub mod simple {
         hdk::remove_link(&base, &address, "authored_posts", "")?;
         Ok(())
     }
+
     #[zome_fn("hc_public")]
-    pub fn get_my_links(base: Address) -> ZomeApiResult<GetLinksResult> {
-        hdk::get_links(&base, LinkMatch::Exactly("authored_posts"), LinkMatch::Any)
+    pub fn get_my_links(base: Address,status_request : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResult> 
+    {
+        let options = GetLinksOptions{
+            status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
+            ..GetLinksOptions::default()
+        };
+        hdk::get_links_with_options(&base, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
     }
 
 }

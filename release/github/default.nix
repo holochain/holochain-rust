@@ -1,20 +1,17 @@
 { pkgs, release }:
 let
- config = import ./nix/config.nix;
-
- merge = pkgs.callPackage ./nix/merge.nix {
-  github = config;
-  release = release;
- };
-
- check-artifacts = pkgs.callPackage ./nix/check-artifacts.nix {
-  release = release;
- };
+ github = import ./config.nix;
 in
-{
- config = config;
- buildInputs = [
-  merge
-  check-artifacts
- ];
+github // {
+ buildInputs = []
+
+ ++ (pkgs.callPackage ./check-artifacts {
+  release = release;
+ }).buildInputs
+
+ ++ (pkgs.callPackage ./merge {
+  github = github;
+  release = release;
+ }).buildInputs
+ ;
 }

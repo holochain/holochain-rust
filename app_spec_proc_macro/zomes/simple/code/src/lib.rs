@@ -18,7 +18,6 @@ use hdk::{
     holochain_core_types::{
         entry::Entry,
         dna::entry_types::Sharing,
-        error::HolochainError,
         link::LinkMatch
     },
     holochain_persistence_api::{
@@ -26,7 +25,7 @@ use hdk::{
     },
     holochain_json_api::{
        json::JsonString,
-       json::JsonError
+       error::JsonError
     },
     holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions}
 };

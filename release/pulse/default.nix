@@ -1,18 +1,13 @@
 { pkgs, release, github }:
 let
- config = import ./nix/config.nix;
-
- tag = pkgs.callPackage ./nix/tag.nix {
-   pulse = config;
-   release = release;
-   github = github;
- };
+ pulse = import ./config.nix;
 in
-{
- config = import ./nix/config.nix;
-
- buildInputs =
- [
-  tag
- ];
+pulse // {
+ buildInputs = []
+ ++ (pkgs.callPackage ./tag {
+  pulse = pulse;
+  release = release;
+  github = github;
+ }).buildInputs
+ ;
 }

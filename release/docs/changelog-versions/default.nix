@@ -48,4 +48,6 @@ ${heading-placeholder}
   echo '${template}' > '${unreleased-path}'
   '';
 in
-script
+{
+ buildInputs = [ script ];
+}

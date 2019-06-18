@@ -24,4 +24,6 @@ let
   sed -i 's/${release.version.previous}/${release.version.current}/g' {}
  '';
 in
-script
+{
+ buildInputs = [ script ];
+}

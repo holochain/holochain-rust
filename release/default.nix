@@ -1,47 +1,46 @@
 { pkgs }:
 let
-  config = import ./nix/config.nix;
+  release = import ./config.nix;
+
   github = pkgs.callPackage ./github {
-   release = config;
+   release = release;
   };
 
   pulse = pkgs.callPackage ./pulse {
-   release = config;
+   release = release;
    github = github;
   };
 
   rust = pkgs.callPackage ./rust {
-   release = config;
+   release = release;
   };
 
   docs = pkgs.callPackage ./docs {
-   release = config;
+   release = release;
   };
 in
-{
- buildInputs = [
-  (pkgs.callPackage ./nix/audit.nix {
-   config = config;
-   pulse = pulse;
-   })
+release // {
+ buildInputs = []
 
-   (pkgs.callPackage ./nix/branch.nix {
-    release = config;
-    github = github;
-   })
+ ++ (pkgs.callPackage ./audit {
+  release = release;
+  pulse = pulse;
+ }).buildInputs
 
-   (pkgs.callPackage ./nix/deploy.nix {
-    release = config;
-    github = github;
-   })
+ ++ (pkgs.callPackage ./branch {
+  release = release;
+  github = github;
+ }).buildInputs
 
-   (pkgs.callPackage ./nix/prepare.nix { })
- ]
+ ++ (pkgs.callPackage ./deploy {
+  release = release;
+  github = github;
+ }).buildInputs
+
+ ++ (pkgs.callPackage ./prepare { }).buildInputs
  ++ pulse.buildInputs
  ++ rust.buildInputs
  ++ docs.buildInputs
  ++ github.buildInputs
  ;
-
- config = config;
 }

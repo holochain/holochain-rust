@@ -6,9 +6,11 @@ use crate::{
     network::entry_aspect::EntryAspect,
     nucleus,
 };
-use holochain_core_types::{cas::content::Address, entry::EntryWithMetaAndHeader};
+use holochain_core_types::cas::content::Address;
 use holochain_net::connection::json_protocol::FetchEntryData;
 use std::sync::Arc;
+use holochain_core_types::error::HolochainError;
+use boolinator::*;
 
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
@@ -16,47 +18,50 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     //CLEANUP, currently just using the old code from get to find the single content aspect
     // need to find all the other aspects too
     let address = Address::from(get_dht_data.entry_address.clone());
-    let get_entry = nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone())
-        .map(|entry_with_meta_opt| {
-            let state = context
-                .state()
-                .expect("Could not get state for handle_fetch_entry");
-            state
-                .get_headers(address)
-                .map(|headers| {
-                    entry_with_meta_opt
-                        .map(|entry_with_meta| {
-                            if entry_with_meta.entry.entry_type().can_publish(&context) {
-                                Some(EntryWithMetaAndHeader {
-                                    entry_with_meta: entry_with_meta.clone(),
-                                    headers,
-                                })
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or(None)
-                })
-                .map_err(|error| {
-                    context.log(format!("err/net: Error trying to get headers {:?}", error));
-                    None::<EntryWithMetaAndHeader>
-                })
-        })
-        .map_err(|error| {
-            context.log(format!("err/net: Error trying to find entry {:?}", error));
-            None::<EntryWithMetaAndHeader>
-        })
-        .unwrap_or(Ok(None))
-        .unwrap_or(None);
     let mut aspects = vec![];
-    if let Some(entry) = get_entry {
-        aspects.push(EntryAspect::Content(
-            entry.entry_with_meta.entry.clone(),
-            entry.headers[0].clone(),
-        ))
+
+    if let Ok(content) = get_content_aspect(&address, context.clone()) {
+        aspects.push(content);
+
+
+    } else {
+        context.log(format!("warn/net/handle_fetch_entry: Could not get content aspect of requested entry {:?}", address));
     }
+
     let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data, aspects)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
+}
+
+fn get_content_aspect(entry_address: &Address, context: Arc<Context>) -> Result<EntryAspect, HolochainError> {
+    let entry_with_meta = nucleus::actions::get_entry::get_entry_with_meta(&context, entry_address.clone())?
+        .ok_or(HolochainError::EntryNotFoundLocally)?;
+
+    let _ = entry_with_meta
+        .entry
+        .entry_type()
+        .can_publish(&context)
+        .ok_or(HolochainError::EntryIsPrivate)?;
+
+    let headers = context
+        .state()
+        .expect("Could not get state for handle_fetch_entry")
+        .get_headers(entry_address.clone())
+        .map_err(|error| {
+            let err_message = format!(
+                "err/net/fetch/get_content_aspect: Error trying to get headers {:?}",
+                error
+            );
+            context.log(err_message.clone());
+            HolochainError::ErrorGeneric(err_message)
+        })?;
+
+    // TODO: this is just taking the first header..
+    // We should actually transform all headers into EntryAspect::Headers and just the first one
+    // into an EntryAspect content (What about ordering? Using the headers timestamp?)
+    Ok(EntryAspect::Content(
+        entry_with_meta.entry,
+        headers[0].clone(),
+    ))
 }
 
 /*

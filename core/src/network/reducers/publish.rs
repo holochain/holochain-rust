@@ -70,15 +70,13 @@ fn publish_link_meta(
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
     let (link_type, link_attribute) = match entry_with_header.entry.clone() {
-        Entry::LinkAdd(link_add_entry) => (link_add_entry, Attribute::Link),
-        Entry::LinkRemove((link_remove, _)) => (link_remove, Attribute::LinkRemove),
-        _ => {
-            return Err(HolochainError::ErrorGeneric(format!(
-                "Received bad entry type. Expected Entry::LinkAdd received {:?}",
-                entry_with_header.entry,
-            )));
-        }
-    };
+        Entry::LinkAdd(link_add_entry) => Ok((link_add_entry, Attribute::Link)),
+        Entry::LinkRemove((link_remove, _)) => Ok((link_remove, Attribute::LinkRemove)),
+        _ => Err(HolochainError::ErrorGeneric(format!(
+            "Received bad entry type. Expected Entry::LinkAdd received {:?}",
+            entry_with_header.entry,
+        ))),
+    }?;
     let link = link_type.link().clone();
 
     send(

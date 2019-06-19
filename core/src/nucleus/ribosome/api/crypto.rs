@@ -1,8 +1,6 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::{error::HcResult, json::JsonString, signature::Signature};
-use holochain_dpki::keypair::generate_random_sign_keypair;
+use holochain_core_types::{json::JsonString};
 use holochain_wasm_utils::api_serialization::crypto::CryptoArgs;
-use lib3h_sodium::secbuf::SecBuf;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 

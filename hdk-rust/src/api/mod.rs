@@ -58,6 +58,8 @@ pub use self::{
     remove_link::remove_link,
     send::send,
     sign::{sign, sign_one_time, verify_signature},
+    encrypt::encrypt,
+    decrypt::decrypt,
     sleep::sleep,
     update_remove::{remove_entry, update_agent, update_entry},
 };

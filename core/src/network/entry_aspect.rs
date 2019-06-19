@@ -98,12 +98,14 @@ impl EntryAspect {
 
 impl Into<EntryAspectData> for EntryAspect {
     fn into(self) -> EntryAspectData {
-        let aspect_json = JsonString::from(self.clone());
+        let type_hint = self.type_hint();
+        let aspect_address = self.address();
         let ts: DateTime<FixedOffset> = self.header().timestamp().into();
+        let aspect_json: JsonString = self.into();
         EntryAspectData {
-            type_hint: self.type_hint(),
-            aspect_address: self.address(),
-            aspect: aspect_json.to_string().into(),
+            type_hint,
+            aspect_address,
+            aspect: aspect_json.to_bytes(),
             publish_ts: ts.timestamp() as u64,
         }
     }

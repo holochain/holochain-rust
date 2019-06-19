@@ -107,7 +107,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_query_entry_data(query_entry_data, context.clone())
             }
-            JsonProtocol::HandleQueryEntryResult(query_entry_result_data) => {
+            JsonProtocol::QueryEntryResult(query_entry_result_data) => {
                 if !is_my_dna(
                     &my_dna_address,
                     &query_entry_result_data.dna_address.to_string(),

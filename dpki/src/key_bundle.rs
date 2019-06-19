@@ -149,4 +149,30 @@ pub(crate) mod tests {
         let succeeded = bundle.verify(&mut message, &mut signature);
         assert!(!succeeded);
     }
+
+    #[test]
+
+    fn keybundle_should_encrypt_and_decrypt()
+    {
+        let mut bundle = test_generate_random_bundle();
+
+        // Create random data
+        let mut message = SecBuf::with_insecure(16);
+        message.randomize();
+
+        //encrypt it
+        let mut encrypted_message  = bundle.encrypt(&mut message).unwrap();
+
+        //decrypted same message
+        let mut decrypted_message = bundle.decrypt(&mut encrypted_message).unwrap();
+
+        //read read_lock
+        let encrypted_read_lock = encrypted_message.read_lock();
+
+        //read write_lock
+        let decrypted_read_lock = decrypted_message.read_lock();
+
+        //check if decrypted message equals original message
+        assert_eq!(&encrypted_read_lock[0..16],&decrypted_read_lock[0..16])
+    }
 }

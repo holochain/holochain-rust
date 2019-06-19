@@ -248,9 +248,8 @@ impl Conductor {
                                     .collect();
                                 println!("INTERFACEs for SIGNAL: {:?}", interfaces);
                                 interfaces
-                            },
+                            }
                         };
-
 
                         for interface in interfaces_with_instance {
                             broadcasters.get(&interface.id).map(|broadcaster| {
@@ -273,7 +272,9 @@ impl Conductor {
     }
 
     pub fn stop_signal_multiplexer(&self) {
-        self.signal_multiplexer_kill_switch.as_ref().map(|kill_switch| kill_switch.send(()));
+        self.signal_multiplexer_kill_switch
+            .as_ref()
+            .map(|kill_switch| kill_switch.send(()));
     }
 
     pub fn start_all_interfaces(&mut self) {

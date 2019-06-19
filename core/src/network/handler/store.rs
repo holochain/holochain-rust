@@ -95,7 +95,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     if let Err(error) =
                         context.block_on(hold_update_workflow(entry_with_header, context.clone()))
                     {
-                        context.log(format!("err/net/dht: {}", error))
+                        context.log(format!("err/net/handle_store: {}", error))
                     }
                 });
             }
@@ -103,6 +103,11 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 panic!(format!("unimplemented store aspect {:?}", aspect));
             }
         }
+    } else {
+        context.log(format!(
+            "err/net/handle_store: Unable to parse entry aspect: {}",
+            aspect_json
+        ))
     }
 }
 

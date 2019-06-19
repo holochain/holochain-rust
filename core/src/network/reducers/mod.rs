@@ -37,14 +37,13 @@ use crate::{
     },
     state::State,
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
 use holochain_net::connection::{
     json_protocol::{JsonProtocol, MessageData},
     net_connection::NetSend,
 };
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
-use holochain_core_types::json::JsonString;
 
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {

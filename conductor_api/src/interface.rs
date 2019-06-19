@@ -987,6 +987,27 @@ impl ConductorApiBuilder {
         self
     }
 
+    pub fn with_outsource_decryption_callback(
+        mut self,
+        agent_id: AgentId,
+        encryption_service_uri: String,
+    ) -> Self {
+        let agent_id = agent_id.clone();
+        self.io.add_method("agent/decryption", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+
+            let decrypted_message = request_service(&agent_id, &payload, &encryption_service_uri)
+                .map_err(|holochain_error| {
+                    println!("Error in signing hack: {:?}", holochain_error);
+                    jsonrpc_core::Error::internal_error()
+                })?;
+
+            Ok(json!({ "message": decrypted_message }))
+        });
+        self
+    }
+
     pub fn with_agent_keystore_functions(mut self, keystore: Arc<Mutex<Keystore>>) -> Self {
         let k = keystore.clone();
         self.io.add_method("agent/keystore/list", move |_params| {

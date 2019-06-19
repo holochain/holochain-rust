@@ -37,6 +37,7 @@ rpassword = "=2.1.0"
 base64 = "=0.10.1"
 reqwest = "=0.9.11"
 crossbeam-channel = "=0.3.8"
+futures = "0.1.21"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

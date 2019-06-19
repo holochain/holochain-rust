@@ -132,6 +132,8 @@ extern crate tokio;
 #[macro_use]
 extern crate pretty_assertions;
 extern crate base64;
+#[macro_use]
+extern crate futures;
 
 pub mod conductor;
 pub mod config;

@@ -1,14 +1,15 @@
+use std::path::PathBuf;
 use conductor::base::notify;
 use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
 use error::HolochainResult;
 use holochain_core_types::error::HolochainError;
 use hyper::{
-    http::{response::Builder, uri},
+    http::{response::Builder, uri, StatusCode, header},
     rt::Future,
     server::Server,
     Body, Request, Response,
 };
-use hyper_staticfile::{Static, StaticFuture};
+use hyper_staticfile::{ResolveResult, ResolveFuture, FileResponseBuilder};
 use std::{
     io::Error,
     sync::mpsc::{channel, Sender},
@@ -33,12 +34,81 @@ fn dna_connections_response(config: &Option<InterfaceConfiguration>) -> Response
         None => serde_json::Value::Null,
     };
     Builder::new()
+        .header(header::CONTENT_TYPE, header::HeaderValue::from_static("application/json"))
         .body(json!({ "dna_interface": interface }).to_string().into())
         .expect("unable to build response")
 }
 
+/// Future returned by `Static::serve`.
+pub struct StaticFileFuture<B> {
+    /// Future for the `resolve` in progress.
+    resolve_future: ResolveFuture,
+    /// Request we're serving.
+    request: Request<B>,
+}
+
+impl<B> StaticFileFuture<B> {
+    // create a StaticFileFuture to serve a given request
+    pub fn new(root: &PathBuf, request: Request<B>) -> Self {
+        StaticFileFuture{
+            resolve_future: hyper_staticfile::resolve(root, &request),
+            request
+        }
+    }
+}
+
+impl<B> Future for StaticFileFuture<B> {
+    type Item = Response<Body>;
+    type Error = Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        let result = try_ready!(self.resolve_future.poll());
+        let req = &self.request;
+
+        let response = match result {
+            ResolveResult::MethodNotMatched => {
+                Builder::new()
+                    .status(StatusCode::BAD_REQUEST)
+                    .body(Body::empty())
+            },
+            ResolveResult::UriNotMatched | ResolveResult::NotFound => {
+                Builder::new()
+                    .status(StatusCode::NOT_FOUND)
+                    .body(Body::empty())
+            },
+            ResolveResult::PermissionDenied => {
+                Builder::new()
+                    .status(StatusCode::FORBIDDEN)
+                    .body(Body::empty())
+            },
+            ResolveResult::IsDirectory => {
+                let mut target = req.uri().path().to_owned();
+                target.push('/');
+                if let Some(query) = req.uri().query() {
+                    target.push('?');
+                    target.push_str(query);
+                }
+                Builder::new()
+                    .status(StatusCode::MOVED_PERMANENTLY)
+                    .header(header::LOCATION, target.as_str())
+                    .body(Body::empty())
+            },
+            ResolveResult::Found(file, metadata) => {
+                FileResponseBuilder::from_request(req)
+                    .build(file, metadata)
+                    .map(|mut r| {
+                        r.headers_mut().insert(header::CONTENT_TYPE, header::HeaderValue::from_static("text/html"));
+                        r
+                    })
+            },
+        }.expect("unable to build response");
+
+        Ok(Async::Ready(response))
+    }    
+}
+
 enum MainFuture {
-    Static(StaticFuture<Body>),
+    Static(StaticFileFuture<Body>),
     Config(Option<InterfaceConfiguration>),
 }
 
@@ -56,14 +126,14 @@ impl Future for MainFuture {
 
 /// Hyper `Service` implementation that serves all requests.
 struct StaticService {
-    static_: Static,
+    static_file_root: PathBuf,
     dna_interface_config: Option<InterfaceConfiguration>,
 }
 
 impl StaticService {
-    fn new(path: &String, dna_interface_config: &Option<InterfaceConfiguration>) -> Self {
+    fn new(path: &PathBuf, dna_interface_config: &Option<InterfaceConfiguration>) -> Self {
         StaticService {
-            static_: Static::new(path),
+            static_file_root: path.to_path_buf(),
             dna_interface_config: dna_interface_config.to_owned(),
         }
     }
@@ -80,16 +150,16 @@ impl hyper::service::Service for StaticService {
             DNA_CONFIG_ROUTE => MainFuture::Config(self.dna_interface_config.clone()),
             _ => {
                 MainFuture::Static(
-                    hyper_staticfile::resolve(&self.static_.root, &req)
+                    hyper_staticfile::resolve(&self.static_file_root, &req)
                         .map(|result| {
                             match result {
                                 hyper_staticfile::ResolveResult::NotFound => {
                                     // redirect all not-found routes to the root
                                     // this allows virtual routes on the front end
                                     redirect_request_to_root(&mut req);
-                                    self.static_.serve(req)
+                                    StaticFileFuture::new(&self.static_file_root, req)
                                 }
-                                _ => self.static_.serve(req),
+                                _ => StaticFileFuture::new(&self.static_file_root, req),
                             }
                         })
                         .wait()
@@ -128,7 +198,7 @@ impl StaticServer {
 
         let (tx, rx) = channel::<()>();
         self.shutdown_signal = Some(tx);
-        let static_path = self.bundle_config.root_dir.to_owned();
+        let static_path = PathBuf::from(self.bundle_config.root_dir.to_owned());
         let dna_interfaces = self.connected_dna_interface.to_owned();
 
         notify(format!(

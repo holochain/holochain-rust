@@ -633,17 +633,23 @@ impl Conductor {
                 // the hash provided in the TOML Conductor config file with the computed hash of
                 // the loaded dna.
                 {
+                    // let dna_hash_from_conductor_config = HashString::from({
+                    //     match dna_config.hash {
+                    //         Some(v) => v,
+                    //         None => {
+                    //             // Let's warn the user that we encountered an empty DNA hash in the Conductor
+                    //             // config that is meant to be skipped by the consistency checking mechanisim
+                    //             context.log("warn/Conductor: Invalid DNA hash encountered in the Conductor configuration.");
+                    //             String::from("")
+                    //         }
+                    //     }
+                    // }).to_owned();
                     let dna_hash_from_conductor_config = HashString::from({
-                        match dna_config.hash {
-                            Some(v) => v,
-                            None => {
-                                // Let's warn the user that we encountered an empty DNA hash in the Conductor
-                                // config that is meant to be skipped by the consistency checking mechanisim
-                                context.log("warn/Conductor: Invalid DNA hash encountered in the Conductor configuration.");
-                                String::from("")
-                            }
-                        }
-                    }).to_owned();
+                        dna_config.hash.unwrap_or_else(|| {
+                            context.log("warn/Conductor: Invalid DNA hash encountered in the Conductor configuration.");
+                            String::default()
+                        })
+                    });
 
                     let dna_hash_computed = &dna.address();
 
@@ -1517,6 +1523,15 @@ pub mod tests {
     fn test_check_dna_consistency_err() {
         let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
         let b = HashString::from("QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR");
+
+        assert_eq!(
+            Conductor::check_dna_consistency(&a, &b),
+            Err(HolochainError::DnaHashMismatch(a, b)),
+            "DNA consistency check Fail."
+        );
+
+        let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        let b = HashString::from(String::default());
 
         assert_eq!(
             Conductor::check_dna_consistency(&a, &b),

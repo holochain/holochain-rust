@@ -1,4 +1,4 @@
-use crate::holo_signing_service::request_signing_service;
+use crate::holo_signing_service::request_service;
 use base64;
 use conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;
@@ -931,13 +931,36 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
 
-            let signature = request_signing_service(&agent_id, &payload, &signing_service_uri)
+            let signature = request_service(&agent_id, &payload, &signing_service_uri)
                 .map_err(|holochain_error| {
                     println!("Error in signing hack: {:?}", holochain_error);
                     jsonrpc_core::Error::internal_error()
                 })?;
 
             Ok(json!({ "signature": signature }))
+        });
+        self
+    }
+
+    pub fn with_outsource_encryption_callback(
+        mut self,
+        agent_id: AgentId,
+        encryption_service_uri: String,
+    ) -> Self {
+        let agent_id = agent_id.clone();
+        let signing_service_uri = encryption_service_uri.clone();
+
+        self.io.add_method("agent/encryption", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+
+            let encrypted_message = request_service(&agent_id, &payload, &encryption_service_uri)
+                .map_err(|holochain_error| {
+                    println!("Error in signing hack: {:?}", holochain_error);
+                    jsonrpc_core::Error::internal_error()
+                })?;
+
+            Ok(json!({ "message": encrypted_message }))
         });
         self
     }

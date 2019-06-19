@@ -67,7 +67,7 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 /// The network has sent us a query for entry data, so we need to examine
 /// the query and create appropriate actions for the different variants
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
-    let query_json = JsonString::from(query_data.query.clone());
+    let query_json = JsonString::from_json(&String::from_utf8(query_data.query.clone()).unwrap());
     let action_wrapper = match query_json.clone().try_into() {
         Ok(NetworkQuery::GetLinks(link_type, tag)) => {
             let links = get_links(
@@ -101,7 +101,8 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
 /// The network comes back with a result to our previous query with a result, so we
 /// examine the query result for its type and dispatch different actions according to variant
 pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, context: Arc<Context>) {
-    let query_result_json = JsonString::from(query_result_data.query_result);
+    let query_result_json =
+        JsonString::from_json(&String::from_utf8(query_result_data.query_result).unwrap());
     let action_wrapper = match query_result_json.clone().try_into() {
         Ok(NetworkQueryResult::Entry(maybe_entry)) => {
             ActionWrapper::new(Action::HandleGetResult((

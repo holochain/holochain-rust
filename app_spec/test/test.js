@@ -930,4 +930,11 @@ scenario('request grant', async (s, t, { alice, bob }) => {
     t.equal(result.Ok, grants.Ok[0])
 })
 
+  scenario('emit signal', async (s, t, { alice }) => {
+    const result = await alice.callSync("simple", "test_emit_signal", {message: "test message"})
+    t.equal(alice.signals.length, 1)
+    t.deepEqual(alice.signals[0], { signal_type: 'User', name: 'test-signal', arguments: '{"message":"test message"}' })
+    t.notOk(result.Err)
+  })
+
 }

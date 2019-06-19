@@ -1,6 +1,7 @@
 use crate::{action::ActionWrapper, consistency::ConsistencySignal};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 use serde::{Deserialize, Deserializer};
 use std::thread;
 
@@ -9,7 +10,22 @@ use std::thread;
 pub enum Signal {
     Trace(ActionWrapper),
     Consistency(ConsistencySignal),
-    User(JsonString),
+    User(UserSignal),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
+pub struct UserSignal {
+    pub name: String,
+    pub arguments: JsonString,
+}
+
+impl From<EmitSignalArgs> for UserSignal {
+    fn from(args: EmitSignalArgs) -> UserSignal {
+        UserSignal {
+            name: args.name,
+            arguments: args.arguments,
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for Signal {

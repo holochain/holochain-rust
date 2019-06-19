@@ -1,15 +1,28 @@
-// This test file uses the tape testing framework.
-// To learn more, go here: https://github.com/substack/tape
-const { Config, Scenario } = require("@holochain/holochain-nodejs")
-Scenario.setTape(require("tape"))
+const path = require('path')
+const tape = require('tape')
 
-const dnaPath = "./dist/<<DNA_NAME>>.dna.json"
-const agentAlice = Config.agent("alice")
-const dna = Config.dna(dnaPath)
-const instanceAlice = Config.instance(agentAlice, dna)
-const scenario = new Scenario([instanceAlice])
+const { Diorama, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/diorama')
 
-scenario.runTape("description of example test", async (t, { alice }) => {
+process.on('unhandledRejection', error => {
+  // Will print "unhandledRejection err is not defined"
+  console.error('got unhandledRejection:', error);
+});
+
+const dnaPath = path.join(__dirname, "../dist/<<DNA_NAME>>.dna.json")
+const dna = Diorama.dna(dnaPath, '<<DNA_NAME>>')
+
+const diorama = new Diorama({
+  instances: {
+    alice: dna,
+    bob: dna,
+  },
+  bridges: [],
+  debugLog: false,
+  executor: tapeExecutor(require('tape')),
+  middleware: backwardCompatibilityMiddleware,
+})
+
+diorama.registerScenario.runTape("description of example test", async (s, t, { alice }) => {
   // Make a call to a Zome function
   // indicating the function, and passing it an input
   const addr = alice.call("my_zome", "create_my_entry", {"entry" : {"content":"sample content"}})
@@ -18,3 +31,5 @@ scenario.runTape("description of example test", async (t, { alice }) => {
   // check for equality of the actual and expected results
   t.deepEqual(result, { Ok: { App: [ 'my_entry', '{"content":"sample content"}' ] } })
 })
+
+diorama.run()

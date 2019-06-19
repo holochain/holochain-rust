@@ -44,6 +44,7 @@ use holochain_net::connection::{
 };
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
+use holochain_core_types::json::JsonString;
 
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
@@ -117,12 +118,15 @@ pub fn send_message(
 ) -> Result<(), HolochainError> {
     let id = ProcessUniqueId::new().to_string();
 
+    let content_json_string: JsonString = message.to_owned().into();
+    let content = content_json_string.to_bytes();
+
     let data = MessageData {
         request_id: id.clone(),
         dna_address: network_state.dna_address.clone().unwrap(),
         to_agent_id: to_agent_id.clone(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
-        content: serde_json::from_str(&serde_json::to_string(&message).unwrap()).unwrap(),
+        content,
     };
 
     let _ = send(network_state, JsonProtocol::SendMessage(data))?;

@@ -931,11 +931,9 @@ scenario('request grant', async (s, t, { alice, bob }) => {
 })
 
   scenario('emit signal', async (s, t, { alice }) => {
-
     const result = await alice.callSync("simple", "test_emit_signal", {message: "test message"})
-    // TODO: Here we need some way to read all the received UserSignals...
     t.equal(alice.signals.length, 1)
-    t.equal(alice.signals[0], {})
+    t.deepEqual(alice.signals[0], { signal_type: 'User', name: 'test-signal', arguments: '{"message":"test message"}' })
     t.notOk(result.Err)
   })
 

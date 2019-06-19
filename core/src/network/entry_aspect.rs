@@ -1,6 +1,6 @@
 use chrono::{offset::FixedOffset, DateTime};
 use holochain_core_types::{
-    cas::content::{AddressableContent, Content, Address},
+    cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
     entry::Entry,
     error::HolochainError,
@@ -80,7 +80,7 @@ impl EntryAspect {
             EntryAspect::Header(_) => String::from("header"),
             EntryAspect::LinkAdd(_, _) => String::from("link_add"),
             EntryAspect::LinkRemove(_, _) => String::from("link_remove"),
-            EntryAspect::Update(_,_) => String::from("update"),
+            EntryAspect::Update(_, _) => String::from("update"),
             EntryAspect::Deletion(_) => String::from("deletion"),
         }
     }
@@ -90,7 +90,7 @@ impl EntryAspect {
             EntryAspect::Header(header) => header.clone(),
             EntryAspect::LinkAdd(_, header) => header.clone(),
             EntryAspect::LinkRemove(_, header) => header.clone(),
-            EntryAspect::Update(_,header) => header.clone(),
+            EntryAspect::Update(_, header) => header.clone(),
             EntryAspect::Deletion(header) => header.clone(),
         }
     }

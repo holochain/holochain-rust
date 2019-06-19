@@ -2,16 +2,14 @@ use crate::{
     context::Context,
     network::{entry_aspect::EntryAspect, entry_with_header::EntryWithHeader},
     workflows::{
-        hold_entry::hold_entry_workflow,
-        hold_link::hold_link_workflow,
-        remove_link::remove_link_workflow,
-        hold_entry_update::hold_update_workflow,
+        hold_entry::hold_entry_workflow, hold_entry_update::hold_update_workflow,
+        hold_link::hold_link_workflow, remove_link::remove_link_workflow,
     },
 };
 use holochain_core_types::{
-    json::JsonString,
     cas::content::AddressableContent,
     entry::{deletion_entry::DeletionEntry, Entry},
+    json::JsonString,
 };
 use holochain_net::connection::json_protocol::StoreEntryAspectData;
 //use std::{str::FromStr, sync::Arc, thread, convert::TryInto};
@@ -23,7 +21,8 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
     if let Ok(aspect) = aspect_json.try_into() {
         match aspect {
             EntryAspect::Content(entry, header) => {
-                context.log("debug/net/handle: handle_store: Got EntryAspect::Content. processing...");
+                context
+                    .log("debug/net/handle: handle_store: Got EntryAspect::Content. processing...");
                 let entry_with_header = EntryWithHeader { entry, header };
                 thread::spawn(move || {
                     match context.block_on(hold_entry_workflow(&entry_with_header, context.clone()))
@@ -34,24 +33,28 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 });
             }
             EntryAspect::LinkAdd(link_data, header) => {
-                context.log("debug/net/handle: handle_store: Got EntryAspect::LinkAdd. processing...");
+                context
+                    .log("debug/net/handle: handle_store: Got EntryAspect::LinkAdd. processing...");
                 let entry = Entry::LinkAdd(link_data);
                 if entry.address() != *header.entry_address() {
                     context.log("err/net/handle: handle_store: Got EntryAspect::LinkAdd with non-matching LinkData and ChainHeader! Hash of content in header does not match content! Ignoring.");
                     return;
                 }
-                let entry_with_header = EntryWithHeader{entry, header};
+                let entry_with_header = EntryWithHeader { entry, header };
                 thread::spawn(move || {
-                    match context.block_on(hold_link_workflow(&entry_with_header, &context.clone())) {
+                    match context.block_on(hold_link_workflow(&entry_with_header, &context.clone()))
+                    {
                         Err(error) => context.log(format!("err/net/dht: {}", error)),
                         _ => (),
                     }
                 });
             }
-            EntryAspect::LinkRemove((link_data, links_to_remove),  header) => {
-                context.log("debug/net/handle: handle_store: Got EntryAspect::LinkRemove. processing...");
-                let entry = Entry::LinkRemove((link_data,links_to_remove));
-                let entry_with_header = EntryWithHeader{entry, header};
+            EntryAspect::LinkRemove((link_data, links_to_remove), header) => {
+                context.log(
+                    "debug/net/handle: handle_store: Got EntryAspect::LinkRemove. processing...",
+                );
+                let entry = Entry::LinkRemove((link_data, links_to_remove));
+                let entry_with_header = EntryWithHeader { entry, header };
                 thread::spawn(move || {
                     if let Err(error) =
                         context.block_on(remove_link_workflow(&entry_with_header, &context.clone()))
@@ -61,7 +64,8 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 });
             }
             EntryAspect::Update(entry, header) => {
-                context.log("debug/net/handle: handle_store: Got EntryAspect::Update. processing...");
+                context
+                    .log("debug/net/handle: handle_store: Got EntryAspect::Update. processing...");
                 let entry_with_header = EntryWithHeader { entry, header };
                 thread::spawn(move || {
                     if let Err(error) =
@@ -72,13 +76,15 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 });
             }
             EntryAspect::Deletion(header) => {
-                context.log("debug/net/handle: handle_store: Got EntryAspect::Deletion. processing...");
+                context.log(
+                    "debug/net/handle: handle_store: Got EntryAspect::Deletion. processing...",
+                );
                 // reconstruct the deletion entry from the header.
                 let deleted_entry_address = match header.link_update_delete() {
                     None => {
                         context.log("err/net/handle: handle_store: Got EntryAspect::Deletion with header that has no deletion link! Ignoring.");
                         return;
-                    },
+                    }
                     Some(address) => address,
                 };
 

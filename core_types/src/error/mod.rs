@@ -145,7 +145,10 @@ impl fmt::Display for HolochainError {
                 hash1, hash2
             ),
             EntryNotFoundLocally => write!(f, "The requested entry could not be found locally"),
-            EntryIsPrivate => write!(f, "The requested entry is private and should not be shared via gossip"),
+            EntryIsPrivate => write!(
+                f,
+                "The requested entry is private and should not be shared via gossip"
+            ),
         }
     }
 }
@@ -358,10 +361,13 @@ mod tests {
                 HolochainError::ValidationPending,
                 "Entry validation could not be completed",
             ),
-            (HolochainError::EntryNotFound, "The requested entry could not be found"),
+            (
+                HolochainError::EntryNotFound,
+                "The requested entry could not be found",
+            ),
             (
                 HolochainError::EntryIsPrivate,
-                "The requested entry is private and should not be shared via gossip"
+                "The requested entry is private and should not be shared via gossip",
             ),
         ] {
             assert_eq!(output, &input.to_string());

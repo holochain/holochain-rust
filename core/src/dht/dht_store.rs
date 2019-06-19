@@ -104,13 +104,17 @@ impl DhtStore {
             .collect())
     }
 
-    pub fn get_all_metas(&self, address: Address)
-        -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+    pub fn get_all_metas(
+        &self,
+        address: &Address,
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let query = EaviQuery::new(
-            Some(address).into(),
+            Some(address.to_owned()).into(),
             EavFilter::predicate(move |attr: Attribute| match attr.clone() {
-                Attribute::LinkTag(_,_) | Attribute::RemovedLink(_,_) |
-                Attribute::CrudLink | Attribute::CrudStatus => true,
+                Attribute::LinkTag(_, _)
+                | Attribute::RemovedLink(_, _)
+                | Attribute::CrudLink
+                | Attribute::CrudStatus => true,
                 _ => false,
             }),
             None.into(),

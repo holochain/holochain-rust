@@ -948,8 +948,6 @@ impl ConductorApiBuilder {
         encryption_service_uri: String,
     ) -> Self {
         let agent_id = agent_id.clone();
-        let signing_service_uri = encryption_service_uri.clone();
-
         self.io.add_method("agent/encryption", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;

@@ -17,11 +17,11 @@ pub mod query;
 pub mod remove_entry;
 pub mod remove_link;
 pub mod send;
-pub mod sign;
 pub mod sleep;
 pub mod update_entry;
 pub mod verify_signature;
-pub mod encrypt;
+pub mod crypto;
+
 
 use crate::nucleus::ribosome::{
     api::{
@@ -44,7 +44,7 @@ use crate::nucleus::ribosome::{
         remove_link::invoke_remove_link,
         send::invoke_send,
         sign::{invoke_sign, invoke_sign_one_time},
-        encrypt::invoke_encrypt,
+        crypto::invoke_crypto,
         sleep::invoke_sleep,
         update_entry::invoke_update_entry,
         verify_signature::invoke_verify_signature,
@@ -111,8 +111,8 @@ link_zome_api! {
 
     /// Sign a block of data with the Agent key
     "hc_sign", Sign, invoke_sign;
-    "hc_encrypt",Encrypt,invoke_encrypt;
-
+    //execute cryptographic function
+    "hc_crypto",Crypto,invoke_crypto;
     /// Sign a block of data with a one-time key that is then shredded
     "hc_sign_one_time", SignOneTime, invoke_sign_one_time;
 

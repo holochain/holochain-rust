@@ -7,6 +7,8 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use holochain_wasm_utils::api_serialization::crypto::ConductorCryptoApiMethod;
+
 #[derive(Clone)]
 pub struct ConductorApi(Arc<RwLock<IoHandler>>);
 
@@ -38,14 +40,17 @@ impl ConductorApi {
         ConductorApi(conductor_api)
     }
 
-    pub fn sign(&self, payload: String) -> Result<String, HolochainError> {
-        send_json_rpc(self.0.clone(), payload, ("sign".to_string(),"signature".to_string()))
-    }
+    pub fn execute(&self, payload : String,method : ConductorCryptoApiMethod) -> Result<String,HolochainError>
+    {
+        let request_response = match method
+        {
+            ConductorCryptoApiMethod::Sign => (String::from("sign"),String::from("signature")),
+            ConductorCryptoApiMethod::Encrypt =>(String::from("encrypt"),String::from("message")),
+            ConductorCryptoApiMethod::Decrypt =>(String::from("decrypt"),String::from("message")),   
+        };
 
-    pub fn encrypt(&self, payload: String) -> Result<String, HolochainError> {
-        send_json_rpc(self.0.clone(), payload,("encrypt".to_string(),"message".to_string()))
+        send_json_rpc(self.0.clone(), payload, request_response)
     }
-
      
     pub fn get(&self) -> &Arc<RwLock<IoHandler>> {
         &self.0

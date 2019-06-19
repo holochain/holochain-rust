@@ -29,10 +29,10 @@ use super::Dispatch;
 /// }
 /// # }
 /// ```
-pub fn encrypt<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
+pub fn decrypt<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     Dispatch::Crypto.with_input(CryptoArgs {
         payload: payload.into(),
-        method : ConductorCryptoApiMethod::Encrypt
+        method : ConductorCryptoApiMethod::Decrypt
     })
 }
 

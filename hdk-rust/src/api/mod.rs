@@ -37,6 +37,7 @@ mod sign;
 mod sleep;
 mod update_remove;
 mod encrypt;
+mod decrypt;
 
 pub use self::{
     bundle::{close_bundle, start_bundle},
@@ -167,7 +168,7 @@ def_api_fns! {
     hc_debug, Debug;
     hc_call, Call;
     hc_sign, Sign;
-    hc_encrypt,Encrypt;
+    hc_crypto,Crypto;
     hc_sign_one_time, SignOneTime;
     hc_verify_signature, VerifySignature;
     hc_link_entries, LinkEntries;

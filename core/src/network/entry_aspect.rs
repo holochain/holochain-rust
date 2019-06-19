@@ -1,6 +1,6 @@
 use chrono::{offset::FixedOffset, DateTime};
 use holochain_core_types::{
-    cas::content::{AddressableContent, Content},
+    cas::content::{AddressableContent, Content, Address},
     chain_header::ChainHeader,
     entry::Entry,
     error::HolochainError,
@@ -47,7 +47,7 @@ pub enum EntryAspect {
     LinkAdd(LinkData, ChainHeader),
 
     // Same as LinkAdd but for removal of links
-    LinkRemove(LinkData, ChainHeader),
+    LinkRemove((LinkData, Vec<Address>), ChainHeader),
 
     // CLEANUP this looks wrong to me.  I don't think we actually want to
     // send the updated Entry as part of the meta item.  That would mean the

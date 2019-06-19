@@ -85,9 +85,9 @@ fn publish_link_meta(
             link_data.link().base().clone(),
             EntryAspect::LinkAdd(link_data, entry_with_header.header.clone()),
         ),
-        Entry::LinkRemove((link_data, _)) => (
+        Entry::LinkRemove((link_data, links_to_remove)) => (
             link_data.link().base().clone(),
-            EntryAspect::LinkRemove(link_data, entry_with_header.header.clone()),
+            EntryAspect::LinkRemove((link_data, links_to_remove), entry_with_header.header.clone()),
         ),
         _ => {
             return Err(HolochainError::ErrorGeneric(format!(

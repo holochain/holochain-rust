@@ -10,7 +10,10 @@ use holochain_net::connection::json_protocol::StoreEntryAspectData;
 use std::{convert::TryInto, sync::Arc, thread};
 use holochain_core_types::entry::Entry;
 use holochain_core_types::cas::content::AddressableContent;
-use crate::workflows::hold_link::hold_link_workflow;
+use crate::workflows::{
+    hold_link::hold_link_workflow,
+    remove_link::remove_link_workflow,
+};
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
@@ -18,6 +21,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
     if let Ok(aspect) = aspect_json.try_into() {
         match aspect {
             EntryAspect::Content(entry, header) => {
+                context.log("debug/net/handle: handle_store: Got EntryAspect::Content. processing...");
                 let entry_with_header = EntryWithHeader { entry, header };
                 thread::spawn(move || {
                     match context.block_on(hold_entry_workflow(&entry_with_header, context.clone()))
@@ -39,6 +43,18 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     match context.block_on(hold_link_workflow(&entry_with_header, &context.clone())) {
                         Err(error) => context.log(format!("err/net/dht: {}", error)),
                         _ => (),
+                    }
+                });
+            }
+            EntryAspect::LinkRemove((link_data, links_to_remove),  header) => {
+                context.log("debug/net/handle: handle_store: Got EntryAspect::LinkRemove. processing...");
+                let entry = Entry::LinkRemove((link_data,links_to_remove));
+                let entry_with_header = EntryWithHeader{entry, header};
+                thread::spawn(move || {
+                    if let Err(error) =
+                        context.block_on(remove_link_workflow(&entry_with_header, &context.clone()))
+                    {
+                        context.log(format!("err/net/dht: {}", error))
                     }
                 });
             }

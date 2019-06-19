@@ -3,7 +3,6 @@ use holochain_core_types::{
     agent::AgentId, cas::content::AddressableContent, error::HolochainError,
 };
 
-
 // this could be used for a lot of external callbacks and can be moved to somewhere more general?
 pub fn request_service(
     agent_id: &AgentId,
@@ -19,9 +18,11 @@ pub fn request_service(
         ))
     })?;
     // NB: .json sets content-type: application/json
-    let mut response = client.post(url).json(&body_json).send().map_err(|e| {
-        HolochainError::ErrorGeneric(format!("Error during request: {:?}", e))
-    })?;
+    let mut response = client
+        .post(url)
+        .json(&body_json)
+        .send()
+        .map_err(|e| HolochainError::ErrorGeneric(format!("Error during request: {:?}", e)))?;
     response
         .status()
         .is_success()

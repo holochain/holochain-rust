@@ -916,7 +916,8 @@ impl ConductorApiBuilder {
             // Return as base64 encoded string
             //let decrypted_message = base64::decode(&**message_signature).map_err(|_|jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
 
-            let decrypted_string = std::str::from_utf8(&*message_signature).expect("could not decrypt");
+            let decrypted_string =
+                std::str::from_utf8(&*message_signature).expect("could not decrypt");
             Ok(json!({ "message": decrypted_string }))
         });
         self
@@ -956,11 +957,12 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
 
-            let signature = request_service(&agent_id, &payload, &signing_service_uri)
-                .map_err(|holochain_error| {
+            let signature = request_service(&agent_id, &payload, &signing_service_uri).map_err(
+                |holochain_error| {
                     println!("Error in signing hack: {:?}", holochain_error);
                     jsonrpc_core::Error::internal_error()
-                })?;
+                },
+            )?;
 
             Ok(json!({ "signature": signature }))
         });
@@ -979,9 +981,9 @@ impl ConductorApiBuilder {
 
             let encrypted_message = request_service(&agent_id, &payload, &encryption_service_uri)
                 .map_err(|holochain_error| {
-                    println!("Error in signing hack: {:?}", holochain_error);
-                    jsonrpc_core::Error::internal_error()
-                })?;
+                println!("Error in signing hack: {:?}", holochain_error);
+                jsonrpc_core::Error::internal_error()
+            })?;
 
             Ok(json!({ "message": encrypted_message }))
         });
@@ -1000,9 +1002,9 @@ impl ConductorApiBuilder {
 
             let decrypted_message = request_service(&agent_id, &payload, &encryption_service_uri)
                 .map_err(|holochain_error| {
-                    println!("Error in signing hack: {:?}", holochain_error);
-                    jsonrpc_core::Error::internal_error()
-                })?;
+                println!("Error in signing hack: {:?}", holochain_error);
+                jsonrpc_core::Error::internal_error()
+            })?;
 
             Ok(json!({ "message": decrypted_message }))
         });

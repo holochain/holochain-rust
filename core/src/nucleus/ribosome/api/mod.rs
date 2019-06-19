@@ -12,6 +12,7 @@ pub mod link_entries;
 #[macro_use]
 mod macros;
 pub mod capabilities;
+pub mod crypto;
 pub mod keystore;
 pub mod query;
 pub mod remove_entry;
@@ -21,14 +22,13 @@ pub mod sign;
 pub mod sleep;
 pub mod update_entry;
 pub mod verify_signature;
-pub mod crypto;
-
 
 use crate::nucleus::ribosome::{
     api::{
         call::invoke_call,
         capabilities::{invoke_commit_capability_claim, invoke_commit_capability_grant},
         commit::invoke_commit_app_entry,
+        crypto::invoke_crypto,
         debug::invoke_debug,
         entry_address::invoke_entry_address,
         get_entry::invoke_get_entry,
@@ -44,8 +44,7 @@ use crate::nucleus::ribosome::{
         remove_entry::invoke_remove_entry,
         remove_link::invoke_remove_link,
         send::invoke_send,
-        sign::{invoke_sign_one_time},
-        crypto::invoke_crypto,
+        sign::invoke_sign_one_time,
         sleep::invoke_sleep,
         update_entry::invoke_update_entry,
         verify_signature::invoke_verify_signature,

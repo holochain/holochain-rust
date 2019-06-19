@@ -1,8 +1,5 @@
 use error::ZomeApiResult;
-use holochain_wasm_utils::api_serialization::{
-    crypto::{CryptoArgs,ConductorCryptoApiMethod}
-};
-
+use holochain_wasm_utils::api_serialization::crypto::{ConductorCryptoApiMethod, CryptoArgs};
 
 use super::Dispatch;
 
@@ -31,9 +28,6 @@ use super::Dispatch;
 pub fn decrypt<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     Dispatch::Crypto.with_input(CryptoArgs {
         payload: payload.into(),
-        method : ConductorCryptoApiMethod::Decrypt
+        method: ConductorCryptoApiMethod::Decrypt,
     })
 }
-
-
-

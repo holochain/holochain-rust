@@ -24,6 +24,8 @@ mod call;
 mod capability;
 mod commit_entry;
 mod debug;
+mod decrypt;
+mod encrypt;
 mod entry_address;
 mod get_entry;
 mod get_links;
@@ -36,8 +38,6 @@ mod send;
 mod sign;
 mod sleep;
 mod update_remove;
-mod encrypt;
-mod decrypt;
 
 pub use self::{
     bundle::{close_bundle, start_bundle},
@@ -45,6 +45,8 @@ pub use self::{
     capability::{commit_capability_claim, commit_capability_grant},
     commit_entry::{commit_entry, commit_entry_result},
     debug::debug,
+    decrypt::decrypt,
+    encrypt::encrypt,
     entry_address::entry_address,
     get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
     get_links::{get_links, get_links_and_load, get_links_result, get_links_with_options},
@@ -58,8 +60,6 @@ pub use self::{
     remove_link::remove_link,
     send::send,
     sign::{sign, sign_one_time, verify_signature},
-    encrypt::encrypt,
-    decrypt::decrypt,
     sleep::sleep,
     update_remove::{remove_entry, update_agent, update_entry},
 };

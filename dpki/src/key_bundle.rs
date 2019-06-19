@@ -59,13 +59,11 @@ impl KeyBundle {
         self.sign_keys.sign(data)
     }
 
-    pub fn encrypt(&mut self, data : &mut SecBuf) -> HcResult<SecBuf>
-    {
+    pub fn encrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
         self.enc_keys.encrypt(data)
     }
 
-    pub fn decrypt(&mut self, data : &mut SecBuf) -> HcResult<SecBuf>
-    {
+    pub fn decrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
         self.enc_keys.decrypt(data)
     }
 
@@ -152,8 +150,7 @@ pub(crate) mod tests {
 
     #[test]
 
-    fn keybundle_should_encrypt_and_decrypt()
-    {
+    fn keybundle_should_encrypt_and_decrypt() {
         let mut bundle = test_generate_random_bundle();
 
         // Create random data
@@ -161,7 +158,7 @@ pub(crate) mod tests {
         message.randomize();
 
         //encrypt it
-        let mut encrypted_message  = bundle.encrypt(&mut message).unwrap();
+        let mut encrypted_message = bundle.encrypt(&mut message).unwrap();
 
         //decrypted same message
         let mut decrypted_message = bundle.decrypt(&mut encrypted_message).unwrap();
@@ -173,6 +170,6 @@ pub(crate) mod tests {
         let decrypted_read_lock = decrypted_message.read_lock();
 
         //check if decrypted message equals original message
-        assert_eq!(&encrypted_read_lock[0..16],&decrypted_read_lock[0..16])
+        assert_eq!(&encrypted_read_lock[0..16], &decrypted_read_lock[0..16])
     }
 }

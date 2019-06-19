@@ -177,7 +177,9 @@ pub fn create_new_chain_header(
 ) -> Result<ChainHeader, HolochainError> {
     let agent_address = agent_state.get_agent_address()?;
     let signature = Signature::from(
-        root_state.conductor_api.execute(entry.address().to_string(),ConductorCryptoApiMethod::Sign)?,
+        root_state
+            .conductor_api
+            .execute(entry.address().to_string(), ConductorCryptoApiMethod::Sign)?,
         // Temporarily replaced by error handling for Holo hack signing.
         // TODO: pull in the expect below after removing the Holo signing hack again
         //.expect("Must be able to create signatures!"),

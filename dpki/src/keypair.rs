@@ -3,7 +3,7 @@
 use crate::{
     key_bundle,
     password_encryption::{self, PwHashConfig},
-    utils, CODEC_HCK0, CODEC_HCS0, SEED_SIZE, SIGNATURE_SIZE,ENCRYPT_SIZE
+    utils, CODEC_HCK0, CODEC_HCS0, ENCRYPT_SIZE, SEED_SIZE, SIGNATURE_SIZE,
 };
 use hcid::*;
 use holochain_core_types::{agent::Base32, error::HcResult};
@@ -182,7 +182,7 @@ impl EncryptingKeyPair {
         let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
         nonce.randomize();
         let mut cipher = SecBuf::with_insecure(data.len() + lib3h_sodium::aead::ABYTES);
-        lib3h_sodium::aead::enc(data, &mut self.private,None,&mut nonce,&mut cipher)?;
+        lib3h_sodium::aead::enc(data, &mut self.private, None, &mut nonce, &mut cipher)?;
         Ok(data.clone())
     }
 
@@ -193,10 +193,9 @@ impl EncryptingKeyPair {
         let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
         nonce.randomize();
         let mut cipher = SecBuf::with_insecure(data.len() + lib3h_sodium::aead::ABYTES);
-        lib3h_sodium::aead::dec(data, &mut self.private,None,&mut nonce,&mut cipher)?;
+        lib3h_sodium::aead::dec(data, &mut self.private, None, &mut nonce, &mut cipher)?;
         Ok(data.clone())
     }
-
 }
 
 pub fn generate_random_sign_keypair() -> HcResult<SigningKeyPair> {

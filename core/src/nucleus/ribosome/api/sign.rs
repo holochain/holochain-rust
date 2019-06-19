@@ -1,12 +1,10 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{error::HcResult, signature::Signature};
 use holochain_dpki::keypair::generate_random_sign_keypair;
-use holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs,SignOneTimeResult};
+use holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignOneTimeResult};
 use lib3h_sodium::secbuf::SecBuf;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
-
-
 
 /// ZomeApiFunction::SignOneTime function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -67,7 +65,9 @@ mod test_super {
     fn test_zome_api_function_sign() {
         let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::Crypto.as_str(),
-            r#"{ "payload": "this is data", "method" : "Sign" }"#.as_bytes().to_vec(),
+            r#"{ "payload": "this is data", "method" : "Sign" }"#
+                .as_bytes()
+                .to_vec(),
         );
         assert_eq!(JsonString::from_json(r#"{"ok":true,"value":"xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA==","error":"null"}"#), call_result,);
     }

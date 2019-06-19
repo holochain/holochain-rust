@@ -251,12 +251,13 @@ impl Context {
         }
     }
 
-    pub fn execute_conductor_crypto_api_function(&self, payload : String, method : ConductorCryptoApiMethod) -> Result<String,HolochainError>
-    {
-        self.conductor_api.execute(payload,method)
+    pub fn execute_conductor_crypto_api_function(
+        &self,
+        payload: String,
+        method: ConductorCryptoApiMethod,
+    ) -> Result<String, HolochainError> {
+        self.conductor_api.execute(payload, method)
     }
-
-
 
     /// returns the public capability token (if any)
     pub fn get_public_token(&self) -> Result<Address, HolochainError> {

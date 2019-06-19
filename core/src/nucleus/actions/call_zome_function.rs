@@ -25,8 +25,8 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
+use holochain_wasm_utils::api_serialization::crypto::ConductorCryptoApiMethod;
 use std::{pin::Pin, sync::Arc, thread};
-use holochain_wasm_utils::api_serialization::crypto::{ConductorCryptoApiMethod};
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {

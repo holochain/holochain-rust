@@ -12,46 +12,55 @@ use holochain_wasm_utils::api_serialization::crypto::ConductorCryptoApiMethod;
 #[derive(Clone)]
 pub struct ConductorApi(Arc<RwLock<IoHandler>>);
 
-pub fn send_json_rpc(handle : Arc<RwLock<IoHandler>>, payload: String, request_reponse:(String,String)) -> Result<String, HolochainError> {
-        let handler = handle.write().unwrap();
-        let request = format!(
-            r#"{{"jsonrpc": "2.0", "method": "agent/{}", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
-            request_reponse.0,payload, ProcessUniqueId::new(),
-        );
+pub fn send_json_rpc(
+    handle: Arc<RwLock<IoHandler>>,
+    payload: String,
+    request_reponse: (String, String),
+) -> Result<String, HolochainError> {
+    let handler = handle.write().unwrap();
+    let request = format!(
+        r#"{{"jsonrpc": "2.0", "method": "agent/{}", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
+        request_reponse.0,
+        payload,
+        ProcessUniqueId::new(),
+    );
 
-        let response = handler
-            .handle_request_sync(&request)
-            .ok_or("Conductor sign call failed".to_string())?;
+    let response = handler
+        .handle_request_sync(&request)
+        .ok_or("Conductor sign call failed".to_string())?;
 
-        let response = JsonRpc::parse(&response)?;
+    let response = JsonRpc::parse(&response)?;
 
-        match response {
-            JsonRpc::Success(_) => Ok(String::from(response.get_result()?[request_reponse.1].as_str()?)),
-            JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(serde_json::to_string(
-                &response.get_error()?,
-            )?)),
-            _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
-        }
+    match response {
+        JsonRpc::Success(_) => Ok(String::from(
+            response.get_result()?[request_reponse.1].as_str()?,
+        )),
+        JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(serde_json::to_string(
+            &response.get_error()?,
+        )?)),
+        _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
     }
-
+}
 
 impl ConductorApi {
     pub fn new(conductor_api: Arc<RwLock<IoHandler>>) -> ConductorApi {
         ConductorApi(conductor_api)
     }
 
-    pub fn execute(&self, payload : String,method : ConductorCryptoApiMethod) -> Result<String,HolochainError>
-    {
-        let request_response = match method
-        {
-            ConductorCryptoApiMethod::Sign => (String::from("sign"),String::from("signature")),
-            ConductorCryptoApiMethod::Encrypt =>(String::from("encrypt"),String::from("message")),
-            ConductorCryptoApiMethod::Decrypt =>(String::from("decrypt"),String::from("message")),   
+    pub fn execute(
+        &self,
+        payload: String,
+        method: ConductorCryptoApiMethod,
+    ) -> Result<String, HolochainError> {
+        let request_response = match method {
+            ConductorCryptoApiMethod::Sign => (String::from("sign"), String::from("signature")),
+            ConductorCryptoApiMethod::Encrypt => (String::from("encrypt"), String::from("message")),
+            ConductorCryptoApiMethod::Decrypt => (String::from("decrypt"), String::from("message")),
         };
 
         send_json_rpc(self.0.clone(), payload, request_response)
     }
-     
+
     pub fn get(&self) -> &Arc<RwLock<IoHandler>> {
         &self.0
     }

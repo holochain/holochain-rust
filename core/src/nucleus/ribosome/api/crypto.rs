@@ -1,5 +1,5 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::{json::JsonString};
+use holochain_core_types::json::JsonString;
 use holochain_wasm_utils::api_serialization::crypto::CryptoArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -27,7 +27,7 @@ pub fn invoke_crypto(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult
     };
 
     let signature = context
-        .execute_conductor_crypto_api_function(crypto_args.payload.clone(),crypto_args.method)
+        .execute_conductor_crypto_api_function(crypto_args.payload.clone(), crypto_args.method)
         .map(|sig| JsonString::from_json(&sig));
 
     context.log(format!(
@@ -52,11 +52,14 @@ mod test_super {
     fn test_zome_api_function_encrypt() {
         let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::Crypto.as_str(),
-            r#"{ "payload": "this is data", "method" : "Encrypt" }"#.as_bytes().to_vec(),
+            r#"{ "payload": "this is data", "method" : "Encrypt" }"#
+                .as_bytes()
+                .to_vec(),
         );
-        assert_eq!(JsonString::from_json(r#"{"ok":true,"value":"dGhpcyBpcyBkYXRh","error":"null"}"#), call_result,);
+        assert_eq!(
+            JsonString::from_json(r#"{"ok":true,"value":"dGhpcyBpcyBkYXRh","error":"null"}"#),
+            call_result,
+        );
     }
 
-
-  
 }

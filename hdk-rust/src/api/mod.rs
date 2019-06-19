@@ -167,7 +167,6 @@ def_api_fns! {
     hc_send, Send;
     hc_debug, Debug;
     hc_call, Call;
-    hc_sign, Sign;
     hc_crypto,Crypto;
     hc_sign_one_time, SignOneTime;
     hc_verify_signature, VerifySignature;

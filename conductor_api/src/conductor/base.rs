@@ -682,6 +682,8 @@ impl Conductor {
                 self.get_keybundle_for_agent(&instance_config.agent)?,
             );
 
+            api_builder = api_builder.with_agent_encryption_callback(self.get_keybundle_for_agent(&instance_config.agent)?);
+            api_builder = api_builder.with_agent_decryption_callback(self.get_keybundle_for_agent(&instance_config.agent)?);
             let keystore = self
                 .get_keystore_for_agent(&instance_config.agent)
                 .map_err(|err| format!("{}", err))?;

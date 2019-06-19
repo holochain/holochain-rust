@@ -195,6 +195,7 @@ impl Conductor {
     /// Starts a new thread which monitors each instance's signal channel and pushes signals out
     /// all interfaces the according instance is part of.
     pub fn start_signal_multiplexer(&mut self) -> thread::JoinHandle<()> {
+        self.stop_signal_multiplexer();
         let broadcasters = self.interface_broadcasters.clone();
         let instance_signal_receivers = self.instance_signal_receivers.clone();
         let signal_tx = self.signal_tx.clone();
@@ -238,17 +239,22 @@ impl Conductor {
 
                             // Pass through user-defined  signals to the according interfaces
                             // in which the source instance is exposed:
-                            Signal::User(_) => config
-                                .interfaces
-                                .iter()
-                                .filter(|interface_config| {
-                                    interface_config
-                                        .instances
-                                        .iter()
-                                        .find(|instance| instance.id == *instance_id)
-                                        .is_some()
-                                })
-                                .collect(),
+                            Signal::User(_) => {
+                                println!("SIGNAL for instance[{}]: {:?}", instance_id, signal);
+                                let interfaces = config
+                                    .interfaces
+                                    .iter()
+                                    .filter(|interface_config| {
+                                        interface_config
+                                            .instances
+                                            .iter()
+                                            .find(|instance| instance.id == *instance_id)
+                                            .is_some()
+                                    })
+                                    .collect();
+                                println!("INTERFACEs for SIGNAL: {:?}", interfaces);
+                                interfaces
+                            }
                         };
 
                         for interface in interfaces_with_instance {
@@ -269,6 +275,12 @@ impl Conductor {
             }
             thread::sleep(Duration::from_millis(1));
         })
+    }
+
+    pub fn stop_signal_multiplexer(&self) {
+        self.signal_multiplexer_kill_switch
+            .as_ref()
+            .map(|kill_switch| kill_switch.send(()));
     }
 
     pub fn start_all_interfaces(&mut self) {

@@ -23,6 +23,7 @@ mod call;
 mod capability;
 mod commit_entry;
 mod debug;
+mod emit_signal;
 mod entry_address;
 mod get_entry;
 mod get_links;
@@ -42,6 +43,7 @@ pub use self::{
     capability::{commit_capability_claim, commit_capability_grant},
     commit_entry::{commit_entry, commit_entry_result},
     debug::debug,
+    emit_signal::emit_signal,
     entry_address::entry_address,
     get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
     get_links::{get_links, get_links_and_load, get_links_result, get_links_with_options},
@@ -179,6 +181,7 @@ def_api_fns! {
     hc_keystore_get_public_key, KeystoreGetPublicKey;
     hc_commit_capability_grant, CommitCapabilityGrant;
     hc_commit_capability_claim, CommitCapabilityClaim;
+    hc_emit_signal, EmitSignal;
 }
 
 //--------------------------------------------------------------------------------------------------

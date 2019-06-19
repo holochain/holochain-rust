@@ -215,6 +215,7 @@ impl ConductorAdmin for Conductor {
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;
         self.save_config()?;
+        let _ = self.start_signal_multiplexer();
         Ok(())
     }
 
@@ -240,6 +241,7 @@ impl ConductorAdmin for Conductor {
             ));
         }
         self.instances.remove(id);
+        let _ = self.start_signal_multiplexer();
 
         notify(format!("Removed instance \"{}\".", id));
         Ok(())
@@ -258,6 +260,7 @@ impl ConductorAdmin for Conductor {
         self.config = new_config;
         self.save_config()?;
         self.start_interface_by_id(&interface.id)?;
+        let _ = self.start_signal_multiplexer();
         Ok(())
     }
 
@@ -286,6 +289,7 @@ impl ConductorAdmin for Conductor {
         self.save_config()?;
 
         let _ = self.stop_interface_by_id(id);
+        let _ = self.start_signal_multiplexer();
 
         notify(format!("Removed interface \"{}\".", id));
         Ok(())
@@ -334,6 +338,7 @@ impl ConductorAdmin for Conductor {
         let _ = self.stop_interface_by_id(interface_id);
         sleep(Duration::from_millis(SWEET_SLEEP));
         self.start_interface_by_id(interface_id)?;
+        let _ = self.start_signal_multiplexer();
 
         Ok(())
     }
@@ -383,6 +388,7 @@ impl ConductorAdmin for Conductor {
         let _ = self.stop_interface_by_id(interface_id);
         sleep(Duration::from_millis(SWEET_SLEEP));
         self.start_interface_by_id(interface_id)?;
+        let _ = self.start_signal_multiplexer();
 
         Ok(())
     }

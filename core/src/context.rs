@@ -62,7 +62,7 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
-    signal_tx: Option<crossbeam_channel::Sender<Signal>>,
+    pub(crate) signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
 impl Context {

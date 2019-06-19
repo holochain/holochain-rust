@@ -19,7 +19,7 @@ use std::{convert::TryInto, sync::Arc, thread};
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
     let aspect_json =
         JsonString::from_json(&String::from_utf8(dht_data.entry_aspect.aspect).unwrap());
-    if let Ok(aspect) = aspect_json.try_into() {
+    if let Ok(aspect) = aspect_json.clone().try_into() {
         match aspect {
             EntryAspect::Content(entry, header) => {
                 context

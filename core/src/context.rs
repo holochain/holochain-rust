@@ -28,7 +28,6 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 use holochain_net::p2p_config::P2pConfig;
-use holochain_wasm_utils::api_serialization::crypto::ConductorCryptoApiMethod;
 use jsonrpc_core::{self, IoHandler};
 use std::{
     sync::{
@@ -249,14 +248,6 @@ impl Context {
                 _ => tick_rx.recv_timeout(Duration::from_millis(10)),
             };
         }
-    }
-
-    pub fn execute_conductor_crypto_api_function(
-        &self,
-        payload: String,
-        method: ConductorCryptoApiMethod,
-    ) -> Result<String, HolochainError> {
-        self.conductor_api.execute(payload, method)
     }
 
     /// returns the public capability token (if any)

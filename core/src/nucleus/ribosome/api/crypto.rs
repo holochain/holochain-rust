@@ -27,7 +27,8 @@ pub fn invoke_crypto(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult
     };
 
     let signature = context
-        .execute_conductor_crypto_api_function(crypto_args.payload.clone(), crypto_args.method)
+        .conductor_api
+        .execute(crypto_args.payload.clone(), crypto_args.method)
         .map(|sig| JsonString::from_json(&sig));
 
     context.log(format!(

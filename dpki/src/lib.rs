@@ -10,7 +10,6 @@ pub const CONTEXT_SIZE: usize = 8;
 pub const SEED_SIZE: usize = 32;
 pub const AGENT_ID_CTX: [u8; 8] = *b"HCAGNTID";
 pub(crate) const SIGNATURE_SIZE: usize = 64;
-pub(crate) const ENCRYPT_SIZE: usize = 64;
 
 lazy_static! {
     pub static ref CODEC_HCS0: hcid::HcidEncoding =

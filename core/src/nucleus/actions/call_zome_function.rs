@@ -196,7 +196,8 @@ fn make_call_sig<J: Into<JsonString>>(
     let encode_call_data = encode_call_data_for_signing(function, parameters);
     Signature::from(
         context
-            .execute_conductor_crypto_api_function(encode_call_data, ConductorCryptoApiMethod::Sign)
+            .conductor_api
+            .execute(encode_call_data, ConductorCryptoApiMethod::Sign)
             .expect("signing should work"),
     )
 }

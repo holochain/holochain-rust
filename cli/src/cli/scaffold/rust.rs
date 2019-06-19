@@ -115,8 +115,8 @@ impl RustScaffold {
         cargo_file.read_to_string(&mut contents)?;
 
         let template = match self.macro_style {
-            HdkMacroStyle::Declarative => include_str!("./rust/Cargo.template.toml"),
-            HdkMacroStyle::Procedural => include_str!("./rust-proc-macro/Cargo.template.toml"),
+            HdkMacroStyle::Declarative => include_str!("rust/Cargo.template.toml"),
+            HdkMacroStyle::Procedural => include_str!("rust-proc-macro/Cargo.template.toml"),
         };
 
         // create new Cargo.toml using pieces of the original
@@ -135,8 +135,8 @@ impl RustScaffold {
             .write(true)
             .open(file_path)?;
         let contents = match self.macro_style {
-            HdkMacroStyle::Declarative => include_str!("./rust/lib.rs"),
-            HdkMacroStyle::Procedural => include_str!("./rust-proc-macro/lib.rs"),
+            HdkMacroStyle::Declarative => include_str!("rust/lib.rs"),
+            HdkMacroStyle::Procedural => include_str!("rust-proc-macro/lib.rs"),
         };
         cargo_file.write_all(contents.as_bytes())?;
         Ok(())

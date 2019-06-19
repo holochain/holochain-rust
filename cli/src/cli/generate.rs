@@ -49,7 +49,7 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
         "rust" => scaffold(
             &scaffold::rust::RustScaffold::new(
                 &zome_name_string,
-                scaffold::rust::HdkMacroStyle::Declerative,
+                scaffold::rust::HdkMacroStyle::Declarative,
             ),
             code_dir,
         )?,

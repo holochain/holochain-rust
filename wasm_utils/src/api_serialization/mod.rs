@@ -11,6 +11,7 @@ mod call;
 /// importing this module.
 pub mod capabilities;
 pub mod commit_entry;
+pub mod emit_signal;
 pub mod get_entry;
 pub mod get_links;
 pub mod keystore;

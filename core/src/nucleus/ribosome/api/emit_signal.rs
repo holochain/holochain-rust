@@ -61,7 +61,7 @@ pub mod tests {
         signal::{Signal, UserSignal},
     };
     use crossbeam_channel::unbounded;
-    use holochain_core_types::json::JsonString;
+    use holochain_json_api::json::JsonString;
     use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
     use std::sync::Arc;
 

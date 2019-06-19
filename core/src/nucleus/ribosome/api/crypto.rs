@@ -45,9 +45,7 @@ mod test_super {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::{cas::content::Address, json::JsonString};
-    use holochain_dpki::utils::verify;
-
+    use holochain_core_types::{ json::JsonString};
     /// test that bytes passed to debug end up in the log
     #[test]
     fn test_zome_api_function_encrypt() {

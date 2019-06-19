@@ -26,6 +26,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use std::{pin::Pin, sync::Arc, thread};
+use holochain_wasm_utils::api_serialization::crypto::{ConductorCryptoApiMethod};
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {
@@ -192,9 +193,10 @@ fn make_call_sig<J: Into<JsonString>>(
     function: &str,
     parameters: J,
 ) -> Signature {
+    let encode_call_data = encode_call_data_for_signing(function, parameters);
     Signature::from(
         context
-            .sign(encode_call_data_for_signing(function, parameters))
+            .execute_conductor_crypto_api_function(encode_call_data, ConductorCryptoApiMethod::Sign)
             .expect("signing should work"),
     )
 }

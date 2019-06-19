@@ -17,6 +17,7 @@ pub mod query;
 pub mod remove_entry;
 pub mod remove_link;
 pub mod send;
+pub mod sign;
 pub mod sleep;
 pub mod update_entry;
 pub mod verify_signature;
@@ -43,7 +44,7 @@ use crate::nucleus::ribosome::{
         remove_entry::invoke_remove_entry,
         remove_link::invoke_remove_link,
         send::invoke_send,
-        sign::{invoke_sign, invoke_sign_one_time},
+        sign::{invoke_sign_one_time},
         crypto::invoke_crypto,
         sleep::invoke_sleep,
         update_entry::invoke_update_entry,
@@ -108,9 +109,6 @@ link_zome_api! {
 
     /// Commit link deletion entry
     "hc_remove_link", RemoveLink, invoke_remove_link;
-
-    /// Sign a block of data with the Agent key
-    "hc_sign", Sign, invoke_sign;
     //execute cryptographic function
     "hc_crypto",Crypto,invoke_crypto;
     /// Sign a block of data with a one-time key that is then shredded

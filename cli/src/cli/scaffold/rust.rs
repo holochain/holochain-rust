@@ -28,8 +28,17 @@ pub struct RustScaffold {
     macro_style: HdkMacroStyle,
 }
 
-/// Given existing Cargo.toml string, pull out some values and return a new
-/// string with values pulled from template
+/**
+ * @brief      Creates a Cargo.toml string from a Cargo.template.toml template
+ * Takes a name and pulls the authors and edition out of the existing toml file.
+ * The Cargo.template.toml should contain tags <<NAME>>, <<AUTHORS>>, <<EDITION>>, <<VERSION>>
+ *
+ * @param      name      The name for the zome/lib
+ * @param      contents  Existing Cargo.toml as a string with authors and edition fields filled
+ * @param      template  The Cargo.template.toml, looks like a Cargo.toml with tags in place of some fields
+ *
+ * @return     { Returns filled template Cargo.toml as a string if successful }
+ */
 fn generate_cargo_toml(name: &str, contents: &str, template: &str) -> DefaultResult<String> {
     let config: Value = toml::from_str(contents)?;
 

@@ -1,7 +1,7 @@
 use error::ZomeApiResult;
 use holochain_core_types::signature::Provenance;
 use holochain_wasm_utils::api_serialization::{
-    sign::{OneTimeSignArgs, SignArgs, SignOneTimeResult},
+    sign::{OneTimeSignArgs, SignOneTimeResult},
     crypto::{CryptoArgs,ConductorCryptoApiMethod},
     verify_signature::VerifySignatureArgs,
 };

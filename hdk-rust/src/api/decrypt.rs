@@ -1,5 +1,4 @@
 use error::ZomeApiResult;
-use holochain_core_types::signature::Provenance;
 use holochain_wasm_utils::api_serialization::{
     crypto::{CryptoArgs,ConductorCryptoApiMethod}
 };
@@ -24,8 +23,8 @@ use super::Dispatch;
 /// # use holochain_core_types::signature::{Provenance, Signature};
 /// # use hdk::error::ZomeApiResult;
 /// # fn main() {
-/// pub fn handle_sign_message(message: String) -> ZomeApiResult<Signature> {
-///    hdk::sign(message).map(Signature::from)
+/// pub fn handle_sign_message(payload: String) -> ZomeApiResult<Signature> {
+///    hdk::decrypt(message).map(Signature::from)
 /// }
 /// # }
 /// ```

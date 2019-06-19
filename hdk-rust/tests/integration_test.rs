@@ -117,8 +117,6 @@ pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
-
-
 #[no_mangle]
 pub fn hc_crypto(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()

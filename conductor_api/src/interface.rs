@@ -914,9 +914,10 @@ impl ConductorApiBuilder {
 
             let message_signature = message_signature.read_lock();
             // Return as base64 encoded string
-            let encrypted_message = base64::encode(&**message_signature);
+            //let decrypted_message = base64::decode(&**message_signature).map_err(|_|jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
 
-            Ok(json!({ "message": encrypted_message }))
+            let decrypted_string = std::str::from_utf8(&*message_signature).expect("could not decrypt");
+            Ok(json!({ "message": decrypted_string }))
         });
         self
     }

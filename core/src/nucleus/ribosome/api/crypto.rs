@@ -39,3 +39,26 @@ pub fn invoke_crypto(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult
 
     runtime.store_result(signature)
 }
+
+#[cfg(test)]
+mod test_super {
+    use crate::nucleus::ribosome::{
+        api::{tests::test_zome_api_function, ZomeApiFunction},
+        Defn,
+    };
+    use holochain_core_types::{cas::content::Address, json::JsonString};
+    use holochain_dpki::utils::verify;
+
+    /// test that bytes passed to debug end up in the log
+    #[test]
+    fn test_zome_api_function_encrypt() {
+        let (call_result, _) = test_zome_api_function(
+            ZomeApiFunction::Crypto.as_str(),
+            r#"{ "payload": "this is data", "method" : "Encrypt" }"#.as_bytes().to_vec(),
+        );
+        assert_eq!(JsonString::from_json(r#"{"ok":true,"value":"dGhpcyBpcyBkYXRh","error":"null"}"#), call_result,);
+    }
+
+
+  
+}

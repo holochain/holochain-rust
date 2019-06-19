@@ -186,6 +186,17 @@ impl EncryptingKeyPair {
         Ok(data.clone())
     }
 
+    /// encrypt some arbitrary data with the signing private key
+    /// @param {SecBuf} data - the data to sign
+    /// @return {SecBuf} signature - Empty SecBuf to be filled with the signature
+    pub fn decrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
+        let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
+        nonce.randomize();
+        let mut cipher = SecBuf::with_insecure(data.len() + lib3h_sodium::aead::ABYTES);
+        lib3h_sodium::aead::dec(data, &mut self.private,None,&mut nonce,&mut cipher)?;
+        Ok(data.clone())
+    }
+
 }
 
 pub fn generate_random_sign_keypair() -> HcResult<SigningKeyPair> {

@@ -890,9 +890,33 @@ impl ConductorApiBuilder {
 
             let message_signature = message_signature.read_lock();
             // Return as base64 encoded string
-            let signature = base64::encode(&**message_signature);
+            let encrypted_message = base64::encode(&**message_signature);
 
-            Ok(json!({ "signature": signature }))
+            Ok(json!({ "message": encrypted_message }))
+        });
+        self
+    }
+
+    pub fn with_agent_decryption_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
+        self.io.add_method("agent/decrypt", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+            // Convert payload string into a SecBuf
+            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+
+            // Get write lock on the key since we need a mutuble reference to lock the
+            // secure memory the key is in:
+            let mut message_signature = keybundle
+                .lock()
+                .unwrap()
+                .decrypt(&mut message)
+                .expect("Failed to sign with keybundle.");
+
+            let message_signature = message_signature.read_lock();
+            // Return as base64 encoded string
+            let encrypted_message = base64::encode(&**message_signature);
+
+            Ok(json!({ "message": encrypted_message }))
         });
         self
     }

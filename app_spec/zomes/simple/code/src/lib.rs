@@ -69,6 +69,15 @@ pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequ
     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
 }
 
+pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
+    #[derive(Debug, Serialize, Deserialize, DefaultJson)]
+    struct SignalPayload {
+        message: String
+    }
+
+    hdk::emit_signal("test-signal", SignalPayload{message})
+}
+
 pub fn definition() -> ValidatingEntryType {
     entry!(
         name: "simple",
@@ -127,10 +136,15 @@ define_zome! {
             outputs: |result: ZomeApiResult<GetLinksResult>|,
             handler: handle_get_my_links
         }
+        test_emit_signal: {
+            inputs: |message: String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_test_emit_signal
+        }
     ]
 
     traits: {
-        hc_public [create_link,delete_link,get_my_links]
+        hc_public [create_link, delete_link, get_my_links, test_emit_signal]
     }
 }
 

@@ -54,6 +54,25 @@ fn main() {
                     "Successfully loaded {} instance configurations",
                     conductor.instances().len()
                 );
+
+                // Checking if there is a dpki instance
+                if conductor.using_dpki(){
+                    println!("Starting dpki instances...");
+                    conductor
+                    .start_dpki_happ_instance()
+                    .expect("Could not start dpki happ instance!");
+
+                    conductor.dpki_bootstrap().expect("Could not bootstrap dpki!");
+
+                    // Need to stop the dpki instance for now.
+                    // This is a quick solution for now,
+                    // DO NOT INCLUED INTO THE PR
+                    // Reason : Because in the next step we are restarting all the happs again
+                    conductor
+                        .stop_all_instances()
+                        .expect("Could not stop dpki happ instance!");
+                }
+
                 println!("Starting instances...");
                 conductor
                     .start_all_instances()

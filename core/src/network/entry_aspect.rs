@@ -49,7 +49,7 @@ pub enum EntryAspect {
     // Same as LinkAdd but for removal of links
     LinkRemove((LinkData, Vec<Address>), ChainHeader),
 
-    // CLEANUP this looks wrong to me.  I don't think we actually want to
+    // TODO this looks wrong to me.  I don't think we actually want to
     // send the updated Entry as part of the meta item.  That would mean the
     // new entry is getting stored two places on the dht.  I think this
     // should look the same same as Deletion
@@ -62,7 +62,7 @@ pub enum EntryAspect {
     // The header's CRUD link must reference the base address
     // of the EntryData this is in.
     //  Update(Entry, ChainHeader),
-    Update(ChainHeader),
+    Update(Entry, ChainHeader),
 
     // Meta item for removing an entry.
     // Address is the address of the deleted entry.
@@ -80,7 +80,7 @@ impl EntryAspect {
             EntryAspect::Header(_) => String::from("header"),
             EntryAspect::LinkAdd(_, _) => String::from("link_add"),
             EntryAspect::LinkRemove(_, _) => String::from("link_remove"),
-            EntryAspect::Update(_) => String::from("update"),
+            EntryAspect::Update(_,_) => String::from("update"),
             EntryAspect::Deletion(_) => String::from("deletion"),
         }
     }
@@ -90,7 +90,7 @@ impl EntryAspect {
             EntryAspect::Header(header) => header.clone(),
             EntryAspect::LinkAdd(_, header) => header.clone(),
             EntryAspect::LinkRemove(_, header) => header.clone(),
-            EntryAspect::Update(header) => header.clone(),
+            EntryAspect::Update(_,header) => header.clone(),
             EntryAspect::Deletion(header) => header.clone(),
         }
     }

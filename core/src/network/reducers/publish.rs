@@ -49,7 +49,7 @@ fn publish_update_delete_meta(
     // publish crud-status
 
     let aspect = match crud_status {
-        CrudStatus::Modified => EntryAspect::Update(entry_with_header.header.clone()),
+        CrudStatus::Modified => EntryAspect::Update(entry_with_header.entry.clone(), entry_with_header.header.clone()),
         CrudStatus::Deleted => EntryAspect::Deletion(entry_with_header.header.clone()),
         crud => {
             return Err(HolochainError::ErrorGeneric(format!(

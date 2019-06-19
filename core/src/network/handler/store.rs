@@ -1,19 +1,21 @@
 use crate::{
     context::Context,
     network::{entry_aspect::EntryAspect, entry_with_header::EntryWithHeader},
-    workflows::hold_entry::hold_entry_workflow,
+    workflows::{
+        hold_entry::hold_entry_workflow,
+        hold_link::hold_link_workflow,
+        remove_link::remove_link_workflow,
+        hold_entry_update::hold_update_workflow,
+    },
 };
-//use holochain_core_types::{crud_status::CrudStatus, eav::Attribute, json::JsonString};
-use holochain_core_types::json::JsonString;
+use holochain_core_types::{
+    json::JsonString,
+    cas::content::AddressableContent,
+    entry::{deletion_entry::DeletionEntry, Entry},
+};
 use holochain_net::connection::json_protocol::StoreEntryAspectData;
 //use std::{str::FromStr, sync::Arc, thread, convert::TryInto};
 use std::{convert::TryInto, sync::Arc, thread};
-use holochain_core_types::entry::Entry;
-use holochain_core_types::cas::content::AddressableContent;
-use crate::workflows::{
-    hold_link::hold_link_workflow,
-    remove_link::remove_link_workflow,
-};
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
@@ -53,6 +55,38 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 thread::spawn(move || {
                     if let Err(error) =
                         context.block_on(remove_link_workflow(&entry_with_header, &context.clone()))
+                    {
+                        context.log(format!("err/net/dht: {}", error))
+                    }
+                });
+            }
+            EntryAspect::Update(entry, header) => {
+                context.log("debug/net/handle: handle_store: Got EntryAspect::Update. processing...");
+                let entry_with_header = EntryWithHeader { entry, header };
+                thread::spawn(move || {
+                    if let Err(error) =
+                        context.block_on(hold_update_workflow(entry_with_header, context.clone()))
+                    {
+                        context.log(format!("err/net/dht: {}", error))
+                    }
+                });
+            }
+            EntryAspect::Deletion(header) => {
+                context.log("debug/net/handle: handle_store: Got EntryAspect::Deletion. processing...");
+                // reconstruct the deletion entry from the header.
+                let deleted_entry_address = match header.link_update_delete() {
+                    None => {
+                        context.log("err/net/handle: handle_store: Got EntryAspect::Deletion with header that has no deletion link! Ignoring.");
+                        return;
+                    },
+                    Some(address) => address,
+                };
+
+                let entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address));
+                let entry_with_header = EntryWithHeader { entry, header };
+                thread::spawn(move || {
+                    if let Err(error) =
+                        context.block_on(hold_update_workflow(entry_with_header, context.clone()))
                     {
                         context.log(format!("err/net/dht: {}", error))
                     }

@@ -22,11 +22,11 @@ const diorama = new Diorama({
   middleware: backwardCompatibilityMiddleware,
 })
 
-diorama.registerScenario.runTape("description of example test", async (s, t, { alice }) => {
+diorama.registerScenario("description of example test", async (s, t, { alice }) => {
   // Make a call to a Zome function
   // indicating the function, and passing it an input
-  const addr = alice.call("my_zome", "create_my_entry", {"entry" : {"content":"sample content"}})
-  const result = alice.call("my_zome", "get_my_entry", {"address": addr.Ok})
+  const addr = await alice.call("my_zome", "create_my_entry", {"entry" : {"content":"sample content"}})
+  const result = await alice.call("my_zome", "get_my_entry", {"address": addr.Ok})
 
   // check for equality of the actual and expected results
   t.deepEqual(result, { Ok: { App: [ 'my_entry', '{"content":"sample content"}' ] } })

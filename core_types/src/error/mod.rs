@@ -362,8 +362,8 @@ mod tests {
                 "Entry validation could not be completed",
             ),
             (
-                HolochainError::EntryNotFound,
-                "The requested entry could not be found",
+                HolochainError::EntryNotFoundLocally,
+                "The requested entry could not be found locally",
             ),
             (
                 HolochainError::EntryIsPrivate,

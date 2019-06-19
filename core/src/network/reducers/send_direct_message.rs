@@ -3,7 +3,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
     state::State,
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_net::connection::json_protocol::{JsonProtocol, MessageData};
 
 fn inner(
@@ -12,15 +12,14 @@ fn inner(
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
+    let content_json_string: JsonString = direct_message_data.message.to_owned().into();
+    let content = content_json_string.to_bytes();
     let data = MessageData {
         request_id: direct_message_data.msg_id.clone(),
         dna_address: network_state.dna_address.clone().unwrap(),
         to_agent_id: direct_message_data.address.clone(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
-        content: serde_json::from_str(
-            &serde_json::to_string(&direct_message_data.message).unwrap(),
-        )
-        .unwrap(),
+        content,
     };
 
     let protocol_object = if direct_message_data.is_response {

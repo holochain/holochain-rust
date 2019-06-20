@@ -14,6 +14,7 @@ use holochain_core_types::{
 use holochain_net::connection::json_protocol::StoreEntryAspectData;
 //use std::{str::FromStr, sync::Arc, thread, convert::TryInto};
 use std::{convert::TryInto, sync::Arc, thread};
+use crate::workflows::hold_entry_remove::hold_remove_workflow;
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
@@ -93,7 +94,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 let entry_with_header = EntryWithHeader { entry, header };
                 thread::spawn(move || {
                     if let Err(error) =
-                        context.block_on(hold_update_workflow(entry_with_header, context.clone()))
+                        context.block_on(hold_remove_workflow(entry_with_header, context.clone()))
                     {
                         context.log(format!("err/net/handle_store: {}", error))
                     }

@@ -550,7 +550,11 @@ pub fn shutdown_test(
 /// Entry with no Aspect case: Should no-op
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-pub fn no_aspect_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
+pub fn no_aspect_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 

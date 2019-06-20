@@ -53,8 +53,8 @@ pub fn publish_entry_list_test(
     alex.reply_to_first_HandleGetAuthoringEntryList();
     // Should receive a HandleFetchEntry request from network module after receiving list
     let _ = alex.wait_HandleFetchEntry_and_reply();
-//    // Should receive a HandleFetchEntry request from network module for gossip
-//    let _ = alex.wait_HandleFetchEntry_and_reply();
+    //    // Should receive a HandleFetchEntry request from network module for gossip
+    //    let _ = alex.wait_HandleFetchEntry_and_reply();
 
     // billy might receive HandleStoreEntryAspect
     let res = billy.wait_json_with_timeout(
@@ -92,8 +92,8 @@ pub fn double_publish_entry_list_test(
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
     alex.reply_to_first_HandleGetAuthoringEntryList();
-//    // Should receive only one HandleFetchEntry request from network module for Gossip
-//    let _ = alex.wait_HandleFetchEntry_and_reply();
+    //    // Should receive only one HandleFetchEntry request from network module for Gossip
+    //    let _ = alex.wait_HandleFetchEntry_and_reply();
     // billy might receive HandleStoreEntryAspect
     let res = billy.wait_json_with_timeout(
         Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
@@ -187,9 +187,9 @@ pub fn many_aspects_test(
     // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(has_received);
-//    // Maybe 2nd get for gossiping
-//    let has_received = alex.wait_HandleFetchEntry_and_reply();
-//    log_d!("Alex has_received: {}", has_received);
+    //    // Maybe 2nd get for gossiping
+    //    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    //    log_d!("Alex has_received: {}", has_received);
 
     // billy might receive HandleStoreEntryAspect
     let res = billy.wait_json_with_timeout(

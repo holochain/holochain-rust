@@ -68,7 +68,8 @@ lazy_static! {
     ];
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
         three_workflows::hold_and_publish_test,
-        three_workflows::publish_entry_stress_test,
+        // Stress test disabled by default
+        // three_workflows::publish_entry_stress_test,
         multidna_workflows::send_test,
         multidna_workflows::dht_test,
     ];
@@ -169,12 +170,8 @@ fn main() {
             launch_two_nodes_test_with_memory_network(test_fn).unwrap();
         }
         if config["modes"]["LIB3H_MOCK"].as_bool().unwrap() {
-            launch_two_nodes_test_with_mock(
-                "test_bin/data/lib3h_mock_config.json",
-                None,
-                test_fn,
-            )
-            .unwrap();
+            launch_two_nodes_test_with_mock("test_bin/data/lib3h_mock_config.json", None, test_fn)
+                .unwrap();
         }
         if config["modes"]["N3H"].as_bool().unwrap() {
             launch_two_nodes_test(

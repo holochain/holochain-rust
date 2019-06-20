@@ -14,7 +14,8 @@ members = [
   "net",
   "dpki",
   "test_bin",
-  "benchmarks"
+  "benchmarks",
+  "logging"
 ]
 exclude = [
   "test_utils",

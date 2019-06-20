@@ -8,9 +8,8 @@ use crate::{
         CallbackFnCall,
     },
 };
-use holochain_core_types::{
-    cas::content::AddressableContent, entry::Entry, validation::ValidationData,
-};
+use holochain_core_types::{entry::Entry, validation::ValidationData};
+use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
 use std::sync::Arc;
 

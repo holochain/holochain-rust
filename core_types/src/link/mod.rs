@@ -5,10 +5,10 @@
 pub mod link_data;
 pub mod link_list;
 
-use crate::{
-    agent::AgentId, cas::content::Address, chain_header::ChainHeader, error::HolochainError,
-    json::JsonString,
-};
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::Address;
+
+use crate::{agent::AgentId, chain_header::ChainHeader};
 use entry::Entry;
 use link::link_data::LinkData;
 use regex::Regex;
@@ -92,10 +92,10 @@ impl<S: Into<String>> LinkMatch<S> {
 pub mod tests {
 
     use crate::{
-        cas::content::AddressableContent,
         entry::{test_entry_a, test_entry_b},
         link::{Link, LinkActionKind, LinkTag, LinkType},
     };
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     pub fn example_link_type() -> LinkType {
         LinkType::from("foo-link-type")

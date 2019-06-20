@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use holochain_core_types::{cas::content::Address, hash::HashString};
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
 // CONSTS
 // TODO: make an array of agent_ids instead?

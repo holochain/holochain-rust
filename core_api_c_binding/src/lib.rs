@@ -2,16 +2,17 @@
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_persistence_api;
 
 use holochain_conductor_api::{context_builder::ContextBuilder, Holochain};
 use holochain_core::{context::Context, logger::Logger};
 use holochain_core_types::{
     agent::AgentId,
-    cas::content::Address,
     dna::{capabilities::CapabilityRequest, Dna},
     error::HolochainError,
     signature::Signature,
 };
+use holochain_persistence_api::cas::content::Address;
 
 use std::sync::Arc;
 

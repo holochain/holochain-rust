@@ -1,4 +1,5 @@
-use crate::{error::HolochainError, json::JsonString, link::Link};
+use crate::link::Link;
+use holochain_json_api::{error::JsonError, json::JsonString};
 
 //-------------------------------------------------------------------------------------------------
 // LinkList

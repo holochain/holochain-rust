@@ -30,9 +30,9 @@ impl ToTokens for ZomeFunction {
             #[no_mangle]
             pub extern "C" fn #zome_function_name(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
                 use hdk::{
-                    holochain_core_types::{
+                    holochain_json_api::{
                         json::JsonString,
-                        error::HolochainError
+                        error::JsonError
                     },
                 };
 
@@ -49,7 +49,7 @@ impl ToTokens for ZomeFunction {
                 }
 
                 // Macro'd InputStruct
-                #[derive(Deserialize, Serialize, Debug, hdk::holochain_core_types_derive::DefaultJson)]
+                #[derive(Deserialize, Serialize, Debug, hdk::holochain_json_derive::DefaultJson)]
                 struct InputStruct {
                     #(#input_params),*
                 }

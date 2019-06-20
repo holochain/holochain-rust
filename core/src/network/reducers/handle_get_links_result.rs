@@ -3,8 +3,9 @@ use crate::{
     network::state::NetworkState,
     state::State,
 };
-use holochain_core_types::{cas::content::Address, crud_status::CrudStatus, error::HolochainError};
+use holochain_core_types::{crud_status::CrudStatus, error::HolochainError};
 use holochain_net::connection::json_protocol::FetchMetaResultData;
+use holochain_persistence_api::cas::content::Address;
 
 fn reduce_handle_get_links_result_inner(
     network_state: &mut NetworkState,

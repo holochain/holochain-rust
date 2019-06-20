@@ -1,6 +1,7 @@
 use super::Dispatch;
 use error::ZomeApiResult;
-use holochain_core_types::{cas::content::Address, time::Timeout};
+use holochain_core_types::time::Timeout;
+use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 
 /// Sends a node-to-node message to the given agent, specified by their address.
@@ -16,14 +17,17 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
+/// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # extern crate serde;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # use hdk::error::ZomeApiResult;
-/// # use holochain_core_types::cas::content::Address;
-/// # use holochain_core_types::json::JsonString;
+/// # use holochain_persistence_api::cas::content::Address;
+/// # use holochain_json_api::error::JsonError;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::error::RibosomeEncodingBits;
 /// # use holochain_core_types::error::RibosomeEncodedValue;

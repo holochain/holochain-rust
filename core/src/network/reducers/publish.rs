@@ -142,12 +142,15 @@ fn reduce_publish_inner(
         EntryType::LinkRemove => publish_entry(network_state, &entry_with_header)
             .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
         EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            publish_update_delete_meta(
-                network_state,
-                entry_with_header.entry.address(),
-                CrudStatus::Deleted,
-                &entry_with_header.clone(),
-            )
+            match entry_with_header.header.link_update_delete() {
+                Some(modified_entry) => publish_update_delete_meta(
+                    network_state,
+                    modified_entry,
+                    CrudStatus::Deleted,
+                    &entry_with_header.clone(),
+                ),
+                None => Ok(()),
+            }
         }),
         _ => Err(HolochainError::NotImplemented(
             "reduce_publish_inner".into(),

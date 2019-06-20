@@ -10,18 +10,22 @@ extern crate serde_derive;
 #[macro_use]
 extern crate hdk;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 use hdk::{
     error::ZomeApiResult,
     entry_definition::ValidatingEntryType,
     holochain_core_types::{
-        cas::content::Address,
         entry::Entry,
         dna::entry_types::Sharing,
-        error::HolochainError,
-        json::JsonString,
         link::LinkMatch
+    },
+    holochain_persistence_api::{
+        cas::content::Address,
+    },
+    holochain_json_api::{
+       json::JsonString,
+       error::JsonError
     },
     holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions}
 };
@@ -64,16 +68,16 @@ pub mod simple {
                     }
                 }
             )]
-        
+
     )
 }
 
-    #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
+    #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
     pub struct Simple {
         content: String,
     }
 
-    impl Simple 
+    impl Simple
     {
         pub fn new(content:String) -> Simple
         {
@@ -97,7 +101,7 @@ pub mod simple {
     }
 
     #[zome_fn("hc_public")]
-    pub fn create_link(base: Address,target : String) -> ZomeApiResult<()> 
+    pub fn create_link(base: Address,target : String) -> ZomeApiResult<()>
     {
         let address = hdk::commit_entry(&simple_entry(target))?;
         hdk::link_entries(&base, &address, "authored_posts", "")?;
@@ -111,7 +115,7 @@ pub mod simple {
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_my_links(base: Address,status_request : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResult> 
+    pub fn get_my_links(base: Address,status_request : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResult>
     {
         let options = GetLinksOptions{
             status_request : status_request.unwrap_or(LinksStatusRequestKind::All),

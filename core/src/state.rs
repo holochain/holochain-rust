@@ -11,16 +11,21 @@ use crate::{
     nucleus::state::{NucleusState, NucleusStateSnapshot},
 };
 use holochain_core_types::{
+    chain_header::ChainHeader,
+    dna::Dna,
+    eav::{Attribute, EaviQuery},
+    entry::{entry_type::EntryType, Entry},
+    error::{HcResult, HolochainError},
+};
+
+use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
-    chain_header::ChainHeader,
-    dna::Dna,
-    eav::{Attribute, EaviQuery, IndexFilter},
-    entry::{entry_type::EntryType, Entry},
-    error::{HcResult, HolochainError},
+    eav::IndexFilter,
 };
+
 use std::{
     collections::HashSet,
     convert::TryInto,

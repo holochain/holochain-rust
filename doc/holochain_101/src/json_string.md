@@ -520,7 +520,7 @@ impl TryFrom<JsonString> for MyType {
 #### Automatic derive
 
 The standard boilerplate has been implemented as a derive macro in the
-`holochain_core_types_derive` crate.
+`lib3h_persistence_derive` crate.
 
 Simply `#[derive(DefaultJson)]` to add the above boilerplate plus some extra
 conveniences (e.g. for references) to your type.
@@ -532,7 +532,7 @@ conveniences (e.g. for references) to your type.
 - `MyType` implements `Serialize`, `Deserialize` and `Debug` from serde/std
 
 ```rust
-use holochain_core_types::json::JsonString;
+use lib3h_persistence_api::json::JsonString;
 use holochain_core_types::error::HolochainError;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]

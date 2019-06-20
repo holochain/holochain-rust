@@ -1,6 +1,6 @@
 use super::Dispatch;
 use error::ZomeApiResult;
-use holochain_core_types::json::JsonString;
+use holochain_json_api::json::JsonString;
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 
 /// Emits a signal that listeners can receive.
@@ -29,7 +29,7 @@ use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 /// # extern crate hdk;
 /// # use hdk::error::ZomeApiResult;
 /// # use std::time::Duration;
-/// # use hdk::holochain_core_types::json::JsonString;
+/// # use hdk::holochain_json_api::json::JsonString;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
 /// # #[no_mangle]

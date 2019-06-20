@@ -1,9 +1,9 @@
 use constants::*;
-use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{net_connection::NetSend, NetResult},
     tweetlog::TWEETLOG,
 };
+use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 use p2p_node::test_node::TestNode;
 use std::str;

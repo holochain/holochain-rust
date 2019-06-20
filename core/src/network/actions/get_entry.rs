@@ -7,9 +7,11 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{
-    cas::content::Address, entry::EntryWithMetaAndHeader, error::HcResult, time::Timeout,
-};
+
+use holochain_persistence_api::cas::content::Address;
+
+use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HcResult, time::Timeout};
+
 use std::{pin::Pin, sync::Arc, thread};
 
 /// FetchEntry Action Creator

@@ -5,10 +5,11 @@ use crate::{
     instance::dispatch_action,
     nucleus,
 };
-use holochain_core_types::{cas::content::Address, eav::Attribute, entry::EntryWithMetaAndHeader};
+use holochain_core_types::{eav::Attribute, entry::EntryWithMetaAndHeader};
 use holochain_net::connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
+use holochain_persistence_api::cas::content::Address;
 use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 
 /// The network has requested a DHT entry from us.

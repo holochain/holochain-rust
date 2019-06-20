@@ -1,4 +1,6 @@
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_core_types::error::HolochainError;
+use holochain_json_api::{error::JsonError, json::JsonString};
+
 use memory::{MemoryBits, MemoryInt, MEMORY_INT_MAX};
 
 #[derive(Copy, Clone, Debug, PartialEq)]

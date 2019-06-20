@@ -1,6 +1,6 @@
 #[macro_use]
 extern crate log;
-use doodle_log::{FastLoggerBuilder, tag::TagFilter};
+use logging::{FastLoggerBuilder, tag::TagFilter};
 
 
 fn main() {

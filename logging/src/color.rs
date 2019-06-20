@@ -1,5 +1,4 @@
 use std::str::FromStr;
-use serde_derive::Deserialize;
 
 /// The 8 standard colors.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

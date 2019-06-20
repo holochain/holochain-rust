@@ -1,7 +1,6 @@
 //! Tagging capability: add capability to filter by regex and attribute some color to them.
 
 use regex::Regex;
-use serde_derive::Deserialize;
 use std::default::Default;
 
 

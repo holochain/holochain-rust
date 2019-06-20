@@ -8,7 +8,7 @@ use log::{
 };
 use colored::*;
 use serde_derive::Deserialize;
-use toml;
+// use toml;
 
 pub mod color;
 pub mod tag;
@@ -56,7 +56,7 @@ impl FastLogger {
                         return None;
                     } else {
                         color = tag_filter.tag_color();
-                        return Some(tag_filter.tag_color())
+                        // return Some(tag_filter.tag_color())
                     }
                 }
             }
@@ -256,7 +256,7 @@ struct Rule {
 
 impl From<Logger> for FastLogger {
     fn from(logger: Logger) -> Self {
-        let tag_filters: Vec<Rule> = Vec::with_capacity(logger.rules.unwrap_or(vec![]).len());
+        let _tag_filters: Vec<Rule> = Vec::with_capacity(logger.rules.unwrap_or(vec![]).len());
         FastLogger {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
             ..FastLoggerBuilder::default().build().unwrap()

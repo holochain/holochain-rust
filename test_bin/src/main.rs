@@ -168,9 +168,9 @@ fn main() {
         if config["modes"]["IN_MEMORY"].as_bool().unwrap() {
             launch_two_nodes_test_with_memory_network(test_fn).unwrap();
         }
-        if config["modes"]["IPC_MOCK"].as_bool().unwrap() {
-            launch_two_nodes_test_with_ipc_mock(
-                "test_bin/data/mock_ipc_network_config.json",
+        if config["modes"]["LIB3H_MOCK"].as_bool().unwrap() {
+            launch_two_nodes_test_with_mock(
+                "test_bin/data/lib3h_mock_config.json",
                 None,
                 test_fn,
             )
@@ -203,9 +203,9 @@ fn main() {
             if config["modes"]["IN_MEMORY"].as_bool().unwrap() {
                 launch_three_nodes_test_with_memory_network(test_fn).unwrap();
             }
-            if config["modes"]["IPC_MOCK"].as_bool().unwrap() {
-                launch_three_nodes_test_with_ipc_mock(
-                    "test_bin/data/mock_ipc_network_config.json",
+            if config["modes"]["LIB3H_MOCK"].as_bool().unwrap() {
+                launch_three_nodes_test_with_mock(
+                    "test_bin/data/lib3h_mock_config.json",
                     None,
                     test_fn,
                 )
@@ -270,9 +270,9 @@ fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResu
     Ok(())
 }
 
-// do general test with hackmode
+// do general test in a mocked mode
 #[cfg_attr(tarpaulin, skip)]
-fn launch_two_nodes_test_with_ipc_mock(
+fn launch_two_nodes_test_with_mock(
     config_filepath: &str,
     maybe_end_user_config_filepath: Option<String>,
     test_fn: TwoNodesTestFn,
@@ -400,9 +400,9 @@ fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> Net
     Ok(())
 }
 
-// do general test with hackmode
+// do general test with a mocked mode
 #[cfg_attr(tarpaulin, skip)]
-fn launch_three_nodes_test_with_ipc_mock(
+fn launch_three_nodes_test_with_mock(
     config_filepath: &str,
     maybe_end_user_config_filepath: Option<String>,
     test_fn: ThreeNodesTestFn,

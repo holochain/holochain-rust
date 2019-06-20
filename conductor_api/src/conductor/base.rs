@@ -18,9 +18,14 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
-    json::JsonString,
+    agent::AgentId,
+    dna::Dna,
+    error::{HcResult, HolochainError},
 };
+
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::AddressableContent;
+
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
@@ -137,6 +142,7 @@ impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
         lib3h_sodium::check_init();
+
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
@@ -834,12 +840,12 @@ impl Conductor {
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
-    pub fn load_dna(file: &PathBuf) -> Result<Dna, HolochainError> {
+    pub fn load_dna(file: &PathBuf) -> HcResult<Dna> {
         notify(format!("Reading DNA from {}", file.display()));
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from_json(&contents))
+        Dna::try_from(JsonString::from_json(&contents)).map_err(|err| err.into())
     }
 
     /// Default KeyLoader that actually reads files from the filesystem
@@ -1058,8 +1064,9 @@ pub mod tests {
         action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::signal_channel,
     };
-    use holochain_core_types::{cas::content::Address, dna};
+    use holochain_core_types::dna;
     use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
+    use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::wasm_target_dir;
     use lib3h_sodium::secbuf::SecBuf;
     use std::{

@@ -2,10 +2,10 @@ use crate::{
     context::Context, dht::actions::update_entry::update_entry,
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
 };
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use crate::workflows::validation_package;
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     error::HolochainError,
     validation::{EntryLifecycle, ValidationData},
 };

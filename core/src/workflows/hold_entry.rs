@@ -12,10 +12,12 @@ use crate::{
     workflows::validation_package,
 };
 use holochain_core_types::{
-    cas::content::AddressableContent,
     error::HolochainError,
     validation::{EntryLifecycle, ValidationData},
 };
+
+use holochain_persistence_api::cas::content::AddressableContent;
+
 use std::sync::Arc;
 
 pub async fn hold_entry_workflow<'a>(

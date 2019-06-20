@@ -6,7 +6,8 @@ use crate::{
     nucleus::ribosome::callback::{receive::receive, CallbackParams, CallbackResult},
 };
 
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::error::HolochainError;
+use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
 use std::sync::Arc;
 

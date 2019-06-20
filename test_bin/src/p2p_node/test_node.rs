@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
         json_protocol::{
@@ -16,6 +15,7 @@ use holochain_net::{
     p2p_network::P2pNetwork,
     tweetlog::{TweetProxy, *},
 };
+use holochain_persistence_api::cas::content::Address;
 
 use super::{
     create_config::{create_ipc_config, create_lib3h_config},

@@ -12,8 +12,8 @@ use crate::{
     scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
     state::State,
 };
+
 use holochain_core_types::{
-    cas::content::Address,
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     dna::Dna,
@@ -30,6 +30,7 @@ use holochain_net::{
     },
     p2p_config::P2pConfig,
 };
+use holochain_persistence_api::cas::content::Address;
 use snowflake;
 use std::{
     hash::{Hash, Hasher},

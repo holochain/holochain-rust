@@ -7,7 +7,8 @@
 use serde_json;
 
 use failure::Error;
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::Address;
 use std::convert::TryFrom;
 
 use super::protocol::Protocol;

@@ -8,7 +8,8 @@ extern crate boolinator;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
+
 
 pub mod blog;
 pub mod memo;
@@ -17,8 +18,14 @@ pub mod post;
 use blog::Env;
 use hdk::{
     error::ZomeApiResult,
+    holochain_persistence_api::{
+        cas::content::Address
+    },
+    holochain_json_api::{
+        error::JsonError, json::JsonString,
+    },
     holochain_core_types::{
-        cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
+        entry::Entry,
         signature::Provenance
     },
     holochain_wasm_utils::api_serialization::{

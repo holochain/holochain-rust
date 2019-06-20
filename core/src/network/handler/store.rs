@@ -13,8 +13,8 @@ use holochain_core_types::{
 };
 use holochain_net::connection::json_protocol::StoreEntryAspectData;
 //use std::{str::FromStr, sync::Arc, thread, convert::TryInto};
-use std::{convert::TryInto, sync::Arc, thread};
 use crate::workflows::hold_entry_remove::hold_remove_workflow;
+use std::{convert::TryInto, sync::Arc, thread};
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {

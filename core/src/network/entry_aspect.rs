@@ -8,7 +8,10 @@ use holochain_core_types::{
     link::link_data::LinkData,
 };
 use holochain_net::connection::json_protocol::EntryAspectData;
-use std::{convert::{Into, TryFrom}, fmt};
+use std::{
+    convert::{Into, TryFrom},
+    fmt,
+};
 
 impl AddressableContent for EntryAspect {
     fn content(&self) -> Content {
@@ -111,26 +114,53 @@ impl Into<EntryAspectData> for EntryAspect {
     }
 }
 
-fn format_header(header: &ChainHeader) -> String{
-    format!("Header[type: {}, crud_link: {:?}]", header.entry_type(), header.link_update_delete())
+fn format_header(header: &ChainHeader) -> String {
+    format!(
+        "Header[type: {}, crud_link: {:?}]",
+        header.entry_type(),
+        header.link_update_delete()
+    )
 }
 impl fmt::Debug for EntryAspect {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            EntryAspect::Content(entry, header) =>
-                write!(f, "EntryAspect::Content({}, {})", entry.address(), format_header(header)),
-            EntryAspect::Header(header) =>
-                write!(f, "EntryAspect::Header({})", format_header(header)),
-            EntryAspect::LinkAdd(link_data, header) =>
-                write!(f, "EntryAspect::LinkAdd({} -> {} [tag: {}, type: {}], {})", link_data.link.base(), link_data.link.target(), link_data.link.tag(), link_data.link.link_type(), format_header(header)),
-            EntryAspect::LinkRemove((link_data, _), header) =>
-                write!(f, "EntryAspect::LinkRemove({} -> {} [tag: {}, type: {}], {})", link_data.link.base(), link_data.link.target(), link_data.link.tag(), link_data.link.link_type(), format_header(header)),
-            EntryAspect::Update(entry, header) =>
-                write!(f, "EntryAspect::Update({}, {})", entry.address(), format_header(header)),
-            EntryAspect::Deletion(header) =>
-                write!(f, "EntryAspect::Deletion({})", format_header(header)),
+            EntryAspect::Content(entry, header) => write!(
+                f,
+                "EntryAspect::Content({}, {})",
+                entry.address(),
+                format_header(header)
+            ),
+            EntryAspect::Header(header) => {
+                write!(f, "EntryAspect::Header({})", format_header(header))
+            }
+            EntryAspect::LinkAdd(link_data, header) => write!(
+                f,
+                "EntryAspect::LinkAdd({} -> {} [tag: {}, type: {}], {})",
+                link_data.link.base(),
+                link_data.link.target(),
+                link_data.link.tag(),
+                link_data.link.link_type(),
+                format_header(header)
+            ),
+            EntryAspect::LinkRemove((link_data, _), header) => write!(
+                f,
+                "EntryAspect::LinkRemove({} -> {} [tag: {}, type: {}], {})",
+                link_data.link.base(),
+                link_data.link.target(),
+                link_data.link.tag(),
+                link_data.link.link_type(),
+                format_header(header)
+            ),
+            EntryAspect::Update(entry, header) => write!(
+                f,
+                "EntryAspect::Update({}, {})",
+                entry.address(),
+                format_header(header)
+            ),
+            EntryAspect::Deletion(header) => {
+                write!(f, "EntryAspect::Deletion({})", format_header(header))
+            }
         }
-
     }
 }
 

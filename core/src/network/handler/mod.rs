@@ -14,11 +14,10 @@ use crate::{
 use holochain_core_types::hash::HashString;
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 
-use std::{convert::TryFrom, sync::Arc};
-use holochain_net::connection::json_protocol::{StoreEntryAspectData, MessageData};
+use crate::network::{direct_message::DirectMessage, entry_aspect::EntryAspect};
 use holochain_core_types::json::JsonString;
-use crate::network::entry_aspect::EntryAspect;
-use crate::network::direct_message::DirectMessage;
+use holochain_net::connection::json_protocol::{MessageData, StoreEntryAspectData};
+use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -46,7 +45,8 @@ fn format_store_data(data: &StoreEntryAspectData) -> String {
     let aspect_json =
         JsonString::from_json(&String::from_utf8(data.entry_aspect.aspect.clone()).unwrap());
     let aspect = EntryAspect::try_from(aspect_json).unwrap();
-    format!(r#"
+    format!(
+        r#"
 StoreEntryAspectData {{
     request_id: "{req_id}",
     dna_address: "{dna_adr}",
@@ -58,21 +58,22 @@ StoreEntryAspectData {{
         aspect: "{aspect:?}"
     }}
 }}"#,
-    req_id = data.request_id,
-    dna_adr = data.dna_address,
-    provider_agent_id = data.provider_agent_id,
-    entry_address = data.entry_address,
-    aspect_address = data.entry_aspect.aspect_address,
-    type_hint = data.entry_aspect.type_hint,
-    aspect = aspect)
+        req_id = data.request_id,
+        dna_adr = data.dna_address,
+        provider_agent_id = data.provider_agent_id,
+        entry_address = data.entry_address,
+        aspect_address = data.entry_aspect.aspect_address,
+        type_hint = data.entry_aspect.type_hint,
+        aspect = aspect
+    )
 }
 
 // See comment on fn format_store_data() - same reason for this function.
 fn format_message_data(data: &MessageData) -> String {
-    let message_json =
-        JsonString::from_json(&String::from_utf8(data.content.clone()).unwrap());
+    let message_json = JsonString::from_json(&String::from_utf8(data.content.clone()).unwrap());
     let message = DirectMessage::try_from(message_json).unwrap();
-    format!(r#"
+    format!(
+        r#"
 MessageData {{
     request_id: "{req_id}",
     dna_address: "{dna_adr}",
@@ -80,11 +81,11 @@ MessageData {{
     from_agent_id: "{from}",
     content: {content:?},
 }}"#,
-    req_id = data.request_id,
-    dna_adr = data.dna_address,
-    to = data.to_agent_id,
-    from = data.from_agent_id,
-    content = message,
+        req_id = data.request_id,
+        dna_adr = data.dna_address,
+        to = data.to_agent_id,
+        from = data.from_agent_id,
+        content = message,
     )
 }
 

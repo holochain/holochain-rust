@@ -28,7 +28,7 @@ pub(crate) fn create_ipc_config(
             log_d!("filepath = {}", filepath);
             // Get config from file
             let p2p_config = P2pConfig::from_file(filepath);
-            assert_eq!(p2p_config.backend_kind, P2pBackendKind::IPC);
+            assert_eq!(p2p_config.backend_kind, P2pBackendKind::N3H);
             // complement missing fields
             serde_json::from_value(json!({
             "backend_kind": String::from(p2p_config.backend_kind),
@@ -51,7 +51,7 @@ pub(crate) fn create_ipc_config(
         None => {
             // use default config
             serde_json::from_value(json!({
-            "backend_kind": "IPC",
+            "backend_kind": "N3H",
             "backend_config":
             {
                 "socketType": "ws",

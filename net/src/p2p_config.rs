@@ -9,7 +9,7 @@ use std::{fs::File, io::prelude::*, str::FromStr};
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq, Eq)]
 pub enum P2pBackendKind {
     MEMORY,
-    IPC,
+    N3H,
     LIB3H,
 }
 
@@ -18,7 +18,8 @@ impl FromStr for P2pBackendKind {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "MEMORY" => Ok(P2pBackendKind::MEMORY),
-            "IPC" => Ok(P2pBackendKind::IPC),
+            "N3H" => Ok(P2pBackendKind::N3H),
+            "LIB3H" => Ok(P2pBackendKind::LIB3H),
             _ => Err(()),
         }
     }
@@ -28,7 +29,7 @@ impl From<P2pBackendKind> for String {
     fn from(kind: P2pBackendKind) -> String {
         String::from(match kind {
             P2pBackendKind::MEMORY => "MEMORY",
-            P2pBackendKind::IPC => "IPC",
+            P2pBackendKind::N3H => "N3H",
             P2pBackendKind::LIB3H => "LIB3H",
         })
     }
@@ -100,7 +101,7 @@ impl P2pConfig {
     }
 
     pub fn default_ipc_spawn() -> Self {
-        P2pConfig::from_str(P2pConfig::DEFAULT_IPC_SPAWN_CONFIG)
+        P2pConfig::from_str(P2pConfig::DEFAULT_N3H_SPAWN_CONFIG)
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
@@ -117,7 +118,7 @@ impl P2pConfig {
         })
         .to_string();
         P2pConfig::new(
-            P2pBackendKind::IPC,
+            P2pBackendKind::N3H,
             &backend_config,
             Some(P2pConfig::load_end_user_config(
                 maybe_end_user_config_filepath,
@@ -127,7 +128,7 @@ impl P2pConfig {
 
     pub fn default_ipc_uri(maybe_ipc_binding: Option<&str>) -> Self {
         match maybe_ipc_binding {
-            None => P2pConfig::from_str(P2pConfig::DEFAULT_IPC_URI_CONFIG)
+            None => P2pConfig::from_str(P2pConfig::DEFAULT_N3H_URI_CONFIG)
                 .expect("Invalid backend_config json on P2pConfig creation."),
             Some(ipc_binding) => {
                 let backend_config = json!({
@@ -137,7 +138,7 @@ impl P2pConfig {
                 })
                 .to_string();
                 P2pConfig::new(
-                    P2pBackendKind::IPC,
+                    P2pBackendKind::N3H,
                     &backend_config,
                     Some(P2pConfig::default_end_user_config()),
                 )
@@ -226,25 +227,25 @@ impl P2pConfig {
       }
     }"#;
 
-    pub const DEFAULT_IPC_SPAWN_CONFIG: &'static str = r#"
+    pub const DEFAULT_N3H_SPAWN_CONFIG: &'static str = r#"
     {
-      "backend_kind": "IPC",
+      "backend_kind": "N3H",
       "backend_config": {
         "socketType": "ws",
         "spawn": {
           "cmd": "node",
           "env": {
             "N3H_MODE": "HACK",
-            "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
+            "N3H_N3H_SOCKET": "tcp://127.0.0.1:*",
             "N3H_LOG_LEVEL": "i"
           }
         }
       }
     }"#;
 
-    pub const DEFAULT_IPC_URI_CONFIG: &'static str = r#"
+    pub const DEFAULT_N3H_URI_CONFIG: &'static str = r#"
     {
-      "backend_kind": "IPC",
+      "backend_kind": "N3H",
       "backend_config": {
         "socketType": "ws",
         "ipcUri": "tcp://127.0.0.1:0",

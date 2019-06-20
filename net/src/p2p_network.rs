@@ -40,11 +40,11 @@ impl P2pNetwork {
         // Provide worker factory depending on backend kind
         let worker_factory: NetWorkerFactory = match p2p_config.backend_kind {
             // Create an IpcNetWorker with the passed backend config
-            P2pBackendKind::IPC => {
+            P2pBackendKind::N3H => {
                 let enduser_config = p2p_config
                     .maybe_end_user_config
                     .clone()
-                    .expect("P2pConfig for IPC networking is missing an end-user config")
+                    .expect("P2pConfig for N3H networking is missing an end-user config")
                     .to_string();
                 Box::new(move |h| {
                     Ok(

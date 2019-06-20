@@ -1,5 +1,5 @@
 {
-  "backend_kind": "IPC",
+  "backend_kind": "N3H",
   "backend_config": {
     "socketType": "ws",
     "spawn": {

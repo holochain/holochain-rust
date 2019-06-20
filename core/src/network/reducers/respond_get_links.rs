@@ -5,7 +5,9 @@ use crate::{
     },
     state::State,
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    cas::content::Address, crud_status::CrudStatus, error::HolochainError, json::JsonString,
+};
 use holochain_net::connection::json_protocol::{
     JsonProtocol, QueryEntryData, QueryEntryResultData,
 };
@@ -15,7 +17,7 @@ use holochain_net::connection::json_protocol::{
 fn reduce_respond_get_links_inner(
     network_state: &mut NetworkState,
     query_data: &QueryEntryData,
-    links: &Vec<Address>,
+    links: &Vec<(Address, CrudStatus)>,
     link_type: String,
     tag: String,
 ) -> Result<(), HolochainError> {

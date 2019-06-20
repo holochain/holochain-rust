@@ -102,7 +102,6 @@ fn publish_link_meta(
             )));
         }
     };
-
     send(
         network_state,
         JsonProtocol::PublishEntry(ProvidedEntryData {

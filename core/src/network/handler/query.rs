@@ -7,7 +7,7 @@ use crate::{
     nucleus,
 };
 use holochain_core_types::{
-    cas::content::Address, entry::EntryWithMetaAndHeader, json::JsonString,
+    cas::content::Address, crud_status::CrudStatus, entry::EntryWithMetaAndHeader, json::JsonString,
 };
 use holochain_net::connection::json_protocol::{QueryEntryData, QueryEntryResultData};
 use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
@@ -17,7 +17,7 @@ fn get_links(
     base: Address,
     link_type: String,
     tag: String,
-) -> Vec<Address> {
+) -> Vec<(Address, CrudStatus)> {
     context
         .state()
         .unwrap()
@@ -25,7 +25,7 @@ fn get_links(
         .get_links(base, link_type, tag)
         .unwrap_or(BTreeSet::new())
         .into_iter()
-        .map(|eav| eav.value())
+        .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
         .collect::<Vec<_>>()
 }
 

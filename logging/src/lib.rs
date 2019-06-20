@@ -120,7 +120,7 @@ pub struct FastLoggerBuilder {
 
 ///
 /// ```rust
-/// use doodle_log::FastLoggerBuilder;
+/// use logging::FastLoggerBuilder;
 /// let logger = FastLoggerBuilder::new()
 ///     .set_level_from_str("Debug")
 ///     .set_channel_size(512)

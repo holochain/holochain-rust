@@ -1,7 +1,6 @@
-use holochain_core_types::{
-    cas::content::Address, crud_status::CrudStatus, entry::EntryWithMetaAndHeader,
-    error::HolochainError, json::JsonString,
-};
+use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader};
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::Address;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum NetworkQuery {

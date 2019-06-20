@@ -5,9 +5,8 @@ use crate::{
     },
     state::State,
 };
-use holochain_core_types::{
-    entry::EntryWithMetaAndHeader, error::HolochainError, json::JsonString,
-};
+use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError};
+use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{
     JsonProtocol, QueryEntryData, QueryEntryResultData,
 };

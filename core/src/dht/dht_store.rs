@@ -122,7 +122,7 @@ impl DhtStore {
             IndexFilter::LatestByAttribute,
             None,
         );
-        self.meta_storage.read()?.fetch_eavi(&query)
+        Ok(self.meta_storage.read()?.fetch_eavi(&query)?)
     }
 
     /// Get all headers for an entry by first looking in the DHT meta store

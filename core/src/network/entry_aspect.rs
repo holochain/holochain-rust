@@ -1,13 +1,8 @@
 use chrono::{offset::FixedOffset, DateTime};
-use holochain_core_types::{
-    cas::content::{Address, AddressableContent, Content},
-    chain_header::ChainHeader,
-    entry::Entry,
-    error::HolochainError,
-    json::JsonString,
-    link::link_data::LinkData,
-};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry, link::link_data::LinkData};
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_net::connection::json_protocol::EntryAspectData;
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 use std::{
     convert::{Into, TryFrom},
     fmt,
@@ -18,7 +13,7 @@ impl AddressableContent for EntryAspect {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+    fn try_from_content(content: &Content) -> Result<Self, JsonError> {
         Self::try_from(content.to_owned())
     }
 }

@@ -2,18 +2,15 @@ use crate::{
     context::Context,
     network::{entry_aspect::EntryAspect, entry_with_header::EntryWithHeader},
     workflows::{
-        hold_entry::hold_entry_workflow, hold_entry_update::hold_update_workflow,
-        hold_link::hold_link_workflow, remove_link::remove_link_workflow,
+        hold_entry::hold_entry_workflow, hold_entry_remove::hold_remove_workflow,
+        hold_entry_update::hold_update_workflow, hold_link::hold_link_workflow,
+        remove_link::remove_link_workflow,
     },
 };
-use holochain_core_types::{
-    cas::content::AddressableContent,
-    entry::{deletion_entry::DeletionEntry, Entry},
-    json::JsonString,
-};
+use holochain_core_types::entry::{deletion_entry::DeletionEntry, Entry};
+use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::StoreEntryAspectData;
-//use std::{str::FromStr, sync::Arc, thread, convert::TryInto};
-use crate::workflows::hold_entry_remove::hold_remove_workflow;
+use holochain_persistence_api::cas::content::AddressableContent;
 use std::{convert::TryInto, sync::Arc, thread};
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.

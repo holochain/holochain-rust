@@ -8,10 +8,9 @@ use crate::{
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use boolinator::*;
-use holochain_core_types::{
-    cas::content::Address, eav::Attribute, entry::Entry, error::HolochainError, time::Timeout,
-};
+use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
 use holochain_net::connection::json_protocol::FetchEntryData;
+use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 /// The network has requested a DHT entry from us.

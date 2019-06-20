@@ -6,10 +6,10 @@ use crate::{
     network::query::{NetworkQuery, NetworkQueryResult},
     nucleus,
 };
-use holochain_core_types::{
-    cas::content::Address, crud_status::CrudStatus, entry::EntryWithMetaAndHeader, json::JsonString,
-};
+use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader};
+use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{QueryEntryData, QueryEntryResultData};
+use holochain_persistence_api::cas::content::Address;
 use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 
 fn get_links(

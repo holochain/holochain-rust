@@ -15,7 +15,7 @@ use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::Net
 use holochain_persistence_api::hash::HashString;
 
 use crate::network::{direct_message::DirectMessage, entry_aspect::EntryAspect};
-use holochain_core_types::json::JsonString;
+use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{MessageData, StoreEntryAspectData};
 use std::{convert::TryFrom, sync::Arc};
 

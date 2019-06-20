@@ -3,9 +3,9 @@ use crate::{
     network::{query::NetworkQuery, reducers::send, state::NetworkState},
     state::State,
 };
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_core_types::error::HolochainError;
+use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{JsonProtocol, QueryEntryData};
-
 fn reduce_get_entry_inner(
     network_state: &mut NetworkState,
     key: &GetEntryKey,

@@ -11,7 +11,11 @@
 extern crate failure;
 extern crate holochain_common;
 #[macro_use]
-pub extern crate holochain_core_types_derive;
+pub extern crate holochain_json_derive;
+
+extern crate holochain_json_api;
+extern crate holochain_persistence_api;
+
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;

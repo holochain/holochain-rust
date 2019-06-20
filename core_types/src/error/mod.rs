@@ -7,10 +7,15 @@ mod ribosome_error;
 pub use self::{dna_error::*, ribosome_error::*};
 
 use self::HolochainError::*;
-use crate::json::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use hash::HashString;
+use holochain_persistence_api::{error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
+
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
+    json::*,
+};
+
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -62,7 +67,12 @@ impl ::std::convert::TryFrom<ZomeApiInternalResult> for CoreError {
                 "Attempted to deserialize CoreError from a non-error ZomeApiInternalResult".into(),
             ))
         } else {
-            CoreError::try_from(JsonString::from_json(&zome_api_internal_result.error))
+            let hc_error: JsonString = JsonString::from_json(&zome_api_internal_result.error);
+            let ce: JsonResult<_> = CoreError::try_from(hc_error);
+            ce.map_err(|err: JsonError| {
+                let hc_error: HolochainError = err.into();
+                hc_error
+            })
         }
     }
 }
@@ -158,6 +168,26 @@ impl Error for HolochainError {}
 impl From<HolochainError> for String {
     fn from(holochain_error: HolochainError) -> Self {
         holochain_error.to_string()
+    }
+}
+
+impl From<PersistenceError> for HolochainError {
+    fn from(persistence_error: PersistenceError) -> Self {
+        match persistence_error {
+            PersistenceError::ErrorGeneric(e) => HolochainError::ErrorGeneric(e),
+            PersistenceError::SerializationError(e) => HolochainError::SerializationError(e),
+            PersistenceError::IoError(e) => HolochainError::IoError(e),
+        }
+    }
+}
+
+impl From<JsonError> for HolochainError {
+    fn from(json_error: JsonError) -> Self {
+        match json_error {
+            JsonError::ErrorGeneric(e) => HolochainError::ErrorGeneric(e),
+            JsonError::SerializationError(e) => HolochainError::SerializationError(e),
+            JsonError::IoError(e) => HolochainError::IoError(e),
+        }
     }
 }
 

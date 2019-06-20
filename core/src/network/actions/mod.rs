@@ -5,7 +5,8 @@ pub mod get_validation_package;
 pub mod initialize_network;
 pub mod publish;
 
-use holochain_core_types::{cas::content::Address, error::HcResult};
+use holochain_core_types::error::HcResult;
+use holochain_persistence_api::cas::content::Address;
 
 #[derive(Clone, Debug)]
 pub enum ActionResponse {

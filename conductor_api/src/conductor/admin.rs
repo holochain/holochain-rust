@@ -7,9 +7,10 @@ use crate::{
     dpki_instance::DpkiInstance,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_core_types::{
-    cas::content::AddressableContent, error::HolochainError, hash::HashString,
-};
+use holochain_core_types::error::HolochainError;
+
+use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
+
 use json_patch;
 use std::{
     fs::{self, create_dir_all},
@@ -588,7 +589,8 @@ pub mod tests {
         keystore::test_hash_config,
     };
     use holochain_common::paths::DNA_EXTENSION;
-    use holochain_core_types::{dna::Dna, json::JsonString};
+    use holochain_core_types::dna::Dna;
+    use holochain_json_api::json::JsonString;
     use std::{
         convert::TryFrom,
         env::current_dir,

@@ -25,13 +25,13 @@ pub mod tests {
     };
     use holochain_core_types::{
         agent::test_agent_id,
-        cas::content::{Address, AddressableContent},
         chain_header::test_chain_header,
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
-        json::JsonString,
         link::link_data::LinkData,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use test_utils::*;
 
     // TODO: Should wait for a success or saturation response from the network module after Publish

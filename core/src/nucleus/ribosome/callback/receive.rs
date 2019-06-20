@@ -10,7 +10,8 @@ use crate::{
         CallbackFnCall,
     },
 };
-use holochain_core_types::{error::HolochainError, json::JsonString};
+
+use holochain_json_api::{error::JsonError, json::JsonString};
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -53,7 +54,7 @@ pub mod tests {
             Defn,
         },
     };
-    use holochain_core_types::cas::content::Address;
+    use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
 
     #[test]

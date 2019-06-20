@@ -7,7 +7,8 @@ use crate::connection::{
     protocol::Protocol,
     NetResult,
 };
-use holochain_core_types::{cas::content::Address, json::JsonString};
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::Address;
 use std::{
     collections::{hash_map::Entry, HashMap},
     convert::TryFrom,
@@ -164,11 +165,12 @@ impl Drop for InMemoryWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::p2p_config::P2pConfig;
-
-    use crate::connection::json_protocol::{JsonProtocol, TrackDnaData};
+    use crate::{
+        connection::json_protocol::{JsonProtocol, TrackDnaData},
+        p2p_config::P2pConfig,
+    };
     use crossbeam_channel::unbounded;
-    use holochain_core_types::{cas::content::Address, hash::HashString};
+    use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
     fn example_dna_address() -> Address {
         "blabladnaAddress".into()

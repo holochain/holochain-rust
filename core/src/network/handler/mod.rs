@@ -11,8 +11,8 @@ use crate::{
         handler::{fetch::*, query::*, send::*, store::*},
     },
 };
-use holochain_core_types::hash::HashString;
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
+use holochain_persistence_api::hash::HashString;
 
 use crate::network::{direct_message::DirectMessage, entry_aspect::EntryAspect};
 use holochain_core_types::json::JsonString;

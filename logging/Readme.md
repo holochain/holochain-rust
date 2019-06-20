@@ -18,6 +18,6 @@ It still misses:
 
 To have a generale view of the capability of this crate, you can run this command:
 
-```Rust
+```bash
 cargo run --example simple
 ```

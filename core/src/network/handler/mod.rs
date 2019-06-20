@@ -15,6 +15,10 @@ use holochain_core_types::hash::HashString;
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 
 use std::{convert::TryFrom, sync::Arc};
+use holochain_net::connection::json_protocol::{StoreEntryAspectData, MessageData};
+use holochain_core_types::json::JsonString;
+use crate::network::entry_aspect::EntryAspect;
+use crate::network::direct_message::DirectMessage;
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -30,6 +34,58 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
         return false;
     }
     true
+}
+
+// Since StoreEntryAspectData lives in the net crate and EntryAspect is specific
+// to core we can't implement fmt::Debug so that it spans over both, StoreEntryAspectData
+// and the type that is represented as opaque byte vector.
+// For debug logs we do want to see the whole store request including the EntryAspect.
+// This function enables pretty debug logs by deserializing the EntryAspect explicitly
+// and combining it with the top-level fields in a formatted and indented output.
+fn format_store_data(data: &StoreEntryAspectData) -> String {
+    let aspect_json =
+        JsonString::from_json(&String::from_utf8(data.entry_aspect.aspect.clone()).unwrap());
+    let aspect = EntryAspect::try_from(aspect_json).unwrap();
+    format!(r#"
+StoreEntryAspectData {{
+    request_id: "{req_id}",
+    dna_address: "{dna_adr}",
+    provider_agent_id: "{provider_agent_id}",
+    entry_address: "{entry_address}",
+    entry_aspect: {{
+        aspect_address: "{aspect_address}",
+        type_hint: "{type_hint}",
+        aspect: "{aspect:?}"
+    }}
+}}"#,
+    req_id = data.request_id,
+    dna_adr = data.dna_address,
+    provider_agent_id = data.provider_agent_id,
+    entry_address = data.entry_address,
+    aspect_address = data.entry_aspect.aspect_address,
+    type_hint = data.entry_aspect.type_hint,
+    aspect = aspect)
+}
+
+// See comment on fn format_store_data() - same reason for this function.
+fn format_message_data(data: &MessageData) -> String {
+    let message_json =
+        JsonString::from_json(&String::from_utf8(data.content.clone()).unwrap());
+    let message = DirectMessage::try_from(message_json).unwrap();
+    format!(r#"
+MessageData {{
+    request_id: "{req_id}",
+    dna_address: "{dna_adr}",
+    to_agent_id: "{to}",
+    from_agent_id: "{from}",
+    content: {content:?},
+}}"#,
+    req_id = data.request_id,
+    dna_adr = data.dna_address,
+    to = data.to_agent_id,
+    from = data.from_agent_id,
+    content = message,
+    )
 }
 
 /// Creates the network handler.
@@ -64,8 +120,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
                 context.log(format!(
-                    "debug/net/handle: HandleStoreEntryAspect: {:?}",
-                    dht_entry_data
+                    "debug/net/handle: HandleStoreEntryAspect: {}",
+                    format_store_data(&dht_entry_data)
                 ));
                 handle_store(dht_entry_data, context.clone())
             }
@@ -136,8 +192,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
                 context.log(format!(
-                    "debug/net/handle: HandleSendMessage: {:?}",
-                    message_data
+                    "debug/net/handle: HandleSendMessage: {}",
+                    format_message_data(&message_data)
                 ));
                 handle_send_message(message_data, context.clone())
             }
@@ -150,8 +206,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
                 context.log(format!(
-                    "debug/net/handle: SendMessageResult: {:?}",
-                    message_data
+                    "debug/net/handle: SendMessageResult: {}",
+                    format_message_data(&message_data)
                 ));
                 handle_send_message_result(message_data, context.clone())
             }

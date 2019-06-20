@@ -57,7 +57,7 @@ lazy_static! {
         basic_workflows::dht_two_aspects_test,
         basic_workflows::two_authors_test,
         basic_workflows::shutdown_test,
-        //basic_workflows::no_aspect_test,
+        basic_workflows::no_aspect_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,

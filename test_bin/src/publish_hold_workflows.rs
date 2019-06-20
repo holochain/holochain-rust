@@ -53,20 +53,23 @@ pub fn publish_entry_list_test(
     alex.reply_to_first_HandleGetAuthoringEntryList();
     // Should receive a HandleFetchEntry request from network module after receiving list
     let _ = alex.wait_HandleFetchEntry_and_reply();
-    // Should receive a HandleFetchEntry request from network module for gossip
-    let _ = alex.wait_HandleFetchEntry_and_reply();
+//    // Should receive a HandleFetchEntry request from network module for gossip
+//    let _ = alex.wait_HandleFetchEntry_and_reply();
+
     // billy might receive HandleStoreEntryAspect
     let res = billy.wait_json_with_timeout(
         Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
+
     log_i!("Billy got res: {:?}", res);
     // billy asks for reported authored data.
-    billy.request_entry(ENTRY_ADDRESS_1.clone());
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+    let res = billy.reply_to_HandleQueryEntry(&query_data);
     // #fullsync
     // Billy answers its own request
-    let has_received = billy.wait_HandleQueryEntry_and_reply();
-    assert!(has_received);
+    // let has_received = billy.wait_HandleQueryEntry_and_reply();
+    assert!(res.is_ok());
     // Billy should receive the entry data
     let mut result =
         billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
@@ -89,8 +92,8 @@ pub fn double_publish_entry_list_test(
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
     alex.reply_to_first_HandleGetAuthoringEntryList();
-    // Should receive only one HandleFetchEntry request from network module for Gossip
-    let _ = alex.wait_HandleFetchEntry_and_reply();
+//    // Should receive only one HandleFetchEntry request from network module for Gossip
+//    let _ = alex.wait_HandleFetchEntry_and_reply();
     // billy might receive HandleStoreEntryAspect
     let res = billy.wait_json_with_timeout(
         Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
@@ -98,10 +101,11 @@ pub fn double_publish_entry_list_test(
     );
     log_i!("Billy got res: {:?}", res);
     // billy asks for reported published data.
-    billy.request_entry(ENTRY_ADDRESS_1.clone());
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+    billy.reply_to_HandleQueryEntry(&query_data).unwrap();
     // #fullsync
     // Billy receives and replies to its own query
-    let _ = billy.wait_HandleQueryEntry_and_reply();
+    //let _ = billy.wait_HandleQueryEntry_and_reply();
     // Billy should receive the entry data back
     let mut result =
         billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
@@ -131,15 +135,17 @@ pub fn hold_list_test(
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(has_received);
     // wait for billy to receive HandleStoreEntryAspect via gossip
-    let _ = billy.wait_json_with_timeout(
+    let res = billy.wait_json_with_timeout(
         Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
+    log_i!("Billy got res: {:?}", res);
     // billy asks for reported authored data.
-    billy.request_entry(ENTRY_ADDRESS_1.clone());
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+    billy.reply_to_HandleQueryEntry(&query_data).unwrap();
     // #fullsync
     // billy replies to own query
-    let _ = billy.wait_HandleQueryEntry_and_reply();
+    // let _ = billy.wait_HandleQueryEntry_and_reply();
     // Billy should receive the entry data
     let mut result =
         billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
@@ -160,25 +166,31 @@ pub fn many_aspects_test(
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
+    // =====
     setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
-    // Author meta and reply to HandleGetPublishingMetaList
+    // Author & hold several aspects on same address
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_2.clone()], false)?;
     alex.hold_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_3.clone()])?;
     log_d!("Alex authored and stored Aspects");
 
-    // Send AuthoringEntryList and should receive a HandleFetchEntry request from network module
+    // billy might receive HandleStoreEntryAspect
+    let res = billy.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+    log_i!("Billy got res 0: {:?}", res);
+
+    // Send AuthoringEntryList
+    // =======================
     alex.reply_to_first_HandleGetAuthoringEntryList();
+    // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(has_received);
-    // Maybe 2nd get for gossiping
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    log_d!("Alex has_received: {}", has_received);
-    // Send AuthoringEntryList and should receive a HandleFetchEntry request from network module
-    alex.reply_to_first_HandleGetHoldingEntryList();
-    // wait for gossip to ask for the held data
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    assert!(has_received);
+//    // Maybe 2nd get for gossiping
+//    let has_received = alex.wait_HandleFetchEntry_and_reply();
+//    log_d!("Alex has_received: {}", has_received);
+
     // billy might receive HandleStoreEntryAspect
     let res = billy.wait_json_with_timeout(
         Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
@@ -190,12 +202,21 @@ pub fn many_aspects_test(
         Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
-    log_i!("Billy got res 2: {:?}", res);
+    assert!(res.is_some());
+
+    // Send HoldingEntryList
+    // =====================
+    // Send HoldingEntryList and should receive a HandleFetchEntry request from network module
+    alex.reply_to_first_HandleGetHoldingEntryList();
+    // wait for gossip to ask for the held data
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    assert!(has_received);
     // billy might receive HandleStoreEntryAspect
     let res = billy.wait_json_with_timeout(
         Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
+    assert!(res.is_some());
     log_i!("Billy got res 3: {:?}", res);
     // Billy asks for that data
     let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());

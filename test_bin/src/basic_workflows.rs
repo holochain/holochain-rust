@@ -547,35 +547,28 @@ pub fn shutdown_test(
     Ok(())
 }
 
-///// Entry with no Aspect case
-//// this is all debug code, no need to track code test coverage
-//#[cfg_attr(tarpaulin, skip)]
-//pub fn no_aspect_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
-//    // Setup
-//    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
-//
-//    // Entry but no Aspect
-//    // =================
-//    // Alex publish data on the network
-//    alex.author_entry(&ENTRY_ADDRESS_1, vec![], true)?;
-//
-//    // Billy asks for missing metadata on the network.
-//    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
-//
-//    // Alex sends that data back to the network
-//    alex.reply_to_HandleQueryEntry(&query_data)?;
-//
-//    // Billy should receive an empty list
-//    let result = billy
-//        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
-//        .unwrap();
-//
-//    log_i!("got GetMetaResult: {:?}", result);
-//    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
-//    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
-//    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
-//    assert_eq!(meta_data.content_list.len(), 0);
-//}
+/// Entry with no Aspect case: Should no-op
+// this is all debug code, no need to track code test coverage
+#[cfg_attr(tarpaulin, skip)]
+pub fn no_aspect_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
+    // Setup
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
+
+    // Alex publish Entry but no Aspect on the network
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![], true)?;
+
+    // Billy asks for missing metadata on the network.
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+
+    // Alex sends that data back to the network
+    let res = alex.reply_to_HandleQueryEntry(&query_data);
+    log_i!("alex responds with: {:?}", res);
+    let info = std::string::String::from_utf8_lossy(&res.err().unwrap().result_info).into_owned();
+    log_i!("got result_info: {}", info);
+    assert_eq!(info, "No entry found");
+    // Done
+    Ok(())
+}
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]

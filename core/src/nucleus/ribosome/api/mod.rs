@@ -4,6 +4,7 @@
 pub mod call;
 pub mod commit;
 pub mod debug;
+pub mod emit_signal;
 pub mod entry_address;
 pub mod get_entry;
 pub mod get_links;
@@ -28,6 +29,7 @@ use crate::nucleus::ribosome::{
         capabilities::{invoke_commit_capability_claim, invoke_commit_capability_grant},
         commit::invoke_commit_app_entry,
         debug::invoke_debug,
+        emit_signal::invoke_emit_signal,
         entry_address::invoke_entry_address,
         get_entry::invoke_get_entry,
         get_links::invoke_get_links,
@@ -139,6 +141,9 @@ link_zome_api! {
 
     /// Commit a capability grant to the source chain
     "hc_commit_capability_claim", CommitCapabilityClaim, invoke_commit_capability_claim;
+
+    /// Send a DNA defined signal to UIs and other listeners
+    "hc_emit_signal", EmitSignal, invoke_emit_signal;
 }
 
 #[cfg(test)]

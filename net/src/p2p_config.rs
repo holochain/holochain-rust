@@ -1,7 +1,7 @@
 use holochain_json_api::{error::JsonError, json::JsonString};
+use lib3h::engine::RealEngineConfig;
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
-use lib3h::engine::RealEngineConfig;
 
 //--------------------------------------------------------------------------------------------------
 // P2pBackendKind
@@ -55,7 +55,7 @@ impl From<&'static str> for P2pBackendKind {
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub enum BackendConfig {
     Json(serde_json::Value),
-    Lib3h(RealEngineConfig)
+    Lib3h(RealEngineConfig),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]

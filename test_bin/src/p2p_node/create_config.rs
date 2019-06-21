@@ -32,49 +32,46 @@ pub(crate) fn create_ipc_config(
             assert_eq!(p2p_config.backend_kind, P2pBackendKind::N3H);
             match p2p_config.backend_config {
                 BackendConfig::Json(partial_config) =>
-                    // complement missing fields
+                // complement missing fields
+                {
                     p2p_config.backend_config = BackendConfig::Json(json!(
-                        {
-                            "socketType": partial_config["socketType"],
-                            "bootstrapNodes": bootstrap_nodes,
-                            "spawn":
-                            {
-                                "workDir": dir.clone(),
-                                "env": {
-                                    "N3H_MODE": partial_config["spawn"]["env"]["N3H_MODE"],
-                                    "N3H_WORK_DIR": dir.clone(),
-                                    "N3H_IPC_SOCKET": partial_config["spawn"]["env"]["N3H_IPC_SOCKET"],
-                                    "N3H_LOG_LEVEL": partial_config["spawn"]["env"]["N3H_LOG_LEVEL"],
-                                }
-                            },
-                        }))
-                ,
-                _ => panic!("wrong backend config, was expecting Json"),
-            }
-            p2p_config
-        }
-        None => {
-            P2pConfig {
-                backend_kind: P2pBackendKind::N3H,
-                backend_config: BackendConfig::Json(
-                    json!({
-                        "socketType": "ws",
+                    {
+                        "socketType": partial_config["socketType"],
                         "bootstrapNodes": bootstrap_nodes,
                         "spawn":
                         {
                             "workDir": dir.clone(),
                             "env": {
-                                "N3H_MODE": "HACK",
+                                "N3H_MODE": partial_config["spawn"]["env"]["N3H_MODE"],
                                 "N3H_WORK_DIR": dir.clone(),
-                                "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
-                                "N3H_LOG_LEVEL": "t"
+                                "N3H_IPC_SOCKET": partial_config["spawn"]["env"]["N3H_IPC_SOCKET"],
+                                "N3H_LOG_LEVEL": partial_config["spawn"]["env"]["N3H_LOG_LEVEL"],
                             }
                         },
-                    })
-                ),
-                maybe_end_user_config: None,
+                    }))
+                }
+                _ => panic!("wrong backend config, was expecting Json"),
             }
+            p2p_config
         }
+        None => P2pConfig {
+            backend_kind: P2pBackendKind::N3H,
+            backend_config: BackendConfig::Json(json!({
+                "socketType": "ws",
+                "bootstrapNodes": bootstrap_nodes,
+                "spawn":
+                {
+                    "workDir": dir.clone(),
+                    "env": {
+                        "N3H_MODE": "HACK",
+                        "N3H_WORK_DIR": dir.clone(),
+                        "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
+                        "N3H_LOG_LEVEL": "t"
+                    }
+                },
+            })),
+            maybe_end_user_config: None,
+        },
     };
     config.maybe_end_user_config = Some(P2pConfig::load_end_user_config(
         maybe_end_user_config_filepath,
@@ -114,22 +111,18 @@ pub(crate) fn create_lib3h_config(
             // TODO: complement missing fields if necessary
             p2p_config
         }
-        None => {
-            P2pConfig {
-                backend_kind: P2pBackendKind::LIB3H,
-                backend_config: BackendConfig::Lib3h(
-                    RealEngineConfig {
-                        socket_type: "ws".into(),
-                        bootstrap_nodes: bootstrap_nodes,
-                        work_dir: dir.clone(),
-                        log_level: 'd',
-                        bind_url: format!("FIXME"),
-                        dht_custom_config: vec![],
-                    }
-                ),
-                maybe_end_user_config: None,
-            }
-        }
+        None => P2pConfig {
+            backend_kind: P2pBackendKind::LIB3H,
+            backend_config: BackendConfig::Lib3h(RealEngineConfig {
+                socket_type: "ws".into(),
+                bootstrap_nodes: bootstrap_nodes,
+                work_dir: dir.clone(),
+                log_level: 'd',
+                bind_url: format!("FIXME"),
+                dht_custom_config: vec![],
+            }),
+            maybe_end_user_config: None,
+        },
     };
     config.maybe_end_user_config = Some(P2pConfig::load_end_user_config(
         maybe_end_user_config_filepath,

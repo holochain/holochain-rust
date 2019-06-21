@@ -2,7 +2,7 @@ use crate::{
     conductor::broadcaster::Broadcaster,
     config::{
         serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
-        StorageConfiguration, NetworkConfig,
+        NetworkConfig, StorageConfiguration,
     },
     context_builder::ContextBuilder,
     dpki_instance::DpkiInstance,
@@ -47,7 +47,7 @@ use config::AgentConfiguration;
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     ipc::spawn::{ipc_spawn, SpawnResult},
-    p2p_config::{P2pConfig,P2pBackendKind,BackendConfig},
+    p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
 };
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
 use signal_wrapper::SignalWrapper;
@@ -464,22 +464,20 @@ impl Conductor {
                     2000,
                     true,
                 )
-                    .map_err(|error| {
-                        println!("Error while spawning network process: {:?}", error);
-                        HolochainError::ErrorGeneric(error.to_string())
-                    })?;
+                .map_err(|error| {
+                    println!("Error while spawning network process: {:?}", error);
+                    HolochainError::ErrorGeneric(error.to_string())
+                })?;
                 println!(
                     "Network spawned with bindings:\n\t - ipc: {}\n\t - p2p: {:?}",
                     spawn_result.ipc_binding, spawn_result.p2p_bindings
                 );
                 Ok(spawn_result)
-
-            },
-            NetworkConfig::Lib3h(_) => {
-                Err(HolochainError::ErrorGeneric("Lib3h Network not implemented".to_string()))
-            },
+            }
+            NetworkConfig::Lib3h(_) => Err(HolochainError::ErrorGeneric(
+                "Lib3h Network not implemented".to_string(),
+            )),
         }
-
     }
 
     fn get_p2p_config(&self) -> P2pConfig {
@@ -512,18 +510,12 @@ impl Conductor {
                             .as_ref()
                             .map(|spawn| spawn.ipc_binding.clone())
                     });
-                P2pConfig::new_ipc_uri(
-                    uri,
-                    &config.bootstrap_nodes,
-                    config.networking_config_file,
-                )
-            },
-            NetworkConfig::Lib3h(config) => {
-                P2pConfig {
-                    backend_kind: P2pBackendKind::LIB3H,
-                    backend_config: BackendConfig::Lib3h(config),
-                    maybe_end_user_config: None,
-                }
+                P2pConfig::new_ipc_uri(uri, &config.bootstrap_nodes, config.networking_config_file)
+            }
+            NetworkConfig::Lib3h(config) => P2pConfig {
+                backend_kind: P2pBackendKind::LIB3H,
+                backend_config: BackendConfig::Lib3h(config),
+                maybe_end_user_config: None,
             },
         }
     }

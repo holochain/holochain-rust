@@ -64,11 +64,9 @@ impl P2pNetwork {
                 };
 
                 Box::new(move |h| {
-                    Ok(
-                        Box::new(Lib3hWorker::new(h, backend_config.clone())?)
-                            as Box<NetWorker>,
-                    )
-                }) },
+                    Ok(Box::new(Lib3hWorker::new(h, backend_config.clone())?) as Box<NetWorker>)
+                })
+            }
             // Create an InMemoryWorker
             P2pBackendKind::MEMORY => Box::new(move |h| {
                 Ok(Box::new(InMemoryWorker::new(h, &backend_config_str)?) as Box<NetWorker>)
@@ -100,7 +98,7 @@ impl P2pNetwork {
             NetConnectionThread::new(wrapped_handler, worker_factory, None).map_err(|e| {
                 format_err!(
                     "Failed to obtain a connection to a p2p network module w/ config: {}: ",
-                 //   p2p_config.as_str(),
+                    //   p2p_config.as_str(),
                     e
                 )
             })?;
@@ -156,11 +154,7 @@ mod tests {
     #[test]
     fn it_should_create_memory_network() {
         let p2p = P2pConfig::new_with_unique_memory_backend();
-        let mut res = P2pNetwork::new(
-            NetHandler::new(Box::new(|_r| Ok(()))),
-            p2p,
-        )
-        .unwrap();
+        let mut res = P2pNetwork::new(NetHandler::new(Box::new(|_r| Ok(()))), p2p).unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }

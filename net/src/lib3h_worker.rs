@@ -6,9 +6,9 @@ use crate::connection::{
     NetResult,
 };
 use lib3h::{
+    dht::mirror_dht::MirrorDht,
     engine::{RealEngine, RealEngineConfig},
     transport_wss::TransportWss,
-    dht::{mirror_dht::MirrorDht},
 };
 use lib3h_protocol::network_engine::NetworkEngine;
 

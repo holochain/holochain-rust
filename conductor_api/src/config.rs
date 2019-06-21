@@ -21,9 +21,9 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 
-use lib3h::engine::RealEngineConfig;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
+use lib3h::engine::RealEngineConfig;
 
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
@@ -651,7 +651,7 @@ pub struct UiInterfaceConfiguration {
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum NetworkConfig {
     N3h(N3hConfig),
     Lib3h(RealEngineConfig),

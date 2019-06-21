@@ -3,10 +3,6 @@
 //! The reason for having this crate is to have a minimal but
 //! complete set of types that are used in most other Holochain
 //! crates, but that don't include Holochain itself.
-//!
-//! Note: This is already quite big. Maybe break the CAS and EAV traits
-//! out into their separate crate as well since those are generic and not
-//! necessarily bound to Holochain.
 #![feature(try_from)]
 #![feature(try_trait)]
 #![feature(never_type)]

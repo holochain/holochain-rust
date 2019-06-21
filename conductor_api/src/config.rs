@@ -21,6 +21,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 
+use lib3h::engine::RealEngineConfig;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
 
@@ -70,7 +71,7 @@ pub struct Configuration {
     /// Configures how logging should behave. Optional.
     #[serde(default)]
     pub logger: LoggerConfiguration,
-    /// Configuration options for the network module n3h. Optional.
+    /// Configuration options for the network module. Optional.
     #[serde(default)]
     pub network: Option<NetworkConfig>,
     /// where to persist the config file and DNAs. Optional.
@@ -649,7 +650,15 @@ pub struct UiInterfaceConfiguration {
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
-pub struct NetworkConfig {
+#[serde(rename_all = "lowercase")]
+#[serde(tag="type")]
+pub enum NetworkConfig {
+    N3h(N3hConfig),
+    Lib3h(RealEngineConfig),
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct N3hConfig {
     /// List of URIs that point to other nodes to bootstrap p2p connections.
     #[serde(default)]
     pub bootstrap_nodes: Vec<String>,
@@ -855,6 +864,7 @@ pub mod tests {
         id = "app spec instance"
 
     [network]
+    type="n3h"
     bootstrap_nodes = ["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"]
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     networking_config_file = "/Users/cnorris/.holochain/network_config.json"
@@ -878,7 +888,7 @@ pub mod tests {
         assert_eq!(config.logger.logger_type, "debug");
         assert_eq!(
             config.network.unwrap(),
-            NetworkConfig {
+            NetworkConfig::N3h(N3hConfig {
                 bootstrap_nodes: vec![String::from(
                     "wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"
                 )],
@@ -889,7 +899,7 @@ pub mod tests {
                 networking_config_file: Some(String::from(
                     "/Users/cnorris/.holochain/network_config.json"
                 )),
-            }
+            })
         );
     }
 

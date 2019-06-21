@@ -14,6 +14,7 @@ holochain_persistence_file = "=0.0.1-alpha4"
 holochain_persistence_pickle = "=0.0.1-alpha6"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
+lib3h ="=0.0.1-alpha1"
 lib3h_sodium = "=0.0.1-alpha1"
 holochain_common = { path = "../common" }
 chrono = "=0.4.6"

@@ -133,7 +133,7 @@ impl ConductorApiBuilder {
             let id = instance_ids_map
                 .get(&PublicInstanceIdentifier::from(public_id_str))
                 .ok_or(jsonrpc_core::Error::invalid_params(
-                    "instance identifier invalid",
+                    format!("instance identifier invalid: {}", public_id_str),
                 ))?;
             let instance = instances
                 .get(id)

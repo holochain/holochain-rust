@@ -585,22 +585,14 @@ fn can_link_entries() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmdQvKn8yNojRHSxr9yK3HhEGAcAzfGgC6f8XT4joZdwTp"}"#)
-    );
 }
 
 #[test]
 fn can_remove_link() {
-    let (mut hc, _) = start_holochain_instance("can_link_entries", "alice");
+    let (mut hc, _) = start_holochain_instance("can_remove_link", "alice");
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmdQvKn8yNojRHSxr9yK3HhEGAcAzfGgC6f8XT4joZdwTp"}"#)
-    );
 }
 
 #[test]
@@ -653,12 +645,12 @@ fn can_roundtrip_links() {
             LinksResult {
                 address: entry_address_3.clone(),
                 headers: Vec::new(),
-                tag: "".into(),
+                tag: "test-tag".into(),
             },
             LinksResult {
                 address: entry_address_2.clone(),
                 headers: Vec::new(),
-                tag: "".into(),
+                tag: "test-tag".into(),
             },
         ]));
     let expected_links_reversed = JsonString::from(expected_links_reversed);

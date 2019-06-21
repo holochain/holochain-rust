@@ -5,7 +5,6 @@ use crate::{
         InstanceReferenceConfiguration, InterfaceConfiguration, StorageConfiguration,
     },
     dpki_instance::DpkiInstance,
-    error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
 use holochain_core_types::{
@@ -16,7 +15,12 @@ use std::{
     fs::{self, create_dir_all},
     path::PathBuf,
     sync::{Arc, RwLock},
+    thread::sleep,
+    time::Duration,
 };
+
+/// how many milliseconds sleep all bugs under rugs
+const SWEET_SLEEP: u64 = 500;
 
 pub trait ConductorAdmin {
     fn install_dna_from_file(
@@ -26,6 +30,7 @@ pub trait ConductorAdmin {
         copy: bool,
         expected_hash: Option<HashString>,
         properties: Option<&serde_json::Value>,
+        uuid: Option<String>,
     ) -> Result<HashString, HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_instance(
@@ -35,8 +40,6 @@ pub trait ConductorAdmin {
         agent_id: &String,
     ) -> Result<(), HolochainError>;
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
-    fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
-    fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn add_interface(&mut self, new_instance: InterfaceConfiguration)
         -> Result<(), HolochainError>;
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError>;
@@ -81,6 +84,7 @@ impl ConductorAdmin for Conductor {
         copy: bool,
         expected_hash: Option<HashString>,
         properties: Option<&serde_json::Value>,
+        uuid: Option<String>,
     ) -> Result<HashString, HolochainError> {
         let path_string = path
             .to_str()
@@ -110,6 +114,10 @@ impl ConductorAdmin for Conductor {
             json_patch::merge(&mut dna.properties, &props);
         }
 
+        if let Some(uuid) = uuid {
+            dna.uuid = uuid;
+        }
+
         let config_path = match copy {
             true => self.save_dna(&dna)?,
             false => PathBuf::from(path_string),
@@ -126,7 +134,7 @@ impl ConductorAdmin for Conductor {
 
         let mut new_config = self.config.clone();
         new_config.dnas.push(new_dna.clone());
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
         notify(format!("Installed DNA from {} as \"{}\"", path_string, id));
@@ -156,7 +164,7 @@ impl ConductorAdmin for Conductor {
             new_config = new_config.save_remove_instance(id);
         }
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -200,8 +208,8 @@ impl ConductorAdmin for Conductor {
             },
         };
         new_config.instances.push(new_instance_config);
-        new_config.check_consistency()?;
-        let instance = self.instantiate_from_config(id, &new_config)?;
+        new_config.check_consistency(&mut self.dna_loader)?;
+        let instance = self.instantiate_from_config(id, Some(&new_config))?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;
@@ -218,7 +226,7 @@ impl ConductorAdmin for Conductor {
 
         new_config = new_config.save_remove_instance(id);
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -236,19 +244,6 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
-    fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
-        let instance = self.instances.get(id)?;
-
-        notify(format!("Starting instance \"{}\"...", id));
-        instance.write().unwrap().start()
-    }
-
-    fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
-        let instance = self.instances.get(id)?;
-        notify(format!("Stopping instance \"{}\"...", id));
-        instance.write().unwrap().stop()
-    }
-
     fn add_interface(&mut self, interface: InterfaceConfiguration) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         if new_config.interfaces.iter().any(|i| i.id == interface.id) {
@@ -258,7 +253,7 @@ impl ConductorAdmin for Conductor {
             )));
         }
         new_config.interfaces.push(interface.clone());
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
         self.start_interface_by_id(&interface.id)?;
@@ -285,7 +280,7 @@ impl ConductorAdmin for Conductor {
             .filter(|interface| interface.id != *id)
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -331,11 +326,12 @@ impl ConductorAdmin for Conductor {
             })
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
         let _ = self.stop_interface_by_id(interface_id);
+        sleep(Duration::from_millis(SWEET_SLEEP));
         self.start_interface_by_id(interface_id)?;
 
         Ok(())
@@ -379,11 +375,12 @@ impl ConductorAdmin for Conductor {
             })
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
         let _ = self.stop_interface_by_id(interface_id);
+        sleep(Duration::from_millis(SWEET_SLEEP));
         self.start_interface_by_id(interface_id)?;
 
         Ok(())
@@ -449,7 +446,7 @@ impl ConductorAdmin for Conductor {
         };
 
         new_config.agents.push(new_agent);
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -484,7 +481,7 @@ impl ConductorAdmin for Conductor {
             new_config = new_config.save_remove_instance(id);
         }
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -518,9 +515,15 @@ impl ConductorAdmin for Conductor {
             )));
         }
         new_config.bridges.push(new_bridge.clone());
-        new_config.check_consistency()?;
-        self.config = new_config;
+        new_config.check_consistency(&mut self.dna_loader)?;
+        self.config = new_config.clone();
         self.save_config()?;
+
+        // Rebuild and reset caller's conductor api so it sees the bridge handle
+        let id = &new_bridge.caller_id;
+        let new_conductor_api = self.build_conductor_api(id.clone(), &new_config)?;
+        let mut instance = self.instances.get(id)?.write()?;
+        instance.set_conductor_api(new_conductor_api);
 
         notify(format!(
             "Added bridge from '{}' to '{}' as '{}'",
@@ -553,7 +556,7 @@ impl ConductorAdmin for Conductor {
             .filter(|bridge| bridge.caller_id != *caller_id || bridge.callee_id != *callee_id)
             .collect();
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -766,7 +769,8 @@ pattern = '.*'"#
                 String::from("new-dna"),
                 false,
                 None,
-                None
+                None,
+                None,
             )
             .is_ok());
 
@@ -807,7 +811,7 @@ pattern = '.*'"#
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
+hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
 id = 'new-dna'"#,
             ),
         );
@@ -835,7 +839,8 @@ id = 'new-dna'"#,
                 String::from("new-dna"),
                 true,
                 None,
-                None
+                None,
+                None,
             )
             .is_ok());
 
@@ -886,7 +891,8 @@ id = 'new-dna'"#,
                 String::from("new-dna"),
                 false,
                 Some(dna.address()),
-                None
+                None,
+                None,
             )
             .is_ok());
 
@@ -896,7 +902,8 @@ id = 'new-dna'"#,
                 String::from("new-dna"),
                 false,
                 Some("wrong-address".into()),
-                None
+                None,
+                None,
             ),
             Err(HolochainError::DnaHashMismatch(
                 "wrong-address".into(),
@@ -920,7 +927,8 @@ id = 'new-dna'"#,
                 String::from("new-dna-with-props"),
                 false,
                 None,
-                Some(&new_props)
+                Some(&new_props),
+                None,
             ),
             Err(HolochainError::ConfigError(
                 "Cannot install DNA with properties unless copy flag is true".into()
@@ -933,7 +941,8 @@ id = 'new-dna'"#,
                 String::from("new-dna-with-props"),
                 true,
                 None,
-                Some(&new_props)
+                Some(&new_props),
+                None,
             )
             .is_ok());
 
@@ -974,6 +983,77 @@ id = 'new-dna'"#,
     }
 
     #[test]
+    fn test_install_dna_from_file_with_uuid() {
+        let test_name = "test_install_dna_from_file_with_uuid";
+        let mut conductor = create_test_conductor(test_name, 3000);
+
+        let mut new_dna_path = PathBuf::new();
+        new_dna_path.push("new-dna.dna.json");
+        let uuid = "uuid".to_string();
+
+        assert!(conductor
+            .install_dna_from_file(
+                new_dna_path.clone(),
+                String::from("new-dna-with-uuid-1"),
+                false,
+                None,
+                None,
+                Some(uuid.clone()),
+            )
+            .is_ok());
+
+        assert!(conductor
+            .install_dna_from_file(
+                new_dna_path.clone(),
+                String::from("new-dna-with-uuid-2"),
+                true,
+                None,
+                None,
+                Some(uuid.clone()),
+            )
+            .is_ok());
+
+        let mut new_dna =
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
+                .unwrap();
+        let original_hash = new_dna.address();
+        new_dna.uuid = uuid;
+        let new_hash = new_dna.address();
+        assert_ne!(original_hash, new_hash);
+
+        let mut output_dna_file = current_dir()
+            .expect("Could not get current dir")
+            .join("tmp-test")
+            .join(test_name)
+            .join("dna");
+
+        output_dna_file.push(new_hash.to_string());
+        output_dna_file.set_extension(DNA_EXTENSION);
+
+        assert_eq!(
+            conductor.config().dnas,
+            vec![
+                DnaConfiguration {
+                    id: String::from("test-dna"),
+                    file: String::from("app_spec.dna.json"),
+                    hash: Some(String::from("Qm328wyq38924y")),
+                },
+                DnaConfiguration {
+                    id: String::from("new-dna-with-uuid-1"),
+                    file: new_dna_path.to_string_lossy().to_string(),
+                    hash: Some(String::from(new_dna.address())),
+                },
+                DnaConfiguration {
+                    id: String::from("new-dna-with-uuid-2"),
+                    file: output_dna_file.to_str().unwrap().to_string(),
+                    hash: Some(String::from(new_dna.address())),
+                },
+            ]
+        );
+        assert!(output_dna_file.is_file())
+    }
+
+    #[test]
     fn test_add_instance() {
         let test_name = "test_add_instance";
         let mut conductor = create_test_conductor(test_name, 3001);
@@ -995,6 +1075,7 @@ id = 'new-dna'"#,
                 new_dna_path.clone(),
                 String::from("new-dna"),
                 false,
+                None,
                 None,
                 None,
             )
@@ -1023,7 +1104,7 @@ id = 'new-dna'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
+hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
 id = 'new-dna'"#,
             ),
         );
@@ -1152,31 +1233,6 @@ type = 'websocket'"#,
     }
 
     #[test]
-    fn test_start_stop_instance() {
-        let mut conductor = create_test_conductor("test_start_stop_instance", 3004);
-        assert_eq!(
-            conductor.start_instance(&String::from("test-instance-1")),
-            Ok(()),
-        );
-        assert_eq!(
-            conductor.start_instance(&String::from("test-instance-1")),
-            Err(HolochainInstanceError::InstanceAlreadyActive),
-        );
-        assert_eq!(
-            conductor.start_instance(&String::from("non-existant-id")),
-            Err(HolochainInstanceError::NoSuchInstance),
-        );
-        assert_eq!(
-            conductor.stop_instance(&String::from("test-instance-1")),
-            Ok(())
-        );
-        assert_eq!(
-            conductor.stop_instance(&String::from("test-instance-1")),
-            Err(HolochainInstanceError::InstanceNotActiveYet),
-        );
-    }
-
-    #[test]
     fn test_add_interface() {
         let test_name = "test_add_interface";
         let mut conductor = create_test_conductor(test_name, 3005);
@@ -1299,6 +1355,7 @@ type = 'http'"#,
                 false,
                 None,
                 None,
+                None,
             )
             .expect("Could not install DNA");
 
@@ -1334,7 +1391,7 @@ type = 'http'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
+hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
 id = 'new-dna'"#,
             ),
         );

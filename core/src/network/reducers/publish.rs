@@ -71,7 +71,7 @@ fn publish_link_meta(
 ) -> Result<(), HolochainError> {
     let (link_type, link_attribute) = match entry_with_header.entry.clone() {
         Entry::LinkAdd(link_add_entry) => (link_add_entry, Attribute::Link),
-        Entry::LinkRemove(link_remove) => (link_remove, Attribute::LinkRemove),
+        Entry::LinkRemove((link_remove, _)) => (link_remove, Attribute::LinkRemove),
         _ => {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Received bad entry type. Expected Entry::LinkAdd received {:?}",
@@ -80,11 +80,6 @@ fn publish_link_meta(
         }
     };
     let link = link_type.link().clone();
-
-    println!(
-        "debug/reduce/link_meta: Publishing link meta for link: {:?}",
-        link
-    );
 
     send(
         network_state,

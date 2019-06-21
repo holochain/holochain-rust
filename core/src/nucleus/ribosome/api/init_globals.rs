@@ -25,7 +25,10 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
         public_token: Address::from(""),
-        cap_request: runtime.zome_call_data()?.call.cap.clone(),
+        cap_request: runtime
+            .zome_call_data()
+            .map(|zome_call_data| Some(zome_call_data.call.cap.clone()))
+            .unwrap_or_else(|_| None),
         properties: JsonString::from(dna.properties),
     };
 
@@ -112,10 +115,10 @@ pub mod tests {
 
         assert_eq!(
             globals.cap_request,
-            CapabilityRequest::new( Address::from("dummy_token"),
+            Some(CapabilityRequest::new( Address::from("dummy_token"),
                                     Address::from("HcSCimiBHJ8y3zejkjtHsu9Q8MZx96ztvfYRJ9fJH3Pbxodac5s8rqmShYqaamz"),
                                     Signature::from("nI/AFdqZPYw1yoCeV92pKWwugdkB54JJDhLLf3JgMFl9sm3aFIWKpiRo+4t8L+wn+S0Pg1Vh0Bzbmq3DSfJwDw=="),
-                                    ),
+                                    )),
         );
     }
 }

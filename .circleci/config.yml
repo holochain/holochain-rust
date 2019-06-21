@@ -70,14 +70,6 @@ jobs:
    - checkout
 
    - run:
-       name: install cli
-       command: nix-shell --run hc-cli-install
-
-   - run:
-       name: install node conductor
-       command: nix-shell --run hc-conductor-node-install
-
-   - run:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test
 
@@ -85,9 +77,16 @@ jobs:
        name: proc macro app spec tests
        command: nix-shell --run hc-app-spec-test-proc
 
+ cluster-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+
    - run:
-       name: nodejs conductor tests
-       command: nix-shell --run hc-conductor-node-test
+       name: app spec cluster tests
+       command: nix-shell --run hc-app-spec-cluster-test
 
  cli-tests:
   docker:
@@ -210,6 +209,7 @@ workflows:
    - build
    - fmt
    - app-spec-tests
+   - cluster-tests
    - cli-tests
    - wasm-conductor-tests
 

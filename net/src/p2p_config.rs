@@ -1,6 +1,7 @@
 use holochain_json_api::{error::JsonError, json::JsonString};
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
+use lib3h::engine::RealEngineConfig;
 
 //--------------------------------------------------------------------------------------------------
 // P2pBackendKind
@@ -52,9 +53,15 @@ impl From<&'static str> for P2pBackendKind {
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
+pub enum BackendConfig {
+    Json(serde_json::Value),
+    Lib3h(RealEngineConfig)
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct P2pConfig {
     pub backend_kind: P2pBackendKind,
-    pub backend_config: serde_json::Value,
+    pub backend_config: BackendConfig,
     pub maybe_end_user_config: Option<serde_json::Value>,
 }
 
@@ -77,13 +84,12 @@ impl P2pConfig {
 impl P2pConfig {
     pub fn new(
         backend_kind: P2pBackendKind,
-        backend_config: &str,
+        backend_config: BackendConfig,
         maybe_end_user_config: Option<serde_json::Value>,
     ) -> Self {
         P2pConfig {
             backend_kind,
-            backend_config: serde_json::from_str(backend_config)
-                .expect("Invalid backend_config json on P2pConfig creation."),
+            backend_config,
             maybe_end_user_config,
         }
     }
@@ -110,16 +116,15 @@ impl P2pConfig {
         bootstrap_nodes: &Vec<String>,
         maybe_end_user_config_filepath: Option<String>,
     ) -> Self {
-        let backend_config = json!({
+        let backend_config = BackendConfig::Json(json!({
             "socketType": "ws",
             "blockConnect": false,
             "bootstrapNodes": bootstrap_nodes,
             "ipcUri": maybe_ipc_binding
-        })
-        .to_string();
+        }));
         P2pConfig::new(
             P2pBackendKind::N3H,
-            &backend_config,
+            backend_config,
             Some(P2pConfig::load_end_user_config(
                 maybe_end_user_config_filepath,
             )),
@@ -131,15 +136,14 @@ impl P2pConfig {
             None => P2pConfig::from_str(P2pConfig::DEFAULT_N3H_URI_CONFIG)
                 .expect("Invalid backend_config json on P2pConfig creation."),
             Some(ipc_binding) => {
-                let backend_config = json!({
+                let backend_config = BackendConfig::Json(json!({
                     "socketType": "ws",
                     "blockConnect": false,
                     "ipcUri": ipc_binding
-                })
-                .to_string();
+                }));
                 P2pConfig::new(
                     P2pBackendKind::N3H,
-                    &backend_config,
+                    backend_config,
                     Some(P2pConfig::default_end_user_config()),
                 )
             }
@@ -149,7 +153,7 @@ impl P2pConfig {
     pub fn new_with_memory_backend(server_name: &str) -> Self {
         P2pConfig::new(
             P2pBackendKind::MEMORY,
-            &Self::memory_backend_string(server_name),
+            BackendConfig::Json(json!(Self::memory_backend_string(server_name))),
             None,
         )
     }

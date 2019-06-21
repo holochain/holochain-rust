@@ -33,9 +33,12 @@ impl P2pNetwork {
     /// Constructor
     /// `config` is the configuration of the p2p module
     /// `handler` is the closure for handling Protocol messages received from the network module.
-    pub fn new(mut handler: NetHandler, p2p_config: &P2pConfig) -> NetResult<Self> {
+    pub fn new(mut handler: NetHandler, p2p_config: P2pConfig) -> NetResult<Self> {
         // Create Config struct
-        let backend_config = JsonString::from_json(&p2p_config.backend_config.to_string());
+        let backend_config_str = match &p2p_config.backend_config {
+            BackendConfig::Json(ref json) => JsonString::from_json(&json.to_string()),
+            _ => JsonString::from(""),
+        };
 
         // Provide worker factory depending on backend kind
         let worker_factory: NetWorkerFactory = match p2p_config.backend_kind {
@@ -48,21 +51,27 @@ impl P2pNetwork {
                     .to_string();
                 Box::new(move |h| {
                     Ok(
-                        Box::new(IpcNetWorker::new(h, &backend_config, enduser_config)?)
+                        Box::new(IpcNetWorker::new(h, &backend_config_str, enduser_config)?)
                             as Box<NetWorker>,
                     )
                 })
             }
             // Create a Lib3hWorker
-            P2pBackendKind::LIB3H => Box::new(move |h| {
-                Ok(
-                    Box::new(Lib3hWorker::new_with_json_config(h, &backend_config)?)
-                        as Box<NetWorker>,
-                )
-            }),
+            P2pBackendKind::LIB3H => {
+                let backend_config = match p2p_config.backend_config {
+                    BackendConfig::Lib3h(config) => config.clone(),
+                    _ => return Err(format_err!("mismatch backend type, expecting lib3h")),
+                };
+
+                Box::new(move |h| {
+                    Ok(
+                        Box::new(Lib3hWorker::new(h, backend_config.clone())?)
+                            as Box<NetWorker>,
+                    )
+                }) },
             // Create an InMemoryWorker
             P2pBackendKind::MEMORY => Box::new(move |h| {
-                Ok(Box::new(InMemoryWorker::new(h, &backend_config)?) as Box<NetWorker>)
+                Ok(Box::new(InMemoryWorker::new(h, &backend_config_str)?) as Box<NetWorker>)
             }),
         };
 
@@ -90,8 +99,8 @@ impl P2pNetwork {
         let connection =
             NetConnectionThread::new(wrapped_handler, worker_factory, None).map_err(|e| {
                 format_err!(
-                    "Failed to obtain a connection to a p2p network module w/ config: {}: {}",
-                    p2p_config.as_str(),
+                    "Failed to obtain a connection to a p2p network module w/ config: {}: ",
+                 //   p2p_config.as_str(),
                     e
                 )
             })?;
@@ -146,9 +155,10 @@ mod tests {
 
     #[test]
     fn it_should_create_memory_network() {
+        let p2p = P2pConfig::new_with_unique_memory_backend();
         let mut res = P2pNetwork::new(
             NetHandler::new(Box::new(|_r| Ok(()))),
-            &P2pConfig::new_with_unique_memory_backend(),
+            p2p,
         )
         .unwrap();
         res.send(Protocol::P2pReady).unwrap();

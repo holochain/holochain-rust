@@ -682,7 +682,7 @@ impl TestNode {
                 sender.send(r?)?;
                 Ok(())
             })),
-            &config,
+            config.clone(),
         )
         .expect("Failed to create P2pNetwork");
 

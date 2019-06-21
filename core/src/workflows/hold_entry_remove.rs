@@ -4,12 +4,12 @@ use crate::{
 };
 
 use crate::workflows::validation_package;
-use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     validation::{EntryLifecycle, ValidationData},
 };
+use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
 
 pub async fn hold_remove_workflow<'a>(

@@ -8,17 +8,17 @@ use crate::{
         respond_validation_package_request::respond_validation_package_request,
     },
 };
-use holochain_core_types::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, thread};
 
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_net::connection::json_protocol::MessageData;
 use std::convert::TryFrom;
 
-fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, HolochainError> {
+fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
     DirectMessage::try_from(JsonString::from_json(
         &String::from_utf8(content)
-            .map_err(|error| HolochainError::SerializationError(error.to_string()))?,
+            .map_err(|error| JsonError::SerializationError(error.to_string()))?,
     ))
 }
 

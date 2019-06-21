@@ -5,11 +5,13 @@ extern crate holochain_wasm_utils;
 extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 extern crate wasmi;
 
-use holochain_wasm_utils::holochain_core_types::json::JsonString;
-use holochain_wasm_utils::holochain_core_types::json::RawString;
+use holochain_wasm_utils::holochain_json_api::{
+    json::{JsonString, RawString}, error::JsonError
+};
+
 use holochain_wasm_utils::memory::stack::WasmStack;
 use holochain_wasm_utils::memory::allocation::AllocationError;
 

@@ -3,8 +3,11 @@ use crate::{
     network::{query::NetworkQuery, reducers::send, state::NetworkState},
     state::State,
 };
-use holochain_core_types::{error::HolochainError, hash::HashString, json::JsonString};
+
+use holochain_core_types::error::HolochainError;
+use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{JsonProtocol, QueryEntryData};
+use holochain_persistence_api::hash::HashString;
 
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
@@ -100,7 +103,8 @@ mod tests {
         );
     }
 
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use holochain_core_types::entry::test_entry;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     // This test needs to be refactored.

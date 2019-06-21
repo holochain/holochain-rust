@@ -5,7 +5,7 @@ use crate::connection::{
     protocol::Protocol,
     NetResult,
 };
-use holochain_core_types::json::JsonString;
+use holochain_json_api::json::JsonString;
 use lib3h::{
     real_engine::{RealEngine, RealEngineConfig},
     transport_wss::TransportWss,

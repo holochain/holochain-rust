@@ -1,9 +1,9 @@
-use crate::{
-    cas::content::{Address, AddressableContent},
-    entry::Entry,
-    error::HolochainError,
-    json::JsonString,
-};
+use crate::{entry::Entry, error::HolochainError};
+
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+
+use holochain_json_api::{error::JsonError, json::JsonString};
+
 use std::{collections::BTreeMap, str::FromStr};
 
 //--------------------------------------------------------------------------------------------------

@@ -1,4 +1,5 @@
-use crate::{cas::content::Address, error::HolochainError, json::JsonString};
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::Address;
 
 //-------------------------------------------------------------------------------------------------
 // DeletionEntry
@@ -24,7 +25,8 @@ impl DeletionEntry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{cas::content::AddressableContent, entry::test_entry_a};
+    use crate::entry::test_entry_a;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     pub fn test_deletion_entry() -> DeletionEntry {
         let entry = test_entry_a();

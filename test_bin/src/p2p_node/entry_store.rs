@@ -1,8 +1,8 @@
-use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::json_protocol::{EntryAspectData, EntryData},
     tweetlog::*,
 };
+use holochain_persistence_api::cas::content::Address;
 use std::collections::HashMap;
 
 pub struct EntryStore {

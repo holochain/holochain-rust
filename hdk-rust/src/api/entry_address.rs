@@ -1,6 +1,7 @@
 use super::Dispatch;
 use error::ZomeApiResult;
-use holochain_core_types::{cas::content::Address, entry::Entry};
+use holochain_core_types::entry::Entry;
+use holochain_persistence_api::cas::content::Address;
 /// Reconstructs an address of the given entry data.
 /// This is the same value that would be returned if `entry_type_name` and `entry_value` were passed
 /// to the [commit_entry](fn.commit_entry.html) function and by which it would be retrievable from the DHT using [get_entry](fn.get_entry.html).
@@ -13,15 +14,18 @@ use holochain_core_types::{cas::content::Address, entry::Entry};
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
+/// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
+/// # extern crate holochain_json_derive;
 /// # use hdk::error::ZomeApiResult;
-/// # use holochain_core_types::json::JsonString;
+/// # use holochain_json_api::error::JsonError;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::AppEntryValue;
 /// # use holochain_core_types::entry::Entry;
-/// # use holochain_core_types::cas::content::Address;
+/// # use holochain_persistence_api::cas::content::Address;
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]

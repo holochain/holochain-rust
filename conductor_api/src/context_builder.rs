@@ -1,6 +1,11 @@
-use holochain_cas_implementations::{
-    cas::{file::FilesystemStorage, memory::MemoryStorage, pickle::PickleStorage},
-    eav::{file::EavFileStorage, memory::EavMemoryStorage, pickle::EavPickleStorage},
+use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+
+use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
+
+use holochain_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
+
+use holochain_persistence_api::{
+    cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
 };
 
 use holochain_core::{
@@ -9,10 +14,7 @@ use holochain_core::{
     persister::SimplePersister,
     signal::SignalSender,
 };
-use holochain_core_types::{
-    agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
-    error::HolochainError,
-};
+use holochain_core_types::{agent::AgentId, eav::Attribute, error::HolochainError};
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::IoHandler;
 use std::{
@@ -37,7 +39,7 @@ pub struct ContextBuilder {
     //persister: Option<Arc<Mutex<Persister>>>,
     chain_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
     dht_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
-    eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage>>>,
+    eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage<Attribute>>>>,
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
@@ -67,7 +69,8 @@ impl ContextBuilder {
     /// Chain and DHT storages get set to the same memory CAS.
     pub fn with_memory_storage(mut self) -> Self {
         let cas = Arc::new(RwLock::new(MemoryStorage::new()));
-        let eav = Arc::new(RwLock::new(EavMemoryStorage::new()));
+        let eav = //Arc<RwLock<holochain_persistence_api::eav::EntityAttributeValueStorage<Attribute>>> =
+            Arc::new(RwLock::new(EavMemoryStorage::new()));
         self.chain_storage = Some(cas.clone());
         self.dht_storage = Some(cas);
         self.eav_storage = Some(eav);
@@ -85,7 +88,8 @@ impl ContextBuilder {
         fs::create_dir_all(&eav_path)?;
 
         let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
-        let eav_storage = Arc::new(RwLock::new(EavFileStorage::new(eav_path)?));
+        let eav_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>> =
+            Arc::new(RwLock::new(EavFileStorage::new(eav_path)?));
         self.chain_storage = Some(file_storage.clone());
         self.dht_storage = Some(file_storage);
         self.eav_storage = Some(eav_storage);

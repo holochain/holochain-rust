@@ -1,6 +1,6 @@
-use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, error::HolochainError, json::*, time::Timeout,
-};
+use holochain_core_types::{chain_header::ChainHeader, crud_status::CrudStatus, time::Timeout};
+use holochain_json_api::{error::JsonError, json::*};
+use holochain_persistence_api::cas::content::Address;
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
 pub struct GetLinksArgs {
@@ -43,6 +43,7 @@ pub struct LinksResult {
     pub address: Address,
     pub headers: Vec<ChainHeader>,
     pub tag: String,
+    pub status: CrudStatus,
 }
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]

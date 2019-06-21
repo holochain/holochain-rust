@@ -1,5 +1,4 @@
 use constants::*;
-use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
         json_protocol::{ConnectData, EntryData, JsonProtocol},
@@ -9,6 +8,7 @@ use holochain_net::{
     },
     tweetlog::TWEETLOG,
 };
+use holochain_persistence_api::cas::content::Address;
 use p2p_node::test_node::TestNode;
 
 /// Do normal setup: 'TrackDna' & 'Connect',

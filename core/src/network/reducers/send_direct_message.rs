@@ -3,9 +3,9 @@ use crate::{
     network::{reducers::send, state::NetworkState},
     state::State,
 };
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_core_types::error::HolochainError;
+use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{JsonProtocol, MessageData};
-
 fn inner(
     network_state: &mut NetworkState,
     direct_message_data: &DirectMessageData,
@@ -76,7 +76,8 @@ mod tests {
         },
         state::test_store,
     };
-    use holochain_core_types::{cas::content::Address, error::HolochainError};
+    use holochain_core_types::error::HolochainError;
+    use holochain_persistence_api::cas::content::Address;
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {

@@ -1,6 +1,6 @@
 use super::entry_store::EntryStore;
-use holochain_core_types::cas::content::Address;
 use holochain_net::connection::json_protocol::{EntryAspectData, EntryData};
+use holochain_persistence_api::cas::content::Address;
 use std::collections::HashMap;
 
 /// Holds DNA-specific data

@@ -14,14 +14,16 @@ use boolinator::*;
 use conductor::base::DnaLoader;
 use holochain_core_types::{
     agent::{AgentId, Base32},
-    cas::content::AddressableContent,
     dna::{
         bridges::{BridgePresence, BridgeReference},
         Dna,
     },
     error::{HcResult, HolochainError},
-    json::JsonString,
 };
+
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::AddressableContent;
+
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
@@ -534,7 +536,7 @@ impl TryFrom<DnaConfiguration> for Dna {
         let mut f = File::open(dna_config.file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from_json(&contents))
+        Dna::try_from(JsonString::from_json(&contents)).map_err(|err| err.into())
     }
 }
 

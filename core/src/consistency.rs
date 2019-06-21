@@ -2,11 +2,8 @@ use crate::{
     action::Action, context::Context, entry::CanPublish,
     network::entry_with_header::EntryWithHeader,
 };
-use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    entry::Entry,
-    link::link_data::LinkData,
-};
+use holochain_core_types::{entry::Entry, link::link_data::LinkData};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Clone)]
@@ -108,6 +105,7 @@ impl ConsistencyModel {
                         Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone())),
                         Entry::LinkRemove(_) => Some(RemoveLink(entry.clone())),
                         // Question: Why does Entry::LinkAdd take LinkData instead of Link?
+                        // as of now, link data contains more information than just the link
                         _ => None,
                     });
                     let mut pending = vec![hold];

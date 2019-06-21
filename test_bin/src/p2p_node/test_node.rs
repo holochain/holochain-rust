@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net::{
     connection::{
         json_protocol::{
@@ -16,6 +15,7 @@ use holochain_net::{
     p2p_network::P2pNetwork,
     tweetlog::{TweetProxy, *},
 };
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
 use std::{
     collections::{HashMap, HashSet},

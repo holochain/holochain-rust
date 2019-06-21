@@ -4,13 +4,13 @@ use crate::{
     nucleus::state::{NucleusStateSnapshot, NUCLEUS_SNAPSHOT_ADDRESS},
     state::State,
 };
-use holochain_core_types::{
-    cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
-    },
-    error::HolochainError,
+use holochain_core_types::error::HolochainError;
+
+use holochain_persistence_api::cas::{
+    content::{Address, AddressableContent, Content},
+    storage::ContentAddressableStorage,
 };
+
 use std::sync::{Arc, RwLock};
 
 /// trait that defines the persistence functionality that holochain_core requires

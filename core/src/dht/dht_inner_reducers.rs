@@ -9,13 +9,18 @@
 ///
 use crate::dht::dht_store::DhtStore;
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
-    eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::{HcResult, HolochainError},
     link::Link,
 };
+
+use holochain_persistence_api::{
+    cas::content::{Address, AddressableContent},
+    eav::IndexFilter,
+};
+
 use std::{collections::BTreeSet, convert::TryInto, str::FromStr};
 
 pub(crate) enum LinkModification {

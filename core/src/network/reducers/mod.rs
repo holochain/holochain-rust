@@ -37,11 +37,13 @@ use crate::{
     },
     state::State,
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
+use holochain_core_types::error::HolochainError;
+use holochain_json_api::json::JsonString;
 use holochain_net::connection::{
     json_protocol::{JsonProtocol, MessageData},
     net_connection::NetSend,
 };
+use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 

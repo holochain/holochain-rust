@@ -1077,16 +1077,22 @@ impl TestNode {
             Lib3hServerProtocol::HandleFetchEntry(_msg) => {
                 // FIXME
             }
-            Lib3hServerProtocol::HandleStoreEntry(_msg) => {
+            Lib3hServerProtocol::HandleStoreEntryAspect(_msg) => {
                 // FIXME
             }
             Lib3hServerProtocol::HandleDropEntry(_msg) => {
                 // FIXME
             }
-            Lib3hServerProtocol::HandleGetPublishingEntryList(_msg) => {
+            Lib3hServerProtocol::HandleQueryEntry(_msg) => {
                 // FIXME
             }
-            Lib3hServerProtocol::HandleGetHoldingEntryList(_msg) => {
+            Lib3hServerProtocol::QueryEntryResult(_msg) => {
+                // FIXME
+            }
+            Lib3hServerProtocol::HandleGetAuthoringEntryList(_msg) => {
+                // FIXME
+            }
+            Lib3hServerProtocol::HandleGetGossipingEntryList(_msg) => {
                 // FIXME
             }
         }

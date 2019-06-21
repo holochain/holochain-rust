@@ -43,7 +43,7 @@ fn dpki_cap_request(
 #[derive(Serialize, Deserialize, Debug, Clone, DefaultJson)]
 #[allow(non_snake_case)]
 struct IsInitializedResult {
-    Ok : bool
+    Ok: bool,
 }
 
 impl DpkiInstance for Holochain {
@@ -81,7 +81,7 @@ impl DpkiInstance for Holochain {
             params,
         )?;
         let result: IsInitializedResult = result.try_into()?;
-        println!("Cheking If DPKI instance is_initialized : {}",result.Ok);
+        println!("Cheking If DPKI instance is_initialized : {}", result.Ok);
         Ok(result.Ok)
     }
 }

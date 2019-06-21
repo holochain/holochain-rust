@@ -56,13 +56,15 @@ fn main() {
                 );
 
                 // Checking if there is a dpki instance
-                if conductor.using_dpki(){
+                if conductor.using_dpki() {
                     println!("Starting dpki instances...");
                     conductor
-                    .start_dpki_happ_instance()
-                    .expect("Could not start dpki happ instance!");
+                        .start_dpki_happ_instance()
+                        .expect("Could not start dpki happ instance!");
 
-                    conductor.dpki_bootstrap().expect("Could not bootstrap dpki!");
+                    conductor
+                        .dpki_bootstrap()
+                        .expect("Could not bootstrap dpki!");
 
                     // Need to stop the dpki instance for now.
                     // This is a quick solution for now,

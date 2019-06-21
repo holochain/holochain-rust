@@ -383,16 +383,18 @@ impl Conductor {
             .map(|_| ())
     }
 
-
     /// Starts dpki_happ instances
     pub fn start_dpki_happ_instance(&mut self) -> Result<(), HolochainInstanceError> {
         let dpki_instance_id = &self.dpki_instance_id().unwrap();
         self.instances
             .iter_mut()
             .map(|(id, hc)| {
-                if id == dpki_instance_id{
-                    notify(format!("Starting dpki hApp instance for bootstrap process \"{}\"...", id));
-                    return hc.write().unwrap().start()
+                if id == dpki_instance_id {
+                    notify(format!(
+                        "Starting dpki hApp instance for bootstrap process \"{}\"...",
+                        id
+                    ));
+                    return hc.write().unwrap().start();
                 }
                 Ok(())
             })
@@ -1021,10 +1023,10 @@ impl Conductor {
     /// bootstraps the dpki app if configured
     pub fn dpki_bootstrap(&mut self) -> Result<(), HolochainError> {
         println!("Starting DPKI Bootstrap ...");
-        println!("Cheking if conductor is using DPKI : {}",self.using_dpki());
+        println!("Cheking if conductor is using DPKI : {}", self.using_dpki());
         if self.using_dpki() {
             let dpki_instance_id = self.dpki_instance_id().unwrap();
-            println!("DPKI instance id: {}",dpki_instance_id);
+            println!("DPKI instance id: {}", dpki_instance_id);
             let instance = self.instances.get(&dpki_instance_id)?;
             let hc_lock = instance.clone();
             let hc_lock_inner = hc_lock.clone();

@@ -80,7 +80,7 @@ impl DpkiInstance for Holochain {
             DPKI_TRAIT_FN_IS_INITIALIZED,
             params,
         )?;
-        let result: IsInitializedResult = result.try_into()?;
+        let result: Result<bool, HolochainError> = result.try_into()?;
         println!("Cheking If DPKI instance is_initialized : {}", result.Ok);
         Ok(result.Ok)
     }

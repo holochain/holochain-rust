@@ -589,17 +589,17 @@ impl InMemoryServer {
             return Ok(());
         }
         // #fullsync
-        // Have the first known chain registered to that DNA respond
+        // Have the requester respond to itself
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
-                    let (_k, r) = &e
-                        .get_mut()
-                        .iter()
-                        .next()
-                        .expect("No Chain is registered to track the DNA");
-                    r.send(JsonProtocol::HandleQueryEntry(msg.clone()).into())?;
-                    return Ok(());
+                    for (k, r) in e.get_mut().iter() {
+                        if k == &msg.requester_agent_id {
+                            self.log.i(&format!("---- HandleQueryEntry {}", k));
+                            r.send(JsonProtocol::HandleQueryEntry(msg.clone()).into())?;
+                            return Ok(());
+                        }
+                    }
                 }
             }
             _ => unreachable!(),

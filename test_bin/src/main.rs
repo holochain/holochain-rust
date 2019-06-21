@@ -56,7 +56,7 @@ lazy_static! {
         basic_workflows::dht_test,
         basic_workflows::dht_two_aspects_test,
         basic_workflows::two_authors_test,
-        basic_workflows::shutdown_test,
+//        basic_workflows::shutdown_test,
         basic_workflows::no_aspect_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
@@ -68,7 +68,7 @@ lazy_static! {
     ];
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
         three_workflows::hold_and_publish_test,
-        // Stress test disabled by default
+        // // Stress test disabled by default
         // three_workflows::publish_entry_stress_test,
         multidna_workflows::send_test,
         multidna_workflows::dht_test,

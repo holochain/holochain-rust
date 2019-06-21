@@ -231,8 +231,8 @@ pub fn hold_and_publish_test(
     // Camille requests 1st entry
     let query_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());
     // #fullsync
-    // Camille might receive query request as this moment
-    let _ = camille.wait_HandleQueryEntry_and_reply();
+    // Have Camille reply
+    camille.reply_to_HandleQueryEntry(&query_entry).unwrap();
 
     // Camille should receive the data
     let req_id = query_entry.request_id.clone();
@@ -260,8 +260,8 @@ pub fn hold_and_publish_test(
     // Camille requests 2nd entry
     let query_data = camille.request_entry(ENTRY_ADDRESS_2.clone());
     // #fullsync
-    // Camille might receive query request as this moment
-    let _ = camille.wait_HandleQueryEntry_and_reply();
+    // Have Camille reply
+    camille.reply_to_HandleQueryEntry(&query_data).unwrap();
 
     // Camille should receive the data
     let req_id = query_data.request_id.clone();

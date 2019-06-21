@@ -202,21 +202,24 @@ pub fn many_aspects_test(
         Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
+    log_i!("Billy got res 2: {:?}", res);
     assert!(res.is_some());
 
     // Send HoldingEntryList
     // =====================
     // Send HoldingEntryList and should receive a HandleFetchEntry request from network module
     alex.reply_to_first_HandleGetHoldingEntryList();
-    // wait for gossip to ask for the held data
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    assert!(has_received);
+    // #fullsync
+    // wait for Network module to ask for the held data
+    let _ = alex.wait_HandleFetchEntry_and_reply();
+    // assert!(has_received); // n3h doesnt send fetch because gossip already took care of it
+
     // billy might receive HandleStoreEntryAspect
     let res = billy.wait_json_with_timeout(
         Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
-    assert!(res.is_some());
+    // assert!(res.is_some()); // n3h doesnt send fetch because gossip already took care of it
     log_i!("Billy got res 3: {:?}", res);
     // Billy asks for that data
     let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());

@@ -1,10 +1,10 @@
 use crate::three_workflows::setup_three_nodes;
 use constants::*;
-use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{json_protocol::JsonProtocol, NetResult},
     tweetlog::TWEETLOG,
 };
+use holochain_persistence_api::cas::content::Address;
 use p2p_node::test_node::TestNode;
 
 /// Have multiple nodes track multiple dnas

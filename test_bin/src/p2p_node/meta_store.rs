@@ -1,8 +1,8 @@
-use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net::{
     connection::json_protocol::{MetaKey, MetaTuple},
     tweetlog::*,
 };
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use multihash::Hash;
 use std::collections::HashMap;
 

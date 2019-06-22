@@ -18,9 +18,14 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
-    json::JsonString,
+    agent::AgentId,
+    dna::Dna,
+    error::{HcResult, HolochainError},
 };
+
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::AddressableContent;
+
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
@@ -137,6 +142,7 @@ impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
         lib3h_sodium::check_init();
+
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
@@ -189,6 +195,7 @@ impl Conductor {
     /// Starts a new thread which monitors each instance's signal channel and pushes signals out
     /// all interfaces the according instance is part of.
     pub fn start_signal_multiplexer(&mut self) -> thread::JoinHandle<()> {
+        self.stop_signal_multiplexer();
         let broadcasters = self.interface_broadcasters.clone();
         let instance_signal_receivers = self.instance_signal_receivers.clone();
         let signal_tx = self.signal_tx.clone();
@@ -232,17 +239,22 @@ impl Conductor {
 
                             // Pass through user-defined  signals to the according interfaces
                             // in which the source instance is exposed:
-                            Signal::User(_) => config
-                                .interfaces
-                                .iter()
-                                .filter(|interface_config| {
-                                    interface_config
-                                        .instances
-                                        .iter()
-                                        .find(|instance| instance.id == *instance_id)
-                                        .is_some()
-                                })
-                                .collect(),
+                            Signal::User(_) => {
+                                println!("SIGNAL for instance[{}]: {:?}", instance_id, signal);
+                                let interfaces = config
+                                    .interfaces
+                                    .iter()
+                                    .filter(|interface_config| {
+                                        interface_config
+                                            .instances
+                                            .iter()
+                                            .find(|instance| instance.id == *instance_id)
+                                            .is_some()
+                                    })
+                                    .collect();
+                                println!("INTERFACEs for SIGNAL: {:?}", interfaces);
+                                interfaces
+                            }
                         };
 
                         for interface in interfaces_with_instance {
@@ -263,6 +275,12 @@ impl Conductor {
             }
             thread::sleep(Duration::from_millis(1));
         })
+    }
+
+    pub fn stop_signal_multiplexer(&self) {
+        self.signal_multiplexer_kill_switch
+            .as_ref()
+            .map(|kill_switch| kill_switch.send(()));
     }
 
     pub fn start_all_interfaces(&mut self) {
@@ -822,12 +840,12 @@ impl Conductor {
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
-    pub fn load_dna(file: &PathBuf) -> Result<Dna, HolochainError> {
+    pub fn load_dna(file: &PathBuf) -> HcResult<Dna> {
         notify(format!("Reading DNA from {}", file.display()));
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from_json(&contents))
+        Dna::try_from(JsonString::from_json(&contents)).map_err(|err| err.into())
     }
 
     /// Default KeyLoader that actually reads files from the filesystem
@@ -1046,8 +1064,9 @@ pub mod tests {
         action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::signal_channel,
     };
-    use holochain_core_types::{cas::content::Address, dna};
+    use holochain_core_types::dna;
     use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
+    use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::wasm_target_dir;
     use lib3h_sodium::secbuf::SecBuf;
     use std::{

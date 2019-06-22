@@ -1,11 +1,11 @@
 use holochain_core_types::{
     agent::AgentId,
     entry::Entry,
-    error::HolochainError,
-    json::*,
     link::Link,
     validation::{EntryValidationData, LinkValidationData},
 };
+
+use holochain_json_api::{error::JsonError, json::*};
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct EntryValidationArgs {

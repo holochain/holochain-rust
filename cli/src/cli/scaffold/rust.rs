@@ -17,14 +17,29 @@ use toml::{self, value::Value};
 pub const CARGO_FILE_NAME: &str = "Cargo.toml";
 pub const LIB_RS_PATH: &str = "src/lib.rs";
 
+pub enum HdkMacroStyle {
+    Declarative,
+    Procedural,
+}
+
 pub struct RustScaffold {
     build_template: Build,
     package_name: String,
+    macro_style: HdkMacroStyle,
 }
 
-/// Given existing Cargo.toml string, pull out some values and return a new
-/// string with values pulled from template
-fn generate_cargo_toml(name: &str, contents: &str) -> DefaultResult<String> {
+/**
+ * @brief      Creates a Cargo.toml string from a Cargo.template.toml template
+ * Takes a name and pulls the authors and edition out of the existing toml file.
+ * The Cargo.template.toml should contain tags <<NAME>>, <<AUTHORS>>, <<EDITION>>, <<VERSION>>
+ *
+ * @param      name      The name for the zome/lib
+ * @param      contents  Existing Cargo.toml as a string with authors and edition fields filled
+ * @param      template  The Cargo.template.toml, looks like a Cargo.toml with tags in place of some fields
+ *
+ * @return     { Returns filled template Cargo.toml as a string if successful }
+ */
+fn generate_cargo_toml(name: &str, contents: &str, template: &str) -> DefaultResult<String> {
     let config: Value = toml::from_str(contents)?;
 
     let authors_default = Value::from("[\"TODO\"]");
@@ -46,18 +61,18 @@ fn generate_cargo_toml(name: &str, contents: &str) -> DefaultResult<String> {
         .and_then(|p| p.get("edition"))
         .unwrap_or(&edition_default);
 
-    interpolate_cargo_template(&name, authors, edition, version_default)
+    interpolate_cargo_template(template, &name, authors, edition, version_default)
 }
 
 /// Use the Cargo.toml.template file and interpolate values into the placeholders
 /// TODO: consider using an actual templating engine such as https://github.com/Keats/tera
 fn interpolate_cargo_template(
+    template: &str,
     name: &Value,
     authors: &Value,
     edition: &Value,
     version: String,
 ) -> DefaultResult<String> {
-    let template = include_str!("rust/Cargo.template.toml");
     Ok(template
         .replace("<<NAME>>", toml::to_string(name)?.as_str())
         .replace("<<AUTHORS>>", toml::to_string(authors)?.as_str())
@@ -66,7 +81,7 @@ fn interpolate_cargo_template(
 }
 
 impl RustScaffold {
-    pub fn new(package_name: &str) -> RustScaffold {
+    pub fn new(package_name: &str, macro_style: HdkMacroStyle) -> RustScaffold {
         let target_dir = wasm_target_dir(&package_name.into(), &String::new().into());
         let mut artifact_name = target_dir.clone();
         let artifact_path_component: PathBuf = [
@@ -94,6 +109,7 @@ impl RustScaffold {
                 ],
             ),
             package_name: package_name.to_string(),
+            macro_style,
         }
     }
 
@@ -107,8 +123,14 @@ impl RustScaffold {
         let mut contents = String::new();
         cargo_file.read_to_string(&mut contents)?;
 
+        let template = match self.macro_style {
+            HdkMacroStyle::Declarative => include_str!("rust/Cargo.template.toml"),
+            HdkMacroStyle::Procedural => include_str!("rust-proc-macro/Cargo.template.toml"),
+        };
+
         // create new Cargo.toml using pieces of the original
-        let new_toml = generate_cargo_toml(self.package_name.as_str(), contents.as_str())?;
+        let new_toml =
+            generate_cargo_toml(self.package_name.as_str(), contents.as_str(), template)?;
         cargo_file.seek(SeekFrom::Start(0))?;
         cargo_file.write_all(new_toml.as_bytes())?;
         Ok(())
@@ -121,7 +143,10 @@ impl RustScaffold {
             .truncate(true)
             .write(true)
             .open(file_path)?;
-        let contents = include_str!("./rust/lib.rs");
+        let contents = match self.macro_style {
+            HdkMacroStyle::Declarative => include_str!("rust/lib.rs"),
+            HdkMacroStyle::Procedural => include_str!("rust-proc-macro/lib.rs"),
+        };
         cargo_file.write_all(contents.as_bytes())?;
         Ok(())
     }

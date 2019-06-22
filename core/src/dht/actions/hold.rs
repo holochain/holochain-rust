@@ -8,10 +8,8 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    error::HolochainError,
-};
+use holochain_core_types::error::HolochainError;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{pin::Pin, sync::Arc};
 
 pub async fn hold_entry(

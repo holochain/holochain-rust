@@ -8,7 +8,8 @@ use crate::{
     },
 };
 
-use holochain_core_types::{cas::content::Address, signature::Provenance};
+use holochain_core_types::signature::Provenance;
+use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, vec::Vec};
 
 pub async fn respond_validation_package_request(

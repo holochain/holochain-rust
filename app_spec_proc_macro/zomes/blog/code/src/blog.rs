@@ -2,13 +2,18 @@ use hdk::{
     self,
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
-        cas::content::Address,
         dna::capabilities::CapabilityRequest,
         entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
         error::HolochainError,
-        json::JsonString,
         signature::{Provenance, Signature},
         link::LinkMatch,
+    },
+    holochain_persistence_api::{
+        cas::content::Address,
+    },
+    holochain_json_api::{
+        error::JsonError,
+        json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{
         commit_entry::CommitEntryOptions,
@@ -218,7 +223,7 @@ fn check_claim_against_grant(claim: &Address, provenance: Provenance, payload: S
 
 // this is an example of a receive function that can handle a typed messaged
 pub fn handle_receive(from: Address, json_msg: JsonString) -> String {
-    let maybe_message: Result<Message, HolochainError> = json_msg.try_into();
+    let maybe_message: Result<Message, _> = json_msg.try_into();
     let response = match maybe_message {
         Err(err) => format!("error: {}", err),
         Ok(message) => match message.msg_type.as_str() {
@@ -227,7 +232,7 @@ pub fn handle_receive(from: Address, json_msg: JsonString) -> String {
 
             // post calls the create_post zome function handler after checking the supplied signature
             "post" => {
-                let maybe_post_body: Result<PostMessageBody, HolochainError> =
+                let maybe_post_body: Result<PostMessageBody, _> =
                     message.body.try_into();
                 match maybe_post_body {
                     Err(err) => format!("error: couldn't parse body: {}", err),

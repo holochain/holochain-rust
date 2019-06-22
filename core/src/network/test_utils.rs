@@ -2,7 +2,8 @@ use crate::{
     context::Context,
     instance::{tests::test_context, Instance},
 };
-use holochain_core_types::{cas::content::Address, dna::Dna};
+use holochain_core_types::dna::Dna;
+use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 /// create a test instance

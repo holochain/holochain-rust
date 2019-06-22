@@ -1,11 +1,10 @@
 use crate::{
     agent::AgentId,
-    cas::content::Address,
     chain_header::ChainHeader,
-    error::HolochainError,
-    json::JsonString,
     link::{Link, LinkActionKind},
 };
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::Address;
 
 //-------------------------------------------------------------------------------------------------
 // LinkData
@@ -88,15 +87,15 @@ pub mod tests {
 
     use crate::{
         agent::test_agent_id,
-        cas::content::AddressableContent,
         chain_header::test_chain_header,
         entry::{test_entry_a, test_entry_b, Entry},
-        json::JsonString,
         link::{
             link_data::LinkData,
             tests::{example_link, example_link_action_kind, example_link_type},
         },
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::AddressableContent;
     use std::convert::TryFrom;
 
     pub fn example_link_add() -> LinkData {

@@ -10,14 +10,16 @@ extern crate serde_derive;
 #[macro_use]
 extern crate hdk;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
         dna::entry_types::Sharing,
+    },
+    holochain_json_api::{
         json::JsonString,
-        error::{HolochainError},
+        error::JsonError,
     },
 };
 
@@ -28,7 +30,7 @@ pub mod someZome {
     struct TestEntryType {
         stuff: String,
     }
-    
+
     #[genesis]
     fn genisis() {
         Ok(())
@@ -68,5 +70,5 @@ pub mod someZome {
     fn glerp_glerp(_from: Address, message: String) -> String {
         message
     }
-    
+
 }

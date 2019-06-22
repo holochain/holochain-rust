@@ -53,12 +53,12 @@ pub mod tests {
         },
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         crud_status::CrudStatus,
         entry::{test_entry, EntryWithMeta},
         error::ZomeApiInternalResult,
-        json::JsonString,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::api_serialization::{commit_entry::CommitEntryResult, get_entry::*};
 
     use std::sync::Arc;

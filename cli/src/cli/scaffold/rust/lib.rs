@@ -6,7 +6,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 use hdk::{
     entry_definition::ValidatingEntryType,
@@ -18,7 +18,6 @@ use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
     error::HolochainError,
     json::JsonString,
-    validation::EntryValidationData
 };
 
 // see https://developer.holochain.org/api/0.0.20-alpha3/hdk/ for info on using the hdk library

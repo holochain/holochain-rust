@@ -9,12 +9,14 @@ use crate::{
     state::State,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
     eav::Attribute,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
+
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+
 use holochain_net::connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
 
 /// Send to network a PublishDhtData message
@@ -160,7 +162,8 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use holochain_core_types::entry::test_entry;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     pub fn reduce_publish_test() {

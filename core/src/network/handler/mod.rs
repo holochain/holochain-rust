@@ -141,18 +141,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
 
-                // CLEANUP: requester_agent_id was dropped when we moved from FetchMetaResultData
-                // to FetchEntryResultData, so I'm not sure if there is some other check we
-                // should be doing here...
-                // ignore if I'm not the requester
-                //if !is_my_id(&context, &fetch_result_data.requester_agent_id.to_string()) {
-                //    return Ok(());
-                //}
                 context.log(format!(
                     "err/net/handle: unexpected HandleFetchEntryResult: {:?}",
                     fetch_result_data
                 ));
-                //   handle_fetch_entry_result(fetch_result_data, context.clone())
             }
             JsonProtocol::HandleQueryEntry(query_entry_data) => {
                 if !is_my_dna(&my_dna_address, &query_entry_data.dna_address.to_string()) {

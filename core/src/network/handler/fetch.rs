@@ -16,8 +16,6 @@ use std::sync::Arc;
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
-    //CLEANUP, currently just using the old code from get to find the single content aspect
-    // need to find all the other aspects too
     let address = Address::from(get_dht_data.entry_address.clone());
     let mut aspects = vec![];
 
@@ -142,12 +140,3 @@ fn get_meta_aspects(
         Ok(aspects.into_iter().map(Result::unwrap).collect())
     }
 }
-
-/*
-CLEANUP confirm that we really should never handle_fetch_entry_result (because we never send a fetch entry, only the network does)
-/// The network comes back with a result to our previous GET request.
-pub fn handle_fetch_entry_result(dht_data: FetchEntryResultData, context: Arc<Context>) {
-    let action_wrapper = ActionWrapper::new(Action::HandleFetchResult(dht_data));
-    dispatch_action(context.action_channel(), action_wrapper.clone());
-}
-*/

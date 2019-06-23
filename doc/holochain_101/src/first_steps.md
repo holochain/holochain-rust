@@ -6,37 +6,62 @@ ___
 
 Holochain hApps are made of compiled WebAssembly that encodes the rules of the hApp, the data it can store and how users will interact with it. This means that [any language that can compile to WebAssembly](https://github.com/appcypher/awesome-wasm-langs) can one day be used for Holochain.
 
-Writing WebAssembly that complies with the Holochain runtime can be tricky. To make development as streamlined as possible the core team has been developing a Holochain-dev-kit (HDK) for the first supported language, Rust! In the near future the community is encouraged to develop an HDK for their language of choice.
+Writing WebAssembly that complies with the Holochain runtime can be tricky. To make development as streamlined as possible the core team has been developing a Holochain-dev-kit (HDK) for the first supported language, [Rust](https://rust-lang.org)! In the near future the community is encouraged to develop an HDK for their language of choice.
 
 In this article we will walk through the steps of creating a simple hApp using Rust.
 
 ## Requirements
 
-First step is to download the appropriate [dev preview release](https://github.com/holochain/holochain-rust/releases/tag/v0.0.18-alpha2) for your OS. If you decide to build the latest version from source, be warned that the API is undergoing rapid change, so some of the steps in this article may not work. The release contains the binary for the holochain developer command line tool, `hc`, which is used to generate a skeleton app, run tests and build the app package. Follow the installations on [this page](https://developer.holochain.org/start.html) to install the required dependencies.
+**NB: BEFORE YOU START, FOLLOW THE [INSTALLATION GUIDE](https://developer.holochain.org/start.html) TO GET A WORKING HOLOCHAIN DEV ENVIRONMENT.**
 
-Ensure that `hc` is available on your path. If you instead decide to [build from source](https://developer.holochain.org/start.html) cargo will ensure the binaries are on your path automatically.
+To make development easy we provide a nix-shell environment for Holochain. This includes all of the tools you need to develop on any platform. Once you have nix installed you can do as follows:
 
-If you want to jump ahead to see what the completed project will look like, the [full source code is available on GitHub](https://github.com/willemolding/holochain-rust-todo).
+- **✍️Enter the Holochain dev nix-shell at any time by running**
+
+```shell
+$ nix-shell http://holochain.love
+```
+
+You should run all of the following commands from inside this nix-shell.
+
+- **✍️To check everything is working run the following commands to start the shell and check the installed binaries**. 
+
+```shell
+[nix-shell:~]$ holochain --version
+[nix-shell:~]$ hc --version
+```
+
+*Note: don't copy the `[nix-shell:~]$` part when running the commands. This is just indicating the shell prompt you should see.*
+
+You should see [the latest release version](https://github.com/holochain/holochain-rust/releases) in both cases.
+
+The following is an alternative method, if you prefer to test or use Holochain directly on your computer:
+
+- Download the appropriate [dev preview release](https://github.com/holochain/holochain-rust/releases) for your OS. If you decide to build the latest version from source, be warned that the API is undergoing rapid change, so some of the steps in this article may not work. The release contains the binary for the holochain developer command line tool, `hc`, which is used to generate a skeleton app, run tests and build the app package. Follow the installations on [this page](https://developer.holochain.org/start.html) to install the required dependencies.
+
+- Ensure that `hc` is available on your path. If you instead decide to [build from source](https://developer.holochain.org/start.html) cargo will ensure the binaries are on your path automatically. If you want to jump ahead to see what the completed project will look like, the [full source code is available on GitHub](https://github.com/willemolding/holochain-rust-todo).
 
 ## First steps
 
-We will be making a classic to-do list hApp. A user can create new lists and add items to a list. They should also be able to retrieve a list by its address and all of the items on each list.
+Going forward, unless you have chosen to install Holochain via the above alternative method, assume that all commands are run in the above `nix-shell` development environment, unless stated otherwise. We will be making a classic to-do list hApp. A user can create new lists and add items to a list. They should also be able to retrieve a list by its address and all of the items on each list.
 
 Let's begin by generating an empty hApp skeleton by running:
 
 ```
-hc init holochain-rust-todo
+[nix-shell:~]$ hc init holochain-rust-todo
+Created new Holochain project at: "holochain-rust-todo"
 ```
 
-This will generate the following directory structure:
+`cd` to `holochain-rust-todo` and you can check that you have generated the following directory structure:
 
-``` $ tree
-$ tree
+```
+[nix-shell:~]$ cd holochain-rust-todo
+[nix-shell:~/holochain-rust-todo]$ tree
 .
 ├── app.json
 ├── test
-│   ├── index.js
-│   └── package.json
+│   ├── index.js
+│   └── package.json
 └── zomes
 
 2 directories, 3 files
@@ -47,31 +72,34 @@ Notice the `zomes` directory. All Holochain hApps are comprised of one or more z
 We will create a single zome called `lists` that uses a Rust build system:
 
 ```
-cd holochain-rust-todo
-hc generate zomes/lists rust
+[nix-shell:~/holochain-rust-todo]$ hc generate zomes/lists rust
+> cargo init --lib --vcs none
+     Created library package
+Generated "lists" Zome
 ```
 
 The project structure should now be as follows:
 
-``` $ tree
+``` 
+[nix-shell:~/holochain-rust-todo]$ tree
 .
 ├── app.json
 ├── test
-│   ├── index.js
-│   └── package.json
+│   ├── index.js
+│   └── package.json
 └── zomes
     └── lists
         ├── code
-        │   ├── Cargo.toml
-        │   └── src
-        │       └── lib.rs
+        │   ├── Cargo.toml
+        │   └── src
+        │       └── lib.rs
         └── zome.json
 
 5 directories, 6 files
 ```
 
 ## Writing the lists zome
-The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The most important of which is the [`define_zome!`](https://developer.holochain.org/api/0.0.18-alpha1/hdk/macro.define_zome.html) macro. Every zome must use this to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (genesis).
+The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The most important of which is the [`define_zome!`](https://developer.holochain.org/api/0.0.20-alpha3/hdk/macro.define_zome.html) macro. Every zome must use this to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (genesis).
 
 Open up `lib.rs` and replace its contents with the following:
 
@@ -98,7 +126,7 @@ define_zome! {
 This is the simplest possible zome with no entries and no exposed functions.
 
 ## Adding some Entries
-Unlike in holochain-proto, where you needed to define a JSON schema to validate entries, holochain entries in Rust map to a native struct type. We can define our `list` and `listItem` structs as follows:
+Let's add some entries using lists! Unlike in holochain-proto, where you needed to define a JSON schema to validate entries, holochain entries in Rust map to a native struct type. We can define our `list` and `listItem` structs as follows:
 
 ```rust
 #[derive(Serialize, Deserialize, Debug, Clone, DefaultJson)]
@@ -119,7 +147,7 @@ struct GetListResponse {
 }
 ```
 
-You might notice that the `List` struct does not contain a field that holds a collection of `ListItem`s. This will be implemented using links, which we will discuss later.
+You might notice that the `List` struct does not contain a field that holds a collection of `ListItem`s. This will be implemented using links, which we will discuss later. We will use `GetListResponse` to retrieve all the `ListItems` that will be linked to each `List`.
 
 Also be sure to add the following to the list of imports:
 
@@ -187,15 +215,15 @@ define_zome! {
 // -- SNIP-- //
 ```
 
-The `validation_package` field is a function that defines what data should be passed to the `validation` function (and field) through the `ctx` argument. In this case we use a predefined function to only include the entry itself, but it is also possible to pass chain headers, chain entries or the full local chain. The `validation` field is a function that performs custom validation for the entry. In both our cases we are just returning `Ok(())`.
+The `validation_package` field is a function that defines what data should be passed to the `validation` function (and field) through the `validation_data` argument. In this case we use a predefined function to only include the entry itself, but it is also possible to pass chain headers, chain entries or the full local chain. The `validation` field is a function that performs custom validation for the entry. In both our cases we are just returning `Ok(())`.
 
-Take note also of the `links` field. As we will see later links are the main way to encode relational data in Holochain. The `links` section of the entry macro defines what other types of entries are allowed to link to and from this type. This also includes a validation function for fine grain control over linking.
+Take note also of the `links` field of the first `entry!` macro. As we will see later, links are the main way to encode relational data in Holochain. The optional `links` field defines what other types of entries are allowed to link to and from the entry type of the field. This also includes a validation function for fine-grained control over linking.
 
 
 ## Adding Functions
 Finally we need a way to interact with the hApp. We will define the following functions: `create_list`, `add_item` and `get_list`. `get_list` will retrieve a list and all the items linked to each list.
 
-For each of these functions we must define a handler, which is a Rust function that will be executed when the conductor calls the function. (For more on conductors, read Nico's recent post <!--TODO: link-->.) It is best practice for functions to always return a `ZomeApiResult<T>`, where `T` is the type the function should return if it runs without error. This is an extension of the Rust Result type and allows zome functions to abort early on errors using the `?` operator. At the moment the handler function names cannot be the same as the function itself so we will prefix them with `handle_`. This will be fixed in an upcoming release. The handler for `create_list` could be written as:
+For each of these functions we must define a handler, which is a Rust function that will be executed when the conductor calls the function. Note that [conductors will be covered later](conductors.md). It is best practice for functions to always return a [`ZomeApiResult<T>`](https://developer.holochain.org/api/latest/hdk/error/type.ZomeApiResult.html), where `T` is a generic type, and a placeholder for what the function should return if it runs without error. This is an extension of the Rust [`Result`](https://doc.rust-lang.org/nightly/core/result/index.html) type and allows zome functions to abort early on errors using the `?` operator. At the moment the handler function names cannot be the same as the function itself so we will prefix them with `handle_`. This will be fixed in an upcoming release and there's a tracking issue [here](https://github.com/holochain/holochain-rust/issues/1543). The handler for `create_list` could be written as:
 
 ```rust
 fn handle_create_list(list: List) -> ZomeApiResult<Address> {

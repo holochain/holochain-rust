@@ -1,0 +1,17 @@
+[package]
+name = "simple"
+version = "0.1.0"
+authors = ["Ashanti Mutinta <Ashantimutinta@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+serde = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde_derive = "=1.0.89"
+hdk = { path = "../../../../hdk-rust" }
+hdk-proc-macros = { path = "../../../../hdk-proc-macros" }
+holochain_json_derive = "=0.0.1-alpha2"
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]

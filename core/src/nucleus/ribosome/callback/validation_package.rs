@@ -12,9 +12,11 @@ use crate::{
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
-    json::JsonString,
     validation::ValidationPackageDefinition,
 };
+
+use holochain_json_api::json::JsonString;
+
 use holochain_wasm_utils::api_serialization::validation::LinkValidationPackageArgs;
 use std::{convert::TryFrom, sync::Arc};
 
@@ -79,7 +81,7 @@ pub fn get_validation_package_definition(
         }
         EntryType::LinkRemove => {
             let link_remove = match entry {
-                Entry::LinkRemove(link_remove) => link_remove,
+                Entry::LinkRemove((link_remove, _)) => link_remove,
                 _ => {
                     return Err(HolochainError::ValidationFailed(
                         "Failed to extract LinkRemove".into(),

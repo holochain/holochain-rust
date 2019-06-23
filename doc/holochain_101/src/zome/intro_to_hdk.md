@@ -47,7 +47,7 @@ Once Holochain stabilizes beyond the 0.0.x version numbers, it will be published
 
 If you wanted to lock the HDK at a specific version, you could adjust the HDK dependency like this:
 ```toml
-hdk = { git = "https://github.com/holochain/holochain-rust", tag = "v0.0.7-alpha" }
+hdk = { git = "https://github.com/holochain/holochain-rust", tag = "v0.0.18-alpha1" }
 ```
 
 #### Use of the HDK in Rust code

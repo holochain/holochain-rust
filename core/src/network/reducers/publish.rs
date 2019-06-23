@@ -9,12 +9,14 @@ use crate::{
     state::State,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
     eav::Attribute,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
+
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+
 use holochain_net::connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
 
 /// Send to network a PublishDhtData message
@@ -70,21 +72,14 @@ fn publish_link_meta(
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
     let (link_type, link_attribute) = match entry_with_header.entry.clone() {
-        Entry::LinkAdd(link_add_entry) => (link_add_entry, Attribute::Link),
-        Entry::LinkRemove(link_remove) => (link_remove, Attribute::LinkRemove),
-        _ => {
-            return Err(HolochainError::ErrorGeneric(format!(
-                "Received bad entry type. Expected Entry::LinkAdd received {:?}",
-                entry_with_header.entry,
-            )));
-        }
-    };
+        Entry::LinkAdd(link_add_entry) => Ok((link_add_entry, Attribute::Link)),
+        Entry::LinkRemove((link_remove, _)) => Ok((link_remove, Attribute::LinkRemove)),
+        _ => Err(HolochainError::ErrorGeneric(format!(
+            "Received bad entry type. Expected Entry::LinkAdd received {:?}",
+            entry_with_header.entry,
+        ))),
+    }?;
     let link = link_type.link().clone();
-
-    println!(
-        "debug/reduce/link_meta: Publishing link meta for link: {:?}",
-        link
-    );
 
     send(
         network_state,
@@ -167,7 +162,8 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use holochain_core_types::entry::test_entry;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     pub fn reduce_publish_test() {

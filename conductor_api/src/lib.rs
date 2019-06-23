@@ -36,7 +36,7 @@
 ///     conductor::Conductor,
 /// };
 /// use holochain_core_types::error::HolochainError;
-/// use std::{fs::File, io::prelude::*, path::PathBuf};
+/// use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 /// use structopt::StructOpt;
 ///
 /// #[derive(StructOpt, Debug)]
@@ -75,7 +75,7 @@
 /// fn bootstrap_from_config(path: &str) -> Result<Conductor, HolochainError> {
 ///     let config = load_config_file(&String::from(path))?;
 ///     config
-///         .check_consistency()
+///         .check_consistency(&mut Arc::new(Box::new(Conductor::load_dna)))
 ///         .map_err(|string| HolochainError::ConfigError(string))?;
 ///     let mut conductor = Conductor::from_config(config);
 ///     conductor.boot_from_config()?;
@@ -89,14 +89,18 @@
 ///     Ok(load_configuration::<Configuration>(&contents)?)
 /// }
 /// ```
-extern crate holochain_cas_implementations;
 extern crate holochain_common;
 extern crate holochain_core;
 extern crate holochain_core_types;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 extern crate holochain_dpki;
+extern crate holochain_json_api;
 extern crate holochain_net;
+extern crate holochain_persistence_api;
+extern crate holochain_persistence_file;
+extern crate holochain_persistence_mem;
+extern crate holochain_persistence_pickle;
 extern crate lib3h_sodium;
 
 extern crate chrono;

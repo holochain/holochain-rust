@@ -94,15 +94,22 @@ pub struct ValidatingLinkDefinition {
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
+/// # extern crate holochain_json_derive;
+/// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # use boolinator::*;
 /// # use hdk::entry_definition::ValidatingEntryType;
-/// # use hdk::holochain_core_types::{
+/// # use holochain_persistence_api::{
 /// #   cas::content::Address,
-/// #   dna::entry_types::Sharing,
+/// # };
+/// # use holochain_json_api::{
 /// #   json::JsonString,
+/// #   error::JsonError,
+/// # };
+/// # use hdk::holochain_core_types::{
+/// #   dna::entry_types::Sharing,
 /// #   error::HolochainError,
 /// #   validation::EntryValidationData
 /// # };

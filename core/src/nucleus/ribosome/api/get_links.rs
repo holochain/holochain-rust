@@ -52,24 +52,26 @@ pub mod tests {
         },
     };
     use holochain_core_types::{
-        cas::content::Address,
+        agent::test_agent_id,
+        chain_header::test_chain_header,
         entry::{entry_type::test_app_entry_type, Entry},
-        json::{JsonString, RawString},
-        link::Link,
+        link::{link_data::LinkData, Link, LinkMatch},
     };
+    use holochain_json_api::json::{JsonString, RawString};
+    use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use serde_json;
 
     /// dummy link_entries args from standard test entry
     pub fn test_get_links_args_bytes(
         base: &Address,
-        link_type: Option<String>,
-        tag: Option<String>,
+        link_type: LinkMatch<String>,
+        tag: LinkMatch<String>,
     ) -> Vec<u8> {
         let args = GetLinksArgs {
             entry_address: base.clone(),
-            link_type,
-            tag,
+            link_type: link_type.to_regex_string().unwrap(),
+            tag: tag.to_regex_string().unwrap(),
             options: Default::default(),
         };
         serde_json::to_string(&args)
@@ -95,7 +97,6 @@ pub mod tests {
     fn initialize_context(netname: &str) -> Arc<Context> {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
-
         let netname = Some(netname);
         let instance = test_instance(dna, netname).expect("Could not create test instance");
 
@@ -106,10 +107,17 @@ pub mod tests {
     fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
         links.iter().for_each(|link| {
             assert!(initialized_context //commit the AddLink entry first
-                .block_on(commit_entry(link.add_entry(), None, &initialized_context))
+                .block_on(commit_entry(
+                    link.add_entry(test_chain_header(), test_agent_id()),
+                    None,
+                    &initialized_context
+                ))
                 .is_ok());
             assert!(initialized_context
-                .block_on(add_link(&link, &initialized_context))
+                .block_on(add_link(
+                    &LinkData::add_from_link(&link, test_chain_header(), test_agent_id()),
+                    &initialized_context
+                ))
                 .is_ok());
         });
     }
@@ -117,8 +125,8 @@ pub mod tests {
     fn get_links(
         initialized_context: Arc<Context>,
         base: &Address,
-        link_type: Option<String>,
-        tag: Option<String>,
+        link_type: LinkMatch<String>,
+        tag: LinkMatch<String>,
     ) -> JsonString {
         test_zome_api_function_call(
             initialized_context.clone(),
@@ -151,18 +159,18 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("test-type".into()),
-            Some("test-tag".into()),
+            LinkMatch::Exactly("test-type".into()),
+            LinkMatch::Exactly("test-tag".into()),
         );
         let expected_1 = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[1], "test-tag", entry_addresses[2], "test-tag",
             ) + "\u{0}"),
         );
         let expected_2 = JsonString::from_json(
             &(format!(
-               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[2], "test-tag", entry_addresses[1], "test-tag",
             ) + "\u{0}"),
         );
@@ -200,8 +208,8 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("other-type".into()),
-            Some("test-tag".into()),
+            LinkMatch::Exactly("other-type".into()),
+            LinkMatch::Exactly("test-tag".into()),
         );
         assert_eq!(
             call_result,
@@ -237,8 +245,8 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("test-type".into()),
-            Some("other-tag".into()),
+            LinkMatch::Exactly("test-type".into()),
+            LinkMatch::Exactly("other-tag".into()),
         );
         assert_eq!(
             call_result,
@@ -270,16 +278,21 @@ pub mod tests {
         ];
         add_links(initialized_context.clone(), links);
 
-        let call_result = get_links(initialized_context.clone(), &entry_addresses[0], None, None);
+        let call_result = get_links(
+            initialized_context.clone(),
+            &entry_addresses[0],
+            LinkMatch::Any,
+            LinkMatch::Any,
+        );
         let expected_1 = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[1], "test-tag1", entry_addresses[2], "test-tag2",
             ) + "\u{0}"),
         );
         let expected_2 = JsonString::from_json(
             &(format!(
-               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[2], "test-tag2", entry_addresses[1], "test-tag1",
             ) + "\u{0}"),
         );
@@ -316,12 +329,12 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("test-type".into()),
-            Some("test-tag1".into()),
+            LinkMatch::Exactly("test-type".into()),
+            LinkMatch::Exactly("test-tag1".into()),
         );
         let expected = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[1], "test-tag1",
             ) + "\u{0}"),
         );
@@ -351,12 +364,12 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("test-type".into()),
-            Some("test-tag".into()),
+            LinkMatch::Exactly("test-type".into()),
+            LinkMatch::Exactly("test-tag".into()),
         );
         let expected = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[1], "test-tag",
             ) + "\u{0}"),
         );
@@ -387,12 +400,12 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("test-type".into()),
-            None,
+            LinkMatch::Exactly("test-type".into()),
+            LinkMatch::Any,
         );
         let expected = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[1], "test-tag1", entry_addresses[1], "test-tag2",
             ) + "\u{0}"),
         );

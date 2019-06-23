@@ -1,10 +1,10 @@
 use crate::three_workflows::setup_three_nodes;
 use constants::*;
-use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{json_protocol::JsonProtocol, NetResult},
     tweetlog::TWEETLOG,
 };
+use holochain_persistence_api::cas::content::Address;
 use p2p_node::test_node::TestNode;
 
 /// Have multiple nodes track multiple dnas
@@ -55,7 +55,7 @@ pub fn send_test(
     // Camille should receive it
     alex.send_message(CAMILLE_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
     let res = camille
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -67,7 +67,8 @@ pub fn send_test(
 
     // Billy should not receive it
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
-    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
+    let res =
+        billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
     assert!(res.is_none());
 
     // Send messages on DNA B
@@ -79,7 +80,7 @@ pub fn send_test(
     // Billy should receive it
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_2.clone());
     let res = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -91,7 +92,7 @@ pub fn send_test(
     // Camille should not receive it
     alex.send_message(CAMILLE_AGENT_ID.to_string(), ENTRY_CONTENT_2.clone());
     let res =
-        camille.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
+        camille.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
     assert!(res.is_none());
     log_i!("Send messages on DNA B COMPLETE \n\n\n");
 
@@ -104,7 +105,7 @@ pub fn send_test(
     // Camille should receive it
     camille.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_3.clone());
     let res = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -115,7 +116,8 @@ pub fn send_test(
 
     // Alex should not receive it
     camille.send_message(ALEX_AGENT_ID.to_string(), ENTRY_CONTENT_3.clone());
-    let res = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
+    let res =
+        alex.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 1000);
     assert!(res.is_none());
     log_i!("Send messages on DNA C COMPLETE \n\n\n");
 
@@ -152,7 +154,7 @@ pub fn dht_test(
 
     // Camille should receive requested data
     let result = camille
-        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
         .unwrap();
     log_i!("got FetchEntryResult: {:?}", result);
 
@@ -163,7 +165,8 @@ pub fn dht_test(
     alex.reply_to_HandleFetchEntry(&fetch_data)?;
 
     // Billy might receive FailureResult
-    let result = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 1000);
+    let result =
+        billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 1000);
     log_i!("got FailureResult: {:?}", result);
 
     // Done
@@ -204,7 +207,7 @@ pub fn meta_test(
     alex.reply_to_HandleFetchMeta(&fetch_meta)?;
     // billy should receive requested metadata
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
     log_i!("got GetMetaResult: {:?}", result);
     let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
@@ -218,7 +221,7 @@ pub fn meta_test(
         camille.request_meta(ENTRY_ADDRESS_3.clone(), META_LINK_ATTRIBUTE.to_string());
     // Camille should not receive requested metadata
     let result =
-        camille.wait_with_timeout(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))), 1000);
+        camille.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))), 1000);
     log_i!("got GetMetaResult: {:?}", result);
 
     // XXX - currently in-memory and mock return none here

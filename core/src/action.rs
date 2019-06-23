@@ -12,14 +12,14 @@ use crate::{
     scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
     state::State,
 };
+
 use holochain_core_types::{
-    cas::content::Address,
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     dna::Dna,
     entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
-    link::Link,
+    link::link_data::LinkData,
     signature::Provenance,
     validation::ValidationPackage,
 };
@@ -30,6 +30,7 @@ use holochain_net::{
     },
     p2p_config::P2pConfig,
 };
+use holochain_persistence_api::cas::content::Address;
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -107,13 +108,13 @@ pub enum Action {
 
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.
-    AddLink(Link),
+    AddLink(LinkData),
 
     //action for updating crudstatus
     CrudStatus((EntryWithHeader, CrudStatus)),
 
     //Removes a link for the local DHT
-    RemoveLink(Link),
+    RemoveLink(Entry),
 
     // ----------------
     // Network actions:
@@ -150,7 +151,7 @@ pub enum Action {
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
-    RespondGetLinks((FetchMetaData, Vec<Address>)),
+    RespondGetLinks((FetchMetaData, Vec<(Address, CrudStatus)>)),
     HandleGetLinksResult((FetchMetaResultData, String, String)),
 
     /// Makes the network module send a direct (node-to-node) message
@@ -238,10 +239,10 @@ pub struct GetLinksKey {
     pub base_address: Address,
 
     /// The link type
-    pub link_type: Option<String>,
+    pub link_type: String,
 
     /// The link tag, None means get all the tags for a given type
-    pub tag: Option<String>,
+    pub tag: String,
 
     /// A unique ID that is used to pair the eventual result to this request
     pub id: String,

@@ -10,19 +10,23 @@
 //! extern crate holochain_core_types;
 //! extern crate holochain_core;
 //! extern crate holochain_net;
-//! extern crate holochain_cas_implementations;
+//! extern crate holochain_json_api;
+//! extern crate holochain_persistence_api;
+//! extern crate holochain_persistence_mem;
 //! extern crate holochain_dpki;
 //! extern crate lib3h_sodium;
 //! extern crate tempfile;
 //! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
 //! use holochain_core_types::{
-//!     cas::content::Address,
 //!     agent::AgentId,
 //!     dna::{Dna, capabilities::CapabilityRequest,},
-//!     json::JsonString,
 //!     signature::Signature,
 //! };
+//! use holochain_persistence_api::{
+//!     cas::content::Address,
+//! };
+//! use holochain_json_api::json::JsonString;
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
 //! use lib3h_sodium::secbuf::SecBuf;
 //! use test_utils;
@@ -100,8 +104,11 @@ use holochain_core::{
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, Dna},
     error::HolochainError,
-    json::JsonString,
 };
+
+use holochain_json_api::json::JsonString;
+
+use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -221,6 +228,10 @@ impl Holochain {
     pub fn context(&self) -> &Arc<Context> {
         &self.context
     }
+
+    pub fn set_conductor_api(&mut self, api: IoHandler) {
+        self.context.conductor_api.reset(api);
+    }
 }
 
 #[cfg(test)]
@@ -236,11 +247,9 @@ mod tests {
         nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
-        dna::capabilities::CapabilityRequest,
-        json::RawString,
-    };
+    use holochain_core_types::dna::capabilities::CapabilityRequest;
+    use holochain_json_api::json::RawString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
         path::PathBuf,

@@ -16,8 +16,7 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    cas::content::AddressableContent,
-    dna::{
+   dna::{
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo, Sharing},
         fn_declarations::{FnDeclaration, TraitFns},
         traits::ReservedTraitNames,
@@ -26,8 +25,12 @@ use holochain_core_types::{
         Dna,
     },
     entry::entry_type::{AppEntryType, EntryType},
-    json::JsonString,
 };
+use holochain_persistence_api::{
+    cas::content::AddressableContent,
+};
+use holochain_json_api::json::JsonString;
+
 use holochain_net::p2p_config::P2pConfig;
 
 use std::{
@@ -145,6 +148,22 @@ pub fn create_test_defs_with_fn_name(fn_name: &str) -> (ZomeFnDeclarations, Zome
 
     let mut functions = Vec::new();
     functions.push(fn_decl);
+    (functions, traits)
+}
+
+pub fn create_test_defs_with_fn_names(fn_names: Vec<String>) -> (ZomeFnDeclarations, ZomeTraits) {
+    let mut trait_fns = TraitFns::new();
+    let mut functions = Vec::new();
+    for fn_name in fn_names {
+        let mut fn_decl = FnDeclaration::new();
+        fn_decl.name = fn_name.clone();
+        functions.push(fn_decl);
+        trait_fns.functions.push(fn_name.clone());
+    }
+
+    let mut traits = BTreeMap::new();
+    traits.insert(ReservedTraitNames::Public.as_str().to_string(), trait_fns);
+
     (functions, traits)
 }
 

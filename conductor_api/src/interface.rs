@@ -5,10 +5,11 @@ use crossbeam_channel::Receiver;
 use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
 
 use holochain_core_types::{
-    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityRequest, json::JsonString,
-    signature::Provenance,
+    agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
 };
 use holochain_dpki::key_bundle::KeyBundle;
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::Address;
 use lib3h_sodium::secbuf::SecBuf;
 use Holochain;
 
@@ -345,6 +346,9 @@ impl ConductorApiBuilder {
     ///     * `id`: [string] internal handle/name of the newly created DNA config
     ///     * `path`: [string] local file path to DNA file
     ///     * `expected_hash`: [string] (optional) the hash of this DNA. If this does not match the actual hash, installation will fail.
+    ///     * `properties`: [object] (optional) extra data to include in the "properties" section of the DNA
+    ///     * `uuid`: [string] (optional) value to override "uuid" section of the DNA
+    ///     * `copy`: [bool] (optional) copy DNA file to storage directory
     ///
     ///  * `admin/dna/uninstall`
     ///     Uninstalls a DNA from the conductor config. Recursively also removes (and stops)
@@ -473,12 +477,17 @@ impl ConductorApiBuilder {
                     None => None,
                 };
                 let properties = params_map.get("properties");
+                let uuid = params_map
+                    .get("uuid")
+                    .and_then(|v| v.as_str())
+                    .map(|v| v.to_string());
                 let dna_hash = conductor_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
                     id.to_string(),
                     copy,
                     expected_hash,
-                    properties
+                    properties,
+                    uuid,
                 ))?;
                 Ok(json!({ "success": true, "dna_hash": dna_hash }))
             });

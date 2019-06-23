@@ -3,16 +3,15 @@ use crate::{
     network::{reducers::send, state::NetworkState},
     state::State,
 };
-use holochain_core_types::{error::HolochainError, hash::HashString};
+use holochain_core_types::error::HolochainError;
 use holochain_net::connection::json_protocol::{FetchMetaData, JsonProtocol};
+use holochain_persistence_api::hash::HashString;
 
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
     key: &GetLinksKey,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let link_type = key.link_type.clone().unwrap_or("*".to_string()); // map from None to "*"
-    let tag = key.tag.clone().unwrap_or("*".to_string());
     send(
         network_state,
         JsonProtocol::FetchMeta(FetchMetaData {
@@ -20,7 +19,7 @@ fn reduce_get_links_inner(
             request_id: key.id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             entry_address: HashString::from(key.base_address.clone()),
-            attribute: format!("link__{}__{}", link_type, tag),
+            attribute: format!("link__{}__{}", key.link_type, key.tag),
         }),
     )
 }
@@ -80,8 +79,8 @@ mod tests {
         let link_type = String::from("test-link");
         let key = GetLinksKey {
             base_address: entry.address(),
-            link_type: Some(link_type.clone()),
-            tag: Some("link-tag".into()),
+            link_type: link_type,
+            tag: "link-tag".to_string(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
@@ -100,7 +99,8 @@ mod tests {
         );
     }
 
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use holochain_core_types::entry::test_entry;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     // This test needs to be refactored.

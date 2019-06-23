@@ -1,14 +1,16 @@
 [package]
 name = "holochain_test_bin"
-version = "0.0.18-alpha1"
+version = "0.0.20-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_core = { path = "../core" }
 holochain_conductor_api = { path = "../conductor_api" }
-holochain_cas_implementations = { path="../cas_implementations" }
 holochain_core_types = { path = "../core_types" }
+holochain_persistence_api = "=0.0.1-alpha4"
 holochain_net = { path = "../net" }
+lib3h = "=0.0.1-alpha1"
+lib3h_protocol = "=0.0.1-alpha1"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 tempfile = "=3.0.7"
 failure = "=0.1.5"

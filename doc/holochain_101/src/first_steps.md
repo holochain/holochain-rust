@@ -16,7 +16,7 @@
 # First steps writing Holochain hApps with Rust
 
 ___
-This tutorial builds for the 0.0.9-alpha release but as the API and HDK are changing it will likely fail under newer releases.
+This tutorial builds for the 0.0.18-alpha1 release but as the API and HDK are changing it will likely fail under newer releases.
 ___
 
 Holochain hApps are made of compiled WebAssembly that encodes the rules of the hApp, the data it can store and how users will interact with it. This means that [any language that can compile to WebAssembly](https://github.com/appcypher/awesome-wasm-langs) can one day be used for Holochain.
@@ -77,27 +77,27 @@ The project structure should now be as follows:
  │  └── lib.rs
  └── zome.json
 ```
- 
+
 ## Writing the lists zome
-The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The most important of which is the [`define_zome!`](https://developer.holochain.org/api/0.0.9-alpha/hdk/macro.define_zome.html) macro. Every zome must use this to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (genesis).
+The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The most important of which is the [`define_zome!`](https://developer.holochain.org/api/0.0.18-alpha1/hdk/macro.define_zome.html) macro. Every zome must use this to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (genesis).
 
 Open up `lib.rs` and replace its contents with the following:
 
 ```rust
 #[macro_use]
 extern crate hdk;
- 
+
 define_zome! {
     entries: [
     ]
- 
+
     genesis: || {
         Ok(())
     }
- 
+
     functions: [
     ]
- 
+
     traits: {
     }
 }
@@ -138,7 +138,7 @@ extern crate hdk;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate lib3h_persistence_derive;
 use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
@@ -303,7 +303,7 @@ extern crate hdk;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate lib3h_persistence_derive;
 
 use hdk::{
     error::ZomeApiResult,
@@ -317,7 +317,7 @@ use hdk::{
     }
 };
 
- 
+
 define_zome! {
     entries: [
         entry!(
@@ -349,11 +349,11 @@ define_zome! {
             }
         )
     ]
- 
+
     genesis: || {
         Ok(())
     }
- 
+
 	functions: [
         create_list: {
             inputs: |list: List|,

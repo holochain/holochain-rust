@@ -1,13 +1,19 @@
 use hdk::{
     self,
     error::{ZomeApiError, ZomeApiResult},
-    holochain_core_types::{
+    holochain_persistence_api::{
         cas::content::Address,
+    },
+    holochain_json_api::{
+        json::JsonString,
+        error::JsonError
+    },
+    holochain_core_types::{
         dna::capabilities::CapabilityRequest,
         entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
         error::HolochainError,
-        json::JsonString,
         signature::{Provenance, Signature},
+        link::LinkMatch,
     },
     holochain_wasm_utils::api_serialization::{
         commit_entry::CommitEntryOptions,
@@ -39,7 +45,7 @@ pub struct Env {
     dna_address: String,
     agent_id: String,
     agent_address: String,
-    cap_request: CapabilityRequest,
+    cap_request: Option<CapabilityRequest>,
     properties: JsonString,
 }
 
@@ -90,14 +96,16 @@ fn check_sum_args(num1: u32, num2: u32) -> SumInput {
     }
 }
 
-pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
-    hdk::call(
+pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
+    let call_json = hdk::call(
         hdk::THIS_INSTANCE,
         "summer",
         Address::from(PUBLIC_TOKEN.to_string()),
         "sum",
         check_sum_args(num1, num2).into(),
-    )
+    )?;
+    let result: ZomeApiResult<u32> = call_json.try_into()?;
+    result
 }
 
 pub fn handle_ping(to_agent: Address, message: String) -> ZomeApiResult<JsonString> {
@@ -215,7 +223,7 @@ fn check_claim_against_grant(claim: &Address, provenance: Provenance, payload: S
 
 // this is an example of a receive function that can handle a typed messaged
 pub fn handle_receive(from: Address, json_msg: JsonString) -> String {
-    let maybe_message: Result<Message, HolochainError> = json_msg.try_into();
+    let maybe_message: Result<Message, _> = json_msg.try_into();
     let response = match maybe_message {
         Err(err) => format!("error: {}", err),
         Ok(message) => match message.msg_type.as_str() {
@@ -224,7 +232,7 @@ pub fn handle_receive(from: Address, json_msg: JsonString) -> String {
 
             // post calls the create_post zome function handler after checking the supplied signature
             "post" => {
-                let maybe_post_body: Result<PostMessageBody, HolochainError> =
+                let maybe_post_body: Result<PostMessageBody, _> =
                     message.body.try_into();
                 match maybe_post_body {
                     Err(err) => format!("error: couldn't parse body: {}", err),
@@ -396,11 +404,18 @@ pub fn handle_delete_post(content: String) -> ZomeApiResult<Address> {
 }
 
 pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&agent, Some("authored_posts".into()), None)
+    hdk::get_links(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any)
 }
 
+
 pub fn handle_my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&AGENT_ADDRESS, Some("authored_posts".into()), tag)
+    let tag = match tag {Some(ref s) => LinkMatch::Regex(s.as_ref()), None => LinkMatch::Any};
+    hdk::get_links(&AGENT_ADDRESS, LinkMatch::Exactly("authored_posts"), tag)
+}
+
+pub fn handle_my_posts_with_load(tag: Option<String>) -> ZomeApiResult<Vec<Post>> {
+    let tag = match tag {Some(ref s) => LinkMatch::Exactly(s.as_ref()), None => LinkMatch::Any};
+    hdk::utils::get_links_and_load_type(&AGENT_ADDRESS, LinkMatch::Exactly("authored_posts"), tag)
 }
 
 pub fn handle_my_memos() -> ZomeApiResult<Vec<Address>> {
@@ -415,8 +430,8 @@ pub fn handle_get_memo(address: Address) -> ZomeApiResult<Option<Entry>> {
 pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links_with_options(
         &AGENT_ADDRESS,
-        Some("authored_posts".into()),
-        None,
+        LinkMatch::Exactly("authored_posts"),
+        LinkMatch::Any,
         GetLinksOptions {
             timeout: 0.into(),
             ..Default::default()
@@ -427,8 +442,8 @@ pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
 pub fn handle_my_posts_get_my_sources(agent: Address) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links_with_options(
         &agent,
-        Some("authored_posts".into()),
-        None,
+        LinkMatch::Exactly("authored_posts"),
+        LinkMatch::Any,
         GetLinksOptions {
             headers: true,
             ..Default::default()
@@ -514,7 +529,7 @@ pub fn handle_recommend_post(
 }
 
 pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&AGENT_ADDRESS, Some("recommended_posts".into()), None)
+    hdk::get_links(&AGENT_ADDRESS, LinkMatch::Exactly("recommended_posts"), LinkMatch::Any)
 }
 
 pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<Entry>> {
@@ -535,14 +550,14 @@ pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<En
         raw_json
     ))?;
 
-    let entry: Option<Entry> = raw_json.try_into()?;
+    let entry: ZomeApiResult<Option<Entry>> = raw_json.try_into()?;
 
     hdk::debug(format!(
         "********DEBUG******** BRIDGING ACTUAL response from hosting-bridge {:?}",
         entry
     ))?;
 
-    Ok(entry)
+    entry
 }
 
 #[cfg(test)]

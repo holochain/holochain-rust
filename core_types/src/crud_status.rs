@@ -3,15 +3,21 @@
 //! store such as "update" and "remove" (delete), metadata is created pointing entries forward to their 'latest' version,
 //! even including an entry being marked as deleted.
 
-use crate::{
-    cas::content::{Address, AddressableContent, Content},
-    eav::EntityAttributeValueIndex,
-    error::{HcResult, HolochainError},
-    hash::HashString,
-    json::JsonString,
-};
+use crate::eav::EntityAttributeValueIndex;
+
 use eav::Attribute;
 use std::{convert::TryInto, str::FromStr};
+
+use holochain_persistence_api::{
+    cas::content::{Address, AddressableContent, Content},
+    error::PersistenceResult,
+    hash::HashString,
+};
+
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
+    json::JsonString,
+};
 
 /// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an entry address as the Entity, [CrudStatus](../eav/Attribute.html) as the attribute
 /// and CrudStatus as the value.
@@ -19,7 +25,7 @@ use std::{convert::TryInto, str::FromStr};
 pub fn create_crud_status_eav(
     address: &Address,
     status: CrudStatus,
-) -> HcResult<EntityAttributeValueIndex> {
+) -> PersistenceResult<EntityAttributeValueIndex> {
     EntityAttributeValueIndex::new(
         address,
         &Attribute::CrudStatus,
@@ -29,12 +35,17 @@ pub fn create_crud_status_eav(
 
 /// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an old entry address as the Entity, [CrudLink](../eav/Attribute.html) as the attribute
 /// and a new entry address as the value
-pub fn create_crud_link_eav(from: &Address, to: &Address) -> HcResult<EntityAttributeValueIndex> {
+pub fn create_crud_link_eav(
+    from: &Address,
+    to: &Address,
+) -> PersistenceResult<EntityAttributeValueIndex> {
     EntityAttributeValueIndex::new(from, &Attribute::CrudLink, to)
 }
 
 /// the CRUD status of a Pair is stored using an EAV, NOT in the entry itself
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, DefaultJson)]
+#[derive(
+    Copy, Clone, PartialEq, Debug, Serialize, Deserialize, DefaultJson, PartialOrd, Ord, Eq,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum CrudStatus {
     Live,
@@ -77,7 +88,7 @@ impl AddressableContent for CrudStatus {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         content.to_owned().try_into()
     }
 }
@@ -85,16 +96,15 @@ impl AddressableContent for CrudStatus {
 #[cfg(test)]
 mod tests {
     use super::CrudStatus;
-    use crate::{
-        cas::{
-            content::{
-                Address, AddressableContent, AddressableContentTestSuite, Content,
-                ExampleAddressableContent,
-            },
-            storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+    use crate::eav::{eav_round_trip_test_runner, Attribute};
+
+    use holochain_json_api::json::{JsonString, RawString};
+    use holochain_persistence_api::cas::{
+        content::{
+            Address, AddressableContent, AddressableContentTestSuite, Content,
+            ExampleAddressableContent,
         },
-        eav::{eav_round_trip_test_runner, Attribute},
-        json::{JsonString, RawString},
+        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
 
     #[test]

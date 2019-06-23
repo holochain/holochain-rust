@@ -41,7 +41,7 @@
   - [(E) Calling Other Zomes](./zome/calling_other_zomes.md)
   - [Crypto Functions](./zome/crypto.md)
   - [(E) Bundling](./zome/bundling.md)
-  - [(E) Emitting Signals](./zome/emitting_signals.md)
+  - [Emitting Signals](./zome/emitting_signals.md)
   - [API DNA Variables](./zome/dna_variables.md)
   - [List of API Functions](./zome/api_functions.md)
 - [Building Holochain Apps: Packaging](./packaging.md)

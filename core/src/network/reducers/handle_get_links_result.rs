@@ -3,13 +3,14 @@ use crate::{
     network::state::NetworkState,
     state::State,
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::{crud_status::CrudStatus, error::HolochainError};
 use holochain_net::connection::json_protocol::FetchMetaResultData;
+use holochain_persistence_api::cas::content::Address;
 
 fn reduce_handle_get_links_result_inner(
     network_state: &mut NetworkState,
     dht_meta_data: &FetchMetaResultData,
-) -> Result<Vec<Address>, HolochainError> {
+) -> Result<Vec<(Address, CrudStatus)>, HolochainError> {
     network_state.initialized()?;
     // expecting dht_meta_data.content_list to be a jsonified array of EntryWithHeader or Address
     // TODO: do a loop on content once links properly implemented
@@ -41,15 +42,6 @@ pub fn reduce_handle_get_links_result(
     );
 
     let result = reduce_handle_get_links_result_inner(network_state, dht_meta_data);
-    // map back from "*" to option
-    let tag = match tag.as_ref() {
-        "*" => None,
-        _ => Some(tag.to_string()),
-    };
-    let link_type = match link_type.as_ref() {
-        "*" => None,
-        _ => Some(link_type.to_string()),
-    };
     let key = GetLinksKey {
         base_address: Address::from(dht_meta_data.entry_address.clone()),
         link_type: link_type.clone(),

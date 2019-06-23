@@ -40,6 +40,7 @@ impl P2pNetwork {
             _ => JsonString::from(""),
         };
 
+        let p2p_config_str = p2p_config.as_str();
         // Provide worker factory depending on backend kind
         let worker_factory: NetWorkerFactory = match p2p_config.backend_kind {
             // Create an IpcNetWorker with the passed backend config
@@ -97,8 +98,8 @@ impl P2pNetwork {
         let connection =
             NetConnectionThread::new(wrapped_handler, worker_factory, None).map_err(|e| {
                 format_err!(
-                    "Failed to obtain a connection to a p2p network module w/ config: {}: ",
-                    //   p2p_config.as_str(),
+                    "Failed to obtain a connection to a p2p network module w/ config: {}: {} ",
+                    p2p_config_str,
                     e
                 )
             })?;

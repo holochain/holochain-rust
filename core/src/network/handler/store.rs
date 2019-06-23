@@ -31,6 +31,9 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     }
                 });
             }
+            EntryAspect::Header(header) => {
+                panic!(format!("unimplemented store aspect Header: {:?}", header));
+            }
             EntryAspect::LinkAdd(link_data, header) => {
                 context
                     .log("debug/net/handle: handle_store: Got EntryAspect::LinkAdd. processing...");
@@ -96,9 +99,6 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                         context.log(format!("err/net/handle_store: {}", error))
                     }
                 });
-            }
-            _ => {
-                panic!(format!("unimplemented store aspect {:?}", aspect));
             }
         }
     } else {

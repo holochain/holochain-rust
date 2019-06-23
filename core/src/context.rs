@@ -312,7 +312,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 }
 
 /// Create an in-memory network config with the provided name,
-/// otherwise create a unique name and thus network using snowflak.e
+/// otherwise create a unique name and thus network using snowflake.
 /// This is the base function that many other `text_context*` functions use, and hence they also
 /// require an optional network name. The reasoning for this is that tests which only require a
 /// single instance may simply pass None and get a unique network name, but tests which require two

@@ -42,11 +42,6 @@ pub fn reduce_respond_get(
     let (query_data, maybe_entry) = unwrap_to!(action => crate::action::Action::RespondGet);
     let result = reduce_respond_get_inner(network_state, query_data, maybe_entry);
 
-    println!(
-        "debug/reduce/respond_get: Responding to GET request from {} with {:?}",
-        query_data.requester_agent_id, maybe_entry
-    );
-
     network_state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::RespondGet(match result {

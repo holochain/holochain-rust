@@ -53,11 +53,6 @@ pub fn reduce_respond_get_links(
         tag.clone(),
     );
 
-    println!(
-        "debug/reduce/respond_get_links: Responding to GET LINKS request from {} with {:?}",
-        query_data.requester_agent_id, links
-    );
-
     network_state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::RespondGetLinks(match result {

@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added `Crud Status` information to link data in get_links as well as query through `LinkStatusRequest` [#1337](https://github.com/holochain/holochain-rust/pull/1337)
+- The `hc` tool can now generate template zomes that use the new proc macro HDK [#1511](https://github.com/holochain/holochain-rust/pull/1511)
 - Added a MVP implementation of [Signals](https://github.com/holochain/holochain-rust/blob/develop/doc/architecture/decisions/0013-signals-listeners-model-and-api.md) that introduces `hdk::emit_signal(name, payload)` [#1516](https://github.com/holochain/holochain-rust/pull/1516)
 
 ### Changed

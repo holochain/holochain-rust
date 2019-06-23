@@ -717,14 +717,17 @@ where
     T: Deserialize<'a>,
 {
     toml::from_str::<T>(toml).map_err(|e| {
-        HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+        HolochainError::IoError(format!("Error loading configuration: {}", e.to_string()))
     })
 }
 
 pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
     // see https://github.com/alexcrichton/toml-rs/issues/142
     let config_toml = toml::Value::try_from(config).map_err(|e| {
-        HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+        HolochainError::IoError(format!(
+            "Could not serialize configuration: {}",
+            e.to_string()
+        ))
     })?;
     toml::to_string_pretty(&config_toml).map_err(|e| {
         HolochainError::IoError(format!(
@@ -985,6 +988,57 @@ pub mod tests {
         assert_eq!(config.logger.rules.rules.len(), 1);
 
         assert_eq!(config.network, None);
+    }
+
+    #[test]
+    fn test_load_bad_network_config() {
+        let base_toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    keystore_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app_spec.dna.json"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
+
+    [[interfaces]]
+    id = "app spec websocket interface"
+        [interfaces.driver]
+        type = "websocket"
+        port = 8888
+        [[interfaces.instances]]
+        id = "app spec instance"
+    "#;
+
+        let toml = format!(
+            "{}{}",
+            base_toml,
+            r#"
+    [network]
+    type="lib3h"
+    "#
+        );
+        if let Err(e) = load_configuration::<Configuration>(toml.as_str()) {
+            assert!(
+                true,
+                e.to_string().contains(
+                    "Error loading configuration: missing field `socket_type` for key `network`"
+                )
+            )
+        } else {
+            panic!("Should have failed!")
+        }
     }
 
     #[test]

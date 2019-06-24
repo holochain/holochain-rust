@@ -8,10 +8,10 @@ use crate::{
 };
 use holochain_core_types::{
     agent::AgentId,
-    cas::content::AddressableContent,
     entry::Entry,
     validation::{EntryValidationData, ValidationData},
 };
+use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasm_utils::api_serialization::validation::AgentIdValidationArgs;
 
 use futures::future;

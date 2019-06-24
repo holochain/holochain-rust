@@ -1,6 +1,6 @@
 //! provides a NetWorker implementation for backend IPC p2p connections
 
-use holochain_core_types::json::JsonString;
+use holochain_json_api::json::JsonString;
 
 use crate::ipc::{
     spawn, transport::TransportId, util::get_millis, Transport, TransportEvent, TransportWss,

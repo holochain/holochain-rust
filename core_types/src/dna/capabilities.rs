@@ -1,11 +1,9 @@
 /// capabilities implements the capability request functionality used to check
 /// that a given capability has been granted for actions like zome calls
-use crate::{
-    cas::content::Address,
-    error::HolochainError,
-    json::JsonString,
-    signature::{Provenance, Signature},
-};
+use crate::signature::{Provenance, Signature};
+
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::Address;
 
 //--------------------------------------------------------------------------------------------------
 // CapabilityRequest
@@ -32,7 +30,7 @@ impl CapabilityRequest {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::cas::content::Address;
+    use holochain_persistence_api::cas::content::Address;
 
     #[test]
     fn test_capability_request_new() {

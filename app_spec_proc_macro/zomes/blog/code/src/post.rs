@@ -2,9 +2,12 @@ use boolinator::Boolinator;
 use hdk::entry_definition::ValidatingEntryType;
 /// This file holds everything that represents the "post" entry type.
 use hdk::holochain_core_types::{
-    dna::entry_types::Sharing, error::HolochainError, json::JsonString,
-    validation::EntryValidationData,
+    dna::entry_types::Sharing, validation::EntryValidationData,
 };
+use hdk::holochain_json_api::{
+    error::JsonError, json::JsonString,
+};
+
 
 /// We declare the structure of our entry type with this Rust struct.
 /// It will be checked automatically by the macro below, similar

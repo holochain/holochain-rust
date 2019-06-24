@@ -1,16 +1,17 @@
 use crate::action::ActionWrapper;
 use holochain_core_types::{
+    chain_header::ChainHeader,
+    crud_status::CrudStatus,
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
+    entry::Entry,
+    error::HolochainError,
+};
+use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
-    chain_header::ChainHeader,
-    eav::{
-        Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
-        IndexFilter,
-    },
-    entry::Entry,
-    error::HolochainError,
+    eav::{EavFilter, EntityAttributeValueStorage, IndexFilter},
 };
 use regex::Regex;
 
@@ -25,7 +26,7 @@ use std::{
 pub struct DhtStore {
     // Storages holding local shard data
     content_storage: Arc<RwLock<ContentAddressableStorage>>,
-    meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+    meta_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -75,7 +76,7 @@ impl DhtStore {
     // =========
     pub fn new(
         content_storage: Arc<RwLock<ContentAddressableStorage>>,
-        meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+        meta_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
     ) -> Self {
         DhtStore {
             content_storage,
@@ -86,22 +87,42 @@ impl DhtStore {
     ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
-    ///When that set is obtained, we filter based on the LinkTag attributes to only get the "live" links or links that are valid.
+    ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified
     pub fn get_links(
         &self,
         address: Address,
         link_type: String,
         tag: String,
-    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+    ) -> Result<BTreeSet<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
         let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
         Ok(filtered
             .into_iter()
-            .filter(|eav| match eav.attribute() {
-                Attribute::LinkTag(_, _) => true,
-                _ => false,
+            .map(|s| match s.attribute() {
+                Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
+                _ => (s, CrudStatus::Deleted),
             })
             .collect())
+    }
+
+    pub fn get_all_metas(
+        &self,
+        address: &Address,
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+        let query = EaviQuery::new(
+            Some(address.to_owned()).into(),
+            EavFilter::predicate(move |attr: Attribute| match attr.clone() {
+                Attribute::LinkTag(_, _)
+                | Attribute::RemovedLink(_, _)
+                | Attribute::CrudLink
+                | Attribute::CrudStatus => true,
+                _ => false,
+            }),
+            None.into(),
+            IndexFilter::LatestByAttribute,
+            None,
+        );
+        Ok(self.meta_storage.read()?.fetch_eavi(&query)?)
     }
 
     /// Get all headers for an entry by first looking in the DHT meta store
@@ -132,6 +153,10 @@ impl DhtStore {
                     .map(|content| ChainHeader::try_from_content(&content))
                     .collect::<Result<Vec<_>, _>>()
             })?
+            .map_err(|err| {
+                let hc_error: HolochainError = err.into();
+                hc_error
+            })
     }
 
     /// Add an entry and header to the CAS and EAV, respectively
@@ -155,7 +180,7 @@ impl DhtStore {
     pub(crate) fn content_storage(&self) -> Arc<RwLock<ContentAddressableStorage>> {
         self.content_storage.clone()
     }
-    pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {
+    pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage<Attribute>>> {
         self.meta_storage.clone()
     }
     pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
@@ -171,9 +196,10 @@ impl DhtStore {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use holochain_core_types::{
-        cas::storage::ExampleContentAddressableStorage, chain_header::test_chain_header_with_sig,
-        eav::ExampleEntityAttributeValueStorage, entry::test_entry,
+    use holochain_core_types::{chain_header::test_chain_header_with_sig, entry::test_entry};
+
+    use holochain_persistence_api::{
+        cas::storage::ExampleContentAddressableStorage, eav::ExampleEntityAttributeValueStorage,
     };
 
     #[test]

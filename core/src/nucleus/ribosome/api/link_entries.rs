@@ -3,11 +3,12 @@ use crate::{
     workflows::author_entry::author_entry,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
 };
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -75,11 +76,11 @@ pub mod tests {
         },
     };
     use holochain_core_types::{
-        cas::content::AddressableContent,
         entry::{test_entry, Entry},
         error::{CoreError, ZomeApiInternalResult},
-        json::JsonString,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_wasm_utils::api_serialization::link_entries::*;
 
     use serde_json;

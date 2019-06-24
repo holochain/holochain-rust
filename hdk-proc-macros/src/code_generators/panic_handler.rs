@@ -5,7 +5,7 @@ pub fn panic_handler() -> TokenStream {
     quote! {
         #[no_mangle]
         pub extern "C" fn __install_panic_handler() -> () {
-            use hdk::{api::debug, holochain_core_types::json::RawString};
+            use hdk::{api::debug, holochain_json_api::json::RawString};
             use std::panic;
             panic::set_hook(Box::new(move |info| {
                 let _ = debug(RawString::from(

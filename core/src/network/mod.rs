@@ -1,7 +1,9 @@
 pub mod actions;
 pub mod direct_message;
+pub mod entry_aspect;
 pub mod entry_with_header;
 pub mod handler;
+pub mod query;
 pub mod reducers;
 pub mod state;
 #[cfg(test)]
@@ -23,13 +25,13 @@ pub mod tests {
     };
     use holochain_core_types::{
         agent::test_agent_id,
-        cas::content::{Address, AddressableContent},
         chain_header::test_chain_header,
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
-        json::JsonString,
         link::link_data::LinkData,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use test_utils::*;
 
     // TODO: Should wait for a success or saturation response from the network module after Publish
@@ -298,8 +300,10 @@ pub mod tests {
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order
         assert!(
-            (links[0] == entry_addresses[1] || links[0] == entry_addresses[2])
-                && (links[1] == entry_addresses[1] || links[1] == entry_addresses[2])
+            (links[0] == (entry_addresses[1].clone(), CrudStatus::Live)
+                || links[0] == (entry_addresses[2].clone(), CrudStatus::Live))
+                && (links[1] == (entry_addresses[1].clone(), CrudStatus::Live)
+                    || links[1] == (entry_addresses[2].clone(), CrudStatus::Live))
         );
     }
 }

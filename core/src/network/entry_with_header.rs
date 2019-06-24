@@ -1,7 +1,6 @@
 use crate::{agent::find_chain_header, state::State};
-use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
-};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
+use holochain_persistence_api::cas::content::Address;
 use std::convert::TryInto;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

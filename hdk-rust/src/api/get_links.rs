@@ -1,9 +1,8 @@
 use super::Dispatch;
 use api::get_entry::get_entry_result;
 use error::{ZomeApiError, ZomeApiResult};
-use holochain_core_types::{
-    cas::content::Address, entry::Entry, hash::HashString, link::LinkMatch,
-};
+use holochain_core_types::{entry::Entry, link::LinkMatch};
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultItem, GetEntryResultType},
     get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
@@ -23,8 +22,10 @@ use holochain_wasm_utils::api_serialization::{
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_wasm_utils;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::cas::content::Address;
+/// # extern crate holochain_json_api;
+/// # extern crate holochain_persistence_api;
+/// # use holochain_json_api::json::JsonString;
+/// # use holochain_persistence_api::cas::content::Address;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, GetLinksOptions};
 /// # use holochain_core_types::link::LinkMatch;
@@ -69,8 +70,9 @@ pub fn get_links(
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_wasm_utils;
+/// # extern crate holochain_persistence_api;
 /// # use hdk::error::ZomeApiResult;
-/// # use holochain_core_types::cas::content::Address;
+/// # use holochain_persistence_api::cas::content::Address;
 /// # use holochain_wasm_utils::api_serialization::{
 /// #    get_entry::{GetEntryOptions, GetEntryResult},
 /// #    get_links::GetLinksOptions};

@@ -218,6 +218,11 @@ impl Instance {
                 "err/instance/process_action: could not save state: {:?}",
                 e
             ));
+        } else {
+            context.log(format!(
+                "trace/reduce/process_actions: reducing {:?}",
+                action_wrapper
+            ));
         }
 
         // Add new observers

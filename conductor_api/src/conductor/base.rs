@@ -402,7 +402,7 @@ impl Conductor {
     }
 
     /// Starts dpki_happ instances
-    pub fn start_dpki_happ_instance(&mut self) -> Result<(), HolochainInstanceError> {
+    pub fn start_dpki_instance(&mut self) -> Result<(), HolochainInstanceError> {
         let dpki_instance_id = &self.dpki_instance_id().unwrap();
         self.instances
             .iter_mut()

@@ -59,7 +59,7 @@ fn main() {
                 if conductor.using_dpki() {
                     println!("Starting dpki instances...");
                     conductor
-                        .start_dpki_happ_instance()
+                        .start_dpki_instance()
                         .expect("Could not start dpki happ instance!");
 
                     conductor

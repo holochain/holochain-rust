@@ -1040,7 +1040,7 @@ impl Conductor {
 
     /// bootstraps the dpki app if configured
     pub fn dpki_bootstrap(&mut self) -> Result<(), HolochainError> {
-        println!("Starting DPKI Bootstrap ...");
+        notify("Starting DPKI Bootstrap ...");
         println!("Cheking if conductor is using DPKI : {}", self.using_dpki());
         if self.using_dpki() {
             let dpki_instance_id = self.dpki_instance_id().unwrap();

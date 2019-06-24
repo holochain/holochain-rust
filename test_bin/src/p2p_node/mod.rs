@@ -1,5 +1,5 @@
 extern crate lib3h;
+pub mod chain_store;
 pub mod create_config;
-pub mod dna_store;
-pub mod meta_store;
+pub mod entry_store;
 pub mod test_node;

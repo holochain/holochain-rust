@@ -37,12 +37,6 @@ fn dpki_cap_request(
     ))
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, DefaultJson)]
-#[allow(non_snake_case)]
-struct IsInitializedResult {
-    Ok: bool,
-}
-
 impl DpkiInstance for Holochain {
     /// wrapper for the dpki create_agent_key trait function
     fn dpki_create_agent_key(&mut self, agent_name: String) -> Result<(), HolochainError> {

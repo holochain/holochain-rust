@@ -115,6 +115,8 @@ pub enum HolochainError {
     Timeout,
     InitializationFailed(String),
     DnaHashMismatch(HashString, HashString),
+    EntryNotFoundLocally,
+    EntryIsPrivate,
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -151,6 +153,11 @@ impl fmt::Display for HolochainError {
                 f,
                 "Provided DNA hash does not match actual DNA hash! {} != {}",
                 hash1, hash2
+            ),
+            EntryNotFoundLocally => write!(f, "The requested entry could not be found locally"),
+            EntryIsPrivate => write!(
+                f,
+                "The requested entry is private and should not be shared via gossip"
             ),
         }
     }
@@ -383,6 +390,14 @@ mod tests {
             (
                 HolochainError::ValidationPending,
                 "Entry validation could not be completed",
+            ),
+            (
+                HolochainError::EntryNotFoundLocally,
+                "The requested entry could not be found locally",
+            ),
+            (
+                HolochainError::EntryIsPrivate,
+                "The requested entry is private and should not be shared via gossip",
             ),
         ] {
             assert_eq!(output, &input.to_string());

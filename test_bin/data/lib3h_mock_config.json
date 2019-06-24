@@ -1,5 +1,5 @@
 {
-  "backend_kind": "IPC",
+  "backend_kind": "FIXME",
   "backend_config": {
     "socketType": "ws",
     "spawn": {

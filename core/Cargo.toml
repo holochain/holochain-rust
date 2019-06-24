@@ -36,7 +36,7 @@ holochain_persistence_file = "=0.0.1-alpha4"
 holochain_persistence_mem = "=0.0.1-alpha4"
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
-lib3h_sodium = "=0.0.1-alpha1"
+lib3h_sodium = "=0.0.2-alpha1"
 boolinator = "=2.4.0"
 jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 jsonrpc-lite = "=0.5.0"

@@ -1,10 +1,10 @@
 use holochain_core_types::{
     entry::Entry,
-    error::HolochainError,
-    json::*,
     link::Link,
     validation::{EntryValidationData, LinkValidationData},
 };
+
+use holochain_json_api::{error::JsonError, json::*};
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct EntryValidationArgs {
@@ -20,7 +20,7 @@ pub enum LinkDirection {
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct LinkValidationPackageArgs {
     pub entry_type: String,
-    pub tag: String,
+    pub link_type: String,
     pub direction: LinkDirection,
 }
 

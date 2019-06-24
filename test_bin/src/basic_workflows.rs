@@ -1,99 +1,31 @@
 use constants::*;
-use holochain_core_types::cas::content::Address;
 use holochain_net::{
     connection::{
-        json_protocol::{ConnectData, JsonProtocol},
+        json_protocol::{ConnectData, EntryData, JsonProtocol},
         net_connection::NetSend,
+        protocol::Protocol,
         NetResult,
     },
     tweetlog::TWEETLOG,
 };
-use p2p_node::P2pNode;
-
-/// Tests if we can get back data published on the network
-#[cfg_attr(tarpaulin, skip)]
-fn confirm_published_data(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    address: &Address,
-    content: &serde_json::Value,
-) -> NetResult<()> {
-    // Alex publishs data on the network
-    alex.author_entry(address.into(), content, true)?;
-
-    // Check if both nodes are asked to store it
-    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    // #fulldht
-    assert!(result_a.is_some());
-    log_i!("got HandleStoreEntry on node A: {:?}", result_a);
-
-    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    assert!(result_b.is_some());
-    log_i!("got HandleStoreEntry on node B: {:?}", result_b);
-
-    let fetch_data = billy.request_entry(address.clone());
-
-    // Alex having that data, sends it to the network.
-    alex.reply_to_HandleFetchEntry(&fetch_data)?;
-
-    // billy should receive the data it requested from the netowrk
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
-        .unwrap();
-    log_i!("got dht Entry result: {:?}", result);
-
-    Ok(())
-}
-
-/// Tests if we can get back metadata published on the network
-#[cfg_attr(tarpaulin, skip)]
-fn confirm_published_metadata(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    address: &Address,
-    attribute: &str,
-    link_entry_address: &serde_json::Value,
-) -> NetResult<()> {
-    // Alex publishs metadata on the network
-    let _meta_key = alex.author_meta(address, attribute, link_entry_address, true)?;
-
-    // Check if both nodes are asked to store it
-    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
-    // #fulldht
-    assert!(result_a.is_some());
-    log_i!("got HandleStoreMeta on node A: {:?}", result_a);
-    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
-    assert!(result_b.is_some());
-    log_i!("got HandleStoreMeta on node B: {:?}", result_b);
-
-    // Billy asks for that metadata on the network.
-    let fetch_meta = billy.request_meta(address.clone(), META_LINK_ATTRIBUTE.to_string());
-
-    // Alex having that metadata, sends it to the network.
-    alex.reply_to_HandleFetchMeta(&fetch_meta)?;
-
-    // billy should receive the metadata it requested from the netowrk
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
-        .unwrap();
-    log_i!("got dht meta result: {:?}", result);
-    // Done
-    Ok(())
-}
+use holochain_persistence_api::cas::content::Address;
+use p2p_node::test_node::TestNode;
 
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
 pub fn setup_one_node(
-    alex: &mut P2pNode,
-    _billy: &mut P2pNode,
+    alex: &mut TestNode,
+    _billy: &mut TestNode,
+    dna_address: &Address,
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on both nodes
-    alex.track_dna().expect("Failed sending TrackDna on alex");
+    alex.track_dna(dna_address, true)
+        .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
 
@@ -104,7 +36,7 @@ pub fn setup_one_node(
         alex.send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on alex");
         let alex_state = alex
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
 
         one_let!(JsonProtocol::GetStateResult(state) = alex_state {
@@ -135,20 +67,24 @@ pub fn setup_one_node(
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
 pub fn setup_two_nodes(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    dna_address: &Address,
     can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on both nodes
-    alex.track_dna().expect("Failed sending TrackDna on alex");
+    alex.track_dna(dna_address, true)
+        .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
-    billy.track_dna().expect("Failed sending TrackDna on billy");
+    billy
+        .track_dna(dna_address, true)
+        .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
-        .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
     log_i!("self connected result 2: {:?}", connect_result_2);
 
@@ -160,13 +96,13 @@ pub fn setup_two_nodes(
         alex.send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on alex");
         let alex_state = alex
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
         billy
             .send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on billy");
         let billy_state = billy
-            .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
 
         one_let!(JsonProtocol::GetStateResult(state) = alex_state {
@@ -189,18 +125,18 @@ pub fn setup_two_nodes(
 
         // Make sure Peers are connected
         let result_a = alex
-            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
             .unwrap();
         log_i!("got connect result A: {:?}", result_a);
         one_let!(JsonProtocol::PeerConnected(d) = result_a {
-            assert_eq!(d.agent_id, BILLY_AGENT_ID);
+            assert_eq!(d.agent_id, *BILLY_AGENT_ID);
         });
         let result_b = billy
-            .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+            .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
             .unwrap();
         log_i!("got connect result B: {:?}", result_b);
         one_let!(JsonProtocol::PeerConnected(d) = result_b {
-            assert_eq!(d.agent_id, ALEX_AGENT_ID);
+            assert_eq!(d.agent_id, *ALEX_AGENT_ID);
         });
     }
 
@@ -223,33 +159,34 @@ pub fn setup_two_nodes(
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
     // Setup
-    println!("Testing: send_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Send a message from alex to billy
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_1.clone());
 
     // Check if billy received it
     let res = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
         JsonProtocol::HandleSendMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!("{\"ry\":\"hello\"}".to_string(), msg.content.to_string());
+    assert_eq!(ASPECT_CONTENT_1.to_owned(), msg.content);
 
     // Send a message back from billy to alex
-    billy.send_reponse(
+    billy.send_reponse_json(
         msg.clone(),
-        json!(format!("echo: {}", msg.content.to_string())),
+        format!("echo: {}", std::str::from_utf8(&msg.content).unwrap())
+            .as_bytes()
+            .to_vec(),
     );
     // Check if alex received it
     let res = alex
-        .wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -257,8 +194,8 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         _ => unreachable!(),
     };
     assert_eq!(
-        "\"echo: {\\\"ry\\\":\\\"hello\\\"}\"".to_string(),
-        msg.content.to_string()
+        "echo: hello-1".to_string(),
+        std::str::from_utf8(&msg.content).unwrap(),
     );
 
     // Done
@@ -267,160 +204,200 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
     // Setup
-    println!("Testing: meta_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
-    // Send data & metadata on same address
-    confirm_published_data(alex, billy, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1)?;
-    confirm_published_metadata(
-        alex,
-        billy,
-        &ENTRY_ADDRESS_1,
-        META_LINK_ATTRIBUTE,
-        &META_LINK_CONTENT_1,
-    )?;
-    log_i!("confirm_published_metadata(ENTRY_ADDRESS_1) COMPLETE");
+    // Alex publish data on the network
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
 
-    // Again but now send metadata first
-    confirm_published_metadata(
-        alex,
-        billy,
-        &ENTRY_ADDRESS_2,
-        META_LINK_ATTRIBUTE,
-        &META_LINK_CONTENT_2,
-    )?;
-    confirm_published_data(alex, billy, &ENTRY_ADDRESS_2, &ENTRY_CONTENT_2)?;
-    log_i!("confirm_published_metadata(ENTRY_ADDRESS_2) COMPLETE");
+    // #fullsync
+    // Alex should receive the data
+    let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    assert!(result_a.is_some());
+    log_i!("got HandleStoreEntryAspect on node A: {:?}", result_a);
+    // Gossip should ask Alex for the data
+    let maybe_fetch_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
+    if let Some(fetch_a) = maybe_fetch_a {
+        let fetch = unwrap_to!(fetch_a => JsonProtocol::HandleFetchEntry);
+        let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
+    }
+    // #fullsync
+    // Billy should receive the data
+    let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    assert!(result_b.is_some());
+    log_i!("got HandleStoreEntryAspect on node B: {:?}", result_b);
 
-    // Again but 'wait' at the end
-    // Alex publishs data & meta on the network
-    alex.author_entry(&ENTRY_ADDRESS_3, &ENTRY_CONTENT_3, true)?;
-    alex.author_meta(
-        &ENTRY_ADDRESS_3,
-        &META_LINK_ATTRIBUTE.to_string(),
-        &META_LINK_CONTENT_3,
-        true,
-    )?;
+    // Billy asks for that data
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
-    // wait for gossip
-    // Check if billy is asked to store it
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    // #fulldht
-    assert!(result.is_some());
-    log_i!("Billy got HandleStoreEntry: {:?}", result);
+    // #fullsync
+    // Billy sends that data back to the network
+    let _ = billy.reply_to_HandleQueryEntry(&query_data).unwrap();
 
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
-    assert!(result.is_some());
-    log_i!("Billy got HandleStoreEntry: {:?}", result);
-
-    // Billy sends FetchEntry message
-    let fetch_data = billy.request_entry(ENTRY_ADDRESS_3.clone());
-    // Billy sends HandleFetchEntryResult message
-    alex.reply_to_HandleFetchEntry(&fetch_data)?;
-    // Billy sends FetchMeta message
-    let fetch_meta = billy.request_meta(ENTRY_ADDRESS_3.clone(), META_LINK_ATTRIBUTE.to_string());
-    // Alex sends HandleFetchMetaResult message
-    alex.reply_to_HandleFetchMeta(&fetch_meta)?;
-    // billy should receive requested metadata
+    // Billy should receive requested data
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
         .unwrap();
-    log_i!("got GetMetaResult: {:?}", result);
-    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
-    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_3.clone());
-    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
-    assert_eq!(meta_data.content_list.len(), 1);
-    assert_eq!(meta_data.content_list[0], META_LINK_CONTENT_3.clone());
+    log_i!("got QueryEntryResult: {:?}\n\n\n\n", result);
+
+    // Billy asks for unknown data
+    let query_data = billy.request_entry(ENTRY_ADDRESS_2.clone());
+
+    // #fullsync
+    // Billy sends that data back to the network
+    let res = billy.reply_to_HandleQueryEntry(&query_data);
+    assert!(res.is_err());
+    // Billy should receive FailureResult
+    let result = billy
+        .wait_json(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .unwrap();
+    log_i!("got FailureResult: {:?}", result);
+    let gen_res = unwrap_to!(result => JsonProtocol::FailureResult);
+    log_i!(
+        "Failure result_info: {}",
+        std::str::from_utf8(&gen_res.result_info).unwrap()
+    );
+    assert_eq!(res.err().unwrap(), *gen_res);
+
     // Done
     Ok(())
 }
 
-// this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn dht_two_aspects_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
-    println!("Testing: dht_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Alex publish data on the network
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_entry(
+        &ENTRY_ADDRESS_1,
+        vec![ASPECT_CONTENT_1.clone(), ASPECT_CONTENT_2.clone()],
+        true,
+    )?;
 
     // Check if both nodes are asked to store it
-    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
-    // #fulldht
+    let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    // #fullsync
     assert!(result_a.is_some());
-    log_i!("got HandleStoreEntry on node A: {:?}", result_a);
-
-    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    let json = result_a.unwrap();
+    log_i!("got HandleStoreEntryAspect on node A: {:?}", json);
+    let store_data_1 = unwrap_to!(json => JsonProtocol::HandleStoreEntryAspect);
+    assert_eq!(store_data_1.entry_address, ENTRY_ADDRESS_1.clone());
+    assert!(
+        store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_1
+            || store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_2
+    );
+    assert!(
+        store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1
+            || store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
+    );
+    // 2nd store
+    let result_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    assert!(result_a.is_some());
+    let json = result_a.unwrap();
+    log_i!("got 2nd HandleStoreEntryAspect on node A: {:?}", json);
+    let store_data_2 = unwrap_to!(json => JsonProtocol::HandleStoreEntryAspect);
+    assert_ne!(store_data_1, store_data_2);
+    assert_eq!(store_data_2.entry_address, ENTRY_ADDRESS_1.clone());
+    assert!(
+        store_data_2.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_1
+            || store_data_2.entry_aspect.aspect_address.clone() == *ASPECT_ADDRESS_2
+    );
+    assert!(
+        store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1
+            || store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
+    );
+    // Gossip might ask us for the data
+    let maybe_fetch_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
+    if let Some(fetch_a) = maybe_fetch_a {
+        let fetch = unwrap_to!(fetch_a => JsonProtocol::HandleFetchEntry);
+        let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
+    }
+    // #fullsync
+    // also check aspects on billy?
+    let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
     assert!(result_b.is_some());
-    log_i!("got HandleStoreEntry on node B: {:?}", result_b);
+    log_i!("got HandleStoreEntryAspect on node B: {:?}", result_b);
+    let result_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    assert!(result_b.is_some());
+    log_i!("got 2nd HandleStoreEntryAspect on node B: {:?}", result_b);
 
     // Billy asks for that data
-    let fetch_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
-    // Alex sends that data back to the network
-    alex.reply_to_HandleFetchEntry(&fetch_data)?;
+    // #fullsync
+    // Billy sends that data back to the network
+    let _ = billy.reply_to_HandleQueryEntry(&query_data).unwrap();
 
     // Billy should receive requested data
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
         .unwrap();
-    log_i!("got FetchEntryResult: {:?}", result);
-
-    // Billy asks for unknown data
-    let fetch_data = billy.request_entry(ENTRY_ADDRESS_2.clone());
-
-    // Alex sends that data back to the network
-    alex.reply_to_HandleFetchEntry(&fetch_data)?;
-
-    // Billy should receive FailureResult
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
-        .unwrap();
-    log_i!("got FailureResult: {:?}", result);
-
+    log_i!("got QueryEntryResult: {:?}", result);
+    let query_data = unwrap_to!(result => JsonProtocol::QueryEntryResult);
+    let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
+    log_i!("got query_result: {:?}", query_result);
+    assert_eq!(query_data.entry_address, ENTRY_ADDRESS_1.clone());
+    assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
+    assert_eq!(query_result.aspect_list.len(), 2);
+    assert!(
+        query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_1
+            || query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_2
+    );
     // Done
     Ok(())
 }
 
 /// Sending a Message before doing a 'TrackDna' should fail
-pub fn no_setup_test(alex: &mut P2pNode, billy: &mut P2pNode, _connect: bool) -> NetResult<()> {
+pub fn no_setup_test(alex: &mut TestNode, billy: &mut TestNode, _connect: bool) -> NetResult<()> {
+    // Little dance for making alex have its current_dna set to DNA_ADDRESS_A
+    alex.track_dna(&DNA_ADDRESS_A, true)
+        .expect("Failed sending TrackDna message on alex");
+    alex.untrack_current_dna()
+        .expect("Failed sending UntrackDna message on alex");
+    alex.set_current_dna(&DNA_ADDRESS_A);
+
     // Send a message from alex to billy
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_1.clone());
 
     // Alex should receive a FailureResult
-    let _res = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 500);
+    let _res = alex.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::FailureResult(_))), 500);
     // in-memory can't send a failure result back
     // assert!(_res.is_some());
 
     // Billy should not receive anything
-    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res =
+        billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
     Ok(())
 }
 
 /// Sending a Message before doing a 'TrackDna' should fail
 pub fn untrack_alex_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: untrack_alex_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Send Untrack
-    alex.untrack_dna()
+    alex.untrack_current_dna()
         .expect("Failed sending UntrackDna message on alex");
+    alex.set_current_dna(&DNA_ADDRESS_A);
 
     // Send a message from alex to billy
     let before_count = alex.count_recv_json_messages();
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_1.clone());
 
     // Billy should not receive it.
-    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res =
+        billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
     // Alex should also not receive anything back
     assert_eq!(before_count, alex.count_recv_json_messages());
@@ -431,17 +408,16 @@ pub fn untrack_alex_test(
 
 /// Sending a Message before doing a 'TrackDna' should fail
 pub fn untrack_billy_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: untrack_billy_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Send Untrack
     billy
-        .untrack_dna()
+        .untrack_current_dna()
         .expect("Failed sending UntrackDna message on alex");
 
     // Making sure Untrack has been received
@@ -450,16 +426,19 @@ pub fn untrack_billy_test(
     billy.listen(1000);
 
     // Send a message from alex to billy
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_1.clone());
+
+    log_i!("waiting for FailureResult...");
 
     // Alex should receive FailureResult
     let result = alex
-        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
     log_i!("got FailureResult: {:?}", result);
 
     // Billy should not receive it.
-    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
+    let res =
+        billy.wait_json_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
 
     // Done
@@ -467,18 +446,17 @@ pub fn untrack_billy_test(
 }
 
 /// Sending a Message before doing a 'TrackDna' should fail
-pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -> NetResult<()> {
     // Setup
-    println!("Testing: untrack_billy_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
     // Billy untracks DNA
     billy
-        .untrack_dna()
+        .untrack_current_dna()
         .expect("Failed sending UntrackDna message on billy");
 
     // Alex untracks DNA
-    alex.untrack_dna()
+    alex.untrack_current_dna()
         .expect("Failed sending UntrackDna message on alex");
 
     // Making sure Untrack has been received
@@ -487,9 +465,12 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
     billy.listen(100);
 
     // Billy re-tracks DNA
-    billy.track_dna().expect("Failed sending TrackDna on billy");
+    billy
+        .track_dna(&DNA_ADDRESS_A, true)
+        .expect("Failed sending TrackDna on billy");
     // alex re-tracks DNA
-    alex.track_dna().expect("Failed sending TrackDna on alex");
+    alex.track_dna(&DNA_ADDRESS_A, true)
+        .expect("Failed sending TrackDna on alex");
 
     // Making sure Track has been received
     // TODO: Have server reply with successResult
@@ -499,27 +480,32 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
     log_i!("Alternate setup COMPLETE");
 
     // Send a message from alex to billy
-    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+    alex.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_1.clone());
 
     // Check if billy received it
     let res = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
         JsonProtocol::HandleSendMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!("{\"ry\":\"hello\"}".to_string(), msg.content.to_string());
+    assert_eq!(
+        "hello-1".to_string(),
+        std::str::from_utf8(&msg.content).unwrap()
+    );
 
     // Send a message back from billy to alex
-    billy.send_reponse(
+    billy.send_reponse_json(
         msg.clone(),
-        json!(format!("echo: {}", msg.content.to_string())),
+        format!("echo: {}", std::str::from_utf8(&msg.content).unwrap())
+            .as_bytes()
+            .to_vec(),
     );
     // Check if alex received it
     let res = alex
-        .wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -527,88 +513,133 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
         _ => unreachable!(),
     };
     assert_eq!(
-        "\"echo: {\\\"ry\\\":\\\"hello\\\"}\"".to_string(),
-        msg.content.to_string()
+        "echo: hello-1".to_string(),
+        std::str::from_utf8(&msg.content).unwrap(),
     );
 
     // Done
     Ok(())
 }
 
+/// Send Protocol::Shutdown
+pub fn shutdown_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    can_connect: bool,
+) -> NetResult<()> {
+    // Setup
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
+    assert_eq!(alex.is_network_ready(), true);
+
+    // Do something
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
+    let _ = billy.listen(200);
+    let _ = alex.listen(200);
+
+    // kill alex manually
+    alex.send(Protocol::Shutdown.into())?;
+
+    // alex should receive 'Terminated' which should set `is_network_ready` to false
+    let _ = alex.wait_json_with_timeout(Box::new(|_| true), 200);
+    assert_eq!(alex.is_network_ready(), false);
+
+    // Done
+    Ok(())
+}
+
+/// Entry with no Aspect case: Should no-op
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-pub fn no_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn no_aspect_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
 
-    // No Meta & No Entry
-    // ==================
-    // Billy asks for missing metadata on the network.
-    let fetch_meta = billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.to_string());
-
-    // Alex sends that data back to the network
-    alex.reply_to_HandleFetchMeta(&fetch_meta)?;
-
-    // Billy should receive an empty list
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
-        .unwrap();
-
-    log_i!("got GetMetaResult: {:?}", result);
-    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
-    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
-    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
-    assert_eq!(meta_data.content_list.len(), 0);
-
-    // Entry but no Meta
-    // =================
-    // Alex publish data on the network
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    // Alex publish Entry but no Aspect on the network
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![], true)?;
 
     // Billy asks for missing metadata on the network.
-    let fetch_meta = billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.to_string());
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
     // Alex sends that data back to the network
-    alex.reply_to_HandleFetchMeta(&fetch_meta)?;
+    let res = alex.reply_to_HandleQueryEntry(&query_data);
+    log_i!("alex responds with: {:?}", res);
+    let info = std::string::String::from_utf8_lossy(&res.err().unwrap().result_info).into_owned();
+    log_i!("got result_info: {}", info);
+    assert_eq!(info, "No entry found");
+    // Done
+    Ok(())
+}
 
-    // Billy should receive an empty list
+// this is all debug code, no need to track code test coverage
+#[cfg_attr(tarpaulin, skip)]
+pub fn two_authors_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    can_connect: bool,
+) -> NetResult<()> {
+    // Setup
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
+
+    // Again but 'wait' at the end
+    // Alex publishs data & meta on the network
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
+    // #fullsync
+    let _ = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    // wait for broadcast
+    // Gossip might ask us for the data
+    let maybe_fetch_a = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
+    if let Some(fetch_a) = maybe_fetch_a {
+        let fetch = unwrap_to!(fetch_a => JsonProtocol::HandleFetchEntry);
+        let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
+    }
+    // Check if billy is asked to store it
+    let result = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    assert!(result.is_some());
+    log_i!("Billy got HandleStoreEntryAspect: {:?}", result.unwrap());
+
+    // Billy authors second aspect
+    billy.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_2.clone()], true)?;
+    // #fullsync
+    let _ = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    // Gossip might ask us for the data
+    let maybe_fetch_b = billy.wait_json(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
+    if let Some(fetch_b) = maybe_fetch_b {
+        let fetch = unwrap_to!(fetch_b => JsonProtocol::HandleFetchEntry);
+        let _ = billy.reply_to_HandleFetchEntry(&fetch).unwrap();
+    }
+    // wait for gossip / broadcast
+    // Check if billy is asked to store it
+    let result = alex.wait_json(Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))));
+    // #fullsync
+    assert!(result.is_some());
+    log_i!("Alex got HandleStoreEntryAspect: {:?}", result.unwrap());
+
+    // Billy asks for that data
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+
+    // #fullsync
+    // Billy sends that data back to the network
+    let _ = billy.reply_to_HandleQueryEntry(&query_data).unwrap();
+
+    // Billy should receive requested data
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
         .unwrap();
-
-    log_i!("got GetMetaResult: {:?}", result);
-    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
-    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
-    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
-    assert_eq!(meta_data.content_list.len(), 0);
-
-    // Meta but no Entry
-    // =================
-    // Alex publish data on the network
-    alex.author_meta(
-        &ENTRY_ADDRESS_2,
-        &META_LINK_ATTRIBUTE.to_string(),
-        &META_LINK_CONTENT_2,
-        true,
-    )?;
-
-    // Billy asks for metadata on the network.
-    let fetch_meta = billy.request_meta(ENTRY_ADDRESS_2.clone(), META_LINK_ATTRIBUTE.to_string());
-
-    // Alex sends that data back to the network
-    alex.reply_to_HandleFetchMeta(&fetch_meta)?;
-
-    // Billy should receive meta
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
-        .unwrap();
-
-    log_i!("got GetMetaResult: {:?}", result);
-    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
-    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_2.clone());
-    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
-    assert_eq!(meta_data.content_list.len(), 1);
-    assert_eq!(meta_data.content_list[0], META_LINK_CONTENT_2.clone());
+    log_i!("got QueryEntryResult: {:?}", result);
+    let query_data = unwrap_to!(result => JsonProtocol::QueryEntryResult);
+    let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
+    log_i!("got query_result: {:?}", query_result);
+    assert_eq!(query_data.entry_address, ENTRY_ADDRESS_1.clone());
+    assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
+    assert_eq!(query_result.aspect_list.len(), 2);
+    assert!(
+        query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_1
+            || query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_2
+    );
     // Done
     Ok(())
 }

@@ -1,5 +1,6 @@
 use crate::{
     action::ActionWrapper,
+    conductor_api::ConductorApi,
     instance::Observer,
     logger::Logger,
     nucleus::actions::get_entry::get_entry_from_cas,
@@ -11,14 +12,19 @@ use futures::{
     task::{noop_local_waker_ref, Poll},
     Future,
 };
-use holochain_core_types::{
-    agent::AgentId,
+
+use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
-    dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
+};
+
+use holochain_core_types::{
+    agent::AgentId,
+    dna::{wasm::DnaWasm, Dna},
+    eav::Attribute,
     entry::{
         cap_entries::{CapabilityType, ReservedCapabilityId},
         entry_type::EntryType,
@@ -28,8 +34,6 @@ use holochain_core_types::{
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};
-use jsonrpc_lite::JsonRpc;
-use snowflake::ProcessUniqueId;
 use std::{
     sync::{
         mpsc::{channel, Receiver, SyncSender},
@@ -55,10 +59,10 @@ pub struct Context {
     pub observer_channel: Option<SyncSender<Observer>>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
-    pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+    pub eav_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
     pub p2p_config: P2pConfig,
-    pub conductor_api: Arc<RwLock<IoHandler>>,
-    signal_tx: Option<crossbeam_channel::Sender<Signal>>,
+    pub conductor_api: ConductorApi,
+    pub(crate) signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
 impl Context {
@@ -96,7 +100,7 @@ impl Context {
         persister: Arc<Mutex<Persister>>,
         chain_storage: Arc<RwLock<ContentAddressableStorage>>,
         dht_storage: Arc<RwLock<ContentAddressableStorage>>,
-        eav: Arc<RwLock<EntityAttributeValueStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
@@ -113,7 +117,10 @@ impl Context {
             dht_storage,
             eav_storage: eav,
             p2p_config,
-            conductor_api: Self::test_check_conductor_api(conductor_api, agent_id),
+            conductor_api: ConductorApi::new(Self::test_check_conductor_api(
+                conductor_api,
+                agent_id,
+            )),
         }
     }
 
@@ -125,7 +132,7 @@ impl Context {
         signal_tx: Option<crossbeam_channel::Sender<Signal>>,
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
-        eav: Arc<RwLock<EntityAttributeValueStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
@@ -140,7 +147,7 @@ impl Context {
             dht_storage: cas,
             eav_storage: eav,
             p2p_config,
-            conductor_api: Self::test_check_conductor_api(None, agent_id),
+            conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
         })
     }
 
@@ -249,29 +256,7 @@ impl Context {
     }
 
     pub fn sign(&self, payload: String) -> Result<String, HolochainError> {
-        let handler = self.conductor_api.write().unwrap();
-        let request = format!(
-            r#"{{"jsonrpc": "2.0", "method": "agent/sign", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
-            payload, ProcessUniqueId::new()
-        );
-
-        let response = handler
-            .handle_request_sync(&request)
-            .ok_or("Conductor sign call failed".to_string())?;
-
-        let response = JsonRpc::parse(&response)?;
-
-        match response {
-            JsonRpc::Success(_) => Ok(String::from(
-                response.get_result().unwrap()["signature"]
-                    .as_str()
-                    .unwrap(),
-            )),
-            JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
-                serde_json::to_string(&response.get_error().unwrap()).unwrap(),
-            )),
-            _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
-        }
+        self.conductor_api.sign(payload)
     }
 
     /// returns the public capability token (if any)
@@ -316,8 +301,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
         .state()
         .ok_or("Network::start() could not get application state".to_string())?;
     let agent_state = state.agent();
-
-    let agent = await!(agent_state.get_agent(&context))?;
+    let agent = agent_state.get_agent()?;
     let agent_id = agent.pub_sign_key;
 
     let dna = state
@@ -345,8 +329,8 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};
-    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;
+    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 

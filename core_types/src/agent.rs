@@ -1,11 +1,12 @@
-use crate::{
-    cas::content::{Address, AddressableContent, Content},
-    entry::Entry,
-    error::HcResult,
+use crate::{entry::Entry, error::HcResult};
+
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
+
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
     json::JsonString,
 };
 
-use crate::error::HolochainError;
 use std::{convert::TryFrom, str};
 
 use hcid::*;
@@ -40,7 +41,7 @@ impl AgentId {
 
     /// initialize an Agent struct with `nick` and `key` that will be encoded with HCID.
     pub fn new_with_raw_key(nick: &str, key: &str) -> HcResult<Self> {
-        let codec = with_hcs0()?;
+        let codec = HcidEncoding::with_kind("hcs0")?;
         let key_b32 = codec.encode(key.as_bytes())?;
         Ok(AgentId::new(nick, key_b32))
     }
@@ -55,7 +56,7 @@ impl AgentId {
 
     /// Get the key decoded with HCID
     pub fn decoded_key(&self) -> HcResult<String> {
-        let codec = with_hcs0()?;
+        let codec = HcidEncoding::with_kind("hcs0")?;
         let key_b32 = codec.decode(&self.pub_sign_key)?;
         Ok(str::from_utf8(&key_b32).unwrap().to_owned())
     }
@@ -73,10 +74,10 @@ impl AddressableContent for AgentId {
     }
 
     // build from entry content
-    fn try_from_content(content: &Content) -> HcResult<Self> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         match Entry::try_from(content)? {
             Entry::AgentId(agent_id) => Ok(agent_id),
-            _ => Err(HolochainError::SerializationError(
+            _ => Err(JsonError::SerializationError(
                 "Attempted to load AgentId from non AgentID entry".into(),
             )),
         }
@@ -91,6 +92,10 @@ pub static TOO_BAD_ID: &'static str =
 
 pub fn test_agent_id() -> AgentId {
     AgentId::new("bob", GOOD_ID.to_string())
+}
+
+pub fn test_agent_id_with_name(name: &str) -> AgentId {
+    AgentId::new(name, name.to_string())
 }
 
 #[cfg(test)]

@@ -1,7 +1,9 @@
 pub mod actions;
 pub mod direct_message;
+pub mod entry_aspect;
 pub mod entry_with_header;
 pub mod handler;
+pub mod query;
 pub mod reducers;
 pub mod state;
 #[cfg(test)]
@@ -22,12 +24,14 @@ pub mod tests {
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
+        agent::test_agent_id,
+        chain_header::test_chain_header,
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
-        json::JsonString,
         link::link_data::LinkData,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use test_utils::*;
 
     // TODO: Should wait for a success or saturation response from the network module after Publish
@@ -199,7 +203,7 @@ pub mod tests {
 
         let entry = test_entry();
         context1
-            .block_on(author_entry(&entry, None, &context1))
+            .block_on(author_entry(&entry, None, &context1, &vec![]))
             .expect("Could not author entry");
 
         let agent1_state = context1.state().unwrap().agent();
@@ -246,8 +250,22 @@ pub mod tests {
             entry_addresses.push(address);
         }
 
-        let link1 = LinkData::new_add(&entry_addresses[0], &entry_addresses[1], "test-tag");
-        let link2 = LinkData::new_add(&entry_addresses[0], &entry_addresses[2], "test-tag");
+        let link1 = LinkData::new_add(
+            &entry_addresses[0],
+            &entry_addresses[1],
+            "test-tag",
+            "test-link",
+            test_chain_header(),
+            test_agent_id(),
+        );
+        let link2 = LinkData::new_add(
+            &entry_addresses[0],
+            &entry_addresses[2],
+            "test-tag",
+            "test-link",
+            test_chain_header(),
+            test_agent_id(),
+        );
 
         // Store link1 on the network
         println!("\n add_link(link1) ...");
@@ -272,7 +290,8 @@ pub mod tests {
         let maybe_links = context2.block_on(get_links(
             context2.clone(),
             entry_addresses[0].clone(),
-            String::from("test-tag"),
+            "test-link".into(),
+            "test-tag".into(),
             Default::default(),
         ));
 
@@ -281,8 +300,10 @@ pub mod tests {
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order
         assert!(
-            (links[0] == entry_addresses[1] || links[0] == entry_addresses[2])
-                && (links[1] == entry_addresses[1] || links[1] == entry_addresses[2])
+            (links[0] == (entry_addresses[1].clone(), CrudStatus::Live)
+                || links[0] == (entry_addresses[2].clone(), CrudStatus::Live))
+                && (links[1] == (entry_addresses[1].clone(), CrudStatus::Live)
+                    || links[1] == (entry_addresses[2].clone(), CrudStatus::Live))
         );
     }
 }

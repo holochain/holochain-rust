@@ -8,10 +8,12 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::AddressableContent,
     entry::Entry,
     validation::{LinkValidationData, ValidationData},
 };
+
+use holochain_persistence_api::cas::content::AddressableContent;
+
 use holochain_wasm_utils::api_serialization::validation::LinkValidationArgs;
 use std::sync::Arc;
 
@@ -23,7 +25,7 @@ pub async fn validate_link_entry(
     let address = entry.address().clone();
     let link = match entry.clone() {
         Entry::LinkAdd(link_add) => link_add.clone(),
-        Entry::LinkRemove(link_remove) => link_remove,
+        Entry::LinkRemove((link_remove, _)) => link_remove,
         _ => {
             return Err(ValidationError::Error(
                 "Could not extract link_add from entry".into(),
@@ -39,7 +41,7 @@ pub async fn validate_link_entry(
 
     let link_definition_path = links_utils::find_link_definition_in_dna(
         &base.entry_type(),
-        link.tag(),
+        link.link_type(),
         &target.entry_type(),
         context,
     )
@@ -50,7 +52,7 @@ pub async fn validate_link_entry(
             link,
             validation_data,
         }),
-        Entry::LinkRemove(link) => Ok(LinkValidationData::LinkRemove {
+        Entry::LinkRemove((link, _)) => Ok(LinkValidationData::LinkRemove {
             link,
             validation_data,
         }),

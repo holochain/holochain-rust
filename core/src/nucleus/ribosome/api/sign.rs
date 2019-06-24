@@ -1,8 +1,9 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::{error::HcResult, json::JsonString, signature::Signature};
+use holochain_core_types::{error::HcResult, signature::Signature};
 use holochain_dpki::keypair::generate_random_sign_keypair;
-use holochain_sodium::secbuf::SecBuf;
+use holochain_json_api::json::JsonString;
 use holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignArgs, SignOneTimeResult};
+use lib3h_sodium::secbuf::SecBuf;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -91,8 +92,9 @@ mod test_super {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::{cas::content::Address, json::JsonString};
     use holochain_dpki::utils::verify;
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::Address;
 
     /// test that bytes passed to debug end up in the log
     #[test]

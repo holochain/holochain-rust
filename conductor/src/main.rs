@@ -17,15 +17,15 @@
 /// A custom config can be provided with the --config, -c flag.
 extern crate holochain_conductor_api;
 extern crate holochain_core_types;
-extern crate holochain_sodium;
+extern crate lib3h_sodium;
 extern crate structopt;
 
 use holochain_conductor_api::{
-    conductor::{mount_conductor_from_config, CONDUCTOR},
+    conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::error::HolochainError;
-use std::{fs::File, io::prelude::*, path::PathBuf, thread::sleep, time::Duration};
+use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc, thread::sleep, time::Duration};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -38,7 +38,7 @@ struct Opt {
 
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
-    holochain_sodium::check_init();
+    lib3h_sodium::check_init();
     let opt = Opt::from_args();
     let config_path = opt
         .config
@@ -80,7 +80,7 @@ fn main() {
 fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
-        .check_consistency()
+        .check_consistency(&mut Arc::new(Box::new(Conductor::load_dna)))
         .map_err(|string| HolochainError::ConfigError(string))?;
     mount_conductor_from_config(config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();

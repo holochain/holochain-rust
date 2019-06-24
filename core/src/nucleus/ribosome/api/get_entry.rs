@@ -43,7 +43,7 @@ pub mod tests {
             ribosome::{
                 self,
                 api::{
-                    commit::tests::test_commit_args_bytes,
+                    commit::tests::test_commit_entry_args_bytes,
                     tests::{test_parameters, test_zome_name},
                 },
                 runtime::WasmCallData,
@@ -53,13 +53,14 @@ pub mod tests {
         },
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         crud_status::CrudStatus,
         entry::{test_entry, EntryWithMeta},
         error::ZomeApiInternalResult,
-        json::JsonString,
     };
-    use holochain_wasm_utils::api_serialization::get_entry::*;
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
+    use holochain_wasm_utils::api_serialization::{commit_entry::CommitEntryResult, get_entry::*};
+
     use std::sync::Arc;
 
     /// dummy get args from standard test entry
@@ -213,7 +214,7 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            Some(test_commit_args_bytes()),
+            Some(test_commit_entry_args_bytes()),
             WasmCallData::new_zome_call(Arc::clone(&context), commit_call),
         )
         .expect("test should be callable");
@@ -222,7 +223,7 @@ pub mod tests {
             call_result,
             JsonString::from_json(
                 &(String::from(JsonString::from(ZomeApiInternalResult::success(
-                    test_entry().address()
+                    CommitEntryResult::new(test_entry().address())
                 ))) + "\u{0}")
             ),
         );

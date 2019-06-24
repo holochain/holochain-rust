@@ -1,5 +1,3 @@
-# https://www.appveyor.com/docs/enterprise/running-builds-on-aws/
-
 build_cloud: azure
 image: hc-azure
 
@@ -48,11 +46,6 @@ environment:
 
   - test_p: hc
     test_path: cli
-    wasm_path:
-    wasm_path_2:
-
-  - test_p: holochain_sodium
-    test_path: sodium
     wasm_path:
     wasm_path_2:
 

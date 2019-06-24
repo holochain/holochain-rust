@@ -1,10 +1,9 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
     nucleus::state::{NucleusState, PendingValidationKey},
+    state::State,
 };
-use holochain_core_types::cas::content::AddressableContent;
-use std::sync::Arc;
+use holochain_persistence_api::cas::content::AddressableContent;
 
 /// Reduce AddPendingValidation Action.
 /// Inserts boxed EntryWithHeader and dependencies into state, referenced with
@@ -12,8 +11,8 @@ use std::sync::Arc;
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 pub fn reduce_add_pending_validation(
-    _context: Arc<Context>,
     state: &mut NucleusState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -34,13 +33,17 @@ pub mod tests {
         network::entry_with_header::EntryWithHeader,
         nucleus::state::{tests::test_nucleus_state, PendingValidationKey},
         scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
+        state::test_store,
     };
-    use holochain_core_types::{chain_header::test_chain_header, entry::Entry, json::RawString};
+    use holochain_core_types::{chain_header::test_chain_header, entry::Entry};
+    use holochain_json_api::json::RawString;
+    use std::sync::Arc;
 
     #[test]
     fn test_reduce_add_pending_validation() {
         let context = test_context("jimmy", None);
         let mut state = test_nucleus_state();
+        let root_state = test_store(context);
 
         let entry = Entry::App("package_entry".into(), RawString::from("test value").into());
         let entry_with_header = EntryWithHeader {
@@ -56,7 +59,7 @@ pub mod tests {
             },
         )));
 
-        reduce_add_pending_validation(context, &mut state, &action_wrapper);
+        reduce_add_pending_validation(&mut state, &root_state, &action_wrapper);
 
         assert!(state
             .pending_validations

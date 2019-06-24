@@ -19,12 +19,17 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    entry::Entry,
-    error::{HolochainError, RibosomeEncodedValue},
-    json::{default_to_json, JsonString},
-    validation::ValidationPackageDefinition,
+    entry::Entry, error::RibosomeEncodedValue, validation::ValidationPackageDefinition,
 };
-use holochain_wasm_utils::memory::allocation::WasmAllocation;
+
+use holochain_json_api::{
+    error::JsonError,
+    json::{default_to_json, JsonString},
+};
+
+use holochain_wasm_utils::{
+    api_serialization::receive::ReceiveParams, memory::allocation::WasmAllocation,
+};
 use num_traits::FromPrimitive;
 use serde_json;
 use std::{convert::TryFrom, str::FromStr, sync::Arc};
@@ -42,7 +47,7 @@ pub enum Callback {
     /// genesis() -> bool
     Genesis,
 
-    /// receive(from: String, message: String) -> String
+    /// receive(from: Address, message: String) -> String
     Receive,
 }
 
@@ -106,7 +111,7 @@ impl Defn for Callback {
 pub enum CallbackParams {
     Genesis,
     ValidateCommit(Entry),
-    Receive(String),
+    Receive(ReceiveParams),
 }
 
 impl ToString for CallbackParams {
@@ -116,7 +121,7 @@ impl ToString for CallbackParams {
             CallbackParams::ValidateCommit(serialized_entry) => {
                 String::from(JsonString::from(serialized_entry.to_owned()))
             }
-            CallbackParams::Receive(payload) => payload.clone(),
+            CallbackParams::Receive(params) => JsonString::from(params).to_string(),
         }
     }
 }

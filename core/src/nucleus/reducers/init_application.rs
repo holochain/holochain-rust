@@ -1,9 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
     nucleus::state::{NucleusState, NucleusStatus},
+    state::State,
 };
-use std::sync::Arc;
 
 /// Reduce InitializeChain Action
 /// Switch status to failed if an initialization is tried for an
@@ -11,8 +10,8 @@ use std::sync::Arc;
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 pub fn reduce_initialize_chain(
-    _context: Arc<Context>,
     state: &mut NucleusState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     match state.status() {
@@ -45,6 +44,7 @@ pub mod tests {
             reduce,
             state::{NucleusState, NucleusStatus},
         },
+        state::test_store,
     };
     use holochain_core_types::dna::Dna;
     use std::sync::{mpsc::sync_channel, Arc};
@@ -58,9 +58,10 @@ pub mod tests {
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
         let context = test_context_with_channels("jimmy", &sender, &tx_observer, None);
+        let root_state = test_store(context);
 
         // Reduce Init action
-        let reduced_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
+        let reduced_nucleus = reduce(nucleus.clone(), &root_state, &action_wrapper);
 
         assert_eq!(reduced_nucleus.has_initialized(), false);
         assert_eq!(reduced_nucleus.has_initialization_failed(), false);

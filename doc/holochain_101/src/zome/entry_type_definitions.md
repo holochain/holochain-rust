@@ -107,7 +107,7 @@ entry!(
 )
 ```
 
-As mentioned above, sharing refers to whether entries of this type are private to their author, or whether they will be gossiped to other peers to hold copies of. The value must be referenced from an [enum in the HDK](/api/0.0.7-alpha/holochain_core_types/dna/entry_types/enum.Sharing.html). Holochain currently supports the first two values in the enum: Public, and Private.
+As mentioned above, sharing refers to whether entries of this type are private to their author, or whether they will be gossiped to other peers to hold copies of. The value must be referenced from an [enum in the HDK](/api/0.0.18-alpha1/holochain_core_types/dna/entry_types/enum.Sharing.html). Holochain currently supports the first two values in the enum: Public, and Private.
 
 ---
 
@@ -119,7 +119,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_persistence_derive;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 struct Post {
@@ -152,7 +152,7 @@ Every struct used as a `native_type` reference should include all 4 derives, as 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 ```
 
-`Serialize` and `Deserialize` come from `serde_derive`, and `DefaultJson` comes from `holochain_core_types_derive`.
+`Serialize` and `Deserialize` come from `serde_derive`, and `DefaultJson` comes from `holochain_persistence_derive`.
 
 Then there is the struct itself. This is the real type definition, because it defines the schema. It is simply a list of property names, the 'keys', and the types of values expected, which should be set to one of the primitive types of the language. This will tell `serde` how to parse JSON string inputs into the type. Note that conversion from JSON strings into the struct type can easily fail, in particular if the proper keys are not present on the input.
 
@@ -174,7 +174,7 @@ entry!(
 
 At the moment, what `validation_package` is will not be covered in great detail. In short, for a peer to perform validation of an entry from another peer, varying degrees of metadata from the original author of the entry might be needed. `validation_package` refers to the carrier for that extra metadata.
 
-Looking at the above code, there is a required import from the HDK needed for use in `validation_package`, and that's the enum `ValidationPackageDefinition`. The value of `validation_package` is a function that takes no arguments. It will be called as a callback by Holochain. The result should be a value from the `ValidationPackageDefinition` enum, whose values can be [seen here](https://developer.holochain.org/api/0.0.7-alpha/hdk/enum.ValidationPackageDefinition.html). In the example, and as the most basic option, simply use `Entry`, which means no extra metadata beyond the entry itself is needed.
+Looking at the above code, there is a required import from the HDK needed for use in `validation_package`, and that's the enum `ValidationPackageDefinition`. The value of `validation_package` is a function that takes no arguments. It will be called as a callback by Holochain. The result should be a value from the `ValidationPackageDefinition` enum, whose values can be [seen here](https://developer.holochain.org/api/0.0.18-alpha1/hdk/enum.ValidationPackageDefinition.html). In the example, and as the most basic option, simply use `Entry`, which means no extra metadata beyond the entry itself is needed.
 
 Further reading is [here](./entry_validation.md).
 
@@ -236,7 +236,7 @@ define_zome! {
             name: "post",
             description: "A blog post entry which has an author",
             sharing: Sharing::Public,
-   
+
             validation_package: || {
                 ValidationPackageDefinition::Entry
             },
@@ -292,7 +292,7 @@ define_zome! {
 
 Use of this technique can help you write clean, modular code.
 
-If you want to look closely at a complete example of the use of `entry!` in a Zome, check out the [API reference](https://developer.holochain.org/api/0.0.7-alpha/hdk/macro.entry.html), or the ["app-spec" example app](https://github.com/holochain/holochain-rust/blob/v0.0.4/app_spec/zomes/blog/code/src/post.rs).
+If you want to look closely at a complete example of the use of `entry!` in a Zome, check out the [API reference](https://developer.holochain.org/api/0.0.18-alpha1/hdk/macro.entry.html), or the ["app-spec" example app](https://github.com/holochain/holochain-rust/blob/v0.0.4/app_spec/zomes/blog/code/src/post.rs).
 
 #### Summary
 This is still a pretty minimal Zome, since it doesn't have any functions yet, and the most basic `genesis` behaviour, so read on to learn about how to work with those aspects of `define_zome!`.

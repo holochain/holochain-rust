@@ -64,11 +64,13 @@ If this code was run in nodejs, the output should be:
 ### Calling Zome Functions
 The following discusses how to use `rpc-websockets` to make calls to Zome functions.
 
-To use as the JSON-RPC "method" the instance ID (as seen in the `info/instances` example), the Zome name, and the function name are combined into a single string, separated by forward slash (`/`) characters. It could look like the following:
-`'test-instance/blogs/create_blog'`
+The JSON-RPC "method" to use is simply "call".
 
-A JSON object is constructed to give arguments. It could look like the following:
-`{ blog: { content: 'sample content' }}`
+The instance ID (as seen in the `info/instances` example), the Zome name, and the function name all need to be given as values in the "params" value of the JSON-RPC, in addition to the arguments to pass that function. This part of the "params" object might look like this:
+`{"instance_id": "test-instance", "zome": "blog", "function": "create_post"}`
+
+ Unlike `info/instances`, Zome functions usually expect arguments. To give arguments, a JSON object should be constructed, and given as `"args"` key of the "params" value. It may look like the following:
+`{ blog: { content: "sample content" }}`
 
 The following code shows how to use `rpc-websockets` to call Zome functions.
 ```js

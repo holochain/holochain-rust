@@ -1,4 +1,4 @@
-use holochain_core_types::{error::HolochainError, json::*};
+use holochain_json_api::{error::JsonError, json::*};
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Hash, Debug, Serialize, DefaultJson)]
 pub struct KeystoreListResult {
@@ -40,4 +40,9 @@ pub struct KeystoreDeriveKeyArgs {
 pub struct KeystoreSignArgs {
     pub src_id: String,
     pub payload: String,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Hash, Debug, Serialize, DefaultJson)]
+pub struct KeystoreGetPublicKeyArgs {
+    pub src_id: String,
 }

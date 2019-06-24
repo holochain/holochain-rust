@@ -1,21 +1,26 @@
 #![feature(try_from)]
 extern crate holochain_core_types;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 #[macro_use]
 extern crate serde_derive;
 extern crate holochain_wasm_utils;
 extern crate serde_json;
 
 use holochain_core_types::{
-    cas::content::Address,
     entry::Entry,
     error::{
-        HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
+        RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
         ZomeApiInternalResult,
     },
-    json::{JsonString, RawString},
+    signature::Provenance
 };
+
+use holochain_wasm_utils::{
+    holochain_persistence_api::cas::content::Address,
+    holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
+};
+
 use holochain_wasm_utils::memory::{
     ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
     stack::WasmStack,
@@ -127,13 +132,19 @@ fn hdk_commit(
     mem_stack: &mut WasmStack,
     entry_type_name: &str,
     entry_value: &'static str,
+    provenance: &Vec<Provenance>
 ) -> Result<Address, String> {
     // Put args in struct and serialize into memory
     let entry = Entry::App(
         entry_type_name.to_owned().into(),
         RawString::from(entry_value).into(),
     );
-    let allocation_of_input = mem_stack.write_json(entry)?;
+
+    let args = holochain_wasm_utils::api_serialization::commit_entry::CommitEntryArgs {
+        entry,
+        options:holochain_wasm_utils::api_serialization::commit_entry::CommitEntryOptions::new(provenance.to_vec())
+    };
+    let allocation_of_input = mem_stack.write_json(args)?;
 
     // Call WASMI-able commit
     let encoded_allocation_of_result =
@@ -220,7 +231,7 @@ pub extern "C" fn commit_test(
         Err(code) => return code.into(),
     };
 
-    let result = hdk_commit(&mut mem_stack, "testEntryType", "hello");
+    let result = hdk_commit(&mut mem_stack, "testEntryType", "hello", &vec![]);
 
     return_code_for_allocation_result(mem_stack.write_json(result)).into()
 }

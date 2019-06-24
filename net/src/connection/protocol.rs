@@ -2,9 +2,12 @@
 //! for communications between holochain core and the p2p / networking
 //! process or library. See json_protocol for a higher level interface.
 
+use failure::Error;
 use serde_bytes;
+use std::convert::TryFrom;
 
-use holochain_core_types::json::JsonString;
+use holochain_json_api::json::JsonString;
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 
 /// Low-level interface spec for communicating with the p2p abstraction
 /// notice this is not Serializable or Deserializable
@@ -17,12 +20,20 @@ pub enum Protocol {
     NamedBinary(NamedBinaryData),
     /// send/recv generic json as utf8 strings
     Json(JsonString),
+    /// send/recv Lib3hClientProtocol message
+    Lib3hClient(Lib3hClientProtocol),
+    /// send/recv Lib3hServerProtocol message
+    Lib3hServer(Lib3hServerProtocol),
     /// send/recv a Ping message (ipc protocol spec)
     Ping(PingData),
     /// send/recv a Pong message (ipc protocol spec)
     Pong(PongData),
     /// we have connected / configured the connection, ready for messages
     P2pReady,
+    /// Tell network module to shutdown
+    Shutdown,
+    /// Network module is notifying IPC connected peers of termination
+    Terminated,
 }
 
 /// provide utility for Protocol serialization
@@ -37,6 +48,14 @@ impl<'a> From<&'a Protocol> for NamedBinaryData {
                 name: b"json".to_vec(),
                 data: String::from(j).into_bytes(),
             },
+            Protocol::Lib3hClient(_h) => NamedBinaryData {
+                name: b"lib3hClient".to_vec(),
+                data: String::new().into_bytes(), // FIXME
+            },
+            Protocol::Lib3hServer(_h) => NamedBinaryData {
+                name: b"lib3hServer".to_vec(),
+                data: String::new().into_bytes(), // FIXME
+            },
             Protocol::Ping(p) => NamedBinaryData {
                 name: b"ping".to_vec(),
                 data: rmp_serde::to_vec_named(p).unwrap(),
@@ -47,6 +66,14 @@ impl<'a> From<&'a Protocol> for NamedBinaryData {
             },
             Protocol::P2pReady => NamedBinaryData {
                 name: b"p2pReady".to_vec(),
+                data: Vec::new(),
+            },
+            Protocol::Shutdown => NamedBinaryData {
+                name: b"shutdown".to_vec(),
+                data: Vec::new(),
+            },
+            Protocol::Terminated => NamedBinaryData {
+                name: b"terminated".to_vec(),
                 data: Vec::new(),
             },
         }
@@ -79,6 +106,8 @@ impl<'a> From<&'a NamedBinaryData> for Protocol {
                 Protocol::Pong(sub)
             }
             b"p2pReady" => Protocol::P2pReady,
+            b"shutdown" => Protocol::Shutdown,
+            b"terminated" => Protocol::Terminated,
             _ => panic!("bad Protocol type: {}", String::from_utf8_lossy(&nb.name)),
         }
     }
@@ -99,6 +128,65 @@ impl<'a> From<&'a str> for Protocol {
 impl From<String> for Protocol {
     fn from(s: String) -> Self {
         s.as_str().into()
+    }
+}
+
+impl<'a> From<&'a Lib3hClientProtocol> for Protocol {
+    fn from(w: &Lib3hClientProtocol) -> Self {
+        Protocol::Lib3hClient(w.clone())
+    }
+}
+
+impl From<Lib3hClientProtocol> for Protocol {
+    fn from(w: Lib3hClientProtocol) -> Self {
+        Protocol::Lib3hClient(w)
+    }
+}
+
+impl<'a> From<&'a Lib3hServerProtocol> for Protocol {
+    fn from(w: &Lib3hServerProtocol) -> Self {
+        Protocol::Lib3hServer(w.clone())
+    }
+}
+
+impl From<Lib3hServerProtocol> for Protocol {
+    fn from(w: Lib3hServerProtocol) -> Self {
+        Protocol::Lib3hServer(w)
+    }
+}
+
+impl<'a> TryFrom<&'a Protocol> for Lib3hServerProtocol {
+    type Error = Error;
+    fn try_from(p: &Protocol) -> Result<Self, Error> {
+        if let Protocol::Lib3hServer(msg) = p {
+            Ok(msg.clone())
+        } else {
+            bail!("could not convert into Lib3hServerProtocol: {:?}", p);
+        }
+    }
+}
+impl TryFrom<Protocol> for Lib3hServerProtocol {
+    type Error = Error;
+    fn try_from(p: Protocol) -> Result<Self, Error> {
+        Lib3hServerProtocol::try_from(&p)
+    }
+}
+
+impl<'a> TryFrom<&'a Protocol> for Lib3hClientProtocol {
+    type Error = Error;
+    fn try_from(p: &Protocol) -> Result<Self, Error> {
+        if let Protocol::Lib3hClient(msg) = p {
+            Ok(msg.clone())
+        } else {
+            bail!("could not convert into Lib3hServerProtocol: {:?}", p);
+        }
+    }
+}
+
+impl TryFrom<Protocol> for Lib3hClientProtocol {
+    type Error = Error;
+    fn try_from(p: Protocol) -> Result<Self, Error> {
+        Lib3hClientProtocol::try_from(&p)
     }
 }
 
@@ -266,5 +354,19 @@ mod tests {
         let res = simple_convert!(&Protocol::P2pReady);
 
         assert_eq!(Protocol::P2pReady, res);
+    }
+
+    #[test]
+    fn it_can_convert_shutdown() {
+        let res = simple_convert!(&Protocol::Shutdown);
+
+        assert_eq!(Protocol::Shutdown, res);
+    }
+
+    #[test]
+    fn it_can_convert_died() {
+        let res = simple_convert!(&Protocol::Terminated);
+
+        assert_eq!(Protocol::Terminated, res);
     }
 }

@@ -8,8 +8,10 @@
 //! ```
 //! #![feature(try_from)]
 //! extern crate holochain_core_types;
+//! extern crate holochain_persistence_api;
+//! extern crate holochain_json_api;
 //! use holochain_core_types::dna::Dna;
-//! use holochain_core_types::json::JsonString;
+//! use holochain_json_api::json::JsonString;
 //! use std::convert::TryFrom;
 //!
 //! let name = String::from("My Holochain DNA");
@@ -32,7 +34,6 @@ pub mod wasm;
 pub mod zome;
 
 use crate::{
-    cas::content::{AddressableContent, Content},
     dna::{
         bridges::Bridge,
         entry_types::EntryTypeDef,
@@ -40,8 +41,15 @@ use crate::{
     },
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
+};
+
+use holochain_persistence_api::cas::content::{AddressableContent, Content};
+
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
     json::JsonString,
 };
+
 use entry::entry_type::AppEntryType;
 use multihash;
 use serde_json::{self, Value};
@@ -98,7 +106,7 @@ impl AddressableContent for Dna {
         Content::from(self.to_owned())
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         Ok(Dna::try_from(content.to_owned())?)
     }
 }
@@ -271,7 +279,6 @@ pub mod tests {
     use super::*;
     extern crate base64;
     use crate::{
-        cas::content::Address,
         dna::{
             bridges::{Bridge, BridgePresence, BridgeReference},
             entry_types::EntryTypeDef,
@@ -279,8 +286,9 @@ pub mod tests {
             zome::tests::test_zome,
         },
         entry::entry_type::{AppEntryType, EntryType},
-        json::JsonString,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::Address;
     use std::convert::TryFrom;
 
     fn test_dna() -> Dna {
@@ -305,7 +313,7 @@ pub mod tests {
                                 "links_to": [
                                     {
                                         "target_type": "test",
-                                        "tag": "test"
+                                        "link_type": "test"
                                     }
                                 ],
                                 "linked_from": []
@@ -480,7 +488,7 @@ pub mod tests {
                                 "links_to": [
                                     {
                                         "target_type": "test",
-                                        "tag": "test"
+                                        "link_type": "test"
                                     }
                                 ],
                                 "linked_from": []

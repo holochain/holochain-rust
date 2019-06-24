@@ -4,10 +4,11 @@ use crate::{
 };
 use boolinator::*;
 use holochain_core_types::{
-    cas::content::Address, entry::EntryWithMetaAndHeader, error::HolochainError,
+    crud_status::CrudStatus, entry::EntryWithMetaAndHeader, error::HolochainError,
     validation::ValidationPackage,
 };
 use holochain_net::p2p_network::P2pNetwork;
+use holochain_persistence_api::cas::content::Address;
 use snowflake;
 use std::{
     collections::HashMap,
@@ -27,7 +28,7 @@ type GetEntryWithMetaResult = Option<Result<Option<EntryWithMetaAndHeader>, Holo
 /// None: process started, but no response yet from the network
 /// Some(Err(_)): there was a problem at some point
 /// Some(Ok(_)): we got the list of links
-type GetLinksResult = Option<Result<Vec<Address>, HolochainError>>;
+type GetLinksResult = Option<Result<Vec<(Address, CrudStatus)>, HolochainError>>;
 
 /// This represents the state of a get_validation_package network process:
 /// None: process started, but no response yet from the network
@@ -52,8 +53,9 @@ pub struct NetworkState {
     pub get_entry_with_meta_results: HashMap<GetEntryKey, GetEntryWithMetaResult>,
 
     /// Here we store the results of GET links processes.
-    /// The key of this map is the base address and the tag name for which the links
-    /// are requested.
+    /// The key of this map contains the base address, link_type and link tag for the link being requested.
+    /// the tag and link_type fields of the key are Options, None means they are waiting to retrieve all
+    /// links of any tag/type
     /// None means that we are still waiting for a result from the network.
     pub get_links_results: HashMap<GetLinksKey, GetLinksResult>,
 

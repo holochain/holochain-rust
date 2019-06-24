@@ -4,6 +4,7 @@
 pub mod call;
 pub mod commit;
 pub mod debug;
+pub mod emit_signal;
 pub mod entry_address;
 pub mod get_entry;
 pub mod get_links;
@@ -25,16 +26,18 @@ pub mod verify_signature;
 use crate::nucleus::ribosome::{
     api::{
         call::invoke_call,
-        capabilities::invoke_grant_capability,
+        capabilities::{invoke_commit_capability_claim, invoke_commit_capability_grant},
         commit::invoke_commit_app_entry,
         debug::invoke_debug,
+        emit_signal::invoke_emit_signal,
         entry_address::invoke_entry_address,
         get_entry::invoke_get_entry,
         get_links::invoke_get_links,
         init_globals::invoke_init_globals,
         keystore::{
-            invoke_keystore_derive_key, invoke_keystore_derive_seed, invoke_keystore_list,
-            invoke_keystore_new_random, invoke_keystore_sign,
+            invoke_keystore_derive_key, invoke_keystore_derive_seed,
+            invoke_keystore_get_public_key, invoke_keystore_list, invoke_keystore_new_random,
+            invoke_keystore_sign,
         },
         link_entries::invoke_link_entries,
         query::invoke_query,
@@ -130,8 +133,17 @@ link_zome_api! {
     /// Sign a block of data using a key in the keystore
     "hc_keystore_sign", KeystoreSign, invoke_keystore_sign;
 
+    /// Get the public key for a given secret
+    "hc_keystore_get_public_key", KeystoreGetPublicKey, invoke_keystore_get_public_key;
+
     /// Commit a capability grant to the source chain
-    "hc_grant_capability", GrantCapability, invoke_grant_capability;
+    "hc_commit_capability_grant", CommitCapabilityGrant, invoke_commit_capability_grant;
+
+    /// Commit a capability grant to the source chain
+    "hc_commit_capability_claim", CommitCapabilityClaim, invoke_commit_capability_claim;
+
+    /// Send a DNA defined signal to UIs and other listeners
+    "hc_emit_signal", EmitSignal, invoke_emit_signal;
 }
 
 #[cfg(test)]
@@ -146,7 +158,7 @@ pub mod tests {
             ZomeFnCall,
         },
     };
-    use holochain_core_types::json::JsonString;
+    use holochain_json_api::json::JsonString;
     use std::sync::Arc;
     use test_utils;
     use wabt;

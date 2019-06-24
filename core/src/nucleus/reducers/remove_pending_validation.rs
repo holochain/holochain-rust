@@ -1,9 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
     nucleus::state::{NucleusState, PendingValidationKey},
+    state::State,
 };
-use std::sync::Arc;
 
 /// Reduce RemovePendingValidation Action.
 /// Removes boxed EntryWithHeader and dependencies from state, referenced with
@@ -12,8 +11,8 @@ use std::sync::Arc;
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 pub fn reduce_remove_pending_validation(
-    _context: Arc<Context>,
     state: &mut NucleusState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -34,16 +33,18 @@ pub mod tests {
             state::tests::test_nucleus_state,
         },
         scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
+        state::test_store,
     };
-    use holochain_core_types::{
-        cas::content::AddressableContent, chain_header::test_chain_header, entry::Entry,
-        json::RawString,
-    };
+    use holochain_core_types::{chain_header::test_chain_header, entry::Entry};
+    use holochain_json_api::json::RawString;
+    use holochain_persistence_api::cas::content::AddressableContent;
+    use std::sync::Arc;
 
     #[test]
     fn test_reduce_remove_pending_validation() {
         let context = test_context("jimmy", None);
-        let mut state = test_nucleus_state();
+        let mut nucleus_state = test_nucleus_state();
+        let state = test_store(context);
 
         let entry = Entry::App("package_entry".into(), RawString::from("test value").into());
         let entry_with_header = EntryWithHeader {
@@ -59,9 +60,9 @@ pub mod tests {
             },
         )));
 
-        reduce_add_pending_validation(context.clone(), &mut state, &action_wrapper);
+        reduce_add_pending_validation(&mut nucleus_state, &state, &action_wrapper);
 
-        assert!(state
+        assert!(nucleus_state
             .pending_validations
             .contains_key(&PendingValidationKey::new(
                 entry.address(),
@@ -73,9 +74,9 @@ pub mod tests {
             ValidatingWorkflow::HoldEntry,
         )));
 
-        reduce_remove_pending_validation(context, &mut state, &action_wrapper);
+        reduce_remove_pending_validation(&mut nucleus_state, &state, &action_wrapper);
 
-        assert!(!state
+        assert!(!nucleus_state
             .pending_validations
             .contains_key(&PendingValidationKey::new(
                 entry.address(),

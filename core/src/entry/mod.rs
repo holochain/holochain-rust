@@ -10,8 +10,7 @@ pub trait CanPublish {
 impl CanPublish for EntryType {
     fn can_publish(&self, context: &Context) -> bool {
         match self {
-            EntryType::Dna => return false,
-            EntryType::CapTokenGrant => return false,
+            EntryType::Dna | EntryType::CapTokenGrant | EntryType::CapTokenClaim => return false,
             _ => {
                 if self.is_sys() {
                     return true;
@@ -47,10 +46,8 @@ impl CanPublish for EntryType {
 pub mod tests {
     use super::*;
 
-    use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
-        entry::entry_type::{AppEntryType, EntryType},
-    };
+    use holochain_core_types::entry::entry_type::{AppEntryType, EntryType};
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
     use test_utils::create_arbitrary_test_dna;
 
@@ -68,7 +65,7 @@ pub mod tests {
             EntryType::LinkList,
             EntryType::ChainHeader,
             EntryType::ChainMigrate,
-            EntryType::CapToken,
+            EntryType::CapTokenClaim,
             EntryType::CapTokenGrant,
         ]
     }
@@ -84,6 +81,7 @@ pub mod tests {
             match t.clone() {
                 EntryType::Dna => assert!(!t.can_publish(&context)),
                 EntryType::CapTokenGrant => assert!(!t.can_publish(&context)),
+                EntryType::CapTokenClaim => assert!(!t.can_publish(&context)),
                 EntryType::App(entry_type_name) => match entry_type_name.to_string().as_str() {
                     "testEntryType" => assert!(t.can_publish(&context)),
                     "testEntryTypeC" => {

@@ -13,10 +13,12 @@ use crate::{
     nucleus::validation::ValidationError, scheduled_jobs::pending_validations::ValidatingWorkflow,
 };
 use holochain_core_types::{
-    cas::content::AddressableContent,
     error::HolochainError,
     validation::{EntryLifecycle, ValidationData},
 };
+
+use holochain_persistence_api::cas::content::AddressableContent;
+
 use std::sync::Arc;
 
 pub async fn hold_entry_workflow<'a>(
@@ -66,20 +68,27 @@ pub async fn hold_entry_workflow<'a>(
         &context
     ))
     .map_err(|err| {
-        context.log(format!(
-            "err/workflow/hold_entry: {} is NOT valid! {:?}",
-            entry_with_header.entry.address(),
-            err,
-        ));
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
+            context.log(format!(
+                "debug/workflow/hold_entry: {} could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}",
+                entry_with_header.entry.address(),
+                dependencies,
+            ));
             add_pending_validation(
                 entry_with_header.to_owned(),
                 dependencies.clone(),
                 ValidatingWorkflow::HoldEntry,
                 &context,
             );
+            HolochainError::ValidationPending
+        } else {
+            context.log(format!(
+                "info/workflow/hold_entry: Entry {} is NOT valid! Validation error: {:?}",
+                entry_with_header.entry.address(),
+                err,
+            ));
+            HolochainError::from(err)
         }
-        HolochainError::ValidationPending
     })?;
 
     context.log(format!(

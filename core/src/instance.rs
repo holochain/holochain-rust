@@ -1,6 +1,6 @@
 use crate::{
-    action::ActionWrapper, context::Context, persister::Persister, scheduled_jobs, signal::Signal,
-    state::State, workflows::application,
+    action::ActionWrapper, consistency::ConsistencyModel, context::Context, persister::Persister,
+    scheduled_jobs, signal::Signal, state::State, workflows::application,
 };
 #[cfg(test)]
 use crate::{
@@ -8,12 +8,12 @@ use crate::{
     nucleus::actions::initialize::initialize_chain,
 };
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
-#[cfg(test)]
-use holochain_core_types::cas::content::Address;
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
 };
+#[cfg(test)]
+use holochain_persistence_api::cas::content::Address;
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, Sender, SyncSender},
@@ -35,6 +35,7 @@ pub struct Instance {
     observer_channel: Option<SyncSender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
     persister: Option<Arc<Mutex<Persister>>>,
+    consistency_model: ConsistencyModel,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -161,18 +162,19 @@ impl Instance {
         rx_action: Receiver<ActionWrapper>,
         rx_observer: Receiver<Observer>,
     ) {
-        let sync_self = self.clone();
+        let mut sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
         thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
             for action_wrapper in rx_action {
                 state_observers = sync_self.process_action(
-                    action_wrapper,
+                    &action_wrapper,
                     state_observers,
                     &rx_observer,
                     &sub_context,
                 );
+                sync_self.emit_signals(&sub_context, &action_wrapper);
             }
         });
     }
@@ -181,7 +183,7 @@ impl Instance {
     /// returns the new vector of observers
     pub(crate) fn process_action(
         &self,
-        action_wrapper: ActionWrapper,
+        action_wrapper: &ActionWrapper,
         mut state_observers: Vec<Observer>,
         rx_observer: &Receiver<Observer>,
         context: &Arc<Context>,
@@ -198,7 +200,7 @@ impl Instance {
                     .expect("owners of the state RwLock shouldn't panic");
 
                 // Create new state by reducing the action on old state
-                new_state = state.reduce(context.clone(), action_wrapper.clone());
+                new_state = state.reduce(action_wrapper.clone());
             }
 
             // Get write lock
@@ -216,8 +218,12 @@ impl Instance {
                 "err/instance/process_action: could not save state: {:?}",
                 e
             ));
+        } else {
+            context.log(format!(
+                "trace/reduce/process_actions: reducing {:?}",
+                action_wrapper
+            ));
         }
-        self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers
         state_observers.extend(rx_observer.try_iter());
@@ -228,40 +234,51 @@ impl Instance {
             .collect()
     }
 
-    /// Given an `Action` that is being processed, decide whether or not it should be
-    /// emitted as a `Signal::Internal`, and if so, send it
-    fn maybe_emit_action_signal(&self, context: &Arc<Context>, action: ActionWrapper) {
+    pub(crate) fn emit_signals(&mut self, context: &Context, action_wrapper: &ActionWrapper) {
         if let Some(tx) = context.signal_tx() {
             // @TODO: if needed for performance, could add a filter predicate here
             // to prevent emitting too many unneeded signals
-            let signal = Signal::Internal(action);
-            tx.send(signal).unwrap_or_else(|e| {
+            let trace_signal = Signal::Trace(action_wrapper.clone());
+            tx.send(trace_signal).unwrap_or_else(|e| {
                 context.log(format!(
                     "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
                     e
                 ));
-            })
+            });
+
+            self.consistency_model
+                .process_action(action_wrapper.action())
+                .map(|signal| {
+                    tx.send(Signal::Consistency(signal)).unwrap_or_else(|e| {
+                        context.log(format!(
+                            "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                            e
+                        ));
+                    });
+                });
         }
     }
 
     /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(State::new(context))),
+            state: Arc::new(RwLock::new(State::new(context.clone()))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
+            consistency_model: ConsistencyModel::new(context.clone()),
         }
     }
 
-    pub fn from_state(state: State) -> Self {
+    pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
             state: Arc::new(RwLock::new(state)),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
+            consistency_model: ConsistencyModel::new(context.clone()),
         }
     }
 
@@ -331,15 +348,15 @@ pub mod tests {
         context::{test_memory_network_config, Context},
         logger::{test_logger, TestLogger},
     };
-    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::AgentId,
-        cas::content::AddressableContent,
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
-        json::{JsonString, RawString},
     };
+    use holochain_json_api::json::{JsonString, RawString};
+    use holochain_persistence_api::cas::content::AddressableContent;
+    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use tempfile;
     use test_utils;
 
@@ -353,10 +370,8 @@ pub mod tests {
 
     use test_utils::mock_signing::registered_test_agent;
 
-    use holochain_cas_implementations::{
-        cas::memory::MemoryStorage, eav::memory::EavMemoryStorage,
-    };
     use holochain_core_types::entry::Entry;
+    use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]
@@ -468,7 +483,11 @@ pub mod tests {
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
-        let agent_state = AgentState::new_with_top_chain_header(chain_store, Some(chain_header));
+        let agent_state = AgentState::new_with_top_chain_header(
+            chain_store,
+            Some(chain_header),
+            context.agent_id.address(),
+        );
         let state = State::new_with_agent(Arc::new(context.clone()), agent_state);
         let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());
@@ -536,7 +555,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit((entry, _)) => {
+                Action::Commit((entry, _, _)) => {
                     assert!(
                         entry.entry_type() == EntryType::AgentId
                             || entry.entry_type() == EntryType::Dna
@@ -591,7 +610,7 @@ pub mod tests {
 
         let action_wrapper = test_action_wrapper_commit();
         let new_observers = instance.process_action(
-            action_wrapper.clone(),
+            &action_wrapper,
             Vec::new(), // start with no observers
             &rx_observer,
             &context,
@@ -735,14 +754,14 @@ pub mod tests {
         let context = test_context("alex", netname);
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let dna_entry = Entry::Dna(Box::new(dna));
-        let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None)));
+        let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None, vec![])));
 
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
         let context = instance.initialize_context(context);
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
-        instance.process_action(commit_action, state_observers, &rx_observer, &context);
+        instance.process_action(&commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());
@@ -751,7 +770,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit((entry, _)) => {
+                Action::Commit((entry, _, _)) => {
                     assert_eq!(entry.entry_type(), EntryType::Dna);
                     assert_eq!(entry.content(), dna_entry.content());
                     true
@@ -767,14 +786,20 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex", netname);
         let agent_entry = Entry::AgentId(context.agent_id.clone());
-        let commit_agent_action = ActionWrapper::new(Action::Commit((agent_entry.clone(), None)));
+        let commit_agent_action =
+            ActionWrapper::new(Action::Commit((agent_entry.clone(), None, vec![])));
 
         // Set up instance and process the action
         let instance = Instance::new(context.clone());
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);
-        instance.process_action(commit_agent_action, state_observers, &rx_observer, &context);
+        instance.process_action(
+            &commit_agent_action,
+            state_observers,
+            &rx_observer,
+            &context,
+        );
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());
@@ -783,7 +808,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit((entry, _)) => {
+                Action::Commit((entry, _, _)) => {
                     assert_eq!(entry.entry_type(), EntryType::AgentId);
                     assert_eq!(entry.content(), agent_entry.content());
                     true

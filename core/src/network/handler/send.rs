@@ -8,16 +8,33 @@ use crate::{
         respond_validation_package_request::respond_validation_package_request,
     },
 };
-use holochain_core_types::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, thread};
 
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_net::connection::json_protocol::MessageData;
+use std::convert::TryFrom;
+
+fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
+    DirectMessage::try_from(JsonString::from_json(
+        &String::from_utf8(content)
+            .map_err(|error| JsonError::SerializationError(error.to_string()))?,
+    ))
+}
 
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called
 pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
-    let message: DirectMessage =
-        serde_json::from_str(&serde_json::to_string(&message_data.content).unwrap()).unwrap();
+    let message = match parse_direct_message(message_data.content.clone()) {
+        Ok(message) => message,
+        Err(error) => {
+            context.log(format!(
+                "error/net/handle_send_message: Could not deserialize DirectMessage: {:?}",
+                error,
+            ));
+            return;
+        }
+    };
 
     match message {
         DirectMessage::Custom(custom_direct_message) => {
@@ -43,6 +60,7 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
                     message_data.request_id,
                     address,
                     context.clone(),
+                    &vec![]
                 ));
             });
         }
@@ -55,8 +73,16 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
 /// We got a JsonProtocol::HandleSendMessageResult.
 /// This means somebody has responded to our message that we called and this is the answer
 pub fn handle_send_message_result(message_data: MessageData, context: Arc<Context>) {
-    let response: DirectMessage =
-        serde_json::from_str(&serde_json::to_string(&message_data.content).unwrap()).unwrap();
+    let response = match parse_direct_message(message_data.content.clone()) {
+        Ok(message) => message,
+        Err(error) => {
+            context.log(format!(
+                "error/net/handle_send_message_result: Could not deserialize DirectMessage: {:?}",
+                error,
+            ));
+            return;
+        }
+    };
 
     let initial_message = context
         .state()

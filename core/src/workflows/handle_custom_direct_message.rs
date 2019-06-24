@@ -6,11 +6,16 @@ use crate::{
     nucleus::ribosome::callback::{receive::receive, CallbackParams, CallbackResult},
 };
 
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::error::HolochainError;
+use holochain_persistence_api::cas::content::Address;
+use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
 use std::sync::Arc;
 
+/// handles receiving a message from an api send call
+/// call the receive call back, and sends the result back to the
+/// source of the send message which is in the from_agent_id param
 pub async fn handle_custom_direct_message(
-    to_agent_id: Address,
+    from_agent_id: Address,
     msg_id: String,
     custom_direct_message: CustomDirectMessage,
     context: Arc<Context>,
@@ -20,10 +25,17 @@ pub async fn handle_custom_direct_message(
         .payload
         .map_err(|error| format!("Got error in initial custom direct message: {}", error))?;
 
-    let result = receive(context.clone(), &zome, &CallbackParams::Receive(payload));
+    let result = receive(
+        context.clone(),
+        &zome,
+        &CallbackParams::Receive(ReceiveParams {
+            from: from_agent_id.clone(),
+            payload,
+        }),
+    );
     let response = match result {
         CallbackResult::ReceiveResult(response) => Ok(response),
-        _ => Err("Error calling receive callback".to_string()),
+        err => Err(format!("Error calling receive callback: {:?}", err)),
     };
 
     let custom_direct_message = CustomDirectMessage {
@@ -32,7 +44,7 @@ pub async fn handle_custom_direct_message(
     };
     let direct_message = DirectMessage::Custom(custom_direct_message);
     let direct_message_data = DirectMessageData {
-        address: to_agent_id,
+        address: from_agent_id,
         message: direct_message,
         msg_id,
         is_response: true,

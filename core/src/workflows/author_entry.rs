@@ -9,18 +9,24 @@ use crate::{
 };
 
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
+    signature::Provenance,
     validation::{EntryLifecycle, ValidationData},
 };
-use std::sync::Arc;
+
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+
+use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryResult;
+
+use std::{sync::Arc, vec::Vec};
 
 pub async fn author_entry<'a>(
     entry: &'a Entry,
     maybe_link_update_delete: Option<Address>,
     context: &'a Arc<Context>,
-) -> Result<Address, HolochainError> {
+    provenances: &'a Vec<Provenance>,
+) -> Result<CommitEntryResult, HolochainError> {
     let address = entry.address();
     context.log(format!(
         "debug/workflow/authoring_entry: {} with content: {:?}",
@@ -28,7 +34,11 @@ pub async fn author_entry<'a>(
     ));
 
     // 1. Build the context needed for validation of the entry
-    let validation_package = await!(build_validation_package(&entry, context.clone()))?;
+    let validation_package = await!(build_validation_package(
+        &entry,
+        context.clone(),
+        provenances
+    ))?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
@@ -79,14 +89,15 @@ pub async fn author_entry<'a>(
             address
         ));
     }
-    Ok(addr)
+    Ok(CommitEntryResult::new(addr))
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::author_entry;
     use crate::nucleus::actions::tests::*;
-    use holochain_core_types::{entry::test_entry_with_value, json::JsonString};
+    use holochain_core_types::entry::test_entry_with_value;
+    use holochain_json_api::json::JsonString;
     use std::{thread, time};
 
     #[test]
@@ -103,8 +114,10 @@ pub mod tests {
                 &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
                 None,
                 &context1,
+                &vec![],
             ))
-            .unwrap();
+            .unwrap()
+            .address();
         thread::sleep(time::Duration::from_millis(500));
 
         let mut json: Option<JsonString> = None;

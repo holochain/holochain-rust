@@ -7,7 +7,8 @@ use crate::connection::{
     protocol::Protocol,
     NetResult,
 };
-use holochain_core_types::{cas::content::Address, json::JsonString};
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::Address;
 use std::{
     collections::{hash_map::Entry, HashMap},
     convert::TryFrom,
@@ -27,6 +28,11 @@ impl NetWorker for InMemoryWorker {
     /// we got a message from holochain core
     /// forward to our in-memory server
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
+        // InMemoryWorker doesn't have to do anything on shutdown
+        if data == Protocol::Shutdown {
+            self.handler.handle(Ok(Protocol::Terminated))?;
+            return Ok(());
+        }
         let server_map = MEMORY_SERVER_MAP.read().unwrap();
         let mut server = server_map
             .get(&self.server_name)
@@ -43,7 +49,7 @@ impl NetWorker for InMemoryWorker {
                         Entry::Occupied(_) => (),
                         Entry::Vacant(e) => {
                             let (tx, rx) = mpsc::channel();
-                            server.register_cell(
+                            server.register_chain(
                                 &track_msg.dna_address,
                                 &track_msg.agent_id,
                                 tx,
@@ -67,7 +73,8 @@ impl NetWorker for InMemoryWorker {
                     {
                         Entry::Vacant(_) => (),
                         Entry::Occupied(e) => {
-                            server.unregister_cell(&untrack_msg.dna_address, &untrack_msg.agent_id);
+                            server
+                                .unregister_chain(&untrack_msg.dna_address, &untrack_msg.agent_id);
                             e.remove();
                         }
                     };
@@ -84,14 +91,14 @@ impl NetWorker for InMemoryWorker {
         // Send p2pready on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
-            (self.handler)(Ok(Protocol::P2pReady))?;
+            self.handler.handle(Ok(Protocol::P2pReady))?;
         }
         // check for messages from our InMemoryServer
         let mut did_something = false;
         for (_, receiver) in self.receiver_per_dna.iter_mut() {
             if let Ok(data) = receiver.try_recv() {
                 did_something = true;
-                (self.handler)(Ok(data))?;
+                self.handler.handle(Ok(data))?;
             }
         }
         Ok(did_something)
@@ -158,10 +165,12 @@ impl Drop for InMemoryWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::p2p_config::P2pConfig;
-
-    use crate::connection::json_protocol::{JsonProtocol, TrackDnaData};
-    use holochain_core_types::cas::content::Address;
+    use crate::{
+        connection::json_protocol::{JsonProtocol, TrackDnaData},
+        p2p_config::P2pConfig,
+    };
+    use crossbeam_channel::unbounded;
+    use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
     fn example_dna_address() -> Address {
         "blabladnaAddress".into()
@@ -174,14 +183,14 @@ mod tests {
     fn can_memory_worker_double_track() {
         // setup client 1
         let memory_config = &JsonString::from_json(&P2pConfig::unique_memory_backend_string());
-        let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
+        let (handler_send_1, handler_recv_1) = unbounded::<Protocol>();
 
         let mut memory_worker_1 = Box::new(
             InMemoryWorker::new(
-                Box::new(move |r| {
+                NetHandler::new(Box::new(move |r| {
                     handler_send_1.send(r?)?;
                     Ok(())
-                }),
+                })),
                 memory_config,
             )
             .unwrap(),
@@ -197,7 +206,7 @@ mod tests {
             .receive(
                 JsonProtocol::TrackDna(TrackDnaData {
                     dna_address: example_dna_address(),
-                    agent_id: AGENT_ID_1.to_string(),
+                    agent_id: HashString::from(AGENT_ID_1),
                 })
                 .into(),
             )
@@ -212,7 +221,7 @@ mod tests {
             .receive(
                 JsonProtocol::TrackDna(TrackDnaData {
                     dna_address: example_dna_address(),
-                    agent_id: AGENT_ID_1.to_string(),
+                    agent_id: HashString::from(AGENT_ID_1),
                 })
                 .into(),
             )

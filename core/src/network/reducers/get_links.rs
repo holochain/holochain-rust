@@ -1,33 +1,36 @@
 use crate::{
     action::{ActionWrapper, GetLinksKey},
-    context::Context,
-    network::{reducers::send, state::NetworkState},
+    network::{query::NetworkQuery, reducers::send, state::NetworkState},
+    state::State,
 };
-use holochain_core_types::{error::HolochainError, hash::HashString};
-use holochain_net::connection::json_protocol::{FetchMetaData, JsonProtocol};
-use std::sync::Arc;
+
+use holochain_core_types::error::HolochainError;
+use holochain_json_api::json::JsonString;
+use holochain_net::connection::json_protocol::{JsonProtocol, QueryEntryData};
+use holochain_persistence_api::hash::HashString;
 
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
     key: &GetLinksKey,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-
+    let query_json: JsonString =
+        NetworkQuery::GetLinks(key.link_type.clone(), key.tag.clone()).into();
     send(
         network_state,
-        JsonProtocol::FetchMeta(FetchMetaData {
-            requester_agent_id: network_state.agent_id.clone().unwrap(),
+        JsonProtocol::QueryEntry(QueryEntryData {
+            requester_agent_id: network_state.agent_id.clone().unwrap().into(),
             request_id: key.id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             entry_address: HashString::from(key.base_address.clone()),
-            attribute: format!("link__{}", key.tag),
+            query: query_json.to_string().into_bytes(),
         }),
     )
 }
 
 pub fn reduce_get_links(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -42,8 +45,8 @@ pub fn reduce_get_links(
 }
 
 pub fn reduce_get_links_timeout(
-    _context: Arc<Context>,
     network_state: &mut NetworkState,
+    _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -77,15 +80,16 @@ mod tests {
         let store = test_store(context.clone());
 
         let entry = test_entry();
-        let tag = String::from("test-tag");
+        let link_type = String::from("test-link");
         let key = GetLinksKey {
             base_address: entry.address(),
-            tag: tag.clone(),
+            link_type: link_type,
+            tag: "link-tag".to_string(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = store.reduce(action_wrapper);
         let maybe_get_links_result = store
             .network()
             .get_links_results
@@ -99,7 +103,8 @@ mod tests {
         );
     }
 
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use holochain_core_types::entry::test_entry;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     // This test needs to be refactored.
@@ -116,18 +121,18 @@ mod tests {
             dna_address: "reduce_get_links_test".into(),
             agent_id: String::from("alice"),
         }));
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = store.reduce(action_wrapper);
 
         let entry = test_entry();
-        let tag = String::from("test-tag");
+        let link_type = String::from("test-link");
         let key = GetLinksKey {
             base_address: entry.address(),
-            tag: tag.clone(),
+            link_type: link_type.clone(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = store.reduce(action_wrapper);
         let maybe_get_entry_result = store.network().get_links_results.get(&key).cloned();
 
         assert_eq!(maybe_get_entry_result, Some(None));
@@ -158,10 +163,10 @@ mod tests {
         }
 
         let entry = test_entry();
-        let tag = String::from("test-tag");
+        let link_type = String::from("test-link");
         let key = GetLinksKey {
             base_address: entry.address(),
-            tag: tag.clone(),
+            link_type: link_type.clone(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));

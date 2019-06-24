@@ -2,10 +2,10 @@ use crate::{
     context::Context,
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
-use holochain_core_types::{
-    error::{HcResult, HolochainError},
-    json::JsonString,
-};
+use holochain_core_types::error::{HcResult, HolochainError};
+
+use holochain_json_api::json::JsonString;
+
 use holochain_wasm_utils::api_serialization::keystore::KeystoreListResult;
 use jsonrpc_lite::JsonRpc;
 use serde_json::{self, Value};
@@ -20,7 +20,7 @@ fn conductor_callback<S: Into<String>>(
 ) -> HcResult<JsonString> {
     let conductor_api = context.conductor_api.clone();
 
-    let handler = conductor_api.write().unwrap();
+    let handler = conductor_api.get().write().unwrap();
 
     let method = method.into();
     let id = ProcessUniqueId::new();
@@ -183,5 +183,40 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
         args_str, string
     ));
 
+    runtime.store_result(Ok(JsonString::from_json(&string)))
+}
+
+pub fn invoke_keystore_get_public_key(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+
+    let result = conductor_callback(
+        "agent/keystore/get_public_key",
+        &args_str.to_string(),
+        context.clone(),
+    );
+    let string: String = match result {
+        Ok(json_string) => {
+            context.log(format!(
+                "debug/zome: keystore_get_public_key json_string:{:?}",
+                json_string
+            ));
+            let value: Value = serde_json::from_str(&json_string.to_string()).unwrap();
+            value["pub_key"].to_string()
+        }
+        Err(err) => {
+            context.log(format!(
+                "err/zome: agent/keystore/get_public_key callback failed: {:?}",
+                err
+            ));
+            return ribosome_error_code!(CallbackFailed);
+        }
+    };
+
+    context.log(format!(
+        "debug/zome: pubkey for args:{:?} is:{:?}",
+        args_str, string
+    ));
     runtime.store_result(Ok(JsonString::from_json(&string)))
 }

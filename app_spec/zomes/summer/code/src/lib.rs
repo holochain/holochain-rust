@@ -6,11 +6,12 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate boolinator;
-use hdk::holochain_core_types::json::JsonString;
-use hdk::holochain_core_types::error::HolochainError;
+use hdk::holochain_json_api::error::JsonError;
+use hdk::holochain_json_api::json::JsonString;
+use hdk::error::ZomeApiResult;
 
-fn handle_sum(num1: u32, num2: u32) -> u32 {
-    num1 + num2
+fn handle_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
+    Ok(num1 + num2)
 }
 
 define_zome! {
@@ -23,7 +24,7 @@ define_zome! {
     functions: [
         sum: {
             inputs: |num1: u32, num2: u32|,
-            outputs: |sum: u32|,
+            outputs: |sum: ZomeApiResult<u32>|,
             handler: handle_sum
         }
     ]
@@ -43,7 +44,7 @@ mod tests {
     pub fn handle_sum_test() {
         assert_eq!(
             handle_sum(1, 1),
-            2,
+            Ok(2),
         );
     }
 

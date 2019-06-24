@@ -3,10 +3,12 @@ use crate::{
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
 };
+
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+
 use holochain_wasm_utils::api_serialization::get_entry::*;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -58,13 +60,14 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
 
-    let res: Result<(), HolochainError> = context
+    let res: Result<Address, HolochainError> = context
         .block_on(author_entry(
             &deletion_entry.clone(),
             Some(deleted_entry_address.clone()),
             &context.clone(),
+            &vec![],
         ))
-        .map(|_| ());
+        .map(|_| deletion_entry.address());
 
     runtime.store_result(res)
 }

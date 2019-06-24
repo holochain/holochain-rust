@@ -6,7 +6,9 @@ use crate::{
         ZomeFnCall,
     },
 };
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_core_types::error::HolochainError;
+use holochain_json_api::json::JsonString;
+
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
@@ -41,7 +43,7 @@ impl ZomeFnCall {
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
 
@@ -49,7 +51,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            zome_call_data.context.log(format!(
+            context.log(format!(
                 "err/zome: invoke_call failed to deserialize: {:?}",
                 args_str
             ));
@@ -59,15 +61,23 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 
     let result = if input.instance_handle == String::from(THIS_INSTANCE) {
         // ZomeFnCallArgs to ZomeFnCall
-        let zome_call = ZomeFnCall::from_args(zome_call_data.context.clone(), input.clone());
+        let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
 
-        // Don't allow recursive calls
-        if zome_call.same_fn_as(&zome_call_data.call) {
-            return ribosome_error_code!(RecursiveCallForbidden);
+        if let Ok(zome_call_data) = runtime.zome_call_data() {
+            // Don't allow recursive calls
+            if zome_call.same_fn_as(&zome_call_data.call) {
+                return ribosome_error_code!(RecursiveCallForbidden);
+            }
         }
-        local_call(runtime, input)
+        local_call(runtime, input.clone()).map_err(|error| {
+            context.log(format!("err/zome-to-zome-call/[{:?}]: {:?}", input, error));
+            error
+        })
     } else {
-        bridge_call(runtime, input)
+        bridge_call(runtime, input.clone()).map_err(|error| {
+            context.log(format!("err/bridge-call/[{:?}]: {:?}", input, error));
+            error
+        })
     };
 
     runtime.store_result(result)
@@ -97,7 +107,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
         input.instance_handle, input.zome_name, input.fn_name, input.fn_args
     );
 
-    let handler = conductor_api.write().unwrap();
+    let handler = conductor_api.get().write().unwrap();
 
     let id = ProcessUniqueId::new();
     // json-rpc format
@@ -113,7 +123,20 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     let response = JsonRpc::parse(&response)?;
 
     match response {
-        JsonRpc::Success(_) => Ok(JsonString::from(response.get_result().unwrap().to_owned())),
+        JsonRpc::Success(_) => {
+            // First we try to unwrap a potential stringification:
+            let value_response = response.get_result().unwrap().to_owned();
+            let string_response = value_response.to_string();
+            let maybe_parsed_string: Result<String, serde_json::error::Error> =
+                serde_json::from_str(&string_response);
+            let sanitized_response = match maybe_parsed_string {
+                Ok(string) => string,
+                Err(_) => string_response,
+            };
+            // Below, sanitized_response is the same response but guaranteed without quotes.
+            // This should be returned as a JsonString for handling in the zome code.
+            Ok(JsonString::from_json(&sanitized_response))
+        }
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
             serde_json::to_string(&response.get_error().unwrap()).unwrap(),
         )),
@@ -152,7 +175,6 @@ pub mod tests {
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         dna::{
             capabilities::CapabilityRequest,
             fn_declarations::{FnDeclaration, TraitFns},
@@ -164,9 +186,10 @@ pub mod tests {
             Entry,
         },
         error::{DnaError, HolochainError},
-        json::JsonString,
         signature::Signature,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use serde_json;
     use std::{
@@ -328,8 +351,14 @@ pub mod tests {
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = test_setup
             .context
-            .block_on(author_entry(&grant_entry, None, &test_setup.context))
-            .unwrap();
+            .block_on(author_entry(
+                &grant_entry,
+                None,
+                &test_setup.context,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
         let other_agent_context = test_context("other agent", None);
         let cap_request =
             make_cap_request_for_call(other_agent_context.clone(), addr, "test", "{}");
@@ -373,8 +402,14 @@ pub mod tests {
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = test_setup
             .context
-            .block_on(author_entry(&grant_entry, None, &test_setup.context))
-            .unwrap();
+            .block_on(author_entry(
+                &grant_entry,
+                None,
+                &test_setup.context,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
         let cap_request = make_cap_request_for_call(
             test_context("random other agent", None),
             grant_addr.clone(),
@@ -485,8 +520,9 @@ pub mod tests {
             .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = context
-            .block_on(author_entry(&grant_entry, None, &context))
-            .unwrap();
+            .block_on(author_entry(&grant_entry, None, &context, &vec![]))
+            .unwrap()
+            .address();
 
         // make the call with a valid capability call from a random source should succeed
         let zome_call = ZomeFnCall::new(

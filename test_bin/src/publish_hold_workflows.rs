@@ -1,41 +1,39 @@
 use basic_workflows::setup_two_nodes;
 use constants::*;
 use holochain_net::{
-    connection::{json_protocol::JsonProtocol, NetResult},
+    connection::{
+        json_protocol::{EntryData, JsonProtocol},
+        NetResult,
+    },
     tweetlog::*,
 };
-use p2p_node::P2pNode;
+use p2p_node::test_node::TestNode;
 
-/// Test the following workflow after normal setup:
-/// sequenceDiagram
-/// participant a as Alex
-/// participant net as P2P Network
-/// participant b as Billy
-/// a->>net: HandleFetchPublishedDataListResult(list:[])
-/// b->>net: FetchDhtData(xyz_addr)
-/// net->>a: HandleFetchData(xyz_addr)
-/// a-->>net: FailureResult
-/// net->>b: FailureResult
+///
 #[cfg_attr(tarpaulin, skip)]
 pub fn empty_publish_entry_list_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: empty_publish_entry_list_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
-    // Alex replies an empty list to the initial HandleGetPublishingEntryList
-    alex.reply_to_first_HandleGetPublishingEntryList();
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
+    // Alex replies an empty list to the initial HandleGetAuthoringEntryList
+    alex.reply_to_first_HandleGetAuthoringEntryList();
     // Billy asks for unpublished data.
-    let fetch_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+
+    // #fullsync
     // Alex sends back a failureResult response to the network
-    alex.reply_to_HandleFetchEntry(&fetch_data)?;
+    let res = billy.reply_to_HandleQueryEntry(&query_data);
+    assert!(res.is_err());
     // Billy should receive the failureResult back
     let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .wait_json(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
     log_i!("got result: {:?}", result);
+    let gen_res = unwrap_to!(result => JsonProtocol::FailureResult);
+    assert_eq!(res.err().unwrap(), *gen_res);
     // Done
     Ok(())
 }
@@ -43,113 +41,40 @@ pub fn empty_publish_entry_list_test(
 /// Return some data in publish_list request
 #[cfg_attr(tarpaulin, skip)]
 pub fn publish_entry_list_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: publish_entry_list_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
     // author an entry without publishing it
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, false)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], false)?;
     // Reply to the publish_list request received from network module
-    alex.reply_to_first_HandleGetPublishingEntryList();
-    // Should receive a HandleFetchEntry request from network module
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    assert!(has_received);
-    // billy might receive HandleStoreEntry
-    let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))), 2000);
-    // billy asks for reported published data.
-    billy.request_entry(ENTRY_ADDRESS_1.clone());
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    if !has_received {
-        let _has_received = billy.wait_HandleFetchEntry_and_reply();
-    }
+    alex.reply_to_first_HandleGetAuthoringEntryList();
+    // Should receive a HandleFetchEntry request from network module after receiving list
+    let _ = alex.wait_HandleFetchEntry_and_reply();
+    //    // Should receive a HandleFetchEntry request from network module for gossip
+    //    let _ = alex.wait_HandleFetchEntry_and_reply();
+
+    // billy might receive HandleStoreEntryAspect
+    let res = billy.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+
+    log_i!("Billy got res: {:?}", res);
+    // billy asks for reported authored data.
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+    let res = billy.reply_to_HandleQueryEntry(&query_data);
+    // #fullsync
+    // Billy answers its own request
+    // let has_received = billy.wait_HandleQueryEntry_and_reply();
+    assert!(res.is_ok());
     // Billy should receive the entry data
-    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchEntryResult(_))));
+    let mut result =
+        billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
     if result.is_none() {
-        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
-    }
-    let json = result.unwrap();
-    log_i!("got result: {:?}", json);
-    // Done
-    Ok(())
-}
-
-/// Reply some data in publish_meta_list
-#[cfg_attr(tarpaulin, skip)]
-pub fn publish_meta_list_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    can_connect: bool,
-) -> NetResult<()> {
-    // Setup
-    println!("Testing: publish_meta_list_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
-    // Author meta and reply to HandleGetPublishingMetaList
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
-    alex.author_meta(
-        &ENTRY_ADDRESS_1,
-        META_LINK_ATTRIBUTE.into(),
-        &META_LINK_CONTENT_1,
-        false,
-    )?;
-    alex.reply_to_first_HandleGetPublishingMetaList();
-    // Should receive a HandleFetchEntry request from network module
-    let has_received = alex.wait_HandleFetchMeta_and_reply();
-    assert!(has_received);
-    // billy might receive HandleFetchMeta
-    let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
-    // billy asks for reported published data.
-    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
-    // Alex or billy should receive HandleFetchMeta request
-    let has_received = alex.wait_HandleFetchMeta_and_reply();
-    if !has_received {
-        let _has_received = billy.wait_HandleFetchMeta_and_reply();
-    }
-    // Billy should receive the data
-    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
-    if result.is_none() {
-        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
-    }
-    let json = result.unwrap();
-    log_i!("got result: {:?}", json);
-    // Done
-    Ok(())
-}
-
-/// Reply with some meta in hold_meta_list
-#[cfg_attr(tarpaulin, skip)]
-pub fn hold_meta_list_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    can_connect: bool,
-) -> NetResult<()> {
-    // Setup
-    println!("Testing: hold_meta_list_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
-    // Have alex hold some data
-    alex.hold_meta(&ENTRY_ADDRESS_1, META_LINK_ATTRIBUTE, &META_LINK_CONTENT_1);
-    // Alex: Look for the hold_list request received from network module and reply
-    alex.reply_to_first_HandleGetHoldingMetaList();
-    // Might receive a HandleFetchMeta request from network module:
-    // hackmode would want the data right away
-    let has_received = alex.wait_HandleFetchMeta_and_reply();
-    if has_received {
-        // billy might receive HandleStoreMeta
-        let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
-    }
-    // Have billy request that metadata
-    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
-    // Alex might receive HandleFetchMeta request as this moment
-    let has_received = alex.wait_HandleFetchMeta_and_reply();
-    if !has_received {
-        let _has_received = billy.wait_HandleFetchMeta_and_reply();
-    }
-    // Billy should receive the data
-    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
-    if result.is_none() {
-        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+        result = billy.wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
     }
     let json = result.unwrap();
     log_i!("got result: {:?}", json);
@@ -160,28 +85,32 @@ pub fn hold_meta_list_test(
 /// Return some data in publish_list request
 #[cfg_attr(tarpaulin, skip)]
 pub fn double_publish_entry_list_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+    alex: &mut TestNode,
+    billy: &mut TestNode,
     can_connect: bool,
 ) -> NetResult<()> {
-    println!("Testing: double_publish_entry_list_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
-    alex.reply_to_first_HandleGetPublishingEntryList();
-    // Should NOT receive a HandleFetchEntry request from network module
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    assert!(!has_received);
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
+    alex.reply_to_first_HandleGetAuthoringEntryList();
+    //    // Should receive only one HandleFetchEntry request from network module for Gossip
+    //    let _ = alex.wait_HandleFetchEntry_and_reply();
+    // billy might receive HandleStoreEntryAspect
+    let res = billy.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+    log_i!("Billy got res: {:?}", res);
     // billy asks for reported published data.
-    billy.request_entry(ENTRY_ADDRESS_1.clone());
-    // Alex or Billy receives and replies to a HandleFetchEntry
-    let has_received = alex.wait_HandleFetchEntry_and_reply();
-    if !has_received {
-        let _has_received = billy.wait_HandleFetchEntry_and_reply();
-    }
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+    billy.reply_to_HandleQueryEntry(&query_data).unwrap();
+    // #fullsync
+    // Billy receives and replies to its own query
+    //let _ = billy.wait_HandleQueryEntry_and_reply();
     // Billy should receive the entry data back
-    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchEntryResult(_))));
+    let mut result =
+        billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
     if result.is_none() {
-        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+        result = billy.wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
     }
     let json = result.unwrap();
     log_i!("got result: {:?}", json);
@@ -189,42 +118,39 @@ pub fn double_publish_entry_list_test(
     Ok(())
 }
 
-/// Reply some data in publish_meta_list
+/// Reply with some meta in hold_meta_list
 #[cfg_attr(tarpaulin, skip)]
-pub fn double_publish_meta_list_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
+pub fn hold_list_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: double_publish_meta_list_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
-
-    // Author meta and reply to HandleGetPublishingMetaList
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
-    alex.author_meta(
-        &ENTRY_ADDRESS_1,
-        META_LINK_ATTRIBUTE.into(),
-        &META_LINK_CONTENT_1,
-        true,
-    )?;
-    alex.reply_to_first_HandleGetPublishingMetaList();
-    // Should NOT receive a HandleFetchMeta request from network module
-    let has_received = alex.wait_HandleFetchMeta_and_reply();
-    assert!(!has_received);
-    // billy might receive HandleFetchMeta
-    let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
-    // billy asks for reported published data.
-    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
-    // Alex or billy should receive HandleFetchMeta request
-    let has_received = alex.wait_HandleFetchMeta_and_reply();
-    if !has_received {
-        let _has_received = billy.wait_HandleFetchMeta_and_reply();
-    }
-    // Billy should receive the data
-    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
+    // Have alex hold some data
+    alex.hold_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()])?;
+    // Alex: Look for the hold_list request received from network module and reply
+    alex.reply_to_first_HandleGetHoldingEntryList();
+    // wait for gossip to ask for the held data
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    assert!(has_received);
+    // wait for billy to receive HandleStoreEntryAspect via gossip
+    let res = billy.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+    log_i!("Billy got res: {:?}", res);
+    // billy asks for reported authored data.
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
+    billy.reply_to_HandleQueryEntry(&query_data).unwrap();
+    // #fullsync
+    // billy replies to own query
+    // let _ = billy.wait_HandleQueryEntry_and_reply();
+    // Billy should receive the entry data
+    let mut result =
+        billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
     if result.is_none() {
-        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+        result = billy.wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
     }
     let json = result.unwrap();
     log_i!("got result: {:?}", json);
@@ -234,102 +160,105 @@ pub fn double_publish_meta_list_test(
 
 /// Reply some data in publish_meta_list
 #[cfg_attr(tarpaulin, skip)]
-pub fn many_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn many_aspects_test(
+    alex: &mut TestNode,
+    billy: &mut TestNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
-    println!("Testing: many_meta_test()");
-    setup_two_nodes(alex, billy, can_connect)?;
-    // Author meta and reply to HandleGetPublishingMetaList
-    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
-    log_d!("entry authored");
+    // =====
+    setup_two_nodes(alex, billy, &DNA_ADDRESS_A, can_connect)?;
+    // Author & hold several aspects on same address
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_2.clone()], false)?;
+    alex.hold_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_3.clone()])?;
+    log_d!("Alex authored and stored Aspects");
 
-    alex.author_meta(
-        &ENTRY_ADDRESS_1,
-        META_LINK_ATTRIBUTE.into(),
-        &META_LINK_CONTENT_1,
-        true,
-    )?;
-    log_d!("META_LINK_CONTENT_1 authored");
-    alex.author_meta(
-        &ENTRY_ADDRESS_1,
-        META_CRUD_ATTRIBUTE.into(),
-        &META_CRUD_CONTENT,
-        true,
-    )?;
-    log_d!("META_CRUD_CONTENT authored");
-    alex.author_meta(
-        &ENTRY_ADDRESS_1,
-        META_LINK_ATTRIBUTE.into(),
-        &META_LINK_CONTENT_2,
-        false,
-    )?;
-    log_d!("META_LINK_CONTENT_2 authored");
-    alex.author_meta(
-        &ENTRY_ADDRESS_1,
-        META_LINK_ATTRIBUTE.into(),
-        &META_LINK_CONTENT_3,
-        false,
-    )?;
-    log_d!("META_LINK_CONTENT_3 authored");
-    alex.reply_to_first_HandleGetPublishingMetaList();
+    // billy might receive HandleStoreEntryAspect
+    let res = billy.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+    log_i!("Billy got res 0: {:?}", res);
 
+    // Send AuthoringEntryList
+    // =======================
+    alex.reply_to_first_HandleGetAuthoringEntryList();
     // Should receive a HandleFetchEntry request from network module
-    let has_received = alex.wait_HandleFetchMeta_and_reply();
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(has_received);
+    //    // Maybe 2nd get for gossiping
+    //    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    //    log_d!("Alex has_received: {}", has_received);
 
-    // billy might receive HandleFetchMeta
-    let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
-    log_d!("alex has_received done");
+    // billy might receive HandleStoreEntryAspect
+    let res = billy.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+    log_i!("Billy got res 1: {:?}", res);
+    // billy might receive HandleStoreEntryAspect
+    let res = billy.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+    log_i!("Billy got res 2: {:?}", res);
+    assert!(res.is_some());
 
-    // billy asks for reported published data.
-    let request_meta_1 = billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
+    // Send HoldingEntryList
+    // =====================
+    // Send HoldingEntryList and should receive a HandleFetchEntry request from network module
+    alex.reply_to_first_HandleGetHoldingEntryList();
+    // #fullsync
+    // wait for Network module to ask for the held data
+    let _ = alex.wait_HandleFetchEntry_and_reply();
+    // assert!(has_received); // n3h doesnt send fetch because gossip already took care of it
 
-    // Alex or billy should receive HandleFetchMeta request
-    let has_received = alex.wait_HandleFetchMeta_and_reply();
-    if !has_received {
-        billy.wait_HandleFetchMeta_and_reply();
-    }
-    log_d!("node has_received HandleFetchMeta 1 = {}", has_received);
+    // billy might receive HandleStoreEntryAspect
+    let res = billy.wait_json_with_timeout(
+        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+        2000,
+    );
+    // assert!(res.is_some()); // n3h doesnt send fetch because gossip already took care of it
+    log_i!("Billy got res 3: {:?}", res);
+    // Billy asks for that data
+    let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
-    // Alex or billy should receive HandleFetchMeta request
-    let mut has_received = alex.wait_HandleFetchMeta_and_reply();
-    if !has_received {
-        has_received = billy.wait_HandleFetchMeta_and_reply();
-    }
-    log_d!("node has_received HandleFetchMeta 2 = {}", has_received);
+    // #fullsync
+    // Billy sends that data back to the network
+    let query_res_data = billy.reply_to_HandleQueryEntry(&query_data).unwrap();
+    let query_result: EntryData = bincode::deserialize(&query_res_data.query_result).unwrap();
+    log_i!("sending query_result: {:?}", query_result);
 
-    // Billy should receive the data
-    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
-    if result.is_none() {
-        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
-    }
-    let result = result.unwrap();
-    log_i!("got result 1: {:?}", result);
-    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
-    assert_eq!(meta_data.request_id, request_meta_1.request_id);
-    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
-    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
-    assert_eq!(meta_data.content_list.len(), 3);
-
-    // billy asks for reported published data.
-    let request_meta_2 = billy.request_meta(ENTRY_ADDRESS_1.clone(), META_CRUD_ATTRIBUTE.into());
-    // Alex or billy should receive HandleFetchMeta request
-    let has_received = alex.wait_HandleFetchMeta_and_reply();
-    if !has_received {
-        let _has_received = billy.wait_HandleFetchMeta_and_reply();
-    }
-    // Billy should receive the data
-    let mut result = billy.find_recv_msg(1, Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
-    if result.is_none() {
-        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
-    }
-    let json = result.unwrap();
-    log_i!("got result 2: {:?}", json);
-    let meta_data = unwrap_to!(json => JsonProtocol::FetchMetaResult);
-    assert_eq!(meta_data.request_id, request_meta_2.request_id);
-    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
-    assert_eq!(meta_data.attribute, META_CRUD_ATTRIBUTE.clone());
-    assert_eq!(meta_data.content_list.len(), 1);
-    assert_eq!(meta_data.content_list[0], META_CRUD_CONTENT.clone());
+    // Billy should receive requested data
+    let result = billy
+        .wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
+        .unwrap();
+    log_i!("got QueryEntryResult: {:?}", result);
+    let query_res_data = unwrap_to!(result => JsonProtocol::QueryEntryResult);
+    let query_result: EntryData = bincode::deserialize(&query_res_data.query_result).unwrap();
+    log_i!("got query_result: {:?}", query_result);
+    assert_eq!(query_res_data.entry_address, ENTRY_ADDRESS_1.clone());
+    assert_eq!(
+        query_result.entry_address.clone(),
+        query_res_data.entry_address
+    );
+    assert_eq!(query_result.aspect_list.len(), 3);
+    assert!(
+        query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_1
+            || query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_2
+            || query_result.aspect_list[0].aspect_address.clone() == *ASPECT_ADDRESS_3
+    );
+    assert!(
+        query_result.aspect_list[1].aspect_address.clone() == *ASPECT_ADDRESS_1
+            || query_result.aspect_list[1].aspect_address.clone() == *ASPECT_ADDRESS_2
+            || query_result.aspect_list[1].aspect_address.clone() == *ASPECT_ADDRESS_3
+    );
+    assert!(
+        query_result.aspect_list[2].aspect_address.clone() == *ASPECT_ADDRESS_1
+            || query_result.aspect_list[2].aspect_address.clone() == *ASPECT_ADDRESS_2
+            || query_result.aspect_list[2].aspect_address.clone() == *ASPECT_ADDRESS_3
+    );
     // Done
     Ok(())
 }

@@ -1,12 +1,12 @@
 use crate::{context::Context, workflows::get_entry_result::get_entry_with_meta_workflow};
 use holochain_core_types::{
-    cas::content::Address,
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry, EntryWithMeta},
     error::HolochainError,
     time::Timeout,
     validation::{EntryValidationData, ValidationData},
 };
+use holochain_persistence_api::cas::content::Address;
 
 use std::sync::Arc;
 
@@ -16,7 +16,7 @@ mod link_entry;
 mod provenances;
 mod remove_entry;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 /// A failed validation.
 pub enum ValidationError {
     /// `Fail` means the validation function did run successfully and recognized the entry

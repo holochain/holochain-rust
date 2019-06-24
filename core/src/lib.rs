@@ -16,12 +16,13 @@ extern crate num_derive;
 #[macro_use]
 extern crate holochain_wasm_utils;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 #[macro_use]
 extern crate pretty_assertions;
 
 pub mod action;
 pub mod agent;
+pub mod consistency;
 pub mod context;
 pub mod dht;
 pub mod entry;
@@ -37,3 +38,5 @@ pub mod scheduled_jobs;
 pub mod signal;
 pub mod state;
 pub mod workflows;
+
+mod conductor_api;

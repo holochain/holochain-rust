@@ -15,15 +15,17 @@ pub use crate::{
         reducers::reduce,
     },
 };
-use holochain_core_types::{
-    cas::content::Address, dna::capabilities::CapabilityRequest, error::HcResult, json::JsonString,
-};
+use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HcResult};
+
+use holochain_persistence_api::cas::content::Address;
+
+use holochain_json_api::json::JsonString;
 
 use snowflake;
 use std::sync::Arc;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 pub struct ZomeFnCall {
     id: snowflake::ProcessUniqueId,
     pub zome_name: String,
@@ -75,6 +77,10 @@ impl ZomeFnCall {
     pub fn cap_token(&self) -> Address {
         self.cap.cap_token.clone()
     }
+
+    pub fn id(&self) -> snowflake::ProcessUniqueId {
+        self.id.clone()
+    }
 }
 
 pub type ZomeFnResult = HcResult<JsonString>;
@@ -118,12 +124,12 @@ pub mod tests {
     use test_utils;
 
     use holochain_core_types::{
-        cas::content::AddressableContent,
         dna::capabilities::CapabilityRequest,
         error::{DnaError, HolochainError},
-        json::{JsonString, RawString},
         signature::Signature,
     };
+    use holochain_json_api::json::{JsonString, RawString};
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     /// dummy zome name compatible with ZomeFnCall
     pub fn test_zome() -> String {

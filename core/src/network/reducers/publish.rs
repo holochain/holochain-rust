@@ -1,22 +1,21 @@
 use crate::{
     action::ActionWrapper,
-    context::Context,
     network::{
         actions::ActionResponse,
+        entry_aspect::EntryAspect,
         entry_with_header::{fetch_entry_with_header, EntryWithHeader},
         reducers::send,
         state::NetworkState,
     },
+    state::State,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
-    eav::Attribute,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net::connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
-use std::sync::Arc;
+use holochain_net::connection::json_protocol::{EntryData, JsonProtocol, ProvidedEntryData};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 /// Send to network a PublishDhtData message
 fn publish_entry(
@@ -25,39 +24,53 @@ fn publish_entry(
 ) -> Result<(), HolochainError> {
     send(
         network_state,
-        JsonProtocol::PublishEntry(EntryData {
-            dna_address: network_state.dna_address.clone().unwrap(),
-            provider_agent_id: network_state.agent_id.clone().unwrap(),
-            entry_address: entry_with_header.entry.address().clone(),
-            entry_content: serde_json::from_str(
-                &serde_json::to_string(&entry_with_header).unwrap(),
-            )
-            .unwrap(),
+        JsonProtocol::PublishEntry(ProvidedEntryData {
+            dna_address: network_state.dna_address.clone().unwrap().into(),
+            provider_agent_id: network_state.agent_id.clone().unwrap().into(),
+            entry: EntryData {
+                entry_address: entry_with_header.entry.address().clone(),
+                aspect_list: vec![EntryAspect::Content(
+                    entry_with_header.entry.clone(),
+                    entry_with_header.header.clone(),
+                )
+                .into()],
+            },
         }),
     )
 }
 
-/// Send to network:
-///  - a PublishDhtMeta message for the crud-status
-///  - a PublishDhtMeta message for the crud-link
+/// Send to network a publish request for either delete or update aspect information
 fn publish_update_delete_meta(
     network_state: &mut NetworkState,
-    entry_address: Address,
-    crud_status: String,
+    orig_entry_address: Address,
+    crud_status: CrudStatus,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
     // publish crud-status
+
+    let aspect = match crud_status {
+        CrudStatus::Modified => EntryAspect::Update(
+            entry_with_header.entry.clone(),
+            entry_with_header.header.clone(),
+        ),
+        CrudStatus::Deleted => EntryAspect::Deletion(entry_with_header.header.clone()),
+        crud => {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Unexpeced CRUD variant {:?}",
+                crud
+            )));
+        }
+    };
+
     send(
         network_state,
-        JsonProtocol::PublishMeta(DhtMetaData {
-            dna_address: network_state.dna_address.clone().unwrap(),
-            provider_agent_id: network_state.agent_id.clone().unwrap(),
-            entry_address: entry_address.clone(),
-            attribute: crud_status,
-            content_list: vec![serde_json::from_str(
-                &serde_json::to_string(&entry_with_header).unwrap(),
-            )
-            .unwrap()],
+        JsonProtocol::PublishEntry(ProvidedEntryData {
+            dna_address: network_state.dna_address.clone().unwrap().into(),
+            provider_agent_id: network_state.agent_id.clone().unwrap().into(),
+            entry: EntryData {
+                entry_address: orig_entry_address,
+                aspect_list: vec![aspect.into()],
+            },
         }),
     )?;
 
@@ -67,75 +80,76 @@ fn publish_update_delete_meta(
 
 /// Send to network a PublishMeta message holding a link metadata to `entry_with_header`
 fn publish_link_meta(
-    context: &Arc<Context>,
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
-    let (link_type, link_attribute) = match entry_with_header.entry.clone() {
-        Entry::LinkAdd(link_add_entry) => (link_add_entry, Attribute::Link),
-        Entry::LinkRemove(link_remove) => (link_remove, Attribute::LinkRemove),
+    let (base, aspect) = match entry_with_header.entry.clone() {
+        Entry::LinkAdd(link_data) => (
+            link_data.link().base().clone(),
+            EntryAspect::LinkAdd(link_data, entry_with_header.header.clone()),
+        ),
+        Entry::LinkRemove((link_data, links_to_remove)) => (
+            link_data.link().base().clone(),
+            EntryAspect::LinkRemove(
+                (link_data, links_to_remove),
+                entry_with_header.header.clone(),
+            ),
+        ),
         _ => {
             return Err(HolochainError::ErrorGeneric(format!(
-                "Received bad entry type. Expected Entry::LinkAdd received {:?}",
+                "Received bad entry type. Expected Entry::LinkAdd/Remove received {:?}",
                 entry_with_header.entry,
             )));
         }
     };
-    let link = link_type.link().clone();
-
-    context.log(format!(
-        "debug/reduce/link_meta: Publishing link meta for link: {:?}",
-        link
-    ));
-
     send(
         network_state,
-        JsonProtocol::PublishMeta(DhtMetaData {
+        JsonProtocol::PublishEntry(ProvidedEntryData {
             dna_address: network_state.dna_address.clone().unwrap(),
-            provider_agent_id: network_state.agent_id.clone().unwrap(),
-            entry_address: link.base().clone(),
-            attribute: link_attribute.to_string(),
-            content_list: vec![serde_json::from_str(
-                &serde_json::to_string(&entry_with_header).unwrap(),
-            )
-            .unwrap()],
+            provider_agent_id: network_state.agent_id.clone().unwrap().into(),
+            entry: EntryData {
+                entry_address: base,
+                aspect_list: vec![aspect.into()],
+            },
         }),
     )
 }
 
 fn reduce_publish_inner(
-    context: &Arc<Context>,
     network_state: &mut NetworkState,
+    root_state: &State,
     address: &Address,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
-    let entry_with_header = fetch_entry_with_header(&address, &context)?;
+    let entry_with_header = fetch_entry_with_header(&address, root_state)?;
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            if entry_with_header.header.link_update_delete().is_some() {
-                publish_update_delete_meta(
+            match entry_with_header.header.link_update_delete() {
+                Some(modified_entry) => publish_update_delete_meta(
                     network_state,
-                    entry_with_header.entry.address(),
-                    String::from(CrudStatus::Modified),
+                    modified_entry,
+                    CrudStatus::Modified,
                     &entry_with_header.clone(),
-                )
-            } else {
-                Ok(())
+                ),
+                None => Ok(()),
             }
         }),
         EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
+            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
         EntryType::LinkRemove => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
+            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
         EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            publish_update_delete_meta(
-                network_state,
-                entry_with_header.entry.address(),
-                String::from(CrudStatus::Deleted),
-                &entry_with_header.clone(),
-            )
+            match entry_with_header.header.link_update_delete() {
+                Some(modified_entry) => publish_update_delete_meta(
+                    network_state,
+                    modified_entry,
+                    CrudStatus::Deleted,
+                    &entry_with_header.clone(),
+                ),
+                None => Ok(()),
+            }
         }),
         _ => Err(HolochainError::NotImplemented(
             "reduce_publish_inner".into(),
@@ -144,14 +158,14 @@ fn reduce_publish_inner(
 }
 
 pub fn reduce_publish(
-    context: Arc<Context>,
     network_state: &mut NetworkState,
+    root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let address = unwrap_to!(action => crate::action::Action::Publish);
 
-    let result = reduce_publish_inner(&context, network_state, &address);
+    let result = reduce_publish_inner(network_state, root_state, &address);
     network_state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::Publish(match result {
@@ -169,7 +183,8 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use holochain_core_types::entry::test_entry;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     pub fn reduce_publish_test() {
@@ -179,7 +194,7 @@ mod tests {
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::Publish(entry.address()));
 
-        store.reduce(context.clone(), action_wrapper);
+        store.reduce(action_wrapper);
     }
 
 }

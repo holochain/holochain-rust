@@ -9,13 +9,13 @@ use crate::{
         CallbackFnCall, ZomeFnCall,
     },
 };
-use holochain_core_types::{
-    error::{
-        HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
-        ZomeApiInternalResult,
-    },
-    json::JsonString,
+use holochain_core_types::error::{
+    HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
+    ZomeApiInternalResult,
 };
+
+use holochain_json_api::json::JsonString;
+
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use std::{convert::TryFrom, fmt, sync::Arc};
 use wasmi::{Externals, HostError, RuntimeArgs, RuntimeValue, Trap, TrapKind};
@@ -44,10 +44,10 @@ pub enum WasmCallData {
 }
 
 #[derive(Debug)]
-struct BadCallError();
+struct BadCallError(String);
 impl fmt::Display for BadCallError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Bad calling context")
+        write!(f, "Bad calling context: {}", self.0)
     }
 }
 
@@ -68,6 +68,27 @@ impl WasmCallData {
             WasmCallData::CallbackCall(data) => data.call.fn_name.clone(),
             WasmCallData::DirectCall(name, _) => name.to_string(),
         }
+    }
+}
+
+impl fmt::Display for WasmCallData {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "fn_name: {} ({})",
+            self.fn_name(),
+            match self {
+                WasmCallData::ZomeCall(_data) => "ZomeCall",
+                WasmCallData::CallbackCall(_data) => "CallbackCall",
+                WasmCallData::DirectCall(_name, _) => "DirectCall",
+            }
+        )
+    }
+}
+
+impl fmt::Debug for WasmCallData {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "WasmCallData({})", self)
     }
 }
 
@@ -94,14 +115,20 @@ impl Runtime {
     pub fn zome_call_data(&self) -> Result<ZomeCallData, Trap> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.clone()),
-            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError())))),
+            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError(format!(
+                "zome_call_data: {:?}",
+                &self.data
+            )))))),
         }
     }
 
     pub fn callback_call_data(&self) -> Result<CallbackCallData, Trap> {
         match &self.data {
             WasmCallData::CallbackCall(ref data) => Ok(data.clone()),
-            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError())))),
+            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError(format!(
+                "callback_call_data: {:?}",
+                &self.data
+            )))))),
         }
     }
 
@@ -119,7 +146,10 @@ impl Runtime {
                 fn_name: data.call.fn_name.clone(),
                 parameters: data.call.parameters.clone(),
             }),
-            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError())))),
+            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError(format!(
+                "call_data: {:?}",
+                &self.data
+            )))))),
         }
     }
 
@@ -127,7 +157,10 @@ impl Runtime {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.context.clone()),
             WasmCallData::CallbackCall(ref data) => Ok(data.context.clone()),
-            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError())))),
+            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError(format!(
+                "context data: {:?}",
+                &self.data
+            )))))),
         }
     }
 

@@ -18,6 +18,7 @@ help:
 	@echo "run 'make test_holochain' to test holochain builds"
 	@echo "run 'make test_cli' to build and test the command line tool builds"
 	@echo "run 'make install_cli' to build and install the command line tool builds"
+	@echo "run 'make build_conductor_wasm' to build the wasm light-client browser conductor"
 	@echo "run 'make test-something' to run cargo tests matching 'something'"
 
 SHELL = /bin/bash
@@ -165,14 +166,19 @@ test_cli: build_cli
 	cd cli && RUSTFLAGS="-D warnings" $(CARGO) test
 
 test_app_spec: RUST_VERSION=$(CORE_RUST_VERSION)
-test_app_spec: version_rustup ensure_wasm_target install_cli build_nodejs_conductor
+test_app_spec: version_rustup ensure_wasm_target install_cli build_rust_conductor
 	@echo -e "\033[0;93m## Testing app_spec... ##\033[0m"
-	cd app_spec && ./build_and_test.sh
+	( cd app_spec && ./build_and_test.sh )
 
 build_nodejs_conductor: RUST_VERSION=$(CORE_RUST_VERSION)
 build_nodejs_conductor: version_rustup core_toolchain
 	@echo -e "\033[0;93m## Building nodejs_conductor... ##\033[0m"
 	./scripts/build_nodejs_conductor.sh
+
+build_rust_conductor: RUST_VERSION=$(CORE_RUST_VERSION)
+build_rust_conductor: version_rustup core_toolchain
+	@echo -e "\033[0;93m## Building rust conductor... ##\033[0m"
+	$(CARGO) build -p holochain --release && $(CARGO) install -f --path conductor
 
 c_build: core_toolchain
 	cd dna_c_binding && $(CARGO) build
@@ -186,10 +192,17 @@ wasm_build: ensure_wasm_target
 	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 
+.PHONY: install_wasm_bindgen_cli
+install_wasm_bindgen_cli:
+	@if ! $(CARGO_TOOLS) install --list | grep -q 'wasm-bindgen-cli v0.2.32'; then \
+		echo -e "\033[0;93m## Installing wasm_bindgen_cli ##\033[0m"; \
+		$(CARGO_TOOLS) install --force wasm-bindgen-cli --vers "0.2.32"; \
+	fi
+
 .PHONY: build_holochain
 build_holochain: core_toolchain wasm_build
 	@echo -e "\033[0;93m## Building holochain... ##\033[0m"
-	$(CARGO) build --all --exclude hc
+	$(CARGO) build --all --exclude hc --exclude conductor_wasm
 
 .PHONY: build_cli
 build_cli: core_toolchain ensure_wasm_target
@@ -206,9 +219,14 @@ install_cli: build_cli
 	@echo -e "\033[0;93m## Installing hc command... ##\033[0m"
 	cd cli && $(CARGO) install -f --path .
 
+.PHONY: build_conductor_wasm
+build_conductor_wasm: ensure_wasm_target install_wasm_bindgen_cli
+	$(CARGO) build --release -p holochain_conductor_wasm --target wasm32-unknown-unknown
+	wasm-bindgen target/wasm32-unknown-unknown/release/holochain_conductor_wasm.wasm --out-dir conductor_wasm/npm_package/gen --nodejs
+
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci
-	$(CARGO) tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive
+	$(CARGO) tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_json_derive
 
 .PHONY: code_coverage_crate
 code_coverage_crate: core_toolchain wasm_build install_ci

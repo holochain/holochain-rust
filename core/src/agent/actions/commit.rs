@@ -8,9 +8,9 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
+use holochain_core_types::{entry::Entry, error::HolochainError};
+use holochain_persistence_api::cas::content::Address;
 use std::{pin::Pin, sync::Arc};
-//use core::mem::PinMut;
 
 /// Commit Action Creator
 /// This is the high-level commit function that wraps the whole commit process and is what should
@@ -22,8 +22,11 @@ pub async fn commit_entry(
     maybe_link_update_delete: Option<Address>,
     context: &Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let action_wrapper =
-        ActionWrapper::new(Action::Commit((entry.clone(), maybe_link_update_delete)));
+    let action_wrapper = ActionWrapper::new(Action::Commit((
+        entry.clone(),
+        maybe_link_update_delete,
+        vec![],
+    )));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     await!(CommitFuture {
         context: context.clone(),

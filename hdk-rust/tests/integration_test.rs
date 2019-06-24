@@ -2,6 +2,8 @@
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_json_api;
+extern crate holochain_persistence_api;
 extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
@@ -11,7 +13,7 @@ extern crate serde_derive;
 extern crate hdk;
 extern crate holochain_wasm_utils;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 #[cfg(not(windows))]
 use hdk::error::ZomeApiError;
@@ -21,7 +23,7 @@ use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
+    crud_status::CrudStatus,
     dna::{
         entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
@@ -32,11 +34,16 @@ use holochain_core_types::{
         Entry,
     },
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
-    hash::HashString,
-    json::JsonString,
 };
+
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::{
+    cas::content::{Address, AddressableContent},
+    hash::HashString,
+};
+
 #[cfg(not(windows))]
-use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error::CoreError};
+use holochain_core_types::{entry::EntryWithMeta, error::CoreError};
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
@@ -197,7 +204,22 @@ pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 }
 
 #[no_mangle]
-pub fn hc_grant_capability(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
@@ -320,7 +342,7 @@ fn start_holochain_instance<T: Into<String>>(
             .unwrap();
         test_entry_type.links_to.push(LinksTo {
             target_type: String::from("testEntryType"),
-            tag: String::from("test-tag"),
+            link_type: String::from("test"),
         });
     }
 
@@ -329,7 +351,7 @@ fn start_holochain_instance<T: Into<String>>(
         let mut link_validator = EntryTypeDef::new();
         link_validator.links_to.push(LinksTo {
             target_type: String::from("link_validator"),
-            tag: String::from("longer"),
+            link_type: String::from("longer"),
         });
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
@@ -575,16 +597,14 @@ fn can_link_entries() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from_json(r#"{"Ok":null}"#));
 }
 
 #[test]
 fn can_remove_link() {
-    let (mut hc, _) = start_holochain_instance("can_link_entries", "alice");
+    let (mut hc, _) = start_holochain_instance("can_remove_link", "alice");
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from_json(r#"{"Ok":null}"#));
 }
 
 #[test]
@@ -619,10 +639,14 @@ fn can_roundtrip_links() {
         LinksResult {
             address: entry_address_2.clone(),
             headers: Vec::new(),
+            tag: "test-tag".into(),
+            status: CrudStatus::Live,
         },
         LinksResult {
             address: entry_address_3.clone(),
             headers: Vec::new(),
+            tag: "test-tag".into(),
+            status: CrudStatus::Live,
         },
     ]));
     let expected_links = JsonString::from(expected_links);
@@ -635,10 +659,14 @@ fn can_roundtrip_links() {
             LinksResult {
                 address: entry_address_3.clone(),
                 headers: Vec::new(),
+                tag: "test-tag".into(),
+                status: CrudStatus::Live,
             },
             LinksResult {
                 address: entry_address_2.clone(),
                 headers: Vec::new(),
+                tag: "test-tag".into(),
+                status: CrudStatus::Live,
             },
         ]));
     let expected_links_reversed = JsonString::from(expected_links_reversed);

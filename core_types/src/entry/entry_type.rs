@@ -1,5 +1,5 @@
 use error::HolochainError;
-use json::JsonString;
+use holochain_json_api::{error::JsonError, json::JsonString};
 use std::{
     convert::TryFrom,
     fmt::{Display, Formatter, Result as FmtResult},
@@ -59,7 +59,7 @@ pub enum EntryType {
     ChainHeader,
     ChainMigrate,
     CapTokenGrant,
-    CapToken,
+    CapTokenClaim,
 }
 
 impl From<AppEntryType> for EntryType {
@@ -115,7 +115,7 @@ impl FromStr for EntryType {
             sys_prefix!("link_remove") => EntryType::LinkRemove,
             sys_prefix!("link_list") => EntryType::LinkList,
             sys_prefix!("chain_migrate") => EntryType::ChainMigrate,
-            sys_prefix!("cap_token") => EntryType::CapToken,
+            sys_prefix!("cap_token_claim") => EntryType::CapTokenClaim,
             sys_prefix!("cap_token_grant") => EntryType::CapTokenGrant,
             _ => EntryType::App(AppEntryType(s.into())),
         })
@@ -134,7 +134,7 @@ impl From<EntryType> for String {
             EntryType::LinkRemove => sys_prefix!("link_remove"),
             EntryType::LinkList => sys_prefix!("link_list"),
             EntryType::ChainMigrate => sys_prefix!("chain_migrate"),
-            EntryType::CapToken => sys_prefix!("cap_token"),
+            EntryType::CapTokenClaim => sys_prefix!("cap_token_claim"),
             EntryType::CapTokenGrant => sys_prefix!("cap_token_grant"),
         })
     }
@@ -203,7 +203,7 @@ pub mod tests {
             EntryType::LinkList,
             EntryType::ChainHeader,
             EntryType::ChainMigrate,
-            EntryType::CapToken,
+            EntryType::CapTokenClaim,
             EntryType::CapTokenGrant,
         ]
     }
@@ -241,7 +241,7 @@ pub mod tests {
             (sys_prefix!("link_list"), EntryType::LinkList),
             (sys_prefix!("chain_header"), EntryType::ChainHeader),
             (sys_prefix!("chain_migrate"), EntryType::ChainMigrate),
-            (sys_prefix!("cap_token"), EntryType::CapToken),
+            (sys_prefix!("cap_token_claim"), EntryType::CapTokenClaim),
             (sys_prefix!("cap_token_grant"), EntryType::CapTokenGrant),
         ] {
             assert_eq!(

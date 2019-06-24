@@ -1,16 +1,20 @@
 [package]
 name = "holochain_conductor_api"
-version = "0.0.12-alpha1"
+version = "0.0.20-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
-holochain_core_types_derive = { path = "../core_types_derive" }
+holochain_json_derive = "=0.0.1-alpha2"
+holochain_json_api = "=0.0.1-alpha2"
+holochain_persistence_api = "=0.0.1-alpha4"
+holochain_persistence_mem = "=0.0.1-alpha4"
+holochain_persistence_file = "=0.0.1-alpha4"
+holochain_persistence_pickle = "=0.0.1-alpha6"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
-holochain_sodium = { path = "../sodium" }
+lib3h_sodium = "=0.0.1-alpha1"
 holochain_common = { path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"
@@ -28,14 +32,12 @@ colored = "=1.7.0"
 regex = "=1.1.2"
 maplit = "=1.0.1"
 lazy_static = "=1.2.0"
-directories = "=1.0.2"
 json-patch = "=0.2.2"
 hyper = "=0.12.25"
 hyper-staticfile = "=0.3.1"
 tokio = "=0.1.17"
 fs_extra = "=1.1.0"
 rpassword = "=2.1.0"
-dirs = "=1.0.5"
 base64 = "=0.10.1"
 reqwest = "=0.9.11"
 crossbeam-channel = "=0.3.8"

@@ -5,11 +5,12 @@ use crossbeam_channel::Receiver;
 use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
 
 use holochain_core_types::{
-    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityRequest, json::JsonString,
-    signature::Provenance,
+    agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
 };
 use holochain_dpki::key_bundle::KeyBundle;
-use holochain_sodium::secbuf::SecBuf;
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::Address;
+use lib3h_sodium::secbuf::SecBuf;
 use Holochain;
 
 use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
@@ -21,13 +22,13 @@ use std::{
     thread,
 };
 
-use conductor::{ConductorAdmin, ConductorUiAdmin, CONDUCTOR};
+use conductor::{ConductorAdmin, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
 use holochain_dpki::utils::SeedContext;
-use keystore::{KeyType, Keystore};
+use keystore::{KeyType, Keystore, Secret};
 use serde_json::{self, map::Map};
 
 pub type InterfaceError = String;
@@ -345,6 +346,9 @@ impl ConductorApiBuilder {
     ///     * `id`: [string] internal handle/name of the newly created DNA config
     ///     * `path`: [string] local file path to DNA file
     ///     * `expected_hash`: [string] (optional) the hash of this DNA. If this does not match the actual hash, installation will fail.
+    ///     * `properties`: [object] (optional) extra data to include in the "properties" section of the DNA
+    ///     * `uuid`: [string] (optional) value to override "uuid" section of the DNA
+    ///     * `copy`: [bool] (optional) copy DNA file to storage directory
     ///
     ///  * `admin/dna/uninstall`
     ///     Uninstalls a DNA from the conductor config. Recursively also removes (and stops)
@@ -473,14 +477,19 @@ impl ConductorApiBuilder {
                     None => None,
                 };
                 let properties = params_map.get("properties");
-                conductor_call!(|c| c.install_dna_from_file(
+                let uuid = params_map
+                    .get("uuid")
+                    .and_then(|v| v.as_str())
+                    .map(|v| v.to_string());
+                let dna_hash = conductor_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
                     id.to_string(),
                     copy,
                     expected_hash,
-                    properties
+                    properties,
+                    uuid,
                 ))?;
-                Ok(json!({"success": true}))
+                Ok(json!({ "success": true, "dna_hash": dna_hash }))
             });
 
         self.io.add_method("admin/dna/uninstall", move |params| {
@@ -865,6 +874,28 @@ impl ConductorApiBuilder {
         self
     }
 
+    /// Adds extra functionality for running tests via the RPC interface
+    ///
+    /// - `test/agent/add`
+    ///     Adds a test agent. Test agents do not use the regular keystore and instead use
+    ///     the test_keystore_loader. This makes test running much faster
+    ///     Params:
+    ///         - id [String] Id to assign to the agent to refer to it in interfaces
+    ///         - name [String] Nickname for the agent. Can be the same as agent_id
+    ///     Returns: Json object containing the newly created agent address
+    pub fn with_test_admin_functions(mut self) -> Self {
+        self.io.add_method("test/agent/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            let name = Self::get_as_string("name", &params_map)?;
+
+            let agent_address = conductor_call!(|c| c.add_test_agent(id, name))?;
+            Ok(json!({ "agent_address": agent_address }))
+        });
+
+        self
+    }
+
     pub fn with_outsource_signing_callback(
         mut self,
         agent_id: AgentId,
@@ -983,6 +1014,33 @@ impl ConductorApiBuilder {
 
             Ok(json!({ "signature": String::from(signature) }))
         });
+
+        let k = keystore.clone();
+        self.io
+            .add_method("agent/keystore/get_public_key", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let src_id = Self::get_as_string("src_id", &params_map)?;
+
+                let secret = k.lock().unwrap().get(&src_id).map_err(|err| {
+                    jsonrpc_core::Error::invalid_params(format!(
+                        r#"error getting "{}": {}"#,
+                        src_id, err
+                    ))
+                })?;
+
+                let pub_key = match *secret.lock().unwrap() {
+                    Secret::SigningKey(ref mut keypair) => keypair.public.to_owned(),
+                    Secret::EncryptingKey(ref mut keypair) => keypair.public.to_owned(),
+                    _ => {
+                        return Err(jsonrpc_core::Error::invalid_params(format!(
+                            r#""{}" must be a signing or encrypting key"#,
+                            src_id
+                        )));
+                    }
+                };
+
+                Ok(json!({ "pub_key": pub_key }))
+            });
 
         self
     }

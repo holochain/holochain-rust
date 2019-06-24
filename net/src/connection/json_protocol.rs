@@ -4,22 +4,29 @@
 
 #![allow(non_snake_case)]
 
-use serde_json;
-
+use super::protocol::Protocol;
 use failure::Error;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
 use std::convert::TryFrom;
 
-use super::protocol::Protocol;
+//--------------------------------------------------------------------------------------------------
+// Generic response
+//--------------------------------------------------------------------------------------------------
 
-/// Tuple holding all the info required for identifying a metadata.
-/// (entry_address, attribute, content)
-/// TODO: Content is supposed to be a HashString but for now its JSON because of how Core is
-/// currently handling Meta.
-pub type MetaTuple = (Address, String, serde_json::Value);
-/// (entry_address, attribute)
-pub type MetaKey = (Address, String);
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct GenericResultData {
+    pub dna_address: Address,
+    #[serde(rename = "_id")]
+    pub request_id: String,
+    pub to_agent_id: Address,
+    pub result_info: Vec<u8>,
+}
+
+//--------------------------------------------------------------------------------------------------
+// Config & State
+//--------------------------------------------------------------------------------------------------
 
 fn get_default_state_id() -> String {
     "undefined".to_string()
@@ -29,7 +36,7 @@ fn get_default_state_bindings() -> Vec<String> {
     Vec::new()
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
 pub struct StateData {
     pub state: String,
     #[serde(default = "get_default_state_id")]
@@ -38,178 +45,174 @@ pub struct StateData {
     pub bindings: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct ConfigData {
     pub config: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+//--------------------------------------------------------------------------------------------------
+// Connection
+//--------------------------------------------------------------------------------------------------
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct ConnectData {
-    #[serde(rename = "address")]
     pub peer_address: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct PeerData {
-    #[serde(rename = "agentId")]
-    pub agent_id: String,
+    pub agent_id: Address,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+//--------------------------------------------------------------------------------------------------
+// Direct messaging
+//--------------------------------------------------------------------------------------------------
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageData {
     pub dna_address: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
-    pub to_agent_id: String,
-    pub from_agent_id: String,
+    pub to_agent_id: Address,
+    pub from_agent_id: Address,
     #[serde(rename = "data")]
-    pub content: serde_json::Value,
+    pub content: Vec<u8>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+//--------------------------------------------------------------------------------------------------
+// DNA tracking
+//--------------------------------------------------------------------------------------------------
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackDnaData {
     pub dna_address: Address,
-    pub agent_id: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-#[serde(rename_all = "camelCase")]
-pub struct SuccessResultData {
-    pub dna_address: Address,
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    pub to_agent_id: String,
-    pub success_info: serde_json::Value,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-#[serde(rename_all = "camelCase")]
-pub struct FailureResultData {
-    pub dna_address: Address,
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    pub to_agent_id: String,
-    pub error_info: serde_json::Value,
+    pub agent_id: Address,
 }
 
 //--------------------------------------------------------------------------------------------------
-// DHT Entry
+// Entry
 //--------------------------------------------------------------------------------------------------
 
-/// Drop some data request from own p2p-module
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct DropEntryData {
-    pub dna_address: Address,
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    #[serde(rename = "dataAddress")]
+pub struct EntryAspectData {
+    pub aspect_address: Address,
+    pub type_hint: String,
+    pub aspect: Vec<u8>,
+    pub publish_ts: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct EntryData {
     pub entry_address: Address,
+    pub aspect_list: Vec<EntryAspectData>,
 }
 
-/// Data Request from some other agent
+impl EntryData {
+    /// get an EntryAspectData from an EntryData
+    pub fn get(&self, aspect_address: &Address) -> Option<EntryAspectData> {
+        for aspect in self.aspect_list.iter() {
+            if aspect.aspect_address == *aspect_address {
+                return Some(aspect.clone());
+            }
+        }
+        None
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// Query
+//--------------------------------------------------------------------------------------------------
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryEntryData {
+    pub dna_address: Address,
+    pub entry_address: Address,
+    #[serde(rename = "_id")]
+    pub request_id: String,
+    pub requester_agent_id: Address,
+    pub query: Vec<u8>, // opaque query struct
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryEntryResultData {
+    pub dna_address: Address,
+    pub entry_address: Address,
+    #[serde(rename = "_id")]
+    pub request_id: String,
+    pub requester_agent_id: Address,
+    pub responder_agent_id: Address,
+    pub query_result: Vec<u8>, // opaque query-result struct
+}
+
+//--------------------------------------------------------------------------------------------------
+// Publish & Store
+//--------------------------------------------------------------------------------------------------
+
+///
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ProvidedEntryData {
+    pub dna_address: Address,
+    pub provider_agent_id: Address,
+    pub entry: EntryData,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct StoreEntryAspectData {
+    #[serde(rename = "_id")]
+    pub request_id: String,
+    pub dna_address: Address,
+    pub provider_agent_id: Address,
+    pub entry_address: Address,
+    pub entry_aspect: EntryAspectData,
+}
+
+//--------------------------------------------------------------------------------------------------
+// Gossip
+//--------------------------------------------------------------------------------------------------
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 #[serde(rename_all = "camelCase")]
 pub struct FetchEntryData {
     pub dna_address: Address,
+    /// Request Entry from a specific Agent
+    pub provider_agent_id: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
-    pub requester_agent_id: String,
-    #[serde(rename = "address")]
     pub entry_address: Address,
+    pub aspect_address_list: Option<Vec<Address>>, // None -> Get all, otherwise get specified aspects
 }
 
-/// Generic DHT data message
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct EntryData {
-    pub dna_address: Address,
-    pub provider_agent_id: String,
-    #[serde(rename = "address")]
-    pub entry_address: Address,
-    #[serde(rename = "content")]
-    pub entry_content: serde_json::Value,
-}
-
-/// DHT data response from a request
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 #[serde(rename_all = "camelCase")]
 pub struct FetchEntryResultData {
     pub dna_address: Address,
+    pub provider_agent_id: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
-    pub requester_agent_id: String,
-    pub provider_agent_id: String,
-    #[serde(rename = "address")]
-    pub entry_address: Address,
-    #[serde(rename = "content")]
-    pub entry_content: serde_json::Value,
+    pub entry: EntryData,
 }
 
 //--------------------------------------------------------------------------------------------------
-// DHT metadata
-//--------------------------------------------------------------------------------------------------
-
-/// Metadata Request from another agent
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-#[serde(rename_all = "camelCase")]
-pub struct FetchMetaData {
-    pub dna_address: Address,
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    pub requester_agent_id: String,
-    pub entry_address: Address,
-    pub attribute: String,
-}
-
-/// Generic DHT metadata message
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-#[serde(rename_all = "camelCase")]
-pub struct DhtMetaData {
-    pub dna_address: Address,
-    pub provider_agent_id: String,
-    pub entry_address: Address,
-    pub attribute: String,
-    // single string or list of hashs
-    pub content_list: Vec<serde_json::Value>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-#[serde(rename_all = "camelCase")]
-pub struct FetchMetaResultData {
-    pub dna_address: Address,
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    pub requester_agent_id: String,
-    pub provider_agent_id: String,
-    pub entry_address: Address,
-    pub attribute: String,
-    // // List of (hash, content) pairs.
-    // single string or list of hashs
-    pub content_list: Vec<serde_json::Value>,
-}
-
-/// Drop some data request from own p2p-module
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-#[serde(rename_all = "camelCase")]
-pub struct DropMetaData {
-    pub dna_address: Address,
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    pub entry_address: Address,
-    pub attribute: String,
-}
-
-//--------------------------------------------------------------------------------------------------
-// List (publish & hold)
+// Get Lists
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 #[serde(rename_all = "camelCase")]
 pub struct GetListData {
     pub dna_address: Address,
+    /// Request List from a specific Agent
+    pub provider_agent_id: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
 }
@@ -218,23 +221,14 @@ pub struct GetListData {
 #[serde(rename_all = "camelCase")]
 pub struct EntryListData {
     pub dna_address: Address,
+    pub provider_agent_id: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
-    pub entry_address_list: Vec<Address>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-#[serde(rename_all = "camelCase")]
-pub struct MetaListData {
-    pub dna_address: Address,
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    // List of meta identifiers, a pair: (entry_address, attribute, hashed_content)
-    pub meta_list: Vec<MetaTuple>,
+    pub address_map: std::collections::HashMap<Address, Vec<Address>>, // Aspect addresses per entry
 }
 
 //--------------------------------------------------------------------------------------------------
-// JsonProtocol Enum
+// Enum
 //--------------------------------------------------------------------------------------------------
 
 /// Enum holding all message types that serialize as json in the 'hc-core <-> P2P network module' protocol.
@@ -249,20 +243,19 @@ pub struct MetaListData {
 #[serde(rename_all = "camelCase", tag = "method")]
 pub enum JsonProtocol {
     // -- Generic responses -- //
-    /// Generic success response to a request (any message with an _id field.).
-    /// Used when the request is not expecting a response holding specific data.
-    SuccessResult(SuccessResultData),
-    /// Generic failure response to a request (any message with an _id field.)
+    /// Success response to a request (any message with an _id field.)
+    SuccessResult(GenericResultData),
+    /// Failure response to a request (any message with an _id field.)
     /// Can also be a response to a mal-formed request.
-    FailureResult(FailureResultData),
+    FailureResult(GenericResultData),
 
-    // -- Connection -- //
+    // -- DNA tracking -- //
     /// Order the p2p module to be part of the network of the specified DNA.
     TrackDna(TrackDnaData),
-
     /// Order the p2p module to leave the network of the specified DNA.
     UntrackDna(TrackDnaData),
 
+    // -- Connection -- //
     /// Request the network module to connect to a specific Peer. Used for bootstrapping only.
     /// Connection address should be an opaque transport-layer connection string,
     /// which will generally be a URI, but in the case of libp2p is a multiaddr.
@@ -271,7 +264,7 @@ pub enum JsonProtocol {
     /// This is sent when another Peer joins the Network.
     PeerConnected(PeerData),
 
-    // -- Config (deprecated?) -- //
+    // -- Config & State -- //
     /// Request the current state from the p2p module
     #[serde(rename = "requestState")]
     GetState,
@@ -298,63 +291,31 @@ pub enum JsonProtocol {
     HandleSendMessageResult(MessageData),
 
     // -- Entry -- //
-    /// Request an Entry from the DHT network of a DNA.
-    FetchEntry(FetchEntryData),
-    /// The network's reponse from `FetchEntry`
-    FetchEntryResult(FetchEntryResultData),
-    /// The network module is requesting its Core to respond to a `FetchEntry`
+    /// Another node, or the network module itself is requesting data from us
     HandleFetchEntry(FetchEntryData),
-    /// Successful response for a `FetchEntry` request from Core
+    /// Successful data response for a `HandleFetchEntry` request
     HandleFetchEntryResult(FetchEntryResultData),
-
     /// Core's request to add an Entry to the DHT network.
     /// The network will take care to figure out which nodes are going to store it.
-    PublishEntry(EntryData),
+    PublishEntry(ProvidedEntryData),
     /// Network request for Core to store an Entry in its DHT shard.
-    HandleStoreEntry(EntryData),
-    /// Network informing Core that it isn't required to hold an Entry in its DHT shard anymore.
-    HandleDropEntry(DropEntryData),
+    HandleStoreEntryAspect(StoreEntryAspectData),
 
-    // -- Meta -- //
-    /// Request a Meta from the DHT network of a DNA.
-    FetchMeta(FetchMetaData),
-    /// The network's reponse from `FetchMeta`
-    FetchMetaResult(FetchMetaResultData),
-    /// The network module is requesting its Core to respond to a `FetchMeta`
-    HandleFetchMeta(FetchMetaData),
-    /// Successful response for a `HandleFetchMeta` request from Core
-    HandleFetchMetaResult(FetchMetaResultData),
+    // -- Query -- //
+    /// Request some info / data from a Entry
+    QueryEntry(QueryEntryData),
+    QueryEntryResult(QueryEntryResultData),
+    HandleQueryEntry(QueryEntryData),
+    HandleQueryEntryResult(QueryEntryResultData),
 
-    /// Core's request to add a Meta to the DHT network.
-    /// The network will take care to figure out which nodes are going to store it.
-    PublishMeta(DhtMetaData),
-    /// Network request for Core to store a Meta in its DHT shard.
-    HandleStoreMeta(DhtMetaData),
-    /// Network informing Core that it isn't required to hold a Meta in its DHT shard anymore.
-    #[serde(rename = "handleDropData")]
-    HandleDropMeta(DropMetaData),
-
-    // -- Entry lists -- //
+    // -- Get lists -- //
     /// The p2p module requests from Core the list of entries it has authored
     /// and wants published on the network.
-    HandleGetPublishingEntryList(GetListData),
-    /// Core's response to a `HandleGetPublishingEntryList
-    HandleGetPublishingEntryListResult(EntryListData),
+    HandleGetAuthoringEntryList(GetListData),
+    HandleGetAuthoringEntryListResult(EntryListData),
     /// The p2p module requests from Core the list of entries it is holding for the network.
-    HandleGetHoldingEntryList(GetListData),
-    /// Core's response to a `HandleGetHoldingEntryList`
-    HandleGetHoldingEntryListResult(EntryListData),
-
-    // -- Meta lists -- //
-    /// The p2p module requests from Core the list of Meta it has authored
-    /// and wants published on the network.
-    HandleGetPublishingMetaList(GetListData),
-    /// Core's response to a `HandleGetPublishingMetaList`
-    HandleGetPublishingMetaListResult(MetaListData),
-    /// The p2p module requests from Core the list of Meta it is holding for the network.
-    HandleGetHoldingMetaList(GetListData),
-    /// Core's response to a `HandleGetHoldingMetaList`
-    HandleGetHoldingMetaListResult(MetaListData),
+    HandleGetGossipingEntryList(GetListData),
+    HandleGetGossipingEntryListResult(EntryListData),
 }
 
 /// Conversions
@@ -392,6 +353,14 @@ impl From<JsonProtocol> for Protocol {
 mod tests {
     use super::*;
 
+    macro_rules! hashmap {
+        ($( $key: expr => $val: expr ),*) => {{
+            let mut map = ::std::collections::HashMap::new();
+            $( map.insert($key, $val); )*
+                map
+        }}
+    }
+
     macro_rules! test_convert {
         ($e:expr) => {
             let orig = $e;
@@ -399,6 +368,22 @@ mod tests {
             let w = JsonProtocol::try_from(p).unwrap();
             assert_eq!(orig, w);
         };
+    }
+
+    fn test_aspect() -> EntryAspectData {
+        EntryAspectData {
+            aspect_address: "HkAspect".into(),
+            type_hint: "test_aspect".into(),
+            aspect: vec![1, 2, 3, 4],
+            publish_ts: 42,
+        }
+    }
+
+    fn test_entry() -> EntryData {
+        EntryData {
+            entry_address: "HkEntry".into(),
+            aspect_list: vec![test_aspect()],
+        }
     }
 
     #[test]
@@ -461,7 +446,7 @@ mod tests {
     #[test]
     fn it_can_convert_PeerConnected() {
         test_convert!(JsonProtocol::PeerConnected(PeerData {
-            agent_id: "test_id".to_string(),
+            agent_id: Address::from("test_id"),
         }));
     }
 
@@ -470,9 +455,9 @@ mod tests {
         test_convert!(JsonProtocol::SendMessage(MessageData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            to_agent_id: "test_to".to_string(),
-            from_agent_id: "test_from".to_string(),
-            content: json!("hello"),
+            to_agent_id: Address::from("test_to"),
+            from_agent_id: Address::from("test_from"),
+            content: "hello".into(),
         }));
     }
 
@@ -481,9 +466,9 @@ mod tests {
         test_convert!(JsonProtocol::SendMessageResult(MessageData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            to_agent_id: "test_to".to_string(),
-            from_agent_id: "test_from".to_string(),
-            content: json!("hello"),
+            to_agent_id: Address::from("test_to"),
+            from_agent_id: Address::from("test_from"),
+            content: "hello".into(),
         }));
     }
 
@@ -492,9 +477,9 @@ mod tests {
         test_convert!(JsonProtocol::HandleSendMessage(MessageData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            to_agent_id: "test_to".to_string(),
-            from_agent_id: "test_from".to_string(),
-            content: json!("hello"),
+            to_agent_id: Address::from("test_to"),
+            from_agent_id: Address::from("test_from"),
+            content: "hello".into(),
         }));
     }
 
@@ -503,19 +488,20 @@ mod tests {
         test_convert!(JsonProtocol::HandleSendMessageResult(MessageData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            to_agent_id: "test_to".to_string(),
-            from_agent_id: "test_from".to_string(),
-            content: json!("hello"),
+            to_agent_id: Address::from("test_to"),
+            from_agent_id: Address::from("test_from"),
+            content: "hello".into(),
         }));
     }
 
     #[test]
     fn it_can_convert_FetchEntry() {
-        test_convert!(JsonProtocol::FetchEntry(FetchEntryData {
+        test_convert!(JsonProtocol::HandleFetchEntry(FetchEntryData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            requester_agent_id: "test_to".to_string(),
+            provider_agent_id: Address::from("test_from"),
             entry_address: "Hk42".into(),
+            aspect_address_list: None,
         }));
     }
     #[test]
@@ -523,19 +509,9 @@ mod tests {
         test_convert!(JsonProtocol::HandleFetchEntry(FetchEntryData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            requester_agent_id: "test_to".to_string(),
+            provider_agent_id: Address::from("test_from"),
             entry_address: "Hk42".into(),
-        }));
-    }
-    #[test]
-    fn it_can_convert_FetchEntryResult() {
-        test_convert!(JsonProtocol::FetchEntryResult(FetchEntryResultData {
-            dna_address: "test_dna".into(),
-            request_id: "test_id".to_string(),
-            requester_agent_id: "test_to".to_string(),
-            provider_agent_id: "test_from".to_string(),
-            entry_address: "Hk42".into(),
-            entry_content: json!("hello")
+            aspect_address_list: None,
         }));
     }
     #[test]
@@ -543,200 +519,91 @@ mod tests {
         test_convert!(JsonProtocol::HandleFetchEntryResult(FetchEntryResultData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
-            requester_agent_id: "test_to".to_string(),
-            provider_agent_id: "test_from".to_string(),
-            entry_address: "Hk42".into(),
-            entry_content: json!("hello")
+            provider_agent_id: Address::from("test_from"),
+            entry: test_entry(),
         }));
     }
     #[test]
     fn it_can_convert_PublishEntry() {
-        test_convert!(JsonProtocol::PublishEntry(EntryData {
+        test_convert!(JsonProtocol::PublishEntry(ProvidedEntryData {
             dna_address: "test_dna".into(),
-            provider_agent_id: "test_from".to_string(),
-            entry_address: "Hk42".into(),
-            entry_content: json!("hello"),
+            provider_agent_id: Address::from("test_from"),
+            entry: test_entry(),
         }));
     }
     #[test]
-    fn it_can_convert_HandleStoreEntry() {
-        test_convert!(JsonProtocol::HandleStoreEntry(EntryData {
+    fn it_can_convert_HandleStoreEntryAspect() {
+        test_convert!(JsonProtocol::HandleStoreEntryAspect(StoreEntryAspectData {
+            request_id: "req_id".to_string(),
             dna_address: "test_dna".into(),
-            provider_agent_id: "test_from".to_string(),
+            provider_agent_id: Address::from("test_from"),
             entry_address: "Hk42".into(),
-            entry_content: json!("hello"),
-        }));
-    }
-    #[test]
-    fn it_can_convert_HandleDropEntry() {
-        test_convert!(JsonProtocol::HandleDropEntry(DropEntryData {
-            dna_address: "test_dna".into(),
-            request_id: "test_id".to_string(),
-            entry_address: "Hk42".into(),
+            entry_aspect: test_aspect(),
         }));
     }
 
+    // -- Query -- //
+
     #[test]
-    fn it_can_convert_FetchMeta() {
-        test_convert!(JsonProtocol::FetchMeta(FetchMetaData {
+    fn it_can_convert_QueryEntry() {
+        test_convert!(JsonProtocol::QueryEntry(QueryEntryData {
             dna_address: "test_dna".into(),
+            entry_address: "Hk42".into(),
             request_id: "test_id".to_string(),
-            requester_agent_id: "test_to".to_string(),
-            entry_address: "Hk42".into(),
-            attribute: "meta_attribute".to_string(),
+            requester_agent_id: Address::from("test_from"),
+            query: vec![4, 3, 2, 1],
         }));
     }
     #[test]
-    fn it_can_convert_HandleFetchMeta() {
-        test_convert!(JsonProtocol::HandleFetchMeta(FetchMetaData {
+    fn it_can_convert_QueryEntryResult() {
+        test_convert!(JsonProtocol::QueryEntryResult(QueryEntryResultData {
             dna_address: "test_dna".into(),
+            entry_address: "Hk42".into(),
             request_id: "test_id".to_string(),
-            requester_agent_id: "test_to".to_string(),
-            entry_address: "Hk42".into(),
-            attribute: "meta_attribute".to_string(),
-        }));
-    }
-    #[test]
-    fn it_can_convert_FetchMetaResult() {
-        test_convert!(JsonProtocol::FetchMetaResult(FetchMetaResultData {
-            dna_address: "test_dna".into(),
-            request_id: "test_id".to_string(),
-            requester_agent_id: "test_to".to_string(),
-            provider_agent_id: "test_from".to_string(),
-            entry_address: "Hk42".into(),
-            attribute: "meta_attribute".to_string(),
-            content_list: vec![json!("hello-meta")],
-        }));
-    }
-    #[test]
-    fn it_can_convert_HandleFetchMetaResult() {
-        test_convert!(JsonProtocol::HandleFetchMetaResult(FetchMetaResultData {
-            dna_address: "test_dna".into(),
-            request_id: "test_id".to_string(),
-            requester_agent_id: "test_to".to_string(),
-            provider_agent_id: "test_from".to_string(),
-            entry_address: "Hk42".into(),
-            attribute: "meta_attribute".to_string(),
-            content_list: vec![json!("hello-meta")],
-        }));
-    }
-    #[test]
-    fn it_can_convert_PublishMeta() {
-        test_convert!(JsonProtocol::PublishMeta(DhtMetaData {
-            dna_address: "test_dna".into(),
-            provider_agent_id: "test_from".to_string(),
-            entry_address: "Hk42".into(),
-            attribute: "meta_attribute".to_string(),
-            content_list: vec![json!("hello-meta")],
-        }));
-    }
-    #[test]
-    fn it_can_convert_HandleStoreMeta() {
-        test_convert!(JsonProtocol::HandleStoreMeta(DhtMetaData {
-            dna_address: "test_dna".into(),
-            provider_agent_id: "test_from".to_string(),
-            entry_address: "Hk42".into(),
-            attribute: "meta_attribute".to_string(),
-            content_list: vec![json!("hello-meta")],
-        }));
-    }
-    #[test]
-    fn it_can_convert_HandleDropMeta() {
-        test_convert!(JsonProtocol::HandleDropMeta(DropMetaData {
-            dna_address: "test_dna".into(),
-            request_id: "test_id".to_string(),
-            entry_address: "Hk42".into(),
-            attribute: "meta_attribute".to_string(),
+            requester_agent_id: Address::from("test_from"),
+            responder_agent_id: Address::from("test_to"),
+            query_result: vec![4, 3, 2, 1],
         }));
     }
 
+    // -- Entry lists -- //
+
     #[test]
-    fn it_can_convert_HandleGetPublishingEntryList() {
-        test_convert!(JsonProtocol::HandleGetPublishingEntryList(GetListData {
+    fn it_can_convert_HandleGetAuthoringEntryList() {
+        test_convert!(JsonProtocol::HandleGetAuthoringEntryList(GetListData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
+            provider_agent_id: Address::from("test_from"),
         }));
     }
     #[test]
-    fn it_can_convert_HandleGetPublishingEntryListResult() {
-        test_convert!(JsonProtocol::HandleGetPublishingEntryListResult(
+    fn it_can_convert_HandleGetAuthoringEntryListResult() {
+        test_convert!(JsonProtocol::HandleGetAuthoringEntryListResult(
             EntryListData {
                 dna_address: "test_dna".into(),
                 request_id: "test_id".to_string(),
-                entry_address_list: vec!["data1".into(), "data2".into()],
+                address_map: hashmap![Address::from("test_address") => vec!["data1".into(), "data2".into()]],
+                provider_agent_id: Address::from("test_from"),
             }
         ));
     }
     #[test]
-    fn it_can_convert_HandleGetHoldingEntryList() {
-        test_convert!(JsonProtocol::HandleGetHoldingEntryList(GetListData {
+    fn it_can_convert_HandleGetGossipingEntryList() {
+        test_convert!(JsonProtocol::HandleGetGossipingEntryList(GetListData {
             dna_address: "test_dna".into(),
             request_id: "test_id".to_string(),
+            provider_agent_id: Address::from("test_from"),
         }));
     }
     #[test]
-    fn it_can_convert_HandleGetHoldingEntryListResult() {
-        test_convert!(JsonProtocol::HandleGetHoldingEntryListResult(
+    fn it_can_convert_HandleGetGossipingEntryListResult() {
+        test_convert!(JsonProtocol::HandleGetGossipingEntryListResult(
             EntryListData {
                 dna_address: "test_dna".into(),
                 request_id: "test_id".to_string(),
-                entry_address_list: vec!["data1".into(), "data2".into()],
+                address_map: hashmap![Address::from("test_address") => vec!["data1".into(), "data2".into()]],
+                provider_agent_id: Address::from("test_from"),
             }
         ));
-    }
-
-    #[test]
-    fn it_can_convert_HandleGetPublishingMetaList() {
-        test_convert!(JsonProtocol::HandleGetPublishingMetaList(GetListData {
-            dna_address: "test_dna".into(),
-            request_id: "test_id".to_string(),
-        }));
-    }
-    #[test]
-    fn it_can_convert_HandleGetPublishingMetaListResult() {
-        test_convert!(JsonProtocol::HandleGetPublishingMetaListResult(
-            MetaListData {
-                dna_address: "test_dna".into(),
-                request_id: "test_id".to_string(),
-                meta_list: vec![
-                    (
-                        "data1".into(),
-                        "meta_attribute".to_string(),
-                        "entry_address".into()
-                    ),
-                    (
-                        "data2".into(),
-                        "meta_attribute".to_string(),
-                        "other_entry_address".into()
-                    )
-                ],
-            }
-        ));
-    }
-    #[test]
-    fn it_can_convert_HandleGetHoldingMetaList() {
-        test_convert!(JsonProtocol::HandleGetHoldingMetaList(GetListData {
-            dna_address: "test_dna".into(),
-            request_id: "test_id".to_string(),
-        }));
-    }
-    #[test]
-    fn it_can_convert_HandleGetHoldingMetaListResult() {
-        test_convert!(JsonProtocol::HandleGetHoldingMetaListResult(MetaListData {
-            request_id: "test_id".to_string(),
-            dna_address: "test_dna".into(),
-            meta_list: vec![
-                (
-                    "data1".into(),
-                    "meta_attribute".to_string(),
-                    "entry_address".into()
-                ),
-                (
-                    "data2".into(),
-                    "meta_attribute".to_string(),
-                    "other_entry_address".into()
-                )
-            ],
-        }));
     }
 }

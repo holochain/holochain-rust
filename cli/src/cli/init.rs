@@ -70,6 +70,24 @@ fn setup_test_folder(path: &PathBuf, test_folder: &str) -> DefaultResult<()> {
     Ok(())
 }
 
+fn setup_ops(path: &PathBuf) -> DefaultResult<()> {
+    let mut vagrantfile_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(path.join("Vagrantfile"))?;
+    let vagrantfile_starter = include_str!("ops-scaffold/Vagrantfile");
+    vagrantfile_file.write_all(vagrantfile_starter.as_bytes())?;
+
+    let mut defaultnix_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(path.join("default.nix"))?;
+    let defaultnix_starter = include_str!("ops-scaffold/default.nix");
+    defaultnix_file.write_all(defaultnix_starter.as_bytes())?;
+
+    Ok(())
+}
+
 pub fn init(path: &PathBuf) -> DefaultResult<()> {
     if !path.exists() {
         fs::create_dir_all(&path)?;
@@ -104,6 +122,9 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
 
     // create a test folder with useful files
     setup_test_folder(&path, &TEST_DIR_NAME)?;
+
+    // create basic ops files
+    setup_ops(&path)?;
 
     // CLI feedback
     println!(

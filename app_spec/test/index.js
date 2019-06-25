@@ -12,28 +12,39 @@ const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
 const dna = Diorama.dna(dnaPath, 'app-spec')
 const dna2 = Diorama.dna(dnaPath, 'app-spec', {uuid: 'altered-dna'})
 
-const dioramaSimple = new Diorama({
+const commonConductorConfig = {
   instances: {
-    alice: dna,
-    bob: dna,
-    carol: dna,
+    app: dna,
+    app2: dna,
   },
   bridges: [
-    Diorama.bridge('test-bridge', 'alice', 'bob')
+    Diorama.bridge('test-bridge', 'app', 'app2')
   ],
+}
+
+const dioramaSimple = new Diorama({
+  conductors: {
+    alice: commonConductorConfig,
+    bob: commonConductorConfig,
+    carol: commonConductorConfig,
+  },
   debugLog: false,
   executor: tapeExecutor(require('tape')),
   middleware: backwardCompatibilityMiddleware,
 })
 
 const dioramaMultiDna = new Diorama({
-  instances: {
-    alice: dna,
-    bob: dna2,
+  conductors: {
+    conductor: {
+      instances: {
+        app1: dna,
+        app2: dna2,
+      },
+      bridges: [
+        Diorama.bridge('test-bridge', 'app1', 'app2')
+      ],
+    }
   },
-  bridges: [
-    Diorama.bridge('test-bridge', 'alice', 'bob')
-  ],
   debugLog: false,
   executor: tapeExecutor(require('tape')),
   middleware: backwardCompatibilityMiddleware,

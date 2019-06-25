@@ -19,7 +19,7 @@ use hdk::holochain_core_types::{
 };
 
 use hdk::holochain_json_api::{
-    json::JsonsString,
+    json::JsonString,
     error::JsonError
 };
 

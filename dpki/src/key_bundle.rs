@@ -156,9 +156,8 @@ pub(crate) mod tests {
         // Create random data
         let mut message = SecBuf::with_insecure(16);
         message.randomize();
-
         //encrypt it
-        let mut encrypted_message = bundle.encrypt(&mut message).unwrap();
+        let mut encrypted_message = bundle.encrypt(&mut message.clone()).unwrap();
 
         //decrypted same message
         let mut decrypted_message = bundle.decrypt(&mut encrypted_message).unwrap();
@@ -169,7 +168,9 @@ pub(crate) mod tests {
         //read write_lock
         let decrypted_read_lock = decrypted_message.read_lock();
 
+        let message_read_lock = message.read_lock();
+
         //check if decrypted message equals original message
-        assert_eq!(&encrypted_read_lock[0..16], &decrypted_read_lock[0..16])
+        assert_eq!(message_read_lock[0..16], decrypted_read_lock[0..16])
     }
 }

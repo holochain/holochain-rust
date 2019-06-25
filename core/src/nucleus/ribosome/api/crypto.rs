@@ -56,7 +56,21 @@ mod test_super {
                 .to_vec(),
         );
         assert_eq!(
-            JsonString::from_json(r#"{"ok":true,"value":"dGhpcyBpcyBkYXRh","error":"null"}"#),
+            JsonString::from_json(r#"{"ok":true,"value":"FJ/KKN5d7VHUu+8jKiMWuDtIBZclOBETQ8Gnkw==","error":"null"}"#),
+            call_result,
+        );
+    }
+
+    #[test]
+    fn test_zome_api_function_decrypt() {
+        let (call_result, _) = test_zome_api_function(
+            ZomeApiFunction::Crypto.as_str(),
+            r#"{ "payload": "FJ/KKN5d7VHUu+8jKiMWuDtIBZclOBETQ8Gnkw==", "method" : "Decrypt" }"#
+                .as_bytes()
+                .to_vec(),
+        );
+        assert_eq!(
+            JsonString::from_json(r#"{"ok":true,"value":"this is data","error":"null"}"#),
             call_result,
         );
     }

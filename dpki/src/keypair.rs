@@ -180,21 +180,19 @@ impl EncryptingKeyPair {
     /// @return {SecBuf} signature - Empty SecBuf to be filled with the signature
     pub fn encrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
         let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
-        nonce.randomize();
         let mut cipher = SecBuf::with_insecure(data.len() + lib3h_sodium::aead::ABYTES);
         lib3h_sodium::aead::enc(data, &mut self.private, None, &mut nonce, &mut cipher)?;
-        Ok(data.clone())
+        Ok(cipher.clone())
     }
 
     /// encrypt some arbitrary data with the signing private key
     /// @param {SecBuf} data - the data to sign
     /// @return {SecBuf} signature - Empty SecBuf to be filled with the signature
-    pub fn decrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
+    pub fn decrypt(&mut self, cipher: &mut SecBuf) -> HcResult<SecBuf> {
         let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
-        nonce.randomize();
-        let mut cipher = SecBuf::with_insecure(data.len() + lib3h_sodium::aead::ABYTES);
-        lib3h_sodium::aead::dec(data, &mut self.private, None, &mut nonce, &mut cipher)?;
-        Ok(data.clone())
+        let mut decrypted_message = SecBuf::with_insecure(cipher.len() + lib3h_sodium::aead::ABYTES);
+        lib3h_sodium::aead::dec(&mut decrypted_message, &mut self.private, None, &mut nonce, cipher)?;
+        Ok(decrypted_message)
     }
 }
 
@@ -280,4 +278,6 @@ mod tests {
         let succeeded = sign_keys.verify(&mut message, &mut signature);
         assert!(!succeeded);
     }
+
+  
 }

@@ -882,15 +882,15 @@ impl ConductorApiBuilder {
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            let mut message_signature = keybundle
+            let mut encrypted_message = keybundle
                 .lock()
                 .unwrap()
                 .encrypt(&mut message)
                 .expect("Failed to sign with keybundle.");
 
-            let message_signature = message_signature.read_lock();
+            let encrypted_message = encrypted_message.read_lock();
             // Return as base64 encoded string
-            let encrypted_message = base64::encode(&**message_signature);
+            let encrypted_message = base64::encode(&**encrypted_message);
 
             Ok(json!({ "message": encrypted_message }))
         });
@@ -901,24 +901,20 @@ impl ConductorApiBuilder {
         self.io.add_method("agent/decrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
-            // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload.clone());
-
+            //decoded base64 string
+            let decoded_message = base64::decode(&payload).map_err(|_|jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
+            let mut decoded_message_buf = SecBuf::with_insecure(decoded_message.len());
+            decoded_message_buf.from_array(&decoded_message).map_err(|_|jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            let mut message_signature = keybundle
+            let mut decrypted_buf = keybundle
                 .lock()
                 .unwrap()
-                .decrypt(&mut message)
-                .expect("Failed to sign with keybundle.");
+                .decrypt(&mut decoded_message_buf)
+                .map_err(|_|jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
 
-            let message_signature = message_signature.read_lock();
-            // Return as base64 encoded string
-            //let decrypted_message = base64::decode(&**message_signature).map_err(|_|jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
-
-            let decrypted_string =
-                std::str::from_utf8(&*message_signature).expect("could not decrypt");
-            Ok(json!({ "message": decrypted_string }))
+            let decrypted_bytes = decrypted_buf.read_lock();
+            Ok(json!({ "message": &**decrypted_bytes }))
         });
         self
     }
@@ -975,7 +971,7 @@ impl ConductorApiBuilder {
         encryption_service_uri: String,
     ) -> Self {
         let agent_id = agent_id.clone();
-        self.io.add_method("agent/encryption", move |params| {
+        self.io.add_method("agent/encrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
 
@@ -996,7 +992,7 @@ impl ConductorApiBuilder {
         encryption_service_uri: String,
     ) -> Self {
         let agent_id = agent_id.clone();
-        self.io.add_method("agent/decryption", move |params| {
+        self.io.add_method("agent/decrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
 

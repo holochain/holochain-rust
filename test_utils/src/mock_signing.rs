@@ -102,7 +102,8 @@ pub fn mock_encrypt(payload: String, agent_id: &AgentId) -> String { TEST_AGENT_
 /// but with key generated from a static/deterministic mock seed.
 /// This enables unit testing of core code that creates signatures without
 /// depending on the conductor or actual key files.
-pub fn mock_decrypt(payload: String, agent_id: &AgentId) -> String { TEST_AGENT_KEYBUNDLES
+pub fn mock_decrypt(payload: String, agent_id: &AgentId) -> String { 
+        TEST_AGENT_KEYBUNDLES
         .lock()
         .unwrap()
         .get(&agent_id.address())
@@ -111,15 +112,17 @@ pub fn mock_decrypt(payload: String, agent_id: &AgentId) -> String { TEST_AGENT_
                  Test agent keys need to be registered first.", agent_id).as_str())
         .lock()
         .map(|mut keybundle| {
+            let decoded_base_64 = base64::decode(&payload).unwrap();
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload);
+            let mut message = SecBuf::with_insecure(decoded_base_64.len());
+            message.from_array(&decoded_base_64).unwrap();
 
             // Create signature
-            let mut message_signed = keybundle.decrypt(&mut message).expect("Mock signing failed.");
-            let message_signed = message_signed.read_lock();
+            let mut decrypted = keybundle.decrypt(&mut message).expect("Mock signing failed.");
+            let decrypted_lock = decrypted.read_lock();
 
             // Return as base64 encoded string
-            base64::encode(&**message_signed)
+            std::str::from_utf8(&*decrypted_lock).unwrap().to_string()
         })
         .unwrap()
 }

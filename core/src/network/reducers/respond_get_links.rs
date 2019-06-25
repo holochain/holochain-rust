@@ -1,32 +1,38 @@
 use crate::{
     action::ActionWrapper,
-    network::{actions::ActionResponse, reducers::send, state::NetworkState},
+    network::{
+        actions::ActionResponse, query::NetworkQueryResult, reducers::send, state::NetworkState,
+    },
     state::State,
 };
-use holochain_core_types::{cas::content::Address, crud_status::CrudStatus, error::HolochainError};
-use holochain_net::connection::json_protocol::{FetchMetaData, FetchMetaResultData, JsonProtocol};
+use holochain_core_types::{crud_status::CrudStatus, error::HolochainError};
+use holochain_json_api::json::JsonString;
+use holochain_net::connection::json_protocol::{
+    JsonProtocol, QueryEntryData, QueryEntryResultData,
+};
+use holochain_persistence_api::cas::content::Address;
 
-/// Send back to network a HandleFetchMetaResult, no matter what.
+/// Send back to network a HandleQueryEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
 fn reduce_respond_get_links_inner(
     network_state: &mut NetworkState,
-    get_dht_meta_data: &FetchMetaData,
+    query_data: &QueryEntryData,
     links: &Vec<(Address, CrudStatus)>,
+    link_type: String,
+    tag: String,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-
+    let query_result_json: JsonString =
+        NetworkQueryResult::Links(links.clone(), link_type, tag).into();
     send(
         network_state,
-        JsonProtocol::HandleFetchMetaResult(FetchMetaResultData {
-            request_id: get_dht_meta_data.request_id.clone(),
-            requester_agent_id: get_dht_meta_data.requester_agent_id.clone(),
+        JsonProtocol::HandleQueryEntryResult(QueryEntryResultData {
+            request_id: query_data.request_id.clone(),
+            requester_agent_id: query_data.requester_agent_id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
-            provider_agent_id: network_state.agent_id.clone().unwrap(),
-            entry_address: get_dht_meta_data.entry_address.clone().into(),
-            attribute: get_dht_meta_data.attribute.clone(),
-            content_list: vec![
-                serde_json::from_str(&serde_json::to_string(&links).unwrap()).unwrap(),
-            ],
+            responder_agent_id: network_state.agent_id.clone().unwrap().into(),
+            entry_address: query_data.entry_address.clone().into(),
+            query_result: query_result_json.to_string().into_bytes(),
         }),
     )
 }
@@ -37,12 +43,14 @@ pub fn reduce_respond_get_links(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (get_dht_meta_data, links) = unwrap_to!(action => crate::action::Action::RespondGetLinks);
-    let result = reduce_respond_get_links_inner(network_state, get_dht_meta_data, links);
-
-    println!(
-        "debug/reduce/get_links: Responding to GET LINKS request from {} with {:?}",
-        get_dht_meta_data.requester_agent_id, links
+    let (query_data, links, link_type, tag) =
+        unwrap_to!(action => crate::action::Action::RespondGetLinks);
+    let result = reduce_respond_get_links_inner(
+        network_state,
+        query_data,
+        links,
+        link_type.clone(),
+        tag.clone(),
     );
 
     network_state.actions.insert(

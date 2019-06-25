@@ -1,10 +1,14 @@
 use crate::context::Context;
 use holochain_core_types::{
-    cas::{content::Address, storage::ContentAddressableStorage},
     crud_status::CrudStatus,
-    eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
+};
+
+use holochain_persistence_api::{
+    cas::{content::Address, storage::ContentAddressableStorage},
+    eav::IndexFilter,
 };
 
 use std::{
@@ -138,9 +142,6 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     Ok(Some((crud_status, maybe_link_update_delete)))
 }
 
-/// FetchEntry Action Creator
-///
-/// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 pub fn get_entry_with_meta<'a>(
     context: &'a Arc<Context>,
     address: Address,
@@ -173,7 +174,8 @@ pub fn get_entry_with_meta<'a>(
 #[cfg(test)]
 pub mod tests {
     use crate::instance::tests::test_context_with_state;
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use holochain_core_types::entry::test_entry;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     fn test_get_entry_from_dht_cas() {

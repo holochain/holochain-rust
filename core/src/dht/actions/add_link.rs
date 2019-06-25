@@ -58,14 +58,13 @@ impl Future for AddLinkFuture {
 mod tests {
     use super::*;
     use crate::nucleus;
-
     use holochain_core_types::{
         agent::test_agent_id,
-        cas::content::AddressableContent,
         chain_header::test_chain_header,
         entry::Entry,
         link::{link_data::LinkData, Link, LinkActionKind},
     };
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry() -> Entry {

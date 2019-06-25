@@ -12,7 +12,8 @@ use super::dht_inner_reducers::{
     reduce_update_entry_inner, LinkModification,
 };
 
-use holochain_core_types::{cas::content::AddressableContent, entry::Entry};
+use holochain_core_types::entry::Entry;
+use holochain_persistence_api::cas::content::AddressableContent;
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -167,12 +168,12 @@ pub mod tests {
     };
     use holochain_core_types::{
         agent::{test_agent_id, test_agent_id_with_name},
-        cas::content::AddressableContent,
         chain_header::test_chain_header,
         eav::Attribute,
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
     };
+    use holochain_persistence_api::cas::content::AddressableContent;
     use std::convert::TryFrom;
 
     #[test]

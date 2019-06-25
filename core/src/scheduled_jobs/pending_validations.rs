@@ -4,11 +4,10 @@ use crate::{
     nucleus::actions::remove_pending_validation::remove_pending_validation,
     workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
 };
-use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    error::HolochainError,
-    json::JsonString,
-};
+use holochain_core_types::error::HolochainError;
+
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{fmt, sync::Arc, thread};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;

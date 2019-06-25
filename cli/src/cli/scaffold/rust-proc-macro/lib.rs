@@ -24,7 +24,7 @@ use hdk::holochain_json_api::{
 };
 
 use hdk::holochain_persistence_api::{
-    cas::content::Adddress
+    cas::content::Address
 };
 
 use hdk_proc_macros::zome;

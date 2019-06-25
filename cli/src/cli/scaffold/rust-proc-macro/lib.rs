@@ -7,19 +7,26 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 use hdk::{
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
 };
 use hdk::holochain_core_types::{
-    cas::content::Address,
     entry::Entry,
     dna::entry_types::Sharing,
-    error::HolochainError,
-    json::JsonString,
 };
+
+use hdk::holochain_json_api::{
+    json::JsonsString,
+    error::JsonError
+};
+
+use hdk::holochain_persistence_api::{
+    cas::content::Adddress
+};
+
 use hdk_proc_macros::zome;
 
 // see https://developer.holochain.org/api/0.0.18-alpha1/hdk/ for info on using the hdk library
@@ -53,7 +60,7 @@ mod my_zome {
                 Ok(())
             }
         )
-    }   
+    }
 
     #[zome_fn("hc_public")]
     fn create_my_entry(entry: MyEntry) -> ZomeApiResult<Address> {

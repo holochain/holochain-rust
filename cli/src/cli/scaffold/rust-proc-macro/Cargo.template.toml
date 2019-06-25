@@ -11,7 +11,7 @@ serde_derive = "=1.0.89"
 hdk = { git = "https://github.com/holochain/holochain-rust", <<VERSION>> }
 hdk-proc-macros = { git = "https://github.com/holochain/holochain-rust", <<VERSION>> }
 holochain_wasm_utils = { git = "https://github.com/holochain/holochain-rust", <<VERSION>> }
-holochain_core_types_derive = { git = "https://github.com/holochain/holochain-rust", <<VERSION>> }
+holochain_json_derive = { version = "0.0.1-alpah2" }
 
 [lib]
 path = "src/lib.rs"

@@ -1,10 +1,12 @@
 use crate::{
     self as hdk,
     error::{ZomeApiError, ZomeApiResult},
-    holochain_core_types::entry::{AppEntryValue, Entry},
+    holochain_core_types::{
+        entry::{AppEntryValue, Entry},
+        link::LinkMatch,
+    },
     holochain_persistence_api::cas::content::Address,
 };
-use holochain_core_types::link::LinkMatch;
 use std::convert::TryFrom;
 
 ///

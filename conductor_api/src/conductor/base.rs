@@ -18,7 +18,8 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::AgentId, dna::Dna,
+    agent::AgentId,
+    dna::Dna,
     error::{HcResult, HolochainError},
 };
 

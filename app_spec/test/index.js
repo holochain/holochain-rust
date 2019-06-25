@@ -1,7 +1,7 @@
 const path = require('path')
 const tape = require('tape')
 
-const { Diorama, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/diorama')
+const { Diorama, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/triorama')
 
 process.on('unhandledRejection', error => {
   // Will print "unhandledRejection err is not defined"
@@ -48,6 +48,7 @@ const dioramaMultiDna = new Diorama({
   debugLog: false,
   executor: tapeExecutor(require('tape')),
   middleware: backwardCompatibilityMiddleware,
+  callbacksPort: 8888,
 })
 
 require('./regressions')(dioramaSimple.registerScenario)

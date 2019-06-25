@@ -7,9 +7,10 @@ use crate::{
     dpki_instance::DpkiInstance,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_core_types::{
-    cas::content::AddressableContent, error::HolochainError, hash::HashString,
-};
+use holochain_core_types::error::HolochainError;
+
+use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
+
 use json_patch;
 use std::{
     fs::{self, create_dir_all},
@@ -214,6 +215,7 @@ impl ConductorAdmin for Conductor {
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;
         self.save_config()?;
+        let _ = self.start_signal_multiplexer();
         Ok(())
     }
 
@@ -241,6 +243,7 @@ impl ConductorAdmin for Conductor {
         self.instances.remove(id).map(|instance| {
             instance.write().unwrap().kill();
         });
+        let _ = self.start_signal_multiplexer();
 
         notify(format!("Removed instance \"{}\".", id));
         Ok(())
@@ -259,6 +262,7 @@ impl ConductorAdmin for Conductor {
         self.config = new_config;
         self.save_config()?;
         self.start_interface_by_id(&interface.id)?;
+        let _ = self.start_signal_multiplexer();
         Ok(())
     }
 
@@ -287,6 +291,7 @@ impl ConductorAdmin for Conductor {
         self.save_config()?;
 
         let _ = self.stop_interface_by_id(id);
+        let _ = self.start_signal_multiplexer();
 
         notify(format!("Removed interface \"{}\".", id));
         Ok(())
@@ -335,6 +340,7 @@ impl ConductorAdmin for Conductor {
         let _ = self.stop_interface_by_id(interface_id);
         sleep(Duration::from_millis(SWEET_SLEEP));
         self.start_interface_by_id(interface_id)?;
+        let _ = self.start_signal_multiplexer();
 
         Ok(())
     }
@@ -384,6 +390,7 @@ impl ConductorAdmin for Conductor {
         let _ = self.stop_interface_by_id(interface_id);
         sleep(Duration::from_millis(SWEET_SLEEP));
         self.start_interface_by_id(interface_id)?;
+        let _ = self.start_signal_multiplexer();
 
         Ok(())
     }
@@ -584,7 +591,8 @@ pub mod tests {
         keystore::test_hash_config,
     };
     use holochain_common::paths::DNA_EXTENSION;
-    use holochain_core_types::{dna::Dna, json::JsonString};
+    use holochain_core_types::dna::Dna;
+    use holochain_json_api::json::JsonString;
     use std::{
         convert::TryFrom,
         env::current_dir,

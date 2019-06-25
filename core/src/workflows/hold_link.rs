@@ -1,10 +1,6 @@
 use crate::{
-    context::Context,
-    dht::actions::add_link::add_link,
-    network::{
-        actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
-    },
-    nucleus::validation::validate_entry,
+    context::Context, dht::actions::add_link::add_link,
+    network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
 };
 
 use crate::{
@@ -12,6 +8,7 @@ use crate::{
         actions::add_pending_validation::add_pending_validation, validation::ValidationError,
     },
     scheduled_jobs::pending_validations::ValidatingWorkflow,
+    workflows::validation_package,
 };
 use holochain_core_types::{
     entry::Entry,
@@ -24,9 +21,7 @@ pub async fn hold_link_workflow<'a>(
     entry_with_header: &'a EntryWithHeader,
     context: &'a Arc<Context>,
 ) -> Result<(), HolochainError> {
-    let EntryWithHeader { entry, header } = &entry_with_header;
-
-    let link_add = match entry {
+    let link_add = match &entry_with_header.entry {
         Entry::LinkAdd(link_add) => link_add,
         _ => Err(HolochainError::ErrorGeneric(
             "hold_link_workflow expects entry to be an Entry::LinkAdd".to_string(),
@@ -35,11 +30,11 @@ pub async fn hold_link_workflow<'a>(
     let link = link_add.link().clone();
 
     context.log(format!("debug/workflow/hold_link: {:?}", link));
-    // 1. Get validation package from source
     context.log(format!(
         "debug/workflow/hold_link: getting validation package..."
     ));
-    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))
+    // 1. Get hold of validation package
+    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
             context.log(format!("debug/workflow/hold_link: {}", message));
@@ -74,7 +69,7 @@ pub async fn hold_link_workflow<'a>(
     // 3. Validate the entry
     context.log(format!("debug/workflow/hold_link: validate..."));
     await!(validate_entry(
-        entry.clone(),
+        entry_with_header.entry.clone(),
         None,
         validation_data,
         &context
@@ -102,7 +97,7 @@ pub async fn hold_link_workflow<'a>(
     context.log(format!("debug/workflow/hold_link: is valid!"));
 
     // 3. If valid store the entry in the local DHT shard
-    await!(add_link(&link, &context))?;
+    await!(add_link(&link_add, &context))?;
     context.log(format!("debug/workflow/hold_link: added! {:?}", link));
     Ok(())
 }
@@ -149,7 +144,13 @@ pub mod tests {
             .block_on(author_entry(&entry, None, &context1))
             .unwrap();
 
-        let link_add = LinkData::new_add(&entry_address, &entry_address, "test-link");
+        let link_add = LinkData::new_add(
+            &entry_address,
+            &entry_address,
+            "test-tag",
+            test_chain_header(),
+            test_agent_id(),
+        );
         let link_entry = Entry::LinkAdd(link_add);
 
         let _ = context1

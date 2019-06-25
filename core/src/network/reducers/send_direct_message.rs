@@ -4,23 +4,22 @@ use crate::{
     state::State,
 };
 use holochain_core_types::error::HolochainError;
+use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{JsonProtocol, MessageData};
-
 fn inner(
     network_state: &mut NetworkState,
     direct_message_data: &DirectMessageData,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
+    let content_json_string: JsonString = direct_message_data.message.to_owned().into();
+    let content = content_json_string.to_bytes();
     let data = MessageData {
         request_id: direct_message_data.msg_id.clone(),
         dna_address: network_state.dna_address.clone().unwrap(),
-        to_agent_id: direct_message_data.address.to_string(),
-        from_agent_id: network_state.agent_id.clone().unwrap(),
-        content: serde_json::from_str(
-            &serde_json::to_string(&direct_message_data.message).unwrap(),
-        )
-        .unwrap(),
+        to_agent_id: direct_message_data.address.clone(),
+        from_agent_id: network_state.agent_id.clone().unwrap().into(),
+        content,
     };
 
     let protocol_object = if direct_message_data.is_response {
@@ -77,7 +76,8 @@ mod tests {
         },
         state::test_store,
     };
-    use holochain_core_types::{cas::content::Address, error::HolochainError};
+    use holochain_core_types::error::HolochainError;
+    use holochain_persistence_api::cas::content::Address;
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {

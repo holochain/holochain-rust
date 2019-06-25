@@ -6,8 +6,10 @@ use holochain_core_types::{
         HolochainError, RibosomeEncodedAllocation, RibosomeEncodedValue, RibosomeEncodingBits,
         RibosomeErrorCode,
     },
-    json::JsonString,
 };
+
+use holochain_json_api::json::JsonString;
+
 use memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},
     stack::WasmStack,

@@ -1,6 +1,6 @@
 [package]
 name = "code"
-version = "0.0.18-alpha1"
+version = "0.0.20-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -9,7 +9,7 @@ serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 hdk = { path = "../../../../hdk-rust" }
 hdk-proc-macros = { path = "../../../../hdk-proc-macros" }
 
-holochain_core_types_derive = { path = "../../../../core_types_derive" }
+holochain_json_derive = "=0.0.1-alpha2"
 serde_derive = "=1.0.89"
 boolinator = "=2.4.0"
 

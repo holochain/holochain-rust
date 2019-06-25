@@ -8,9 +8,9 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
+use holochain_core_types::{entry::Entry, error::HolochainError};
+use holochain_persistence_api::cas::content::Address;
 use std::{pin::Pin, sync::Arc};
-//use core::mem::PinMut;
 
 /// Commit Action Creator
 /// This is the high-level commit function that wraps the whole commit process and is what should

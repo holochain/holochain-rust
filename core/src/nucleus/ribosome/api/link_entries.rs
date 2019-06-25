@@ -3,11 +3,12 @@ use crate::{
     workflows::author_entry::author_entry,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
 };
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -30,10 +31,28 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
+    let top_chain_header_option = context.state().unwrap().agent().top_chain_header();
+
+    let top_chain_header = match top_chain_header_option {
+        Some(top_chain) => top_chain,
+        None => {
+            context.log(format!(
+                "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+                args_str
+            ));
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
+    };
 
     let link = input.to_link();
-    let link_add = LinkData::from_link(&link, LinkActionKind::ADD);
+    let link_add = LinkData::from_link(
+        &link,
+        LinkActionKind::ADD,
+        top_chain_header,
+        context.agent_id.clone(),
+    );
     let entry = Entry::LinkAdd(link_add);
+
     // Wait for future to be resolved
     // This is where the link entry actually gets created.
     let result: Result<Address, HolochainError> = context
@@ -57,13 +76,13 @@ pub mod tests {
         },
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         entry::{test_entry, Entry},
         error::{CoreError, ZomeApiInternalResult},
-        hash::HashString,
-        json::JsonString,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_wasm_utils::api_serialization::link_entries::*;
+
     use serde_json;
     use std::{convert::TryFrom, sync::Arc};
 
@@ -145,19 +164,14 @@ pub mod tests {
             .block_on(commit_entry(test_entry(), None, &context))
             .expect("Could not commit entry for testing");
 
-        let call_result = test_zome_api_function_call(
+        let call_result_json = test_zome_api_function_call(
             context.clone(),
             test_link_args_bytes("test-link".into(), "test-tag".into()),
         );
 
-        let no_entry: Option<Address> = Some(HashString::from(
-            "QmW7YnHJBXRNrrr476Vc2UzdZowQEq8oK93nVjKVfu3gyn",
-        ));
-        let result = ZomeApiInternalResult::success(no_entry);
-        assert_eq!(
-            call_result,
-            JsonString::from_json(&(String::from(JsonString::from(result)) + "\u{0}")),
-        );
+        let call_result = ZomeApiInternalResult::try_from(call_result_json);
+
+        assert!(call_result.is_ok())
     }
 
     #[test]
@@ -192,20 +206,14 @@ pub mod tests {
             .block_on(commit_entry(test_entry_b(), None, &context))
             .expect("Could not commit entry for testing");
 
-        let call_result = test_zome_api_function_call(
+        let call_result_json = test_zome_api_function_call(
             context.clone(),
             test_link_2_args_bytes("test-link".into(), "test-tag".into()),
         );
 
-        let no_entry: Option<Address> = Some(HashString::from(
-            "QmWue97eUUpPvYwYz7vxVQYC9qXEGLDuxghmWK1A2yX99t",
-        ));
-        let result = ZomeApiInternalResult::success(no_entry);
+        let call_result = ZomeApiInternalResult::try_from(call_result_json);
 
-        assert_eq!(
-            call_result,
-            JsonString::from_json(&(String::from(JsonString::from(result)) + "\u{0}")),
-        );
+        assert!(call_result.is_ok())
     }
 
     #[test]

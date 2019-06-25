@@ -1,9 +1,10 @@
 //! This file contains defitions for Zome errors and also Zome Results.
 
-use crate::holochain_core_types::{
-    error::{HolochainError, RibosomeErrorCode},
-    json::{JsonError, JsonString},
-};
+use crate::holochain_core_types::error::{HolochainError, RibosomeErrorCode};
+
+use crate::holochain_persistence_api::error::PersistenceError;
+use holochain_json_api::{error::JsonError, json::JsonString};
+
 use holochain_wasm_utils::memory::allocation::AllocationError;
 use std::{error::Error, fmt};
 
@@ -17,8 +18,6 @@ pub enum ZomeApiError {
     ValidationFailed(String),
     Timeout,
 }
-
-impl JsonError for ZomeApiError {}
 
 impl From<ZomeApiError> for HolochainError {
     fn from(zome_api_error: ZomeApiError) -> Self {
@@ -42,6 +41,20 @@ impl From<HolochainError> for ZomeApiError {
             HolochainError::Timeout => ZomeApiError::Timeout,
             _ => ZomeApiError::Internal(holochain_error.to_string()),
         }
+    }
+}
+
+impl From<PersistenceError> for ZomeApiError {
+    fn from(persistence_error: PersistenceError) -> Self {
+        let holochain_error: HolochainError = persistence_error.into();
+        holochain_error.into()
+    }
+}
+
+impl From<JsonError> for ZomeApiError {
+    fn from(json_error: JsonError) -> Self {
+        let holochain_error: HolochainError = json_error.into();
+        holochain_error.into()
     }
 }
 
@@ -100,7 +113,7 @@ pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
 mod tests {
 
     use error::{ZomeApiError, ZomeApiResult};
-    use holochain_core_types::json::JsonString;
+    use holochain_json_api::json::JsonString;
 
     #[test]
     fn zome_api_result_json_result_round_trip_test() {

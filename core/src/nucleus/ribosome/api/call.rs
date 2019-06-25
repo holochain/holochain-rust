@@ -6,7 +6,9 @@ use crate::{
         ZomeFnCall,
     },
 };
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_core_types::error::HolochainError;
+use holochain_json_api::json::JsonString;
+
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
@@ -173,7 +175,6 @@ pub mod tests {
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         dna::{
             capabilities::CapabilityRequest,
             fn_declarations::{FnDeclaration, TraitFns},
@@ -185,9 +186,10 @@ pub mod tests {
             Entry,
         },
         error::{DnaError, HolochainError},
-        json::JsonString,
         signature::Signature,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use serde_json;
     use std::{

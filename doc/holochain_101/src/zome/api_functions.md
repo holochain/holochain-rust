@@ -187,6 +187,16 @@ Creates a capability grant on the local chain for allowing access to zome functi
 
 [View it in the Rust HDK](https://developer.holochain.org/api/0.0.18-alpha1/hdk/api/fn.commit_capability_grant.html)
 
+### Emit Signal
+
+Canonical name: `emit_signal`
+
+Emits a signal that a can be subscribed to by various clients.
+
+[View it in the Rust HDK](https://developer.holochain.org/api/0.0.18-alpha1/hdk/api/fn.emit_signal.html)
+
+Read more about [Signals](emitting_signals.html)
+
 ### Start Bundle
 
 Canonical name: `start_bundle`

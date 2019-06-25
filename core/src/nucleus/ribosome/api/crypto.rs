@@ -56,7 +56,9 @@ mod test_super {
                 .to_vec(),
         );
         assert_eq!(
-            JsonString::from_json(r#"{"ok":true,"value":"FJ/KKN5d7VHUu+8jKiMWuDtIBZclOBETQ8Gnkw==","error":"null"}"#),
+            JsonString::from_json(
+                r#"{"ok":true,"value":"FJ/KKN5d7VHUu+8jKiMWuDtIBZclOBETQ8Gnkw==","error":"null"}"#
+            ),
             call_result,
         );
     }

@@ -190,8 +190,15 @@ impl EncryptingKeyPair {
     /// @return {SecBuf} signature - Empty SecBuf to be filled with the signature
     pub fn decrypt(&mut self, cipher: &mut SecBuf) -> HcResult<SecBuf> {
         let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
-        let mut decrypted_message = SecBuf::with_insecure(cipher.len() + lib3h_sodium::aead::ABYTES);
-        lib3h_sodium::aead::dec(&mut decrypted_message, &mut self.private, None, &mut nonce, cipher)?;
+        let mut decrypted_message =
+            SecBuf::with_insecure(cipher.len() + lib3h_sodium::aead::ABYTES);
+        lib3h_sodium::aead::dec(
+            &mut decrypted_message,
+            &mut self.private,
+            None,
+            &mut nonce,
+            cipher,
+        )?;
         Ok(decrypted_message)
     }
 }
@@ -279,5 +286,4 @@ mod tests {
         assert!(!succeeded);
     }
 
-  
 }

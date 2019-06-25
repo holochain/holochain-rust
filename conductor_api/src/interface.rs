@@ -902,16 +902,19 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             //decoded base64 string
-            let decoded_message = base64::decode(&payload).map_err(|_|jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
+            let decoded_message = base64::decode(&payload)
+                .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
             let mut decoded_message_buf = SecBuf::with_insecure(decoded_message.len());
-            decoded_message_buf.from_array(&decoded_message).map_err(|_|jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
+            decoded_message_buf
+                .from_array(&decoded_message)
+                .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
             let mut decrypted_buf = keybundle
                 .lock()
                 .unwrap()
                 .decrypt(&mut decoded_message_buf)
-                .map_err(|_|jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
+                .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
 
             let decrypted_bytes = decrypted_buf.read_lock();
             Ok(json!({ "message": &**decrypted_bytes }))

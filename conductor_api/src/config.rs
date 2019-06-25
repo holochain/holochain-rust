@@ -861,7 +861,7 @@ pub mod tests {
         id = "app spec instance"
 
     [network]
-    type="n3h"
+    type = "n3h"
     bootstrap_nodes = ["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"]
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     networking_config_file = "/Users/cnorris/.holochain/network_config.json"
@@ -1020,7 +1020,7 @@ pub mod tests {
             base_toml,
             r#"
     [network]
-    type="lib3h"
+    type = "lib3h"
     "#
         );
         if let Err(e) = load_configuration::<Configuration>(toml.as_str()) {

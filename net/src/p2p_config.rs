@@ -240,7 +240,7 @@ impl P2pConfig {
           "cmd": "node",
           "env": {
             "N3H_MODE": "HACK",
-            "N3H_N3H_SOCKET": "tcp://127.0.0.1:*",
+            "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
             "N3H_LOG_LEVEL": "i"
           }
         }

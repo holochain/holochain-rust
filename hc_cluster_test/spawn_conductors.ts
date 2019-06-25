@@ -6,6 +6,15 @@ import { adminInterfaceId, dnaInterfaceId } from './config'
 
 const holochainBin = process.env.EMULATION_HOLOCHAIN_BIN_PATH
 
+interface ConductorConfigOptions {
+  index: number,
+  debugging: boolean,
+  adminPortStart: number,
+  instancePortStart: number,
+  tmpPath: string,
+  n3hPath: string
+}
+
 interface ConductorConfig {
   config: string
   adminPort: number
@@ -18,13 +27,13 @@ interface ConductorDetails {
   handle: any
 }
 
-const genConfig = (index: number, debugging: boolean, tmpPath: string, n3hPath: string): ConductorConfig => {
+const genConfig = (options: ConductorConfigOptions): ConductorConfig => {
 
-  const adminPort = 3000 + index
-  const instancePort = 4000 + index
+  const adminPort = options.adminPortStart + options.index
+  const instancePort = options.instancePortStart + options.index
 
   const config = `
-persistence_dir = "${tmpPath}"
+persistence_dir = "${options.tmpPath}"
 
 agents = []
 dnas = []
@@ -52,27 +61,34 @@ instances = []
 
 [logger]
 type = "debug"
-${debugging ? '' : '[[logger.rules.rules]]'}
-${debugging ? '' : 'exclude = true'}
-${debugging ? '': 'pattern = "^debug"'}
+${options.debugging ? '' : '[[logger.rules.rules]]'}
+${options.debugging ? '' : 'exclude = true'}
+${options.debugging ? '': 'pattern = "^debug"'}
 
 [network]
-n3h_log_level = "${debugging ? 'i' : 'e'}"
+n3h_log_level = "${options.debugging ? 'i' : 'e'}"
 bootstrap_nodes = []
 n3h_mode = "REAL"
-n3h_persistence_path = "${n3hPath}"
+n3h_persistence_path = "${options.n3hPath}"
     `
 
   return { config, adminPort, instancePort }
 }
 
-const spawnConductor = (i: number, debugging: boolean): Promise<ConductorDetails> => {
+const spawnConductor = (i: number, debugging: boolean, adminPortStart: number, instancePortStart: number): Promise<ConductorDetails> => {
   const tmpPath = fs.mkdtempSync(path.join(os.tmpdir(), 'n3h-test-conductors-'))
   const n3hPath = path.join(tmpPath, 'n3h-storage')
   fs.mkdirSync(n3hPath)
   const configPath = path.join(tmpPath, `empty-conductor-${i}.toml`)
 
-  const { config, adminPort, instancePort } = genConfig(i, debugging, tmpPath, n3hPath)
+  const { config, adminPort, instancePort } = genConfig({
+    index: i,
+    debugging,
+    adminPortStart,
+    instancePortStart,
+    tmpPath,
+    n3hPath
+  })
 
   fs.writeFileSync(configPath, config)
 
@@ -102,16 +118,16 @@ const spawnConductor = (i: number, debugging: boolean): Promise<ConductorDetails
   })
 }
 
-const spawnConductors = async (numberOfConductors: number, debugging: boolean): Promise<Array<ConductorDetails>> => {
+const spawnConductors = async (numberOfConductors: number, debugging: boolean, adminPortStart: number, instancePortStart: number, indexStart: number = 0): Promise<Array<ConductorDetails>> => {
   const promises = []
 
   // start the first conductor and
   // wait for it, because it sets up n3h
-  const firstConductor = await spawnConductor(0, debugging)
+  const firstConductor = await spawnConductor(indexStart + 0, debugging, adminPortStart, instancePortStart)
   promises.push(firstConductor)
 
   for (let i = 1; i < numberOfConductors; i++) {
-    promises.push(spawnConductor(i, debugging))
+    promises.push(spawnConductor(indexStart + i, debugging, adminPortStart, instancePortStart))
   }
   return Promise.all(promises)
 }

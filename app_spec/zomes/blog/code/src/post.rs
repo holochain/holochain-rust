@@ -54,7 +54,7 @@ pub fn definition() -> ValidatingEntryType {
         sharing: Sharing::Public,
 
         validation_package: || {
-            hdk::ValidationPackageDefinition::ChainFull
+            hdk::ValidationPackageDefinition::Entry
         },
 
         validation: |validation_data: hdk::EntryValidationData<Post>| {

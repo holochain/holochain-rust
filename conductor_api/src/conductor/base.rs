@@ -695,6 +695,20 @@ impl Conductor {
                     .clone()
                     .expect("holo_remote_key needs signing_service_uri set"),
             );
+            api_builder = api_builder.with_outsource_signing_callback(
+                self.agent_config_to_id(&agent_config)?,
+                self.config
+                    .encryption_service_uri
+                    .clone()
+                    .expect("holo_remote_key needs encryption_service_uri set"),
+            );
+            api_builder = api_builder.with_outsource_signing_callback(
+                self.agent_config_to_id(&agent_config)?,
+                self.config
+                    .decryption_service_uri
+                    .clone()
+                    .expect("holo_remote_key needs decryption_service_uri set"),
+            );
         } else {
             api_builder = api_builder.with_agent_signature_callback(
                 self.get_keybundle_for_agent(&instance_config.agent)?,

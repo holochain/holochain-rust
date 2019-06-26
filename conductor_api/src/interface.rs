@@ -983,7 +983,7 @@ impl ConductorApiBuilder {
 
             let encrypted_message = request_service(&agent_id, &payload, &encryption_service_uri)
                 .map_err(|holochain_error| {
-                println!("Error in signing hack: {:?}", holochain_error);
+                println!("Error in encryption hack: {:?}", holochain_error);
                 jsonrpc_core::Error::internal_error()
             })?;
 
@@ -995,16 +995,16 @@ impl ConductorApiBuilder {
     pub fn with_outsource_decryption_callback(
         mut self,
         agent_id: AgentId,
-        encryption_service_uri: String,
+        decryption_service_uri: String,
     ) -> Self {
         let agent_id = agent_id.clone();
         self.io.add_method("agent/decrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
 
-            let decrypted_message = request_service(&agent_id, &payload, &encryption_service_uri)
+            let decrypted_message = request_service(&agent_id, &payload, &decryption_service_uri)
                 .map_err(|holochain_error| {
-                println!("Error in signing hack: {:?}", holochain_error);
+                println!("Error in decryption hack: {:?}", holochain_error);
                 jsonrpc_core::Error::internal_error()
             })?;
 

@@ -82,6 +82,22 @@ Not yet available.
 
 Enables the signing of some piece of data, with the private keys associated with the acting agent.
 
+### Encrypt
+
+Canonical name: `encrypt`
+
+Not yet available.
+
+Enables the encryption of some piece of data, with the private keys associated with the acting agent.
+
+### Decrypt
+
+Canonical name: `decrypt`
+
+Not yet available.
+
+Enables the decryption of some piece of data, with the private keys associated with the acting agent.
+
 ### Verify Signature
 
 Canonical name: `verify_signature`

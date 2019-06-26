@@ -53,12 +53,9 @@ pub fn get_validation_package_definition(
                     ));
                 }
             };
-            let (base, target) = links_utils::get_link_entries(link_add.link(), &context)?;
 
-            let link_definition_path = links_utils::find_link_definition_in_dna(
-                &base.entry_type(),
+            let link_definition_path = links_utils::find_link_definition_by_type(
                 link_add.link().link_type(),
-                &target.entry_type(),
                 &context,
             )?;
 
@@ -88,12 +85,9 @@ pub fn get_validation_package_definition(
                     ));
                 }
             };
-            let (base, target) = links_utils::get_link_entries(link_remove.link(), &context)?;
 
-            let link_definition_path = links_utils::find_link_definition_in_dna(
-                &base.entry_type(),
+            let link_definition_path = links_utils::find_link_definition_by_type(
                 link_remove.link().link_type(),
-                &target.entry_type(),
                 &context,
             )?;
 

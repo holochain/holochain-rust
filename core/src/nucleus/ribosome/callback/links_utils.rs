@@ -125,3 +125,40 @@ pub fn find_link_definition_in_dna(
         "Unknown entry type",
     )))
 }
+
+pub fn find_link_definition_by_type(
+    link_type: &String,
+    context: &Arc<Context>,
+) -> Result<LinkDefinitionPath, HolochainError> {
+    let dna = context.get_dna().expect("No DNA found?!");
+    for (zome_name, zome) in dna.zomes.iter() {
+        for (entry_type, entry_type_def) in zome.entry_types.iter() {
+            if let EntryType::App(entry_type_name) = entry_type.clone() {
+                for link in entry_type_def.links_to.iter() {
+                    if link.link_type == *link_type {
+                        return Ok(LinkDefinitionPath {
+                            zome_name: zome_name.clone(),
+                            entry_type_name: entry_type_name.to_string(),
+                            direction: LinkDirection::To,
+                            link_type: link_type.clone(),
+                        })
+                    }
+                }
+
+                for link in entry_type_def.linked_from.iter() {
+                    if link.link_type == *link_type {
+                        return Ok(LinkDefinitionPath {
+                            zome_name: zome_name.clone(),
+                            entry_type_name: entry_type_name.to_string(),
+                            direction: LinkDirection::From,
+                            link_type: link_type.clone(),
+                        })
+                    }
+                }
+            }
+
+        }
+    }
+
+    Err(HolochainError::ErrorGeneric(String::from("Unknown entry type")))
+}

@@ -1,5 +1,5 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::json::JsonString;
+use holochain_json_api::json::*;
 use holochain_wasm_utils::api_serialization::crypto::CryptoArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};

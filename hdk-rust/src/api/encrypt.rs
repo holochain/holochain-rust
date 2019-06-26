@@ -15,8 +15,7 @@ use super::Dispatch;
 /// # extern crate holochain_core_types;
 /// # #[macro_use]
 /// # extern crate holochain_json_derive;
-/// # use holochain_json_api::json::JsonString;
-/// # use holochain_core_types::json::JsonString;
+/// # use hdk::holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::{Provenance, Signature};
 /// # use hdk::error::ZomeApiResult;

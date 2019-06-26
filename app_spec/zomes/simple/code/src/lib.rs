@@ -142,7 +142,7 @@ define_zome! {
         }
         encrypt :{
             inputs : |content: String|,
-            outputs |result: ZomeApiResult<String>|,
+            outputs: |result: ZomeApiResult<String>|,
             handler :|content : String| -> ZomeApiResult<String>{hdk::encrypt(content)}
         }
         decrypt :{

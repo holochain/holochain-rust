@@ -13,7 +13,8 @@ let
     hc-release-pulse-tag \
     && hc-release-branch \
     && hc-release-rust-manifest-versions \
-    && hc-release-docs-changelog-versions
+    && hc-release-docs-changelog-versions \
+    && hc-release-github-merge
     ;;
    *)
     exit 1

@@ -49,7 +49,7 @@ fn generate_cargo_toml(name: &str, contents: &str, template: &str) -> DefaultRes
     let version_default = if maybe_version.is_some() {
         maybe_version.unwrap()
     } else {
-        String::from("tag = \"v0.0.20-alpha3\"")
+        String::from("tag = \"v0.0.21-alpha1\"")
     };
     let maybe_package = config.get("package");
 

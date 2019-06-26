@@ -83,7 +83,6 @@ pub struct Configuration {
     /// over this websocket.
     pub signing_service_uri: Option<String>,
 
-    
     /// Optional URI for a websocket connection to an outsourced encryption service.
     /// Bootstrapping step for Holo closed-alpha.
     /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures

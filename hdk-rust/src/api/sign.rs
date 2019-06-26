@@ -1,7 +1,7 @@
 use error::ZomeApiResult;
 use holochain_core_types::signature::Provenance;
 use holochain_wasm_utils::api_serialization::{
-    crypto::{ConductorCryptoApiMethod, CryptoArgs},
+    crypto::{CryptoArgs, CryptoMethod},
     sign::{OneTimeSignArgs, SignOneTimeResult},
     verify_signature::VerifySignatureArgs,
 };
@@ -35,7 +35,7 @@ use super::Dispatch;
 pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     Dispatch::Crypto.with_input(CryptoArgs {
         payload: payload.into(),
-        method: ConductorCryptoApiMethod::Sign,
+        method: CryptoMethod::Sign,
     })
 }
 

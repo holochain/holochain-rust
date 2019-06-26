@@ -28,7 +28,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_wasm_utils::api_serialization::crypto::ConductorCryptoApiMethod;
+use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use std::{pin::Pin, sync::Arc, thread};
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
@@ -200,7 +200,7 @@ fn make_call_sig<J: Into<JsonString>>(
     Signature::from(
         context
             .conductor_api
-            .execute(encode_call_data, ConductorCryptoApiMethod::Sign)
+            .execute(encode_call_data, CryptoMethod::Sign)
             .expect("signing should work"),
     )
 }

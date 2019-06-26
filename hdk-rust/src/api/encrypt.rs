@@ -1,10 +1,10 @@
 use error::ZomeApiResult;
-use holochain_wasm_utils::api_serialization::crypto::{ConductorCryptoApiMethod, CryptoArgs};
+use holochain_wasm_utils::api_serialization::crypto::{CryptoArgs, CryptoMethod};
 
 use super::Dispatch;
 
-/// Signs a string payload using the agent's private key.
-/// Returns the signature as a string.
+/// encrypts a string payload using the agent's private key.
+/// Returns the message as a string.
 /// # Examples
 /// ```rust
 /// # #![feature(try_from)]
@@ -14,7 +14,8 @@ use super::Dispatch;
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
+/// # extern crate holochain_json_derive;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::{Provenance, Signature};
@@ -28,6 +29,6 @@ use super::Dispatch;
 pub fn encrypt<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     Dispatch::Crypto.with_input(CryptoArgs {
         payload: payload.into(),
-        method: ConductorCryptoApiMethod::Encrypt,
+        method: CryptoMethod::Encrypt,
     })
 }

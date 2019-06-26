@@ -16,8 +16,9 @@ use holochain_persistence_api::hash::HashString;
 
 use crate::network::{direct_message::DirectMessage, entry_aspect::EntryAspect};
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::json_protocol::{MessageData, StoreEntryAspectData};
+use holochain_net::connection::json_protocol::{MessageData, StoreEntryAspectData, QueryEntryData, QueryEntryResultData};
 use std::{convert::TryFrom, sync::Arc};
+use crate::network::query::{NetworkQuery, NetworkQueryResult};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -89,6 +90,50 @@ MessageData {{
     )
 }
 
+// See comment on fn format_store_data() - same reason for this function.
+fn format_query_entry_data(data: &QueryEntryData) -> String {
+    let query_json = JsonString::from_json(&String::from_utf8(data.query.clone()).unwrap());
+    let query = NetworkQuery::try_from(query_json).unwrap();
+    format!(
+        r#"
+QueryEntryData {{
+    request_id: "{req_id}",
+    dna_address: "{dna_adr}",
+    requester_agent_id: "{from}",
+    entry_address: "{entry_address}",
+    query: {query:?},
+}}"#,
+        req_id = data.request_id,
+        dna_adr = data.dna_address.to_string(),
+        from = data.requester_agent_id.to_string(),
+        entry_address = data.entry_address.to_string(),
+        query = query,
+    )
+}
+
+// See comment on fn format_store_data() - same reason for this function.
+fn format_query_entry_result_data(data: &QueryEntryResultData) -> String {
+    let query_result_json = JsonString::from_json(&String::from_utf8(data.query_result.clone()).unwrap());
+    let query_result = NetworkQueryResult::try_from(query_result_json).unwrap();
+    format!(
+        r#"
+QueryEntryResultData {{
+    request_id: "{req_id}",
+    dna_address: "{dna_adr}",
+    requester_agent_id: "{requester}",
+    responder_agent_id: "{responder}",
+    entry_address: "{entry_address}",
+    query_result: {query_result:?},
+}}"#,
+        req_id = data.request_id,
+        dna_adr = data.dna_address.to_string(),
+        requester = data.requester_agent_id.to_string(),
+        responder = data.responder_agent_id.to_string(),
+        entry_address = data.entry_address.to_string(),
+        query_result = query_result,
+    )
+}
+
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
@@ -151,8 +196,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
                 context.log(format!(
-                    "debug/net/handle: HandleQueryEntry: {:?}",
-                    query_entry_data
+                    "debug/net/handle: HandleQueryEntry: {}",
+                    format_query_entry_data(&query_entry_data),
                 ));
                 handle_query_entry_data(query_entry_data, context.clone())
             }
@@ -171,8 +216,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
                 context.log(format!(
-                    "debug/net/handle: HandleQueryEntryResult: {:?}",
-                    query_entry_result_data
+                    "debug/net/handle: HandleQueryEntryResult: {}",
+                    format_query_entry_result_data(&query_entry_result_data),
                 ));
                 handle_query_entry_result(query_entry_result_data, context.clone())
             }

@@ -120,5 +120,17 @@ pub mod simple {
         hdk::get_links_with_options(&base, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
     }
 
+    [zome_fn("hc_public")]
+    pub fn encrypt(content : String) -> ZomeApiResult<String> 
+    {
+       hdk::encrypt(content)
+    }
+
+     [zome_fn("hc_public")]
+    pub fn decrypt(content : String) -> ZomeApiResult<String> 
+    {
+       hdk::decrypt(content)
+    }
+
 }
 

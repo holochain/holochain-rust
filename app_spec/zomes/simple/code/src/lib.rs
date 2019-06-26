@@ -127,6 +127,16 @@ define_zome! {
             outputs: |result: ZomeApiResult<GetLinksResult>|,
             handler: handle_get_my_links
         }
+        encrypt :{
+            input : |content: String|,
+            outputs |result: ZomeApiResult<String>|,
+            handler :|content : String| -> ZomeApiResult<String>{hdk::encrypt(content)}
+        }
+        decrypt :{
+            input : |content: String|,
+            outputs |result: ZomeApiResult<String>|,
+            handler :|content : String| -> ZomeApiResult<String>{hdk::decrypt(content)}
+        }
     ]
 
     traits: {

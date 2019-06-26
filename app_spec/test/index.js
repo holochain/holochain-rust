@@ -16,24 +16,24 @@ const dna2 = Diorama.dna(dnaPath, 'app-spec', {uuid: 'altered-dna'})
 const commonConductorConfig = {
   instances: {
     app: dna,
-    app2: dna,
+    //app2: dna,
   },
   bridges: [
-    Diorama.bridge('test-bridge', 'app', 'app2')
+    //Diorama.bridge('test-bridge', 'app', 'app2')
   ],
 }
 
 const dioramaSimple = new Diorama({
   conductors: {
     alice: commonConductorConfig,
-    bob: commonConductorConfig,
-    carol: commonConductorConfig,
+    //bob: commonConductorConfig,
+    //carol: commonConductorConfig,
   },
-  debugLog: false,
+  debugLog: true,
   executor: tapeExecutor(require('tape')),
   middleware: backwardCompatibilityMiddleware,
 })
-
+/*
 const dioramaMultiDna = new Diorama({
   conductors: {
     conductor: {
@@ -50,22 +50,22 @@ const dioramaMultiDna = new Diorama({
   executor: tapeExecutor(require('tape')),
   middleware: backwardCompatibilityMiddleware,
   callbacksPort: 8888,
-})
+})*/
 
 require('./regressions')(dioramaSimple.registerScenario)
-require('./test')(dioramaSimple.registerScenario)
-require('./multi-dna')(dioramaMultiDna.registerScenario)
+//require('./test')(dioramaSimple.registerScenario)
+//require('./multi-dna')(dioramaMultiDna.registerScenario)
 
 const run = async () => {
   await spawnConductor('alice', 3000)
   dioramaSimple.registerConductor({name: 'alice', url: 'http://0.0.0.0:3000'})
-  await spawnConductor('bob', 4000)
-  dioramaSimple.registerConductor({name: 'bob', url: 'http://0.0.0.0:4000'})
-  await spawnConductor('carol', 5000)
-  dioramaSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
+  //await spawnConductor('bob', 4000)
+  //dioramaSimple.registerConductor({name: 'bob', url: 'http://0.0.0.0:4000'})
+  //await spawnConductor('carol', 5000)
+  //dioramaSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
 
   await dioramaSimple.run()
-  await dioramaMultiDna.run()
+  //await dioramaMultiDna.run()
 }
 
 run()

@@ -1,6 +1,8 @@
 module.exports = scenario => {
 
-scenario('calling get_links before link_entries makes no difference', async (s, t, {alice}) => {
+
+
+scenario.only('calling get_links before link_entries makes no difference', async (s, t, {alice}) => {
 
   const get1 = await alice.app.call("blog", "my_posts", {})
   t.ok(get1.Ok)
@@ -8,11 +10,17 @@ scenario('calling get_links before link_entries makes no difference', async (s, 
   const create1 = await alice.app.callSync("blog","create_post", {content: 'hi'})
   t.ok(create1.Ok)
 
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+  console.log("Waiting...")
+  await delay(5000)
+  console.log("Done")
+
   const get2 = await alice.app.call("blog", "my_posts", {})
   t.ok(get2.Ok)
   t.equal(get2.Ok.links.length,1)
 })
-
+/*
 scenario('calling get_links twice in a row is no different than calling it once', async (s, t, {alice}) => {
   // This test is exactly the same as the previous one, but calls my_posts twice in a row.
   // This makes the links come through the second time.
@@ -108,5 +116,5 @@ scenario('create & publish post -> recommend to other agent', async (s, t, {alic
   console.log('agent addresses: ', alice.app.agentId, bob.app.agentId)
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
-
+*/
 }

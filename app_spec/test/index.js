@@ -58,11 +58,11 @@ require('./multi-dna')(dioramaMultiDna.registerScenario)
 
 const run = async () => {
   await spawnConductor('alice', 3000)
-  dioramaSimple.registerConductor({name: 'alice', url: 'http://0.0.0.0:3000'})
+  await dioramaSimple.registerConductor({name: 'alice', url: 'http://0.0.0.0:3000'})
   await spawnConductor('bob', 4000)
-  dioramaSimple.registerConductor({name: 'bob', url: 'http://0.0.0.0:4000'})
+  await dioramaSimple.registerConductor({name: 'bob', url: 'http://0.0.0.0:4000'})
   await spawnConductor('carol', 5000)
-  dioramaSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
+  await dioramaSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
 
   await dioramaSimple.run()
   await dioramaMultiDna.run()

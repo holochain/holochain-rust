@@ -54,12 +54,14 @@ module.exports = (name, port, holochainBin) => {
     fs.writeFileSync(configPath, config)
 
     console.info(`Spawning conductor ${name} process...`)
+    console.info(`holochain binary = ${holochainBin}`)
+    console.info(`config path      = ${configPath}`)
     const handle = child_process.spawn(holochainBin, ['-c', configPath])
 
     handle.stdout.on('data', data => console.log(`[C '${name}']`, data.toString('utf8')))
     handle.stderr.on('data', data => console.error(`!C '${name}'!`, data.toString('utf8')))
     handle.on('close', code => console.log(`conductor '${name}' exited with code`, code))
-    
+
     return new Promise((resolve) => {
         handle.stdout.on('data', data => {
             // wait for the logs to convey that the interfaces have started

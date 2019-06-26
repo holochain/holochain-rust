@@ -365,7 +365,7 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   await bob.callSync("simple", "create_link",
     { "base":alice.agentId, "target": "Posty" }
   )
-  
+
   //get all created links so far alice
   const alice_posts = await bob.call("simple", "get_my_links",
     { "base": alice.agentId,"status_request" : "Live" }
@@ -393,7 +393,7 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   const bob_agent_posts_expect_empty = await bob.call("simple", "get_my_links",{ "base": alice.agentId,"status_request" : "Live" })
   //get links from alice
   const alice_agent_posts_expect_empty = await alice.call("simple", "get_my_links",{ "base": alice.agentId,"status_request" : "Live" })
-  
+
   //bob expects zero links
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
@@ -405,9 +405,9 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   //different chain hash up to this point so we should be able to create a link with the same data
   await alice.callSync("simple", "create_link",{ "base":alice.agentId, "target": "Posty" })
 
-  //get alice posts 
+  //get alice posts
   const alice_posts_not_empty = await bob.call("simple", "get_my_links",{ "base": alice.agentId,"status_request" : "Live" })
-  
+
    //expect 1 post
   t.ok(alice_posts_not_empty.Ok)
   t.equal(alice_posts_not_empty.Ok.links.length, 1);
@@ -940,5 +940,12 @@ scenario('request grant', async (s, t, { alice, bob }) => {
 
     t.equal(result.Ok, grants.Ok[0])
 })
+
+  scenario('emit signal', async (s, t, { alice }) => {
+    const result = await alice.callSync("simple", "test_emit_signal", {message: "test message"})
+    t.equal(alice.signals.length, 1)
+    t.deepEqual(alice.signals[0], { signal_type: 'User', name: 'test-signal', arguments: '{"message":"test message"}' })
+    t.notOk(result.Err)
+  })
 
 }

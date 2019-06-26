@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core"
-version = "0.0.20-alpha3"
+version = "0.0.21-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -29,9 +29,12 @@ toml = "=0.5.0"
 holochain_net = { path = "../net" }
 holochain_wasm_utils = { path = "../wasm_utils"}
 holochain_common = { path = "../common" }
-holochain_core_types_derive = { path = "../core_types_derive" }
+holochain_json_derive = "=0.0.1-alpha2"
+holochain_json_api = "=0.0.1-alpha2"
+holochain_persistence_api = "=0.0.1-alpha4"
+holochain_persistence_file = "=0.0.1-alpha4"
+holochain_persistence_mem = "=0.0.1-alpha4"
 holochain_core_types = { path = "../core_types" }
-holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_dpki = { path = "../dpki" }
 lib3h_sodium = "=0.0.1-alpha1"
 boolinator = "=2.4.0"

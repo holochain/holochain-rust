@@ -64,19 +64,21 @@ macro_rules! load_string {
 /// # extern crate boolinator;
 /// # extern crate holochain_core_types;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
+/// # extern crate holochain_json_derive;
+/// # extern crate holochain_json_api;
+/// # extern crate holochain_persistence_api;
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
-/// # use holochain_core_types::json::JsonString;
+/// # use holochain_json_api::{error::JsonError, json::JsonString};
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::error::RibosomeEncodedValue;
 /// # use boolinator::Boolinator;
 /// use hdk::error::ZomeApiResult;
 /// use holochain_core_types::{
-///     cas::content::Address,
 ///     dna::entry_types::Sharing,
 ///     validation::EntryValidationData
 /// };
+/// # use holochain_persistence_api::cas::content::Address;
 /// # use holochain_core_types::error::RibosomeEncodingBits;
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
@@ -125,10 +127,12 @@ macro_rules! load_string {
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// #[no_mangle]
+/// # #[no_mangle]
 /// # pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// #[no_mangle]
+/// # #[no_mangle]
 /// # pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -273,7 +277,7 @@ macro_rules! define_zome {
                 Ok(_) => hdk::holochain_core_types::error::RibosomeEncodedValue::Success.into(),
                 Err(e) => $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
                     $crate::global_fns::write_json(
-                        $crate::holochain_wasm_utils::holochain_core_types::json::RawString::from(e)
+                        $crate::holochain_wasm_utils::holochain_json_api::json::RawString::from(e)
                     )
                 ).into(),
             }
@@ -379,7 +383,7 @@ macro_rules! define_zome {
 
         #[no_mangle]
         pub extern "C" fn __install_panic_handler() -> () {
-            use $crate::{api::debug, holochain_core_types::json::RawString};
+            use $crate::{api::debug, holochain_json_api::json::RawString};
             use std::panic;
             panic::set_hook(Box::new(move |info| {
                 let _ = debug(RawString::from(
@@ -417,7 +421,7 @@ macro_rules! define_zome {
                     }
 
                     // Macro'd InputStruct
-                    #[derive(Deserialize, Serialize, Debug, $crate::holochain_core_types_derive::DefaultJson)]
+                    #[derive(Deserialize, Serialize, Debug, $crate::holochain_json_derive::DefaultJson)]
                     struct InputStruct {
                         $($input_param_name : $input_param_type),*
                     }

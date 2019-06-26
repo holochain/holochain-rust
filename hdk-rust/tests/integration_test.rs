@@ -2,6 +2,8 @@
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_json_api;
+extern crate holochain_persistence_api;
 extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
@@ -11,7 +13,7 @@ extern crate serde_derive;
 extern crate hdk;
 extern crate holochain_wasm_utils;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 #[cfg(not(windows))]
 use hdk::error::ZomeApiError;
@@ -21,7 +23,6 @@ use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
     dna::{
         entry_types::{EntryTypeDef, LinksTo},
@@ -33,9 +34,14 @@ use holochain_core_types::{
         Entry,
     },
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
-    hash::HashString,
-    json::JsonString,
 };
+
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::{
+    cas::content::{Address, AddressableContent},
+    hash::HashString,
+};
+
 #[cfg(not(windows))]
 use holochain_core_types::{entry::EntryWithMeta, error::CoreError};
 use holochain_wasm_utils::{
@@ -214,6 +220,11 @@ pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBi
 
 #[no_mangle]
 pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 

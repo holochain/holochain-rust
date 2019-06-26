@@ -2,8 +2,7 @@
 
 use dna::zome::ZomeEntryTypes;
 use entry::entry_type::EntryType;
-use error::HolochainError;
-use json::JsonString;
+use holochain_json_api::{error::JsonError, json::JsonString};
 use serde::{ser::SerializeMap, Deserialize, Deserializer, Serializer};
 use std::collections::BTreeMap;
 

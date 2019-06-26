@@ -45,7 +45,8 @@ mod test_super {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::{cas::content::AddressableContent, json::JsonString};
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     fn test_zome_api_function_verify() {

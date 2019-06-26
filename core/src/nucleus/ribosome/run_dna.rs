@@ -11,8 +11,9 @@ use holochain_core_types::{
     error::{
         HcResult, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
     },
-    json::JsonString,
 };
+use holochain_json_api::json::JsonString;
+
 use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
 use std::convert::TryFrom;
 use wasmi::RuntimeValue;

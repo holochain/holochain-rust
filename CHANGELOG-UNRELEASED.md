@@ -5,7 +5,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 {{ version-heading }}
 
 ### Added
-- Added `Crud Status` information to link data in get_links as well as query through `LinkStatusRequest` [#1337](https://github.com/holochain/holochain-rust/pull/1337)
 
 ### Changed
 

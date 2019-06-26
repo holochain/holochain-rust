@@ -1,7 +1,6 @@
 use boolinator::Boolinator;
-use holochain_core_types::{
-    agent::AgentId, cas::content::AddressableContent, error::HolochainError,
-};
+use holochain_core_types::{agent::AgentId, error::HolochainError};
+use holochain_persistence_api::cas::content::AddressableContent;
 
 // this could be used for a lot of external callbacks and can be moved to somewhere more general?
 pub fn request_service(

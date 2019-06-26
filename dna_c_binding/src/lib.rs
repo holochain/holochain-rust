@@ -6,6 +6,7 @@
 #![feature(try_from)]
 #![warn(unused_extern_crates)]
 extern crate holochain_core_types;
+extern crate holochain_json_api;
 
 use holochain_core_types::dna::Dna;
 use std::{
@@ -15,7 +16,7 @@ use std::{
     panic::catch_unwind,
 };
 
-use holochain_core_types::json::JsonString;
+use holochain_json_api::json::JsonString;
 
 #[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]

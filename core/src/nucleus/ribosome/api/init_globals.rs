@@ -1,10 +1,13 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::{
+use holochain_core_types::entry::entry_type::EntryType;
+
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
-    entry::entry_type::EntryType,
     hash::HashString,
-    json::JsonString,
 };
+
+use holochain_json_api::json::JsonString;
+
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use wasmi::RuntimeArgs;
 
@@ -74,9 +77,10 @@ pub mod tests {
         Defn,
     };
     use holochain_core_types::{
-        cas::content::Address, dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult,
-        json::JsonString, signature::Signature,
+        dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult, signature::Signature,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use std::convert::TryFrom;
     use test_utils::mock_signing::registered_test_agent;

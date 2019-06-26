@@ -12,14 +12,19 @@ use futures::{
     task::{noop_local_waker_ref, Poll},
     Future,
 };
-use holochain_core_types::{
-    agent::AgentId,
+
+use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
-    dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
+};
+
+use holochain_core_types::{
+    agent::AgentId,
+    dna::{wasm::DnaWasm, Dna},
+    eav::Attribute,
     entry::{
         cap_entries::{CapabilityType, ReservedCapabilityId},
         entry_type::EntryType,
@@ -54,10 +59,10 @@ pub struct Context {
     pub observer_channel: Option<SyncSender<Observer>>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
-    pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+    pub eav_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
-    signal_tx: Option<crossbeam_channel::Sender<Signal>>,
+    pub(crate) signal_tx: Option<crossbeam_channel::Sender<Signal>>,
 }
 
 impl Context {
@@ -95,7 +100,7 @@ impl Context {
         persister: Arc<Mutex<Persister>>,
         chain_storage: Arc<RwLock<ContentAddressableStorage>>,
         dht_storage: Arc<RwLock<ContentAddressableStorage>>,
-        eav: Arc<RwLock<EntityAttributeValueStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
@@ -127,7 +132,7 @@ impl Context {
         signal_tx: Option<crossbeam_channel::Sender<Signal>>,
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
-        eav: Arc<RwLock<EntityAttributeValueStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
@@ -320,8 +325,8 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};
-    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;
+    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 

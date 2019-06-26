@@ -5,21 +5,26 @@ extern crate hdk;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 use hdk::{
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
 };
 use hdk::holochain_core_types::{
-    cas::content::Address,
     dna::entry_types::Sharing,
-    error::HolochainError,
-    json::JsonString,
     entry::Entry,
     link::LinkMatch,
+};
+use hdk::holochain_persistence_api::{
+    cas::content::Address,
     hash::HashString
 };
+use hdk::holochain_json_api::{
+    json::JsonString,
+    error::JsonError
+};
+
 
 use hdk::holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions};
 
@@ -34,7 +39,7 @@ pub struct Simple {
     content: String,
 }
 
-impl Simple 
+impl Simple
 {
     pub fn new(content:String) -> Simple
     {
@@ -69,6 +74,15 @@ pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequ
     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
 }
 
+pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
+    #[derive(Debug, Serialize, Deserialize, DefaultJson)]
+    struct SignalPayload {
+        message: String
+    }
+
+    hdk::emit_signal("test-signal", SignalPayload{message})
+}
+
 pub fn definition() -> ValidatingEntryType {
     entry!(
         name: "simple",
@@ -94,7 +108,6 @@ pub fn definition() -> ValidatingEntryType {
                     Ok(())
                 }
             )]
-        
     )
 }
 
@@ -108,7 +121,7 @@ define_zome! {
         Ok(())
     }
 
-  
+
 
     functions: [
 
@@ -137,10 +150,15 @@ define_zome! {
             outputs |result: ZomeApiResult<String>|,
             handler :|content : String| -> ZomeApiResult<String>{hdk::decrypt(content)}
         }
+        test_emit_signal: {
+            inputs: |message: String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_test_emit_signal
+        }
     ]
 
     traits: {
-        hc_public [create_link,delete_link,get_my_links]
+        hc_public [create_link, delete_link, get_my_links, test_emit_signal]
     }
 }
 

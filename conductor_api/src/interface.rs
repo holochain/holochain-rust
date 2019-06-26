@@ -5,10 +5,11 @@ use crossbeam_channel::Receiver;
 use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
 
 use holochain_core_types::{
-    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityRequest, json::JsonString,
-    signature::Provenance,
+    agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
 };
 use holochain_dpki::key_bundle::KeyBundle;
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::Address;
 use lib3h_sodium::secbuf::SecBuf;
 use Holochain;
 

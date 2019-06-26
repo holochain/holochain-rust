@@ -2,20 +2,19 @@
 //! HDK exposed functions to access powerful Holochain functions.
 
 use crate::error::{ZomeApiError, ZomeApiResult};
+use holochain_json_api::json::{default_to_json, JsonString, RawString};
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
+
 use holochain_core_types::{
-    cas::content::Address,
     dna::capabilities::CapabilityRequest,
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::ZomeApiGlobals,
-    holochain_core_types::{
-        hash::HashString,
-        json::{default_to_json, JsonString, RawString},
-    },
     memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
 };
+
 use init_globals::init_globals;
 use std::convert::{TryFrom, TryInto};
 
@@ -26,6 +25,7 @@ mod commit_entry;
 mod debug;
 mod decrypt;
 mod encrypt;
+mod emit_signal;
 mod entry_address;
 mod get_entry;
 mod get_links;
@@ -47,6 +47,7 @@ pub use self::{
     debug::debug,
     decrypt::decrypt,
     encrypt::encrypt,
+    mit_signal::emit_signal,
     entry_address::entry_address,
     get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
     get_links::{get_links, get_links_and_load, get_links_result, get_links_with_options},
@@ -184,6 +185,7 @@ def_api_fns! {
     hc_keystore_get_public_key, KeystoreGetPublicKey;
     hc_commit_capability_grant, CommitCapabilityGrant;
     hc_commit_capability_claim, CommitCapabilityClaim;
+    hc_emit_signal, EmitSignal;
 }
 
 //--------------------------------------------------------------------------------------------------

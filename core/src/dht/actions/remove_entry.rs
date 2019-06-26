@@ -7,7 +7,10 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_persistence_api::cas::content::Address;
+
+use holochain_core_types::error::HolochainError;
+
 use std::{pin::Pin, sync::Arc};
 
 /// Remove Entry Action Creator

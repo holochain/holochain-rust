@@ -9,13 +9,13 @@ use crate::{
         CallbackFnCall, ZomeFnCall,
     },
 };
-use holochain_core_types::{
-    error::{
-        HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
-        ZomeApiInternalResult,
-    },
-    json::JsonString,
+use holochain_core_types::error::{
+    HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
+    ZomeApiInternalResult,
 };
+
+use holochain_json_api::json::JsonString;
+
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use std::{convert::TryFrom, fmt, sync::Arc};
 use wasmi::{Externals, HostError, RuntimeArgs, RuntimeValue, Trap, TrapKind};

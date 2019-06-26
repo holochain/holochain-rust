@@ -51,7 +51,7 @@ const bugTest = async () => {
 
     thirdConductor.onSignal(async signal => {
       if (signal.action_type === "Hold") {
-        console.log('new HOLD!', signal.data.entry.App)
+        console.log('new HOLD!', signal.data)
       }
     })
 

@@ -24,8 +24,8 @@ mod capability;
 mod commit_entry;
 mod debug;
 mod decrypt;
-mod encrypt;
 mod emit_signal;
+mod encrypt;
 mod entry_address;
 mod get_entry;
 mod get_links;
@@ -46,8 +46,8 @@ pub use self::{
     commit_entry::{commit_entry, commit_entry_result},
     debug::debug,
     decrypt::decrypt,
-    encrypt::encrypt,
     emit_signal::emit_signal,
+    encrypt::encrypt,
     entry_address::entry_address,
     get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
     get_links::{get_links, get_links_and_load, get_links_result, get_links_with_options},

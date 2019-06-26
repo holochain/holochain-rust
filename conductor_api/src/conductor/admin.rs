@@ -819,7 +819,7 @@ pattern = '.*'"#
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
+hash = 'QmZgGb3SWaxEWJ8ctb7acTVueHCCA4yexbKwKrRnZ4Cesi'
 id = 'new-dna'"#,
             ),
         );
@@ -1112,7 +1112,7 @@ id = 'new-dna'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
+hash = 'QmZgGb3SWaxEWJ8ctb7acTVueHCCA4yexbKwKrRnZ4Cesi'
 id = 'new-dna'"#,
             ),
         );
@@ -1399,7 +1399,7 @@ type = 'http'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
+hash = 'QmZgGb3SWaxEWJ8ctb7acTVueHCCA4yexbKwKrRnZ4Cesi'
 id = 'new-dna'"#,
             ),
         );

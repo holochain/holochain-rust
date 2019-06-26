@@ -36,6 +36,7 @@ mod send;
 mod sign;
 mod sleep;
 mod update_remove;
+mod entry_meta;
 
 pub use self::{
     bundle::{close_bundle, start_bundle},
@@ -59,6 +60,7 @@ pub use self::{
     sign::{sign, sign_one_time, verify_signature},
     sleep::sleep,
     update_remove::{remove_entry, update_agent, update_entry},
+    entry_meta::entry_meta,
 };
 
 macro_rules! def_api_fns {

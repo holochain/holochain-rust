@@ -458,7 +458,7 @@ define_zome! {
     entries: [
         entry!(
             name: "testEntryType",
-            description: "asdfda",
+            meta: "asdfda",
             sharing: Sharing::Public,
 
             validation_package: || {
@@ -495,7 +495,7 @@ define_zome! {
 
         entry!(
             name: "validation_package_tester",
-            description: "asdfda",
+            meta: "asdfda",
             sharing: Sharing::Public,
             validation_package: || {
                 hdk::ValidationPackageDefinition::ChainFull
@@ -517,7 +517,7 @@ define_zome! {
 
         entry!(
             name: "link_validator",
-            description: "asdfda",
+            meta: "asdfda",
             sharing: Sharing::Public,
 
             validation_package: || {

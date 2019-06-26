@@ -172,7 +172,7 @@ pub struct ValidatingLinkDefinition {
 macro_rules! entry {
     (
         name: $name:expr,
-        description: $description:expr,
+        meta: $meta:expr,
         sharing: $sharing:expr,
        // $(native_type: $native_type:ty,)*
 
@@ -190,7 +190,7 @@ macro_rules! entry {
 
         {
             let mut entry_type = hdk::holochain_core_types::dna::entry_types::EntryTypeDef::new();
-            entry_type.description = String::from($description);
+            entry_type.meta = JsonString::from($meta);
             entry_type.sharing = $sharing;
 
             $($(

@@ -141,7 +141,7 @@ pub fn find_link_definition_by_type(
                             entry_type_name: entry_type_name.to_string(),
                             direction: LinkDirection::To,
                             link_type: link_type.clone(),
-                        })
+                        });
                     }
                 }
 
@@ -152,13 +152,14 @@ pub fn find_link_definition_by_type(
                             entry_type_name: entry_type_name.to_string(),
                             direction: LinkDirection::From,
                             link_type: link_type.clone(),
-                        })
+                        });
                     }
                 }
             }
-
         }
     }
 
-    Err(HolochainError::ErrorGeneric(String::from("Unknown entry type")))
+    Err(HolochainError::ErrorGeneric(String::from(
+        "Unknown entry type",
+    )))
 }

@@ -14,11 +14,16 @@ use crate::{
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 use holochain_persistence_api::hash::HashString;
 
-use crate::network::{direct_message::DirectMessage, entry_aspect::EntryAspect};
+use crate::network::{
+    direct_message::DirectMessage,
+    entry_aspect::EntryAspect,
+    query::{NetworkQuery, NetworkQueryResult},
+};
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::json_protocol::{MessageData, StoreEntryAspectData, QueryEntryData, QueryEntryResultData};
+use holochain_net::connection::json_protocol::{
+    MessageData, QueryEntryData, QueryEntryResultData, StoreEntryAspectData,
+};
 use std::{convert::TryFrom, sync::Arc};
-use crate::network::query::{NetworkQuery, NetworkQueryResult};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -113,7 +118,8 @@ QueryEntryData {{
 
 // See comment on fn format_store_data() - same reason for this function.
 fn format_query_entry_result_data(data: &QueryEntryResultData) -> String {
-    let query_result_json = JsonString::from_json(&String::from_utf8(data.query_result.clone()).unwrap());
+    let query_result_json =
+        JsonString::from_json(&String::from_utf8(data.query_result.clone()).unwrap());
     let query_result = NetworkQueryResult::try_from(query_result_json).unwrap();
     format!(
         r#"

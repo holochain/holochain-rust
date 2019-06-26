@@ -135,15 +135,15 @@ pub mod simple {
     }
 
     #[zome_fn("hc_public")]
-    pub fn encrypt(content : String) -> ZomeApiResult<String> 
+    pub fn encrypt(payload : String) -> ZomeApiResult<String> 
     {
-       hdk::encrypt(content)
+       hdk::encrypt(payload)
     }
 
     #[zome_fn("hc_public")]
-    pub fn decrypt(content : String) -> ZomeApiResult<String> 
+    pub fn decrypt(payload : String) -> ZomeApiResult<String> 
     {
-       hdk::decrypt(content)
+       hdk::decrypt(payload)
     }
 
 }

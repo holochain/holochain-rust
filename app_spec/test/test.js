@@ -51,11 +51,11 @@ scenario('sign_and_verify_message', async (s, t, { alice, bob }) => {
 scenario('encrypt_and_decrypt_message', async (s, t, { alice, bob }) => {
   const message = "Hello everyone! Time to start the secret meeting";
 
-  const EncryptResult = await bob.call("simple", "encrypt", { content:message });
-  t.deepEqual(EncryptResult, { Ok: 'YVystBCmNEJGW/91bg43cUUybbtiElex0B+QWYy+PlB+nE3W8TThYGE4QzuUexvzkGqSutV04dSN8oyZxTJiBg==' });
+  const EncryptResult = await bob.call("simple", "encrypt", { payload:message });
+  t.deepEqual(EncryptResult, { Ok: 'KJLPN5EU+wfVqOItW3mlLCiQGchOor+TMV5tjUXs8JgfVL+mHUxKfvgJmU7KufCNMgnFW3GEpCHHc/JouzJ+2A==' });
 
 
-  const DecryptResult = await alice.call("simple", "decrypt", { content:EncryptResult.Ok });
+  const DecryptResult = await alice.call("simple", "decrypt", { payload:EncryptResult.Ok });
   t.deepEqual(DecryptResult.Ok, message);
 })
 

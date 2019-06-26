@@ -918,7 +918,7 @@ impl ConductorApiBuilder {
                 .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
 
             let decrypted_bytes = decrypted_buf.read_lock();
-            Ok(json!({ "message": &**decrypted_bytes }))
+            Ok(json!({ "message": std::str::from_utf8(&**decrypted_bytes) }))
         });
         self
     }

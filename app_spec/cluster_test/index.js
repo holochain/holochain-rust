@@ -63,7 +63,8 @@ const bugTest = async () => {
   cluster.conductors[1].onSignal(async signal => {
     if (signal.action_type === "Hold") {
       countHolding++
-      if (countHolding === 2) {
+      console.log('old HOLD [',countHolding,']',signal.data)
+      if (countHolding === 5) {
         proceedWithThirdNode()
       }
     }

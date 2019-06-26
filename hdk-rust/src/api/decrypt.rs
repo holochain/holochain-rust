@@ -21,7 +21,7 @@ use super::Dispatch;
 /// # use hdk::error::ZomeApiResult;
 /// # fn main() {
 /// pub fn handle_sign_message(payload: String) -> ZomeApiResult<Signature> {
-///    hdk::decrypt(message).map(Signature::from)
+///    hdk::decrypt(payload).map(Signature::from)
 /// }
 /// # }
 /// ```

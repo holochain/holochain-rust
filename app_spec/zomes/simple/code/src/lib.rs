@@ -147,7 +147,7 @@ define_zome! {
         }
         decrypt :{
             inputs : |content: String|,
-            outputs |result: ZomeApiResult<String>|,
+            outputs: |result: ZomeApiResult<String>|,
             handler :|content : String| -> ZomeApiResult<String>{hdk::decrypt(content)}
         }
         test_emit_signal: {

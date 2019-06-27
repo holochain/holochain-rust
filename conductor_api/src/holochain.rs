@@ -182,9 +182,6 @@ impl Holochain {
 
     /// activate the Holochain instance
     pub fn start(&mut self) -> Result<(), HolochainInstanceError> {
-        if self.active {
-            return Err(HolochainInstanceError::InstanceAlreadyActive);
-        }
         self.active = true;
         Ok(())
     }

@@ -1,6 +1,6 @@
 //! provides in-memory p2p "server" for use in scenario testing
 //! the server connects all the memory_workers together, so there is no real gossiping going around.
-//! Could have pluggable DHT strategy. Full-sync currently hard-coded: #fulldht
+//! Could have pluggable DHT strategy. Full-sync currently hard-coded: #fullsync
 
 #![allow(non_snake_case)]
 
@@ -8,9 +8,9 @@ use super::memory_book::*;
 use crate::{
     connection::{
         json_protocol::{
-            DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
-            FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-            MessageData, MetaListData, PeerData,
+            EntryListData, FetchEntryData, FetchEntryResultData, GenericResultData, GetListData,
+            JsonProtocol, MessageData, PeerData, ProvidedEntryData, QueryEntryData,
+            QueryEntryResultData, StoreEntryAspectData,
         },
         protocol::Protocol,
         NetResult,
@@ -38,25 +38,25 @@ lazy_static! {
 
 /// a global server for routing messages between nodes in-memory
 pub(crate) struct InMemoryServer {
-    // keep track of senders by `dna_address::agent_id`
-    senders: HashMap<CellId, mpsc::Sender<Protocol>>,
+    // keep track of senders by ChainId (dna_address::agent_id)
+    senders: HashMap<ChainId, mpsc::Sender<Protocol>>,
     // keep track of agents by dna_address
-    senders_by_dna: HashMap<Address, HashMap<String, mpsc::Sender<Protocol>>>,
+    senders_by_dna: HashMap<Address, HashMap<Address, mpsc::Sender<Protocol>>>,
     // Unique identifier
     name: String,
     // Keep track of connected clients
     client_count: usize,
 
-    // All published data book: cell_id -> entry_addresses
-    published_book: CellBook,
-    // All stored data book: cell_id -> entry_addresses
-    stored_book: CellBook,
+    // All published data book: chain_id -> entry_addresses
+    authored_book: ChainBook,
+    // All stored data book: chain_id -> entry_addresses
+    stored_book: ChainBook,
 
     // Keep track of which DNAs are "tracked"
-    trackdna_book: HashSet<CellId>,
+    trackdna_book: HashSet<ChainId>,
     // Keep track of requests authored by the server
-    // request_id -> cell_id
-    request_book: HashMap<RequestId, CellId>,
+    // request_id -> chain_id
+    request_book: HashMap<RequestId, ChainId>,
     // used for making unique request ids
     request_count: usize,
 
@@ -73,21 +73,21 @@ impl InMemoryServer {
     }
 
     /// generate a new request, return the request_id  (sugar)
-    fn priv_create_request(&mut self, dna_address: &Address, agent_id: &str) -> RequestId {
-        let cell_id = into_cell_id(dna_address, agent_id);
-        self.priv_create_request_with_cell_id(&cell_id)
+    fn priv_create_request(&mut self, dna_address: &Address, agent_id: &Address) -> RequestId {
+        let chain_id = into_chain_id(dna_address, agent_id);
+        self.priv_create_request_with_chain_id(&chain_id)
     }
 
     /// generate a new request, return the request_id
-    fn priv_create_request_with_cell_id(&mut self, cell_id: &CellId) -> RequestId {
+    fn priv_create_request_with_chain_id(&mut self, chain_id: &ChainId) -> RequestId {
         let req_id = self.priv_generate_request_id();
         self.request_book
-            .insert(req_id.clone(), cell_id.to_string());
+            .insert(req_id.clone(), chain_id.to_string());
         req_id
     }
 
-    /// Check if its our own request and return CellId
-    fn priv_check_request(&self, request_id: &RequestId) -> Option<&CellId> {
+    /// Check if its our own request and return ChainId
+    fn priv_check_request(&self, request_id: &RequestId) -> Option<&ChainId> {
         self.log.t(&format!(
             "---- priv_check_request('{}') in {:?} ?",
             request_id,
@@ -97,58 +97,34 @@ impl InMemoryServer {
     }
 
     /// Send all Get*Lists requests to agent
-    fn priv_request_all_lists(&mut self, dna_address: &Address, agent_id: &str) {
+    fn priv_request_all_lists(&mut self, dna_address: &Address, agent_id: &Address) {
         // Entry
         // Request this agent's published entries
         let request_id = self.priv_create_request(dna_address, agent_id);
         self.priv_send_one(
             dna_address,
             agent_id,
-            JsonProtocol::HandleGetPublishingEntryList(GetListData {
+            JsonProtocol::HandleGetAuthoringEntryList(GetListData {
                 request_id,
+                provider_agent_id: agent_id.clone(),
                 dna_address: dna_address.clone(),
             })
             .into(),
         )
-        .expect("Sending HandleGetPublishingEntryList failed");
+        .expect("Sending HandleGetAuthoringEntryList failed");
         // Request this agent's holding entries
         let request_id = self.priv_create_request(dna_address, agent_id);
         self.priv_send_one(
             dna_address,
             agent_id,
-            JsonProtocol::HandleGetHoldingEntryList(GetListData {
+            JsonProtocol::HandleGetGossipingEntryList(GetListData {
                 request_id,
+                provider_agent_id: agent_id.clone(),
                 dna_address: dna_address.clone(),
             })
             .into(),
         )
         .expect("Sending HandleGetHoldingEntryList failed");
-
-        // Metadata
-        // Request this agent's published metadata
-        let request_id = self.priv_create_request(dna_address, agent_id);
-        self.priv_send_one(
-            dna_address,
-            agent_id,
-            JsonProtocol::HandleGetPublishingMetaList(GetListData {
-                request_id,
-                dna_address: dna_address.clone(),
-            })
-            .into(),
-        )
-        .expect("Sending HandleGetPublishingMetaList failed");
-        // Request this agent's holding metadata
-        let request_id = self.priv_create_request(dna_address, agent_id);
-        self.priv_send_one(
-            dna_address,
-            agent_id,
-            JsonProtocol::HandleGetHoldingMetaList(GetListData {
-                request_id,
-                dna_address: dna_address.clone(),
-            })
-            .into(),
-        )
-        .expect("Sending HandleGetHoldingMetaList failed");
     }
 }
 
@@ -162,7 +138,7 @@ impl InMemoryServer {
             senders_by_dna: HashMap::new(),
             client_count: 0,
             request_book: HashMap::new(),
-            published_book: HashMap::new(),
+            authored_book: HashMap::new(),
             stored_book: HashMap::new(),
             request_count: 0,
             trackdna_book: HashSet::new(),
@@ -192,33 +168,33 @@ impl InMemoryServer {
         }
     }
 
-    /// register a cell's handler with the server (for message routing)
-    pub fn register_cell(
+    /// register a chain's handler with the server (for message routing)
+    pub fn register_chain(
         &mut self,
         dna_address: &Address,
-        agent_id: &str,
+        agent_id: &Address,
         sender: mpsc::Sender<Protocol>,
     ) -> NetResult<()> {
         self.senders
-            .insert(into_cell_id(dna_address, agent_id), sender.clone());
+            .insert(into_chain_id(dna_address, agent_id), sender.clone());
         match self.senders_by_dna.entry(dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
-                e.get_mut().insert(agent_id.to_string(), sender.clone());
+                e.get_mut().insert(agent_id.clone(), sender.clone());
             }
             Entry::Vacant(e) => {
                 let mut map = HashMap::new();
-                map.insert(agent_id.to_string(), sender.clone());
+                map.insert(agent_id.clone(), sender.clone());
                 e.insert(map);
             }
         };
         Ok(())
     }
 
-    /// unregister a cell's handler with the server (for message routing)
-    pub fn unregister_cell(&mut self, dna_address: &Address, agent_id: &str) {
-        let cell_id = into_cell_id(dna_address, agent_id);
-        self.log.d(&format!("unregistering '{}'", cell_id));
-        let maybe_sender = self.senders.remove(&cell_id);
+    /// unregister a chain's handler with the server (for message routing)
+    pub fn unregister_chain(&mut self, dna_address: &Address, agent_id: &Address) {
+        let chain_id = into_chain_id(dna_address, agent_id);
+        self.log.d(&format!("unregistering '{}'", chain_id));
+        let maybe_sender = self.senders.remove(&chain_id);
         if maybe_sender.is_none() {
             return;
         }
@@ -228,7 +204,7 @@ impl InMemoryServer {
             }
             Entry::Vacant(_) => unreachable!(),
         };
-        self.log.d(&format!("unregistering '{}' DONE", cell_id));
+        self.log.d(&format!("unregistering '{}' DONE", chain_id));
     }
 
     /// process a message sent by a node to the "network"
@@ -265,8 +241,8 @@ impl InMemoryServer {
                 }
                 // Check if its a response to our own request
                 {
-                    let maybe_cell_id = self.priv_check_request(&msg.request_id);
-                    if maybe_cell_id.is_some() {
+                    let maybe_chain_id = self.priv_check_request(&msg.request_id);
+                    if maybe_chain_id.is_some() {
                         self.log.d(&format!(
                             "---- '{}' internal request failed: {:?}",
                             self.name.clone(),
@@ -284,16 +260,16 @@ impl InMemoryServer {
             }
             JsonProtocol::TrackDna(msg) => {
                 // Check if we are already tracking this dna for this agent
-                let cell_id = into_cell_id(&msg.dna_address, &msg.agent_id);
-                if self.trackdna_book.contains(&cell_id) {
+                let chain_id = into_chain_id(&msg.dna_address, &msg.agent_id);
+                if self.trackdna_book.contains(&chain_id) {
                     self.log.e(&format!(
                         "({}) ##### DNA already tracked: {}",
                         self.name.clone(),
-                        cell_id
+                        chain_id
                     ));
                     return Ok(());
                 }
-                self.trackdna_book.insert(cell_id);
+                self.trackdna_book.insert(chain_id);
                 // Notify all Peers connected to this DNA of a new Peer connection.
                 self.priv_send_all(
                     &msg.dna_address.clone(),
@@ -308,15 +284,15 @@ impl InMemoryServer {
 
             JsonProtocol::UntrackDna(msg) => {
                 // Make sure we are already tracking this dna for this agent
-                let cell_id = into_cell_id(&msg.dna_address, &msg.agent_id);
-                if !self.trackdna_book.contains(&cell_id) {
+                let chain_id = into_chain_id(&msg.dna_address, &msg.agent_id);
+                if !self.trackdna_book.contains(&chain_id) {
                     self.log.w(&format!(
                         "Trying to untrack an already untracked DNA: {}",
-                        cell_id
+                        chain_id
                     ));
                     return Ok(());
                 }
-                self.trackdna_book.remove(&cell_id);
+                self.trackdna_book.remove(&chain_id);
             }
 
             JsonProtocol::SendMessage(msg) => {
@@ -325,46 +301,28 @@ impl InMemoryServer {
             JsonProtocol::HandleSendMessageResult(msg) => {
                 self.priv_serve_HandleSendMessageResult(&msg)?;
             }
-            JsonProtocol::FetchEntry(msg) => {
-                self.priv_serve_FetchEntry(&msg)?;
-            }
-            JsonProtocol::HandleFetchEntryResult(msg) => {
-                self.priv_serve_HandleFetchEntryResult(&msg)?;
-            }
 
             JsonProtocol::PublishEntry(msg) => {
                 self.priv_serve_PublishEntry(&msg)?;
             }
-
-            JsonProtocol::FetchMeta(msg) => {
-                self.priv_serve_FetchMeta(&msg)?;
+            JsonProtocol::HandleFetchEntryResult(msg) => {
+                self.priv_serve_HandleFetchEntryResult(&msg)?;
             }
-            JsonProtocol::HandleFetchMetaResult(msg) => {
-                self.priv_serve_HandleFetchMetaResult(&msg)?;
+            JsonProtocol::QueryEntry(msg) => {
+                self.priv_serve_QueryEntry(&msg)?;
             }
-
-            JsonProtocol::PublishMeta(msg) => {
-                self.priv_serve_PublishMeta(&msg)?;
+            JsonProtocol::HandleQueryEntryResult(msg) => {
+                self.priv_serve_HandleQueryEntryResult(&msg)?;
             }
 
             // Our request for the publish_list has returned
-            JsonProtocol::HandleGetPublishingEntryListResult(msg) => {
-                self.priv_serve_HandleGetPublishingEntryListResult(&msg)?;
+            JsonProtocol::HandleGetAuthoringEntryListResult(msg) => {
+                self.priv_serve_HandleGetAuthoringEntryListResult(&msg)?;
             }
 
             // Our request for the hold_list has returned
-            JsonProtocol::HandleGetHoldingEntryListResult(msg) => {
-                self.priv_serve_HandleGetHoldingEntryListResult(&msg);
-            }
-
-            // Our request for the publish_meta_list has returned
-            JsonProtocol::HandleGetPublishingMetaListResult(msg) => {
-                self.priv_serve_HandleGetPublishingMetaListResult(&msg)?;
-            }
-
-            // Our request for the hold_meta_list has returned
-            JsonProtocol::HandleGetHoldingMetaListResult(msg) => {
-                self.priv_serve_HandleGetHoldingMetaListResult(&msg);
+            JsonProtocol::HandleGetGossipingEntryListResult(msg) => {
+                self.priv_serve_HandleGetGossipingEntryListResult(&msg);
             }
 
             _ => {
@@ -383,15 +341,15 @@ impl InMemoryServer {
     fn priv_check_or_fail(
         &mut self,
         dna_address: &Address,
-        agent_id: &str,
-        maybe_sender_info: Option<(String, Option<String>)>,
+        agent_id: &Address,
+        maybe_sender_info: Option<(Address, Option<String>)>,
     ) -> NetResult<bool> {
-        let cell_id = into_cell_id(dna_address, agent_id);
-        if self.trackdna_book.contains(&cell_id) {
+        let chain_id = into_chain_id(dna_address, agent_id);
+        if self.trackdna_book.contains(&chain_id) {
             self.log.t(&format!(
                 "---- '{}' check OK: {}",
                 self.name.clone(),
-                cell_id,
+                chain_id,
             ));
             return Ok(true);
         };
@@ -399,7 +357,7 @@ impl InMemoryServer {
             self.log.e(&format!(
                 "#### '{}' check failed: {}",
                 self.name.clone(),
-                cell_id
+                chain_id
             ));
             return Err(NetworkError::GenericError {
                 error: "DNA not tracked by agent and no sender info.".to_string(),
@@ -409,16 +367,16 @@ impl InMemoryServer {
         let sender_info = maybe_sender_info.unwrap();
         let sender_agent_id = sender_info.0;
         let sender_request_id = sender_info.1.unwrap_or_default();
-        let fail_msg = FailureResultData {
+        let fail_msg = GenericResultData {
             dna_address: dna_address.clone(),
             request_id: sender_request_id,
             to_agent_id: sender_agent_id.clone(),
-            error_info: json!(String::from("DNA not tracked by agent")),
+            result_info: "DNA not tracked by agent".into(),
         };
         self.log.e(&format!(
             "#### '{}' check failed for {}.\n\t Sending failure {:?}",
             self.name.clone(),
-            cell_id,
+            chain_id,
             fail_msg.clone()
         ));
         self.priv_send_one(
@@ -430,19 +388,19 @@ impl InMemoryServer {
     }
 
     /// send a message to the appropriate channel based on dna_address::to_agent_id
-    /// If cell_id is unknown, send back FailureResult to `maybe_sender_info`
-    fn priv_send_one_with_cell_id(&mut self, cell_id: &str, data: Protocol) -> NetResult<()> {
-        let maybe_sender = self.senders.get_mut(cell_id);
+    /// If chain_id is unknown, send back FailureResult to `maybe_sender_info`
+    fn priv_send_one_with_chain_id(&mut self, chain_id: &str, data: Protocol) -> NetResult<()> {
+        let maybe_sender = self.senders.get_mut(chain_id);
         if maybe_sender.is_none() {
             self.log.e(&format!(
                 "#### ({}) error: No sender channel found for {}",
                 self.name.clone(),
-                cell_id,
+                chain_id,
             ));
             return Err(format_err!(
                 "({}) No sender channel found for {}",
                 self.name.clone(),
-                cell_id,
+                chain_id,
             ));
         }
         let sender = maybe_sender.unwrap();
@@ -451,16 +409,16 @@ impl InMemoryServer {
         sender.send(data)?;
         Ok(())
     }
-    /// send a message to the appropriate channel based on cell_id (dna_address::to_agent_id)
-    /// If cell_id is unknown, send back FailureResult to `maybe_sender_info`
+    /// send a message to the appropriate channel based on chain_id (dna_address::to_agent_id)
+    /// If chain_id is unknown, send back FailureResult to `maybe_sender_info`
     fn priv_send_one(
         &mut self,
         dna_address: &Address,
-        to_agent_id: &str,
+        to_agent_id: &Address,
         data: Protocol,
     ) -> NetResult<()> {
-        let cell_id = into_cell_id(dna_address, to_agent_id);
-        self.priv_send_one_with_cell_id(&cell_id, data)
+        let chain_id = into_chain_id(dna_address, to_agent_id);
+        self.priv_send_one_with_chain_id(&chain_id, data)
     }
 
     /// send a message to all nodes connected with this dna address
@@ -537,75 +495,53 @@ impl InMemoryServer {
         Ok(())
     }
 
-    // -- serve DHT Entry -- //
+    // -- serve Publish Entry -- //
 
     /// on publish, we send store requests to all nodes connected on this dna
-    fn priv_serve_PublishEntry(&mut self, msg: &EntryData) -> NetResult<()> {
+    fn priv_serve_PublishEntry(&mut self, msg: &ProvidedEntryData) -> NetResult<()> {
         // Provider must be tracking
         let sender_info = Some((msg.provider_agent_id.clone(), None));
-        let is_tracking =
-            self.priv_check_or_fail(&msg.dna_address, &msg.provider_agent_id, sender_info)?;
-        if !is_tracking {
-            return Ok(());
-        }
-        // all good, book-keep publish
-        bookkeep(
-            &mut self.published_book,
+        let is_tracking = self.priv_check_or_fail(
             &msg.dna_address,
-            &msg.provider_agent_id,
-            &msg.entry_address,
-            &msg.entry_address,
-        );
-        // #fulldht
-        // have everyone store it (including self)
-        self.priv_send_all(
-            &msg.dna_address,
-            JsonProtocol::HandleStoreEntry(msg.clone()).into(),
+            &msg.provider_agent_id.clone(),
+            sender_info,
         )?;
-        Ok(())
-    }
-
-    /// when someone makes a dht data request,
-    /// this in-memory module routes it to the first node connected on that dna.
-    /// this works because we send store requests to all connected nodes.
-    /// If there is no other node for this DNA, send a FailureResult.
-    fn priv_serve_FetchEntry(&mut self, msg: &FetchEntryData) -> NetResult<()> {
-        // Provider must be tracking
-        let sender_info = Some((msg.requester_agent_id.clone(), Some(msg.request_id.clone())));
-        let is_tracking =
-            self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
-        // #fulldht
-        // Have the first known cell registered to that DNA respond
-        match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
-            Entry::Occupied(mut e) => {
-                if !e.get().is_empty() {
-                    let (_k, r) = &e
-                        .get_mut()
-                        .iter()
-                        .next()
-                        .expect("No Cell is registered to track the DNA");
-                    r.send(JsonProtocol::HandleFetchEntry(msg.clone()).into())?;
-                    return Ok(());
-                }
-            }
-            _ => unreachable!(),
-        };
 
-        // No node found, send an empty FetchEntryResultData
-        // TODO: should send a FailureResult instead?
-        let response = JsonProtocol::FetchEntryResult(FetchEntryResultData {
-            request_id: msg.request_id.clone(),
-            requester_agent_id: msg.requester_agent_id.clone(),
-            dna_address: msg.dna_address.clone(),
-            provider_agent_id: msg.requester_agent_id.clone(),
-            entry_address: msg.entry_address.clone(),
-            entry_content: json!(null),
-        });
-        self.priv_send_one(&msg.dna_address, &msg.requester_agent_id, response.into())?;
-        // Done
+        // Store every aspect
+        for aspect in msg.entry.aspect_list.clone() {
+            let chain_id = into_chain_id(&msg.dna_address, &msg.provider_agent_id);
+            // Publish is authoring unless its broadcasting an aspect we are storing
+            if !book_has_aspect(
+                &self.stored_book,
+                chain_id,
+                &msg.entry.entry_address,
+                &aspect.aspect_address,
+            ) {
+                bookkeep(
+                    &mut self.authored_book,
+                    &msg.dna_address,
+                    &msg.provider_agent_id,
+                    &msg.entry.entry_address,
+                    &aspect.aspect_address,
+                );
+            }
+            let store_msg = StoreEntryAspectData {
+                request_id: self.priv_generate_request_id(),
+                dna_address: msg.dna_address.clone(),
+                provider_agent_id: msg.provider_agent_id.clone(),
+                entry_address: msg.entry.entry_address.clone(),
+                entry_aspect: aspect,
+            };
+            // #fullsync
+            // Broadcast: have everyone store it (including self)
+            self.priv_send_all(
+                &msg.dna_address,
+                JsonProtocol::HandleStoreEntryAspect(store_msg).into(),
+            )?;
+        }
         Ok(())
     }
 
@@ -621,308 +557,182 @@ impl InMemoryServer {
         if !is_tracking {
             return Ok(());
         }
-        // Requester must be tracking
-        let is_tracking = msg.requester_agent_id == ""
-            || self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
-        if !is_tracking {
+        //        // Requester must be tracking
+        //        let is_tracking = msg.requester_agent_id == ""
+        //            || self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
+        //        if !is_tracking {
+        //            return Ok(());
+        //        }
+
+        // Should be from our own request do a publish
+        if !self.request_book.contains_key(&msg.request_id) {
+            // FIXME return Err instead
             return Ok(());
         }
-        // if its from our own request do a publish
-        if self.request_book.contains_key(&msg.request_id) {
-            let dht_data = EntryData {
-                dna_address: msg.dna_address.clone(),
-                provider_agent_id: msg.provider_agent_id.clone(),
-                entry_address: msg.entry_address.clone(),
-                entry_content: msg.entry_content.clone(),
-            };
-            self.priv_serve_PublishEntry(&dht_data)?;
-            return Ok(());
-        }
-        // otherwise just send back to requester
-        self.priv_send_one(
-            &msg.dna_address,
-            &msg.requester_agent_id,
-            JsonProtocol::FetchEntryResult(msg.clone()).into(),
-        )?;
+        let dht_data = ProvidedEntryData {
+            dna_address: msg.dna_address.clone(),
+            provider_agent_id: msg.provider_agent_id.clone(),
+            entry: msg.entry.clone(),
+        };
+        self.priv_serve_PublishEntry(&dht_data)?;
         Ok(())
     }
 
-    // -- serve DHT metadata -- //
+    // -- serve QueryEntry -- //
 
-    /// on publish, we send store requests to all nodes connected on this dna
-    fn priv_serve_PublishMeta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
+    fn priv_serve_QueryEntry(&mut self, msg: &QueryEntryData) -> NetResult<()> {
         // Provider must be tracking
-        let sender_info = Some((msg.provider_agent_id.clone(), None));
-        let is_tracking =
-            self.priv_check_or_fail(&msg.dna_address, &msg.provider_agent_id, sender_info)?;
-        if !is_tracking {
-            return Ok(());
-        }
-        // all good, book-keep every metaContent
-        for content in msg.content_list.clone() {
-            let meta_id = into_meta_id(&(
-                msg.entry_address.clone(),
-                msg.attribute.clone(),
-                content.clone(),
-            ));
-            bookkeep(
-                &mut self.published_book,
-                &msg.dna_address,
-                &msg.provider_agent_id,
-                &msg.entry_address,
-                &meta_id,
-            );
-        }
-        // fully connected DHT so ask everyone to store the content.
-        self.priv_send_all(
-            &msg.dna_address,
-            JsonProtocol::HandleStoreMeta(msg.clone()).into(),
-        )
-    }
-
-    /// when someone makes a dht meta data request,
-    /// this in-memory module routes it to the first node connected on that dna.
-    /// this works because we also send store requests to all connected nodes.
-    fn priv_serve_FetchMeta(&mut self, msg: &FetchMetaData) -> NetResult<()> {
-        // Requester must be tracking
         let sender_info = Some((msg.requester_agent_id.clone(), Some(msg.request_id.clone())));
         let is_tracking =
             self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
-        // #fulldht
-        // Have the first known cell registered to that DNA respond
+        // #fullsync
+        // Have the requester respond to itself
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
-                    let (_k, r) = &e
-                        .get_mut()
-                        .iter()
-                        .next()
-                        .expect("senders_by_dna.entry does not hold any value");
-                    r.send(JsonProtocol::HandleFetchMeta(msg.clone()).into())?;
-                    return Ok(());
+                    for (k, r) in e.get_mut().iter() {
+                        if k == &msg.requester_agent_id {
+                            self.log.i(&format!("---- HandleQueryEntry {}", k));
+                            r.send(JsonProtocol::HandleQueryEntry(msg.clone()).into())?;
+                            return Ok(());
+                        }
+                    }
                 }
             }
             _ => unreachable!(),
         };
-        // No node found, send an empty FetchMetaResultData
+
+        // No node found, send an empty FetchEntryResultData
         // TODO: should send a FailureResult instead?
-        let response = JsonProtocol::FetchMetaResult(FetchMetaResultData {
+        let response = JsonProtocol::QueryEntryResult(QueryEntryResultData {
+            dna_address: msg.dna_address.clone(),
+            entry_address: msg.entry_address.clone(),
             request_id: msg.request_id.clone(),
             requester_agent_id: msg.requester_agent_id.clone(),
-            dna_address: msg.dna_address.clone(),
-            provider_agent_id: msg.requester_agent_id.clone(),
-            entry_address: msg.entry_address.clone(),
-            attribute: msg.attribute.clone(),
-            content_list: vec![json!(null)],
+            responder_agent_id: msg.requester_agent_id.clone(),
+            query_result: vec![],
         });
         self.priv_send_one(&msg.dna_address, &msg.requester_agent_id, response.into())?;
         // Done
         Ok(())
     }
 
-    /// send back a response to a request for dht meta data
-    fn priv_serve_HandleFetchMetaResult(&mut self, msg: &FetchMetaResultData) -> NetResult<()> {
-        // Provider must be tracking
-        let sender_info = Some((msg.provider_agent_id.clone(), Some(msg.request_id.clone())));
+    fn priv_serve_HandleQueryEntryResult(&mut self, msg: &QueryEntryResultData) -> NetResult<()> {
+        // Provider/Responder must be tracking
+        let sender_info = Some((msg.responder_agent_id.clone(), Some(msg.request_id.clone())));
         let is_tracking = self.priv_check_or_fail(
             &msg.dna_address,
-            &msg.provider_agent_id,
+            &msg.responder_agent_id.clone(),
             sender_info.clone(),
         )?;
         if !is_tracking {
             return Ok(());
         }
         // Requester must be tracking
-        let is_tracking = msg.requester_agent_id == ""
+        let is_tracking = msg.requester_agent_id.to_string() == ""
             || self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
         if !is_tracking {
-            return Ok(());
-        }
-        // if its from our own request, resolve it
-        if self.request_book.contains_key(&msg.request_id) {
-            self.priv_resolve_HandleFetchMetaResult(msg)?;
             return Ok(());
         }
         // otherwise just send back to requester
         self.priv_send_one(
             &msg.dna_address,
             &msg.requester_agent_id,
-            JsonProtocol::FetchMetaResult(msg.clone()).into(),
+            JsonProtocol::QueryEntryResult(msg.clone()).into(),
         )?;
         Ok(())
     }
 
-    /// Resolve our own HandleFetchMeta request:
-    ///   - do a publish for each new/unknown meta content
-    fn priv_resolve_HandleFetchMetaResult(&mut self, msg: &FetchMetaResultData) -> NetResult<()> {
-        let cell_id = into_cell_id(&msg.dna_address, &msg.provider_agent_id);
-        for meta_content in msg.content_list.clone() {
-            let meta_id = into_meta_id(&(
-                msg.entry_address.clone(),
-                msg.attribute.clone(),
-                meta_content.clone(),
-            ));
-            if book_has(
-                &self.published_book,
-                cell_id.clone(),
-                &msg.entry_address,
-                &meta_id,
-            ) {
-                continue;
-            }
-            self.log.t(&format!(
-                "Publishing missing Meta: {}",
-                meta_content.clone()
-            ));
-            let meta_data = DhtMetaData {
-                dna_address: msg.dna_address.clone(),
-                provider_agent_id: msg.provider_agent_id.clone(),
-                entry_address: msg.entry_address.clone(),
-                attribute: msg.attribute.clone(),
-                content_list: vec![meta_content],
-            };
-            self.priv_serve_PublishMeta(&meta_data)?;
-        }
-        Ok(())
-    }
+    // -- serve Get List -- //
 
     /// Received response from our request for the 'publish_list'
     /// For each data not already published, request it in order to publish it ourselves.
-    fn priv_serve_HandleGetPublishingEntryListResult(
+    fn priv_serve_HandleGetAuthoringEntryListResult(
         &mut self,
         msg: &EntryListData,
     ) -> NetResult<()> {
-        let cell_id = self
+        let chain_id = self
             .priv_check_request(&msg.request_id)
             .expect("Not our request")
             .to_string();
         self.log.d(&format!(
-            "---- HandleGetPublishingDataListResult: cell_id = '{}'",
-            cell_id,
+            "---- HandleGetAuthoringEntryListResult: chain_id = '{}'",
+            chain_id,
         ));
-        // Compare with already published list
-        // For each data not already published, request it and publish it ourselves.
-        for entry_address in msg.entry_address_list.clone() {
-            if book_has_entry(&self.published_book, cell_id.clone(), &entry_address) {
-                continue;
+        // Compare with already authored list
+        // For each aspect not already authored, fetch it and publish it ourselves.
+        for (entry_address, aspect_address_list) in msg.address_map.clone() {
+            for aspect_address in aspect_address_list {
+                if book_has_aspect(
+                    &self.authored_book,
+                    chain_id.clone(),
+                    &entry_address,
+                    &aspect_address,
+                ) {
+                    continue;
+                }
+                let request_id = self.priv_create_request_with_chain_id(&chain_id);
+                self.priv_send_one_with_chain_id(
+                    &chain_id,
+                    JsonProtocol::HandleFetchEntry(FetchEntryData {
+                        dna_address: msg.dna_address.clone(),
+                        provider_agent_id: undo_chain_id(&chain_id).1,
+                        request_id,
+                        entry_address: entry_address.clone(),
+                        aspect_address_list: Some(vec![aspect_address]),
+                    })
+                    .into(),
+                )?;
             }
-            let request_id = self.priv_create_request_with_cell_id(&cell_id);
-            self.priv_send_one_with_cell_id(
-                &cell_id,
-                JsonProtocol::HandleFetchEntry(FetchEntryData {
-                    requester_agent_id: String::new(),
-                    request_id,
-                    dna_address: msg.dna_address.clone(),
-                    entry_address,
-                })
-                .into(),
-            )?;
         }
         Ok(())
     }
 
     /// Received response from our request for the 'holding_list'
-    fn priv_serve_HandleGetHoldingEntryListResult(&mut self, msg: &EntryListData) {
-        let cell_id = self
+    fn priv_serve_HandleGetGossipingEntryListResult(&mut self, msg: &EntryListData) {
+        let chain_id = self
             .priv_check_request(&msg.request_id)
             .expect("Not our request")
             .to_string();
         self.log.d(&format!(
-            "---- HandleGetHoldingEntryListResult: cell_id = '{}'",
-            cell_id,
+            "---- HandleGetHoldingEntryListResult: chain_id = '{}'",
+            chain_id,
         ));
         // Compare with current stored_book
         // For each data not already holding, add it to stored_data_book?
-        for entry_address in msg.entry_address_list.clone() {
-            if book_has_entry(&self.stored_book, cell_id.clone(), &entry_address) {
-                continue;
+        for (entry_address, aspect_address_list) in msg.address_map.clone() {
+            for aspect_address in aspect_address_list {
+                if book_has_aspect(
+                    &self.stored_book,
+                    chain_id.clone(),
+                    &entry_address,
+                    &aspect_address,
+                ) {
+                    continue;
+                }
+                bookkeep_with_chain_id(
+                    &mut self.stored_book,
+                    chain_id.clone(),
+                    &entry_address,
+                    &aspect_address,
+                );
+                // Ask for the new aspect since in-memory mode doesnt gossip
+                let request_id = self.priv_create_request_with_chain_id(&chain_id);
+                let _ = self.priv_send_one_with_chain_id(
+                    &chain_id,
+                    JsonProtocol::HandleFetchEntry(FetchEntryData {
+                        dna_address: msg.dna_address.clone(),
+                        provider_agent_id: undo_chain_id(&chain_id).1,
+                        request_id,
+                        entry_address: entry_address.clone(),
+                        aspect_address_list: Some(vec![aspect_address]),
+                    })
+                    .into(),
+                );
             }
-            bookkeep_with_cell_id(
-                &mut self.stored_book,
-                cell_id.clone(),
-                &entry_address,
-                &entry_address,
-            );
-        }
-    }
-
-    /// Received response from our request for the 'publish_list'
-    /// For each data not already published, request it in order to publish it ourselves.
-    fn priv_serve_HandleGetPublishingMetaListResult(
-        &mut self,
-        msg: &MetaListData,
-    ) -> NetResult<()> {
-        let cell_id = self
-            .priv_check_request(&msg.request_id)
-            .expect("Not our request")
-            .to_string();
-        self.log.d(&format!(
-            "---- HandleGetPublishingMetaListResult: cell_id = '{}'",
-            cell_id,
-        ));
-        // Compare with already published list
-        // For each metadata not already published, request it and publish it ourselves.
-        let mut requested_meta_key = Vec::new();
-        for meta_tuple in msg.meta_list.clone() {
-            let meta_id = into_meta_id(&meta_tuple);
-            // dont send request for a known meta
-            if book_has(
-                &self.published_book,
-                cell_id.clone(),
-                &meta_tuple.0,
-                &meta_id,
-            ) {
-                continue;
-            }
-            // dont send same request twice
-            let meta_key = (meta_tuple.0.clone(), meta_tuple.1.clone());
-            if requested_meta_key.contains(&meta_key) {
-                continue;
-            }
-            requested_meta_key.push(meta_key);
-            // send request for that meta_key
-            let request_id = self.priv_create_request_with_cell_id(&cell_id);
-            let fetch_meta = FetchMetaData {
-                requester_agent_id: String::new(),
-                request_id,
-                dna_address: msg.dna_address.clone(),
-                entry_address: meta_tuple.0,
-                attribute: meta_tuple.1,
-            };
-            self.priv_send_one_with_cell_id(
-                &cell_id,
-                JsonProtocol::HandleFetchMeta(fetch_meta).into(),
-            )?;
-        }
-        Ok(())
-    }
-
-    /// Received response from our request for the 'holding_meta_list'
-    fn priv_serve_HandleGetHoldingMetaListResult(&mut self, msg: &MetaListData) {
-        let cell_id = self
-            .priv_check_request(&msg.request_id)
-            .expect("Not our request")
-            .to_string();
-        self.log.d(&format!(
-            "---- HandleGetHoldingMetaListResult: cell_id = '{}'",
-            cell_id,
-        ));
-        // Compare with current stored_meta_book
-        // For each data not already holding, add it to stored_meta_book?
-        for meta_tuple in msg.meta_list.clone() {
-            let meta_id = into_meta_id(&meta_tuple);
-            if book_has(&self.stored_book, cell_id.clone(), &meta_tuple.0, &meta_id) {
-                continue;
-            }
-            bookkeep_with_cell_id(
-                &mut self.stored_book,
-                cell_id.clone(),
-                &meta_tuple.0,
-                &meta_id,
-            );
         }
     }
 }

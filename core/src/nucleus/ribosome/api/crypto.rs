@@ -19,7 +19,7 @@ pub fn invoke_crypto(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult
         // Exit on error
         Err(_) => {
             context.log(format!(
-                "err/zome: invoke_sign failed to deserialize SignArgs: {:?}",
+                "err/zome: invoke_crypto failed to deserialize SignArgs: {:?}",
                 args_str
             ));
             return ribosome_error_code!(ArgumentDeserializationFailed);

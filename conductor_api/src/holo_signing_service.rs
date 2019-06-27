@@ -12,7 +12,7 @@ pub fn request_service(
     let client = reqwest::Client::new();
     let url = reqwest::Url::parse(service_uri).map_err(|_| {
         HolochainError::ConfigError(format!(
-            "Can't parse signing service URI: '{}'",
+            "Can't parse service URI: '{}'",
             service_uri
         ))
     })?;

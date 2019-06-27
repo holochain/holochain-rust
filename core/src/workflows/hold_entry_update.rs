@@ -2,7 +2,7 @@ use crate::{
     context::Context, dht::actions::update_entry::update_entry,
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
 };
-use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use holochain_persistence_api::cas::content::AddressableContent;
 
 use crate::workflows::validation_package;
 use holochain_core_types::{
@@ -12,10 +12,10 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn hold_update_workflow<'a>(
-    entry_with_header: EntryWithHeader,
+    entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
-) -> Result<Address, HolochainError> {
-    let EntryWithHeader { entry, header } = &entry_with_header;
+) -> Result<(), HolochainError> {
+    let EntryWithHeader { entry, header } = entry_with_header;
 
     // 1. Get hold of validation package
     let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))?;
@@ -46,5 +46,7 @@ pub async fn hold_update_workflow<'a>(
         &context.clone(),
         link,
         entry.address().clone()
-    ))
+    ))?;
+
+    Ok(())
 }

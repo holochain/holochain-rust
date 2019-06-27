@@ -12,12 +12,12 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
 
-pub async fn hold_remove_workflow<'a>(
-    entry_with_header: EntryWithHeader,
+pub async fn hold_remove_workflow(
+    entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     // 1. Get hold of validation package
-    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))?;
+    let maybe_validation_package = await!(validation_package(entry_with_header, context.clone()))?;
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
 

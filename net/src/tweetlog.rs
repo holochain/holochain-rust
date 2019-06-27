@@ -84,7 +84,7 @@ macro_rules! log_ee {
 // LOGLEVEL
 //--------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LogLevel {
     Trace = 1,
     Debug,
@@ -153,7 +153,7 @@ impl TweetLogger {
 #[allow(non_camel_case_types)]
 type listenerCallback = fn(LogLevel, Option<&str>, &str);
 
-/// this is the actual memory space for our Tweetlog singleton
+// this is the actual memory space for our Tweetlog singleton
 lazy_static! {
     pub static ref TWEETLOG: RwLock<Tweetlog> = RwLock::new(Tweetlog::new());
 }

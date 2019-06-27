@@ -7,10 +7,9 @@ use crate::connection::{
 };
 use holochain_json_api::json::JsonString;
 use lib3h::{
-    real_engine::{RealEngine, RealEngineConfig},
+    engine::{RealEngine, RealEngineConfig},
     transport_wss::TransportWss,
 };
-use lib3h_protocol::network_engine::NetworkEngine;
 
 /// A worker that makes use of lib3h / NetworkEngine.
 /// It adapts the Worker interface with Lib3h's NetworkEngine's interface.

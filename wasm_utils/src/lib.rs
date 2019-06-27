@@ -1,7 +1,6 @@
 //! Library holding necessary code for the Ribosome  that is also useful for hdk-rust,
 //! or more generally for making rust code that the Ribosome can run.
 //! Must not have any dependency with any other Holochain crates.
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 #[macro_use]
 extern crate serde_derive;

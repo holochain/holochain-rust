@@ -12,7 +12,7 @@ holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "2019-06-27-rust-nightly" }
 holochain_json_api = { git = "https://github.com/holochain/holochain-serialization", branch = "2019-06-27-bump-nightly" }
-lib3h_sodium = "=0.0.1-alpha1"
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "2019-06-27-rust-nightly" }
 wabt = "=0.7.4"
 tempfile = "=3.0.7"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }

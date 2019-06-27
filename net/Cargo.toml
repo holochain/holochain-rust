@@ -9,15 +9,15 @@ tempfile = "=3.0.7"
 
 [dependencies]
 failure = "=0.1.5"
-lib3h = "=0.0.1-alpha1"
-lib3h_protocol = "=0.0.1-alpha1"
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "2019-06-27-rust-nightly" }
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "2019-06-27-rust-nightly" }
 holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }
 holochain_json_derive = { git = "https://github.com/holochain/holochain-serialization", branch = "2019-06-27-bump-nightly" }
 holochain_json_api = { git = "https://github.com/holochain/holochain-serialization", branch = "2019-06-27-bump-nightly" }
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "2019-06-27-rust-nightly" }
 lazy_static = "=1.2.0"
-libc = "=0.2.50"
+libc = "=0.2.58"
 reqwest = "=0.9.11"
 sha2 = "=0.8.0"
 serde = "=1.0.89"

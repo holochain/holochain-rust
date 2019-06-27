@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #[macro_use]
 extern crate holochain_wasm_utils;
 #[macro_use]

@@ -1,5 +1,4 @@
 #![warn(unused_extern_crates)]
-#![feature(try_from)]
 extern crate holochain_common;
 extern crate holochain_conductor_api;
 extern crate holochain_core;

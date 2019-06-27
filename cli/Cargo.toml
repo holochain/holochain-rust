@@ -12,7 +12,7 @@ holochain_dpki = { path = "../dpki" }
 holochain_json_api = { git = "https://github.com/holochain/holochain-serialization", branch = "2019-06-27-bump-nightly" }
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "2019-06-27-rust-nightly" }
 holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "2019-06-27-rust-nightly" }
-lib3h_sodium = "=0.0.1-alpha1"
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "2019-06-27-rust-nightly" }
 holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "=0.2.15"
 failure = "=0.1.5"
@@ -25,7 +25,7 @@ base64 = "=0.10.1"
 colored = "=1.7.0"
 ignore = "=0.4.6"
 rpassword = "=2.1.0"
-rustyline = "=3.0.0"
+rustyline = "=5.0.0"
 
 [dev-dependencies]
 tempfile = "=3.0.7"

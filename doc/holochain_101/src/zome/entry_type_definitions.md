@@ -113,7 +113,6 @@ As mentioned above, sharing refers to whether entries of this type are private t
 
 __native_type__
 ```rust
-#![feature(try_from)]
 extern crate serde;
 extern crate serde_json;
 #[macro_use]
@@ -139,11 +138,6 @@ Clearly, `native_type` is where things start to get interesting. It requires the
 It is important to remember that the Rust code of a Zome is compiled into WASM before it can be executed by Holochain. This introduces a certain constraint. How is data passed between Holochain, and the WASM Zome code? Answer: it is stored in the WASM memory as stringified JSON data, and accessed by the WASM code and by Holochain, running the WASM interpreter.
 
 JSON was chosen as the interchange format because it is so universal, and almost all languages have serializers and parsers. Rust's is called `serde`. The three `serde` related dependencies all relate to the need to serialize to and from JSON within Zomes.
-
-Note that the top line in the snippet above is important. It switches on a Rust feature that would otherwise be off, allowing attempted conversions between types, which is exactly what the JSON parsing is doing.
-```rust
-#![feature(try_from)]
-```
 
 Additionally, the HDK offers built-in conversion functions from JSON strings to Entry structs. This comes from the `DefaultJson` [derive](https://doc.rust-lang.org/rust-by-example/trait/derive.html).
 

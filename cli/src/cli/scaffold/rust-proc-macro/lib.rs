@@ -1,4 +1,4 @@
-#![feature(try_from, proc_macro_hygiene)]
+#![feature(proc_macro_hygiene)]
 #[macro_use]
 extern crate hdk;
 extern crate hdk_proc_macros;

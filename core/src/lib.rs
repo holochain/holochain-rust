@@ -1,5 +1,5 @@
 //! The library implementing the holochain pattern of validation rules + local source chain + DHT
-#![feature(try_from, arbitrary_self_types, futures_api, async_await, await_macro)]
+#![feature(arbitrary_self_types, futures_api, async_await, await_macro)]
 #![warn(unused_extern_crates)]
 #[macro_use]
 extern crate serde_derive;

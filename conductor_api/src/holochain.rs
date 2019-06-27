@@ -269,7 +269,6 @@ mod tests {
             Arc::new(
                 ContextBuilder::new()
                     .with_agent(agent.clone())
-                    .with_logger(logger.clone())
                     .with_signals(signal_tx)
                     .with_conductor_api(mock_conductor_api(agent))
                     .with_file_storage(tempdir().unwrap().path().to_str().unwrap())

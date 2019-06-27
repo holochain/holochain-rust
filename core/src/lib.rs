@@ -19,6 +19,8 @@ extern crate holochain_wasm_utils;
 extern crate holochain_json_derive;
 #[macro_use]
 extern crate pretty_assertions;
+#[macro_use]
+extern crate log;
 
 pub mod action;
 pub mod agent;

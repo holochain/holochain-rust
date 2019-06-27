@@ -442,8 +442,9 @@ impl ColoredLogLevel for Level {
 //     }
 // }
 
-
-static ID_COLORS: &'static [&str] = &["green", "white", "yellow", "white", "blue", "magenta", "cyan", ];
+static ID_COLORS: &'static [&str] = &[
+    "green", "white", "yellow", "white", "blue", "magenta", "cyan",
+];
 
 /// Pick a color from: "green", "white", "yellow", "white", "blue", "magenta"
 /// or "cyan" based on a provided text.
@@ -454,7 +455,6 @@ pub fn pick_color(text: &str) -> &str {
     }
     ID_COLORS[(total as usize) % ID_COLORS.len()]
 }
-
 
 #[test]
 fn pick_color_test() {

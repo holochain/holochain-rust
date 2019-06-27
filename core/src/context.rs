@@ -2,7 +2,6 @@ use crate::{
     action::ActionWrapper,
     conductor_api::ConductorApi,
     instance::Observer,
-    logger::Logger,
     nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
@@ -46,13 +45,12 @@ use std::{
 use test_utils::mock_signing::mock_conductor_api;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
-/// This includes components that are injected from the outside like logger and persister
+/// This includes components that are injected from the outside like persister
 /// but also the store of the instance that gets injected before passing on the context
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {
     pub agent_id: AgentId,
-    pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: Option<SyncSender<ActionWrapper>>,
@@ -96,7 +94,6 @@ impl Context {
 
     pub fn new(
         agent_id: AgentId,
-        logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         chain_storage: Arc<RwLock<ContentAddressableStorage>>,
         dht_storage: Arc<RwLock<ContentAddressableStorage>>,
@@ -107,7 +104,6 @@ impl Context {
     ) -> Self {
         Context {
             agent_id: agent_id.clone(),
-            logger,
             persister,
             state: None,
             action_channel: None,
@@ -126,7 +122,6 @@ impl Context {
 
     pub fn new_with_channels(
         agent_id: AgentId,
-        logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: Option<SyncSender<ActionWrapper>>,
         signal_tx: Option<crossbeam_channel::Sender<Signal>>,
@@ -137,7 +132,6 @@ impl Context {
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id: agent_id.clone(),
-            logger,
             persister,
             state: None,
             action_channel,
@@ -153,12 +147,9 @@ impl Context {
 
     // helper function to make it easier to call the logger
     pub fn log<T: Into<String>>(&self, msg: T) {
-        let mut logger = self
-            .logger
-            .lock()
-            .or(Err(HolochainError::LoggingError))
-            .expect("Logger should work");;
-        logger.log(msg.into());
+        let msg_str = msg.into();
+        //println!("{}",msg_str.clone());
+        info!("{}", msg_str);
     }
 
     pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
@@ -328,7 +319,7 @@ pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
 pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
-    use crate::{logger::test_logger, persister::SimplePersister, state::State};
+    use crate::{persister::SimplePersister, state::State};
     use holochain_core_types::agent::AgentId;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Arc, Mutex, RwLock};
@@ -346,7 +337,6 @@ pub mod tests {
         ));
         let mut maybe_context = Context::new(
             AgentId::generate_fake("Terence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
@@ -379,7 +369,6 @@ pub mod tests {
         ));
         let mut context = Context::new(
             AgentId::generate_fake("Terence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),

@@ -386,7 +386,6 @@ pub mod tests {
         (
             Arc::new(Context::new(
                 agent,
-                logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(content_storage.clone()))),
                 content_storage.clone(),
                 content_storage.clone(),
@@ -415,14 +414,12 @@ pub mod tests {
         network_name: Option<&str>,
     ) -> Arc<Context> {
         let agent = AgentId::generate_fake(agent_name);
-        let logger = test_logger();
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         Arc::new(
             Context::new_with_channels(
                 agent,
-                logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 Some(action_channel.clone()),
                 None,
@@ -445,7 +442,6 @@ pub mod tests {
         ));
         let mut context = Context::new(
             registered_test_agent("Florence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
@@ -469,7 +465,6 @@ pub mod tests {
         let cas = Arc::new(RwLock::new(file_system.clone()));
         let mut context = Context::new(
             registered_test_agent("Florence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
             cas.clone(),
             cas.clone(),

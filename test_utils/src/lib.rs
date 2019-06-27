@@ -220,7 +220,6 @@ pub fn test_context_and_logger_with_network_name(
         Arc::new({
             let mut builder = ContextBuilder::new()
                 .with_agent(agent.clone())
-                .with_logger(logger.clone())
                 .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
                 .expect("Tempdir must be accessible")
                 .with_conductor_api(mock_signing::mock_conductor_api(agent));

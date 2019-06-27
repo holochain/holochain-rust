@@ -13,10 +13,7 @@ use crate::{
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;
-use holochain_core::{
-    logger::{ChannelLogger, Logger},
-    signal::Signal,
-};
+use holochain_core::{logger::Logger, signal::Signal};
 use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
@@ -28,6 +25,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
+use logging::{tag::TagFilter, FastLoggerBuilder};
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -625,9 +623,15 @@ impl Conductor {
                 }
 
                 if config.logger.logger_type == "debug" {
-                    context_builder = context_builder.with_logger(Arc::new(Mutex::new(
+                    let _logger = FastLoggerBuilder::new()
+                        .set_level_from_str("Trace")
+                        .add_tag_filter(TagFilter::new("Abort", false, "Red"))
+                        .build()
+                        .expect("Fail to instanciate the logging factory.");
+
+                    /*                    context_builder = context_builder.with_logger(Arc::new(Mutex::new(
                         ChannelLogger::new(instance_config.id.clone(), self.logger.get_sender()),
-                    )));
+                    )));*/
                 }
 
                 // Conductor API

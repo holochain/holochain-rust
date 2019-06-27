@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate log;
-use logging::{FastLoggerBuilder, tag::TagFilter};
-
+use logging::{tag::TagFilter, FastLoggerBuilder};
 
 fn main() {
     let _logger = FastLoggerBuilder::new()

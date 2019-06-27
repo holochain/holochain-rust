@@ -52,7 +52,6 @@ pub mod test {
     use super::*;
     use crate::{
         context::Context,
-        logger::test_logger,
         persister::SimplePersister,
         state::{test_store, State},
     };
@@ -69,7 +68,6 @@ pub mod test {
         ));
         let mut context = Context::new(
             AgentId::generate_fake("Terence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),

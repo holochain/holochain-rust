@@ -3,7 +3,6 @@
 use regex::Regex;
 use std::default::Default;
 
-
 #[derive(Clone, Debug)]
 pub struct TagFilter {
     pub pattern: Option<String>,
@@ -30,7 +29,7 @@ impl TagFilter {
     pub fn tag_color(&self) -> String {
         match &self.color {
             Some(color) => color.clone(),
-            None => String::default()
+            None => String::default(),
         }
     }
 
@@ -129,5 +128,4 @@ fn is_match_test() {
 
     assert_eq!(tag_filter.is_match("bar"), false);
     assert_eq!(tag_filter.is_match("xfooy"), true);
-
 }

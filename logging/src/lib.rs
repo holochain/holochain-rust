@@ -1,12 +1,6 @@
 use chrono;
-use log::{
-    Level,
-    // LevelFilter,
-    Metadata,
-    Record,
-    SetLoggerError,
-};
 use colored::*;
+use log::{Level, Metadata, Record, SetLoggerError};
 use serde_derive::Deserialize;
 // use toml;
 
@@ -15,11 +9,7 @@ pub mod tag;
 
 use color::{pick_color, ColoredLevelConfig};
 use crossbeam_channel::{self, Receiver, Sender};
-use std::boxed::Box;
-use std::default::Default;
-use std::str::FromStr;
-use std::io::Write;
-use std::thread;
+use std::{boxed::Box, default::Default, io::Write, str::FromStr, thread};
 use tag::TagFilter;
 
 type MsgT = Box<dyn LogMessageTrait>;
@@ -60,9 +50,7 @@ impl FastLogger {
                     }
                 }
             }
-            return Some(
-                color
-            );
+            return Some(color);
         }
     }
 
@@ -219,11 +207,10 @@ trait LogMessageTrait: Send {
 /// from the OS.
 impl LogMessageTrait for LogMessage {
     fn build(&self) -> String {
-
         // Let's colorise our logging messages
         let msg_color = match &self.color {
             Some(color) => color,
-            None => pick_color(&self.module)
+            None => pick_color(&self.module),
         };
 
         let msg = format!(
@@ -271,7 +258,7 @@ impl From<Rule> for TagFilter {
             &rule.pattern,
             rule.exclude.unwrap_or(tf.exclude()),
             &rule.color.unwrap_or(tf.tag_color()),
-            )
+        )
     }
 }
 
@@ -286,7 +273,8 @@ fn should_log_test() {
                 .set_pattern("foo")
                 .set_exclusion(false)
                 .set_color("Blue")
-                .build())
+                .build(),
+        )
         .build()
         .unwrap();
 
@@ -300,7 +288,7 @@ fn should_log_test() {
     logger.add_tag_filter(TagFilter::new("b", false, "Green"));
 
     assert_eq!(logger.should_log("baz"), None);
-    assert_eq!(logger.should_log("xboy"), Some(String::from("Green") ));
+    assert_eq!(logger.should_log("xboy"), Some(String::from("Green")));
 }
 
 #[test]

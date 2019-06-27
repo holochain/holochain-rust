@@ -102,6 +102,7 @@ extern crate holochain_persistence_file;
 extern crate holochain_persistence_mem;
 extern crate holochain_persistence_pickle;
 extern crate lib3h_sodium;
+extern crate logging;
 
 extern crate chrono;
 extern crate crossbeam_channel;

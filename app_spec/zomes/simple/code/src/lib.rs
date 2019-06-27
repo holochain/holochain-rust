@@ -54,13 +54,13 @@ fn simple_entry(content: String) -> Entry {
 
 pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::commit_entry(&simple_entry(target))?;
-    hdk::link_entries(&base, &HashString::from(address), "authored_posts", "")?;
+    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", "")?;
     Ok(())
 }
 
 pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::entry_address(&simple_entry(target))?;
-    hdk::remove_link(&base, &HashString::from(address), "authored_posts", "")?;
+    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts", "")?;
     Ok(())
 }
 
@@ -71,7 +71,7 @@ pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequ
         status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
         ..GetLinksOptions::default()
     };
-    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
+    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
 }
 
 pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
@@ -99,7 +99,7 @@ pub fn definition() -> ValidatingEntryType {
         links: [
             from!(
                 "%agent_id",
-                link_type: "authored_posts",
+                link_type: "authored_simple_posts",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },

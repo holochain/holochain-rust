@@ -1,4 +1,3 @@
-use boolinator::*;
 use crate::{
     context::Context,
     nucleus::{
@@ -8,6 +7,7 @@ use crate::{
         CallbackFnCall,
     },
 };
+use boolinator::*;
 use holochain_core_types::{
     entry::Entry,
     validation::{LinkValidationData, ValidationData},
@@ -15,7 +15,7 @@ use holochain_core_types::{
 
 use holochain_persistence_api::cas::content::AddressableContent;
 
-use holochain_wasm_utils::api_serialization::validation::{LinkValidationArgs, LinkDirection};
+use holochain_wasm_utils::api_serialization::validation::{LinkDirection, LinkValidationArgs};
 use std::sync::Arc;
 
 pub async fn validate_link_entry(
@@ -50,7 +50,8 @@ pub async fn validate_link_entry(
         .dna()
         .expect("There has to be a DNA in the nucleus when trying to validate entries");
 
-    let entry_def = dna.get_entry_type_def(&link_definition_path.entry_type_name)
+    let entry_def = dna
+        .get_entry_type_def(&link_definition_path.entry_type_name)
         .expect("This is Some === find_link_definition_by_type is correct");
 
     let (base_type, target_type) = if link_definition_path.direction == LinkDirection::To {
@@ -59,14 +60,20 @@ pub async fn validate_link_entry(
             .iter()
             .find(|link| link.link_type == link_definition_path.link_type)
             .expect("This is Some === find_link_definition_by_type is correct");
-        (link_definition_path.entry_type_name.clone(), link_def.target_type.clone())
+        (
+            link_definition_path.entry_type_name.clone(),
+            link_def.target_type.clone(),
+        )
     } else {
         let link_def = entry_def
             .linked_from
             .iter()
             .find(|link| link.link_type == link_definition_path.link_type)
             .expect("This is Some === find_link_definition_by_type is correct");
-        (link_def.base_type.clone(), link_definition_path.entry_type_name.clone())
+        (
+            link_def.base_type.clone(),
+            link_definition_path.entry_type_name.clone(),
+        )
     };
 
     (base.entry_type().to_string() == base_type)
@@ -84,7 +91,6 @@ pub async fn validate_link_entry(
             target_type,
             target.entry_type().to_string(),
         )))?;
-
 
     let validation_data = match entry.clone() {
         Entry::LinkAdd(link) => Ok(LinkValidationData::LinkAdd {

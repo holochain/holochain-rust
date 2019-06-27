@@ -19,8 +19,8 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryResult;
 
-use std::{sync::Arc, vec::Vec};
 use crate::nucleus::ribosome::callback::links_utils::get_link_entries;
+use std::{sync::Arc, vec::Vec};
 
 pub async fn author_entry<'a>(
     entry: &'a Entry,

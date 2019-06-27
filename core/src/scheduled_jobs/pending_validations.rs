@@ -6,12 +6,13 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 
+use crate::workflows::{
+    hold_entry_remove::hold_remove_workflow, hold_entry_update::hold_update_workflow,
+    remove_link::remove_link_workflow,
+};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{fmt, sync::Arc, thread};
-use crate::workflows::hold_entry_update::hold_update_workflow;
-use crate::workflows::remove_link::remove_link_workflow;
-use crate::workflows::hold_entry_remove::hold_remove_workflow;
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
@@ -46,9 +47,10 @@ pub struct PendingValidationStruct {
 fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
     thread::spawn(move || {
         let result = match pending.workflow {
-            ValidatingWorkflow::HoldLink => {
-                context.block_on(hold_link_workflow(&pending.entry_with_header, context.clone()))
-            }
+            ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
+                &pending.entry_with_header,
+                context.clone(),
+            )),
             ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
                 &pending.entry_with_header,
                 context.clone(),

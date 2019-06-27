@@ -3,7 +3,13 @@ use crate::{
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
 };
 
-use crate::workflows::validation_package;
+use crate::{
+    nucleus::{
+        actions::add_pending_validation::add_pending_validation, validation::ValidationError,
+    },
+    scheduled_jobs::pending_validations::ValidatingWorkflow,
+    workflows::validation_package,
+};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
@@ -11,9 +17,6 @@ use holochain_core_types::{
 };
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
-use crate::nucleus::actions::add_pending_validation::add_pending_validation;
-use crate::scheduled_jobs::pending_validations::ValidatingWorkflow;
-use crate::nucleus::validation::ValidationError;
 
 pub async fn hold_remove_workflow(
     entry_with_header: &EntryWithHeader,
@@ -22,17 +25,17 @@ pub async fn hold_remove_workflow(
     // 1. Get hold of validation package
     let maybe_validation_package = await!(validation_package(entry_with_header, context.clone()))
         .map_err(|err| {
-            let message = "Could not get validation package from source! -> Add to pending...";
-            context.log(format!("debug/workflow/hold_remove: {}", message));
-            context.log(format!("debug/workflow/hold_remove: Error was: {:?}", err));
-            add_pending_validation(
-                entry_with_header.to_owned(),
-                Vec::new(),
-                ValidatingWorkflow::RemoveEntry,
-                context.clone(),
-            );
-            HolochainError::ValidationPending
-        })?;
+        let message = "Could not get validation package from source! -> Add to pending...";
+        context.log(format!("debug/workflow/hold_remove: {}", message));
+        context.log(format!("debug/workflow/hold_remove: Error was: {:?}", err));
+        add_pending_validation(
+            entry_with_header.to_owned(),
+            Vec::new(),
+            ValidatingWorkflow::RemoveEntry,
+            context.clone(),
+        );
+        HolochainError::ValidationPending
+    })?;
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
 

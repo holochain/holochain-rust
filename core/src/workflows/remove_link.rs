@@ -10,10 +10,13 @@ use holochain_core_types::{
     validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
+use crate::nucleus::actions::add_pending_validation::add_pending_validation;
+use crate::scheduled_jobs::pending_validations::ValidatingWorkflow;
+use crate::nucleus::validation::ValidationError;
 
-pub async fn remove_link_workflow<'a>(
-    entry_with_header: &'a EntryWithHeader,
-    context: &'a Arc<Context>,
+pub async fn remove_link_workflow(
+    entry_with_header: &EntryWithHeader,
+    context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     let link_remove = match &entry_with_header.entry {
         Entry::LinkRemove((link_remove, _)) => link_remove,
@@ -28,7 +31,20 @@ pub async fn remove_link_workflow<'a>(
     context.log(format!(
         "debug/workflow/remove_link: getting validation package..."
     ));
-    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))?;
+    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
+        .map_err(|err| {
+            let message = "Could not get validation package from source! -> Add to pending...";
+            context.log(format!("debug/workflow/remove_link: {}", message));
+            context.log(format!("debug/workflow/remove_link: Error was: {:?}", err));
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                Vec::new(),
+                ValidatingWorkflow::RemoveLink,
+                context.clone(),
+            );
+            HolochainError::ValidationPending
+        })?;
+
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
     context.log(format!(
@@ -50,9 +66,26 @@ pub async fn remove_link_workflow<'a>(
         &context
     ))
     .map_err(|err| {
-        context.log(format!("debug/workflow/remove_link: invalid! {:?}", err));
-        err
+        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
+            context.log(format!("debug/workflow/remove_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies));
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                dependencies.clone(),
+                ValidatingWorkflow::HoldLink,
+                context.clone(),
+            );
+            HolochainError::ValidationPending
+        } else {
+            context.log(format!(
+                "info/workflow/remove_link: Link {:?} is NOT valid! Validation error: {:?}",
+                entry_with_header.entry,
+                err,
+            ));
+            HolochainError::from(err)
+        }
+
     })?;
+
     context.log(format!("debug/workflow/remove_link: is valid!"));
 
     // 3. If valid store remove the entry in the local DHT shard

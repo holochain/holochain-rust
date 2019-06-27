@@ -9,6 +9,9 @@ use holochain_core_types::error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{fmt, sync::Arc, thread};
+use crate::workflows::hold_entry_update::hold_update_workflow;
+use crate::workflows::remove_link::remove_link_workflow;
+use crate::workflows::hold_entry_remove::hold_remove_workflow;
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
@@ -16,6 +19,9 @@ pub type PendingValidation = Arc<PendingValidationStruct>;
 pub enum ValidatingWorkflow {
     HoldEntry,
     HoldLink,
+    RemoveLink,
+    UpdateEntry,
+    RemoveEntry,
 }
 
 impl fmt::Display for ValidatingWorkflow {
@@ -23,6 +29,9 @@ impl fmt::Display for ValidatingWorkflow {
         match self {
             ValidatingWorkflow::HoldEntry => write!(f, "HoldEntryWorkflow"),
             ValidatingWorkflow::HoldLink => write!(f, "HoldLinkWorkflow"),
+            ValidatingWorkflow::RemoveLink => write!(f, "RemoveLinkWorkflow"),
+            ValidatingWorkflow::UpdateEntry => write!(f, "UpdateEntryWorkflow"),
+            ValidatingWorkflow::RemoveEntry => write!(f, "RemoveEntryWorkflow"),
         }
     }
 }
@@ -38,9 +47,21 @@ fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
     thread::spawn(move || {
         let result = match pending.workflow {
             ValidatingWorkflow::HoldLink => {
-                context.block_on(hold_link_workflow(&pending.entry_with_header, &context))
+                context.block_on(hold_link_workflow(&pending.entry_with_header, context.clone()))
             }
             ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
+                &pending.entry_with_header,
+                context.clone(),
+            )),
+            ValidatingWorkflow::RemoveLink => context.block_on(remove_link_workflow(
+                &pending.entry_with_header,
+                context.clone(),
+            )),
+            ValidatingWorkflow::UpdateEntry => context.block_on(hold_update_workflow(
+                &pending.entry_with_header,
+                context.clone(),
+            )),
+            ValidatingWorkflow::RemoveEntry => context.block_on(hold_remove_workflow(
                 &pending.entry_with_header,
                 context.clone(),
             )),

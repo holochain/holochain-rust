@@ -72,14 +72,15 @@ pub fn find_link_definition_by_type(
 ) -> Result<LinkDefinitionPath, HolochainError> {
     let dna = context.get_dna().expect("No DNA found?!");
 
-    let all_zome_entry_types = dna.zomes.iter().flat_map(|(zome_name, zome)| {
-        zome.entry_types
-            .iter()
-            .map(move |(entry_type, entry_type_def)| (zome_name, entry_type, entry_type_def))
-    });
-
-    let all_app_entries =
-        all_zome_entry_types.filter_map(|(zome_name, entry_type, entry_type_def)| {
+    let all_app_entries = dna
+        .zomes
+        .iter()
+        .flat_map(|(zome_name, zome)| {
+            zome.entry_types
+                .iter()
+                .map(move |(entry_type, entry_type_def)| (zome_name, entry_type, entry_type_def))
+        })
+        .filter_map(|(zome_name, entry_type, entry_type_def)| {
             if let EntryType::App(entry_type_name) = entry_type.clone() {
                 Some((zome_name, entry_type_def, entry_type_name))
             } else {

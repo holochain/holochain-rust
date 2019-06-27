@@ -54,10 +54,8 @@ pub fn get_validation_package_definition(
                 }
             };
 
-            let link_definition_path = links_utils::find_link_definition_by_type(
-                link_add.link().link_type(),
-                &context,
-            )?;
+            let link_definition_path =
+                links_utils::find_link_definition_by_type(link_add.link().link_type(), &context)?;
 
             let params = LinkValidationPackageArgs {
                 entry_type: link_definition_path.entry_type_name,

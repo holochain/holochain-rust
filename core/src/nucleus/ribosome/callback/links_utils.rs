@@ -60,72 +60,11 @@ pub struct LinkDefinitionPath {
     pub link_type: String,
 }
 
-/// This function tries to find the link definition for a link given by base type,
-/// link type and target type.
-///
-/// It first looks at all "links_to" definitions in the base entry type and checks
-/// for matching link type and target type.
-///
-/// If nothing could be found there it iterates over all "linked_form" definitions in
-/// the target entry type.
+/// This function tries to find the link definition for a link given by link type.
+/// It assumes that link type names are unique and thus just iterates through
+/// zomes, entry types and their links and returns the first match.
 ///
 /// Returns a LinkDefinitionPath to uniquely reference the link definition in the DNA.
-pub fn find_link_definition_in_dna(
-    base_type: &EntryType,
-    link_type: &String,
-    target_type: &EntryType,
-    context: &Arc<Context>,
-) -> Result<LinkDefinitionPath, HolochainError> {
-    let dna = context.get_dna().expect("No DNA found?!");
-    match base_type {
-        EntryType::App(app_entry_type) => dna
-            .get_entry_type_def(&app_entry_type.to_string())
-            .ok_or(HolochainError::ErrorGeneric(String::from(
-                "Unknown entry type",
-            )))?
-            .links_to
-            .iter()
-            .find(|&link_def| {
-                link_def.target_type == String::from(target_type.clone())
-                    && &link_def.link_type == link_type
-            })
-            .and_then(|link_def| {
-                Some(LinkDefinitionPath {
-                    zome_name: dna.get_zome_name_for_app_entry_type(app_entry_type)?,
-                    entry_type_name: app_entry_type.to_string(),
-                    direction: LinkDirection::To,
-                    link_type: link_def.link_type.clone(),
-                })
-            }),
-        _ => None,
-    }
-    .or(match target_type {
-        EntryType::App(app_entry_type) => dna
-            .get_entry_type_def(&app_entry_type.to_string())
-            .ok_or(HolochainError::ErrorGeneric(String::from(
-                "Unknown entry type",
-            )))?
-            .linked_from
-            .iter()
-            .find(|&link_def| {
-                link_def.base_type == String::from(base_type.clone())
-                    && &link_def.link_type == link_type
-            })
-            .and_then(|link_def| {
-                Some(LinkDefinitionPath {
-                    zome_name: dna.get_zome_name_for_app_entry_type(app_entry_type)?,
-                    entry_type_name: app_entry_type.to_string(),
-                    direction: LinkDirection::From,
-                    link_type: link_def.link_type.clone(),
-                })
-            }),
-        _ => None,
-    })
-    .ok_or(HolochainError::ErrorGeneric(String::from(
-        "Unknown entry type",
-    )))
-}
-
 pub fn find_link_definition_by_type(
     link_type: &String,
     context: &Arc<Context>,
@@ -141,7 +80,7 @@ pub fn find_link_definition_by_type(
                             entry_type_name: entry_type_name.to_string(),
                             direction: LinkDirection::To,
                             link_type: link_type.clone(),
-                        })
+                        });
                     }
                 }
 
@@ -152,13 +91,14 @@ pub fn find_link_definition_by_type(
                             entry_type_name: entry_type_name.to_string(),
                             direction: LinkDirection::From,
                             link_type: link_type.clone(),
-                        })
+                        });
                     }
                 }
             }
-
         }
     }
 
-    Err(HolochainError::ErrorGeneric(String::from("Unknown entry type")))
+    Err(HolochainError::ErrorGeneric(String::from(
+        "Unknown entry type",
+    )))
 }

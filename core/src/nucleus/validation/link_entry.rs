@@ -33,19 +33,14 @@ pub async fn validate_link_entry(
         }
     };
     let link = link.link().clone();
-    let (base, target) = links_utils::get_link_entries(&link, context).map_err(|_| {
+    let (_base, _target) = links_utils::get_link_entries(&link, context).map_err(|_| {
         ValidationError::UnresolvedDependencies(
             [link.base().clone(), link.target().clone()].to_vec(),
         )
     })?;
 
-    let link_definition_path = links_utils::find_link_definition_in_dna(
-        &base.entry_type(),
-        link.link_type(),
-        &target.entry_type(),
-        context,
-    )
-    .map_err(|_| ValidationError::NotImplemented)?;
+    let link_definition_path = links_utils::find_link_definition_by_type(link.link_type(), context)
+        .map_err(|_| ValidationError::NotImplemented)?;
 
     let validation_data = match entry.clone() {
         Entry::LinkAdd(link) => Ok(LinkValidationData::LinkAdd {

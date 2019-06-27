@@ -45,31 +45,31 @@ mod test_super {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
+    use holochain_core_types::error::ZomeApiInternalResult;
     use holochain_json_api::json::*;
+    use std::convert::TryFrom;
     /// test that bytes passed to debug end up in the log
     #[test]
-    fn test_zome_api_function_encrypt() {
-        let (call_result, _) = test_zome_api_function(
+    fn test_zome_api_crypto_functions() {
+        let (call_result_json, _) = test_zome_api_function(
             ZomeApiFunction::Crypto.as_str(),
             r#"{ "payload": "this is data", "method" : "Encrypt" }"#
                 .as_bytes()
                 .to_vec(),
         );
-        assert_eq!(
-            JsonString::from_json(
-                r#"{"ok":true,"value":"FJ/KKN5d7VHUu+8jKiMWuDtIBZclOBETQ8Gnkw==","error":"null"}"#
-            ),
-            call_result,
-        );
-    }
 
-    #[test]
-    fn test_zome_api_function_decrypt() {
+        let encrypt_result = ZomeApiInternalResult::try_from(call_result_json)
+            .expect("Could not try from zomeapiitnernal");
+        assert!(encrypt_result.ok);
+
         let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::Crypto.as_str(),
-            r#"{ "payload": "FJ/KKN5d7VHUu+8jKiMWuDtIBZclOBETQ8Gnkw==", "method" : "Decrypt" }"#
-                .as_bytes()
-                .to_vec(),
+            format!(
+                r#"{{ "payload": "{}", "method" : "Decrypt" }}"#,
+                encrypt_result.value
+            )
+            .as_bytes()
+            .to_vec(),
         );
         assert_eq!(
             JsonString::from_json(r#"{"ok":true,"value":"this is data","error":"null"}"#),

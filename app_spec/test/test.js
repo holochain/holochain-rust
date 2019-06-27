@@ -52,9 +52,8 @@ scenario('encrypt_and_decrypt_message', async (s, t, { alice, bob }) => {
   const message = "Hello everyone! Time to start the secret meeting";
 
   const EncryptResult = await bob.call("simple", "encrypt", { payload:message });
-  t.deepEqual(EncryptResult, { Ok: 'KJLPN5EU+wfVqOItW3mlLCiQGchOor+TMV5tjUXs8JgfVL+mHUxKfvgJmU7KufCNMgnFW3GEpCHHc/JouzJ+2A==' });
-
-
+  
+  t.ok(EncryptResult);
   const DecryptResult = await alice.call("simple", "decrypt", { payload:EncryptResult.Ok });
   t.deepEqual(DecryptResult.Ok, message);
 })

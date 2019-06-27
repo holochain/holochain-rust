@@ -6,6 +6,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::{get_entry::*, validation::LinkDirection};
 use std::sync::Arc;
+use boolinator::Boolinator;
 
 /// Retrieves the base and target entries of the link and returns both.
 pub fn get_link_entries(
@@ -70,35 +71,36 @@ pub fn find_link_definition_by_type(
     context: &Arc<Context>,
 ) -> Result<LinkDefinitionPath, HolochainError> {
     let dna = context.get_dna().expect("No DNA found?!");
-    for (zome_name, zome) in dna.zomes.iter() {
-        for (entry_type, entry_type_def) in zome.entry_types.iter() {
-            if let EntryType::App(entry_type_name) = entry_type.clone() {
-                for link in entry_type_def.links_to.iter() {
-                    if link.link_type == *link_type {
-                        return Ok(LinkDefinitionPath {
-                            zome_name: zome_name.clone(),
-                            entry_type_name: entry_type_name.to_string(),
-                            direction: LinkDirection::To,
-                            link_type: link_type.clone(),
-                        });
-                    }
-                }
 
-                for link in entry_type_def.linked_from.iter() {
-                    if link.link_type == *link_type {
-                        return Ok(LinkDefinitionPath {
-                            zome_name: zome_name.clone(),
-                            entry_type_name: entry_type_name.to_string(),
-                            direction: LinkDirection::From,
-                            link_type: link_type.clone(),
-                        });
-                    }
-                }
-            }
+    let all_zome_entry_types = dna.zomes.iter()
+        .flat_map(|(zome_name, zome)| zome.entry_types.iter()
+        .map(move |(entry_type, entry_type_def)| (zome_name, entry_type, entry_type_def) ));
+
+    let all_app_entries = all_zome_entry_types
+    .filter_map(|(zome_name, entry_type, entry_type_def)| {
+        if let EntryType::App(entry_type_name) = entry_type.clone() {
+            Some((zome_name, entry_type_def, entry_type_name))
+        } else {
+            None
         }
-    }
+    });
 
-    Err(HolochainError::ErrorGeneric(String::from(
+    all_app_entries.flat_map(|(zome_name, entry_type_def, entry_type_name)| {
+        entry_type_def.links_to.iter()
+        .filter_map(|link| (link.link_type == *link_type).as_some(LinkDirection::To))
+        .chain(
+        entry_type_def.linked_from.iter()
+        .filter_map(|link| (link.link_type == *link_type).as_some(LinkDirection::From))
+        ).map(move |_| {
+            LinkDefinitionPath {
+                zome_name: zome_name.clone(),
+                entry_type_name: entry_type_name.to_string(),
+                direction: LinkDirection::To,
+                link_type: link_type.clone(),
+            }
+        })
+    }).next()
+    .ok_or(HolochainError::ErrorGeneric(String::from(
         "Unknown entry type",
     )))
 }

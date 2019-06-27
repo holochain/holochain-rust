@@ -70,7 +70,7 @@ module.exports = (name, port, holochainBin) => {
             // the websocket connections
             if (data.toString('utf8').indexOf('Starting interfaces...') >= 0) {
                 console.info(`Conductor '${name}' process spawning successful`)
-                resolve({handle})
+                resolve(handle)
             }
         })
     })

@@ -57,11 +57,11 @@ require('./test')(dioramaSimple.registerScenario)
 require('./multi-dna')(dioramaMultiDna.registerScenario)
 
 const run = async () => {
-  await spawnConductor('alice', 3000)
+  const alice = await spawnConductor('alice', 3000)
   await dioramaSimple.registerConductor({name: 'alice', url: 'http://0.0.0.0:3000'})
-  await spawnConductor('bob', 4000)
+  const bob = await spawnConductor('bob', 4000)
   await dioramaSimple.registerConductor({name: 'bob', url: 'http://0.0.0.0:4000'})
-  await spawnConductor('carol', 5000)
+  const carol = await spawnConductor('carol', 5000)
   await dioramaSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -71,6 +71,11 @@ const run = async () => {
   
   await dioramaSimple.run()
   await dioramaMultiDna.run()
+
+  alice.kill()
+  bob.kill()
+  carol.kill()
+  process.exit()
 }
 
 run()

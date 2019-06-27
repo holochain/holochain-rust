@@ -11,10 +11,7 @@ pub fn request_service(
     let body_json = json!({"agent_id": agent_id.address(), "payload": payload});
     let client = reqwest::Client::new();
     let url = reqwest::Url::parse(service_uri).map_err(|_| {
-        HolochainError::ConfigError(format!(
-            "Can't parse service URI: '{}'",
-            service_uri
-        ))
+        HolochainError::ConfigError(format!("Can't parse service URI: '{}'", service_uri))
     })?;
     // NB: .json sets content-type: application/json
     let mut response = client

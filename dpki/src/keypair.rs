@@ -173,11 +173,9 @@ impl EncryptingKeyPair {
         Self { public, private }
     }
 
-    // TODO: Encrypt and decrypt functions
-
     /// encrypt some arbitrary data with the signing private key
-    /// @param {SecBuf} data - the data to sign
-    /// @return {SecBuf} signature - Empty SecBuf to be filled with the signature
+    /// @param {SecBuf} data - the data to encrypt
+    /// @return {SecBuf} cipher - encrypted data
     pub fn encrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
         let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
         let mut cipher = SecBuf::with_insecure(data.len() + lib3h_sodium::aead::ABYTES);
@@ -185,9 +183,9 @@ impl EncryptingKeyPair {
         Ok(cipher.clone())
     }
 
-    /// encrypt some arbitrary data with the signing private key
-    /// @param {SecBuf} data - the data to sign
-    /// @return {SecBuf} signature - Empty SecBuf to be filled with the signature
+    /// decrypt some arbitrary data with the signing private key
+    /// @param {SecBuf} cipher - the data to decrypt
+    /// @return {SecBuf} data - the decrypted data
     pub fn decrypt(&mut self, cipher: &mut SecBuf) -> HcResult<SecBuf> {
         let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
         let mut decrypted_message =

@@ -25,9 +25,10 @@ pub fn send_json_rpc(
         ProcessUniqueId::new(),
     );
 
-    let response = handler
-        .handle_request_sync(&request)
-        .ok_or("Conductor sign call failed".to_string())?;
+    let response = handler.handle_request_sync(&request).ok_or(format!(
+        "Conductor request agent/{} failed",
+        request_reponse.0
+    ))?;
 
     let response = JsonRpc::parse(&response)?;
 
@@ -38,7 +39,10 @@ pub fn send_json_rpc(
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(serde_json::to_string(
             &response.get_error()?,
         )?)),
-        _ => Err(HolochainError::ErrorGeneric("Signing failed".to_string())),
+        _ => Err(HolochainError::ErrorGeneric(format!(
+            "agent/{} failed",
+            request_reponse.0
+        ))),
     }
 }
 

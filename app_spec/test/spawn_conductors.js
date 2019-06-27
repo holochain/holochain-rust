@@ -12,7 +12,7 @@ dnas = []
 instances = []
 
 [signals]
-consistency = false
+consistency = true
 trace = true
 
 [[interfaces]]

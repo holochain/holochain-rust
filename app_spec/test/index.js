@@ -64,6 +64,11 @@ const run = async () => {
   await spawnConductor('carol', 5000)
   await dioramaSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
 
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+  console.log("Waiting for conductors to settle...")
+  await delay(5000)
+  console.log("Ok, starting tests!")
+  
   await dioramaSimple.run()
   await dioramaMultiDna.run()
 }

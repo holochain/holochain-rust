@@ -72,7 +72,7 @@ pub fn mock_signer(payload: String, agent_id: &AgentId) -> String { TEST_AGENT_K
         .unwrap()
 }
 
-/// This is a local mock for the `agent/sign` conductor API function.
+/// This is a local mock for the `agent/encrypt` conductor API function.
 /// It creates a syntactically equivalent signature using dpki::Keypair
 /// but with key generated from a static/deterministic mock seed.
 /// This enables unit testing of core code that creates signatures without

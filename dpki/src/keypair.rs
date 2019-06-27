@@ -178,24 +178,66 @@ impl EncryptingKeyPair {
     /// @return {SecBuf} cipher - encrypted data
     pub fn encrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
         let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
-        let mut cipher = SecBuf::with_insecure(data.len() + lib3h_sodium::aead::ABYTES);
+        nonce.randomize();
+
+        //data to represent encryption data length
+        let cipher_length = data.len() + lib3h_sodium::aead::ABYTES;
+        let mut cipher = SecBuf::with_insecure(cipher_length.clone());
+
+        //data is encrypted and cipher is populated
         lib3h_sodium::aead::enc(data, &mut self.private, None, &mut nonce, &mut cipher)?;
-        Ok(cipher.clone())
+        let mut cipher_with_nonce =
+            SecBuf::with_insecure(cipher_length.clone() + lib3h_sodium::aead::NONCEBYTES);
+
+        //get read locks from cipher
+        let cipher_slice = &**cipher.read_lock();
+        let nonce_slice = &**nonce.read_lock();
+
+        //append nonce to cipher
+        let cipher_with_nonce_slice = cipher_slice
+            .into_iter()
+            .cloned()
+            .chain(nonce_slice.into_iter().cloned())
+            .collect::<Vec<u8>>();
+        cipher_with_nonce.from_array(&cipher_with_nonce_slice);
+
+        Ok(cipher_with_nonce)
     }
 
     /// decrypt some arbitrary data with the signing private key
     /// @param {SecBuf} cipher - the data to decrypt
     /// @return {SecBuf} data - the decrypted data
     pub fn decrypt(&mut self, cipher: &mut SecBuf) -> HcResult<SecBuf> {
+        let cipher_length = cipher.len() - lib3h_sodium::aead::NONCEBYTES;
+
+        //get nonce from buffer
+        let mut cipher_slice = &**cipher.read_lock();
         let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
+        let nonce_slice_from_cipher = cipher_slice
+            .iter()
+            .skip(cipher_length.clone())
+            .cloned()
+            .collect::<Vec<u8>>();
+        nonce.from_array(&nonce_slice_from_cipher)?;
+
+        //get cipher only from buffer
+        let cipher_no_nonce_slice = cipher_slice
+            .iter()
+            .cloned()
+            .take(cipher_length)
+            .collect::<Vec<u8>>();
+        let mut cipher_no_nonce = SecBuf::with_insecure(cipher_length);
+        cipher_no_nonce.from_array(&cipher_no_nonce_slice)?;
+
+        //decrypt cipher with nonce
         let mut decrypted_message =
-            SecBuf::with_insecure(cipher.len() + lib3h_sodium::aead::ABYTES);
+            SecBuf::with_insecure(cipher_length + lib3h_sodium::aead::ABYTES);
         lib3h_sodium::aead::dec(
             &mut decrypted_message,
             &mut self.private,
             None,
             &mut nonce,
-            cipher,
+            &mut cipher_no_nonce,
         )?;
         Ok(decrypted_message)
     }

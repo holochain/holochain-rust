@@ -60,11 +60,19 @@ impl KeyBundle {
     }
 
     pub fn encrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
-        self.enc_keys.encrypt(data)
+        let mut encrypted_data = SecBuf::with_insecure(
+            data.len() + lib3h_sodium::aead::ABYTES + lib3h_sodium::aead::NONCEBYTES,
+        );
+        self.enc_keys.encrypt(data, &mut encrypted_data);
+        Ok(encrypted_data.clone())
     }
 
-    pub fn decrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
-        self.enc_keys.decrypt(data)
+    pub fn decrypt(&mut self, cipher: &mut SecBuf) -> HcResult<SecBuf> {
+        let mut decrypted_data = SecBuf::with_insecure(
+            (cipher.len() - lib3h_sodium::aead::NONCEBYTES) + lib3h_sodium::aead::ABYTES,
+        );
+        self.enc_keys.decrypt(cipher, &mut decrypted_data);
+        Ok(decrypted_data.clone())
     }
 
     /// verify data that was signed with our private signing key

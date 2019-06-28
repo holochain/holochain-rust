@@ -432,14 +432,6 @@ mod tests {
         assert!(result.is_ok());
         assert!(hc.active());
 
-        // start when active returns error
-        let result = hc.start();
-        assert!(result.is_err());
-        assert_eq!(
-            HolochainInstanceError::InstanceAlreadyActive,
-            result.err().unwrap()
-        );
-
         let result = hc.stop();
         assert!(result.is_ok());
         assert!(!hc.active());

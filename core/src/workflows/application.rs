@@ -2,6 +2,7 @@ use crate::{
     context::{get_dna_and_agent, Context},
     instance::Instance,
     network::actions::initialize_network,
+    network::handler::republish_all_public_chain_entries,
     nucleus::actions::initialize::initialize_chain,
 };
 use holochain_core_types::{
@@ -27,5 +28,6 @@ pub async fn initialize(
         await!(initialize_chain(dna, &instance_context))?;
     }
     await!(initialize_network::initialize_network(&instance_context))?;
+    republish_all_public_chain_entries(&instance_context);
     Ok(instance_context)
 }

@@ -17,6 +17,7 @@ use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::JsonString,
 };
+use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use serde_json;
 use std::{
     collections::HashMap,
@@ -180,7 +181,9 @@ pub fn create_new_chain_header(
 ) -> Result<ChainHeader, HolochainError> {
     let agent_address = agent_state.get_agent_address()?;
     let signature = Signature::from(
-        root_state.conductor_api.sign(entry.address().to_string())?,
+        root_state
+            .conductor_api
+            .execute(entry.address().to_string(), CryptoMethod::Sign)?,
         // Temporarily replaced by error handling for Holo hack signing.
         // TODO: pull in the expect below after removing the Holo signing hack again
         //.expect("Must be able to create signatures!"),

@@ -59,6 +59,22 @@ impl KeyBundle {
         self.sign_keys.sign(data)
     }
 
+    pub fn encrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
+        let mut encrypted_data = SecBuf::with_insecure(
+            data.len() + lib3h_sodium::aead::ABYTES + lib3h_sodium::aead::NONCEBYTES,
+        );
+        self.enc_keys.encrypt(data, &mut encrypted_data);
+        Ok(encrypted_data.clone())
+    }
+
+    pub fn decrypt(&mut self, cipher: &mut SecBuf) -> HcResult<SecBuf> {
+        let mut decrypted_data = SecBuf::with_insecure(
+            (cipher.len() - lib3h_sodium::aead::NONCEBYTES) + lib3h_sodium::aead::ABYTES,
+        );
+        self.enc_keys.decrypt(cipher, &mut decrypted_data);
+        Ok(decrypted_data.clone())
+    }
+
     /// verify data that was signed with our private signing key
     /// @param {SecBuf} data buffer to verify
     /// @param {SecBuf} signature candidate for that data buffer
@@ -138,5 +154,31 @@ pub(crate) mod tests {
         message.randomize();
         let succeeded = bundle.verify(&mut message, &mut signature);
         assert!(!succeeded);
+    }
+
+    #[test]
+
+    fn keybundle_should_encrypt_and_decrypt() {
+        let mut bundle = test_generate_random_bundle();
+
+        // Create random data
+        let mut message = SecBuf::with_insecure(16);
+        message.randomize();
+        //encrypt it
+        let mut encrypted_message = bundle.encrypt(&mut message.clone()).unwrap();
+
+        //decrypted same message
+        let mut decrypted_message = bundle.decrypt(&mut encrypted_message).unwrap();
+
+        //read read_lock
+        let encrypted_read_lock = encrypted_message.read_lock();
+
+        //read write_lock
+        let decrypted_read_lock = decrypted_message.read_lock();
+
+        let message_read_lock = message.read_lock();
+
+        //check if decrypted message equals original message
+        assert_eq!(message_read_lock[0..16], decrypted_read_lock[0..16])
     }
 }

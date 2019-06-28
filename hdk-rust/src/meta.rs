@@ -333,7 +333,7 @@ pub mod tests {
 
         let validating_entry_type = entry!(
             name: "post",
-            meta: "{\"description\": \"blog entry post\"}",
+            description: "{\"description\": \"blog entry post\"}",
             sharing: Sharing::Public,
 
 
@@ -358,7 +358,7 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(partial_zome),
-            JsonString::from_json("{\"entry_types\":{\"post\":{\"meta\":\"{\\\"description\\\": \\\"blog entry post\\\"}\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
+            JsonString::from_json("{\"entry_types\":{\"post\":{\"properties\":\"{\\\"description\\\": \\\"blog entry post\\\"}\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
         );
     }
 }

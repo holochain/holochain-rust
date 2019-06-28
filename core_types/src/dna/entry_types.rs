@@ -123,8 +123,8 @@ where
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash, DefaultJson)]
 pub struct EntryTypeDef {
     /// Metdata associated with this entry def (e.g. description, examples, index/UI hints)
-    #[serde(default = "empty_meta")]
-    pub meta: JsonString,
+    #[serde(default = "empty_properties")]
+    pub properties: JsonString,
 
     /// The sharing model of this entry type (public, private, encrypted).
     #[serde(default)]
@@ -139,14 +139,14 @@ pub struct EntryTypeDef {
     pub linked_from: Vec<LinkedFrom>,
 }
 
-fn empty_meta() -> JsonString {
+fn empty_properties() -> JsonString {
     JsonString::empty_object()
 }
 
 impl Default for EntryTypeDef {
     fn default() -> Self {
         EntryTypeDef {
-            meta: JsonString::empty_object(),
+            properties: JsonString::empty_object(),
             sharing: Sharing::default(),
             links_to: Vec::default(),
             linked_from: Vec::default(),
@@ -176,7 +176,7 @@ mod tests {
     fn build_and_compare() {
         let fixture: EntryTypeDef = serde_json::from_str(
             r#"{
-                "meta": "{\"description\": \"A test entry\"}",
+                "properties": "{\"description\": \"A test entry\"}",
                 "sharing": "public",
                 "links_to": [
                     {
@@ -195,7 +195,7 @@ mod tests {
         .unwrap();
 
         let mut entry = EntryTypeDef::new();
-        entry.meta = JsonString::from("{\"description\": \"A test entry\"}");
+        entry.properties = JsonString::from("{\"description\": \"A test entry\"}");
         entry.sharing = Sharing::Public;
 
         let mut link = LinksTo::new();

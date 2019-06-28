@@ -31,7 +31,7 @@ define_zome! {
     entries: [
         entry!(
             name: "testEntryType",
-            meta: "asdfdaz",
+            description: "asdfdaz",
             sharing: Sharing::Public,
 
             validation_package: || {
@@ -55,7 +55,7 @@ define_zome! {
 
         entry!(
             name: "package_entry",
-            meta: "asdfda",
+            description: "asdfda",
             sharing: Sharing::Public,
 
             validation_package: || {
@@ -80,7 +80,7 @@ define_zome! {
 
         entry!(
             name: "package_chain_entries",
-            meta: "asdfda",
+            description: "asdfda",
             sharing: Sharing::Public,
 
             validation_package: || {
@@ -105,7 +105,7 @@ define_zome! {
 
         entry!(
             name: "package_chain_headers",
-            meta: "asdfda",
+            description: "asdfda",
             sharing: Sharing::Public,
 
             validation_package: || {
@@ -130,7 +130,7 @@ define_zome! {
 
         entry!(
             name: "package_chain_full",
-            meta: "asdfda",
+            description: "asdfda",
             sharing: Sharing::Public,
 
             validation_package: || {

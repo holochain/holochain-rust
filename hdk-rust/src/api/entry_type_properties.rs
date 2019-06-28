@@ -8,9 +8,10 @@ extern "C" {
     fn zome_setup(zd: &mut ZomeDefinition);
 }
 
-// Returns the metadata defined with an entry type
-// This is most useful to expose the metadata to bridging zomes
-pub fn entry_meta(name: &EntryType) -> ZomeApiResult<JsonString> {
+// Returns the properties defined with an entry type
+// It is encouraged to using JSON to encode structured properties
+// with an entry
+pub fn entry_type_properties(name: &EntryType) -> ZomeApiResult<JsonString> {
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
 
@@ -20,7 +21,7 @@ pub fn entry_meta(name: &EntryType) -> ZomeApiResult<JsonString> {
 
     entry_def
     .map(|entry_def| {
-    	entry_def.entry_type_definition.meta.clone()
+    	entry_def.entry_type_definition.properties.clone()
     })
     .ok_or(ZomeApiError::Internal("No matching entry type in this zome".into()))
 }

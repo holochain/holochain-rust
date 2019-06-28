@@ -483,7 +483,7 @@ pub mod tests {
                         "config": {},
                         "entry_types": {
                             "test": {
-                                "meta": "test",
+                                "properties": "test",
                                 "sharing": "public",
                                 "links_to": [
                                     {
@@ -665,7 +665,7 @@ pub mod tests {
                     "zome1": {
                         "entry_types": {
                             "test": {
-                                "meta": 42
+                                "properties": 42
                             }
                         }
                     }

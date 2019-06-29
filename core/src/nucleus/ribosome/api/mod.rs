@@ -13,6 +13,7 @@ pub mod link_entries;
 #[macro_use]
 mod macros;
 pub mod capabilities;
+pub mod crypto;
 pub mod keystore;
 pub mod query;
 pub mod remove_entry;
@@ -28,6 +29,7 @@ use crate::nucleus::ribosome::{
         call::invoke_call,
         capabilities::{invoke_commit_capability_claim, invoke_commit_capability_grant},
         commit::invoke_commit_app_entry,
+        crypto::invoke_crypto,
         debug::invoke_debug,
         emit_signal::invoke_emit_signal,
         entry_address::invoke_entry_address,
@@ -44,7 +46,7 @@ use crate::nucleus::ribosome::{
         remove_entry::invoke_remove_entry,
         remove_link::invoke_remove_link,
         send::invoke_send,
-        sign::{invoke_sign, invoke_sign_one_time},
+        sign::invoke_sign_one_time,
         sleep::invoke_sleep,
         update_entry::invoke_update_entry,
         verify_signature::invoke_verify_signature,
@@ -108,10 +110,8 @@ link_zome_api! {
 
     /// Commit link deletion entry
     "hc_remove_link", RemoveLink, invoke_remove_link;
-
-    /// Sign a block of data with the Agent key
-    "hc_sign", Sign, invoke_sign;
-
+    //execute cryptographic function
+    "hc_crypto",Crypto,invoke_crypto;
     /// Sign a block of data with a one-time key that is then shredded
     "hc_sign_one_time", SignOneTime, invoke_sign_one_time;
 

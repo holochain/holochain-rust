@@ -1,9 +1,9 @@
 let
- holonix-release-tag = "further-bad-assigning";
- holonix-release-sha256 = "1mhrp677p45ihajnjanav7cjvfhb2qn4g262vr06wy1zkj20mm0g";
+ holonix-release-tag = "0.0.1";
+ holonix-release-sha256 = "1n26n9q4i2k11n1m7disjs7s5s11lq29icqyk8qngqs5gf7kq4pi";
 
  holonix = import (fetchTarball {
-  url = "https://github.com/holochain/holonix/archive/${holonix-release-tag}.tar.gz";
+  url = "https://github.com/holochain/holonix/tarball/${holonix-release-tag}";
   sha256 = "${holonix-release-sha256}";
  });
  # holonix = import ../holonix;

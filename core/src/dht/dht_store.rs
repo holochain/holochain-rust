@@ -105,6 +105,26 @@ impl DhtStore {
             .collect())
     }
 
+    pub fn get_all_metas(
+        &self,
+        address: &Address,
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+        let query = EaviQuery::new(
+            Some(address.to_owned()).into(),
+            EavFilter::predicate(move |attr: Attribute| match attr.clone() {
+                Attribute::LinkTag(_, _)
+                | Attribute::RemovedLink(_, _)
+                | Attribute::CrudLink
+                | Attribute::CrudStatus => true,
+                _ => false,
+            }),
+            None.into(),
+            IndexFilter::LatestByAttribute,
+            None,
+        );
+        Ok(self.meta_storage.read()?.fetch_eavi(&query)?)
+    }
+
     /// Get all headers for an entry by first looking in the DHT meta store
     /// for header addresses, then resolving them with the DHT CAS
     pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {

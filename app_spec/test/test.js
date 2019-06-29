@@ -48,6 +48,16 @@ scenario('sign_and_verify_message', async (s, t, { alice, bob }) => {
     t.deepEqual(VerificationResult, { Ok: true });
 })
 
+scenario('encrypt_and_decrypt_message', async (s, t, { alice, bob }) => {
+  const message = "Hello everyone! Time to start the secret meeting";
+
+  const EncryptResult = await bob.call("simple", "encrypt", { payload:message });
+  
+  t.ok(EncryptResult);
+  const DecryptResult = await alice.call("simple", "decrypt", { payload:EncryptResult.Ok });
+  t.deepEqual(DecryptResult.Ok, message);
+})
+
 scenario('secrets', async (s, t, { alice }) => {
     const ListResult = await alice.call("converse", "list_secrets", { });
     // it should start out with the genesis made seed
@@ -354,7 +364,7 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   await bob.callSync("simple", "create_link",
     { "base":alice.agentId, "target": "Posty" }
   )
-  
+
   //get all created links so far alice
   const alice_posts = await bob.call("simple", "get_my_links",
     { "base": alice.agentId,"status_request" : "Live" }
@@ -382,7 +392,7 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   const bob_agent_posts_expect_empty = await bob.call("simple", "get_my_links",{ "base": alice.agentId,"status_request" : "Live" })
   //get links from alice
   const alice_agent_posts_expect_empty = await alice.call("simple", "get_my_links",{ "base": alice.agentId,"status_request" : "Live" })
-  
+
   //bob expects zero links
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
@@ -394,9 +404,9 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   //different chain hash up to this point so we should be able to create a link with the same data
   await alice.callSync("simple", "create_link",{ "base":alice.agentId, "target": "Posty" })
 
-  //get alice posts 
+  //get alice posts
   const alice_posts_not_empty = await bob.call("simple", "get_my_links",{ "base": alice.agentId,"status_request" : "Live" })
-  
+
    //expect 1 post
   t.ok(alice_posts_not_empty.Ok)
   t.equal(alice_posts_not_empty.Ok.links.length, 1);

@@ -83,6 +83,18 @@ pub struct Configuration {
     /// over this websocket.
     pub signing_service_uri: Option<String>,
 
+    /// Optional URI for a websocket connection to an outsourced encryption service.
+    /// Bootstrapping step for Holo closed-alpha.
+    /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures
+    /// over this websocket.
+    pub encryption_service_uri: Option<String>,
+
+    /// Optional URI for a websocket connection to an outsourced decryption service.
+    /// Bootstrapping step for Holo closed-alpha.
+    /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures
+    /// over this websocket.
+    pub decryption_service_uri: Option<String>,
+
     /// Optional DPKI configuration if conductor is using a DPKI app to initalize and manage
     /// keys for new instances
     pub dpki: Option<DpkiConfiguration>,
@@ -657,14 +669,8 @@ pub struct NetworkConfig {
     #[serde(default = "default_n3h_log_level")]
     pub n3h_log_level: String,
     /// Overall mode n3h operates in.
-    /// Should be one of
-    /// * REAL
-    /// * MOCK
-    /// * HACK
-    /// REAL is the default and what should be used in all production cases.
-    /// MOCK is for using n3h only as a local hub that apps connect to directly, i.e. n3h will
-    /// not connect to any other n3h instance.
-    /// HACK is Deprecated. Used by n3h developers only. Will get removed soon.
+    /// Should be 'REAL'
+    /// REAL is the only one and what should be used in all production cases.
     #[serde(default = "default_n3h_mode")]
     pub n3h_mode: String,
     /// Absolute path to the directory that n3h uses to store persisted data.

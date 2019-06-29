@@ -173,7 +173,7 @@ impl P2pConfig {
     }
 
     pub fn memory_backend_json(server_name: &str) -> serde_json::Value {
-        json!({"serverName": server_name})
+        json!({ "serverName": server_name })
     }
 }
 

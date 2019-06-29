@@ -893,23 +893,6 @@ scenario('scenario test create & publish post -> get from other instance', async
   t.equal(value.content, initialContent)
 })
 
-scenario('scenario test create & publish -> getting post via bridge', async (s, t, {alice, bob}) => {
-
-  const initialContent = "Holo world"
-  const params = { content: initialContent, in_reply_to: null }
-  const create_result = await alice.app2.callSync("blog", "create_post", params)
-
-  t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
-
-  const post_address = create_result.Ok
-  const params_get = { post_address }
-
-  const result = await alice.app.call("blog", "get_post_bridged", params_get)
-  console.log("BRIDGE CALL RESULT: " + JSON.stringify(result))
-  const value = JSON.parse(result.Ok.App[1])
-  t.equal(value.content, initialContent)
-})
-
 scenario('request grant', async (s, t, { alice, bob }) => {
 
     /*

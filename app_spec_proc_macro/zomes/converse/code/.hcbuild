@@ -4,8 +4,8 @@
       "build",
       "--release",
       "--target=wasm32-unknown-unknown",
-      "--target-dir=target"
+      "--target-dir=/tmp/holochain/target"
     ]
   },
-  "artifact": "target/wasm32-unknown-unknown/release/converse.wasm"
+  "artifact": "/tmp/holochain/target/wasm32-unknown-unknown/release/converse.wasm"
 }

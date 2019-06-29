@@ -372,7 +372,7 @@ important edge cases that we need to cover with additional techniques/tooling.
 `JsonString::from_json(&str)` requires the `&str` passed to it is already a
 serialized JSON value. We may add the option to validate this for debug builds at runtime in the future.
 
-Previously `JsonString` implemented the `From<String>` trait but this was removed. Strings are a special case as they may either contain serialized json or be used as a JSON string primitive. `JsonString::from_json` makes it explicit that you mean the former. 
+Previously `JsonString` implemented the `From<String>` trait but this was removed. Strings are a special case as they may either contain serialized json or be used as a JSON string primitive. `JsonString::from_json` makes it explicit that you mean the former.
 
 We can use `serde_json::to_string` and `json!` to create JSON data that we can
 then wrap in `JsonString`.
@@ -550,7 +550,7 @@ impl TryFrom<JsonString> for MyType {
 #### Automatic derive
 
 The standard boilerplate has been implemented as a derive macro in the
-`lib3h_persistence_derive` crate.
+`holochain_persistence_derive` crate.
 
 Simply `#[derive(DefaultJson)]` to add the above boilerplate plus some extra
 conveniences (e.g. for references) to your type.
@@ -562,7 +562,7 @@ conveniences (e.g. for references) to your type.
 - `MyType` implements `Serialize`, `Deserialize` and `Debug` from serde/std
 
 ```rust
-use lib3h_persistence_api::json::JsonString;
+use holochain_persistence_api::json::JsonString;
 use holochain_core_types::error::HolochainError;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]

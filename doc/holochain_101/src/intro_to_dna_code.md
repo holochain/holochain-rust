@@ -20,7 +20,7 @@ The configuration file should be a JSON file, stored in the Zome folder. The fil
 
 This Zome file is extremely simplistic at this point, and contains only a `description` property, which is a human readable property that describes what the Zome is for.
 
-The only coding language that Holochain knows how to execute is WebAssembly. However, it is unlikely that you'll want to write WebAssembly code by hand. Instead, most people will write their Zomes' code in a language that can compile to WebAssembly, such as Rust or Assemblyscript, and then define a build step in which it is compiled to WebAssembly. There is already a large, and growing, number of languages that compile to WebAssembly.
+The only coding language that Holochain knows how to execute is WebAssembly. However, it is unlikely that you'll want to write WebAssembly code by hand. Instead, most people will write their Zomes' code in [a language that can compile to WebAssembly](https://github.com/appcypher/awesome-wasm-langs), such as Rust or Assemblyscript, and then define a build step in which it is compiled to WebAssembly. There is already a large, and growing, number of languages that compile to WebAssembly.
 
 If this is sounding complex, don't worry. There are tools supplied to make this easy, and you'll be writing in a language that's familiar, or easy to learn.
 

@@ -35,7 +35,7 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
 
     let json = JsonProtocol::TrackDna(TrackDnaData {
         dna_address: network_settings.dna_address.clone(),
-        agent_id: network_settings.agent_id.clone(),
+        agent_id: network_settings.agent_id.clone().into(),
     });
 
     let _ = network.send(json.into()).and_then(|_| {

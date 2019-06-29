@@ -45,7 +45,7 @@ A default `app.json` file looks roughly like this:
   "description": "A Holochain app",
   "authors": [
     {
-      "indentifier": "Author Name <author@name.com>",
+      "identifier": "Author Name <author@name.com>",
       "public_key_source": "",
       "signature": ""
     }

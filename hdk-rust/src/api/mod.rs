@@ -27,6 +27,7 @@ mod decrypt;
 mod emit_signal;
 mod encrypt;
 mod entry_address;
+mod entry_type_properties;
 mod get_entry;
 mod get_links;
 mod keystore;
@@ -38,7 +39,6 @@ mod send;
 mod sign;
 mod sleep;
 mod update_remove;
-mod entry_type_properties;
 
 pub use self::{
     bundle::{close_bundle, start_bundle},
@@ -50,6 +50,7 @@ pub use self::{
     emit_signal::emit_signal,
     encrypt::encrypt,
     entry_address::entry_address,
+    entry_type_properties::entry_type_properties,
     get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
     get_links::{get_links, get_links_and_load, get_links_result, get_links_with_options},
     keystore::{
@@ -64,7 +65,6 @@ pub use self::{
     sign::{sign, sign_one_time, verify_signature},
     sleep::sleep,
     update_remove::{remove_entry, update_agent, update_entry},
-    entry_type_properties::entry_type_properties,
 };
 
 macro_rules! def_api_fns {

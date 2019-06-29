@@ -893,10 +893,15 @@ fn sleep_smoke_test() {
 #[test]
 fn test_get_entry_properties() {
     let (mut hc, _) = start_holochain_instance("test_get_entry_properties", "alice");
-    let result = make_test_call(&mut hc, "get_entry_properties", r#"{"entry_type_string": "testEntryType"}"#);
+    let result = make_test_call(
+        &mut hc,
+        "get_entry_properties",
+        r#"{"entry_type_string": "testEntryType"}"#,
+    );
     assert_eq!(
         result,
         Ok(JsonString::from(r#"{"Ok":"test-properties-string"}"#)),
-        "result = {:?}", result,
+        "result = {:?}",
+        result,
     );
 }

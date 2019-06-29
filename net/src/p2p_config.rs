@@ -153,7 +153,7 @@ impl P2pConfig {
     pub fn new_with_memory_backend(server_name: &str) -> Self {
         P2pConfig::new(
             P2pBackendKind::MEMORY,
-            BackendConfig::Json(json!(Self::memory_backend_string(server_name))),
+            BackendConfig::Json(Self::memory_backend_json(server_name)),
             None,
         )
     }
@@ -165,20 +165,15 @@ impl P2pConfig {
         ))
     }
 
-    pub fn unique_memory_backend_string() -> String {
-        Self::memory_backend_string(&format!(
+    pub fn unique_memory_backend_json() -> serde_json::Value {
+        Self::memory_backend_json(&format!(
             "memory-auto-{}",
             snowflake::ProcessUniqueId::new().to_string()
         ))
     }
 
-    pub fn memory_backend_string(server_name: &str) -> String {
-        format!(
-            r#"{{
-            "serverName": "{}"
-            }}"#,
-            server_name
-        )
+    pub fn memory_backend_json(server_name: &str) -> serde_json::Value {
+        json!({"serverName": server_name})
     }
 }
 

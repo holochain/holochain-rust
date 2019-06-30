@@ -4,7 +4,7 @@ use crate::{
     instance::dispatch_action,
     scheduled_jobs::pending_validations::ValidatingWorkflow,
 };
-use holochain_core_types::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 pub fn remove_pending_validation(

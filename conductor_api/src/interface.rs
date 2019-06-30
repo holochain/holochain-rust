@@ -1,14 +1,15 @@
-use crate::holo_signing_service::request_signing_service;
+use crate::holo_signing_service::request_service;
 use base64;
 use conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;
 use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
 
 use holochain_core_types::{
-    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityRequest, json::JsonString,
-    signature::Provenance,
+    agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
 };
 use holochain_dpki::key_bundle::KeyBundle;
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::Address;
 use lib3h_sodium::secbuf::SecBuf;
 use Holochain;
 
@@ -873,6 +874,57 @@ impl ConductorApiBuilder {
         self
     }
 
+    pub fn with_agent_encryption_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
+        self.io.add_method("agent/encrypt", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+            // Convert payload string into a SecBuf
+            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+
+            // Get write lock on the key since we need a mutuble reference to lock the
+            // secure memory the key is in:
+            let mut encrypted_message = keybundle
+                .lock()
+                .unwrap()
+                .encrypt(&mut message)
+                .expect("Failed to sign with keybundle.");
+
+            let encrypted_message = encrypted_message.read_lock();
+            // Return as base64 encoded string
+            let encrypted_message = base64::encode(&**encrypted_message);
+
+            Ok(json!({ "message": encrypted_message }))
+        });
+        self
+    }
+
+    pub fn with_agent_decryption_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
+        self.io.add_method("agent/decrypt", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+            //decoded base64 string
+            let decoded_message = base64::decode(&payload)
+                .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
+            let mut decoded_message_buf = SecBuf::with_insecure(decoded_message.len());
+            decoded_message_buf
+                .from_array(&decoded_message)
+                .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
+            // Get write lock on the key since we need a mutuble reference to lock the
+            // secure memory the key is in:
+            let mut decrypted_buf = keybundle
+                .lock()
+                .unwrap()
+                .decrypt(&mut decoded_message_buf)
+                .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
+
+            let decrypted_bytes = decrypted_buf.read_lock();
+            let decrypted_string = std::str::from_utf8(&**decrypted_bytes)
+                .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
+            Ok(json!({ "message": decrypted_string }))
+        });
+        self
+    }
+
     /// Adds extra functionality for running tests via the RPC interface
     ///
     /// - `test/agent/add`
@@ -907,13 +959,56 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
 
-            let signature = request_signing_service(&agent_id, &payload, &signing_service_uri)
-                .map_err(|holochain_error| {
+            let signature = request_service(&agent_id, &payload, &signing_service_uri).map_err(
+                |holochain_error| {
                     println!("Error in signing hack: {:?}", holochain_error);
                     jsonrpc_core::Error::internal_error()
-                })?;
+                },
+            )?;
 
             Ok(json!({ "signature": signature }))
+        });
+        self
+    }
+
+    pub fn with_outsource_encryption_callback(
+        mut self,
+        agent_id: AgentId,
+        encryption_service_uri: String,
+    ) -> Self {
+        let agent_id = agent_id.clone();
+        self.io.add_method("agent/encrypt", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+
+            let encrypted_message = request_service(&agent_id, &payload, &encryption_service_uri)
+                .map_err(|holochain_error| {
+                println!("Error in encryption hack: {:?}", holochain_error);
+                jsonrpc_core::Error::internal_error()
+            })?;
+
+            Ok(json!({ "message": encrypted_message }))
+        });
+        self
+    }
+
+    pub fn with_outsource_decryption_callback(
+        mut self,
+        agent_id: AgentId,
+        decryption_service_uri: String,
+    ) -> Self {
+        let agent_id = agent_id.clone();
+        self.io.add_method("agent/decrypt", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+
+            let decrypted_message = request_service(&agent_id, &payload, &decryption_service_uri)
+                .map_err(|holochain_error| {
+                println!("Error in decryption hack: {:?}", holochain_error);
+                jsonrpc_core::Error::internal_error()
+            })?;
+
+            Ok(json!({ "message": decrypted_message }))
         });
         self
     }

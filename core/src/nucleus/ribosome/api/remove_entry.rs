@@ -3,10 +3,12 @@ use crate::{
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
 };
+
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+
 use holochain_wasm_utils::api_serialization::get_entry::*;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};

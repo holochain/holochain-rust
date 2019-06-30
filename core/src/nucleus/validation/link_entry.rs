@@ -8,10 +8,12 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::AddressableContent,
     entry::Entry,
     validation::{LinkValidationData, ValidationData},
 };
+
+use holochain_persistence_api::cas::content::AddressableContent;
+
 use holochain_wasm_utils::api_serialization::validation::LinkValidationArgs;
 use std::sync::Arc;
 

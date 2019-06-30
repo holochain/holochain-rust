@@ -44,6 +44,7 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
   cluster.batch(conductor => conductor.onSignal(async signal => {
     if (signal.action_type === "Hold") {
       countHolding++
+      console.log("Nodes holding so far:" + countHolding)
     }
     // 2 Holds for each nodes ... one for the App entry and one for a LinkAdd entry
     if (countHolding === numConductors * 2 && !enteringShutdown) {

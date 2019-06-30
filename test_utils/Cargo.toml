@@ -1,6 +1,6 @@
 [package]
 name = "test_utils"
-version = "0.0.20-alpha1"
+version = "0.0.21-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -8,9 +8,10 @@ edition = "2018"
 holochain_net = { path = "../net" }
 holochain_core = { path = "../core" }
 holochain_conductor_api = { path = "../conductor_api" }
-holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
+holochain_persistence_api = "=0.0.1-alpha4"
+holochain_json_api = "=0.0.1-alpha2"
 lib3h_sodium = "=0.0.1-alpha1"
 wabt = "=0.7.4"
 tempfile = "=3.0.7"

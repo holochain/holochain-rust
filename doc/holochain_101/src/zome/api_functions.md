@@ -78,9 +78,25 @@ Enables making function calls to an exposed function from another app instance v
 
 Canonical name: `sign`
 
-Not yet available.
-
 Enables the signing of some piece of data, with the private keys associated with the acting agent.
+
+[View it in the Rust HDK](https://developer.holochain.org/api/0.0.18-alpha1/hdk/api/fn.sign.html)
+
+### Encrypt
+
+Canonical name: `encrypt`
+
+Enables the encryption of some piece of data, with the private keys associated with the acting agent.
+
+[View it in the Rust HDK](https://developer.holochain.org/api/0.0.18-alpha1/hdk/api/fn.encrypt.html)
+
+### Decrypt
+
+Canonical name: `decrypt`
+
+Enables the decryption of some piece of data, with the private keys associated with the acting agent.
+
+[View it in the Rust HDK](https://developer.holochain.org/api/0.0.18-alpha1/hdk/api/fn.decrypt.html)
 
 ### Verify Signature
 
@@ -186,6 +202,16 @@ Canonical name: `commit_capability_grant`
 Creates a capability grant on the local chain for allowing access to zome functions.
 
 [View it in the Rust HDK](https://developer.holochain.org/api/0.0.18-alpha1/hdk/api/fn.commit_capability_grant.html)
+
+### Emit Signal
+
+Canonical name: `emit_signal`
+
+Emits a signal that a can be subscribed to by various clients.
+
+[View it in the Rust HDK](https://developer.holochain.org/api/0.0.18-alpha1/hdk/api/fn.emit_signal.html)
+
+Read more about [Signals](emitting_signals.html)
 
 ### Start Bundle
 

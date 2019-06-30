@@ -39,12 +39,12 @@ To implement a conductor in a C based language, the [core_api_c_binding](/core_a
 ## Rust Conductor
 The [conductor crate](/conductor) uses the [conductor_api](conductor_api) to implement an executable which is intended to become the main, highly configurable and GUI less conductor implementation that can be run as a background system service.
 
-## Nodejs Conductor
-The [nodejs_conductor](/nodejs_conductor) directory implements a node package that creates a conductor that wraps the Holochain core Rust implementation so we can access it from node.  This is crucial especially for creating a test-driven development environment for developing Holochain DNA.  The `hc` command-line tool relies on it to run tests.
-
 ## HC Command-line developer tool.
 The [cli crate](/cli) implements our command line developer tool which allows you to create DNA scaffold, run tests, and finally package your DNA for running in a Conductor.  For more details see the [crate README](/cli/README.md).
 
 
 ## App Spec Driven Development
 We use a practice for coordinating additions and features that starts with adding a feature to a sample application so that we know we have a working example all the times.  You can read about [the details here](/CONTRIBUTING.md#app-spec-driven-development)
+
+## (External) Nodejs Conductor
+The [nodejs_conductor](https://github.com/holochain/holochain-nodejs) project implements a node package that creates a Conductor that wraps the rust-based Holochain Conductor so we can access it from node.  This is sometimes used to create a test-driven development environment for developing Holochain DNA.

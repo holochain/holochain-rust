@@ -1,9 +1,7 @@
 use crate::{
     context::Context,
     dht::actions::hold::hold_entry,
-    network::{
-        actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
-    },
+    network::entry_with_header::EntryWithHeader,
     nucleus::{
         actions::add_pending_validation::add_pending_validation, validation::validate_entry,
     },
@@ -11,22 +9,23 @@ use crate::{
 
 use crate::{
     nucleus::validation::ValidationError, scheduled_jobs::pending_validations::ValidatingWorkflow,
+    workflows::validation_package,
 };
 use holochain_core_types::{
-    cas::content::AddressableContent,
     error::HolochainError,
     validation::{EntryLifecycle, ValidationData},
 };
+
+use holochain_persistence_api::cas::content::AddressableContent;
+
 use std::sync::Arc;
 
 pub async fn hold_entry_workflow<'a>(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    let EntryWithHeader { entry, header } = entry_with_header;
-
-    // 1. Get validation package from source
-    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))
+    // 1. Get hold of validation package
+    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
             context.log(format!("debug/workflow/hold_entry: {}", message));
@@ -39,6 +38,7 @@ pub async fn hold_entry_workflow<'a>(
             );
             HolochainError::ValidationPending
         })?;
+
     let validation_package = maybe_validation_package.ok_or_else(|| {
         let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
         context.log(format!("debug/workflow/hold_entry: {}", message));
@@ -60,7 +60,7 @@ pub async fn hold_entry_workflow<'a>(
 
     // 3. Validate the entry
     await!(validate_entry(
-        entry.clone(),
+        entry_with_header.entry.clone(),
         None,
         validation_data,
         &context

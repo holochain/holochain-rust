@@ -21,8 +21,9 @@ Here are the available functions:
 - `sign(payload)` -> signs the payload using the DNA's instance agent ID public key.  This is a convenience function which is equivalent to calling `keystore_sign("primary_keybundle:sign_key",payload)`
 - `sign_one_time(payload_list)` -> signs the payloads with a randomly generated key-pair, returning the signatures and the public key of the key-pair after shredding the private-key.
 - `verify_signature(provenance, payload)` -> verifies that the `payload` matches the `provenance` which is a public key/signature pair.
+- `encrypt(payload)` -> encrypts a message with the `agent` private key.
+- `decrypt(payload)` -> decrypts a message with the `agent` private key
 
 Not Yet Implemented:
 
-- `encrypt(payload)` -> encrypts
 - `keystore_encrypt(src_id,payload)`

@@ -107,6 +107,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn can_generate_scaffolds() {
         let shared_space = gen_dir();
 

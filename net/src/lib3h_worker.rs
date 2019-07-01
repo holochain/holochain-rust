@@ -6,9 +6,9 @@ use crate::connection::{
     NetResult,
 };
 use lib3h::{
-  dht::mirror_dht::MirrorDht,
-  engine::{RealEngine, RealEngineConfig},
-  transport_wss::TransportWss,
+    dht::mirror_dht::MirrorDht,
+    engine::{RealEngine, RealEngineConfig},
+    transport_wss::TransportWss,
 };
 
 use lib3h_crypto_api::{FakeCryptoSystem, InsecureBuffer};
@@ -23,7 +23,8 @@ use lib3h_protocol::network_engine::NetworkEngine;
 pub struct Lib3hWorker {
     handler: NetHandler,
     can_send_P2pReady: bool,
-    net_engine: RealEngine<TransportWss<std::net::TcpStream>, MirrorDht, InsecureBuffer, FakeCryptoSystem>,
+    net_engine:
+        RealEngine<TransportWss<std::net::TcpStream>, MirrorDht, InsecureBuffer, FakeCryptoSystem>,
 }
 
 /// Constructors

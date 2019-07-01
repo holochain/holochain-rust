@@ -34,7 +34,7 @@ pub async fn hold_entry_workflow<'a>(
                 entry_with_header.to_owned(),
                 Vec::new(),
                 ValidatingWorkflow::HoldEntry,
-                &context,
+                context.clone(),
             );
             HolochainError::ValidationPending
         })?;
@@ -46,7 +46,7 @@ pub async fn hold_entry_workflow<'a>(
             entry_with_header.to_owned(),
             Vec::new(),
             ValidatingWorkflow::HoldEntry,
-            &context,
+            context.clone(),
         );
         HolochainError::ValidationPending
     })?;
@@ -76,7 +76,7 @@ pub async fn hold_entry_workflow<'a>(
                 entry_with_header.to_owned(),
                 dependencies.clone(),
                 ValidatingWorkflow::HoldEntry,
-                &context,
+                context.clone(),
             );
             HolochainError::ValidationPending
         } else {

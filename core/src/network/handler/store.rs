@@ -44,7 +44,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 }
                 let entry_with_header = EntryWithHeader { entry, header };
                 thread::spawn(move || {
-                    match context.block_on(hold_link_workflow(&entry_with_header, &context.clone()))
+                    match context.block_on(hold_link_workflow(&entry_with_header, context.clone()))
                     {
                         Err(error) => context.log(format!("err/net/dht: {}", error)),
                         _ => (),
@@ -59,7 +59,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 let entry_with_header = EntryWithHeader { entry, header };
                 thread::spawn(move || {
                     if let Err(error) =
-                        context.block_on(remove_link_workflow(&entry_with_header, &context.clone()))
+                        context.block_on(remove_link_workflow(&entry_with_header, context.clone()))
                     {
                         context.log(format!("err/net/dht: {}", error))
                     }
@@ -71,7 +71,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 let entry_with_header = EntryWithHeader { entry, header };
                 thread::spawn(move || {
                     if let Err(error) =
-                        context.block_on(hold_update_workflow(entry_with_header, context.clone()))
+                        context.block_on(hold_update_workflow(&entry_with_header, context.clone()))
                     {
                         context.log(format!("err/net/dht: {}", error))
                     }
@@ -94,7 +94,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 let entry_with_header = EntryWithHeader { entry, header };
                 thread::spawn(move || {
                     if let Err(error) =
-                        context.block_on(hold_remove_workflow(entry_with_header, context.clone()))
+                        context.block_on(hold_remove_workflow(&entry_with_header, context.clone()))
                     {
                         context.log(format!("err/net/handle_store: {}", error))
                     }

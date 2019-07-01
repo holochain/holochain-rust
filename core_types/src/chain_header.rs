@@ -4,16 +4,21 @@
 
 use crate::{
     agent::test_agent_id,
-    cas::content::{Address, AddressableContent, Content},
     entry::{
         entry_type::{test_entry_type, EntryType},
         test_entry,
     },
-    error::HolochainError,
-    json::JsonString,
     signature::{Provenance, Signature},
     time::{test_iso_8601, Iso8601},
 };
+
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
+
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
+    json::JsonString,
+};
+
 use std::convert::TryInto;
 
 /// ChainHeader of a source chain "Item"
@@ -118,7 +123,7 @@ impl AddressableContent for ChainHeader {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         content.to_owned().try_into()
     }
 }
@@ -151,7 +156,6 @@ pub fn test_provenances(sig: &'static str) -> Vec<Provenance> {
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        cas::content::{Address, AddressableContent},
         chain_header::{test_chain_header, test_provenances, ChainHeader},
         entry::{
             entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
@@ -159,6 +163,7 @@ pub mod tests {
         },
         time::test_iso_8601,
     };
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header_a() -> ChainHeader {

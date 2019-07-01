@@ -8,53 +8,15 @@ This crate implements a set of development tools for building and running Holoch
 
 ## Install
 
-### Scripted installation
+The recommended pattern for usage of the command line tools is to follow the installation instructions found in the Quick Start guide on the developer documentation.
 
-The install scripts provided by holochain core (see [README](../README.md)) install all the dependencies required for holochain cli.
-
-### Manual installation
-
-An option for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
-
-### Building From Source
-
-These dependencies need to be installed in order to compile, and use `hc`:
-
-- [Rust](https://www.rust-lang.org/en-US/install.html)
-  - needs to be the `nightly-2019-01-24` build, so use the following commands, once you have first installed Rust
-  - `rustup toolchain install nightly-2019-01-24`
-  - `rustup default nightly-2019-01-24`
-  - (the specific nightly build we use will change over time)
-  - Also, if you are going to be developing Zomes in Rust, install the WASM build target for Rust, by running:
-  - `rustup target add wasm32-unknown-unknown --toolchain nightly-2019-01-24`
-- [Node.js](https://nodejs.org) version 8 or higher
-  - Tests for Holochain apps are now written in Javascript and executed in Nodejs
-  - To read further, check out [the holochain-nodejs module](https://www.npmjs.com/package/@holochain/holochain-nodejs)
-
-
-To install the cutting edge version of the Holochain conductor, run the following command in a terminal
-```shell
-$ cargo install hc --force --git https://github.com/holochain/holochain-rust.git --branch develop
-```
-
-To install the latest released version of the Holochain conductor, run the following command in a terminal
-```shell
-$ cargo install hc --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.19-alpha1
-```
-
-The command line tools are now available in your command line using the `hc` command.
-
-Run `hc --version` to confirm.
-
-Run `hc help` for help.
-
-### Networking
-
-If you want to use `hc run` with real (as opposed to mock) networking, you will also need to install [n3h](https://github.com/holochain/n3h).
+[https://developer.holochain.org/start.html](https://developer.holochain.org/start.html)
 
 ## Usage
 
-`(u)` means the command is not yet implemented.
+Run `hc --version` to check your version number.
+
+Run `hc help` for help.
 
 | Command   | Use                                                                 |
 |-----------|---------------------------------------------------------------------|

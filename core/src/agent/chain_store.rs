@@ -1,13 +1,14 @@
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
-    cas::{
-        content::{Address, AddressableContent},
-        storage::ContentAddressableStorage,
-    },
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
     error::RibosomeErrorCode::{self, *},
 };
+use holochain_persistence_api::cas::{
+    content::{Address, AddressableContent},
+    storage::ContentAddressableStorage,
+};
+
 use std::{
     str::FromStr,
     sync::{Arc, RwLock},
@@ -300,17 +301,17 @@ impl Iterator for ChainStoreTypeIterator {
 pub mod tests {
     use self::tempfile::tempdir;
     use crate::agent::chain_store::{ChainStore, ChainStoreQueryOptions, ChainStoreQueryResult};
-    use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
-        cas::content::AddressableContent,
         chain_header::{test_chain_header, test_provenances, ChainHeader},
         entry::{
             entry_type::{test_entry_type_b, AppEntryType},
             test_entry, test_entry_b, test_entry_c, Entry,
         },
-        json::{JsonString, RawString},
         time::test_iso_8601,
     };
+    use holochain_json_api::json::{JsonString, RawString};
+    use holochain_persistence_api::cas::content::AddressableContent;
+    use holochain_persistence_file::cas::file::FilesystemStorage;
     use tempfile;
 
     pub fn test_chain_store() -> ChainStore {

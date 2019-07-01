@@ -15,7 +15,7 @@ scenario('capabilities grant and claim', async (s, t, { alice, bob }) => {
 
     // Bob stores the grant as a claim
     const claim = await bob.app.call("blog", "commit_post_claim", { grantor: alice.app.agentId, claim: result.Ok })
-    t.deepEqual(claim, { Ok: 'Qmebh1y2kYgVG1RPhDDzDFTAskPcRWvz5YNhiNEi17vW9G' });
+    t.deepEqual(claim, { Ok: 'QmYsFu7QGaVeUUac1E4BWST7BR38cYvzRaaTc3YS9WqsTu' });
 
     // Bob can now create a post on alice's chain via a node-to-node message with the claim
     const post_content = "Holo world"
@@ -40,7 +40,7 @@ scenario('sign_and_verify_message', async (s, t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
 
     const SignResult = await bob.app.call("converse", "sign_message", { key_id:"", message: message });
-    t.deepEqual(SignResult, { Ok: 'YVystBCmNEJGW/91bg43cUUybbtiElex0B+QWYy+PlB+nE3W8TThYGE4QzuUexvzkGqSutV04dSN8oyZxTJiBg==' });
+    t.deepEqual(SignResult, { Ok: 'N4wF/U1By7TA4H3k9i+5r8IGYzRMTi59mr/XZOpz8Ydj85mbupUk6tHMf/owgjJo43Vu1lja7ZFKGOFQnpa0Bw==' });
 
     const provenance = [bob.app.agentId, SignResult.Ok];
 
@@ -95,11 +95,11 @@ scenario('show_env', async (s, t, { alice }) => {
   t.equal(result.Ok.dna_address, alice.app.dnaAddress)
   t.equal(result.Ok.dna_name, "HDK-spec-rust")
   t.equal(result.Ok.agent_address, alice.app.agentId)
-  t.equal(result.Ok.agent_id, '{"nick":"alice","pub_sign_key":"' + alice.app.agentId + '"}')
+  t.equal(result.Ok.agent_id, '{"nick":"alice::app","pub_sign_key":"' + alice.app.agentId + '"}')
   t.equal(result.Ok.properties, '{"test_property":"test-property-value"}')
 
   // don't compare the public token because it changes every time we change the dna.
-  t.deepEqual(result.Ok.cap_request.provenance, [ alice.app.agentId, '+78GKy9y3laBbCNK1ajrj2rYVV3lBOxzGAZuuLDqXL2MLJUbMaB4lv7ut/UPWSoEeHx7OuXrTFXfu+PihtMMBQ==' ]
+  t.deepEqual(result.Ok.cap_request.provenance, [ alice.app.agentId, 'HFQkrDmnSOcmGQnYNtaYZWj89rlIQVFg0PpEoeFyx/Qw6Oizy5PI+tcsO8wYrllkuVPPzF5P3pvbCctKkfyGBg==' ]
 );
 
 })
@@ -136,7 +136,7 @@ scenario('cross zome call', async (s, t, { alice }) => {
 scenario('send ping', async (s, t, { alice, bob }) => {
   const params = { to_agent: bob.app.agentId, message: "hello" }
   const result = await alice.app.call("blog", "ping", params)
-    t.deepEqual(result, { Ok: { msg_type:"response", body: "got hello from HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui" } })
+    t.deepEqual(result, { Ok: { msg_type:"response", body: "got hello from HcSCIv3cPT5kegjoqgXM7nVU8rFbd9pyg5oOYUz9PSryp5mb7DKhCsXCS768pua" } })
 })
 
 scenario('hash_post', async (s, t, { alice }) => {

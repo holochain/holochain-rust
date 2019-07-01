@@ -8,7 +8,8 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HcResult};
+use holochain_core_types::error::HcResult;
+use holochain_persistence_api::cas::content::Address;
 use std::{pin::Pin, sync::Arc};
 
 /// Publish Action Creator

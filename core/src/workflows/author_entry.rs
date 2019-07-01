@@ -9,12 +9,13 @@ use crate::{
 };
 
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
     signature::Provenance,
     validation::{EntryLifecycle, ValidationData},
 };
+
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryResult;
 
@@ -95,7 +96,8 @@ pub async fn author_entry<'a>(
 pub mod tests {
     use super::author_entry;
     use crate::nucleus::actions::tests::*;
-    use holochain_core_types::{entry::test_entry_with_value, json::JsonString};
+    use holochain_core_types::entry::test_entry_with_value;
+    use holochain_json_api::json::JsonString;
     use std::{thread, time};
 
     #[test]

@@ -226,7 +226,7 @@ build_conductor_wasm: ensure_wasm_target install_wasm_bindgen_cli
 
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci
-	$(CARGO) tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive
+	$(CARGO) tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_json_derive
 
 .PHONY: code_coverage_crate
 code_coverage_crate: core_toolchain wasm_build install_ci

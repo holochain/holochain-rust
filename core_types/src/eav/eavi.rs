@@ -3,24 +3,29 @@
 //! being used to define relationships between AddressableContent values.
 //! See [wikipedia](https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model) to learn more about this pattern.
 
-use crate::{
+use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
+    eav::{
+        storage::{
+            EntityAttributeValueStorage as GenericStorage, ExampleEntityAttributeValueStorage,
+        },
+        AttributeError, IndexFilter,
+    },
+    error::{PersistenceError, PersistenceResult},
+};
+
+use holochain_json_api::{error::JsonError, json::JsonString};
+
+use crate::{
     entry::{test_entry_a, test_entry_b, Entry},
-    error::{HcResult, HolochainError},
-    json::JsonString,
+    error::HolochainError,
 };
-use chrono::offset::Utc;
-use eav::{
-    query::{EaviQuery, IndexFilter},
-    storage::{EntityAttributeValueStorage, ExampleEntityAttributeValueStorage},
-};
+
 use regex::{Regex, RegexBuilder};
 use std::{
-    cmp::Ordering,
     collections::BTreeSet,
     convert::{TryFrom, TryInto},
     fmt,
-    option::NoneError,
 };
 
 /// Address of AddressableContent representing the EAV entity
@@ -41,11 +46,16 @@ pub enum Attribute {
     PendingEntry,
 }
 
-#[derive(PartialEq, Debug)]
-pub enum AttributeError {
-    Unrecognized(String),
-    ParseError,
+impl Default for Attribute {
+    fn default() -> Self {
+        Attribute::EntryHeader
+    }
 }
+
+unsafe impl Sync for Attribute {}
+unsafe impl Send for Attribute {}
+
+impl holochain_persistence_api::eav::Attribute for Attribute {}
 
 impl From<AttributeError> for HolochainError {
     fn from(err: AttributeError) -> HolochainError {
@@ -56,11 +66,6 @@ impl From<AttributeError> for HolochainError {
             }
         };
         HolochainError::ErrorGeneric(msg)
-    }
-}
-impl From<NoneError> for AttributeError {
-    fn from(_: NoneError) -> AttributeError {
-        AttributeError::ParseError
     }
 }
 
@@ -135,46 +140,20 @@ pub type Index = i64;
 // type Source ...
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
-#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
-pub struct EntityAttributeValueIndex {
-    entity: Entity,
-    attribute: Attribute,
-    value: Value,
-    index: Index,
-    // source: Source,
-}
+pub type EntityAttributeValueIndex =
+    holochain_persistence_api::eav::EntityAttributeValueIndex<Attribute>;
 
-impl PartialOrd for EntityAttributeValueIndex {
-    fn partial_cmp(&self, other: &EntityAttributeValueIndex) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
+pub type EntityAttributeValueStorage = GenericStorage<Attribute>;
 
-impl Ord for EntityAttributeValueIndex {
-    fn cmp(&self, other: &EntityAttributeValueIndex) -> Ordering {
-        self.index.cmp(&other.index())
-    }
-}
-
-impl AddressableContent for EntityAttributeValueIndex {
-    fn content(&self) -> Content {
-        self.to_owned().into()
-    }
-
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
-        content.to_owned().try_into()
-    }
-}
-
-fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
+fn validate_attribute(attribute: &Attribute) -> PersistenceResult<()> {
     if let Attribute::LinkTag(name, _tag) | Attribute::RemovedLink(name, _tag) = attribute {
         let regex = RegexBuilder::new(r#"[/:*?<>"'\\|+]"#)
             .build()
-            .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
+            .map_err(|_| PersistenceError::ErrorGeneric("Could not create regex".to_string()))?;
         if !regex.is_match(name) {
             Ok(())
         } else {
-            Err(HolochainError::ErrorGeneric(
+            Err(PersistenceError::ErrorGeneric(
                 "Attribute name invalid".to_string(),
             ))
         }
@@ -183,55 +162,12 @@ fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
     }
 }
 
-impl EntityAttributeValueIndex {
-    pub fn new(
-        entity: &Entity,
-        attribute: &Attribute,
-        value: &Value,
-    ) -> HcResult<EntityAttributeValueIndex> {
-        validate_attribute(attribute)?;
-        Ok(EntityAttributeValueIndex {
-            entity: entity.clone(),
-            attribute: attribute.clone(),
-            value: value.clone(),
-            index: Utc::now().timestamp_nanos(),
-        })
-    }
-
-    pub fn new_with_index(
-        entity: &Entity,
-        attribute: &Attribute,
-        value: &Value,
-        timestamp: i64,
-    ) -> HcResult<EntityAttributeValueIndex> {
-        validate_attribute(attribute)?;
-        Ok(EntityAttributeValueIndex {
-            entity: entity.clone(),
-            attribute: attribute.clone(),
-            value: value.clone(),
-            index: timestamp,
-        })
-    }
-
-    pub fn entity(&self) -> Entity {
-        self.entity.clone()
-    }
-
-    pub fn attribute(&self) -> Attribute {
-        self.attribute.clone()
-    }
-
-    pub fn value(&self) -> Value {
-        self.value.clone()
-    }
-
-    pub fn index(&self) -> Index {
-        self.index
-    }
-
-    pub fn set_index(&mut self, new_index: i64) {
-        self.index = new_index
-    }
+pub fn new(
+    entity: &Address,
+    attr: &Attribute,
+    value: &Value,
+) -> PersistenceResult<EntityAttributeValueIndex> {
+    validate_attribute(attr).and_then(|_| EntityAttributeValueIndex::new(entity, attr, value))
 }
 
 pub fn test_eav_entity() -> Entry {
@@ -280,11 +216,12 @@ pub fn eav_round_trip_test_runner(
     assert_eq!(
         BTreeSet::new(),
         eav_storage
-            .fetch_eavi(&EaviQuery::new(
+            .fetch_eavi(&crate::eav::query::EaviQuery::new(
                 Some(entity_content.address()).into(),
                 Some(attribute.clone()).into(),
                 Some(value_content.address()).into(),
-                IndexFilter::LatestByAttribute
+                IndexFilter::LatestByAttribute,
+                None
             ))
             .expect("could not fetch eav"),
     );
@@ -321,11 +258,12 @@ pub fn eav_round_trip_test_runner(
         assert_eq!(
             expected,
             eav_storage
-                .fetch_eavi(&EaviQuery::new(
+                .fetch_eavi(&crate::eav::query::EaviQuery::new(
                     e.into(),
                     a.into(),
                     v.into(),
-                    IndexFilter::LatestByAttribute
+                    IndexFilter::LatestByAttribute,
+                    None
                 ))
                 .expect("could not fetch eav")
         );
@@ -335,18 +273,19 @@ pub fn eav_round_trip_test_runner(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{
-        cas::{
-            content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
-            storage::{
-                test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
-            },
+
+    use holochain_json_api::json::RawString;
+
+    use holochain_persistence_api::cas::{
+        content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
+        storage::{
+            test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
         },
-        eav::EntityAttributeValueIndex,
-        json::RawString,
     };
 
-    pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage {
+    use crate::eav::EntityAttributeValueIndex;
+
+    pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage<Attribute> {
         ExampleEntityAttributeValueStorage::new()
     }
 
@@ -356,7 +295,7 @@ pub mod tests {
         let entity =
             ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("foo")))
                 .unwrap();
-        let attribute = "favourite-color".to_string();
+        let attribute = Attribute::LinkTag("abc".to_string(), "favourite-color".to_string());
         let value =
             ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("blue")))
                 .unwrap();
@@ -368,30 +307,35 @@ pub mod tests {
     fn example_eav_one_to_many() {
         EavTestSuite::test_one_to_many::<
             ExampleAddressableContent,
-            ExampleEntityAttributeValueStorage,
-        >(test_eav_storage());
+            Attribute,
+            ExampleEntityAttributeValueStorage<Attribute>,
+        >(test_eav_storage(), &Attribute::default());
     }
 
     #[test]
     fn example_eav_many_to_one() {
         EavTestSuite::test_many_to_one::<
             ExampleAddressableContent,
-            ExampleEntityAttributeValueStorage,
-        >(test_eav_storage());
+            Attribute,
+            ExampleEntityAttributeValueStorage<Attribute>,
+        >(test_eav_storage(), &Attribute::default());
     }
 
     #[test]
     fn example_eav_range() {
-        EavTestSuite::test_range::<ExampleAddressableContent, ExampleEntityAttributeValueStorage>(
-            test_eav_storage(),
-        );
+        EavTestSuite::test_range::<
+            ExampleAddressableContent,
+            Attribute,
+            ExampleEntityAttributeValueStorage<Attribute>,
+        >(test_eav_storage(), &Attribute::default());
     }
 
     #[test]
     fn example_eav_prefixes() {
         EavTestSuite::test_multiple_attributes::<
             ExampleAddressableContent,
-            ExampleEntityAttributeValueStorage,
+            Attribute,
+            ExampleEntityAttributeValueStorage<Attribute>,
         >(
             test_eav_storage(),
             vec!["a_", "b_", "c_", "d_"]
@@ -436,49 +380,49 @@ pub mod tests {
 
     #[test]
     fn validate_attribute_paths() {
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("abc".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_ok());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("abc123".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_ok());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("123".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_ok());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("link_:{}".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("link_\"".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("link_/".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("link_\\".into(), "".into()),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValueIndex::new(
+        assert!(new(
             &test_eav_entity().address(),
             &Attribute::LinkTag("link_?".into(), "".into()),
             &test_eav_entity().address()

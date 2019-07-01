@@ -10,8 +10,9 @@ process.on('unhandledRejection', error => {
 
 const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
 const dna = Diorama.dna(dnaPath, 'app-spec')
+const dna2 = Diorama.dna(dnaPath, 'app-spec', {uuid: 'altered-dna'})
 
-const diorama = new Diorama({
+const dioramaSimple = new Diorama({
   instances: {
     alice: dna,
     bob: dna,
@@ -25,7 +26,26 @@ const diorama = new Diorama({
   middleware: backwardCompatibilityMiddleware,
 })
 
-require('./regressions')(diorama.registerScenario)
-require('./test')(diorama.registerScenario)
+const dioramaMultiDna = new Diorama({
+  instances: {
+    alice: dna,
+    bob: dna2,
+  },
+  bridges: [
+    Diorama.bridge('test-bridge', 'alice', 'bob')
+  ],
+  debugLog: false,
+  executor: tapeExecutor(require('tape')),
+  middleware: backwardCompatibilityMiddleware,
+})
 
-diorama.run()
+require('./regressions')(dioramaSimple.registerScenario)
+require('./test')(dioramaSimple.registerScenario)
+require('./multi-dna')(dioramaMultiDna.registerScenario)
+
+const run = async () => {
+  await dioramaSimple.run()
+  await dioramaMultiDna.run()
+}
+
+run()

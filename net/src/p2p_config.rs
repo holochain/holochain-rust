@@ -1,4 +1,4 @@
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_json_api::{error::JsonError, json::JsonString};
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
 

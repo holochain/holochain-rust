@@ -3,13 +3,14 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
 use holochain_core_types::{
-    cas::content::Address,
     entry::{
         cap_entries::{CapTokenClaim, CapTokenGrant},
         Entry,
     },
     error::HolochainError,
 };
+use holochain_persistence_api::cas::content::Address;
+
 use holochain_wasm_utils::api_serialization::capabilities::{
     CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
 };
@@ -65,10 +66,9 @@ pub mod tests {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::{
-        cas::content::Address, entry::cap_entries::CapabilityType, error::ZomeApiInternalResult,
-        json::JsonString,
-    };
+    use holochain_core_types::{entry::cap_entries::CapabilityType, error::ZomeApiInternalResult};
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::api_serialization::capabilities::{
         CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
     };

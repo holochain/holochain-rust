@@ -1076,7 +1076,7 @@ impl Conductor {
         ));
         if self.using_dpki() {
             let dpki_instance_id = self.dpki_instance_id().unwrap();
-            println!("DPKI instance id: {}", dpki_instance_id);
+            notify(format!("DPKI instance id: {}", dpki_instance_id));
             let instance = self.instances.get(&dpki_instance_id)?;
             let hc_lock = instance.clone();
             let hc_lock_inner = hc_lock.clone();

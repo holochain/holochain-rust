@@ -83,6 +83,16 @@ pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
     hdk::emit_signal("test-signal", SignalPayload{message})
 }
 
+pub fn handle_encrypt(payload : String) ->ZomeApiResult<String>
+{
+    hdk::encrypt(payload)
+}
+
+pub fn handle_decrypt(payload : String) ->ZomeApiResult<String>
+{
+    hdk::decrypt(payload)
+}
+
 pub fn definition() -> ValidatingEntryType {
     entry!(
         name: "simple",
@@ -139,6 +149,16 @@ define_zome! {
             inputs: |base: Address,status_request:Option<LinksStatusRequestKind>|,
             outputs: |result: ZomeApiResult<GetLinksResult>|,
             handler: handle_get_my_links
+        }
+        encrypt :{
+            inputs : |payload: String|,
+            outputs: |result: ZomeApiResult<String>|,
+            handler: handle_encrypt
+        }
+        decrypt :{
+            inputs : |payload: String|,
+            outputs: |result: ZomeApiResult<String>|,
+            handler: handle_decrypt
         }
         test_emit_signal: {
             inputs: |message: String|,

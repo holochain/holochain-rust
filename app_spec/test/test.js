@@ -48,6 +48,16 @@ scenario('sign_and_verify_message', async (s, t, { alice, bob }) => {
     t.deepEqual(VerificationResult, { Ok: true });
 })
 
+scenario('encrypt_and_decrypt_message', async (s, t, { alice, bob }) => {
+  const message = "Hello everyone! Time to start the secret meeting";
+
+  const EncryptResult = await bob.call("simple", "encrypt", { payload:message });
+  
+  t.ok(EncryptResult);
+  const DecryptResult = await alice.call("simple", "decrypt", { payload:EncryptResult.Ok });
+  t.deepEqual(DecryptResult.Ok, message);
+})
+
 scenario('secrets', async (s, t, { alice }) => {
     const ListResult = await alice.call("converse", "list_secrets", { });
     // it should start out with the genesis made seed

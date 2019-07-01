@@ -46,8 +46,11 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
 
     // match against all supported languages
     match language {
-         "rust" => {
-            ensure!(!file_name.contains("-"), "Cannot use hyphens '-' as names for Rust zomes. Use underscore '_' instead.");
+        "rust" => {
+            ensure!(
+                !file_name.contains("-"),
+                "Cannot use hyphens '-' as names for Rust zomes. Use underscore '_' instead."
+            );
             scaffold(
                 &scaffold::rust::RustScaffold::new(
                     &zome_name_string,
@@ -55,9 +58,12 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
                 ),
                 code_dir,
             )?
-        },
+        }
         "rust-proc" => {
-            ensure!(!file_name.contains("-"), "Cannot use hyphens '-' as names for Rust-Proc zomes. Use underscore '_' instead.");
+            ensure!(
+                !file_name.contains("-"),
+                "Cannot use hyphens '-' as names for Rust-Proc zomes. Use underscore '_' instead."
+            );
             scaffold(
                 &scaffold::rust::RustScaffold::new(
                     &zome_name_string,
@@ -65,7 +71,7 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
                 ),
                 code_dir,
             )?
-        },
+        }
         "assemblyscript" => scaffold(
             &scaffold::assemblyscript::AssemblyScriptScaffold::new(),
             code_dir,
@@ -88,9 +94,8 @@ mod tests {
     extern crate tempfile;
     use self::tempfile::{Builder, TempDir};
     extern crate assert_cmd;
-    use std::process::Command;
     use self::assert_cmd::prelude::*;
-
+    use std::{fs, process::Command};
 
     const HOLOCHAIN_TEST_PREFIX: &str = "org.holochain.test";
 
@@ -103,46 +108,46 @@ mod tests {
 
     #[test]
     fn can_generate_scaffolds() {
-        let tmp = gen_dir();
+        let shared_space = gen_dir();
+
+        let root_path = shared_space.path().to_path_buf();
+
+        fs::create_dir_all(&root_path).unwrap();
 
         Command::main_binary()
             .unwrap()
-            .current_dir(&tmp.path())
-            .args(&["init", "."])
+            .current_dir(&root_path)
+            .args(&["init", root_path.to_str().unwrap()])
             .assert()
             .success();
 
         Command::main_binary()
             .unwrap()
-            .current_dir(&tmp.path())
-            .args(&["g", "zomes/bubblechat", "rust"])
+            .current_dir(&root_path)
+            .args(&["generate", "zomes/bubblechat", "rust"])
             .assert()
             .success();
-
-        // TODO: We cannot test this since there is no complete implementation of hdk-assemblyscript
-        // Command::main_binary()
-        //  .unwrap()
-        //   .current_dir(&tmp.path())
-        //   .args(&["g", "zomes/zubblebat", "assemblyscript"])
-        //   .assert()
-        //   .success();
     }
 
     #[test]
     fn rejects_rust_zomes_with_hyphens() {
-        let tmp = gen_dir();
+        let shared_space = gen_dir();
+
+        let root_path = shared_space.path().to_path_buf();
+
+        fs::create_dir_all(&root_path).unwrap();
 
         Command::main_binary()
             .unwrap()
-            .current_dir(&tmp.path())
-            .args(&["init", "."])
+            .current_dir(&root_path)
+            .args(&["init", root_path.to_str().unwrap()])
             .assert()
             .success();
 
         Command::main_binary()
             .unwrap()
-            .current_dir(&tmp.path())
-            .args(&["g", "zomes/bubble-chat", "rust"])
+            .current_dir(&root_path)
+            .args(&["generate", "zomes/bubble-chat", "rust"])
             .assert()
             .failure();
     }

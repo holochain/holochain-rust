@@ -415,10 +415,7 @@ impl Conductor {
             .iter_mut()
             .map(|(id, hc)| {
                 if id == dpki_instance_id {
-                    notify(format!(
-                        "Starting \"{}\" as DPKI instance ...",
-                        id
-                    ));
+                    notify(format!("Starting \"{}\" as DPKI instance ...", id));
                     return hc.write().unwrap().start();
                 }
                 Ok(())
@@ -558,14 +555,14 @@ impl Conductor {
             // which will be the case at least for the DPKI instance which got started
             // specifically in `self.dpki_bootstrap()` above.
             if !self.instances.contains_key(&id) {
-                let instance = self
-                    .instantiate_from_config(&id, Some(&config))
-                    .map_err(|error| {
-                        format!(
-                            "Error while trying to create instance \"{}\": {}",
-                            id, error
-                        )
-                    })?;
+                let instance =
+                    self.instantiate_from_config(&id, Some(&config))
+                        .map_err(|error| {
+                            format!(
+                                "Error while trying to create instance \"{}\": {}",
+                                id, error
+                            )
+                        })?;
 
                 self.instances
                     .insert(id.clone(), Arc::new(RwLock::new(instance)));
@@ -1075,13 +1072,16 @@ impl Conductor {
         if self.using_dpki() {
             notify("DPKI configured. Starting DPKI instance...".to_string());
 
-            self.start_dpki_instance().map_err(|err|
-                format!("Error starting DPKI instance: {:?}", err)
-            )?;
-            let dpki_instance_id = self.dpki_instance_id()
+            self.start_dpki_instance()
+                .map_err(|err| format!("Error starting DPKI instance: {:?}", err))?;
+            let dpki_instance_id = self
+                .dpki_instance_id()
                 .expect("We assume there is a DPKI instance since we just started it above..");
 
-            notify(format!("Instance '{}' running as DPKI instance.", dpki_instance_id));
+            notify(format!(
+                "Instance '{}' running as DPKI instance.",
+                dpki_instance_id
+            ));
 
             let instance = self.instances.get(&dpki_instance_id)?;
             let hc_lock = instance.clone();

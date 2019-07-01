@@ -34,6 +34,7 @@ pub async fn author_entry<'a>(
     ));
 
     // 1. Build the context needed for validation of the entry
+    // Should we add the current entry to the chain in the validation package?
     let validation_package = await!(build_validation_package(
         &entry,
         context.clone(),

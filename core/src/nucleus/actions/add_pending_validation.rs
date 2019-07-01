@@ -12,7 +12,7 @@ pub fn add_pending_validation(
     entry_with_header: EntryWithHeader,
     dependencies: Vec<Address>,
     workflow: ValidatingWorkflow,
-    context: &Arc<Context>,
+    context: Arc<Context>,
 ) {
     dispatch_action(
         context.action_channel(),

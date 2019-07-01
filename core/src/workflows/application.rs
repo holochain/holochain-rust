@@ -1,8 +1,7 @@
 use crate::{
     context::{get_dna_and_agent, Context},
     instance::Instance,
-    network::actions::initialize_network,
-    network::handler::republish_all_public_chain_entries,
+    network::{actions::initialize_network, handler::republish_all_public_chain_entries},
     nucleus::actions::initialize::initialize_chain,
 };
 use holochain_core_types::{

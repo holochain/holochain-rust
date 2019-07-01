@@ -208,7 +208,7 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
         bootstrap_nodes.push(node);
     };
 
-    Some(NetworkConfig {
+    Some(NetworkConfig::N3h(N3hConfig {
         bootstrap_nodes,
         n3h_log_level: EnvVar::N3hLogLevel
             .value()
@@ -224,7 +224,7 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
             .unwrap_or_else(default_n3h_persistence_path),
         n3h_ipc_uri: Default::default(),
         networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
-    })
+    }))
 }
 
 #[cfg(test)]
@@ -363,14 +363,14 @@ mod tests {
         let networking = super::networking_configuration(true);
         assert_eq!(
             networking,
-            Some(NetworkConfig {
+            Some(NetworkConfig::N3h(N3hConfig {
                 bootstrap_nodes: Vec::new(),
                 n3h_log_level: default_n3h_log_level(),
                 n3h_mode: default_n3h_mode(),
                 n3h_persistence_path: default_n3h_persistence_path(),
                 n3h_ipc_uri: Default::default(),
                 networking_config_file: None,
-            })
+            }))
         );
 
         let no_networking = super::networking_configuration(false);

@@ -22,6 +22,7 @@ pub mod receive;
 pub mod send;
 pub mod sign;
 mod update_entry;
+pub mod validate_grant;
 pub mod validation;
 pub mod verify_signature;
 mod zome_api_globals;

@@ -137,13 +137,15 @@ fn is_my_friend(addr: Address) -> bool {
     addr == Address::from(BOB_AGENT_ID)
 }
 
-pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {
+pub fn handle_request_post_grant() -> ZomeApiResult<Address> {
+
     // we may want to extend the testing conductor to be able to make calls with
-    // arbitrary provenances.  If so we could get the caller we want from the
-    // CAPABILITY_REQ global like this:
+    // arbitrary provenances.  If so we would be granting this capability to the
+    // caller using the CAPABILITY_REQ global like this:
     //    let addr = CAPABILITY_REQ.provenance.source();
     // but it doesn't work yet so for this test we are hard-coding the "friend"" to bob
-    let addr = Address::from(BOB_AGENT_ID);
+
+    hdk::grant_capability("can-post",vec![Address::from(BOB_AGENT_ID)])
 
     if is_my_friend(addr.clone()) {
         let mut functions = BTreeMap::new();
@@ -532,12 +534,35 @@ pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&AGENT_ADDRESS, LinkMatch::Exactly("recommended_posts"), LinkMatch::Any)
 }
 
+// this simply returns the first claim which works for this test, thus the arguments are ignored.
+// The exercise of a "real" find_claim function, which we may add to the hdk later, is left to the reader
+fn get_bridge_claim(_identifier: &str) -> Result<Address, HolochainError> {
+    let claim = hdk::query_result(
+        EntryType::CapTokenClaim.into(),
+        QueryArgsOptions {
+            entries: true,
+            ..Default::default()
+        },
+    )
+        .and_then(|result| match result {
+            QueryResult::Entries(entries) => {
+                let entry = &entries[0].1;
+                match entry {
+                    Entry::CapTokenClaim(ref claim) => Ok(claim.token()),
+                    _ => Err(ZomeApiError::Internal("failed to get claim".into())),
+                }
+            }
+            _ => Err(ZomeApiError::Internal("failed to get claim".into())),
+        })?;
+    Ok(claim)
+}
+
 pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     // Obtains the post via bridge to another instance
     let raw_json = hdk::call(
         "test-bridge",
         "blog",
-        Address::from(PUBLIC_TOKEN.to_string()),
+        get_bridge_claim("test-bridge")?, //Address::from(PUBLIC_TOKEN.to_string()),
         "get_post",
         json!({
             "post_address": post_address,

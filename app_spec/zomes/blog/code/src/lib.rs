@@ -49,6 +49,24 @@ define_zome! {
         blog::handle_receive(from, JsonString::from_json(&msg_json))
     }
 
+    // validate_grant gets called for all grants initiated by bridge initialization, or
+    // by calls to `hdk::grant_capability`.  For grants initiated by bridging, the capability_id
+    // will be the bridge handle as defined in the DNA.
+    validate_grant: |capability_id, assignees| {
+        match capability_id {
+            "test-bridge" => Ok(vec!["create_post".into(),"update_post".into()]),
+            "can-post" => {
+                for addr in assignees {
+                    if !blog::is_my_friend(addr) {
+                        return Err(HolochainError::ValidationFailed(format!("assignee not allowed: {}", addr)));
+                    }
+                }
+                Ok(vec!["create_post".to_string()])
+            },
+            _ => Err(HolochainError::ValidationFailed(format!("unknown capability id: {}", capability_id)),
+        }
+    }
+
     functions: [
 
         show_env: {

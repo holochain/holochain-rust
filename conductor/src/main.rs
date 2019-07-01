@@ -54,7 +54,6 @@ fn main() {
                     "Successfully loaded {} instance configurations",
                     conductor.instances().len()
                 );
-
                 println!("Starting instances...");
                 conductor
                     .start_all_instances()

@@ -17,9 +17,9 @@ use holochain_core_types::{
 };
 use std::sync::Arc;
 
-pub async fn hold_link_workflow<'a>(
-    entry_with_header: &'a EntryWithHeader,
-    context: &'a Arc<Context>,
+pub async fn hold_link_workflow(
+    entry_with_header: &EntryWithHeader,
+    context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     let link_add = match &entry_with_header.entry {
         Entry::LinkAdd(link_add) => link_add,
@@ -43,7 +43,7 @@ pub async fn hold_link_workflow<'a>(
                 entry_with_header.to_owned(),
                 Vec::new(),
                 ValidatingWorkflow::HoldLink,
-                context,
+                context.clone(),
             );
             HolochainError::ValidationPending
         })?;
@@ -54,7 +54,7 @@ pub async fn hold_link_workflow<'a>(
             entry_with_header.to_owned(),
             Vec::new(),
             ValidatingWorkflow::HoldLink,
-            &context,
+            context.clone(),
         );
         HolochainError::ValidationPending
     })?;
@@ -81,7 +81,7 @@ pub async fn hold_link_workflow<'a>(
                 entry_with_header.to_owned(),
                 dependencies.clone(),
                 ValidatingWorkflow::HoldLink,
-                &context,
+                context.clone(),
             );
             HolochainError::ValidationPending
         } else {

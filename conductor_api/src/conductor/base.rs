@@ -409,7 +409,7 @@ impl Conductor {
             .map(|(id, hc)| {
                 if id == dpki_instance_id {
                     notify(format!(
-                        "Starting dpki hApp instance for bootstrap process \"{}\"...",
+                        "Starting \"{}\" as DPKI instance ...",
                         id
                     ));
                     return hc.write().unwrap().start();
@@ -583,7 +583,16 @@ impl Conductor {
             );
         }
 
-        // self.dpki_bootstrap()?;
+        // Checking if there is a dpki instance
+        if self.using_dpki() {
+            notify("DPKI configured. Starting DPKI instance...".to_string());
+            self.start_dpki_instance().map_err(|err|
+                format!("Error starting DPKI instance: {:?}", err)
+            )?;
+            self.dpki_bootstrap().map_err(|err|
+                format!("Error bootstrapping DPKI instance: {:?}", err)
+            )?;
+        }
 
         Ok(())
     }

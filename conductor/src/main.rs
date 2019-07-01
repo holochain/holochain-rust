@@ -55,18 +55,6 @@ fn main() {
                     conductor.instances().len()
                 );
 
-                // Checking if there is a dpki instance
-                if conductor.using_dpki() {
-                    println!("Starting dpki instances...");
-                    conductor
-                        .start_dpki_instance()
-                        .expect("Could not start dpki happ instance!");
-
-                    conductor
-                        .dpki_bootstrap()
-                        .expect("Could not bootstrap dpki!");
-                }
-
                 println!("Starting instances...");
                 conductor
                     .start_all_instances()

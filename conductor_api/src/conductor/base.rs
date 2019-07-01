@@ -1985,6 +1985,10 @@ pub mod tests {
             Ok(()),
         );
         assert_eq!(
+            conductor.start_instance(&String::from("test-instance-1")),
+            Err(HolochainInstanceError::InstanceAlreadyActive),
+        );
+        assert_eq!(
             conductor.start_instance(&String::from("non-existant-id")),
             Err(HolochainInstanceError::NoSuchInstance),
         );

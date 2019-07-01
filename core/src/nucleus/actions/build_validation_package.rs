@@ -125,6 +125,7 @@ pub async fn build_validation_package<'a>(
                         Entry => ValidationPackage::only_header(entry_header),
                         ChainEntries => {
                             let mut package = ValidationPackage::only_header(entry_header);
+                            // What if we make another function all_public_chain_entries_as_of(entry) which returns the local chain up to and not including the given entry?
                             package.source_chain_entries = Some(all_public_chain_entries(&context));
                             package
                         }

@@ -396,7 +396,14 @@ impl Conductor {
             .map(|instance_config| instance_config.id.clone())
             .collect::<Vec<String>>()
             .iter()
-            .map(|id| self.start_instance(&id))
+            .map(|id| {
+                let start_result = self.start_instance(&id);
+                if Err(HolochainInstanceError::InstanceAlreadyActive) == start_result {
+                    Ok(())
+                } else {
+                    start_result
+                }
+            })
             .collect::<Result<Vec<()>, _>>()
             .map(|_| ())
     }
@@ -547,17 +554,22 @@ impl Conductor {
         self.dpki_bootstrap()?;
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
-            let instance = self
-                .instantiate_from_config(&id, Some(&config))
-                .map_err(|error| {
-                    format!(
-                        "Error while trying to create instance \"{}\": {}",
-                        id, error
-                    )
-                })?;
+            // We only try to instantiate the instance if it is not running already,
+            // which will be the case at least for the DPKI instance which got started
+            // specifically in `self.dpki_bootstrap()` above.
+            if !self.instances.contains_key(&id) {
+                let instance = self
+                    .instantiate_from_config(&id, Some(&config))
+                    .map_err(|error| {
+                        format!(
+                            "Error while trying to create instance \"{}\": {}",
+                            id, error
+                        )
+                    })?;
 
-            self.instances
-                .insert(id.clone(), Arc::new(RwLock::new(instance)));
+                self.instances
+                    .insert(id.clone(), Arc::new(RwLock::new(instance)));
+            }
         }
 
         for ui_interface_config in config.ui_interfaces.clone() {

@@ -1,1 +1,0 @@
-import ./manifest/build.nix

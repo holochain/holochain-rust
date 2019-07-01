@@ -7,10 +7,13 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
+
+use holochain_persistence_api::cas::content::Address;
+
 use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, error::HcResult,
-    validation::ValidationPackage,
+    chain_header::ChainHeader, error::HcResult, validation::ValidationPackage,
 };
+
 use std::{pin::Pin, sync::Arc};
 
 /// GetValidationPackage Action Creator

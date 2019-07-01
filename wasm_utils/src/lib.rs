@@ -3,12 +3,13 @@
 //! Must not have any dependency with any other Holochain crates.
 #![feature(try_from)]
 #![warn(unused_extern_crates)]
-extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 pub extern crate holochain_core_types;
 #[macro_use]
-pub extern crate holochain_core_types_derive;
+pub extern crate holochain_json_derive;
+pub extern crate holochain_json_api;
+pub extern crate holochain_persistence_api;
 
 /// ignore api_serialization because it is nothing but structs to hold serialization
 #[cfg_attr(tarpaulin, skip)]

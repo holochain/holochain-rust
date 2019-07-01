@@ -5,7 +5,10 @@
 pub mod link_data;
 pub mod link_list;
 
-use crate::{cas::content::Address, error::HolochainError, json::JsonString};
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::Address;
+
+use crate::{agent::AgentId, chain_header::ChainHeader};
 use entry::Entry;
 use link::link_data::LinkData;
 use regex::Regex;
@@ -48,12 +51,12 @@ impl Link {
         &self.tag
     }
 
-    pub fn add_entry(&self) -> Entry {
-        Entry::LinkAdd(LinkData::add_from_link(self))
+    pub fn add_entry(&self, top_chain_header: ChainHeader, agent_id: AgentId) -> Entry {
+        Entry::LinkAdd(LinkData::add_from_link(self, top_chain_header, agent_id))
     }
 
-    pub fn remove_entry(&self) -> Entry {
-        Entry::LinkAdd(LinkData::remove_from_link(self))
+    pub fn remove_entry(&self, top_chain_header: ChainHeader, agent_id: AgentId) -> Entry {
+        Entry::LinkAdd(LinkData::remove_from_link(self, top_chain_header, agent_id))
     }
 }
 
@@ -89,10 +92,10 @@ impl<S: Into<String>> LinkMatch<S> {
 pub mod tests {
 
     use crate::{
-        cas::content::AddressableContent,
         entry::{test_entry_a, test_entry_b},
         link::{Link, LinkActionKind, LinkTag, LinkType},
     };
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     pub fn example_link_type() -> LinkType {
         LinkType::from("foo-link-type")

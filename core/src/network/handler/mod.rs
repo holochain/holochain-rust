@@ -1,4 +1,5 @@
-pub mod get;
+pub mod fetch;
+pub mod query;
 pub mod send;
 pub mod store;
 
@@ -7,12 +8,15 @@ use crate::{
     entry::CanPublish,
     network::{
         actions::publish::publish,
-        handler::{get::*, send::*, store::*},
+        handler::{fetch::*, query::*, send::*, store::*},
     },
 };
-use holochain_core_types::hash::HashString;
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
+use holochain_persistence_api::hash::HashString;
 
+use crate::network::{direct_message::DirectMessage, entry_aspect::EntryAspect};
+use holochain_json_api::json::JsonString;
+use holochain_net::connection::json_protocol::{MessageData, StoreEntryAspectData};
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
@@ -29,6 +33,60 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
         return false;
     }
     true
+}
+
+// Since StoreEntryAspectData lives in the net crate and EntryAspect is specific
+// to core we can't implement fmt::Debug so that it spans over both, StoreEntryAspectData
+// and the type that is represented as opaque byte vector.
+// For debug logs we do want to see the whole store request including the EntryAspect.
+// This function enables pretty debug logs by deserializing the EntryAspect explicitly
+// and combining it with the top-level fields in a formatted and indented output.
+fn format_store_data(data: &StoreEntryAspectData) -> String {
+    let aspect_json =
+        JsonString::from_json(&String::from_utf8(data.entry_aspect.aspect.clone()).unwrap());
+    let aspect = EntryAspect::try_from(aspect_json).unwrap();
+    format!(
+        r#"
+StoreEntryAspectData {{
+    request_id: "{req_id}",
+    dna_address: "{dna_adr}",
+    provider_agent_id: "{provider_agent_id}",
+    entry_address: "{entry_address}",
+    entry_aspect: {{
+        aspect_address: "{aspect_address}",
+        type_hint: "{type_hint}",
+        aspect: "{aspect:?}"
+    }}
+}}"#,
+        req_id = data.request_id,
+        dna_adr = data.dna_address,
+        provider_agent_id = data.provider_agent_id,
+        entry_address = data.entry_address,
+        aspect_address = data.entry_aspect.aspect_address,
+        type_hint = data.entry_aspect.type_hint,
+        aspect = aspect
+    )
+}
+
+// See comment on fn format_store_data() - same reason for this function.
+fn format_message_data(data: &MessageData) -> String {
+    let message_json = JsonString::from_json(&String::from_utf8(data.content.clone()).unwrap());
+    let message = DirectMessage::try_from(message_json).unwrap();
+    format!(
+        r#"
+MessageData {{
+    request_id: "{req_id}",
+    dna_address: "{dna_adr}",
+    to_agent_id: "{to}",
+    from_agent_id: "{from}",
+    content: {content:?},
+}}"#,
+        req_id = data.request_id,
+        dna_adr = data.dna_address,
+        to = data.to_agent_id,
+        from = data.from_agent_id,
+        content = message,
+    )
 }
 
 /// Creates the network handler.
@@ -58,25 +116,15 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 // TODO: Handle the reception of a FailureResult
             }
-            JsonProtocol::HandleStoreEntry(dht_entry_data) => {
+            JsonProtocol::HandleStoreEntryAspect(dht_entry_data) => {
                 if !is_my_dna(&my_dna_address, &dht_entry_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
-                    "debug/net/handle: HandleStoreEntry: {:?}",
-                    dht_entry_data
+                    "debug/net/handle: HandleStoreEntryAspect: {}",
+                    format_store_data(&dht_entry_data)
                 ));
-                handle_store_entry(dht_entry_data, context.clone())
-            }
-            JsonProtocol::HandleStoreMeta(dht_meta_data) => {
-                if !is_my_dna(&my_dna_address, &dht_meta_data.dna_address.to_string()) {
-                    return Ok(());
-                }
-                context.log(format!(
-                    "debug/net/handle: HandleStoreMeta: {:?}",
-                    dht_meta_data
-                ));
-                handle_store_meta(dht_meta_data, context.clone())
+                handle_store(dht_entry_data, context.clone())
             }
             JsonProtocol::HandleFetchEntry(fetch_entry_data) => {
                 if !is_my_dna(&my_dna_address, &fetch_entry_data.dna_address.to_string()) {
@@ -88,78 +136,57 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_fetch_entry(fetch_entry_data, context.clone())
             }
-            JsonProtocol::FetchEntryResult(fetch_result_data) => {
+            JsonProtocol::HandleFetchEntryResult(fetch_result_data) => {
                 if !is_my_dna(&my_dna_address, &fetch_result_data.dna_address.to_string()) {
                     return Ok(());
                 }
-                // ignore if I'm not the requester
-                if !is_my_id(&context, &fetch_result_data.requester_agent_id) {
-                    return Ok(());
-                }
+
                 context.log(format!(
-                    "debug/net/handle: FetchEntryResult: {:?}",
+                    "err/net/handle: unexpected HandleFetchEntryResult: {:?}",
                     fetch_result_data
                 ));
-                handle_fetch_entry_result(fetch_result_data, context.clone())
             }
-            JsonProtocol::HandleFetchMeta(fetch_meta_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_meta_data.dna_address.to_string()) {
+            JsonProtocol::HandleQueryEntry(query_entry_data) => {
+                if !is_my_dna(&my_dna_address, &query_entry_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
-                    "debug/net/handle: HandleFetchMeta: {:?}",
-                    fetch_meta_data
+                    "debug/net/handle: HandleQueryEntry: {:?}",
+                    query_entry_data
                 ));
-                handle_fetch_meta(fetch_meta_data, context.clone())
+                handle_query_entry_data(query_entry_data, context.clone())
             }
-            JsonProtocol::FetchMetaResult(fetch_meta_result_data) => {
+            JsonProtocol::QueryEntryResult(query_entry_result_data) => {
                 if !is_my_dna(
                     &my_dna_address,
-                    &fetch_meta_result_data.dna_address.to_string(),
+                    &query_entry_result_data.dna_address.to_string(),
                 ) {
                     return Ok(());
                 }
                 // ignore if I'm not the requester
-                if !is_my_id(&context, &fetch_meta_result_data.requester_agent_id) {
+                if !is_my_id(
+                    &context,
+                    &query_entry_result_data.requester_agent_id.to_string(),
+                ) {
                     return Ok(());
                 }
-                // TODO: Find a proper solution for selecting DHT meta responses.
-                // Current network implementation broadcasts messages to all nodes which means
-                // we respond to ourselves first in most cases.
-                // Eric and I thought the filter below (ignoring messages from ourselves)
-                // would fix this but that breaks several tests since in most tests
-                // we only have one instance and have to rely on the nodes local knowledge.
-                // A proper solution has to implement some aspects of what we call the
-                // "world model". A node needs to know what context it's in: if we are the only
-                // node we know about (like in these tests) we can not ignore our local knowledge
-                // but in other cases we should rather rely on the network's response.
-                // In the end this needs a full CRDT implemention.
-                //if is_me(
-                //    &context,
-                //    &get_dht_meta_data.dna_address,
-                //    &get_dht_meta_data.from_agent_id,
-                //) {
-                //    context.log("debug/net/handle: Got DHT meta result from myself. Ignoring.");
-                //    return Ok(());
-                //} else {
                 context.log(format!(
-                    "debug/net/handle: FetchMetaResult: {:?}",
-                    fetch_meta_result_data
+                    "debug/net/handle: HandleQueryEntryResult: {:?}",
+                    query_entry_result_data
                 ));
-                handle_fetch_meta_result(fetch_meta_result_data, context.clone())
-                //}
+                handle_query_entry_result(query_entry_result_data, context.clone())
             }
             JsonProtocol::HandleSendMessage(message_data) => {
                 if !is_my_dna(&my_dna_address, &message_data.dna_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
-                if !is_my_id(&context, &message_data.to_agent_id) {
+                if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
-                    "debug/net/handle: HandleSendMessage: {:?}",
-                    message_data
+                    "debug/net/handle: HandleSendMessage: {}",
+                    format_message_data(&message_data)
                 ));
                 handle_send_message(message_data, context.clone())
             }
@@ -168,18 +195,18 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
-                if !is_my_id(&context, &message_data.to_agent_id) {
+                if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
-                    "debug/net/handle: SendMessageResult: {:?}",
-                    message_data
+                    "debug/net/handle: SendMessageResult: {}",
+                    format_message_data(&message_data)
                 ));
                 handle_send_message_result(message_data, context.clone())
             }
             JsonProtocol::PeerConnected(peer_data) => {
                 // ignore peer connection of myself
-                if is_my_id(&context, &peer_data.agent_id) {
+                if is_my_id(&context, &peer_data.agent_id.to_string()) {
                     return Ok(());
                 }
 

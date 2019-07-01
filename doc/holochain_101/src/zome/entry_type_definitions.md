@@ -119,7 +119,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_persistence_derive;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 struct Post {
@@ -152,7 +152,7 @@ Every struct used as a `native_type` reference should include all 4 derives, as 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 ```
 
-`Serialize` and `Deserialize` come from `serde_derive`, and `DefaultJson` comes from `holochain_core_types_derive`.
+`Serialize` and `Deserialize` come from `serde_derive`, and `DefaultJson` comes from `holochain_persistence_derive`.
 
 Then there is the struct itself. This is the real type definition, because it defines the schema. It is simply a list of property names, the 'keys', and the types of values expected, which should be set to one of the primitive types of the language. This will tell `serde` how to parse JSON string inputs into the type. Note that conversion from JSON strings into the struct type can easily fail, in particular if the proper keys are not present on the input.
 

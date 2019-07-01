@@ -8,7 +8,7 @@ extern crate serde_json;
 extern crate serde_derive;
 extern crate boolinator;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 use boolinator::Boolinator;
 use hdk::{
@@ -25,17 +25,19 @@ use holochain_wasm_utils::{
         query::{QueryArgsNames, QueryArgsOptions, QueryResult},
     },
     holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         dna::entry_types::Sharing,
         entry::{
             entry_type::{AppEntryType, EntryType},
             AppEntryValue, Entry,
         },
-        error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeErrorCode},
-        json::{JsonString, RawString},
+        error::{RibosomeEncodedValue, RibosomeEncodingBits, RibosomeErrorCode},
         validation::{EntryValidationData, LinkValidationData},
         link::LinkMatch,
     },
+    holochain_persistence_api::{
+        cas::content::{Address, AddressableContent},
+    },
+    holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
     memory::{
         allocation::WasmAllocation,
         ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},

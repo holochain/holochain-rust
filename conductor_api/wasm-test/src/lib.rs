@@ -1,22 +1,26 @@
 #![feature(try_from)]
 extern crate holochain_core_types;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 #[macro_use]
 extern crate serde_derive;
 extern crate holochain_wasm_utils;
 extern crate serde_json;
 
 use holochain_core_types::{
-    cas::content::Address,
     entry::Entry,
     error::{
-        HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
+        RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
         ZomeApiInternalResult,
     },
-    json::{JsonString, RawString},
     signature::Provenance
 };
+
+use holochain_wasm_utils::{
+    holochain_persistence_api::cas::content::Address,
+    holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
+};
+
 use holochain_wasm_utils::memory::{
     ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
     stack::WasmStack,

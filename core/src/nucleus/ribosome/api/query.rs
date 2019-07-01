@@ -6,8 +6,10 @@ use crate::{
         ribosome::{api::ZomeApiResult, Runtime},
     },
 };
+
+use holochain_persistence_api::cas::content::Address;
+
 use holochain_core_types::{
-    cas::content::Address,
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,

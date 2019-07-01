@@ -1,7 +1,7 @@
 const path = require('path')
 const tape = require('tape')
 
-const { Diorama, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/triorama')
+const { Orchestrator, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/try-o-rama')
 const spawnConductor = require('./spawn_conductors')
 
 process.on('unhandledRejection', error => {
@@ -10,20 +10,16 @@ process.on('unhandledRejection', error => {
 });
 
 const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
-const dna = Diorama.dna(dnaPath, 'app-spec')
-const dna2 = Diorama.dna(dnaPath, 'app-spec', {uuid: 'altered-dna'})
+const dna = Orchestrator.dna(dnaPath, 'app-spec')
+const dna2 = Orchestrator.dna(dnaPath, 'app-spec', {uuid: 'altered-dna'})
 
 const commonConductorConfig = {
   instances: {
     app: dna,
-    app2: dna,
   },
-  bridges: [
-    Diorama.bridge('test-bridge', 'app', 'app2')
-  ],
 }
 
-const dioramaSimple = new Diorama({
+const orchestratorSimple = new Orchestrator({
   conductors: {
     alice: commonConductorConfig,
     bob: commonConductorConfig,
@@ -34,7 +30,7 @@ const dioramaSimple = new Diorama({
   middleware: backwardCompatibilityMiddleware,
 })
 
-const dioramaMultiDna = new Diorama({
+const orchestratorMultiDna = new Orchestrator({
   conductors: {
     conductor: {
       instances: {
@@ -42,7 +38,7 @@ const dioramaMultiDna = new Diorama({
         app2: dna2,
       },
       bridges: [
-        Diorama.bridge('test-bridge', 'app1', 'app2')
+        Orchestrator.bridge('test-bridge', 'app1', 'app2')
       ],
     }
   },
@@ -52,25 +48,25 @@ const dioramaMultiDna = new Diorama({
   callbacksPort: 8888,
 })
 
-require('./regressions')(dioramaSimple.registerScenario)
-require('./test')(dioramaSimple.registerScenario)
-require('./multi-dna')(dioramaMultiDna.registerScenario)
+require('./regressions')(orchestratorSimple.registerScenario)
+require('./test')(orchestratorSimple.registerScenario)
+require('./multi-dna')(orchestratorMultiDna.registerScenario)
 
 const run = async () => {
   const alice = await spawnConductor('alice', 3000)
-  await dioramaSimple.registerConductor({name: 'alice', url: 'http://0.0.0.0:3000'})
+  await orchestratorSimple.registerConductor({name: 'alice', url: 'http://0.0.0.0:3000'})
   const bob = await spawnConductor('bob', 4000)
-  await dioramaSimple.registerConductor({name: 'bob', url: 'http://0.0.0.0:4000'})
+  await orchestratorSimple.registerConductor({name: 'bob', url: 'http://0.0.0.0:4000'})
   const carol = await spawnConductor('carol', 5000)
-  await dioramaSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
+  await orchestratorSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
   console.log("Waiting for conductors to settle...")
   await delay(5000)
   console.log("Ok, starting tests!")
-  
-  await dioramaSimple.run()
-  await dioramaMultiDna.run()
+
+  await orchestratorSimple.run()
+  await orchestratorMultiDna.run()
 
   alice.kill()
   bob.kill()

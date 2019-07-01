@@ -3,7 +3,13 @@ use crate::{
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
 };
 
-use crate::workflows::validation_package;
+use crate::{
+    nucleus::{
+        actions::add_pending_validation::add_pending_validation, validation::ValidationError,
+    },
+    scheduled_jobs::pending_validations::ValidatingWorkflow,
+    workflows::validation_package,
+};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
@@ -12,12 +18,24 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
 
-pub async fn hold_remove_workflow<'a>(
-    entry_with_header: EntryWithHeader,
+pub async fn hold_remove_workflow(
+    entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     // 1. Get hold of validation package
-    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))?;
+    let maybe_validation_package = await!(validation_package(entry_with_header, context.clone()))
+        .map_err(|err| {
+        let message = "Could not get validation package from source! -> Add to pending...";
+        context.log(format!("debug/workflow/hold_remove: {}", message));
+        context.log(format!("debug/workflow/hold_remove: Error was: {:?}", err));
+        add_pending_validation(
+            entry_with_header.to_owned(),
+            Vec::new(),
+            ValidatingWorkflow::RemoveEntry,
+            context.clone(),
+        );
+        HolochainError::ValidationPending
+    })?;
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
 
@@ -33,7 +51,27 @@ pub async fn hold_remove_workflow<'a>(
         None,
         validation_data,
         &context
-    ))?;
+    ))
+    .map_err(|err| {
+        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
+            context.log(format!("debug/workflow/hold_remove: Entry removal could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies));
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                dependencies.clone(),
+                ValidatingWorkflow::RemoveEntry,
+                context.clone(),
+            );
+            HolochainError::ValidationPending
+        } else {
+            context.log(format!(
+                "info/workflow/hold_remove: Entry removal {:?} is NOT valid! Validation error: {:?}",
+                entry_with_header.entry,
+                err,
+            ));
+            HolochainError::from(err)
+        }
+
+    })?;
 
     let deletion_entry = unwrap_to!(entry_with_header.entry => Entry::Deletion);
 

@@ -23,7 +23,6 @@ extern crate serde_json;
 extern crate ignore;
 extern crate rpassword;
 
-// #[cfg(test)]
 mod cli;
 mod config_files;
 mod error;

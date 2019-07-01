@@ -104,7 +104,7 @@ enum Cli {
         #[structopt(
             long = "dna",
             short = "d",
-            help = "Absolute path to the .dna.json file to run. [default: ./dist/<dna-name>.dna.json]",
+            help = "Absolute path to the .dna.json file to run. [default: ./dist/<dna-name>.dna.json]"
         )]
         dna_path: Option<PathBuf>,
         #[structopt(long, help = "Produce logging output")]
@@ -219,9 +219,8 @@ fn run() -> HolochainResult<()> {
             interface,
             logging,
         } => {
-            let dna_path = dna_path.unwrap_or(
-                util::std_package_path(&project_path).map_err(HolochainError::Default)?
-            );
+            let dna_path = dna_path
+                .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
             let interface_type = cli::get_interface_type_string(interface);
             let conductor_config = cli::hc_run_configuration(
                 &dna_path,

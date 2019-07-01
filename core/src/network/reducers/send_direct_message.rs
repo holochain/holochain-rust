@@ -5,7 +5,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::json_protocol::{JsonProtocol, MessageData};
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 fn inner(
     network_state: &mut NetworkState,
     direct_message_data: &DirectMessageData,
@@ -23,12 +23,12 @@ fn inner(
     };
 
     let protocol_object = if direct_message_data.is_response {
-        JsonProtocol::HandleSendMessageResult(data)
+        Lib3hClientProtocol::HandleSendDirectMessageResult(data)
     } else {
         network_state
             .direct_message_connections
             .insert(data.request_id.clone(), direct_message_data.message.clone());
-        JsonProtocol::SendMessage(data)
+        Lib3hClientProtocol::SendDirectMessage(data)
     };
 
     send(network_state, protocol_object)

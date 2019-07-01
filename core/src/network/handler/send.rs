@@ -12,7 +12,7 @@ use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, thread};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
-use holochain_net::connection::json_protocol::MessageData;
+use lib3h_protocol::data_types::EntryAspectData;
 use std::convert::TryFrom;
 
 fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
@@ -70,7 +70,7 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
     };
 }
 
-/// We got a JsonProtocol::HandleSendMessageResult.
+/// We got a Lib3hClientProtocol::HandleSendMessageResult.
 /// This means somebody has responded to our message that we called and this is the answer
 pub fn handle_send_message_result(message_data: MessageData, context: Arc<Context>) {
     let response = match parse_direct_message(message_data.content.clone()) {

@@ -14,7 +14,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net::connection::json_protocol::{EntryData, JsonProtocol, ProvidedEntryData};
+use lib3h_protocol::protocol_client::{EntryData, Lib3hClientProtocol, ProvidedEntryData};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 /// Send to network a PublishDhtData message
@@ -24,7 +24,7 @@ fn publish_entry(
 ) -> Result<(), HolochainError> {
     send(
         network_state,
-        JsonProtocol::PublishEntry(ProvidedEntryData {
+        Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
             dna_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
@@ -64,7 +64,7 @@ fn publish_update_delete_meta(
 
     send(
         network_state,
-        JsonProtocol::PublishEntry(ProvidedEntryData {
+        Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
             dna_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
@@ -104,7 +104,7 @@ fn publish_link_meta(
     };
     send(
         network_state,
-        JsonProtocol::PublishEntry(ProvidedEntryData {
+        Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
             dna_address: network_state.dna_address.clone().unwrap(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {

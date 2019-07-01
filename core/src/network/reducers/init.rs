@@ -5,8 +5,7 @@ use crate::{
 };
 use holochain_net::{
     connection::{
-        json_protocol::{JsonProtocol, TrackDnaData},
-        net_connection::NetSend,
+       net_connection::NetSend,
     },
     p2p_network::P2pNetwork,
 };
@@ -33,7 +32,7 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     //        tweetlog.i("TWEETLOG ENABLED");
     //    }
 
-    let json = JsonProtocol::TrackDna(TrackDnaData {
+    let json = Lib3hClientProtocol::TrackDna(TrackDnaData {
         dna_address: network_settings.dna_address.clone(),
         agent_id: network_settings.agent_id.clone().into(),
     });

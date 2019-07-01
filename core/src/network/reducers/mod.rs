@@ -40,7 +40,7 @@ use crate::{
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::{
-    json_protocol::{JsonProtocol, MessageData},
+    json_protocol::{Lib3hClientProtocol, MessageData},
     net_connection::NetSend,
 };
 use holochain_persistence_api::cas::content::Address;
@@ -87,11 +87,11 @@ pub fn reduce(
     }
 }
 
-/// Sends the given JsonProtocol over the network using the network proxy instance
+/// Sends the given Lib3hClientProtocol over the network using the network proxy instance
 /// that lives in the NetworkState.
 pub fn send(
     network_state: &mut NetworkState,
-    json_message: JsonProtocol,
+    json_message: Lib3hClientProtocol,
 ) -> Result<(), HolochainError> {
     network_state
         .network
@@ -130,7 +130,7 @@ pub fn send_message(
         content,
     };
 
-    let _ = send(network_state, JsonProtocol::SendMessage(data))?;
+    let _ = send(network_state, Lib3hClientProtocol::SendMessage(data))?;
 
     network_state.direct_message_connections.insert(id, message);
 

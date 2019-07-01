@@ -1,5 +1,5 @@
 use super::entry_store::EntryStore;
-use holochain_net::connection::json_protocol::{EntryAspectData, EntryData};
+use lib3h_protocol::data_types::{EntryAspectData, EntryData};
 use holochain_persistence_api::cas::content::Address;
 use std::collections::HashMap;
 

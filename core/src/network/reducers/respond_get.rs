@@ -7,8 +7,8 @@ use crate::{
 };
 use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError};
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::json_protocol::{
-    JsonProtocol, QueryEntryData, QueryEntryResultData,
+use lib3h_protocol::protocol_client::{
+    Lib3hClientProtocol, QueryEntryData, QueryEntryResultData,
 };
 
 /// Send back to network a HandleQueryEntryResult, no matter what.
@@ -16,13 +16,13 @@ use holochain_net::connection::json_protocol::{
 fn reduce_respond_get_inner(
     network_state: &mut NetworkState,
     query_data: &QueryEntryData,
-    maybe_entry: &Option<EntryWithMetaAndHeader>,
+     maybe_entry: &Option<EntryWithMetaAndHeader>,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
     let query_result_json: JsonString = NetworkQueryResult::Entry(maybe_entry.clone()).into();
     send(
         network_state,
-        JsonProtocol::HandleQueryEntryResult(QueryEntryResultData {
+        Lib3hClientProtocol::HandleQueryEntryResult(QueryEntryResultData {
             request_id: query_data.request_id.clone(),
             requester_agent_id: query_data.requester_agent_id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),

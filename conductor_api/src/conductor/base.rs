@@ -544,6 +544,7 @@ impl Conductor {
         self.shutdown();
 
         self.start_signal_multiplexer();
+        self.dpki_bootstrap()?;
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
             let instance = self
@@ -581,17 +582,6 @@ impl Conductor {
                     connected_dna_interface,
                 ),
             );
-        }
-
-        // Checking if there is a dpki instance
-        if self.using_dpki() {
-            notify("DPKI configured. Starting DPKI instance...".to_string());
-            self.start_dpki_instance().map_err(|err|
-                format!("Error starting DPKI instance: {:?}", err)
-            )?;
-            self.dpki_bootstrap().map_err(|err|
-                format!("Error bootstrapping DPKI instance: {:?}", err)
-            )?;
         }
 
         Ok(())
@@ -1069,20 +1059,27 @@ impl Conductor {
 
     /// bootstraps the dpki app if configured
     pub fn dpki_bootstrap(&mut self) -> Result<(), HolochainError> {
-        notify("Starting DPKI Bootstrap ...".to_string());
-        notify(format!(
-            "Cheking if conductor is using DPKI : {}",
-            self.using_dpki()
-        ));
+        // Checking if there is a dpki instance
         if self.using_dpki() {
-            let dpki_instance_id = self.dpki_instance_id().unwrap();
-            notify(format!("DPKI instance id: {}", dpki_instance_id));
+            notify("DPKI configured. Starting DPKI instance...".to_string());
+
+            self.start_dpki_instance().map_err(|err|
+                format!("Error starting DPKI instance: {:?}", err)
+            )?;
+            let dpki_instance_id = self.dpki_instance_id()
+                .expect("We assume there is a DPKI instance since we just started it above..");
+
+            notify(format!("Instance '{}' running as DPKI instance.", dpki_instance_id));
+
             let instance = self.instances.get(&dpki_instance_id)?;
             let hc_lock = instance.clone();
             let hc_lock_inner = hc_lock.clone();
             let mut hc = hc_lock_inner.write().unwrap();
+
             if !hc.dpki_is_initialized()? {
+                notify("DPKI is not initialized yet (i.e. running for the first time). Calling 'init'...".to_string());
                 hc.dpki_init(self.dpki_init_params().unwrap())?;
+                notify("DPKI initialization done!".to_string());
             }
         }
         Ok(())

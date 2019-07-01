@@ -170,6 +170,18 @@ enum Cli {
         #[structopt(long, short, help = "List available instances")]
         list: bool,
     },
+    #[structopt(
+        name = "hash",
+        about = "Parse and hash a DNA file to determine its unique network hash"
+    )]
+    HashDna {
+        #[structopt(
+            long,
+            short,
+            help = "Path to .dna.json file [default: dist/<dna-name>.dna.json]"
+        )]
+        path: Option<PathBuf>,
+    },
 }
 
 fn main() {
@@ -269,6 +281,14 @@ fn run() -> HolochainResult<()> {
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             }
         },
+        Cli::HashDna { path } => {
+            let dna_path = path
+                .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
+
+            let dna_hash = cli::hash_dna(&dna_path)
+                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
+            println!("DNA Hash: {}", dna_hash);
+        }
     }
 
     Ok(())

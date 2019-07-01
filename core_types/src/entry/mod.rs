@@ -70,6 +70,7 @@ pub enum Entry {
     AgentId(AgentId),
     Deletion(DeletionEntry),
     LinkAdd(LinkData),
+    #[allow(clippy::large_enum_variant)]
     LinkRemove((LinkData, Vec<Address>)),
     LinkList(LinkList),
     ChainHeader(ChainHeader),

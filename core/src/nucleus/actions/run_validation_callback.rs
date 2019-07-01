@@ -11,9 +11,8 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError, ugly::lax_send_sync};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
-
 use snowflake;
 use std::{pin::Pin, sync::Arc, thread};
 
@@ -43,23 +42,24 @@ pub async fn run_validation_callback(
             // TODO: have "not matching schema" be its own error
             Err(HolochainError::RibosomeFailed(error_string)) => {
                 if error_string == "Argument deserialization failed" {
-                    Err(ValidationError::Error(String::from(
-                        "JSON object does not match entry schema",
-                    )))
+                    Err(ValidationError::Error(
+                        String::from("JSON object does not match entry schema").into(),
+                    ))
                 } else {
-                    Err(ValidationError::Error(error_string))
+                    Err(ValidationError::Error(error_string.into()))
                 }
             }
-            Err(error) => Err(ValidationError::Error(error.to_string())),
+            Err(error) => Err(ValidationError::Error(error.to_string().into())),
         };
 
-        cloned_context
-            .action_channel()
-            .send(ActionWrapper::new(Action::ReturnValidationResult((
+        lax_send_sync(
+            cloned_context.action_channel().clone(),
+            ActionWrapper::new(Action::ReturnValidationResult((
                 (id, clone_address),
                 validation_result,
-            ))))
-            .expect("action channel to be open in reducer");
+            ))),
+            "run_validation_callback",
+        );
     });
 
     await!(ValidationCallbackFuture {
@@ -79,6 +79,11 @@ impl Future for ValidationCallbackFuture {
     type Output = ValidationResult;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if !self.context.is_action_channel_open() {
+            return Poll::Ready(Err(ValidationError::Error(HolochainError::LifecycleError(
+                "ValidationCallbackFuture".to_string(),
+            ))));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

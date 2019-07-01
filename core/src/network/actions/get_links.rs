@@ -56,6 +56,9 @@ impl Future for GetLinksFuture {
     type Output = HcResult<Vec<(Address, CrudStatus)>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("GetLinksFuture") {
+            return Poll::Ready(Err(err));
+        }
         let state = self.context.state().unwrap().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(error));

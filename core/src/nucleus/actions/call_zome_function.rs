@@ -15,6 +15,7 @@ use holochain_core_types::{
     },
     error::HolochainError,
     signature::{Provenance, Signature},
+    ugly::lax_send_sync,
 };
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -68,7 +69,7 @@ impl ExecuteZomeFnResponse {
 /// Use Context::block_on to wait for the call result.
 pub async fn call_zome_function(
     zome_call: ZomeFnCall,
-    context: &Arc<Context>,
+    context: Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
     context.log(format!(
         "debug/actions/call_zome_fn: Validating call: {:?}",
@@ -106,12 +107,11 @@ pub async fn call_zome_function(
         let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);
         // Send ReturnZomeFunctionResult Action
         context_clone.log("debug/actions/call_zome_fn: sending ReturnZomeFunctionResult action.");
-        context_clone
-            .action_channel()
-            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
-                response,
-            )))
-            .expect("action channel to be open in reducer");
+        lax_send_sync(
+            context_clone.action_channel().clone(),
+            ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
+            "call_zome_function",
+        );
         context_clone.log("debug/actions/call_zome_fn: sent ReturnZomeFunctionResult action.");
     });
 
@@ -296,6 +296,9 @@ impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("CallResultFuture") {
+            return Poll::Ready(Err(err));
+        }
         // With our own executor implementation in Context::block_on we actually
         // wouldn't need the waker since this executor is attached to the redux loop
         // and re-polls after every State mutation.
@@ -387,7 +390,7 @@ pub mod tests {
     #[test]
     fn test_get_grant() {
         let dna = test_dna();
-        let (_, context) =
+        let (_instance, context) =
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         let mut cap_functions = CapFunctions::new();

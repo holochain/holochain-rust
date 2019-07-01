@@ -109,15 +109,13 @@ impl Packager {
             0 => {
                 // A root json file is optional so can still package the dna
                 None
-            },
-            1 => {
-                Some(root_json_files[0])
-            },
+            }
+            1 => Some(root_json_files[0]),
             _ => {
                 // more than one .json file is ambiguous so present an error
                 return Err (format_err!("Error Packaging DNA: Multiple files with extension .json were found in the root of the project, {:?}.\
                     This is ambiguous as the packager is unable to tell which should be used as the base for the .dna.json", root_json_files)
-                )
+                );
             }
         };
 
@@ -320,11 +318,10 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
 // too slow!
 #[cfg(feature = "broken-tests")]
 mod tests {
-    use std::path::PathBuf;
+    use super::*;
     use crate::cli::init::tests::gen_dir;
     use assert_cmd::prelude::*;
-    use std::process::Command;
-    use super::*;
+    use std::{path::PathBuf, process::Command};
 
     #[test]
     fn package_and_unpack_isolated() {
@@ -400,7 +397,6 @@ mod tests {
             .current_dir(&root_path)
             .assert()
             .failure();
-
     }
 
     #[test]

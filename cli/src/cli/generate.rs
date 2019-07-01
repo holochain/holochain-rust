@@ -46,20 +46,26 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
 
     // match against all supported languages
     match language {
-        "rust" => scaffold(
-            &scaffold::rust::RustScaffold::new(
-                &zome_name_string,
-                scaffold::rust::HdkMacroStyle::Declarative,
-            ),
-            code_dir,
-        )?,
-        "rust-proc" => scaffold(
-            &scaffold::rust::RustScaffold::new(
-                &zome_name_string,
-                scaffold::rust::HdkMacroStyle::Procedural,
-            ),
-            code_dir,
-        )?,
+         "rust" => {
+            ensure!(!file_name.contains("-"), "Cannot use hyphens '-' as names for Rust zomes. Use underscore '_' instead.");
+            scaffold(
+                &scaffold::rust::RustScaffold::new(
+                    &zome_name_string,
+                    scaffold::rust::HdkMacroStyle::Declarative,
+                ),
+                code_dir,
+            )?
+        },
+        "rust-proc" => {
+            ensure!(!file_name.contains("-"), "Cannot use hyphens '-' as names for Rust-Proc zomes. Use underscore '_' instead.");
+            scaffold(
+                &scaffold::rust::RustScaffold::new(
+                    &zome_name_string,
+                    scaffold::rust::HdkMacroStyle::Procedural,
+                ),
+                code_dir,
+            )?
+        },
         "assemblyscript" => scaffold(
             &scaffold::assemblyscript::AssemblyScriptScaffold::new(),
             code_dir,
@@ -77,11 +83,14 @@ fn scaffold<S: Scaffold>(tooling: &S, base_path: PathBuf) -> DefaultResult<()> {
 
 #[cfg(test)]
 // too slow!
-#[cfg(feature = "broken-tests")]
+// #[cfg(feature = "broken-tests")]
 mod tests {
-    use assert_cmd::prelude::*;
+    extern crate tempfile;
+    use self::tempfile::{Builder, TempDir};
+    extern crate assert_cmd;
     use std::process::Command;
-    use tempfile::{Builder, TempDir};
+    use self::assert_cmd::prelude::*;
+
 
     const HOLOCHAIN_TEST_PREFIX: &str = "org.holochain.test";
 
@@ -118,4 +127,24 @@ mod tests {
         //   .assert()
         //   .success();
     }
+
+    #[test]
+    fn rejects_rust_zomes_with_hyphens() {
+        let tmp = gen_dir();
+
+        Command::main_binary()
+            .unwrap()
+            .current_dir(&tmp.path())
+            .args(&["init", "."])
+            .assert()
+            .success();
+
+        Command::main_binary()
+            .unwrap()
+            .current_dir(&tmp.path())
+            .args(&["g", "zomes/bubble-chat", "rust"])
+            .assert()
+            .failure();
+    }
+
 }

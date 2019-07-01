@@ -39,9 +39,12 @@ n3h_persistence_path = "${n3hPath}"
     return config
 }
 
-module.exports = (name, port, holochainBin) => {
-    if(!holochainBin) {
+module.exports = (name, port) => {
+    let holochainBin = ""
+    if(process.env.EMULATION_HOLOCHAIN_BIN_PATH) {
         holochainBin = process.env.EMULATION_HOLOCHAIN_BIN_PATH
+    } else {
+        holochainBin = "holochain"
     }
 
     const tmpPath = fs.mkdtempSync(path.join(os.tmpdir(), 'n3h-test-conductors-'))

@@ -3,6 +3,7 @@
 
 #[macro_use]
 extern crate failure;
+extern crate url;
 
 extern crate holochain_persistence_api;
 

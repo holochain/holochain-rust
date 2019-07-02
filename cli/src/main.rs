@@ -72,7 +72,7 @@ enum Cli {
     #[structopt(
         name = "generate",
         alias = "g",
-        about = "Generates a new zome and scaffolds the given functions"
+        about = "Generates a new zome from a template"
     )]
     Generate {
         #[structopt(
@@ -80,7 +80,7 @@ enum Cli {
             parse(from_os_str)
         )]
         zome: PathBuf,
-        #[structopt(help = "Either the name of a build in template (e.g. rust, rust-proc) or the url to a git repo containing a zome template.", default_value = "rust")]
+        #[structopt(help = "Either the name of a build in template (rust, rust-proc) or the url to a git repo containing a zome template.", default_value = "rust")]
         template: String,
     },
     #[structopt(

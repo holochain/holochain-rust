@@ -11,18 +11,18 @@ use tera::{Tera, Context};
 use glob::glob;
 
 const RUST_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-zome-template";
+const RUST_PROC_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-proc-zome-template";
 
 const HOLOCHAIN_VERSION: &str = "v0.0.21-alpha1"; // TODO: figure out the standard way of getting this
 
 pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
 
-    let zome_name = zome_path.components().last().unwrap().as_os_str();
+    let zome_name = zome_path.components().last().unwrap().as_os_str().to_str().unwrap();
 
     // match against all supported templates
     let url = match scaffold.as_ref() {
-        "rust" => {
-            RUST_TEMPLATE_REPO_URL
-        },
+        "rust" => RUST_TEMPLATE_REPO_URL,
+        "rust-proc" => RUST_PROC_TEMPLATE_REPO_URL,
         _ => scaffold, // if not a known type assume that a repo url was passed
     };
 
@@ -42,7 +42,6 @@ pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
 }
 
 fn apply_template_substitution(root_path: &PathBuf, context: Context) -> DefaultResult<()> {
-    // apply the template substitution
     let zome_name_component = root_path.components().last().unwrap();
     let template_glob: PathBuf = [root_path, &PathBuf::from("**/*")].iter().collect();
     let templater = Tera::new(template_glob.to_str().unwrap()).unwrap();

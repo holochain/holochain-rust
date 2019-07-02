@@ -27,7 +27,7 @@ use hdk::{
        json::JsonString,
        error::JsonError
     },
-    holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions}
+    holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions,GetLinksResultCount}
 };
 
 
@@ -125,7 +125,7 @@ pub mod simple {
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_my_links_count(base: Address,status_request : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResult>
+    pub fn get_my_links_count(base: Address,status_request : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResultCount>
     {
         let options = GetLinksOptions{
             status_request : status_request.unwrap_or(LinksStatusRequestKind::All),

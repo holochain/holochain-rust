@@ -213,6 +213,14 @@ Emits a signal that a can be subscribed to by various clients.
 
 Read more about [Signals](emitting_signals.html)
 
+### Entry Type Properties
+
+Canonical name: `entry_type_properties`
+
+Retrieve the properties that were specified when a given entry was defined.
+
+[View it in the Rust HDK](https://developer.holochain.org/api/0.0.18-alpha1/hdk/api/fn.entry_type_properties.html)
+
 ### Start Bundle
 
 Canonical name: `start_bundle`

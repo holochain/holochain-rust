@@ -74,6 +74,15 @@ pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequ
     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
 }
 
+pub fn handle_get_my_links_count(agent : Address,status_request:Option<LinksStatusRequestKind>) ->ZomeApiResult<GetLinksResult>
+{
+    let options = GetLinksOptions{
+        status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
+        ..GetLinksOptions::default()
+    };
+    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
+}
+
 pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
     #[derive(Debug, Serialize, Deserialize, DefaultJson)]
     struct SignalPayload {
@@ -149,6 +158,11 @@ define_zome! {
             inputs: |base: Address,status_request:Option<LinksStatusRequestKind>|,
             outputs: |result: ZomeApiResult<GetLinksResult>|,
             handler: handle_get_my_links
+        }
+        get_my_links_count: {
+            inputs: |base: Address,status_request:Option<LinksStatusRequestKind>|,
+            outputs: |result: ZomeApiResult<GetLinksResult>|,
+            handler: handle_get_my_links_count
         }
         encrypt :{
             inputs : |payload: String|,

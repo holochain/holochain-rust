@@ -50,7 +50,7 @@ pub use self::{
     encrypt::encrypt,
     entry_address::entry_address,
     get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
-    get_links::{get_links, get_links_and_load, get_links_result, get_links_with_options},
+    get_links::{get_links, get_links_and_load, get_links_result, get_links_with_options,get_links_count_with_options,get_links_count},
     keystore::{
         keystore_derive_key, keystore_derive_seed, keystore_get_public_key, keystore_list,
         keystore_new_random, keystore_sign,
@@ -176,6 +176,7 @@ def_api_fns! {
     hc_link_entries, LinkEntries;
     hc_remove_link, RemoveLink;
     hc_get_links, GetLinks;
+    hc_get_links_count,GetLinksCount;
     hc_sleep, Sleep;
     hc_keystore_list, KeystoreList;
     hc_keystore_new_random, KeystoreNewRandom;

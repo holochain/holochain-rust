@@ -34,3 +34,5 @@ pub fn invoke_get_links_count(runtime: &mut Runtime, args: &RuntimeArgs) -> Zome
 
     runtime.store_result(result)
 }
+
+

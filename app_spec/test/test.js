@@ -853,6 +853,64 @@ scenario('get_links_crud', async (s, t, { alice, bob }) => {
 
 })
 
+scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
+
+  //commits an entry and creates two links for alice
+  await alice.callSync("simple", "create_link",
+    { "base": alice.agentId ,"target": "Holo world" }
+  );
+  const alice_result = await alice.callSync("simple", "create_link",
+  { "base": alice.agentId ,"target": "Holo world 2" }
+  );
+
+  //get posts for alice from alice
+  const alice_posts_live= await alice.call("simple","get_my_links_count",
+  {
+    "base" : alice.agentId,"status_request":"Live"
+  })
+
+  //get posts for alice from bob
+  const bob_posts_live= await bob.call("simple","get_my_links_count",
+  {
+    "base" : alice.agentId,
+    "status_request":"Live"
+  })
+
+  //make sure all our links are live and they are two of them
+  t.equal(2,alice_posts_live.Ok.count);
+  t.equal(2,bob_posts_live.Ok.links.count);
+
+
+  ////delete the holo world post from the links alice created
+  await alice.callSync("simple","delete_link",
+  {
+    "base" : alice.agentId,
+    "target" : "Holo world"
+  });
+
+  //get all posts with a deleted status from bob
+  const bob_posts_deleted = await bob.call("simple","get_my_links_count",
+  {
+    "base" : alice.agentId,
+    "status_request" : "Deleted"
+  });
+
+  // get all posts with a deleted status from alice
+  const alice_posts_deleted = await alice.call("simple","get_my_links_count",
+  {
+    "base" : alice.agentId,
+    "status_request" : "Deleted"
+  });
+
+  //make sure only 1 is returned and it has a status of deleted
+  t.equal(1,alice_posts_deleted.Ok.count);
+  t.equal(1,bob_posts_deleted.Ok.count);
+
+
+
+
+})
+
 scenario('create/get_post roundtrip', async (s, t, { alice }) => {
   const content = "Holo world"
   const in_reply_to = null

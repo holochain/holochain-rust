@@ -125,6 +125,16 @@ pub mod simple {
     }
 
     #[zome_fn("hc_public")]
+    pub fn get_my_links_count(base: Address,status_request : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResult>
+    {
+        let options = GetLinksOptions{
+            status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
+            ..GetLinksOptions::default()
+        };
+        hdk::get_links_with_count_options(&base, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
+    }
+
+    #[zome_fn("hc_public")]
     pub fn test_emit_signal(message: String) -> ZomeApiResult<()> {
         #[derive(Debug, Serialize, Deserialize, DefaultJson)]
         struct SignalPayload {

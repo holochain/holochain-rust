@@ -6,7 +6,7 @@ use holochain_persistence_api::cas::content::Address;
 pub enum NetworkQuery {
     GetEntry,
     GetLinks(String, String),
-    GetLinksCount(String,String)
+    GetLinksCount(String,String,Option<CrudStatus>)
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]

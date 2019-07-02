@@ -17,12 +17,13 @@ fn get_links(
     base: Address,
     link_type: String,
     tag: String,
+    crud_status : Option<CrudStatus>
 ) -> Vec<(Address, CrudStatus)> {
     context
         .state()
         .unwrap()
         .dht()
-        .get_links(base, link_type, tag)
+        .get_links(base, link_type, tag,crud_status)
         .unwrap_or(BTreeSet::new())
         .into_iter()
         .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
@@ -75,6 +76,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 query_data.entry_address.clone(),
                 link_type.clone(),
                 tag.clone(),
+                None
             );
             ActionWrapper::new(Action::RespondGetLinks((
                 query_data,
@@ -83,9 +85,9 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 tag.clone(),
             )))
         },
-        Ok(NetworkQuery::GetLinksCount(link_type,tag)) =>
+        Ok(NetworkQuery::GetLinksCount(link_type,tag,crud)) =>
         {
-            let links_count = get_links(&context,query_data.entry_address.clone(),link_type.clone(),tag.clone()).len();
+            let links_count = get_links(&context,query_data.entry_address.clone(),link_type.clone(),tag.clone(),crud.clone()).len();
             ActionWrapper::new(Action::RespondGetLinksCount((query_data,links_count,link_type.clone(),tag.clone())))
         },
         Ok(NetworkQuery::GetEntry) => {

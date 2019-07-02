@@ -10,7 +10,7 @@ pub async fn get_link_result_count_workflow<'a>(
     context: Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResultCount, HolochainError> {
-    let links_count = await!(get_links_count(context, link_args.entry_address.clone(),link_args.link_type.clone(),link_args.tag.clone(),link_args.options.timeout.clone()))?;
+    let links_count = await!(get_links_count(context, link_args.entry_address.clone(),link_args.link_type.clone(),link_args.tag.clone(),link_args.options.timeout.clone(),link_args.options.status_request.clone()))?;
     //get links based on status request, all for everything, deleted for deleted links and live for active links
 
 

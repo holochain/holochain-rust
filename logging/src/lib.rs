@@ -33,7 +33,7 @@ impl FastLogger {
     }
 
     /// Returns the color of a log message if the logger should log it, and None other wise.
-    pub fn should_log(&self, args: &str) -> Option<String> {
+    pub fn should_log_in(&self, args: &str) -> Option<String> {
         if self.tag_filters.len() < 1 {
             return Some(String::default());
         } else {
@@ -74,7 +74,7 @@ impl log::Log for FastLogger {
     /// of formatting and printing the log message.
     fn log(&self, record: &Record) {
         let args = record.args().to_string();
-        let should_log = self.should_log(&args);
+        let should_log = self.should_log_in(&args);
 
         if self.enabled(record.metadata()) && should_log != None {
             let msg = LogMessage {
@@ -84,7 +84,8 @@ impl log::Log for FastLogger {
                 level: self.level_colors.color(record.level()).to_string(),
                 thread_name: std::thread::current()
                     .name()
-                    .unwrap_or("Thread-name")
+                    // .unwrap_or("Thread-name")
+                    .unwrap_or("Anonymous thread")
                     .to_string(),
                 color: should_log,
             };
@@ -125,7 +126,6 @@ impl FastLoggerBuilder {
     }
 
     pub fn set_level_from_str(&mut self, level: &str) -> &mut Self {
-        use std::str::FromStr;
         self.level = Level::from_str(level).unwrap_or_else(|_| {
             eprintln!("Fail to parse the logging level from string: '{}'.", level);
             Level::Info
@@ -207,9 +207,13 @@ trait LogMessageTrait: Send {
 /// from the OS.
 impl LogMessageTrait for LogMessage {
     fn build(&self) -> String {
-        // Let's colorise our logging messages
+        // Let's colorize our logging messages
         let msg_color = match &self.color {
-            Some(color) => color,
+            Some(color) => {
+                if color.len() == 0 {
+                    pick_color(&self.module)
+                } else { color }
+            },
             None => pick_color(&self.module),
         };
 
@@ -218,8 +222,8 @@ impl LogMessageTrait for LogMessage {
             args = self.args.color(msg_color),
             module = self.module,
             line = self.line,
-            // We might considere retrieving the timestamp oince and proceed logging
-            // in batch in the future, if this end up being performance critical
+            // We might considere retrieving the timestamp once and proceed logging
+            // in batch in the future, if this ends up being performance critical
             timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.6f"),
             level = self.level,
             thread_name = self.thread_name,
@@ -278,17 +282,17 @@ fn should_log_test() {
         .build()
         .unwrap();
 
-    assert_eq!(logger.should_log("bar"), Some(String::from("")));
+    assert_eq!(logger.should_log_in("bar"), Some(String::from("")));
 
-    assert_eq!(logger.should_log("xfooy"), Some(String::from("Blue")));
+    assert_eq!(logger.should_log_in("xfooy"), Some(String::from("Blue")));
 
     // rule to reject anything with baz
     logger.add_tag_filter(TagFilter::new("baz", true, "White"));
     // rule to accept anything with b
     logger.add_tag_filter(TagFilter::new("b", false, "Green"));
 
-    assert_eq!(logger.should_log("baz"), None);
-    assert_eq!(logger.should_log("xboy"), Some(String::from("Green")));
+    assert_eq!(logger.should_log_in("baz"), None);
+    assert_eq!(logger.should_log_in("xboy"), Some(String::from("Green")));
 }
 
 #[test]

@@ -1,6 +1,7 @@
 pub mod custom_send;
 pub mod get_entry;
 pub mod get_links;
+pub mod get_links_count;
 pub mod get_validation_package;
 pub mod initialize_network;
 pub mod publish;
@@ -14,4 +15,5 @@ pub enum ActionResponse {
     RespondGet(HcResult<()>),
     RespondFetch(HcResult<()>),
     RespondGetLinks(HcResult<()>),
+    RespondGetLinksCount(HcResult<()>)
 }

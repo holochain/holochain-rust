@@ -157,7 +157,9 @@ pub enum Action {
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
+    GetLinksCount(GetLinksKey),
     RespondGetLinks((QueryEntryData, Vec<(Address, CrudStatus)>, String, String)),
+    RespondGetLinksCount((QueryEntryData, usize, String, String)),
     HandleGetLinksResult((Vec<(Address, CrudStatus)>, GetLinksKey)),
 
     /// Makes the network module send a direct (node-to-node) message

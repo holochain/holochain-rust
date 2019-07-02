@@ -30,6 +30,8 @@ type GetEntryWithMetaResult = Option<Result<Option<EntryWithMetaAndHeader>, Holo
 /// Some(Ok(_)): we got the list of links
 type GetLinksResult = Option<Result<Vec<(Address, CrudStatus)>, HolochainError>>;
 
+type GetLinksResultCount = Option<Result<i64, HolochainError>>;
+
 /// This represents the state of a get_validation_package network process:
 /// None: process started, but no response yet from the network
 /// Some(Err(_)): there was a problem at some point
@@ -58,6 +60,8 @@ pub struct NetworkState {
     /// links of any tag/type
     /// None means that we are still waiting for a result from the network.
     pub get_links_results: HashMap<GetLinksKey, GetLinksResult>,
+
+    pub get_links_results_count : HashMap<GetLinksKey,GetLinksResultCount>,
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
@@ -88,6 +92,7 @@ impl NetworkState {
 
             get_entry_with_meta_results: HashMap::new(),
             get_links_results: HashMap::new(),
+            get_links_results_count : HashMap::new(),
             get_validation_package_results: HashMap::new(),
             direct_message_connections: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),

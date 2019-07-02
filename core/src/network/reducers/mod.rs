@@ -3,6 +3,7 @@ pub mod get_links;
 pub mod get_validation_package;
 pub mod handle_custom_send_response;
 pub mod handle_get_links_result;
+pub mod respond_get_links_count;
 pub mod handle_get_result;
 pub mod handle_get_validation_package;
 pub mod init;
@@ -31,6 +32,7 @@ use crate::{
             respond_fetch::reduce_respond_fetch_data,
             respond_get::reduce_respond_get,
             respond_get_links::reduce_respond_get_links,
+            respond_get_links_count::reduce_respond_get_links_count,
             send_direct_message::{reduce_send_direct_message, reduce_send_direct_message_timeout},
         },
         state::NetworkState,
@@ -65,6 +67,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::RespondFetch(_) => Some(reduce_respond_fetch_data),
         Action::RespondGet(_) => Some(reduce_respond_get),
         Action::RespondGetLinks(_) => Some(reduce_respond_get_links),
+        Action::RespondGetLinksCount(_) => Some(reduce_respond_get_links_count),
         Action::SendDirectMessage(_) => Some(reduce_send_direct_message),
         Action::SendDirectMessageTimeout(_) => Some(reduce_send_direct_message_timeout),
         _ => None,

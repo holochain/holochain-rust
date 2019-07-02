@@ -82,7 +82,12 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 link_type.clone(),
                 tag.clone(),
             )))
-        }
+        },
+        Ok(NetworkQuery::GetLinksCount(link_type,tag)) =>
+        {
+            let links_count = get_links(&context,query_data.entry_address.clone(),link_type.clone(),tag.clone()).len();
+            ActionWrapper::new(Action::RespondGetLinksCount((query_data,links_count,link_type.clone(),tag.clone())))
+        },
         Ok(NetworkQuery::GetEntry) => {
             let maybe_entry = get_entry(&context, query_data.entry_address.clone());
             ActionWrapper::new(Action::RespondGet((query_data, maybe_entry)))

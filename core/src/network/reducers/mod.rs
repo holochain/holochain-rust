@@ -3,6 +3,7 @@ pub mod get_links;
 pub mod get_validation_package;
 pub mod handle_custom_send_response;
 pub mod handle_get_links_result;
+pub mod handle_get_links_result_count;
 pub mod respond_get_links_count;
 pub mod handle_get_result;
 pub mod handle_get_validation_package;
@@ -24,6 +25,7 @@ use crate::{
             get_validation_package::reduce_get_validation_package,
             handle_custom_send_response::reduce_handle_custom_send_response,
             handle_get_links_result::reduce_handle_get_links_result,
+            handle_get_links_result_count::reduce_handle_get_links_count,
             handle_get_result::reduce_handle_get_result,
             handle_get_validation_package::reduce_handle_get_validation_package,
             init::reduce_init,
@@ -61,6 +63,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::HandleGetResult(_) => Some(reduce_handle_get_result),
         Action::HandleGetLinksResult(_) => Some(reduce_handle_get_links_result),
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
+        Action::HandleGetLinksResultCount(_) => Some(reduce_handle_get_links_count),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),
         Action::ResolveDirectConnection(_) => Some(reduce_resolve_direct_connection),

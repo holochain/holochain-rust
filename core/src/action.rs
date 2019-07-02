@@ -161,6 +161,7 @@ pub enum Action {
     RespondGetLinks((QueryEntryData, Vec<(Address, CrudStatus)>, String, String)),
     RespondGetLinksCount((QueryEntryData, usize, String, String)),
     HandleGetLinksResult((Vec<(Address, CrudStatus)>, GetLinksKey)),
+    HandleGetLinksResultCount((usize, GetLinksKey)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)

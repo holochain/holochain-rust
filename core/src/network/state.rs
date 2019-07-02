@@ -30,7 +30,7 @@ type GetEntryWithMetaResult = Option<Result<Option<EntryWithMetaAndHeader>, Holo
 /// Some(Ok(_)): we got the list of links
 type GetLinksResult = Option<Result<Vec<(Address, CrudStatus)>, HolochainError>>;
 
-type GetLinksResultCount = Option<Result<i64, HolochainError>>;
+type GetLinksResultCount = Option<Result<usize, HolochainError>>;
 
 /// This represents the state of a get_validation_package network process:
 /// None: process started, but no response yet from the network

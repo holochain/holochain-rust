@@ -21,7 +21,7 @@ pub async fn get_links(
     link_type: String,
     tag: String,
     timeout: Timeout,
-) -> HcResult<i64> {
+) -> HcResult<usize> {
     let key = GetLinksKey {
         base_address: address.clone(),
         link_type: link_type.clone(),
@@ -53,7 +53,7 @@ pub struct GetLinksCountFuture {
 }
 
 impl Future for GetLinksCountFuture {
-    type Output = HcResult<i64>;
+    type Output = HcResult<usize>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         let state = self.context.state().unwrap().network();

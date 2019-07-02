@@ -31,3 +31,4 @@ glob = "=0.3.0"
 
 [dev-dependencies]
 tempfile = "=3.0.7"
+assert_cmd = "=0.10.2"

@@ -95,10 +95,27 @@ impl Packager {
             .map(|e| e.path().to_path_buf())
             .collect();
 
-        let maybe_json_file_path = root
+        let root_json_files: Vec<&PathBuf> = root
             .iter()
             .filter(|e| e.is_file())
-            .find(|e| e.to_string_lossy().ends_with(".json"));
+            .filter(|e| e.to_string_lossy().ends_with(".json"))
+            .collect();
+
+        let mut meta_section = Object::new();
+
+        let maybe_json_file_path = match root_json_files.len() {
+            0 => {
+                // A root json file is optional so can still package the dna
+                None
+            }
+            1 => Some(root_json_files[0]),
+            _ => {
+                // more than one .json file is ambiguous so present an error
+                return Err (format_err!("Error Packaging DNA: Multiple files with extension .json were found in the root of the project, {:?}.\
+                    This is ambiguous as the packager is unable to tell which should be used as the base for the .dna.json", root_json_files)
+                );
+            }
+        };
 
         // Scan files but discard found json file
         let all_nodes = root.iter().filter(|node_path| {
@@ -106,8 +123,6 @@ impl Packager {
                 .and_then(|path| Some(node_path != &path))
                 .unwrap_or(true)
         });
-
-        let mut meta_section = Object::new();
 
         // Obtain the config file
         let mut main_tree: Object = if let Some(json_file_path) = maybe_json_file_path {
@@ -301,9 +316,10 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
 // too slow!
 #[cfg(feature = "broken-tests")]
 mod tests {
+    use super::*;
     use crate::cli::init::tests::gen_dir;
     use assert_cmd::prelude::*;
-    use std::process::Command;
+    use std::{path::PathBuf, process::Command};
 
     #[test]
     fn package_and_unpack_isolated() {
@@ -352,6 +368,33 @@ mod tests {
         unpack(&shared_space.path().to_path_buf());
 
         shared_space.close().unwrap();
+    }
+
+    #[test]
+    fn aborts_if_multiple_json_in_root() {
+        let shared_space = gen_dir();
+
+        let root_path = shared_space.path().to_path_buf();
+
+        fs::create_dir_all(&root_path).unwrap();
+
+        // Initialize and package a project
+        Command::main_binary()
+            .unwrap()
+            .args(&["init", root_path.to_str().unwrap()])
+            .assert()
+            .success();
+
+        // copy the json
+        fs::copy(root_path.join("app.json"), root_path.join("app2.json")).unwrap();
+
+        // ensure the package command fails
+        Command::main_binary()
+            .unwrap()
+            .args(&["package"])
+            .current_dir(&root_path)
+            .assert()
+            .failure();
     }
 
     #[test]
@@ -407,19 +450,23 @@ mod tests {
 
     #[test]
     fn auto_compilation() {
-        let tmp = gen_dir();
+        let shared_space = gen_dir();
+
+        let root_path = shared_space.path().to_path_buf();
+
+        fs::create_dir_all(&root_path).unwrap();
 
         Command::main_binary()
             .unwrap()
-            .current_dir(&tmp.path())
-            .args(&["init", "."])
+            .current_dir(&root_path)
+            .args(&["init", root_path.to_str().unwrap()])
             .assert()
             .success();
 
         Command::main_binary()
             .unwrap()
-            .current_dir(&tmp.path())
-            .args(&["g", "zomes/bubblechat", "rust"])
+            .current_dir(&root_path)
+            .args(&["generate", "zomes/bubblechat", "rust"])
             .assert()
             .success();
 
@@ -434,7 +481,7 @@ mod tests {
 
         Command::main_binary()
             .unwrap()
-            .current_dir(&tmp.path())
+            .current_dir(&shared_space.path())
             .args(&["package"])
             .assert()
             .success();

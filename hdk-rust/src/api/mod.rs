@@ -27,6 +27,7 @@ mod decrypt;
 mod emit_signal;
 mod encrypt;
 mod entry_address;
+mod entry_type_properties;
 mod get_entry;
 mod get_links;
 mod keystore;
@@ -49,6 +50,7 @@ pub use self::{
     emit_signal::emit_signal,
     encrypt::encrypt,
     entry_address::entry_address,
+    entry_type_properties::entry_type_properties,
     get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
     get_links::{
         get_links, get_links_and_load, get_links_count, get_links_count_with_options,

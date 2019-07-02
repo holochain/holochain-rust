@@ -64,15 +64,15 @@ pub fn get_links_with_options(
 /// # use holochain_json_api::json::JsonString;
 /// # use holochain_persistence_api::cas::content::Address;
 /// # use hdk::error::ZomeApiResult;
-/// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, GetLinksOptions};
+/// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResultCount, GetLinksOptions};
 /// # use holochain_core_types::link::LinkMatch;
 ///
 /// # fn main() {
-/// pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResultCount> {
+/// pub fn handle_posts_count_by_agent(agent: Address) -> ZomeApiResult<GetLinksResultCount> {
 ///     hdk::get_links_count_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any, GetLinksOptions::default())
 /// }
 /// # }
-/// `
+/// ```
 pub fn get_links_count_with_options(
     base: &Address,
     link_type: LinkMatch<&str>,

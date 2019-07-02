@@ -859,6 +859,7 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
   await alice.callSync("simple", "create_link",
     { "base": alice.agentId ,"target": "Holo world" }
   );
+  
   const alice_result = await alice.callSync("simple", "create_link",
   { "base": alice.agentId ,"target": "Holo world 2" }
   );
@@ -876,9 +877,10 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
     "status_request":"Live"
   })
 
-  //make sure all our links are live and they are two of them
+
+  //make sure count equals to 2
   t.equal(2,alice_posts_live.Ok.count);
-  t.equal(2,bob_posts_live.Ok.links.count);
+  t.equal(2,bob_posts_live.Ok.count);
 
 
   ////delete the holo world post from the links alice created
@@ -888,7 +890,7 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
     "target" : "Holo world"
   });
 
-  //get all posts with a deleted status from bob
+  //get all bob posts
   const bob_posts_deleted = await bob.call("simple","get_my_links_count",
   {
     "base" : alice.agentId,
@@ -902,7 +904,7 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
     "status_request" : "Deleted"
   });
 
-  //make sure only 1 is returned and it has a status of deleted
+  //make sure  it is equal to 1
   t.equal(1,alice_posts_deleted.Ok.count);
   t.equal(1,bob_posts_deleted.Ok.count);
 

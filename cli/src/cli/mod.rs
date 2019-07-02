@@ -4,7 +4,6 @@ mod init;
 mod keygen;
 pub mod package;
 mod run;
-mod scaffold;
 pub mod test;
 
 pub use self::{

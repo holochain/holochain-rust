@@ -15,7 +15,6 @@ use std::{
     sync::Arc,
 };
 
-pub const CODE_DIR_NAME: &str = "code";
 
 pub const BUILD_CONFIG_FILE_NAME: &str = ".hcbuild";
 

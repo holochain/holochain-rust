@@ -1,79 +1,31 @@
 use crate::{
-    cli::{
-        package::CODE_DIR_NAME,
-        scaffold::{self, Scaffold},
-    },
     error::DefaultResult,
-    util,
 };
-use serde_json;
 use std::{
-    fs::{self, File},
     path::PathBuf,
 };
+use git2::Repository;
 
-pub const ZOME_CONFIG_FILE_NAME: &str = "zome.json";
+const RUST_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-zome-template";
 
-pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
-    if !zome_name.exists() {
-        fs::create_dir_all(&zome_name)?;
-    }
 
-    ensure!(
-        zome_name.is_dir(),
-        "argument \"zome_name\" doesn't point to a directory"
-    );
+pub fn generate(zome_name: &PathBuf, scaffold: &String) -> DefaultResult<()> {
 
-    let file_name = util::file_name_string(&zome_name)?;
-
-    let zome_config_json = json! {
-        {
-            "description": format!("The {} App", file_name)
-        }
+    // match against all supported templates
+    let url = match scaffold.as_ref() {
+        "rust" => {
+            RUST_TEMPLATE_REPO_URL
+        },
+        _ => scaffold, // if not a known type assume that a repo url was passed
     };
 
-    let file = File::create(zome_name.join(ZOME_CONFIG_FILE_NAME))?;
-    serde_json::to_writer_pretty(file, &zome_config_json)?;
+    Repository::clone(url, zome_name)?;
 
-    let code_dir = zome_name.join(CODE_DIR_NAME);
-    fs::create_dir_all(&code_dir)?;
-    let zome_name_string = zome_name
-        .to_str()
-        .expect("Invalid zome path given")
-        .to_string()
-        .replace("/", "_")
-        .replace("zomes_", "");
-
-    // match against all supported languages
-    match language {
-        "rust" => scaffold(
-            &scaffold::rust::RustScaffold::new(
-                &zome_name_string,
-                scaffold::rust::HdkMacroStyle::Declarative,
-            ),
-            code_dir,
-        )?,
-        "rust-proc" => scaffold(
-            &scaffold::rust::RustScaffold::new(
-                &zome_name_string,
-                scaffold::rust::HdkMacroStyle::Procedural,
-            ),
-            code_dir,
-        )?,
-        "assemblyscript" => scaffold(
-            &scaffold::assemblyscript::AssemblyScriptScaffold::new(),
-            code_dir,
-        )?,
-        // TODO: supply zome name for AssemblyScriptScaffold as well
-        _ => bail!("unsupported language: {}", language),
-    }
+    // apply the template substitution
 
     Ok(())
 }
 
-fn scaffold<S: Scaffold>(tooling: &S, base_path: PathBuf) -> DefaultResult<()> {
-    tooling.gen(base_path)
-}
 
 #[cfg(test)]
 // too slow!

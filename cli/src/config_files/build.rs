@@ -24,13 +24,13 @@ impl Build {
         Ok(build)
     }
 
-    pub fn save_as<T: AsRef<Path>>(&self, path: T) -> DefaultResult<()> {
-        let file = File::create(path)?;
+    // pub fn save_as<T: AsRef<Path>>(&self, path: T) -> DefaultResult<()> {
+    //     let file = File::create(path)?;
 
-        serde_json::to_writer_pretty(file, self)?;
+    //     serde_json::to_writer_pretty(file, self)?;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     /// Starts the build using the supplied build steps and returns the contents of the artifact
     pub fn run(&self, base_path: &PathBuf) -> DefaultResult<String> {
@@ -54,24 +54,24 @@ impl Build {
         }
     }
 
-    pub fn with_artifact<P: Into<PathBuf>>(artifact: P) -> Build {
-        let path: PathBuf = artifact.into();
+    // pub fn with_artifact<P: Into<PathBuf>>(artifact: P) -> Build {
+    //     let path: PathBuf = artifact.into();
 
-        Build {
-            steps: HashMap::new(),
-            artifact: path,
-        }
-    }
+    //     Build {
+    //         steps: HashMap::new(),
+    //         artifact: path,
+    //     }
+    // }
 
-    pub fn cmd(mut self, cmd: &str, args: &[&str]) -> Build {
-        let cmd: String = cmd.to_owned();
-        let args = args
-            .to_vec()
-            .iter()
-            .map(|raw_arg| raw_arg.to_string())
-            .collect();
+    // pub fn cmd(mut self, cmd: &str, args: &[&str]) -> Build {
+    //     let cmd: String = cmd.to_owned();
+    //     let args = args
+    //         .to_vec()
+    //         .iter()
+    //         .map(|raw_arg| raw_arg.to_string())
+    //         .collect();
 
-        self.steps.insert(cmd, args);
-        self
-    }
+    //     self.steps.insert(cmd, args);
+    //     self
+    // }
 }

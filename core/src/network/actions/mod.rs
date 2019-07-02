@@ -15,5 +15,5 @@ pub enum ActionResponse {
     RespondGet(HcResult<()>),
     RespondFetch(HcResult<()>),
     RespondGetLinks(HcResult<()>),
-    RespondGetLinksCount(HcResult<()>)
+    RespondGetLinksCount(HcResult<()>),
 }

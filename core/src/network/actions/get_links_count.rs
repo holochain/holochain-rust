@@ -7,11 +7,11 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{error::HcResult, time::Timeout,crud_status::CrudStatus};
+use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeout};
 use holochain_persistence_api::cas::content::Address;
+use holochain_wasm_utils::api_serialization::get_links::LinksStatusRequestKind;
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};
-use holochain_wasm_utils::api_serialization::get_links::LinksStatusRequestKind;
 
 /// GetLinks Action Creator
 /// This is the network version of get_links that makes the network module start
@@ -22,7 +22,7 @@ pub async fn get_links_count(
     link_type: String,
     tag: String,
     timeout: Timeout,
-    link_status_request : LinksStatusRequestKind
+    link_status_request: LinksStatusRequestKind,
 ) -> HcResult<usize> {
     let key = GetLinksKey {
         base_address: address.clone(),
@@ -31,13 +31,12 @@ pub async fn get_links_count(
         id: ProcessUniqueId::new().to_string(),
     };
 
-    let crud_status = match link_status_request
-    {
+    let crud_status = match link_status_request {
         LinksStatusRequestKind::All => None,
         LinksStatusRequestKind::Live => Some(CrudStatus::Live),
-        LinksStatusRequestKind::Deleted => Some(CrudStatus::Deleted)
+        LinksStatusRequestKind::Deleted => Some(CrudStatus::Deleted),
     };
-    let action_wrapper = ActionWrapper::new(Action::GetLinksCount((key.clone(),crud_status)));
+    let action_wrapper = ActionWrapper::new(Action::GetLinksCount((key.clone(), crud_status)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let key_inner = key.clone();

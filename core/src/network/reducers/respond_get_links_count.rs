@@ -11,7 +11,6 @@ use holochain_net::connection::json_protocol::{
     JsonProtocol, QueryEntryData, QueryEntryResultData,
 };
 
-
 /// Send back to network a HandleQueryEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
 fn reduce_respond_get_links_count_inner(

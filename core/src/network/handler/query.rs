@@ -17,13 +17,13 @@ fn get_links(
     base: Address,
     link_type: String,
     tag: String,
-    crud_status : Option<CrudStatus>
+    crud_status: Option<CrudStatus>,
 ) -> Vec<(Address, CrudStatus)> {
     context
         .state()
         .unwrap()
         .dht()
-        .get_links(base, link_type, tag,crud_status)
+        .get_links(base, link_type, tag, crud_status)
         .unwrap_or(BTreeSet::new())
         .into_iter()
         .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
@@ -76,7 +76,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 query_data.entry_address.clone(),
                 link_type.clone(),
                 tag.clone(),
-                None
+                None,
             );
             ActionWrapper::new(Action::RespondGetLinks((
                 query_data,
@@ -84,12 +84,23 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 link_type.clone(),
                 tag.clone(),
             )))
-        },
-        Ok(NetworkQuery::GetLinksCount(link_type,tag,crud)) =>
-        {
-            let links_count = get_links(&context,query_data.entry_address.clone(),link_type.clone(),tag.clone(),crud.clone()).len();
-            ActionWrapper::new(Action::RespondGetLinksCount((query_data,links_count,link_type.clone(),tag.clone())))
-        },
+        }
+        Ok(NetworkQuery::GetLinksCount(link_type, tag, crud)) => {
+            let links_count = get_links(
+                &context,
+                query_data.entry_address.clone(),
+                link_type.clone(),
+                tag.clone(),
+                crud.clone(),
+            )
+            .len();
+            ActionWrapper::new(Action::RespondGetLinksCount((
+                query_data,
+                links_count,
+                link_type.clone(),
+                tag.clone(),
+            )))
+        }
         Ok(NetworkQuery::GetEntry) => {
             let maybe_entry = get_entry(&context, query_data.entry_address.clone());
             ActionWrapper::new(Action::RespondGet((query_data, maybe_entry)))
@@ -130,7 +141,7 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
                     id: query_result_data.request_id.clone(),
                 },
             )))
-        },
+        }
         Ok(NetworkQueryResult::LinksCount(links_count, link_type, tag)) => {
             ActionWrapper::new(Action::HandleGetLinksResultCount((
                 links_count,

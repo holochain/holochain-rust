@@ -6,8 +6,6 @@ use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
-
-
 pub fn invoke_get_links_count(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args
@@ -29,10 +27,7 @@ pub fn invoke_get_links_count(runtime: &mut Runtime, args: &RuntimeArgs) -> Zome
         }
     };
 
-    
     let result = context.block_on(get_link_result_count_workflow(context.clone(), &input));
 
     runtime.store_result(result)
 }
-
-

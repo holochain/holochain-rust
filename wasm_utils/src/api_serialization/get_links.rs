@@ -7,7 +7,7 @@ pub struct GetLinksArgs {
     pub entry_address: Address,
     pub link_type: String,
     pub tag: String,
-    pub options: GetLinksOptions
+    pub options: GetLinksOptions,
 }
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Eq, Hash)]
@@ -38,9 +38,6 @@ impl Default for GetLinksOptions {
     }
 }
 
-
-
-
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]
 pub struct LinksResult {
     pub address: Address,
@@ -56,7 +53,7 @@ pub struct GetLinksResult {
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]
 pub struct GetLinksResultCount {
-    pub count: usize
+    pub count: usize,
 }
 
 impl GetLinksResult {

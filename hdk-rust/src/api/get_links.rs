@@ -5,7 +5,7 @@ use holochain_core_types::{entry::Entry, link::LinkMatch};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultItem, GetEntryResultType},
-    get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult,GetLinksResultCount},
+    get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult, GetLinksResultCount},
 };
 
 /// Consumes four values; the address of an entry get get links from (the base), the type of the links

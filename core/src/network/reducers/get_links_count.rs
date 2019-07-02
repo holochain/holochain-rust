@@ -4,20 +4,19 @@ use crate::{
     state::State,
 };
 
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{crud_status::CrudStatus, error::HolochainError};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{JsonProtocol, QueryEntryData};
 use holochain_persistence_api::hash::HashString;
-use holochain_core_types::crud_status::CrudStatus;
 
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
     key: &GetLinksKey,
-    crud_status : Option<CrudStatus>
+    crud_status: Option<CrudStatus>,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
     let query_json: JsonString =
-        NetworkQuery::GetLinksCount(key.link_type.clone(), key.tag.clone(),crud_status).into();
+        NetworkQuery::GetLinksCount(key.link_type.clone(), key.tag.clone(), crud_status).into();
     send(
         network_state,
         JsonProtocol::QueryEntry(QueryEntryData {
@@ -36,9 +35,9 @@ pub fn reduce_get_links_count(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (key,crud) = unwrap_to!(action => crate::action::Action::GetLinksCount);
+    let (key, crud) = unwrap_to!(action => crate::action::Action::GetLinksCount);
 
-    let result = match reduce_get_links_inner(network_state, &key,crud.clone()) {
+    let result = match reduce_get_links_inner(network_state, &key, crud.clone()) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };
@@ -64,5 +63,3 @@ pub fn reduce_get_links_timeout(
             .insert(key.clone(), Some(Err(HolochainError::Timeout)));
     }
 }
-
-

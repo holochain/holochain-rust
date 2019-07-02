@@ -31,13 +31,10 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
 
-    
     let result = context.block_on(get_link_result_workflow(&context, &input));
 
     runtime.store_result(result)
 }
-
-
 
 #[cfg(test)]
 pub mod tests {

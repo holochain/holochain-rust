@@ -128,6 +128,17 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
                     id: query_result_data.request_id.clone(),
                 },
             )))
+        },
+        Ok(NetworkQueryResult::LinksCount(links_count, link_type, tag)) => {
+            ActionWrapper::new(Action::HandleGetLinksResultCount((
+                links_count,
+                GetLinksKey {
+                    base_address: query_result_data.entry_address.clone(),
+                    link_type: link_type.clone(),
+                    tag: tag.clone(),
+                    id: query_result_data.request_id.clone(),
+                },
+            )))
         }
         err => {
             context.log(format!(

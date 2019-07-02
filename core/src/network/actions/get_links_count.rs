@@ -15,7 +15,7 @@ use std::{pin::Pin, sync::Arc, thread};
 /// GetLinks Action Creator
 /// This is the network version of get_links that makes the network module start
 /// a look-up process.
-pub async fn get_links(
+pub async fn get_links_count(
     context: Arc<Context>,
     address: Address,
     link_type: String,

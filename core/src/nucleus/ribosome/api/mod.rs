@@ -8,6 +8,7 @@ pub mod emit_signal;
 pub mod entry_address;
 pub mod get_entry;
 pub mod get_links;
+pub mod get_links_count;
 pub mod init_globals;
 pub mod link_entries;
 #[macro_use]

@@ -121,23 +121,31 @@ pub async fn build_validation_package<'a>(
                     _ => unreachable!(),
                 })
                 .and_then(|package_definition| {
+                    let top_header = context.state().unwrap().agent().top_chain_header();
+
                     Ok(match package_definition {
                         Entry => ValidationPackage::only_header(entry_header),
                         ChainEntries => {
                             let mut package = ValidationPackage::only_header(entry_header);
                             // What if we make another function all_public_chain_entries_as_of(entry) which returns the local chain up to and not including the given entry?
-                            package.source_chain_entries = Some(all_public_chain_entries(&context));
+                            package.source_chain_entries = Some(
+                                all_public_chain_entries_before_header(&context, &top_header),
+                            );
                             package
                         }
                         ChainHeaders => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_headers = Some(all_chain_headers(&context));
+                            package.source_chain_headers =
+                                Some(all_chain_headers_before_header(&context, &top_header));
                             package
                         }
                         ChainFull => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_entries = Some(all_public_chain_entries(&context));
-                            package.source_chain_headers = Some(all_chain_headers(&context));
+                            package.source_chain_entries = Some(
+                                all_public_chain_entries_before_header(&context, &top_header),
+                            );
+                            package.source_chain_headers =
+                                Some(all_chain_headers_before_header(&context, &top_header));
                             package
                         }
                         Custom(string) => {
@@ -165,11 +173,14 @@ pub async fn build_validation_package<'a>(
     })
 }
 
-fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
+// Returns all the public entries in the local chain up to but not including the entry with the given header
+fn all_public_chain_entries_before_header(
+    context: &Arc<Context>,
+    top_header: &Option<ChainHeader>,
+) -> Vec<Entry> {
     let chain = context.state().unwrap().agent().chain_store();
-    let top_header = context.state().unwrap().agent().top_chain_header();
     chain
-        .iter(&top_header)
+        .iter(top_header)
         .filter(|ref chain_header| chain_header.entry_type().can_publish(context))
         .map(|chain_header| {
             let storage = chain.content_storage().clone();
@@ -183,10 +194,13 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
         .collect::<Vec<_>>()
 }
 
-fn all_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
+// Returns all the headers in the local chain up to but not including the given entry header
+fn all_chain_headers_before_header(
+    context: &Arc<Context>,
+    top_header: &Option<ChainHeader>,
+) -> Vec<ChainHeader> {
     let chain = context.state().unwrap().agent().chain_store();
-    let top_header = context.state().unwrap().agent().top_chain_header();
-    chain.iter(&top_header).collect()
+    chain.iter(top_header).collect()
 }
 
 /// ValidationPackageFuture resolves to the ValidationPackage or a HolochainError.

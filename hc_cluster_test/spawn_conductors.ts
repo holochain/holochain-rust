@@ -57,6 +57,7 @@ ${debugging ? '' : 'exclude = true'}
 ${debugging ? '': 'pattern = "^debug"'}
 
 [network]
+type = "n3h"
 n3h_log_level = "${debugging ? 'i' : 'e'}"
 bootstrap_nodes = []
 n3h_mode = "REAL"

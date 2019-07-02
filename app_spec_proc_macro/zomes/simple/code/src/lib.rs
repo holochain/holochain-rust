@@ -51,7 +51,7 @@ pub mod simple {
         links: [
             from!(
                 "%agent_id",
-                link_type: "authored_posts",
+                link_type: "authored_simple_posts",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
@@ -104,13 +104,13 @@ pub mod simple {
     pub fn create_link(base: Address,target : String) -> ZomeApiResult<()>
     {
         let address = hdk::commit_entry(&simple_entry(target))?;
-        hdk::link_entries(&base, &address, "authored_posts", "")?;
+        hdk::link_entries(&base, &address, "authored_simple_posts", "")?;
         Ok(())
     }
     #[zome_fn("hc_public")]
     pub fn delete_link(base: Address,target : String) -> ZomeApiResult<()> {
         let address = hdk::entry_address(&simple_entry(target))?;
-        hdk::remove_link(&base, &address, "authored_posts", "")?;
+        hdk::remove_link(&base, &address, "authored_simple_posts", "")?;
         Ok(())
     }
 
@@ -121,7 +121,7 @@ pub mod simple {
             status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
             ..GetLinksOptions::default()
         };
-        hdk::get_links_with_options(&base, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
+        hdk::get_links_with_options(&base, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
     }
 
     #[zome_fn("hc_public")]

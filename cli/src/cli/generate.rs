@@ -1,23 +1,22 @@
-use crate::{
-    error::DefaultResult,
-};
-use std::{
-    fs,
-    io::prelude::*,
-    path::PathBuf,
-};
+use crate::error::DefaultResult;
 use git2::Repository;
-use tera::{Tera, Context};
 use glob::glob;
+use std::{fs, io::prelude::*, path::PathBuf};
+use tera::{Context, Tera};
 
 const RUST_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-zome-template";
 const RUST_PROC_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-proc-zome-template";
 
-const HOLOCHAIN_VERSION: &str = "v0.0.21-alpha1"; // TODO: figure out the standard way of getting this
+const HOLOCHAIN_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
-
-    let zome_name = zome_path.components().last().unwrap().as_os_str().to_str().unwrap();
+    let zome_name = zome_path
+        .components()
+        .last()
+        .ok_or(format_err!("New zome path must have a target directory"))?
+        .as_os_str()
+        .to_str()
+        .ok_or(format_err!("Zome path contains invalid characters"))?;
 
     // match against all supported templates
     let url = match scaffold.as_ref() {
@@ -42,27 +41,42 @@ pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
 }
 
 fn apply_template_substitution(root_path: &PathBuf, context: Context) -> DefaultResult<()> {
-    let zome_name_component = root_path.components().last().unwrap();
-    let template_glob: PathBuf = [root_path, &PathBuf::from("**/*")].iter().collect();
-    let templater = Tera::new(template_glob.to_str().unwrap()).unwrap();
+    let zome_name_component = root_path
+        .components()
+        .last()
+        .ok_or(format_err!("New zome path must have a target directory"))?;
+    let template_glob_path: PathBuf = [root_path, &PathBuf::from("**/*")].iter().collect();
+    let template_glob = template_glob_path
+        .to_str()
+        .ok_or(format_err!("Zome path contains invalid characters"))?;
 
-    for entry in glob(template_glob.to_str().unwrap()).expect("Failed to read glob pattern") {
+    let templater =
+        Tera::new(template_glob).map_err(|_| format_err!("Could not load repo for templating"))?;
+
+    for entry in glob(template_glob).map_err(|_| format_err!("Failed to read glob pattern"))? {
         match entry {
             Ok(path) => {
                 if path.is_file() {
-                    let template_id: PathBuf = path.components().skip_while(|c| !(c==&zome_name_component)).skip(1).collect();
-                    let result = templater.render(template_id.to_str().unwrap(), &context).unwrap();
-                    let mut file = fs::OpenOptions::new().write(true).truncate(true).open(path)?;
+                    let template_id: PathBuf = path
+                        .components()
+                        .skip_while(|c| !(c == &zome_name_component))
+                        .skip(1)
+                        .collect();
+                    let result = templater
+                        .render(template_id.to_str().unwrap(), &context)
+                        .unwrap();
+                    let mut file = fs::OpenOptions::new()
+                        .write(true)
+                        .truncate(true)
+                        .open(path)?;
                     file.write(result.as_bytes())?;
                 }
-            },
+            }
             Err(e) => println!("{:?}", e),
         }
     }
-
     Ok(())
 }
-
 
 #[cfg(test)]
 // too slow!

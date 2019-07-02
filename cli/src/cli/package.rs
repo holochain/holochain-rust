@@ -15,7 +15,6 @@ use std::{
     sync::Arc,
 };
 
-
 pub const BUILD_CONFIG_FILE_NAME: &str = ".hcbuild";
 
 pub const GITIGNORE_FILE_NAME: &str = ".gitignore";

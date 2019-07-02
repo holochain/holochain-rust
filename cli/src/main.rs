@@ -18,11 +18,11 @@ extern crate colored;
 extern crate semver;
 #[macro_use]
 extern crate serde_json;
+extern crate git2;
+extern crate glob;
 extern crate ignore;
 extern crate rpassword;
-extern crate git2;
 extern crate tera;
-extern crate glob;
 
 mod cli;
 mod config_files;
@@ -80,7 +80,10 @@ enum Cli {
             parse(from_os_str)
         )]
         zome: PathBuf,
-        #[structopt(help = "Either the name of a build in template (rust, rust-proc) or the url to a git repo containing a zome template.", default_value = "rust")]
+        #[structopt(
+            help = "Either the name of a build in template (rust, rust-proc) or the url to a git repo containing a zome template.",
+            default_value = "rust"
+        )]
         template: String,
     },
     #[structopt(

@@ -21,6 +21,8 @@ extern crate serde_json;
 extern crate ignore;
 extern crate rpassword;
 extern crate git2;
+extern crate tera;
+extern crate glob;
 
 mod cli;
 mod config_files;

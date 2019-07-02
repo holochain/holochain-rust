@@ -2,14 +2,21 @@ use crate::{
     error::DefaultResult,
 };
 use std::{
+    fs,
+    io::prelude::*,
     path::PathBuf,
 };
 use git2::Repository;
+use tera::{Tera, Context};
+use glob::glob;
 
 const RUST_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-zome-template";
 
+const HOLOCHAIN_VERSION: &str = "v0.0.21-alpha1"; // TODO: figure out the standard way of getting this
 
-pub fn generate(zome_name: &PathBuf, scaffold: &String) -> DefaultResult<()> {
+pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
+
+    let zome_name = zome_path.components().last().unwrap().as_os_str();
 
     // match against all supported templates
     let url = match scaffold.as_ref() {
@@ -19,9 +26,40 @@ pub fn generate(zome_name: &PathBuf, scaffold: &String) -> DefaultResult<()> {
         _ => scaffold, // if not a known type assume that a repo url was passed
     };
 
-    Repository::clone(url, zome_name)?;
+    Repository::clone(url, zome_path)?;
 
+    // delete the .git directory
+    fs::remove_dir_all(zome_path.join(".git"))?;
+
+    let mut context = Context::new();
+    context.insert("name", &zome_name);
+    context.insert("author", &"hc-scaffold-framework");
+    context.insert("version", HOLOCHAIN_VERSION);
+
+    apply_template_substitution(zome_path, context)?;
+
+    Ok(())
+}
+
+fn apply_template_substitution(root_path: &PathBuf, context: Context) -> DefaultResult<()> {
     // apply the template substitution
+    let zome_name_component = root_path.components().last().unwrap();
+    let template_glob: PathBuf = [root_path, &PathBuf::from("**/*")].iter().collect();
+    let templater = Tera::new(template_glob.to_str().unwrap()).unwrap();
+
+    for entry in glob(template_glob.to_str().unwrap()).expect("Failed to read glob pattern") {
+        match entry {
+            Ok(path) => {
+                if path.is_file() {
+                    let template_id: PathBuf = path.components().skip_while(|c| !(c==&zome_name_component)).skip(1).collect();
+                    let result = templater.render(template_id.to_str().unwrap(), &context).unwrap();
+                    let mut file = fs::OpenOptions::new().write(true).truncate(true).open(path)?;
+                    file.write(result.as_bytes())?;
+                }
+            },
+            Err(e) => println!("{:?}", e),
+        }
+    }
 
     Ok(())
 }

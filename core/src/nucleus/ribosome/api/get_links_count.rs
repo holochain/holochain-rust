@@ -2,7 +2,7 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::get_links_count::get_link_result_count_workflow,
 };
-use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
+use holochain_wasm_utils::api_serialization::get_links::GetLinksBy;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -10,7 +10,8 @@ pub fn invoke_get_links_count(runtime: &mut Runtime, args: &RuntimeArgs) -> Zome
     let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let input = match GetLinksArgs::try_from(args_str.clone()) {
+    
+    let input = match GetLinksBy::try_from(args_str.clone()) {
         Ok(input) => {
             context.log(format!(
                 "log/get_links: invoke_get_links called with {:?}",

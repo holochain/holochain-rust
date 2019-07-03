@@ -150,7 +150,7 @@ pub mod simple {
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_my_links_by_tag_count(tag : String,status_request:Option<LinksStatusRequestKind>) ->ZomeApiResult<GetLinksResultCount>
+    pub fn get_my_links_count_by_tag(tag : String,status_request:Option<LinksStatusRequestKind>) ->ZomeApiResult<GetLinksResultCount>
     {
     let options = GetLinksOptions{
         status_request : status_request.unwrap_or(LinksStatusRequestKind::All),

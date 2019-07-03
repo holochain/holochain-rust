@@ -418,4 +418,19 @@ mod tests {
         assert_eq!(headers.contains(&chain_header), false);
         assert_eq!(headers.len(), 2) // includes the DNA and agent entries
     }
+
+    #[test]
+    fn test_later_headers_not_included() {
+        let (_instance, context) = instance(None);
+        // entry is added to the local chain
+        let chain_header = commit(test_entry_package_chain_full(), &context);
+        let pre_commit_headers = all_chain_headers_before_header(&context, &chain_header);
+
+        // commit come more entries
+        commit(test_entry_package_chain_entries(), &context);
+        commit(test_entry_package_entry(), &context);  
+
+        let post_commit_headers = all_chain_headers_before_header(&context, &chain_header);
+        assert_eq!(pre_commit_headers, post_commit_headers)
+    }
 }

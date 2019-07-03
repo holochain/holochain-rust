@@ -32,13 +32,11 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-pub type State = InnerState;
-
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
 /// To plug in a new module, its state slice needs to be added here.
 #[derive(Clone, PartialEq, Debug)]
-pub struct InnerState {
+pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
     dht: Arc<DhtStore>,
@@ -49,7 +47,7 @@ pub struct InnerState {
     pub conductor_api: ConductorApi,
 }
 
-impl InnerState {
+impl State {
     pub fn new(context: Arc<Context>) -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
@@ -57,7 +55,7 @@ impl InnerState {
         let chain_cas = &(*context).chain_storage;
         let dht_cas = &(*context).dht_storage;
         let eav = context.eav_storage.clone();
-        InnerState {
+        State {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(
                 ChainStore::new(chain_cas.clone()),
@@ -84,7 +82,7 @@ impl InnerState {
 
         nucleus_state.dna = Self::get_dna(&agent_state, cas.clone()).ok();
 
-        InnerState {
+        State {
             nucleus: Arc::new(nucleus_state),
             agent: Arc::new(agent_state),
             dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
@@ -120,7 +118,7 @@ impl InnerState {
     }
 
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
-        let mut new_state = InnerState {
+        let mut new_state = State {
             nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),
             agent: crate::agent::state::reduce(Arc::clone(&self.agent), &self, &action_wrapper),
             dht: crate::dht::dht_reducers::reduce(Arc::clone(&self.dht), &action_wrapper),
@@ -157,14 +155,14 @@ impl InnerState {
         context: Arc<Context>,
         agent_snapshot: AgentStateSnapshot,
         nucleus_snapshot: NucleusStateSnapshot,
-    ) -> HcResult<InnerState> {
+    ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(context.dht_storage.clone()),
             agent_snapshot.top_chain_header().map(|h| h.to_owned()),
             context.agent_id.address(),
         );
         let nucleus_state = NucleusState::from(nucleus_snapshot);
-        Ok(InnerState::new_with_agent_and_nucleus(
+        Ok(State::new_with_agent_and_nucleus(
             context.clone(),
             agent_state,
             nucleus_state,
@@ -230,7 +228,7 @@ impl InnerState {
 /// drop the InnerState.
 #[derive(Clone, PartialEq, Debug)]
 pub struct StateWrapper {
-    state: Option<InnerState>,
+    state: Option<State>,
 }
 
 impl StateWrapper {
@@ -240,13 +238,13 @@ impl StateWrapper {
 
     pub fn new(context: Arc<Context>) -> Self {
         StateWrapper {
-            state: Some(InnerState::new(context)),
+            state: Some(State::new(context)),
         }
     }
 
     pub fn new_with_agent(context: Arc<Context>, agent_state: AgentState) -> Self {
         StateWrapper {
-            state: Some(InnerState::new_with_agent(context, agent_state)),
+            state: Some(State::new_with_agent(context, agent_state)),
         }
     }
 
@@ -256,7 +254,7 @@ impl StateWrapper {
         nucleus_state: NucleusState,
     ) -> Self {
         StateWrapper {
-            state: Some(InnerState::new_with_agent_and_nucleus(
+            state: Some(State::new_with_agent_and_nucleus(
                 context,
                 agent_state,
                 nucleus_state,
@@ -315,7 +313,7 @@ impl StateWrapper {
         nucleus_snapshot: NucleusStateSnapshot,
     ) -> HcResult<StateWrapper> {
         Ok(StateWrapper {
-            state: Some(InnerState::try_from_snapshots(
+            state: Some(State::try_from_snapshots(
                 context,
                 agent_snapshot,
                 nucleus_snapshot,
@@ -347,8 +345,8 @@ impl StateWrapper {
     }
 }
 
-impl From<InnerState> for StateWrapper {
-    fn from(state: InnerState) -> StateWrapper {
+impl From<State> for StateWrapper {
+    fn from(state: State) -> StateWrapper {
         StateWrapper { state: Some(state) }
     }
 }

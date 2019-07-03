@@ -49,7 +49,7 @@ pub struct ZomeDefinition {
 }
 
 impl ZomeDefinition {
-    fn new() -> ZomeDefinition {
+    pub fn new() -> ZomeDefinition {
         ZomeDefinition {
             entry_types: Vec::new(),
             agent_entry_validator: None,
@@ -384,7 +384,7 @@ pub mod tests {
 
         let validating_entry_type = entry!(
             name: "post",
-            description: "blog entry post",
+            description: "{\"description\": \"blog entry post\"}",
             sharing: Sharing::Public,
 
 
@@ -409,7 +409,7 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(partial_zome),
-            JsonString::from_json("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
+            JsonString::from_json("{\"entry_types\":{\"post\":{\"properties\":\"{\\\"description\\\": \\\"blog entry post\\\"}\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
         );
     }
 }

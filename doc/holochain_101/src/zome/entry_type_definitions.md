@@ -32,7 +32,7 @@ Examining a `.dna.json` file closely, nested within the JSON configuration for a
 "entry_types": [
     {
         "entry_type_name": "post",
-        "description": "A blog post entry which has an author",
+        "properties": "{\"description\": \"A blog post entry which has an author\"}",
         "sharing": "public",
         "links_to": []
     }
@@ -92,7 +92,7 @@ entry!(
 )
 ```
 
-This should be a human-readable explanation of the meaning or role of this entry type.
+Historically this was a human-readable explanation of the meaning or role of this entry type. Now the description field can hold a stringified JSON object to hold various properties of this entry type (Possibly including a description but also UI display hints, indexing fields, example data etc. It is totally up to you). These properties can be accessed via `hdk::entry_type_properties`.
 
 ---
 

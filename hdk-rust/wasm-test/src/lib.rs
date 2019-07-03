@@ -444,6 +444,10 @@ fn hdk_test_entry_value() -> AppEntryValue {
     .into()
 }
 
+fn handle_get_entry_properties(entry_type_string: String) -> ZomeApiResult<JsonString> {
+    hdk::entry_type_properties(&EntryType::from(entry_type_string))
+}
+
 fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
@@ -460,7 +464,7 @@ define_zome! {
     entries: [
         entry!(
             name: "testEntryType",
-            description: "asdfda",
+            description: "\"test-properties-string\"",
             sharing: Sharing::Public,
 
             validation_package: || {
@@ -735,6 +739,12 @@ define_zome! {
             inputs: | |,
             outputs: |response: ZomeApiResult<()>|,
             handler: handle_sleep
+        }
+
+        get_entry_properties: {
+            inputs: | entry_type_string: String |,
+            outputs: |response: ZomeApiResult<JsonString>|,
+            handler: handle_get_entry_properties
         }
     ]
 

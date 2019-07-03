@@ -2,6 +2,8 @@
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_json_api;
+extern crate holochain_persistence_api;
 extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
@@ -11,7 +13,7 @@ extern crate serde_derive;
 extern crate hdk;
 extern crate holochain_wasm_utils;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 #[cfg(not(windows))]
 use hdk::error::ZomeApiError;
@@ -21,7 +23,7 @@ use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
+    crud_status::CrudStatus,
     dna::{
         entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
@@ -32,11 +34,16 @@ use holochain_core_types::{
         Entry,
     },
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
-    hash::HashString,
-    json::JsonString,
 };
+
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::{
+    cas::content::{Address, AddressableContent},
+    hash::HashString,
+};
+
 #[cfg(not(windows))]
-use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error::CoreError};
+use holochain_core_types::{entry::EntryWithMeta, error::CoreError};
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
@@ -97,6 +104,11 @@ pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 }
 
 #[no_mangle]
+pub fn hc_encrypt(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
 pub fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
@@ -112,7 +124,7 @@ pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 }
 
 #[no_mangle]
-pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+pub fn hc_crypto(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
@@ -208,6 +220,11 @@ pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBi
 
 #[no_mangle]
 pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
@@ -308,6 +325,7 @@ fn start_holochain_instance<T: Into<String>>(
         "send_message",
         "sleep",
         "remove_link",
+        "get_entry_properties",
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
@@ -585,10 +603,6 @@ fn can_link_entries() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmdQvKn8yNojRHSxr9yK3HhEGAcAzfGgC6f8XT4joZdwTp"}"#)
-    );
 }
 
 #[test]
@@ -597,10 +611,6 @@ fn can_remove_link() {
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from_json(r#"{"Ok":"QmdQvKn8yNojRHSxr9yK3HhEGAcAzfGgC6f8XT4joZdwTp"}"#)
-    );
 }
 
 #[test]
@@ -636,11 +646,13 @@ fn can_roundtrip_links() {
             address: entry_address_2.clone(),
             headers: Vec::new(),
             tag: "test-tag".into(),
+            status: CrudStatus::Live,
         },
         LinksResult {
             address: entry_address_3.clone(),
             headers: Vec::new(),
             tag: "test-tag".into(),
+            status: CrudStatus::Live,
         },
     ]));
     let expected_links = JsonString::from(expected_links);
@@ -653,12 +665,14 @@ fn can_roundtrip_links() {
             LinksResult {
                 address: entry_address_3.clone(),
                 headers: Vec::new(),
-                tag: "".into(),
+                tag: "test-tag".into(),
+                status: CrudStatus::Live,
             },
             LinksResult {
                 address: entry_address_2.clone(),
                 headers: Vec::new(),
-                tag: "".into(),
+                tag: "test-tag".into(),
+                status: CrudStatus::Live,
             },
         ]));
     let expected_links_reversed = JsonString::from(expected_links_reversed);
@@ -874,4 +888,20 @@ fn sleep_smoke_test() {
     let (mut hc, _) = start_holochain_instance("sleep_smoke_test", "alice");
     let result = make_test_call(&mut hc, "sleep", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
+}
+
+#[test]
+fn test_get_entry_properties() {
+    let (mut hc, _) = start_holochain_instance("test_get_entry_properties", "alice");
+    let result = make_test_call(
+        &mut hc,
+        "get_entry_properties",
+        r#"{"entry_type_string": "testEntryType"}"#,
+    );
+    assert_eq!(
+        result,
+        Ok(JsonString::from(r#"{"Ok":"test-properties-string"}"#)),
+        "result = {:?}",
+        result,
+    );
 }

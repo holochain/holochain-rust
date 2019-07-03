@@ -1,60 +1,45 @@
-const path = require('path')
-const { Config, Conductor, Scenario } = require('../../nodejs_conductor')
-Scenario.setTape(require('tape'))
+module.exports = scenario => {
 
-const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
-const dna = Config.dna(dnaPath, 'app-spec')
-const agentAlice = Config.agent("alice")
-const agentTash = Config.agent("tash")
+scenario('calling get_links before link_entries makes no difference', async (s, t, {alice}) => {
 
-const instanceAlice = Config.instance(agentAlice, dna)
-const instanceTash = Config.instance(agentTash, dna)
-
-const scenario = new Scenario([instanceAlice, instanceTash], { debugLog: true })
-
-scenario.runTape('calling get_links before link_entries makes no difference', async (t, {alice}) => {
-
-  const get1 = alice.call("blog", "my_posts", {})
+  const get1 = await alice.call("blog", "my_posts", {})
   t.ok(get1.Ok)
 
   const create1 = await alice.callSync("blog","create_post", {content: 'hi'})
   t.ok(create1.Ok)
 
-  const get2 = alice.call("blog", "my_posts", {})
+  const get2 = await alice.call("blog", "my_posts", {})
   t.ok(get2.Ok)
-
-  t.equal(get2.Ok.links.length, 1)
+  t.equal(get2.Ok.links.length,1)
 })
 
-scenario.runTape('calling get_links twice in a row is no different than calling it once', async (t, {alice}) => {
+scenario('calling get_links twice in a row is no different than calling it once', async (s, t, {alice}) => {
   // This test is exactly the same as the previous one, but calls my_posts twice in a row.
   // This makes the links come through the second time.
 
-  const get1 = alice.call("blog", "my_posts", {})
+  const get1 = await alice.call("blog", "my_posts", {})
   t.ok(get1.Ok)
 
   const create1 = await alice.callSync("blog", "create_post", {content: 'hi'})
   t.ok(create1.Ok)
 
-  alice.call("blog", "my_posts", {})
-  const get2 = alice.call("blog", "my_posts", {})
+  await alice.call("blog", "my_posts", {})
+  const get2 = await alice.call("blog", "my_posts", {})
   t.ok(get2.Ok)
-
   t.equal(get2.Ok.links.length, 1)
 })
 
-scenario.runTape('not calling get_links in the beginning is also ok', async (t, {alice}) => {
+scenario('not calling get_links in the beginning is also ok', async (s, t, {alice}) => {
 
   const create1 = await alice.callSync("blog", "create_post", {content: 'hi'})
   t.ok(create1.Ok)
 
-  const get1 = alice.call("blog", "my_posts", {})
+  const get1 = await alice.call("blog", "my_posts", {})
   t.ok(get1.Ok)
-
   t.equal(get1.Ok.links.length, 1)
 })
 
-scenario.runTape('alice create & publish post -> recommend own post to self', async (t, {alice, tash}) => {
+scenario('alice create & publish post -> recommend own post to self', async (s, t, {alice, bob}) => {
 
   const content = "Holo world...1"
   const params = { content: content, in_reply_to: null }
@@ -62,7 +47,7 @@ scenario.runTape('alice create & publish post -> recommend own post to self', as
   const postAddr = postResult.Ok
   t.ok(postAddr, `error: ${postResult}`)
 
-  const gotPost = alice.call("blog", "get_post", {post_address: postAddr})
+  const gotPost = await alice.call("blog", "get_post", {post_address: postAddr})
   t.ok(gotPost.Ok)
 
   let linked = await alice.callSync('blog', 'recommend_post', {
@@ -70,59 +55,58 @@ scenario.runTape('alice create & publish post -> recommend own post to self', as
     agent_address: alice.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "QmZr5F34uGZjAEwmU574VwiRtXGHQmvbUnNgA2MJz7YcTr")
+  t.ok(linked.Ok);
 
-  const recommendedPosts = alice.call('blog', 'my_recommended_posts', {})
+  const recommendedPosts = await alice.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, alice.agentId)
-
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
-scenario.runTape('alice create & publish post -> tash recommend to self', async (t, {alice, tash}) => {
+scenario('alice create & publish post -> bob recommend to self', async (s, t, {alice, bob}) => {
   const content = "Holo world...2"
   const params = { content: content, in_reply_to: null }
   const postResult = await alice.callSync("blog", "create_post", params)
   const postAddr = postResult.Ok
   t.ok(postAddr, `error: ${postResult}`)
 
-  const gotPost = tash.call("blog", "get_post", {post_address: postAddr})
+  const gotPost = await bob.call("blog", "get_post", {post_address: postAddr})
   t.ok(gotPost.Ok)
 
-  let linked = await tash.callSync('blog', 'recommend_post', {
+  let linked = await bob.callSync('blog', 'recommend_post', {
     post_address: postAddr,
-    agent_address: tash.agentId
+    agent_address: bob.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "QmT2Z8Hdkgxkt7X4ZeEkoDt3YTQBzyJa1RNPhfkj9icsQ4")
+  t.ok(linked.Ok);
 
-  const recommendedPosts = tash.call("blog", "my_recommended_posts", {})
+  const recommendedPosts = await bob.call("blog", "my_recommended_posts", {})
   console.log("recommendedPosts", recommendedPosts)
-  console.log('agent addresses: ', alice.agentId, tash.agentId)
-
+  console.log('agent addresses: ', alice.agentId, bob.agentId)
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
-scenario.runTape('create & publish post -> recommend to other agent', async (t, {alice, tash}) => {
+scenario('create & publish post -> recommend to other agent', async (s, t, {alice, bob}) => {
   const content = "Holo world...3"
   const params = { content: content, in_reply_to: null }
   const postResult = await alice.callSync("blog", "create_post", params)
   const postAddr = postResult.Ok
   t.ok(postAddr, `error: ${postResult}`)
 
-  const gotPost = tash.call("blog", "get_post", {post_address: postAddr})
+  const gotPost = await bob.call("blog", "get_post", {post_address: postAddr})
   t.ok(gotPost.Ok)
 
   let linked = await alice.callSync('blog', 'recommend_post', {
     post_address: postAddr,
-    agent_address: tash.agentId
+    agent_address: bob.agentId
   })
   console.log("linked: ", linked)
-  t.equal(linked.Ok, "QmUFkn3kTXuFmBvynEMQ4ox3WyvkkG4GtfvPkNqb5b7Ge7")
+  t.ok(linked.Ok);
 
-  const recommendedPosts = tash.call('blog', 'my_recommended_posts', {})
+  const recommendedPosts = await bob.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
-  console.log('agent addresses: ', alice.agentId, tash.agentId)
-
+  console.log('agent addresses: ', alice.agentId, bob.agentId)
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
+
+}

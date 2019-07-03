@@ -2,8 +2,7 @@
 
 use dna::zome::ZomeEntryTypes;
 use entry::entry_type::EntryType;
-use error::HolochainError;
-use json::JsonString;
+use holochain_json_api::{error::JsonError, json::JsonString};
 use serde::{ser::SerializeMap, Deserialize, Deserializer, Serializer};
 use std::collections::BTreeMap;
 
@@ -121,11 +120,11 @@ where
 }
 
 /// Represents an individual object in the "zome" "entry_types" array.
-#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Hash, DefaultJson)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash, DefaultJson)]
 pub struct EntryTypeDef {
-    /// A description of this entry type.
-    #[serde(default)]
-    pub description: String,
+    /// Metdata associated with this entry def (e.g. description, examples, index/UI hints)
+    #[serde(default = "empty_properties")]
+    pub properties: JsonString,
 
     /// The sharing model of this entry type (public, private, encrypted).
     #[serde(default)]
@@ -138,6 +137,21 @@ pub struct EntryTypeDef {
     /// An array of link definitions for links pointing to entries of this type
     #[serde(default)]
     pub linked_from: Vec<LinkedFrom>,
+}
+
+fn empty_properties() -> JsonString {
+    JsonString::empty_object()
+}
+
+impl Default for EntryTypeDef {
+    fn default() -> Self {
+        EntryTypeDef {
+            properties: JsonString::empty_object(),
+            sharing: Sharing::default(),
+            links_to: Vec::default(),
+            linked_from: Vec::default(),
+        }
+    }
 }
 
 impl EntryTypeDef {
@@ -162,7 +176,7 @@ mod tests {
     fn build_and_compare() {
         let fixture: EntryTypeDef = serde_json::from_str(
             r#"{
-                "description": "test",
+                "properties": "{\"description\": \"A test entry\"}",
                 "sharing": "public",
                 "links_to": [
                     {
@@ -181,7 +195,7 @@ mod tests {
         .unwrap();
 
         let mut entry = EntryTypeDef::new();
-        entry.description = String::from("test");
+        entry.properties = JsonString::from("{\"description\": \"A test entry\"}");
         entry.sharing = Sharing::Public;
 
         let mut link = LinksTo::new();

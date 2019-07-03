@@ -8,9 +8,10 @@ use crate::{
         wasm::DnaWasm,
     },
     entry::entry_type::EntryType,
-    error::HolochainError,
-    json::JsonString,
 };
+
+use holochain_json_api::{error::JsonError, json::JsonString};
+
 use dna::entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef};
 use std::collections::BTreeMap;
 
@@ -190,7 +191,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let expected = "{\"description\":\"\",\"config\":{},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[],\"code\":{\"code\":\"\"},\"bridges\":[]}";
+        let expected = "{\"description\":\"\",\"config\":{},\"entry_types\":{\"foo\":{\"properties\":\"{}\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[],\"code\":{\"code\":\"\"},\"bridges\":[]}";
 
         assert_eq!(
             JsonString::from_json(expected),

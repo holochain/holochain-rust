@@ -1,5 +1,4 @@
-//! This file contains the "secret" functions that get added to Zomes, by the HDK.
-//! These functions match expectations that Holochain has... every Zome technically needs these functions,
+//! This file contains the "secret" functions that get added to Zomes, by the HDK.  These functions match expectations that Holochain has... every Zome technically needs these functions,
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
@@ -10,9 +9,11 @@ use holochain_core_types::{
         zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
     },
     entry::entry_type::{AppEntryType, EntryType},
-    error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
-    json::JsonString,
+    error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
+
+use holochain_json_api::{error::JsonError, json::JsonString};
+
 use holochain_wasm_utils::{
     api_serialization::validation::{
         EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
@@ -44,7 +45,7 @@ pub struct ZomeDefinition {
 }
 
 impl ZomeDefinition {
-    fn new() -> ZomeDefinition {
+    pub fn new() -> ZomeDefinition {
         ZomeDefinition {
             entry_types: Vec::new(),
         }
@@ -298,14 +299,11 @@ pub extern "C" fn __hdk_get_json_definition(
 pub mod tests {
     use crate as hdk;
     use crate::ValidationPackageDefinition;
-    use holochain_core_types::{
-        dna::{
-            entry_types::Sharing,
-            zome::{ZomeFnDeclarations, ZomeTraits},
-        },
-        error::HolochainError,
-        json::JsonString,
+    use holochain_core_types::dna::{
+        entry_types::Sharing,
+        zome::{ZomeFnDeclarations, ZomeTraits},
     };
+    use holochain_json_api::{error::JsonError, json::JsonString};
     use meta::PartialZome;
     use std::collections::BTreeMap;
 
@@ -335,7 +333,7 @@ pub mod tests {
 
         let validating_entry_type = entry!(
             name: "post",
-            description: "blog entry post",
+            description: "{\"description\": \"blog entry post\"}",
             sharing: Sharing::Public,
 
 
@@ -360,7 +358,7 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(partial_zome),
-            JsonString::from_json("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
+            JsonString::from_json("{\"entry_types\":{\"post\":{\"properties\":\"{\\\"description\\\": \\\"blog entry post\\\"}\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
         );
     }
 }

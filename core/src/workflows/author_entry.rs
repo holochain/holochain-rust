@@ -9,15 +9,17 @@ use crate::{
 };
 
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
     signature::Provenance,
     validation::{EntryLifecycle, ValidationData},
 };
 
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+
 use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryResult;
 
+use crate::nucleus::ribosome::callback::links_utils::get_link_entries;
 use std::{sync::Arc, vec::Vec};
 
 pub async fn author_entry<'a>(
@@ -31,6 +33,14 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry: {} with content: {:?}",
         address, entry
     ));
+
+    // 0. If we are trying to author a link or link removal, make sure the linked entries exist:
+    if let Entry::LinkAdd(link_data) = entry {
+        get_link_entries(&link_data.link, context)?;
+    }
+    if let Entry::LinkRemove((link_data, _)) = entry {
+        get_link_entries(&link_data.link, context)?;
+    }
 
     // 1. Build the context needed for validation of the entry
     let validation_package = await!(build_validation_package(
@@ -95,7 +105,8 @@ pub async fn author_entry<'a>(
 pub mod tests {
     use super::author_entry;
     use crate::nucleus::actions::tests::*;
-    use holochain_core_types::{entry::test_entry_with_value, json::JsonString};
+    use holochain_core_types::entry::test_entry_with_value;
+    use holochain_json_api::json::JsonString;
     use std::{thread, time};
 
     #[test]

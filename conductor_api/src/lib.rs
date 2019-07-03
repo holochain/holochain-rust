@@ -89,14 +89,18 @@
 ///     Ok(load_configuration::<Configuration>(&contents)?)
 /// }
 /// ```
-extern crate holochain_cas_implementations;
 extern crate holochain_common;
 extern crate holochain_core;
 extern crate holochain_core_types;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 extern crate holochain_dpki;
+extern crate holochain_json_api;
 extern crate holochain_net;
+extern crate holochain_persistence_api;
+extern crate holochain_persistence_file;
+extern crate holochain_persistence_mem;
+extern crate holochain_persistence_pickle;
 extern crate lib3h_sodium;
 
 extern crate chrono;
@@ -132,6 +136,7 @@ extern crate tokio;
 #[macro_use]
 extern crate pretty_assertions;
 extern crate base64;
+extern crate lib3h;
 
 pub mod conductor;
 pub mod config;

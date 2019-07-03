@@ -166,14 +166,19 @@ test_cli: build_cli
 	cd cli && RUSTFLAGS="-D warnings" $(CARGO) test
 
 test_app_spec: RUST_VERSION=$(CORE_RUST_VERSION)
-test_app_spec: version_rustup ensure_wasm_target install_cli build_nodejs_conductor
+test_app_spec: version_rustup ensure_wasm_target install_cli build_rust_conductor
 	@echo -e "\033[0;93m## Testing app_spec... ##\033[0m"
-	cd app_spec && ./build_and_test.sh
+	( cd app_spec && ./build_and_test.sh )
 
 build_nodejs_conductor: RUST_VERSION=$(CORE_RUST_VERSION)
 build_nodejs_conductor: version_rustup core_toolchain
 	@echo -e "\033[0;93m## Building nodejs_conductor... ##\033[0m"
 	./scripts/build_nodejs_conductor.sh
+
+build_rust_conductor: RUST_VERSION=$(CORE_RUST_VERSION)
+build_rust_conductor: version_rustup core_toolchain
+	@echo -e "\033[0;93m## Building rust conductor... ##\033[0m"
+	$(CARGO) build -p holochain --release && $(CARGO) install -f --path conductor
 
 c_build: core_toolchain
 	cd dna_c_binding && $(CARGO) build
@@ -221,7 +226,7 @@ build_conductor_wasm: ensure_wasm_target install_wasm_bindgen_cli
 
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci
-	$(CARGO) tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive
+	$(CARGO) tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_json_derive
 
 .PHONY: code_coverage_crate
 code_coverage_crate: core_toolchain wasm_build install_ci

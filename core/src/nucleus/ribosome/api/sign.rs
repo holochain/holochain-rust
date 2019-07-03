@@ -1,44 +1,10 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::{error::HcResult, json::JsonString, signature::Signature};
+use holochain_core_types::{error::HcResult, signature::Signature};
 use holochain_dpki::keypair::generate_random_sign_keypair;
-use holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignArgs, SignOneTimeResult};
+use holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignOneTimeResult};
 use lib3h_sodium::secbuf::SecBuf;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
-
-/// ZomeApiFunction::Sign function code
-/// args: [0] encoded MemoryAllocation as u64
-/// Expected argument: u64
-/// Returns an HcApiReturnCode as I64
-pub fn invoke_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-
-    let sign_args = match SignArgs::try_from(args_str.clone()) {
-        Ok(entry_input) => entry_input,
-        // Exit on error
-        Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_sign failed to deserialize SignArgs: {:?}",
-                args_str
-            ));
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
-
-    let signature = context
-        .sign(sign_args.payload.clone())
-        .map(|sig| JsonString::from_json(&sig));
-
-    context.log(format!(
-        "debug/zome: signature of data:{:?} by:{:?} is:{:?}",
-        sign_args.payload, context.agent_id, signature
-    ));
-
-    runtime.store_result(signature)
-}
 
 /// ZomeApiFunction::SignOneTime function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -91,15 +57,18 @@ mod test_super {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::{cas::content::Address, json::JsonString};
     use holochain_dpki::utils::verify;
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::Address;
 
     /// test that bytes passed to debug end up in the log
     #[test]
     fn test_zome_api_function_sign() {
         let (call_result, _) = test_zome_api_function(
-            ZomeApiFunction::Sign.as_str(),
-            r#"{ "payload": "this is data" }"#.as_bytes().to_vec(),
+            ZomeApiFunction::Crypto.as_str(),
+            r#"{ "payload": "this is data", "method" : "Sign" }"#
+                .as_bytes()
+                .to_vec(),
         );
         assert_eq!(JsonString::from_json(r#"{"ok":true,"value":"xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA==","error":"null"}"#), call_result,);
     }

@@ -23,6 +23,7 @@ Conductor. If this is set the Conductor does not spawn n3h itself and ignores th
 ### Example
 ```toml
 [network]
+type = "n3h"
 n3h_persistence_path = "./c1_network_files"
 bootstrap_nodes = []
 ```

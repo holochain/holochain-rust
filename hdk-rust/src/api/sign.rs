@@ -1,7 +1,8 @@
 use error::ZomeApiResult;
 use holochain_core_types::signature::Provenance;
 use holochain_wasm_utils::api_serialization::{
-    sign::{OneTimeSignArgs, SignArgs, SignOneTimeResult},
+    crypto::{CryptoArgs, CryptoMethod},
+    sign::{OneTimeSignArgs, SignOneTimeResult},
     verify_signature::VerifySignatureArgs,
 };
 
@@ -17,9 +18,11 @@ use super::Dispatch;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
+/// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
-/// # use holochain_core_types::json::JsonString;
+/// # extern crate holochain_json_derive;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::{Provenance, Signature};
 /// # use hdk::error::ZomeApiResult;
@@ -30,8 +33,9 @@ use super::Dispatch;
 /// # }
 /// ```
 pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
-    Dispatch::Sign.with_input(SignArgs {
+    Dispatch::Crypto.with_input(CryptoArgs {
         payload: payload.into(),
+        method: CryptoMethod::Sign,
     })
 }
 
@@ -45,9 +49,11 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
+/// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
-/// # use holochain_core_types::json::JsonString;
+/// # extern crate holochain_json_derive;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::{Provenance, Signature};
 /// # use hdk::error::ZomeApiResult;
@@ -77,9 +83,11 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
+/// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
-/// # use holochain_core_types::json::JsonString;
+/// # extern crate holochain_json_derive;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::Provenance;
 /// # use hdk::error::ZomeApiResult;

@@ -7,15 +7,21 @@ use crate::{
     dpki_instance::DpkiInstance,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_core_types::{
-    cas::content::AddressableContent, error::HolochainError, hash::HashString,
-};
+use holochain_core_types::error::HolochainError;
+
+use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
+
 use json_patch;
 use std::{
     fs::{self, create_dir_all},
     path::PathBuf,
     sync::{Arc, RwLock},
+    thread::sleep,
+    time::Duration,
 };
+
+/// how many milliseconds sleep all bugs under rugs
+const SWEET_SLEEP: u64 = 500;
 
 pub trait ConductorAdmin {
     fn install_dna_from_file(
@@ -209,6 +215,7 @@ impl ConductorAdmin for Conductor {
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;
         self.save_config()?;
+        let _ = self.start_signal_multiplexer();
         Ok(())
     }
 
@@ -234,6 +241,7 @@ impl ConductorAdmin for Conductor {
             ));
         }
         self.instances.remove(id);
+        let _ = self.start_signal_multiplexer();
 
         notify(format!("Removed instance \"{}\".", id));
         Ok(())
@@ -252,6 +260,7 @@ impl ConductorAdmin for Conductor {
         self.config = new_config;
         self.save_config()?;
         self.start_interface_by_id(&interface.id)?;
+        let _ = self.start_signal_multiplexer();
         Ok(())
     }
 
@@ -280,6 +289,7 @@ impl ConductorAdmin for Conductor {
         self.save_config()?;
 
         let _ = self.stop_interface_by_id(id);
+        let _ = self.start_signal_multiplexer();
 
         notify(format!("Removed interface \"{}\".", id));
         Ok(())
@@ -326,7 +336,9 @@ impl ConductorAdmin for Conductor {
         self.save_config()?;
 
         let _ = self.stop_interface_by_id(interface_id);
+        sleep(Duration::from_millis(SWEET_SLEEP));
         self.start_interface_by_id(interface_id)?;
+        let _ = self.start_signal_multiplexer();
 
         Ok(())
     }
@@ -374,7 +386,9 @@ impl ConductorAdmin for Conductor {
         self.save_config()?;
 
         let _ = self.stop_interface_by_id(interface_id);
+        sleep(Duration::from_millis(SWEET_SLEEP));
         self.start_interface_by_id(interface_id)?;
+        let _ = self.start_signal_multiplexer();
 
         Ok(())
     }
@@ -575,7 +589,8 @@ pub mod tests {
         keystore::test_hash_config,
     };
     use holochain_common::paths::DNA_EXTENSION;
-    use holochain_core_types::{dna::Dna, json::JsonString};
+    use holochain_core_types::dna::Dna;
+    use holochain_json_api::json::JsonString;
     use std::{
         convert::TryFrom,
         env::current_dir,
@@ -804,7 +819,7 @@ pattern = '.*'"#
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
+hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
 id = 'new-dna'"#,
             ),
         );
@@ -1097,7 +1112,7 @@ id = 'new-dna'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
+hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
 id = 'new-dna'"#,
             ),
         );
@@ -1384,7 +1399,7 @@ type = 'http'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
+hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
 id = 'new-dna'"#,
             ),
         );

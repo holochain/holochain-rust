@@ -3,16 +3,21 @@ use crate::{
     agent::chain_store::{ChainStore, ChainStoreIterator},
     state::State,
 };
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
+
 use holochain_core_types::{
     agent::AgentId,
-    cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
-    json::*,
     signature::{Provenance, Signature},
     time::Iso8601,
 };
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
+    json::JsonString,
+};
+use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use serde_json;
 use std::{
     collections::HashMap,
@@ -145,7 +150,7 @@ impl AddressableContent for AgentStateSnapshot {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         Self::try_from(content.to_owned())
     }
 
@@ -176,7 +181,9 @@ pub fn create_new_chain_header(
 ) -> Result<ChainHeader, HolochainError> {
     let agent_address = agent_state.get_agent_address()?;
     let signature = Signature::from(
-        root_state.conductor_api.sign(entry.address().to_string())?,
+        root_state
+            .conductor_api
+            .execute(entry.address().to_string(), CryptoMethod::Sign)?,
         // Temporarily replaced by error handling for Holo hack signing.
         // TODO: pull in the expect below after removing the Holo signing hack again
         //.expect("Must be able to create signatures!"),
@@ -274,13 +281,13 @@ pub mod tests {
         instance::tests::test_context, state::State,
     };
     use holochain_core_types::{
-        cas::content::AddressableContent,
         chain_header::{test_chain_header, ChainHeader},
         entry::{expected_entry_address, test_entry, Entry},
         error::HolochainError,
-        json::JsonString,
         signature::Signature,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::AddressableContent;
     use serde_json;
     use std::collections::HashMap;
     use test_utils::mock_signing::mock_signer;

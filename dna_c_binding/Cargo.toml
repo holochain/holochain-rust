@@ -1,6 +1,6 @@
 [package]
 name = "holochain_dna_c_binding"
-version = "0.0.18-alpha1"
+version = "0.0.21-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
@@ -9,3 +9,5 @@ crate-type = ["staticlib"]
 
 [dependencies]
 holochain_core_types = { path = "../core_types" }
+holochain_persistence_api = "=0.0.1-alpha4"
+holochain_json_api = "=0.0.1-alpha2"

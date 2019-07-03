@@ -52,10 +52,9 @@ pub struct GetLinksResult {
 }
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Hash, Eq)]
-pub enum GetLinksBy
-{
+pub enum GetLinksBy {
     GetLinksArgs(GetLinksArgs),
-    Tag(String,GetLinksOptions)
+    Tag(String, GetLinksOptions),
 }
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]

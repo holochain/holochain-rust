@@ -1,5 +1,5 @@
 use crate::{
-    action::{ActionWrapper, GetLinksKey,GetLinksKeyByTag},
+    action::{ActionWrapper, GetLinksKey, GetLinksKeyByTag},
     network::{query::NetworkQuery, reducers::send, state::NetworkState},
     state::State,
 };
@@ -35,8 +35,7 @@ fn reduce_get_links_inner_by_tag(
     crud_status: Option<CrudStatus>,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let query_json: JsonString =
-        NetworkQuery::GetLinksByTag(key.tag.clone(), crud_status).into();
+    let query_json: JsonString = NetworkQuery::GetLinksByTag(key.tag.clone(), crud_status).into();
     send(
         network_state,
         JsonProtocol::QueryEntry(QueryEntryData {
@@ -78,7 +77,9 @@ pub fn reduce_get_links_count_by_tag(
         Err(err) => Some(Err(err)),
     };
 
-    network_state.get_links_result_count_by_tag.insert(key.clone(), result);
+    network_state
+        .get_links_result_count_by_tag
+        .insert(key.clone(), result);
 }
 
 pub fn reduce_get_links_timeout(

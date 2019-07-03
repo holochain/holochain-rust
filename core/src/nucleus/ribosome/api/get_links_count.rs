@@ -10,7 +10,7 @@ pub fn invoke_get_links_count(runtime: &mut Runtime, args: &RuntimeArgs) -> Zome
     let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    
+
     let input = match GetLinksBy::try_from(args_str.clone()) {
         Ok(input) => {
             context.log(format!(

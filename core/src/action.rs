@@ -158,11 +158,12 @@ pub enum Action {
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
     GetLinksCount((GetLinksKey, Option<CrudStatus>)),
-    GetLinksCountByTag((GetLinksKeyByTag,Option<CrudStatus>)),
+    GetLinksCountByTag((GetLinksKeyByTag, Option<CrudStatus>)),
     RespondGetLinks((QueryEntryData, Vec<(Address, CrudStatus)>, String, String)),
     RespondGetLinksCount((QueryEntryData, usize, String, String)),
     HandleGetLinksResult((Vec<(Address, CrudStatus)>, GetLinksKey)),
     HandleGetLinksResultCount((usize, GetLinksKey)),
+    HandleGetLinksResultCountByTag((usize, GetLinksKeyByTag)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -262,7 +263,6 @@ pub struct GetLinksKey {
 /// response with this GetLinks request
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Serialize)]
 pub struct GetLinksKeyByTag {
-
     /// The link tag, None means get all the tags for a given type
     pub tag: String,
 

@@ -1,5 +1,5 @@
 use crate::{
-    action::{ActionWrapper, GetEntryKey, GetLinksKey,GetLinksKeyByTag},
+    action::{ActionWrapper, GetEntryKey, GetLinksKey, GetLinksKeyByTag},
     network::{actions::ActionResponse, direct_message::DirectMessage},
 };
 use boolinator::*;
@@ -63,7 +63,7 @@ pub struct NetworkState {
 
     pub get_links_results_count: HashMap<GetLinksKey, GetLinksResultCount>,
 
-    pub get_links_result_count_by_tag : HashMap<GetLinksKeyByTag,GetLinksResultCount>,
+    pub get_links_result_count_by_tag: HashMap<GetLinksKeyByTag, GetLinksResultCount>,
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
@@ -95,7 +95,7 @@ impl NetworkState {
             get_entry_with_meta_results: HashMap::new(),
             get_links_results: HashMap::new(),
             get_links_results_count: HashMap::new(),
-            get_links_result_count_by_tag : HashMap::new(),
+            get_links_result_count_by_tag: HashMap::new(),
             get_validation_package_results: HashMap::new(),
             direct_message_connections: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),

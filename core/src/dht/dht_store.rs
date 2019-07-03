@@ -71,28 +71,29 @@ pub fn create_get_links_eavi_query<'a>(
     ))
 }
 
-pub fn create_get_links_by_tag_eavi_query<'a>(tag : String) -> Result<EaviQuery<'a>, HolochainError>
-{
-    let  tag_regex =Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
+pub fn create_get_links_by_tag_eavi_query<'a>(
+    tag: String,
+) -> Result<EaviQuery<'a>, HolochainError> {
+    let tag_regex =
+        Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
+    let tombstone_tag_regex = tag_regex.clone();
     Ok(EaviQuery::new(
         None.into(),
         EavFilter::predicate(move |attr: Attribute| match attr.clone() {
-            Attribute::LinkTag(_, query_tag)
-            | Attribute::RemovedLink(_, query_tag) => {
+            Attribute::LinkTag(_, query_tag) | Attribute::RemovedLink(_, query_tag) => {
                 tag_regex.is_match(&query_tag)
             }
             _ => false,
         }),
         None.into(),
         IndexFilter::LatestByAttribute,
-        Some(EavFilter::predicate(move |attr: Attribute| match attr.clone() {
-            Attribute::RemovedLink(_, query_tag) => {
-                tag_regex.is_match(&query_tag)
+        Some(EavFilter::predicate(move |attr: Attribute| {
+            match attr.clone() {
+                Attribute::RemovedLink(_, query_tag) => tombstone_tag_regex.is_match(&query_tag),
+                _ => false,
             }
-            _ => false,
-        }
-        ))),
-    )
+        })),
+    ))
 }
 
 impl DhtStore {
@@ -131,7 +132,7 @@ impl DhtStore {
             .collect())
     }
 
-     pub fn get_links_by_tag(
+    pub fn get_links_by_tag(
         &self,
         tag: String,
         crud_filter: Option<CrudStatus>,

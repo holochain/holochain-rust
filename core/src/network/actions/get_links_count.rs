@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, ActionWrapper, GetLinksKey,GetLinksKeyByTag},
+    action::{Action, ActionWrapper, GetLinksKey, GetLinksKeyByTag},
     context::Context,
     instance::dispatch_action,
 };
@@ -53,7 +53,6 @@ pub async fn get_links_count(
     })
 }
 
-
 pub async fn get_links_count_by_tag(
     context: Arc<Context>,
     tag: String,
@@ -83,7 +82,7 @@ pub async fn get_links_count_by_tag(
 
     await!(GetLinksCountByTagFuture {
         context: context.clone(),
-        key 
+        key
     })
 }
 

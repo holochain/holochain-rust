@@ -104,6 +104,11 @@ pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 }
 
 #[no_mangle]
+pub fn hc_encrypt(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
 pub fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
@@ -119,7 +124,7 @@ pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 }
 
 #[no_mangle]
-pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+pub fn hc_crypto(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
@@ -320,6 +325,7 @@ fn start_holochain_instance<T: Into<String>>(
         "send_message",
         "sleep",
         "remove_link",
+        "get_entry_properties",
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
@@ -882,4 +888,20 @@ fn sleep_smoke_test() {
     let (mut hc, _) = start_holochain_instance("sleep_smoke_test", "alice");
     let result = make_test_call(&mut hc, "sleep", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
+}
+
+#[test]
+fn test_get_entry_properties() {
+    let (mut hc, _) = start_holochain_instance("test_get_entry_properties", "alice");
+    let result = make_test_call(
+        &mut hc,
+        "get_entry_properties",
+        r#"{"entry_type_string": "testEntryType"}"#,
+    );
+    assert_eq!(
+        result,
+        Ok(JsonString::from(r#"{"Ok":"test-properties-string"}"#)),
+        "result = {:?}",
+        result,
+    );
 }

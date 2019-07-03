@@ -51,10 +51,10 @@ scenario('sign_and_verify_message', async (s, t, { alice, bob }) => {
 scenario('encrypt_and_decrypt_message', async (s, t, { alice, bob }) => {
   const message = "Hello everyone! Time to start the secret meeting";
 
-  const EncryptResult = await bob.call("simple", "encrypt", { payload:message });
+  const EncryptResult = await bob.app.call("simple", "encrypt", { payload:message });
   
   t.ok(EncryptResult);
-  const DecryptResult = await alice.call("simple", "decrypt", { payload:EncryptResult.Ok });
+  const DecryptResult = await alice.app.call("simple", "decrypt", { payload:EncryptResult.Ok });
   t.deepEqual(DecryptResult.Ok, message);
 })
 

@@ -1,8 +1,7 @@
 use super::entry_store::EntryStore;
 use lib3h_protocol::data_types::{EntryAspectData, EntryData};
 use holochain_persistence_api::cas::content::Address;
-use std::collections::HashMap;
-
+use std::{convert::TryInto, collections::HashMap};
 /// Holds DNA-specific data
 pub struct ChainStore {
     dna_address: Address,
@@ -22,7 +21,7 @@ impl ChainStore {
     pub fn get_entry(&self, entry_address: &Address) -> Option<EntryData> {
         let mut has_aspects = false;
         let mut entry = EntryData {
-            entry_address: entry_address.clone(),
+            entry_address: entry_address.clone().try_into().expect("entry address"),
             aspect_list: vec![],
         };
         // Append what we have in `authored_entry_store`
@@ -45,7 +44,7 @@ impl ChainStore {
 
     /// Return Err if Entry is already known
     pub fn author_entry(&mut self, entry: &EntryData) -> Result<(), ()> {
-        if self.has(&entry.entry_address) {
+        if self.has(&entry.entry_address.into()) {
             return Err(());
         }
         self.authored_entry_store.insert_entry(entry);
@@ -54,7 +53,7 @@ impl ChainStore {
 
     /// Return Err if Entry is already known
     pub fn hold_entry(&mut self, entry: &EntryData) -> Result<(), ()> {
-        if self.has(&entry.entry_address) {
+        if self.has(&entry.entry_address.into()) {
             return Err(());
         }
         self.stored_entry_store.insert_entry(entry);
@@ -68,7 +67,7 @@ impl ChainStore {
         aspect: &EntryAspectData,
     ) -> Result<(), ()> {
         if self
-            .get_aspect(entry_address, &aspect.aspect_address)
+            .get_aspect(entry_address, &aspect.aspect_address.into())
             .is_some()
         {
             return Err(());
@@ -85,7 +84,7 @@ impl ChainStore {
         aspect: &EntryAspectData,
     ) -> Result<(), ()> {
         if self
-            .get_aspect(entry_address, &aspect.aspect_address)
+            .get_aspect(entry_address, &aspect.aspect_address.into())
             .is_some()
         {
             return Err(());
@@ -115,7 +114,7 @@ impl ChainStore {
     ) -> Option<EntryAspectData> {
         let maybe_entry = self.get_entry(entry_address);
         if let Some(entry) = maybe_entry {
-            return entry.get(aspect_address);
+            return entry.get(&aspect_address.clone().try_into().unwrap())
         }
         None
     }

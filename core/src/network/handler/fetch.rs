@@ -9,7 +9,7 @@ use crate::{
 };
 use boolinator::*;
 use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
-use lib3h_protocol::protocol_client::FetchEntryData;
+use lib3h_protocol::data_types::FetchEntryData;
 use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 

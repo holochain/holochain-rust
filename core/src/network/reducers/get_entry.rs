@@ -5,7 +5,11 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::protocol_client::{Lib3hClientProtocol, QueryEntryData};
+use lib3h_protocol::{
+    data_types::{QueryEntryData},
+    protocol_client::Lib3hClientProtocol,
+};
+
 fn reduce_get_entry_inner(
     network_state: &mut NetworkState,
     key: &GetEntryKey,

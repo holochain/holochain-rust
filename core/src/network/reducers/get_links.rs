@@ -6,8 +6,14 @@ use crate::{
 
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::protocol_client::{Lib3hClientProtocol, QueryEntryData};
+
+use lib3h_protocol::{
+    data_types::QueryEntryData,
+    protocol_client::Lib3hClientProtocol
+};
+
 use holochain_persistence_api::hash::HashString;
+use std::convert::TryInto;
 
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
@@ -21,8 +27,11 @@ fn reduce_get_links_inner(
         Lib3hClientProtocol::QueryEntry(QueryEntryData {
             requester_agent_id: network_state.agent_id.clone().unwrap().into(),
             request_id: key.id.clone(),
-            dna_address: network_state.dna_address.clone().unwrap(),
-            entry_address: HashString::from(key.base_address.clone()),
+            // TODO return result these addresses as errors
+            space_address:
+                network_state.dna_address.clone().unwrap().try_into().expect("space address from base58 string"),
+            entry_address:
+                HashString::from(key.base_address.clone()).try_into().expect("entry adress from base58 string"),
             query: query_json.to_string().into_bytes(),
         }),
     )

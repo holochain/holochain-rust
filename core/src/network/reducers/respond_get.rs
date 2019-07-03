@@ -7,9 +7,11 @@ use crate::{
 };
 use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HolochainError};
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::protocol_client::{
-    Lib3hClientProtocol, QueryEntryData, QueryEntryResultData,
+use lib3h_protocol::{
+    data_types::{QueryEntryData, QueryEntryResultData},
+    protocol_client::Lib3hClientProtocol,
 };
+
 
 /// Send back to network a HandleQueryEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.

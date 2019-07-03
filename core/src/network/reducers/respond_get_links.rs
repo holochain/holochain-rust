@@ -7,9 +7,12 @@ use crate::{
 };
 use holochain_core_types::{crud_status::CrudStatus, error::HolochainError};
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::protocol_client::{
-    Lib3hClientProtocol, QueryEntryData, QueryEntryResultData,
+use lib3h_protocol::{
+    data_types::{QueryEntryData, QueryEntryResultData},
+    protocol_client::Lib3hClientProtocol,
 };
+
+
 use holochain_persistence_api::cas::content::Address;
 
 /// Send back to network a HandleQueryEntryResult, no matter what.

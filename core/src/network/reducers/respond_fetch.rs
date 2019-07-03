@@ -7,8 +7,11 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 
-use lib3h_protocol::data_types::{
+use lib3h_protocol::{
+    data_types::{
     EntryData, FetchEntryData, FetchEntryResultData,
+    },
+    protocol_client::Lib3hClientProtocol
 };
 
 

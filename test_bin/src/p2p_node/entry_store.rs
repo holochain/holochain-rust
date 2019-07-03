@@ -1,9 +1,14 @@
 use holochain_net::{
-    connection::json_protocol::{EntryAspectData, EntryData},
     tweetlog::*,
 };
+
+use lib3h_protocol::data_types::{
+    {EntryAspectData, EntryData},
+};
+
 use holochain_persistence_api::cas::content::Address;
 use std::collections::HashMap;
+use std::convert::TryInto;
 
 pub struct EntryStore {
     // TODO: Changed once meta is only Addresses
@@ -31,21 +36,21 @@ impl EntryStore {
     pub fn insert_entry(&mut self, entry: &EntryData) {
         log_tt!(
             "entrystore",
-            "EntryStore: adding content for '{}'",
-            entry.entry_address,
+            "EntryStore: adding content for '{:?}'",
+            entry.entry_address
         );
-        if self.store.get(&entry.entry_address).is_none() {
+        if self.store.get(&entry.entry_address.into()).is_none() {
             let mut map = HashMap::new();
             log_tt!("entrystore", "  -> first content!");
             for aspect in entry.aspect_list.clone() {
-                map.insert(aspect.aspect_address.clone(), aspect.clone());
+                map.insert(aspect.aspect_address.into(), aspect.clone().into());
             }
-            self.store.insert(entry.entry_address.clone(), map);
+            self.store.insert(entry.entry_address.into(), map);
             return;
         }
-        if let Some(map) = self.store.get_mut(&entry.entry_address) {
+        if let Some(map) = self.store.get_mut(&entry.entry_address.into()) {
             for aspect in entry.aspect_list.clone() {
-                map.insert(aspect.aspect_address.clone(), aspect.clone());
+                map.insert(aspect.aspect_address.into(), aspect.clone());
             }
         }
     }
@@ -54,19 +59,19 @@ impl EntryStore {
     pub fn insert_aspect(&mut self, entry_address: &Address, aspect: &EntryAspectData) {
         log_tt!(
             "entrystore",
-            "EntryStore: adding content for '{}': {}",
+            "EntryStore: adding content for '{}': {:?}",
             entry_address,
             aspect.aspect_address,
         );
         if self.store.get(&entry_address).is_none() {
             let mut map = HashMap::new();
             log_tt!("entrystore", "  -> first content!");
-            map.insert(aspect.aspect_address.clone(), aspect.clone());
+            map.insert(aspect.aspect_address.into(), aspect.clone());
             self.store.insert(entry_address.clone(), map);
             return;
         }
         if let Some(map) = self.store.get_mut(&entry_address) {
-            map.insert(aspect.aspect_address.clone(), aspect.clone());
+            map.insert(aspect.aspect_address.into(), aspect.clone());
         }
     }
 
@@ -78,7 +83,7 @@ impl EntryStore {
             None
         } else {
             Some(EntryData {
-                entry_address: entry_address.clone(),
+                entry_address: entry_address.clone().try_into().expect("entry address"),
                 aspect_list,
             })
         };
@@ -94,7 +99,7 @@ impl EntryStore {
         if maybe_entry.is_none() {
             return None;
         }
-        return maybe_entry.unwrap().get(aspect_address);
+        return maybe_entry.unwrap().get(&aspect_address.clone().try_into().unwrap())
     }
 
     //    /// Get all values stored

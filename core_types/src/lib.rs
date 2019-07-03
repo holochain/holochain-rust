@@ -31,7 +31,7 @@ extern crate regex;
 extern crate maplit;
 extern crate hcid;
 extern crate wasmi;
-
+//extern crate rust_base58;
 pub mod chain_header;
 pub mod crud_status;
 pub mod eav;

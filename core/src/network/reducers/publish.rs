@@ -14,7 +14,11 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use lib3h_protocol::protocol_client::{EntryData, Lib3hClientProtocol, ProvidedEntryData};
+use lib3h_protocol::{
+    data_types::{EntryData, ProvidedEntryData},
+    protocol_client::Lib3hClientProtocol,
+};
+
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 /// Send to network a PublishDhtData message

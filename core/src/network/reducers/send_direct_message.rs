@@ -5,7 +5,12 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::protocol_client::Lib3hClientProtocol;
+use lib3h_protocol::{
+    protocol_client::Lib3hClientProtocol,
+    data_types::DirectMessageData as Lib3hDirectMessageData
+};
+use std::convert::TryInto;
+
 fn inner(
     network_state: &mut NetworkState,
     direct_message_data: &DirectMessageData,
@@ -14,10 +19,10 @@ fn inner(
 
     let content_json_string: JsonString = direct_message_data.message.to_owned().into();
     let content = content_json_string.to_bytes();
-    let data = MessageData {
+    let data = Lib3hDirectMessageData {
         request_id: direct_message_data.msg_id.clone(),
-        dna_address: network_state.dna_address.clone().unwrap(),
-        to_agent_id: direct_message_data.address.clone(),
+        space_address: network_state.dna_address.clone().unwrap().try_into().expect("space address"),
+        to_agent_id: direct_message_data.address.clone().try_into().expect("agent id address"),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
         content,
     };

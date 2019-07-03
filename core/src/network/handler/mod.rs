@@ -17,7 +17,7 @@ use holochain_persistence_api::hash::HashString;
 
 use crate::network::{direct_message::DirectMessage, entry_aspect::EntryAspect};
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::data_types::StoreEntryAspectData;
+use lib3h_protocol::data_types::{DirectMessageData, StoreEntryAspectData};
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
@@ -60,17 +60,17 @@ StoreEntryAspectData {{
     }}
 }}"#,
         req_id = data.request_id,
-        dna_adr = data.dna_address,
-        provider_agent_id = data.provider_agent_id,
-        entry_address = data.entry_address,
-        aspect_address = data.entry_aspect.aspect_address,
+        dna_adr = data.space_address.into(),
+        provider_agent_id = data.provider_agent_id.into(),
+        entry_address = data.entry_address.into(),
+        aspect_address = data.entry_aspect.aspect_address.into(),
         type_hint = data.entry_aspect.type_hint,
         aspect = aspect
     )
 }
 
 // See comment on fn format_store_data() - same reason for this function.
-fn format_message_data(data: &MessageData) -> String {
+fn format_message_data(data: &DirectMessageData) -> String {
     let message_json = JsonString::from_json(&String::from_utf8(data.content.clone()).unwrap());
     let message = DirectMessage::try_from(message_json).unwrap();
     format!(

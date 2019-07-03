@@ -40,9 +40,14 @@ use crate::{
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::{
-    json_protocol::{Lib3hClientProtocol, MessageData},
-    net_connection::NetSend,
+   net_connection::NetSend,
 };
+
+use lib3h_protocol::{
+    protocol_client::Lib3hClientProtocol,
+    data_types::DirectMessageData
+};
+
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
@@ -108,6 +113,11 @@ pub fn send(
         ))?
 }
 
+fn address_to_vec(address: &Address) -> Vec<&u8> {
+    let address_string : String = address.clone().unwrap().into();
+    address_string.as_bytes().into()
+}
+
 /// Sends the given DirectMessage to the node given by to_agent_id.
 /// This creates a transient connection as every node-to-node communication follows a
 /// request-response pattern. This function therefore logs the open connection
@@ -121,16 +131,16 @@ pub fn send_message(
 
     let content_json_string: JsonString = message.to_owned().into();
     let content = content_json_string.to_bytes();
-
-    let data = MessageData {
+    let space_address = address_to_vec(network_state.dna_address.clone().unwrap());
+    let data = DirectMessageData {
         request_id: id.clone(),
-        dna_address: network_state.dna_address.clone().unwrap(),
-        to_agent_id: to_agent_id.clone(),
+        space_address,
+        to_agent_id: address_to_vec(to_agent_id.clone()),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
         content,
     };
 
-    let _ = send(network_state, Lib3hClientProtocol::SendMessage(data))?;
+    let _ = send(network_state, Lib3hClientProtocol::SendDirectMessage(data))?;
 
     network_state.direct_message_connections.insert(id, message);
 

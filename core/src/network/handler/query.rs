@@ -8,7 +8,7 @@ use crate::{
 };
 use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader};
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::protocol_client::{QueryEntryData, QueryEntryResultData};
+use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};
 use holochain_persistence_api::cas::content::Address;
 use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
 

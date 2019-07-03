@@ -10,9 +10,9 @@ holochain_core = { path = "../core" }
 holochain_conductor_api = { path = "../conductor_api" }
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
-holochain_persistence_api = "=0.0.1-alpha4"
+holochain_persistence_api = "=0.0.2-alpha1"
 holochain_json_api = "=0.0.1-alpha2"
-lib3h_sodium = "=0.0.1-alpha1"
+lib3h_sodium = "=0.0.2-alpha1"
 wabt = "=0.7.4"
 tempfile = "=3.0.7"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }

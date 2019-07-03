@@ -10,13 +10,18 @@ use holochain_net::{
     p2p_network::P2pNetwork,
 };
 use std::sync::{Arc, Mutex};
+use lib3h_protocol::{
+    data_types::SpaceData,
+    protocol_client::Lib3hClientProtocol,
+};
+use std::convert::TryInto;
 
 pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
     let mut network = P2pNetwork::new(
         network_settings.handler.clone(),
-        &network_settings.p2p_config,
+        network_settings.p2p_config.clone(),
     )
     .unwrap();
 
@@ -32,8 +37,8 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     //        tweetlog.i("TWEETLOG ENABLED");
     //    }
 
-    let json = Lib3hClientProtocol::TrackDna(TrackDnaData {
-        dna_address: network_settings.dna_address.clone(),
+    let json = Lib3hClientProtocol::JoinSpace(SpaceData {
+        space_address: network_settings.dna_address.clone().try_into().expect("space address"),
         agent_id: network_settings.agent_id.clone().into(),
     });
 

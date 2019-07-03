@@ -12,7 +12,7 @@ use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, thread};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
-use lib3h_protocol::data_types::EntryAspectData;
+use lib3h_protocol::data_types::DirectMessageData;
 use std::convert::TryFrom;
 
 fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
@@ -24,7 +24,7 @@ fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
 
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called
-pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
+pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context>) {
     let message = match parse_direct_message(message_data.content.clone()) {
         Ok(message) => message,
         Err(error) => {
@@ -72,7 +72,7 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
 
 /// We got a Lib3hClientProtocol::HandleSendMessageResult.
 /// This means somebody has responded to our message that we called and this is the answer
-pub fn handle_send_message_result(message_data: MessageData, context: Arc<Context>) {
+pub fn handle_send_message_result(message_data: DirectMessageData, context: Arc<Context>) {
     let response = match parse_direct_message(message_data.content.clone()) {
         Ok(message) => message,
         Err(error) => {

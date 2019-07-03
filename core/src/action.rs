@@ -26,11 +26,12 @@ use holochain_core_types::{
 };
 use holochain_net::{
     connection::{
-        json_protocol::{FetchEntryData, QueryEntryData},
-        net_connection::NetHandler,
+       net_connection::NetHandler,
     },
     p2p_config::P2pConfig,
 };
+use lib3h_protocol::data_types::{FetchEntryData, QueryEntryData};
+
 use holochain_persistence_api::cas::content::Address;
 use snowflake;
 use std::{

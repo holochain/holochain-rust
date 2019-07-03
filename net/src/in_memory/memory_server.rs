@@ -7,17 +7,22 @@
 use super::memory_book::*;
 use crate::{
     connection::{
-        json_protocol::{
-            EntryListData, FetchEntryData, FetchEntryResultData, GenericResultData, GetListData,
-            JsonProtocol, MessageData, PeerData, ProvidedEntryData, QueryEntryData,
-            QueryEntryResultData, StoreEntryAspectData,
-        },
-        protocol::Protocol,
+       protocol::Protocol,
         NetResult,
     },
     error::NetworkError,
     tweetlog::*,
 };
+
+use lib3h_protocol::{
+    data_types::{
+            EntryListData, FetchEntryData, FetchEntryResultData, GenericResultData, GetListData,
+            DirectMessageData, PeerData, ProvidedEntryData, QueryEntryData,
+            QueryEntryResultData, StoreEntryAspectData,
+        },
+    protocol_client::Lib3hClientProtocol
+};
+
 use holochain_persistence_api::cas::content::Address;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},

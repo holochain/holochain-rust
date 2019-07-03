@@ -399,7 +399,7 @@ pub mod tests {
     use tempfile;
     use test_utils;
 
-    use crate::{persister::SimplePersister, state::State};
+    use crate::persister::SimplePersister;
 
     use std::{
         sync::{mpsc::channel, Arc, Mutex},
@@ -496,7 +496,7 @@ pub mod tests {
             None,
             None,
         );
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }
@@ -527,7 +527,7 @@ pub mod tests {
             Some(chain_header),
             context.agent_id.address(),
         );
-        let state = State::new_with_agent(Arc::new(context.clone()), agent_state);
+        let state = StateWrapper::new_with_agent(Arc::new(context.clone()), agent_state);
         let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -577,7 +577,7 @@ pub mod tests {
         // @see https://github.com/holochain/holochain-rust/issues/195
         while instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::InitializeChain(_) => true,
@@ -591,7 +591,7 @@ pub mod tests {
 
         while instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {
@@ -612,7 +612,7 @@ pub mod tests {
 
         while instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::ReturnInitializationResult(_) => true,
@@ -803,10 +803,10 @@ pub mod tests {
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history.iter().count());
+        assert_eq!(1, instance.state().history().iter().count());
         instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {
@@ -841,10 +841,10 @@ pub mod tests {
         );
 
         // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history.iter().count());
+        assert_eq!(1, instance.state().history().iter().count());
         instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {

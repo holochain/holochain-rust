@@ -354,7 +354,7 @@ pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
 pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
-    use crate::{logger::test_logger, persister::SimplePersister, state::State};
+    use crate::{logger::test_logger, persister::SimplePersister};
     use holochain_core_types::agent::AgentId;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Arc, Mutex, RwLock};
@@ -387,7 +387,9 @@ pub mod tests {
 
         assert!(maybe_context.state().is_none());
 
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(maybe_context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(
+            maybe_context.clone(),
+        ))));
         maybe_context.set_state(global_state.clone());
 
         {
@@ -418,7 +420,7 @@ pub mod tests {
             None,
         );
 
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
 
         {

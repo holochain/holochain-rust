@@ -228,7 +228,7 @@ pub struct StateWrapper {
 }
 
 impl StateWrapper {
-    pub fn drop(&mut self) {
+    pub fn drop_inner_state(&mut self) {
         self.state = None;
     }
 

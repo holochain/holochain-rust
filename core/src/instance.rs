@@ -332,6 +332,7 @@ impl Instance {
 impl Drop for Instance {
     fn drop(&mut self) {
         self.stop_action_loop();
+        self.state.write().unwrap().drop_inner_state();
     }
 }
 

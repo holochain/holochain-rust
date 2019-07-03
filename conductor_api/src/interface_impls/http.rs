@@ -27,10 +27,13 @@ impl Interface for HttpInterface {
             .start_http(&url.parse().expect("Invalid URL!"))
             .map_err(|e| e.to_string())?;
         let broadcaster = Broadcaster::Noop;
-        let handle = thread::Builder::new().name(format!("http_interface/{}", url)).spawn(move || {
-            let _ = server; // move `server` into this thread
-            let _ = kill_switch.recv();
-        }).expect("Could not spawn thread for HTTP interface");
+        let handle = thread::Builder::new()
+            .name(format!("http_interface/{}", url))
+            .spawn(move || {
+                let _ = server; // move `server` into this thread
+                let _ = kill_switch.recv();
+            })
+            .expect("Could not spawn thread for HTTP interface");
         Ok((broadcaster, handle))
     }
 }

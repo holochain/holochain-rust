@@ -35,22 +35,26 @@ impl PassphraseManager {
 
         let pm_clone = pm.clone();
 
-        let _ =thread::Builder::new().name("passphrase_manager".to_string()).spawn(move || loop {
-            if kill_switch_rx.try_recv().is_ok() {
-                return;
-            }
-
-            if pm_clone.passphrase_cache.lock().unwrap().is_some() {
-                let duration_since_last_read =
-                    Instant::now().duration_since(*pm_clone.last_read.lock().unwrap());
-
-                if duration_since_last_read > Duration::from_secs(PASSPHRASE_CACHE_DURATION_SECS) {
-                    pm_clone.forget_passphrase();
+        let _ = thread::Builder::new()
+            .name("passphrase_manager".to_string())
+            .spawn(move || loop {
+                if kill_switch_rx.try_recv().is_ok() {
+                    return;
                 }
-            }
 
-            thread::sleep(Duration::from_secs(1));
-        });
+                if pm_clone.passphrase_cache.lock().unwrap().is_some() {
+                    let duration_since_last_read =
+                        Instant::now().duration_since(*pm_clone.last_read.lock().unwrap());
+
+                    if duration_since_last_read
+                        > Duration::from_secs(PASSPHRASE_CACHE_DURATION_SECS)
+                    {
+                        pm_clone.forget_passphrase();
+                    }
+                }
+
+                thread::sleep(Duration::from_secs(1));
+            });
 
         pm
     }

@@ -13,8 +13,8 @@ use std::{sync::Arc, thread};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_net::connection::json_protocol::MessageData;
-use std::convert::TryFrom;
 use snowflake::ProcessUniqueId;
+use std::convert::TryFrom;
 
 fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
     DirectMessage::try_from(JsonString::from_json(

@@ -30,37 +30,40 @@ pub async fn run_validation_callback(
     let clone_address = address.clone();
     let cloned_context = context.clone();
 
-    thread::Builder::new().name(format!("validation_callback/{}", id)).spawn(move || {
-        let validation_result: ValidationResult = match ribosome::run_dna(
-            Some(call.clone().parameters.to_bytes()),
-            WasmCallData::new_callback_call(cloned_context.clone(), call),
-        ) {
-            Ok(call_result) => match call_result.is_null() {
-                true => Ok(()),
-                false => Err(ValidationError::Fail(call_result.to_string())),
-            },
-            // TODO: have "not matching schema" be its own error
-            Err(HolochainError::RibosomeFailed(error_string)) => {
-                if error_string == "Argument deserialization failed" {
-                    Err(ValidationError::Error(
-                        String::from("JSON object does not match entry schema").into(),
-                    ))
-                } else {
-                    Err(ValidationError::Error(error_string.into()))
+    thread::Builder::new()
+        .name(format!("validation_callback/{}", id))
+        .spawn(move || {
+            let validation_result: ValidationResult = match ribosome::run_dna(
+                Some(call.clone().parameters.to_bytes()),
+                WasmCallData::new_callback_call(cloned_context.clone(), call),
+            ) {
+                Ok(call_result) => match call_result.is_null() {
+                    true => Ok(()),
+                    false => Err(ValidationError::Fail(call_result.to_string())),
+                },
+                // TODO: have "not matching schema" be its own error
+                Err(HolochainError::RibosomeFailed(error_string)) => {
+                    if error_string == "Argument deserialization failed" {
+                        Err(ValidationError::Error(
+                            String::from("JSON object does not match entry schema").into(),
+                        ))
+                    } else {
+                        Err(ValidationError::Error(error_string.into()))
+                    }
                 }
-            }
-            Err(error) => Err(ValidationError::Error(error.to_string().into())),
-        };
+                Err(error) => Err(ValidationError::Error(error.to_string().into())),
+            };
 
-        lax_send_sync(
-            cloned_context.action_channel().clone(),
-            ActionWrapper::new(Action::ReturnValidationResult((
-                (id, clone_address),
-                validation_result,
-            ))),
-            "run_validation_callback",
-        );
-    }).expect("Could not spawn thread for validation callback");
+            lax_send_sync(
+                cloned_context.action_channel().clone(),
+                ActionWrapper::new(Action::ReturnValidationResult((
+                    (id, clone_address),
+                    validation_result,
+                ))),
+                "run_validation_callback",
+            );
+        })
+        .expect("Could not spawn thread for validation callback");
 
     await!(ValidationCallbackFuture {
         context: context.clone(),

@@ -30,8 +30,8 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
-use std::{pin::Pin, sync::Arc, thread};
 use snowflake::ProcessUniqueId;
+use std::{pin::Pin, sync::Arc, thread};
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {
@@ -97,24 +97,32 @@ pub async fn call_zome_function(
         )))
         .expect("action channel to be open");
 
-    thread::Builder::new().name(format!("call_zome_function/{}", ProcessUniqueId::new().to_string())).spawn(move || {
-        // Have Ribosome spin up DNA and call the zome function
-        let call_result = ribosome::run_dna(
-            Some(zome_call_clone.clone().parameters.to_bytes()),
-            WasmCallData::new_zome_call(context_clone.clone(), zome_call_clone.clone()),
-        );
-        context_clone.log("debug/actions/call_zome_fn: got call_result from ribosome::run_dna.");
-        // Construct response
-        let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);
-        // Send ReturnZomeFunctionResult Action
-        context_clone.log("debug/actions/call_zome_fn: sending ReturnZomeFunctionResult action.");
-        lax_send_sync(
-            context_clone.action_channel().clone(),
-            ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
-            "call_zome_function",
-        );
-        context_clone.log("debug/actions/call_zome_fn: sent ReturnZomeFunctionResult action.");
-    }).expect("Could not spawn thread for call_zome_function");
+    thread::Builder::new()
+        .name(format!(
+            "call_zome_function/{}",
+            ProcessUniqueId::new().to_string()
+        ))
+        .spawn(move || {
+            // Have Ribosome spin up DNA and call the zome function
+            let call_result = ribosome::run_dna(
+                Some(zome_call_clone.clone().parameters.to_bytes()),
+                WasmCallData::new_zome_call(context_clone.clone(), zome_call_clone.clone()),
+            );
+            context_clone
+                .log("debug/actions/call_zome_fn: got call_result from ribosome::run_dna.");
+            // Construct response
+            let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);
+            // Send ReturnZomeFunctionResult Action
+            context_clone
+                .log("debug/actions/call_zome_fn: sending ReturnZomeFunctionResult action.");
+            lax_send_sync(
+                context_clone.action_channel().clone(),
+                ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
+                "call_zome_function",
+            );
+            context_clone.log("debug/actions/call_zome_fn: sent ReturnZomeFunctionResult action.");
+        })
+        .expect("Could not spawn thread for call_zome_function");
 
     context.log(format!(
         "debug/actions/call_zome_fn: awaiting for \

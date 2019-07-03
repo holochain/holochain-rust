@@ -26,10 +26,13 @@ impl Interface for WebsocketInterface {
             .start(&url.parse().expect("Invalid URL!"))
             .map_err(|e| e.to_string())?;
         let broadcaster = Broadcaster::Ws(server.broadcaster());
-        let handle = thread::Builder::new().name(format!("websocket_interface/{}", url)).spawn(move || {
-            let _ = server; // move `server` into this thread
-            let _ = kill_switch.recv();
-        }).expect("Could not spawn thread for websocket interface");
+        let handle = thread::Builder::new()
+            .name(format!("websocket_interface/{}", url))
+            .spawn(move || {
+                let _ = server; // move `server` into this thread
+                let _ = kill_switch.recv();
+            })
+            .expect("Could not spawn thread for websocket interface");
         Ok((broadcaster, handle))
     }
 }

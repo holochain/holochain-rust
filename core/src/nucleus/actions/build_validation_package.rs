@@ -104,59 +104,65 @@ pub async fn build_validation_package<'a>(
             maybe_entry_header.unwrap()
         };
 
-        thread::Builder::new().name(format!("build_validation_package/{}", id)).spawn(move || {
-            let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
-            let maybe_validation_package = maybe_callback_result
-                .and_then(|callback_result| match callback_result {
-                    CallbackResult::Fail(error_string) => {
-                        Err(HolochainError::ErrorGeneric(error_string))
-                    }
-                    CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-                    CallbackResult::NotImplemented(reason) => {
-                        Err(HolochainError::ErrorGeneric(format!(
-                            "ValidationPackage callback not implemented for {:?} ({})",
-                            entry.entry_type().clone(),
-                            reason
-                        )))
-                    }
-                    _ => unreachable!(),
-                })
-                .and_then(|package_definition| {
-                    Ok(match package_definition {
-                        Entry => ValidationPackage::only_header(entry_header),
-                        ChainEntries => {
-                            let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_entries = Some(all_public_chain_entries(&context));
-                            package
+        thread::Builder::new()
+            .name(format!("build_validation_package/{}", id))
+            .spawn(move || {
+                let maybe_callback_result =
+                    get_validation_package_definition(&entry, context.clone());
+                let maybe_validation_package = maybe_callback_result
+                    .and_then(|callback_result| match callback_result {
+                        CallbackResult::Fail(error_string) => {
+                            Err(HolochainError::ErrorGeneric(error_string))
                         }
-                        ChainHeaders => {
-                            let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_headers = Some(all_chain_headers(&context));
-                            package
+                        CallbackResult::ValidationPackageDefinition(def) => Ok(def),
+                        CallbackResult::NotImplemented(reason) => {
+                            Err(HolochainError::ErrorGeneric(format!(
+                                "ValidationPackage callback not implemented for {:?} ({})",
+                                entry.entry_type().clone(),
+                                reason
+                            )))
                         }
-                        ChainFull => {
-                            let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_entries = Some(all_public_chain_entries(&context));
-                            package.source_chain_headers = Some(all_chain_headers(&context));
-                            package
-                        }
-                        Custom(string) => {
-                            let mut package = ValidationPackage::only_header(entry_header);
-                            package.custom = Some(string);
-                            package
-                        }
+                        _ => unreachable!(),
                     })
-                });
+                    .and_then(|package_definition| {
+                        Ok(match package_definition {
+                            Entry => ValidationPackage::only_header(entry_header),
+                            ChainEntries => {
+                                let mut package = ValidationPackage::only_header(entry_header);
+                                package.source_chain_entries =
+                                    Some(all_public_chain_entries(&context));
+                                package
+                            }
+                            ChainHeaders => {
+                                let mut package = ValidationPackage::only_header(entry_header);
+                                package.source_chain_headers = Some(all_chain_headers(&context));
+                                package
+                            }
+                            ChainFull => {
+                                let mut package = ValidationPackage::only_header(entry_header);
+                                package.source_chain_entries =
+                                    Some(all_public_chain_entries(&context));
+                                package.source_chain_headers = Some(all_chain_headers(&context));
+                                package
+                            }
+                            Custom(string) => {
+                                let mut package = ValidationPackage::only_header(entry_header);
+                                package.custom = Some(string);
+                                package
+                            }
+                        })
+                    });
 
-            lax_send_sync(
-                context.action_channel().clone(),
-                ActionWrapper::new(Action::ReturnValidationPackage((
-                    id,
-                    maybe_validation_package,
-                ))),
-                "build_validation_package",
-            );
-        }).expect("Could not spawn thread for build_validation_package");
+                lax_send_sync(
+                    context.action_channel().clone(),
+                    ActionWrapper::new(Action::ReturnValidationPackage((
+                        id,
+                        maybe_validation_package,
+                    ))),
+                    "build_validation_package",
+                );
+            })
+            .expect("Could not spawn thread for build_validation_package");
     }
 
     await!(ValidationPackageFuture {

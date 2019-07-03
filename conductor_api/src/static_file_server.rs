@@ -137,18 +137,20 @@ impl StaticServer {
         ));
         self.running = true;
 
-        let _server = thread::Builder::new().name("conductor_api::static_file_server".to_string()).spawn(move || {
-            let server = Server::bind(&addr)
-                .serve(move || {
-                    future::ok::<_, Error>(StaticService::new(&static_path, &dna_interfaces))
-                })
-                .map_err(|e| notify(format!("server error: {}", e)));
+        let _server = thread::Builder::new()
+            .name("conductor_api::static_file_server".to_string())
+            .spawn(move || {
+                let server = Server::bind(&addr)
+                    .serve(move || {
+                        future::ok::<_, Error>(StaticService::new(&static_path, &dna_interfaces))
+                    })
+                    .map_err(|e| notify(format!("server error: {}", e)));
 
-            notify(format!("Listening on http://{}", addr));
-            let mut rt = Runtime::new().unwrap();
-            rt.spawn(server);
-            let _ = rx.recv();
-        });
+                notify(format!("Listening on http://{}", addr));
+                let mut rt = Runtime::new().unwrap();
+                rt.spawn(server);
+                let _ = rx.recv();
+            });
         Ok(())
     }
 

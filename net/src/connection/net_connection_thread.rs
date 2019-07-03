@@ -3,6 +3,7 @@ use super::{
     protocol::Protocol,
     NetResult,
 };
+use snowflake::ProcessUniqueId;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -10,7 +11,6 @@ use std::{
     },
     thread, time,
 };
-use snowflake::ProcessUniqueId;
 
 /// Struct for holding a network connection running on a separate thread.
 /// It is itself a NetSend, and spawns a NetWorker.

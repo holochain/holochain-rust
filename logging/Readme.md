@@ -19,5 +19,5 @@ It still misses:
 To have a generale view of the capability of this crate, you can run this command:
 
 ```bash
-cargo run --example simple
+cargo run --example simple-fastlog-example
 ```

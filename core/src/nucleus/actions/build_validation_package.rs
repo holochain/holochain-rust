@@ -428,7 +428,7 @@ mod tests {
 
         // commit come more entries
         commit(test_entry_package_chain_entries(), &context);
-        commit(test_entry_package_entry(), &context);  
+        commit(test_entry_package_entry(), &context);
 
         let post_commit_headers = all_chain_headers_before_header(&context, &chain_header);
         assert_eq!(pre_commit_headers, post_commit_headers)

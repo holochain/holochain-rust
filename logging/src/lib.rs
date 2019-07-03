@@ -9,7 +9,7 @@ pub mod tag;
 
 use color::{pick_color, ColoredLevelConfig};
 use crossbeam_channel::{self, Receiver, Sender};
-use std::{boxed::Box, default::Default, io::Write, str::FromStr, thread};
+use std::{boxed::Box, default::Default, io, io::Write, str::FromStr, thread};
 use tag::TagFilter;
 
 type MsgT = Box<dyn LogMessageTrait>;
@@ -39,13 +39,12 @@ impl FastLogger {
         } else {
             let mut color = String::default();
             for tag_filter in self.tag_filters.iter() {
-                let is_match = tag_filter.is_match(args);
-
-                if is_match {
+                if tag_filter.is_match(args) {
                     if tag_filter.exclude() {
                         return None;
                     } else {
                         color = tag_filter.tag_color();
+                        // Do we want to return the fist match or the last one?
                         // return Some(tag_filter.tag_color())
                     }
                 }
@@ -148,14 +147,6 @@ impl FastLoggerBuilder {
         // building and printing the log messages
         let (s, r): (Sender<MsgT>, Receiver<MsgT>) = crossbeam_channel::bounded(self.channel_size);
 
-        thread::spawn(move || {
-            while let Ok(msg) = r.recv() {
-                // eprintln!("{}", msg.build());
-                writeln!(&mut std::io::stderr(), "{}", msg.build())
-                    .expect("Fail to write to output.");
-            }
-        });
-
         let logger = FastLogger {
             level: self.level,
             tag_filters: self.tag_filters.to_owned(),
@@ -163,8 +154,26 @@ impl FastLoggerBuilder {
             sender: s,
         };
 
-        log::set_boxed_logger(Box::new(logger.clone()))
-            .map(|_| log::set_max_level(self.level.to_level_filter()))?;
+        match log::set_boxed_logger(Box::new(logger.clone()))
+            .map(|_| log::set_max_level(self.level.to_level_filter())) {
+                Ok(_v) => {
+                    thread::spawn(move || {
+                        while let Ok(msg) = r.recv() {
+                            // Here we use `writeln!` instead of println! in order to avoid
+                            // unnecessary flush.
+                            // Currently we use `BufWriter` which has a sized buffer of about
+                            // 8kb by default
+                            writeln!(&mut io::BufWriter::new(io::stderr()), "{}", msg.build())
+                                .expect("Fail to write to output.");
+
+
+                        }
+                    });
+                },
+                Err(e) => {
+                    eprintln!("Attempt to initialize the Logger more than once. '{}'.", e);
+                },
+            }
 
         Ok(logger)
     }

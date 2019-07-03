@@ -913,6 +913,77 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
 
 })
 
+
+scenario('get_links_crud_count_tag', async (s, t, { alice, bob }) => {
+
+  //commits an entry and creates two links for alice
+  await alice.callSync("simple", "create_link_with_tag",
+    { "base": alice.agentId ,"target": "Holo world","tag":"tag1" }
+  );
+  
+  const alice_result = await alice.callSync("simple", "create_link_with_tag",
+  { "base": bob.agentId ,"target": "Holo world 2","tag":"tag1" }
+  );
+
+  //get posts for alice from alice
+  const alice_posts_live= await alice.call("simple","get_my_links_count_by_tag",
+  {
+    "tag" : "tag1","status_request":"Live"
+  })
+
+  //get posts for alice from bob
+  const bob_posts_live= await alice.call("simple","get_my_links_count_by_tag",
+  {
+    "tag" : "tag1","status_request":"Live"
+  })
+
+  //make sure count equals to 2
+  t.equal(2,alice_posts_live.Ok.count);
+  t.equal(2,bob_posts_live.Ok.count);
+
+  //delete link
+  let deleted_link =  await alice.callSync("simple","delete_link_with_tag",
+  {
+    "base" : alice.agentId,
+    "target" : "Holo world",
+    "tag" : "tag1"
+  });
+
+ 
+  //get posts for alice from alice
+  const alice_posts_deleted= await alice.call("simple","get_my_links_count_by_tag",
+  {
+    "tag" : "tag1","status_request":"Deleted"
+  })
+
+  //get posts for alice from bob
+  const bob_posts_deleted= await alice.call("simple","get_my_links_count_by_tag",
+  {
+    "tag" : "tag1","status_request":"Deleted"
+  })
+
+  t.equal(1,alice_posts_deleted.Ok.count);
+  t.equal(1,bob_posts_deleted.Ok.count);
+
+
+  const alice_posts_all= await alice.call("simple","get_my_links_count_by_tag",
+  {
+    "tag" : "tag1","status_request":"All"
+  })
+
+  //get posts for alice from bob
+  const bob_posts_all= await alice.call("simple","get_my_links_count_by_tag",
+  {
+    "tag" : "tag1","status_request":"All"
+  })
+
+  t.equal(2,alice_posts_all.Ok.count);
+  t.equal(2,bob_posts_all.Ok.count);
+
+
+
+})
+
 scenario('create/get_post roundtrip', async (s, t, { alice }) => {
   const content = "Holo world"
   const in_reply_to = null

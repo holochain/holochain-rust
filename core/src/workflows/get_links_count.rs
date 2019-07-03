@@ -1,4 +1,7 @@
-use crate::{context::Context, network::actions::get_links_count::{get_links_count,get_links_count_by_tag}};
+use crate::{
+    context::Context,
+    network::actions::get_links_count::{get_links_count, get_links_count_by_tag},
+};
 
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksBy, GetLinksResultCount};
@@ -17,10 +20,12 @@ pub async fn get_link_result_count_workflow<'a>(
             link_args.options.timeout.clone(),
             link_args.options.status_request.clone()
         ))?,
-        GetLinksBy::Tag(tag, options) =>
-        {
-            await!(get_links_count_by_tag(context,tag.to_string(),options.timeout.clone(),options.status_request.clone()))?
-        }
+        GetLinksBy::Tag(tag, options) => await!(get_links_count_by_tag(
+            context,
+            tag.to_string(),
+            options.timeout.clone(),
+            options.status_request.clone()
+        ))?,
     };
     //get links based on status request, all for everything, deleted for deleted links and live for active links
 

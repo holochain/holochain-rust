@@ -46,7 +46,7 @@ fn reduce_respond_get_links_count_inner_by_tag(
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
     let query_result_json: JsonString =
-        NetworkQueryResult::LinksCountByTag(links_count.clone(),tag).into();
+        NetworkQueryResult::LinksCountByTag(links_count.clone(), tag).into();
     send(
         network_state,
         JsonProtocol::HandleQueryEntryResult(QueryEntryResultData {
@@ -84,7 +84,6 @@ pub fn reduce_respond_get_links_count(
         }),
     );
 }
-
 
 pub fn reduce_respond_get_links_count_by_tag(
     network_state: &mut NetworkState,

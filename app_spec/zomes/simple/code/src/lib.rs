@@ -58,6 +58,12 @@ pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()>
     Ok(())
 }
 
+pub fn handle_create_my_link_with_tag(base: Address,target : String,tag:String) -> ZomeApiResult<()> {
+    let address = hdk::commit_entry(&simple_entry(target))?;
+    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", &tag)?;
+    Ok(())
+}
+
 pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::entry_address(&simple_entry(target))?;
     hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts", "")?;
@@ -81,6 +87,15 @@ pub fn handle_get_my_links_count(agent : Address,status_request:Option<LinksStat
         ..GetLinksOptions::default()
     };
     hdk::get_links_count_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
+}
+
+pub fn handle_get_my_links_by_tag_count(tag : String,status_request:Option<LinksStatusRequestKind>) ->ZomeApiResult<GetLinksResultCount>
+{
+    let options = GetLinksOptions{
+        status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
+        ..GetLinksOptions::default()
+    };
+    hdk::get_links_count_by_tag(LinkMatch::Exactly(&tag),options)
 }
 
 pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
@@ -149,6 +164,11 @@ define_zome! {
             outputs: |result: ZomeApiResult<()>|,
             handler: handle_create_my_link
         }
+        create_link_with_tag: {
+            inputs: |base : Address,target:String,tag:String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_create_my_link_with_tag
+        }
         delete_link: {
             inputs: |base : Address,target:String|,
             outputs: |result: ZomeApiResult<()>|,
@@ -163,6 +183,11 @@ define_zome! {
             inputs: |base: Address,status_request:Option<LinksStatusRequestKind>|,
             outputs: |result: ZomeApiResult<GetLinksResultCount>|,
             handler: handle_get_my_links_count
+        }
+        get_my_links_by_tag_count: {
+            inputs: |tag: String,status_request:Option<LinksStatusRequestKind>|,
+            outputs: |result: ZomeApiResult<GetLinksResultCount>|,
+            handler: handle_get_my_links_by_tag_count
         }
         encrypt :{
             inputs : |payload: String|,

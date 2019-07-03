@@ -56,7 +56,7 @@ pub async fn get_links_count(
 pub async fn get_links_count_by_tag(
     context: Arc<Context>,
     tag: String,
-    _timeout: Timeout,
+    timeout: Timeout,
     link_status_request: LinksStatusRequestKind,
 ) -> HcResult<usize> {
     let key = GetLinksKeyByTag {
@@ -72,13 +72,13 @@ pub async fn get_links_count_by_tag(
     let action_wrapper = ActionWrapper::new(Action::GetLinksCountByTag((key.clone(), crud_status)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
-    /*let key_inner = key.clone();
+    let key_inner = key.clone();
     let context_inner = context.clone();
     let _ = thread::spawn(move || {
         thread::sleep(timeout.into());
-        let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout(key_inner));
+        let action_wrapper = ActionWrapper::new(Action::GetLinksTimeoutByTag(key_inner));
         dispatch_action(context_inner.action_channel(), action_wrapper.clone());
-    });*/
+    });
 
     await!(GetLinksCountByTagFuture {
         context: context.clone(),

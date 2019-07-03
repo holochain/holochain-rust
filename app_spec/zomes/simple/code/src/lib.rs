@@ -70,6 +70,12 @@ pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()>
     Ok(())
 }
 
+pub fn handle_delete_my_link_with_tag(base: Address,target : String,tag:String) -> ZomeApiResult<()> {
+    let address = hdk::entry_address(&simple_entry(target))?;
+    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts", &tag)?;
+    Ok(())
+}
+
 
 pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequestKind>) ->ZomeApiResult<GetLinksResult>
 {
@@ -174,6 +180,11 @@ define_zome! {
             outputs: |result: ZomeApiResult<()>|,
             handler: handle_delete_my_link
         }
+        delete_link_with_tag: {
+            inputs: |base : Address,target:String,tag:String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_delete_my_link_with_tag
+        }
         get_my_links: {
             inputs: |base: Address,status_request:Option<LinksStatusRequestKind>|,
             outputs: |result: ZomeApiResult<GetLinksResult>|,
@@ -207,7 +218,7 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag]
+        hc_public [create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag]
     }
 }
 

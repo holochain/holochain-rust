@@ -157,6 +157,7 @@ pub enum Action {
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
+    GetLinksTimeoutByTag(GetLinksKeyByTag),
     GetLinksCount((GetLinksKey, Option<CrudStatus>)),
     GetLinksCountByTag((GetLinksKeyByTag, Option<CrudStatus>)),
     RespondGetLinks((QueryEntryData, Vec<(Address, CrudStatus)>, String, String)),

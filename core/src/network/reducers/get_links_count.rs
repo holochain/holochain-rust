@@ -100,3 +100,22 @@ pub fn reduce_get_links_timeout(
             .insert(key.clone(), Some(Err(HolochainError::Timeout)));
     }
 }
+
+pub fn reduce_get_links_timeout_by_tag(
+    network_state: &mut NetworkState,
+    _root_state: &State,
+    action_wrapper: &ActionWrapper,
+) {
+    let action = action_wrapper.action();
+    let key = unwrap_to!(action => crate::action::Action::GetLinksTimeoutByTag);
+
+    if network_state.get_links_result_count_by_tag.get(key).is_none() {
+        return;
+    }
+
+    if network_state.get_links_result_count_by_tag.get(key).unwrap().is_none() {
+        network_state
+            .get_links_result_count_by_tag
+            .insert(key.clone(), Some(Err(HolochainError::Timeout)));
+    }
+}

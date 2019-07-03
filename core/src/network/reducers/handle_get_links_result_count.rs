@@ -17,7 +17,6 @@ pub fn reduce_handle_get_links_count_by_tag(
     _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
-    println!("handle my links");
     let action = action_wrapper.action();
     let (links_count, key) =
         unwrap_to!(action => crate::action::Action::HandleGetLinksResultCountByTag);

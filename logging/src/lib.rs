@@ -2,7 +2,7 @@ use chrono;
 use colored::*;
 use log::{Level, Metadata, Record, SetLoggerError};
 use serde_derive::Deserialize;
-// use toml;
+use toml;
 
 pub mod color;
 pub mod tag;
@@ -115,14 +115,42 @@ pub struct FastLoggerBuilder {
 ///
 /// ```rust
 /// use logging::FastLoggerBuilder;
+///
 /// let logger = FastLoggerBuilder::new()
 ///     .set_level_from_str("Debug")
 ///     .set_channel_size(512)
 ///     .build();
+///
+/// assert!(logger.is_ok());
 /// ```
 impl FastLoggerBuilder {
     pub fn new() -> Self {
         FastLoggerBuilder::default()
+    }
+
+    /// Instantiate a logger builder from a config file in TOML format.
+    /// ```rust
+    /// use logging::FastLoggerBuilder;
+    ///
+    /// let toml = r#"
+    /// [logger]
+    /// level = "debug"
+    ///     [[logger.rules]]
+    ///     pattern = ".*"
+    ///     color = "red"
+    /// "#;
+    ///
+    /// let logger = FastLoggerBuilder::from_toml(toml)
+    ///                 .expect("Fail to instantiate the logger from toml.");
+    /// assert!(logger.build().is_ok());
+    /// ```
+    pub fn from_toml(toml_str: &str) -> Result<Self, toml::de::Error> {
+        let logger_conf: LoggerConfig = toml::from_str(toml_str)?;
+        let logger: Option<Logger> = logger_conf.logger;
+        assert!(logger.is_some(), "The 'logger' part might be missing in the toml.");
+
+        let flb: FastLoggerBuilder = logger.unwrap().into();
+        Ok(flb)
     }
 
     pub fn set_level(&mut self, level: Level) -> &mut Self {
@@ -248,26 +276,33 @@ impl LogMessageTrait for LogMessage {
     }
 }
 
-#[derive(Deserialize)]
+/// This is a helper for TOML deserialization.
+#[derive(Debug, Deserialize)]
+struct LoggerConfig {
+    pub logger: Option<Logger>,
+}
+
+/// This structure is a helper for the TOML logging configuration.
+#[derive(Debug, Deserialize)]
 struct Logger {
     level: String,
     rules: Option<Vec<Rule>>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 struct Rule {
     pub pattern: String,
     pub exclude: Option<bool>,
     pub color: Option<String>,
 }
 
-impl From<Logger> for FastLogger {
+impl From<Logger> for FastLoggerBuilder {
     fn from(logger: Logger) -> Self {
         let _tag_filters: Vec<Rule> =
             Vec::with_capacity(logger.rules.unwrap_or_else(|| vec![]).len());
-        FastLogger {
+        FastLoggerBuilder {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
-            ..FastLoggerBuilder::default().build().unwrap()
+            ..FastLoggerBuilder::default()
         }
     }
 }
@@ -313,15 +348,20 @@ fn should_log_test() {
 }
 
 #[test]
-fn test_rules_serialization() {
-    let _toml = r#"
+fn test_rules_deserialization() {
+    let toml = r#"
         [logger]
         level = "debug"
-            [[logger.rules.rules]]
+            [[logger.rules]]
             pattern = ".*"
             color = "red"
-        "#;
+    "#;
 
-    // let logger: Logger = toml::from_str(toml).expect("Fail to deserialize logger from toml.");
-    // let fl: FastLogger = logger.into();
+    let logger_conf: LoggerConfig =
+        toml::from_str(toml).expect("Fail to deserialize logger from toml.");
+    let logger: Option<Logger> = logger_conf.logger;
+    assert!(logger.is_some());
+
+    let _flb: FastLoggerBuilder = logger.unwrap().into();
+    assert!(_flb.build().is_ok());
 }

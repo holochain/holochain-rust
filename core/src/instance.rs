@@ -177,6 +177,7 @@ impl Instance {
 
         let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch = Some(kill_sender);
+        let instance_is_alive = sub_context.instance_is_alive.clone();
 
         let _ = thread::Builder::new().name(format!("action_loop/{}", ProcessUniqueId::new().to_string())).spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
@@ -194,6 +195,7 @@ impl Instance {
                     }
                 }
             }
+            (*instance_is_alive.lock().unwrap()) = false;
         });
     }
 

@@ -9,7 +9,13 @@ pub mod tag;
 
 use color::{pick_color, ColoredLevelConfig};
 use crossbeam_channel::{self, Receiver, Sender};
-use std::{boxed::Box, default::Default, io, io::Write, str::FromStr, thread};
+use std::{
+    boxed::Box,
+    default::Default,
+    io::{self, Write},
+    str::FromStr,
+    thread,
+};
 use tag::TagFilter;
 
 type MsgT = Box<dyn LogMessageTrait>;
@@ -155,25 +161,24 @@ impl FastLoggerBuilder {
         };
 
         match log::set_boxed_logger(Box::new(logger.clone()))
-            .map(|_| log::set_max_level(self.level.to_level_filter())) {
-                Ok(_v) => {
-                    thread::spawn(move || {
-                        while let Ok(msg) = r.recv() {
-                            // Here we use `writeln!` instead of println! in order to avoid
-                            // unnecessary flush.
-                            // Currently we use `BufWriter` which has a sized buffer of about
-                            // 8kb by default
-                            writeln!(&mut io::BufWriter::new(io::stderr()), "{}", msg.build())
-                                .expect("Fail to write to output.");
-
-
-                        }
-                    });
-                },
-                Err(e) => {
-                    eprintln!("Attempt to initialize the Logger more than once. '{}'.", e);
-                },
+            .map(|_| log::set_max_level(self.level.to_level_filter()))
+        {
+            Ok(_v) => {
+                thread::spawn(move || {
+                    while let Ok(msg) = r.recv() {
+                        // Here we use `writeln!` instead of println! in order to avoid
+                        // unnecessary flush.
+                        // Currently we use `BufWriter` which has a sized buffer of about
+                        // 8kb by default
+                        writeln!(&mut io::BufWriter::new(io::stderr()), "{}", msg.build())
+                            .expect("Fail to write to output.");
+                    }
+                });
             }
+            Err(e) => {
+                eprintln!("Attempt to initialize the Logger more than once. '{}'.", e);
+            }
+        }
 
         Ok(logger)
     }
@@ -221,8 +226,10 @@ impl LogMessageTrait for LogMessage {
             Some(color) => {
                 if color.is_empty() {
                     pick_color(&self.module)
-                } else { color }
-            },
+                } else {
+                    color
+                }
+            }
             None => pick_color(&self.module),
         };
 
@@ -256,7 +263,8 @@ struct Rule {
 
 impl From<Logger> for FastLogger {
     fn from(logger: Logger) -> Self {
-        let _tag_filters: Vec<Rule> = Vec::with_capacity(logger.rules.unwrap_or_else(|| vec![]).len());
+        let _tag_filters: Vec<Rule> =
+            Vec::with_capacity(logger.rules.unwrap_or_else(|| vec![]).len());
         FastLogger {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
             ..FastLoggerBuilder::default().build().unwrap()

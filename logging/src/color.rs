@@ -93,7 +93,6 @@ impl FromStr for Color {
     }
 }
 
-
 use log::Level;
 use std::fmt;
 
@@ -230,7 +229,6 @@ impl ColoredLogLevel for Level {
         WithFgColor { text: *self, color }
     }
 }
-
 
 static ID_COLORS: &'static [&str] = &[
     "green", "white", "yellow", "white", "blue", "magenta", "cyan",

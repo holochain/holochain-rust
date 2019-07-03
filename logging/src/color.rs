@@ -93,107 +93,6 @@ impl FromStr for Color {
     }
 }
 
-// mod tests {
-//     pub use super::*;
-//
-//     mod from_str {
-//         pub use super::*;
-//
-//         macro_rules! make_test {
-//             ( $( $name:ident: $src:expr => $dst:expr),* ) => {
-//
-//                 $(
-//                     #[test]
-//                     fn $name() {
-//                         let color : Color = $src.into();
-//                         assert_eq!($dst, color)
-//                     }
-//                 )*
-//             }
-//         }
-//
-//         make_test!(
-//             black: "black" => Color::Black,
-//             red: "red" => Color::Red,
-//             green: "green" => Color::Green,
-//             yellow: "yellow" => Color::Yellow,
-//             blue: "blue" => Color::Blue,
-//             magenta: "magenta" => Color::Magenta,
-//             cyan: "cyan" => Color::Cyan,
-//             white: "white" => Color::White,
-//             brightblack: "bright black" => Color::BrightBlack,
-//             brightred: "bright red" => Color::BrightRed,
-//             brightgreen: "bright green" => Color::BrightGreen,
-//             brightyellow: "bright yellow" => Color::BrightYellow,
-//             brightblue: "bright blue" => Color::BrightBlue,
-//             brightmagenta: "bright magenta" => Color::BrightMagenta,
-//             brightcyan: "bright cyan" => Color::BrightCyan,
-//             brightwhite: "bright white" => Color::BrightWhite,
-//
-//             invalid: "invalid" => Color::White,
-//             capitalized: "BLUE" => Color::Blue,
-//             mixed_case: "bLuE" => Color::Blue
-//         );
-//     }
-//
-//     mod from_string {
-//         pub use super::*;
-//
-//         macro_rules! make_test {
-//             ( $( $name:ident: $src:expr => $dst:expr),* ) => {
-//
-//                 $(
-//                     #[test]
-//                     fn $name() {
-//                         let src = String::from($src);
-//                         let color : Color = src.into();
-//                         assert_eq!($dst, color)
-//                     }
-//                 )*
-//             }
-//         }
-//
-//         make_test!(
-//             black: "black" => Color::Black,
-//             red: "red" => Color::Red,
-//             green: "green" => Color::Green,
-//             yellow: "yellow" => Color::Yellow,
-//             blue: "blue" => Color::Blue,
-//             magenta: "magenta" => Color::Magenta,
-//             cyan: "cyan" => Color::Cyan,
-//             white: "white" => Color::White,
-//             brightblack: "bright black" => Color::BrightBlack,
-//             brightred: "bright red" => Color::BrightRed,
-//             brightgreen: "bright green" => Color::BrightGreen,
-//             brightyellow: "bright yellow" => Color::BrightYellow,
-//             brightblue: "bright blue" => Color::BrightBlue,
-//             brightmagenta: "bright magenta" => Color::BrightMagenta,
-//             brightcyan: "bright cyan" => Color::BrightCyan,
-//             brightwhite: "bright white" => Color::BrightWhite,
-//
-//             invalid: "invalid" => Color::White,
-//             capitalized: "BLUE" => Color::Blue,
-//             mixed_case: "bLuE" => Color::Blue
-//         );
-//     }
-//
-//     mod fromstr {
-//         pub use super::*;
-//
-//         #[test]
-//         fn parse() {
-//             let color: Result<Color, _> = "blue".parse();
-//             assert_eq!(Ok(Color::Blue), color)
-//         }
-//
-//         #[test]
-//         fn error() {
-//             let color: Result<Color, ()> = "bloublou".parse();
-//             assert_eq!(Err(()), color)
-//         }
-//
-//     }
-// }
 
 use log::Level;
 use std::fmt;
@@ -273,61 +172,6 @@ impl ColoredLevelConfig {
         Self::default()
     }
 
-    // /// Overrides the [`Error`] level color with the given color.
-    // ///
-    // /// The default color is [`Color::Red`].
-    // ///
-    // /// [`Error`]: https://docs.rs/log/0.4/log/enum.Level.html#variant.Error
-    // /// [`Color::Red`]: https://docs.rs/colored/1/colored/enum.Color.html#variant.Red
-    // pub fn error(mut self, error: Color) -> Self {
-    //     self.error = error;
-    //     self
-    // }
-    //
-    // /// Overrides the [`Warn`] level color with the given color.
-    // ///
-    // /// The default color is [`Color::Yellow`].
-    // ///
-    // /// [`Warn`]: https://docs.rs/log/0.4/log/enum.Level.html#variant.Warn
-    // /// [`Color::Yellow`]: https://docs.rs/colored/1/colored/enum.Color.html#variant.Yellow
-    // pub fn warn(mut self, warn: Color) -> Self {
-    //     self.warn = warn;
-    //     self
-    // }
-    //
-    // /// Overrides the [`Info`] level color with the given color.
-    // ///
-    // /// The default color is [`Color::Blue`].
-    // ///
-    // /// [`Info`]: https://docs.rs/log/0.4/log/enum.Level.html#variant.Info
-    // /// [`Color::White`]: https://docs.rs/colored/1/colored/enum.Color.html#variant.White
-    // pub fn info(mut self, info: Color) -> Self {
-    //     self.info = info;
-    //     self
-    // }
-    //
-    // /// Overrides the [`Debug`] level color with the given color.
-    // ///
-    // /// The default color is [`Color::Magenta`].
-    // ///
-    // /// [`Debug`]: https://docs.rs/log/0.4/log/enum.Level.html#variant.Debug
-    // /// [`Color::White`]: https://docs.rs/colored/1/colored/enum.Color.html#variant.White
-    // pub fn debug(mut self, debug: Color) -> Self {
-    //     self.debug = debug;
-    //     self
-    // }
-    //
-    // /// Overrides the [`Trace`] level color with the given color.
-    // ///
-    // /// The default color is [`Color::White`].
-    // ///
-    // /// [`Trace`]: https://docs.rs/log/0.4/log/enum.Level.html#variant.Trace
-    // /// [`Color::White`]: https://docs.rs/colored/1/colored/enum.Color.html#variant.White
-    // pub fn trace(mut self, trace: Color) -> Self {
-    //     self.trace = trace;
-    //     self
-    // }
-
     /// Colors the given log level with the color in this configuration
     /// corresponding to it's level.
     ///
@@ -337,12 +181,12 @@ impl ColoredLevelConfig {
     /// crate, this will not function in Windows.
     ///
     /// [`colored`]: https://github.com/mackwic/colored
-    pub fn color(&self, level: Level) -> WithFgColor<Level> {
+    pub fn color(self, level: Level) -> WithFgColor<Level> {
         level.colored(self.get_color(level))
     }
 
     /// Retrieves the color that a log level should be colored as.
-    pub fn get_color(&self, level: Level) -> Color {
+    pub fn get_color(self, level: Level) -> Color {
         match level {
             Level::Error => self.error,
             Level::Warn => self.warn,
@@ -387,60 +231,6 @@ impl ColoredLogLevel for Level {
     }
 }
 
-// #[cfg(test)]
-// mod test {
-//     use colored::Colorize;
-//     use crate::Color::*;
-//
-//     use super::WithFgColor;
-//
-//     #[test]
-//     fn fg_color_matches_colored_behavior() {
-//         for &color in &[
-//             Black,
-//             Red,
-//             Green,
-//             Yellow,
-//             Blue,
-//             Magenta,
-//             Cyan,
-//             White,
-//             BrightBlack,
-//             BrightRed,
-//             BrightGreen,
-//             BrightYellow,
-//             BrightBlue,
-//             BrightMagenta,
-//             BrightCyan,
-//             BrightWhite,
-//         ] {
-//             assert_eq!(
-//                 format!("{}", "test".color(color)),
-//                 format!(
-//                     "{}",
-//                     WithFgColor {
-//                         text: "test",
-//                         color: color,
-//                     }
-//                 )
-//             );
-//         }
-//     }
-//
-//     #[test]
-//     fn fg_color_respects_formatting_flags() {
-//         let s = format!(
-//             "{:^8}",
-//             WithFgColor {
-//                 text: "test",
-//                 color: Yellow,
-//             }
-//         );
-//         assert!(s.contains("  test  "));
-//         assert!(!s.contains("   test  "));
-//         assert!(!s.contains("  test   "));
-//     }
-// }
 
 static ID_COLORS: &'static [&str] = &[
     "green", "white", "yellow", "white", "blue", "magenta", "cyan",
@@ -451,7 +241,7 @@ static ID_COLORS: &'static [&str] = &[
 pub fn pick_color(text: &str) -> &str {
     let mut total: u16 = 0;
     for b in text.to_string().into_bytes() {
-        total += b as u16;
+        total += u16::from(b);
     }
     ID_COLORS[(total as usize) % ID_COLORS.len()]
 }

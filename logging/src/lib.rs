@@ -34,8 +34,8 @@ impl FastLogger {
 
     /// Returns the color of a log message if the logger should log it, and None other wise.
     pub fn should_log_in(&self, args: &str) -> Option<String> {
-        if self.tag_filters.len() < 1 {
-            return Some(String::default());
+        if self.tag_filters.is_empty() {
+            Some(String::default())
         } else {
             let mut color = String::default();
             for tag_filter in self.tag_filters.iter() {
@@ -49,7 +49,7 @@ impl FastLogger {
                     }
                 }
             }
-            return Some(color);
+            Some(color)
         }
     }
 
@@ -219,7 +219,7 @@ impl LogMessageTrait for LogMessage {
         // Let's colorize our logging messages
         let msg_color = match &self.color {
             Some(color) => {
-                if color.len() == 0 {
+                if color.is_empty() {
                     pick_color(&self.module)
                 } else { color }
             },
@@ -256,7 +256,7 @@ struct Rule {
 
 impl From<Logger> for FastLogger {
     fn from(logger: Logger) -> Self {
-        let _tag_filters: Vec<Rule> = Vec::with_capacity(logger.rules.unwrap_or(vec![]).len());
+        let _tag_filters: Vec<Rule> = Vec::with_capacity(logger.rules.unwrap_or_else(|| vec![]).len());
         FastLogger {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
             ..FastLoggerBuilder::default().build().unwrap()
@@ -269,8 +269,8 @@ impl From<Rule> for TagFilter {
         let tf = TagFilter::default();
         TagFilter::new(
             &rule.pattern,
-            rule.exclude.unwrap_or(tf.exclude()),
-            &rule.color.unwrap_or(tf.tag_color()),
+            rule.exclude.unwrap_or_else(|| tf.exclude()),
+            &rule.color.unwrap_or_else(|| tf.tag_color()),
         )
     }
 }

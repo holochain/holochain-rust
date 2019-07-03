@@ -147,7 +147,10 @@ impl FastLoggerBuilder {
     pub fn from_toml(toml_str: &str) -> Result<Self, toml::de::Error> {
         let logger_conf: LoggerConfig = toml::from_str(toml_str)?;
         let logger: Option<Logger> = logger_conf.logger;
-        assert!(logger.is_some(), "The 'logger' part might be missing in the toml.");
+        assert!(
+            logger.is_some(),
+            "The 'logger' part might be missing in the toml."
+        );
 
         let flb: FastLoggerBuilder = logger.unwrap().into();
         Ok(flb)

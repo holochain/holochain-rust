@@ -29,6 +29,7 @@ use std::{
     thread,
     time::Duration,
 };
+use snowflake::ProcessUniqueId;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 

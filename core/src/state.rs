@@ -32,11 +32,13 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+pub type State = StateWrapper;
+
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
 /// To plug in a new module, its state slice needs to be added here.
 #[derive(Clone, PartialEq, Debug)]
-pub struct State {
+pub struct InnerState {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
     dht: Arc<DhtStore>,
@@ -47,7 +49,7 @@ pub struct State {
     pub conductor_api: ConductorApi,
 }
 
-impl State {
+impl InnerState {
     pub fn new(context: Arc<Context>) -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
@@ -55,7 +57,7 @@ impl State {
         let chain_cas = &(*context).chain_storage;
         let dht_cas = &(*context).dht_storage;
         let eav = context.eav_storage.clone();
-        State {
+        InnerState {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(
                 ChainStore::new(chain_cas.clone()),
@@ -82,7 +84,7 @@ impl State {
 
         nucleus_state.dna = Self::get_dna(&agent_state, cas.clone()).ok();
 
-        State {
+        InnerState {
             nucleus: Arc::new(nucleus_state),
             agent: Arc::new(agent_state),
             dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
@@ -118,7 +120,7 @@ impl State {
     }
 
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
-        let mut new_state = State {
+        let mut new_state = InnerState {
             nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),
             agent: crate::agent::state::reduce(Arc::clone(&self.agent), &self, &action_wrapper),
             dht: crate::dht::dht_reducers::reduce(Arc::clone(&self.dht), &action_wrapper),
@@ -155,14 +157,14 @@ impl State {
         context: Arc<Context>,
         agent_snapshot: AgentStateSnapshot,
         nucleus_snapshot: NucleusStateSnapshot,
-    ) -> HcResult<State> {
+    ) -> HcResult<InnerState> {
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(context.dht_storage.clone()),
             agent_snapshot.top_chain_header().map(|h| h.to_owned()),
             context.agent_id.address(),
         );
         let nucleus_state = NucleusState::from(nucleus_snapshot);
-        Ok(State::new_with_agent_and_nucleus(
+        Ok(InnerState::new_with_agent_and_nucleus(
             context.clone(),
             agent_state,
             nucleus_state,
@@ -211,6 +213,96 @@ impl State {
             let mut all_headers = headers;
             all_headers.append(&mut dht_headers);
             Ok(all_headers)
+        }
+    }
+}
+
+/// This type wraps (decorates) InnerState with an option and re-exports and delegates all
+/// methods of InnerState.
+/// It owns the InnerState and keeps it in a Option so that it can be dropped explicitly.
+/// It also adds a function `drop(&mut self)` which sets the option to None which will
+/// drop the InnerState.
+#[derive(Clone, PartialEq, Debug)]
+pub struct StateWrapper {
+    state: Option<InnerState>
+}
+
+impl StateWrapper {
+    pub fn drop(&mut self) {
+        self.state = None;
+    }
+
+    pub fn new(context: Arc<Context>) -> Self {
+        StateWrapper {
+            state: Some(InnerState::new(context))
+        }
+    }
+
+    pub fn new_with_agent(context: Arc<Context>, agent_state: AgentState) -> Self {
+        StateWrapper {
+            state: Some(InnerState::new_with_agent(context, agent_state))
+        }
+    }
+
+    pub fn new_with_agent_and_nucleus(
+        context: Arc<Context>,
+        agent_state: AgentState,
+        nucleus_state: NucleusState,
+    ) -> Self {
+        StateWrapper {
+            state: Some(InnerState::new_with_agent_and_nucleus(context, agent_state, nucleus_state))
+        }
+    }
+
+    pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
+        StateWrapper {
+            state: Some(self.state.as_ref().expect("Tried to use dropped state").reduce(action_wrapper))
+        }
+    }
+
+    pub fn nucleus(&self) -> Arc<NucleusState> {
+        Arc::clone(&self.state.as_ref().expect("Tried to use dropped state").nucleus)
+    }
+
+    pub fn agent(&self) -> Arc<AgentState> {
+        Arc::clone(&self.state.as_ref().expect("Tried to use dropped state").agent)
+    }
+
+    pub fn dht(&self) -> Arc<DhtStore> {
+        Arc::clone(&self.state.as_ref().expect("Tried to use dropped state").dht)
+    }
+
+    pub fn network(&self) -> Arc<NetworkState> {
+        Arc::clone(&self.state.as_ref().expect("Tried to use dropped state").network)
+    }
+
+    pub fn try_from_snapshots(
+        context: Arc<Context>,
+        agent_snapshot: AgentStateSnapshot,
+        nucleus_snapshot: NucleusStateSnapshot,
+    ) -> HcResult<StateWrapper> {
+        Ok(StateWrapper {
+            state: Some(InnerState::try_from_snapshots(context, agent_snapshot, nucleus_snapshot)?)
+        })
+    }
+
+    pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {
+        self.state.as_ref().expect("Tried to use dropped state").get_headers(entry_address)
+    }
+
+    pub fn conductor_api(&self) -> ConductorApi {
+        self.state.as_ref().expect("Tried to use dropped state").conductor_api.clone()
+    }
+
+    pub fn history(&self) -> HashSet<ActionWrapper> {
+        self.state.as_ref().expect("Tried to use dropped state").history.clone()
+    }
+}
+
+impl From<InnerState> for StateWrapper {
+    fn from(state: InnerState) -> StateWrapper {
+        StateWrapper {
+            state: Some(state)
         }
     }
 }

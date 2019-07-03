@@ -348,7 +348,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     loop {
-        if context.state().unwrap().history.contains(&action_wrapper) {
+        if context.state().unwrap().history().contains(&action_wrapper) {
             return;
         } else {
             let _ = tick_rx.recv_timeout(Duration::from_millis(10));

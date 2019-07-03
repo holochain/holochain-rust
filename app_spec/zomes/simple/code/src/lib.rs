@@ -184,7 +184,7 @@ define_zome! {
             outputs: |result: ZomeApiResult<GetLinksResultCount>|,
             handler: handle_get_my_links_count
         }
-        get_my_links_by_tag_count: {
+        get_my_links_count_by_tag: {
             inputs: |tag: String,status_request:Option<LinksStatusRequestKind>|,
             outputs: |result: ZomeApiResult<GetLinksResultCount>|,
             handler: handle_get_my_links_by_tag_count
@@ -207,7 +207,7 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count]
+        hc_public [create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag]
     }
 }
 

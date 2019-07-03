@@ -119,10 +119,10 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
         }
         Ok(NetworkQuery::GetLinksByTag(tag, crud)) => {
             let links_count = get_links_by_tag(&context, tag.clone(), crud.clone()).len();
-            ActionWrapper::new(Action::RespondGetLinksCount((
+            println!("links count {:?}",links_count.clone());
+            ActionWrapper::new(Action::RespondGetLinksCountByTag((
                 query_data,
                 links_count,
-                String::default(),
                 tag.clone(),
             )))
         }

@@ -161,6 +161,7 @@ pub enum Action {
     GetLinksCountByTag((GetLinksKeyByTag, Option<CrudStatus>)),
     RespondGetLinks((QueryEntryData, Vec<(Address, CrudStatus)>, String, String)),
     RespondGetLinksCount((QueryEntryData, usize, String, String)),
+    RespondGetLinksCountByTag((QueryEntryData, usize, String)),
     HandleGetLinksResult((Vec<(Address, CrudStatus)>, GetLinksKey)),
     HandleGetLinksResultCount((usize, GetLinksKey)),
     HandleGetLinksResultCountByTag((usize, GetLinksKeyByTag)),

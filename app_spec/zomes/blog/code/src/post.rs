@@ -152,7 +152,6 @@ mod tests {
         assert_eq!(expected_name, post_definition.name.clone());
 
         let expected_definition = EntryTypeDef {
-            description: "blog entry post".to_string(),
             linked_from: vec![
                 LinkedFrom {
                     base_type: "%agent_id".to_string(),

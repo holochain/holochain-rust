@@ -101,7 +101,6 @@ mod tests {
         assert_eq!(expected_name, memo_definition.name.clone());
 
         let expected_definition = EntryTypeDef {
-            description: "A private memo entry type.".to_string(),
             linked_from: vec![],
             links_to: Vec::new(),
             sharing: Sharing::Private,

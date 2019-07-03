@@ -92,7 +92,7 @@ pub fn handle_get_my_links_count(agent : Address,status_request:Option<LinksStat
         status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
         ..GetLinksOptions::default()
     };
-    hdk::get_links_count_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
+    hdk::get_links_count_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
 }
 
 pub fn handle_get_my_links_by_tag_count(tag : String,status_request:Option<LinksStatusRequestKind>) ->ZomeApiResult<GetLinksResultCount>

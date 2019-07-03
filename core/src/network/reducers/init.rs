@@ -17,7 +17,7 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     let network_settings = unwrap_to!(action => Action::InitNetwork);
     let mut network = P2pNetwork::new(
         network_settings.handler.clone(),
-        &network_settings.p2p_config,
+        network_settings.p2p_config.clone(),
     )
     .unwrap();
 

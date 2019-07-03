@@ -2,12 +2,17 @@ use basic_workflows::setup_two_nodes;
 use constants::*;
 use holochain_net::{
     connection::{
-        json_protocol::{EntryData, JsonProtocol},
-        NetResult,
+       NetResult,
     },
     tweetlog::*,
 };
 use p2p_node::test_node::TestNode;
+
+use lib3h_protocol::{
+    data_types::EntryData,
+    protocol_client::Lib3hClientProtocol
+};
+
 
 ///
 #[cfg_attr(tarpaulin, skip)]

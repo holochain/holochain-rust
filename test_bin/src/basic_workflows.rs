@@ -1,12 +1,15 @@
 use constants::*;
 use holochain_net::{
     connection::{
-        json_protocol::{ConnectData, EntryData, JsonProtocol},
-        net_connection::NetSend,
+       net_connection::NetSend,
         protocol::Protocol,
         NetResult,
     },
     tweetlog::TWEETLOG,
+};
+use lib3h_protocol::{
+    protocol_client::Lib3hClientProtocol,
+    data_types::{ConnectData, EntryData},
 };
 use holochain_persistence_api::cas::content::Address;
 use p2p_node::test_node::TestNode;

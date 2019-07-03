@@ -5,12 +5,17 @@ use crate::{
 use constants::*;
 use holochain_net::{
     connection::{
-        json_protocol::{ConnectData, EntryData, JsonProtocol},
-        net_connection::NetSend,
+       net_connection::NetSend,
         NetResult,
     },
     tweetlog::*,
 };
+
+use lib3h_protocol::{
+    data_types::{ConnectData, EntryData},
+    protocol_client::Lib3hClientProtocol
+};
+
 use p2p_node::test_node::TestNode;
 
 // Disconnect & reconnect a Node in a two nodes scenario

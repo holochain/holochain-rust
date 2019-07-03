@@ -5,6 +5,7 @@ use crate::{
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 
+use crate::state::StateWrapper;
 use holochain_core_types::{
     agent::AgentId,
     chain_header::ChainHeader,
@@ -136,8 +137,8 @@ impl AgentStateSnapshot {
     }
 }
 
-impl From<&State> for AgentStateSnapshot {
-    fn from(state: &State) -> Self {
+impl From<&StateWrapper> for AgentStateSnapshot {
+    fn from(state: &StateWrapper) -> Self {
         let agent = &*(state.agent());
         let top_chain = agent.top_chain_header();
         AgentStateSnapshot::new(top_chain)
@@ -175,7 +176,7 @@ pub enum ActionResponse {
 pub fn create_new_chain_header(
     entry: &Entry,
     agent_state: &AgentState,
-    root_state: &State,
+    root_state: &StateWrapper,
     crud_link: &Option<Address>,
     provenances: &Vec<Provenance>,
 ) -> Result<ChainHeader, HolochainError> {
@@ -228,7 +229,7 @@ fn reduce_commit_entry(
     let result = create_new_chain_header(
         &entry,
         agent_state,
-        root_state,
+        &StateWrapper::from(root_state.clone()),
         &maybe_link_update_delete,
         provenances,
     )

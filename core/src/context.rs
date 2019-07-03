@@ -6,7 +6,6 @@ use crate::{
     nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
-    state::State,
 };
 use futures::{
     task::{noop_local_waker_ref, Poll},
@@ -21,6 +20,7 @@ use holochain_persistence_api::{
     eav::EntityAttributeValueStorage,
 };
 
+use crate::state::StateWrapper;
 use holochain_core_types::{
     agent::AgentId,
     dna::{wasm::DnaWasm, Dna},
@@ -54,7 +54,7 @@ pub struct Context {
     pub agent_id: AgentId,
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
-    state: Option<Arc<RwLock<State>>>,
+    state: Option<Arc<RwLock<StateWrapper>>>,
     pub action_channel: Option<SyncSender<ActionWrapper>>,
     pub observer_channel: Option<SyncSender<Observer>>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
@@ -164,11 +164,11 @@ impl Context {
         logger.log(msg.into());
     }
 
-    pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
+    pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
         self.state = Some(state);
     }
 
-    pub fn state(&self) -> Option<RwLockReadGuard<State>> {
+    pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         self.state.as_ref().map(|s| s.read().unwrap())
     }
 

@@ -99,7 +99,6 @@ use holochain_core::{
         ZomeFnCall,
     },
     persister::{Persister, SimplePersister},
-    state::State,
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, Dna},
@@ -108,6 +107,7 @@ use holochain_core_types::{
 
 use holochain_json_api::json::JsonString;
 
+use holochain_core::state::StateWrapper;
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 
@@ -245,7 +245,7 @@ impl Holochain {
     }
 
     /// return
-    pub fn state(&self) -> Result<State, HolochainInstanceError> {
+    pub fn state(&self) -> Result<StateWrapper, HolochainInstanceError> {
         self.check_instance()?;
         Ok(self.instance.as_ref().unwrap().state().clone())
     }

@@ -5,7 +5,7 @@ use crate::{
     persister::Persister,
     scheduled_jobs,
     signal::Signal,
-    state::State,
+    state::{State, StateWrapper},
     workflows::application,
 };
 #[cfg(test)]
@@ -21,6 +21,7 @@ use holochain_core_types::{
 };
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
+use snowflake::ProcessUniqueId;
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, Sender, SyncSender},
@@ -29,7 +30,6 @@ use std::{
     thread,
     time::Duration,
 };
-use snowflake::ProcessUniqueId;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
@@ -38,7 +38,7 @@ pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 #[derive(Clone)]
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
-    state: Arc<RwLock<State>>,
+    state: Arc<RwLock<StateWrapper>>,
     action_channel: Option<SyncSender<ActionWrapper>>,
     observer_channel: Option<SyncSender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
@@ -222,7 +222,7 @@ impl Instance {
     ) -> Vec<Observer> {
         // Mutate state
         {
-            let new_state: State;
+            let new_state: StateWrapper;
 
             {
                 // Only get a read lock first so code in reducers can read state as well
@@ -294,7 +294,7 @@ impl Instance {
     /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(State::new(context.clone()))),
+            state: Arc::new(RwLock::new(StateWrapper::new(context.clone()))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
@@ -306,7 +306,7 @@ impl Instance {
 
     pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(state)),
+            state: Arc::new(RwLock::new(StateWrapper::from(state))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
@@ -316,7 +316,7 @@ impl Instance {
         }
     }
 
-    pub fn state(&self) -> RwLockReadGuard<State> {
+    pub fn state(&self) -> RwLockReadGuard<StateWrapper> {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")

@@ -158,6 +158,7 @@ pub enum Action {
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
     GetLinksCount((GetLinksKey, Option<CrudStatus>)),
+    GetLinksCountByTag((GetLinksKeyByTag,Option<CrudStatus>)),
     RespondGetLinks((QueryEntryData, Vec<(Address, CrudStatus)>, String, String)),
     RespondGetLinksCount((QueryEntryData, usize, String, String)),
     HandleGetLinksResult((Vec<(Address, CrudStatus)>, GetLinksKey)),
@@ -249,6 +250,18 @@ pub struct GetLinksKey {
 
     /// The link type
     pub link_type: String,
+
+    /// The link tag, None means get all the tags for a given type
+    pub tag: String,
+
+    /// A unique ID that is used to pair the eventual result to this request
+    pub id: String,
+}
+
+/// The unique key that represents a GetLinksCountByTag request, used to associate the eventual
+/// response with this GetLinks request
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Serialize)]
+pub struct GetLinksKeyByTag {
 
     /// The link tag, None means get all the tags for a given type
     pub tag: String,

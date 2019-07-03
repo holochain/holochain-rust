@@ -7,6 +7,7 @@ pub enum NetworkQuery {
     GetEntry,
     GetLinks(String, String),
     GetLinksCount(String, String, Option<CrudStatus>),
+    GetLinksByTag(String,Option<CrudStatus>)
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
@@ -14,4 +15,5 @@ pub enum NetworkQueryResult {
     Entry(Option<EntryWithMetaAndHeader>),
     Links(Vec<(Address, CrudStatus)>, String, String),
     LinksCount(usize, String, String),
+    LinksCountByTag(usize,String)
 }

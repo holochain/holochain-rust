@@ -30,6 +30,22 @@ fn get_links(
         .collect::<Vec<_>>()
 }
 
+fn get_links_by_tag(
+    context: &Arc<Context>,
+    tag: String,
+    crud_status: Option<CrudStatus>,
+) -> Vec<(Address, CrudStatus)> {
+    context
+        .state()
+        .unwrap()
+        .dht()
+        .get_links_by_tag(tag, crud_status)
+        .unwrap_or(BTreeSet::new())
+        .into_iter()
+        .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
+        .collect::<Vec<_>>()
+}
+
 fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
     nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone())
         .map(|entry_with_meta_opt| {
@@ -98,6 +114,20 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 query_data,
                 links_count,
                 link_type.clone(),
+                tag.clone(),
+            )))
+        },
+        Ok(NetworkQuery::GetLinksByTag(tag, crud)) => {
+            let links_count = get_links_by_tag(
+                &context,
+                tag.clone(),
+                crud.clone(),
+            )
+            .len();
+            ActionWrapper::new(Action::RespondGetLinksCount((
+                query_data,
+                links_count,
+                String::default(),
                 tag.clone(),
             )))
         }

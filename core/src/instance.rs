@@ -178,7 +178,7 @@ impl Instance {
         let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch = Some(kill_sender);
 
-        thread::spawn(move || {
+        let _ = thread::Builder::new().name(format!("action_loop/{}", ProcessUniqueId::new().to_string())).spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
             while !kill_receiver.try_recv().is_ok() {
                 if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {

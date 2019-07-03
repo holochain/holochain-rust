@@ -30,7 +30,7 @@ pub async fn run_validation_callback(
     let clone_address = address.clone();
     let cloned_context = context.clone();
 
-    thread::spawn(move || {
+    thread::Builder::new().name(format!("validation_callback/{}", id)).spawn(move || {
         let validation_result: ValidationResult = match ribosome::run_dna(
             Some(call.clone().parameters.to_bytes()),
             WasmCallData::new_callback_call(cloned_context.clone(), call),
@@ -60,7 +60,7 @@ pub async fn run_validation_callback(
             ))),
             "run_validation_callback",
         );
-    });
+    }).expect("Could not spawn thread for validation callback");
 
     await!(ValidationCallbackFuture {
         context: context.clone(),

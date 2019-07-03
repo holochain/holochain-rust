@@ -35,7 +35,7 @@ impl PassphraseManager {
 
         let pm_clone = pm.clone();
 
-        thread::spawn(move || loop {
+        let _ =thread::Builder::new().name("passphrase_manager".to_string()).spawn(move || loop {
             if kill_switch_rx.try_recv().is_ok() {
                 return;
             }

@@ -137,7 +137,7 @@ impl StaticServer {
         ));
         self.running = true;
 
-        let _server = thread::spawn(move || {
+        let _server = thread::Builder::new().name("conductor_api::static_file_server".to_string()).spawn(move || {
             let server = Server::bind(&addr)
                 .serve(move || {
                     future::ok::<_, Error>(StaticService::new(&static_path, &dna_interfaces))

@@ -13,6 +13,7 @@ use crate::workflows::{
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{fmt, sync::Arc, thread};
+use snowflake::ProcessUniqueId;
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
@@ -45,7 +46,7 @@ pub struct PendingValidationStruct {
 }
 
 fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
-    thread::spawn(move || {
+    thread::Builder::new().name(format!("retry_validation/{}", ProcessUniqueId::new().to_string())).spawn(move || {
         let result = match pending.workflow {
             ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
                 &pending.entry_with_header,
@@ -76,7 +77,7 @@ fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
                 &context,
             );
         }
-    });
+    }).expect("Could not spawn thread for retry_validation");
 }
 
 pub fn run_pending_validations(context: Arc<Context>) {

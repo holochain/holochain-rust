@@ -31,6 +31,7 @@ use futures::{
 };
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use std::{pin::Pin, sync::Arc, thread};
+use snowflake::ProcessUniqueId;
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {
@@ -96,7 +97,7 @@ pub async fn call_zome_function(
         )))
         .expect("action channel to be open");
 
-    let _ = thread::spawn(move || {
+    thread::Builder::new().name(format!("call_zome_function/{}", ProcessUniqueId::new().to_string())).spawn(move || {
         // Have Ribosome spin up DNA and call the zome function
         let call_result = ribosome::run_dna(
             Some(zome_call_clone.clone().parameters.to_bytes()),
@@ -113,7 +114,7 @@ pub async fn call_zome_function(
             "call_zome_function",
         );
         context_clone.log("debug/actions/call_zome_fn: sent ReturnZomeFunctionResult action.");
-    });
+    }).expect("Could not spawn thread for call_zome_function");
 
     context.log(format!(
         "debug/actions/call_zome_fn: awaiting for \

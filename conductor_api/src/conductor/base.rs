@@ -204,7 +204,7 @@ impl Conductor {
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
 
         self.log("starting signal loop".into());
-        thread::spawn(move || loop {
+        thread::Builder::new().name("signal_multiplexer".to_string()).spawn(move || loop {
             {
                 for (instance_id, receiver) in instance_signal_receivers.read().unwrap().iter() {
                     if let Ok(signal) = receiver.try_recv() {
@@ -274,7 +274,7 @@ impl Conductor {
                 break;
             }
             thread::sleep(Duration::from_millis(1));
-        })
+        }).expect("Must be able to spawn thread")
     }
 
     pub fn stop_signal_multiplexer(&self) {

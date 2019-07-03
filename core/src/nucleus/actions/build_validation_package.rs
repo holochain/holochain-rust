@@ -104,7 +104,7 @@ pub async fn build_validation_package<'a>(
             maybe_entry_header.unwrap()
         };
 
-        thread::spawn(move || {
+        thread::Builder::new().name(format!("build_validation_package/{}", id)).spawn(move || {
             let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
             let maybe_validation_package = maybe_callback_result
                 .and_then(|callback_result| match callback_result {
@@ -156,7 +156,7 @@ pub async fn build_validation_package<'a>(
                 ))),
                 "build_validation_package",
             );
-        });
+        }).expect("Could not spawn thread for build_validation_package");
     }
 
     await!(ValidationPackageFuture {

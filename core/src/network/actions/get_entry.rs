@@ -34,11 +34,11 @@ pub async fn get_entry(
 
     let key_inner = key.clone();
     let context_inner = context.clone();
-    let _ = thread::spawn(move || {
+    thread::Builder::new().name(format!("get_entry_timeout/{:?}", key)).spawn(move || {
         thread::sleep(timeout.into());
         let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(key_inner));
         dispatch_action(context_inner.action_channel(), action_wrapper.clone());
-    });
+    }).expect("Could not spawn thread for get_entry timeout");
 
     await!(GetEntryFuture {
         context: context.clone(),

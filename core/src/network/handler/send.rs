@@ -14,6 +14,7 @@ use std::{sync::Arc, thread};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_net::connection::json_protocol::MessageData;
 use std::convert::TryFrom;
+use snowflake::ProcessUniqueId;
 
 fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
     DirectMessage::try_from(JsonString::from_json(
@@ -38,7 +39,7 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
 
     match message {
         DirectMessage::Custom(custom_direct_message) => {
-            thread::spawn(move || {
+            thread::Builder::new().name(format!("custom_direct_message/{}", ProcessUniqueId::new().to_string())).spawn(move || {
                 if let Err(error) = context.block_on(handle_custom_direct_message(
                     Address::from(message_data.from_agent_id),
                     message_data.request_id,
@@ -47,14 +48,14 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
                 )) {
                     context.log(format!("err/net: Error handling custom direct message: {:?}", error));
                 }
-            });
+            }).expect("Could not spawn thread for handling of custom direct message");
         }
         DirectMessage::RequestValidationPackage(address) => {
             // Async functions only get executed when they are polled.
             // I don't want to wait for this workflow to finish here as it would block the
             // network thread, so I use block_on to poll the async function but do that in
             // another thread:
-            thread::spawn(move || {
+            thread::Builder::new().name(format!("validation_package_request/{}", ProcessUniqueId::new().to_string())).spawn(move || {
                 context.block_on(respond_validation_package_request(
                     Address::from(message_data.from_agent_id),
                     message_data.request_id,
@@ -62,7 +63,7 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
                     context.clone(),
                     &vec![]
                 ));
-            });
+            }).expect("Could not spawn thread for handling of validation package request");
         }
         DirectMessage::ValidationPackage(_) => context.log(
             "err/net: Got DirectMessage::ValidationPackage as initial message. This should not happen.",

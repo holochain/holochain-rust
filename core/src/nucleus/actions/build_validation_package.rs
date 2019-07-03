@@ -121,30 +121,31 @@ pub async fn build_validation_package<'a>(
                     _ => unreachable!(),
                 })
                 .and_then(|package_definition| {
-
                     Ok(match package_definition {
                         Entry => ValidationPackage::only_header(entry_header),
                         ChainEntries => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_entries = Some(
-                                public_chain_entries_from_headers(&context, &all_chain_headers_before_header(&context, &package.chain_header)),
-                            );
+                            package.source_chain_entries = Some(public_chain_entries_from_headers(
+                                &context,
+                                &all_chain_headers_before_header(&context, &package.chain_header),
+                            ));
                             package
                         }
                         ChainHeaders => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_headers =
-                                Some(all_chain_headers_before_header(&context, &package.chain_header));
+                            package.source_chain_headers = Some(all_chain_headers_before_header(
+                                &context,
+                                &package.chain_header,
+                            ));
                             package
                         }
                         ChainFull => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            let headers = all_chain_headers_before_header(&context, &package.chain_header);
-                            package.source_chain_entries = Some(
-                                public_chain_entries_from_headers(&context, &headers),
-                            );
-                            package.source_chain_headers =
-                                Some(headers);
+                            let headers =
+                                all_chain_headers_before_header(&context, &package.chain_header);
+                            package.source_chain_entries =
+                                Some(public_chain_entries_from_headers(&context, &headers));
+                            package.source_chain_headers = Some(headers);
                             package
                         }
                         Custom(string) => {
@@ -181,7 +182,13 @@ fn public_chain_entries_from_headers(
         .iter()
         .filter(|ref chain_header| chain_header.entry_type().can_publish(context))
         .map(|chain_header| {
-            let storage = context.state().unwrap().agent().chain_store().content_storage().clone();
+            let storage = context
+                .state()
+                .unwrap()
+                .agent()
+                .chain_store()
+                .content_storage()
+                .clone();
             let json = (*storage.read().unwrap())
                 .fetch(chain_header.entry_address())
                 .expect("Could not fetch from CAS");
@@ -194,7 +201,7 @@ fn public_chain_entries_from_headers(
 
 fn all_chain_headers_before_header(
     context: &Arc<Context>,
-    header: &ChainHeader
+    header: &ChainHeader,
 ) -> Vec<ChainHeader> {
     let chain = context.state().unwrap().agent().chain_store();
     chain.iter(&Some(header.clone())).skip(1).collect()
@@ -238,10 +245,7 @@ mod tests {
     use super::*;
     use crate::nucleus::actions::tests::*;
 
-    use holochain_core_types::{
-        validation::ValidationPackage,
-        time::Iso8601,
-    };
+    use holochain_core_types::{time::Iso8601, validation::ValidationPackage};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
     #[test]
@@ -294,7 +298,10 @@ mod tests {
 
         let expected = ValidationPackage {
             chain_header: chain_header.clone(),
-            source_chain_entries: Some(public_chain_entries_from_headers(&context, &all_chain_headers_before_header(&context, &chain_header))),
+            source_chain_entries: Some(public_chain_entries_from_headers(
+                &context,
+                &all_chain_headers_before_header(&context, &chain_header),
+            )),
             source_chain_headers: None,
             custom: None,
         };
@@ -364,7 +371,12 @@ mod tests {
     #[test]
     fn test_all_chain_headers_before_header_empty_chain() {
         let (_instance, context) = instance(None);
-        let top_header = context.state().unwrap().agent().top_chain_header().expect("There must be a top chain header");
+        let top_header = context
+            .state()
+            .unwrap()
+            .agent()
+            .top_chain_header()
+            .expect("There must be a top chain header");
         let headers = all_chain_headers_before_header(&context, &top_header);
         assert_eq!(headers.len(), 1) // includes the DNA entry only (no agent entry)
     }
@@ -373,7 +385,12 @@ mod tests {
     fn test_all_chain_headers_before_header_entry_local_commit_validation() {
         let (_instance, context) = instance(None);
 
-        let top_header = context.state().unwrap().agent().top_chain_header().expect("There must be a top chain header");
+        let top_header = context
+            .state()
+            .unwrap()
+            .agent()
+            .top_chain_header()
+            .expect("There must be a top chain header");
         // new entry header is created so it points to previous top header but not added to the local chain
         let new_entry_header = ChainHeader::new(
             &EntryType::from("test-new-entry"),
@@ -382,7 +399,7 @@ mod tests {
             &Some(top_header.address()),
             &None,
             &None,
-            &Iso8601::new(0,0),
+            &Iso8601::new(0, 0),
         );
 
         let headers = all_chain_headers_before_header(&context, &new_entry_header);

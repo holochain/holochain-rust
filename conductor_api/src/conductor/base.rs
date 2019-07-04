@@ -204,77 +204,85 @@ impl Conductor {
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
 
         self.log("starting signal loop".into());
-        thread::spawn(move || loop {
-            {
-                for (instance_id, receiver) in instance_signal_receivers.read().unwrap().iter() {
-                    if let Ok(signal) = receiver.try_recv() {
-                        signal_tx.clone().map(|s| s.send(signal.clone()));
-                        let broadcasters = broadcasters.read().unwrap();
-                        let interfaces_with_instance: Vec<&InterfaceConfiguration> = match signal {
-                            // Send internal signals only to admin interfaces, if signals.trace is set:
-                            Signal::Trace(_) => {
-                                if config.signals.trace {
-                                    config
-                                        .interfaces
-                                        .iter()
-                                        .filter(|interface_config| interface_config.admin)
-                                        .collect()
-                                } else {
-                                    Vec::new()
-                                }
-                            }
+        thread::Builder::new()
+            .name("signal_multiplexer".to_string())
+            .spawn(move || loop {
+                {
+                    for (instance_id, receiver) in instance_signal_receivers.read().unwrap().iter()
+                    {
+                        if let Ok(signal) = receiver.try_recv() {
+                            signal_tx.clone().map(|s| s.send(signal.clone()));
+                            let broadcasters = broadcasters.read().unwrap();
+                            let interfaces_with_instance: Vec<&InterfaceConfiguration> =
+                                match signal {
+                                    // Send internal signals only to admin interfaces, if signals.trace is set:
+                                    Signal::Trace(_) => {
+                                        if config.signals.trace {
+                                            config
+                                                .interfaces
+                                                .iter()
+                                                .filter(|interface_config| interface_config.admin)
+                                                .collect()
+                                        } else {
+                                            Vec::new()
+                                        }
+                                    }
 
-                            // Send internal signals only to admin interfaces, if signals.consistency is set:
-                            Signal::Consistency(_) => {
-                                if config.signals.consistency {
-                                    config
-                                        .interfaces
-                                        .iter()
-                                        .filter(|interface_config| interface_config.admin)
-                                        .collect()
-                                } else {
-                                    Vec::new()
-                                }
-                            }
+                                    // Send internal signals only to admin interfaces, if signals.consistency is set:
+                                    Signal::Consistency(_) => {
+                                        if config.signals.consistency {
+                                            config
+                                                .interfaces
+                                                .iter()
+                                                .filter(|interface_config| interface_config.admin)
+                                                .collect()
+                                        } else {
+                                            Vec::new()
+                                        }
+                                    }
 
-                            // Pass through user-defined  signals to the according interfaces
-                            // in which the source instance is exposed:
-                            Signal::User(_) => {
-                                println!("SIGNAL for instance[{}]: {:?}", instance_id, signal);
-                                let interfaces = config
-                                    .interfaces
-                                    .iter()
-                                    .filter(|interface_config| {
-                                        interface_config
-                                            .instances
+                                    // Pass through user-defined  signals to the according interfaces
+                                    // in which the source instance is exposed:
+                                    Signal::User(_) => {
+                                        println!(
+                                            "SIGNAL for instance[{}]: {:?}",
+                                            instance_id, signal
+                                        );
+                                        let interfaces = config
+                                            .interfaces
                                             .iter()
-                                            .find(|instance| instance.id == *instance_id)
-                                            .is_some()
-                                    })
-                                    .collect();
-                                println!("INTERFACEs for SIGNAL: {:?}", interfaces);
-                                interfaces
-                            }
-                        };
+                                            .filter(|interface_config| {
+                                                interface_config
+                                                    .instances
+                                                    .iter()
+                                                    .find(|instance| instance.id == *instance_id)
+                                                    .is_some()
+                                            })
+                                            .collect();
+                                        println!("INTERFACEs for SIGNAL: {:?}", interfaces);
+                                        interfaces
+                                    }
+                                };
 
-                        for interface in interfaces_with_instance {
-                            broadcasters.get(&interface.id).map(|broadcaster| {
-                                if let Err(error) = broadcaster.send(SignalWrapper {
-                                    signal: signal.clone(),
-                                    instance_id: instance_id.clone(),
-                                }) {
-                                    notify(error.to_string());
-                                }
-                            });
+                            for interface in interfaces_with_instance {
+                                broadcasters.get(&interface.id).map(|broadcaster| {
+                                    if let Err(error) = broadcaster.send(SignalWrapper {
+                                        signal: signal.clone(),
+                                        instance_id: instance_id.clone(),
+                                    }) {
+                                        notify(error.to_string());
+                                    }
+                                });
+                            }
                         }
                     }
                 }
-            }
-            if kill_switch_rx.try_recv().is_ok() {
-                break;
-            }
-            thread::sleep(Duration::from_millis(1));
-        })
+                if kill_switch_rx.try_recv().is_ok() {
+                    break;
+                }
+                thread::sleep(Duration::from_millis(1));
+            })
+            .expect("Must be able to spawn thread")
     }
 
     pub fn stop_signal_multiplexer(&self) {
@@ -1643,7 +1651,7 @@ pub mod tests {
         let mut instance = caller_instance.write().unwrap();
 
         let cap_call = {
-            let context = instance.context();
+            let context = instance.context().unwrap();
             make_cap_request_for_call(
                 context.clone(),
                 Address::from(context.clone().agent_id.address()),
@@ -1675,7 +1683,7 @@ pub mod tests {
         let mut instance = caller_instance.write().unwrap();
 
         let cap_call = {
-            let context = instance.context();
+            let context = instance.context().unwrap();
             make_cap_request_for_call(
                 context.clone(),
                 Address::from(context.clone().agent_id.address()),

@@ -123,6 +123,9 @@ pub enum Action {
     /// Create a network proxy instance from the given [NetworkSettings](struct.NetworkSettings.html)
     InitNetwork(NetworkSettings),
 
+    /// Shut down network by sending JsonProtocoll::UntrackDna, stopping network thread and dropping P2pNetwork instance
+    ShutdownNetwork,
+
     /// Makes the network PUT the given entry to the DHT.
     /// Distinguishes between different entry types and does
     /// the right thing respectively.

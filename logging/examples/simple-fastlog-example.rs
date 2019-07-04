@@ -1,15 +1,15 @@
 #[macro_use]
 extern crate log;
-use logging::{tag::TagFilter, FastLoggerBuilder};
+use logging::{rule::RuleFilter, FastLoggerBuilder};
 
 fn main() {
     FastLoggerBuilder::new()
         .set_level_from_str("Trace")
         // Let's log everything in white
-        .add_tag_filter(TagFilter::new(".*", false, "White"))
-        .add_tag_filter(TagFilter::new("Abort", false, "Red"))
-        .add_tag_filter(TagFilter::new("warned", false, "Yellow"))
-        .add_tag_filter(TagFilter::new("twice", true, "Yellow"))
+        .add_rule_filter(RuleFilter::new(".*", false, "White"))
+        .add_rule_filter(RuleFilter::new("Abort", false, "Red"))
+        .add_rule_filter(RuleFilter::new("warned", false, "Yellow"))
+        .add_rule_filter(RuleFilter::new("twice", true, "Yellow"))
         .build()
         .expect("Fail to instanciate the logging factory.");
 

@@ -5,7 +5,7 @@ use serde_derive::Deserialize;
 use toml;
 
 pub mod color;
-pub mod tag;
+pub mod rule;
 
 use color::{pick_color, ColoredLevelConfig};
 use crossbeam_channel::{self, Receiver, Sender};
@@ -17,7 +17,7 @@ use std::{
     thread,
     env,
 };
-use tag::RuleFilter;
+use rule::RuleFilter;
 
 type MsgT = Box<dyn LogMessageTrait>;
 
@@ -54,7 +54,7 @@ impl FastLogger {
                     } else {
                         color = rule_filter.get_color();
                         // Do we want to return the fist match or the last one?
-                        // return Some(rule_filter.tag_color())
+                        // return Some(rule_filter.get_color())
                     }
                 }
             }
@@ -62,10 +62,10 @@ impl FastLogger {
         }
     }
 
-    /// Add a tag filter to the list of existing filter. This function has to be called be
+    /// Add a rule filter to the list of existing filter. This function has to be called before
     /// registering the logger or it will do nothing because the logger becomes static.
-    pub fn add_rule_filter(&mut self, tag_filter: RuleFilter) {
-        self.rule_filters.push(tag_filter);
+    pub fn add_rule_filter(&mut self, rule_filter: RuleFilter) {
+        self.rule_filters.push(rule_filter);
     }
 
     /// Flush all filter from the logger. Once a logger has been registered, it becomes static and
@@ -257,13 +257,13 @@ impl Default for FastLoggerBuilder {
     }
 }
 
-/// Initialize a simple logging instance with Debug level and no tag filtering.
+/// Initialize a simple logging instance with Debug level and no rule filtering.
 pub fn init_simple() -> Result<(), SetLoggerError> {
-    FastLoggerBuilder::new().set_level(Level::Debug).build()?;
+    FastLoggerBuilder::new().build()?;
     Ok(())
 }
 
-/// This is our log message data structure. Usefull especially for performance reasons.
+/// This is our log message data structure. Useful especially for performance reasons.
 #[derive(Clone, Debug)]
 struct LogMessage {
     args: String,
@@ -279,7 +279,7 @@ trait LogMessageTrait: Send {
 }
 
 /// For performance purpose, we build the logging message in the logging thread instead of the
-/// calling one. It's primarily to deal with the potential slowness of retreaving the timestamp
+/// calling one. It's primarily to deal with the potential slowness of retrieving the timestamp
 /// from the OS.
 impl LogMessageTrait for LogMessage {
     fn build(&self) -> String {
@@ -300,7 +300,7 @@ impl LogMessageTrait for LogMessage {
             args = self.args.color(msg_color),
             module = self.module,
             line = self.line,
-            // We might considere retrieving the timestamp once and proceed logging
+            // We might consider retrieving the timestamp once and proceed logging
             // in batch in the future, if this ends up being performance critical
             // timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.6f"),
             timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
@@ -311,13 +311,13 @@ impl LogMessageTrait for LogMessage {
     }
 }
 
-/// This is a helper for TOML deserialization.
+/// This is a helper for [TOML](toml) deserialization.
 #[derive(Debug, Deserialize)]
 struct LoggerConfig {
     pub logger: Option<Logger>,
 }
 
-/// This structure is a helper for the TOML logging configuration.
+/// This structure is a helper for the [TOML](toml) logging configuration.
 #[derive(Clone, Debug, Deserialize)]
 struct Logger {
     level: String,
@@ -342,7 +342,7 @@ impl From<Logger> for FastLoggerBuilder {
 
         FastLoggerBuilder {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
-            rule_filters: rule_filters,
+            rule_filters,
             ..FastLoggerBuilder::default()
         }
     }
@@ -361,7 +361,7 @@ impl From<Rule> for RuleFilter {
 
 #[test]
 fn should_log_test() {
-    use tag::RuleFilterBuilder;
+    use rule::RuleFilterBuilder;
 
     let mut logger = FastLoggerBuilder::new()
         .set_level_from_str("Debug")

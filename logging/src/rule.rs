@@ -1,4 +1,4 @@
-//! Tagging capability: add capability to filter by regex and attribute some color to them.
+//! Log filtering facility: add the capability to filter out by regex log messages and/or colorize them.
 
 use regex::Regex;
 use std::default::Default;
@@ -17,7 +17,7 @@ impl RuleFilter {
             pattern: Some(pattern.to_owned()),
             exclude,
             color: Some(color.to_owned()),
-            re: Regex::new(&pattern).expect("Fail to init TagFilter's regex."),
+            re: Regex::new(&pattern).expect("Fail to init RuleFilter's regex."),
         }
     }
     /// Returns if we should exclude this log entry or not.
@@ -52,7 +52,7 @@ impl Default for RuleFilter {
             pattern: Some(String::default()),
             exclude: false,
             color: Some(String::from("white")),
-            re: Regex::new(&String::default()).expect("Fail to init TagFilter's regex."),
+            re: Regex::new(&String::default()).expect("Fail to init RuleFilter's regex."),
         }
     }
 }
@@ -93,7 +93,7 @@ impl RuleFilterBuilder {
             pattern,
             exclude: self.exclude,
             color: Some(self.color.to_owned()),
-            re: Regex::new(&self.pattern).expect("Fail to init TagFilter's regex."),
+            re: Regex::new(&self.pattern).expect("Fail to init RuleFilter's regex."),
         }
     }
 }

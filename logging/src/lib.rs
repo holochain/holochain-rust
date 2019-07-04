@@ -15,6 +15,7 @@ use std::{
     io::{self, Write},
     str::FromStr,
     thread,
+    env,
 };
 use tag::TagFilter;
 
@@ -164,19 +165,27 @@ impl FastLoggerBuilder {
         Ok(flb)
     }
 
-    /// Set the
+    /// Returns the verbosity level of logger to build. Can be one of: Trace, Debug, Info, Warn or Error.
+    pub fn level(&self) -> Level {
+        self.level
+    }
+    /// Set the [verbosity level](log::Level) of the logger.
+    /// Value can be one of: [Trace](Level::Trace), [Debug](Level::Debug), [Info](Level::Info),
+    /// [Warn](Level::Warn) or [Error](Level::Error).
     pub fn set_level(&mut self, level: Level) -> &mut Self {
         self.level = level;
         self
     }
 
+    /// Set the [verbosity level](log::Level) of the logger from a string value: Trace, Debug,
+    /// Info, Warn or Error.
     pub fn set_level_from_str(&mut self, level: &str) -> &mut Self {
         self.level = Level::from_str(level).unwrap_or_else(|_| {
             eprintln!(
-                "Fail to parse the logging level from string: '{}'. Reverting to Info.",
+                "Fail to parse the logging level from string: '{}'.",
                 level
             );
-            Level::Info
+            self.level
         });
         self
     }
@@ -237,8 +246,11 @@ impl FastLoggerBuilder {
 
 impl Default for FastLoggerBuilder {
     fn default() -> Self {
+        // Get the log verbosity from the command line
+        let level = env::var("RUST_LOG").unwrap_or("Info".to_string());
+
         FastLoggerBuilder {
-            level: Level::Info,
+            level: Level::from_str(&level).unwrap_or(Level::Info),
             tag_filters: Vec::new(),
             level_colors: ColoredLevelConfig::new(),
             channel_size: 512,
@@ -394,4 +406,12 @@ fn test_rules_deserialization() {
 
     let _flb: FastLoggerBuilder = logger.unwrap().into();
     assert!(_flb.build().is_ok());
+}
+
+#[test]
+fn configure_log_level_from_env_test() {
+    env::set_var("RUST_LOG", "warn");
+    let flb = FastLoggerBuilder::new();
+
+    assert_eq!(flb.level(), Level::Warn)
 }

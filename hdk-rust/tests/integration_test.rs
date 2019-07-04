@@ -379,7 +379,7 @@ fn start_holochain_instance<T: Into<String>>(
 
 fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
     let cap_call = {
-        let context = hc.context();
+        let context = hc.context()?;
         let token = context.get_public_token().unwrap();
         make_cap_request_for_call(
             context.clone(),

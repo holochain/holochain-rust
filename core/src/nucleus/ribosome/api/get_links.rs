@@ -38,6 +38,7 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
 
 #[cfg(test)]
 pub mod tests {
+    use crate::instance::Instance;
     use std::sync::Arc;
     use test_utils;
 
@@ -94,14 +95,15 @@ pub mod tests {
         entry_addresses
     }
 
-    fn initialize_context(netname: &str) -> Arc<Context> {
+    fn initialize_context(netname: &str) -> (Instance, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
         let netname = Some(netname);
         let instance = test_instance(dna, netname).expect("Could not create test instance");
 
         let (context, _) = test_context_and_logger("joan", netname);
-        instance.initialize_context(context)
+        let arc_context = instance.initialize_context(context);
+        (instance, arc_context)
     }
 
     pub fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
@@ -137,7 +139,7 @@ pub mod tests {
     #[test]
     fn returns_list_of_links() {
         // setup the instance and links
-        let initialized_context = initialize_context("returns_list_of_links");
+        let (_instance, initialized_context) = initialize_context("returns_list_of_links");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
             Link::new(
@@ -185,7 +187,7 @@ pub mod tests {
 
     #[test]
     fn get_links_with_non_existent_type_returns_nothing() {
-        let initialized_context =
+        let (_instance, initialized_context) =
             initialize_context("get_links_with_non_existent_type_returns_nothing");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
@@ -222,7 +224,7 @@ pub mod tests {
 
     #[test]
     fn get_links_with_non_existent_tag_returns_nothing() {
-        let initialized_context =
+        let (_instance, initialized_context) =
             initialize_context("get_links_with_non_existent_tag_returns_nothing");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
@@ -260,7 +262,8 @@ pub mod tests {
     #[test]
     fn can_get_all_links_of_any_tag_or_type() {
         // setup the instance and links
-        let initialized_context = initialize_context("can_get_all_links_of_any_tag_or_type");
+        let (_instance, initialized_context) =
+            initialize_context("can_get_all_links_of_any_tag_or_type");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
             Link::new(
@@ -307,7 +310,7 @@ pub mod tests {
 
     #[test]
     fn get_links_with_exact_tag_match_returns_only_that_link() {
-        let initialized_context =
+        let (_instance, initialized_context) =
             initialize_context("get_links_with_exact_tag_match_returns_only_that");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
@@ -343,7 +346,8 @@ pub mod tests {
 
     #[test]
     fn test_with_same_target_and_tag_dedup() {
-        let initialized_context = initialize_context("test_with_same_target_and_tag_dedup");
+        let (_instance, initialized_context) =
+            initialize_context("test_with_same_target_and_tag_dedup");
         let entry_addresses = add_test_entries(initialized_context.clone());
         // links have same tag, same base and same tag. Are the same
         let links = vec![
@@ -378,7 +382,7 @@ pub mod tests {
 
     #[test]
     fn test_with_same_target_different_tag_dont_dedup() {
-        let initialized_context =
+        let (_instance, initialized_context) =
             initialize_context("test_with_same_target_different_tag_dont_dedup");
         let entry_addresses = add_test_entries(initialized_context.clone());
         // same target and type, different tag

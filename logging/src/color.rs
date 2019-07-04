@@ -1,3 +1,5 @@
+//! This is where we handle the color of the logging messages.
+//! Greatly inspired by the [fern](https://docs.rs/fern/0.5.8/fern/colors/index.html) crate.
 use std::str::FromStr;
 
 /// The 8 standard colors.

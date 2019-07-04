@@ -15,7 +15,9 @@ fn main() {
     debug!("What's bugging you today?");
     info!("Some interesting info here");
     warn!("You've been warned Sir!");
-    warn!("Let's not warned twice about the same stuff.");
+    // This next one will not be logged according to our defined rule
+    warn!("Let's not warn twice about the same stuff.");
+    // And this one will be printed in red
     error!("Abort the mission!!");
 
     // Let's give some time to the working thread to finish logging...

@@ -3,6 +3,7 @@ use super::{
     protocol::Protocol,
     NetResult,
 };
+use snowflake::ProcessUniqueId;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -46,7 +47,7 @@ impl NetConnectionThread {
         let (send_endpoint, recv_endpoint) = mpsc::channel();
 
         // Spawn worker thread
-        let thread = thread::spawn(move || {
+        let thread = thread::Builder::new().name(format!("net_worker_thread/{}", ProcessUniqueId::new().to_string())).spawn(move || {
             // Create worker
             let mut worker = worker_factory(handler).unwrap_or_else(|e| {
                 panic!("Failure while attempting to create network worker with provided P2pConfig. Error: {:?}", e)
@@ -104,7 +105,7 @@ impl NetConnectionThread {
             worker.stop().unwrap_or_else(|e| {
                 eprintln!("Error occured in p2p network module on stop: {:?}", e)
             });
-        });
+        }).expect("Could not spawn net connection thread");
 
         // Retrieve endpoint from spawned thread.
         let endpoint = recv_endpoint.recv().map_err(|e| {

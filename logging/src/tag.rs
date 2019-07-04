@@ -4,14 +4,14 @@ use regex::Regex;
 use std::default::Default;
 
 #[derive(Clone, Debug)]
-pub struct TagFilter {
+pub struct RuleFilter {
     pub pattern: Option<String>,
     exclude: bool,
     color: Option<String>,
     re: Regex,
 }
 
-impl TagFilter {
+impl RuleFilter {
     pub fn new(pattern: &str, exclude: bool, color: &str) -> Self {
         Self {
             pattern: Some(pattern.to_owned()),
@@ -20,13 +20,13 @@ impl TagFilter {
             re: Regex::new(&pattern).expect("Fail to init TagFilter's regex."),
         }
     }
-    /// Returns if we should excluse this matter or not.
+    /// Returns if we should exclude this log entry or not.
     pub fn exclude(&self) -> bool {
         self.exclude
     }
 
-    /// Returns the color of the tag.
-    pub fn tag_color(&self) -> String {
+    /// Returns the color of the log entry.
+    pub fn get_color(&self) -> String {
         match &self.color {
             Some(color) => color.clone(),
             None => String::default(),
@@ -46,7 +46,7 @@ impl TagFilter {
     }
 }
 
-impl Default for TagFilter {
+impl Default for RuleFilter {
     fn default() -> Self {
         Self {
             pattern: Some(String::default()),
@@ -57,13 +57,13 @@ impl Default for TagFilter {
     }
 }
 
-pub struct TagFilterBuilder {
+pub struct RuleFilterBuilder {
     pattern: String,
     exclude: bool,
     color: String,
 }
 
-impl TagFilterBuilder {
+impl RuleFilterBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -83,13 +83,13 @@ impl TagFilterBuilder {
         self
     }
 
-    pub fn build(&self) -> TagFilter {
+    pub fn build(&self) -> RuleFilter {
         let pattern = match self.pattern.len() {
             0 => None,
             _ => Some(self.pattern.clone()),
         };
 
-        TagFilter {
+        RuleFilter {
             pattern,
             exclude: self.exclude,
             color: Some(self.color.to_owned()),
@@ -98,7 +98,7 @@ impl TagFilterBuilder {
     }
 }
 
-impl Default for TagFilterBuilder {
+impl Default for RuleFilterBuilder {
     fn default() -> Self {
         Self {
             pattern: String::default(),
@@ -110,22 +110,22 @@ impl Default for TagFilterBuilder {
 
 #[test]
 fn should_log_test() {
-    let tag_filter = TagFilterBuilder::new()
+    let rule_filter = RuleFilterBuilder::new()
         .set_pattern("foo")
         .set_exclusion(false)
         .build();
 
-    assert_eq!(tag_filter.should_log("bar"), false);
-    assert_eq!(tag_filter.should_log("xfooy"), true);
+    assert_eq!(rule_filter.should_log("bar"), false);
+    assert_eq!(rule_filter.should_log("xfooy"), true);
 }
 
 #[test]
 fn is_match_test() {
-    let tag_filter = TagFilterBuilder::new()
+    let rule_filter = RuleFilterBuilder::new()
         .set_pattern("foo")
         .set_exclusion(false)
         .build();
 
-    assert_eq!(tag_filter.is_match("bar"), false);
-    assert_eq!(tag_filter.is_match("xfooy"), true);
+    assert_eq!(rule_filter.is_match("bar"), false);
+    assert_eq!(rule_filter.is_match("xfooy"), true);
 }

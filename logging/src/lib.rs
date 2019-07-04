@@ -17,7 +17,7 @@ use std::{
     thread,
     env,
 };
-use tag::TagFilter;
+use tag::RuleFilter;
 
 type MsgT = Box<dyn LogMessageTrait>;
 
@@ -25,7 +25,7 @@ type MsgT = Box<dyn LogMessageTrait>;
 #[derive(Clone)]
 pub struct FastLogger {
     level: Level,
-    tag_filters: Vec<TagFilter>,
+    rule_filters: Vec<RuleFilter>,
     level_colors: ColoredLevelConfig,
     sender: Sender<MsgT>,
 }
@@ -36,25 +36,25 @@ impl FastLogger {
         self.level
     }
 
-    /// Returns all the *rules* / *tag filters* defined.
-    pub fn tag_filters(&self) -> &Vec<TagFilter> {
-        &self.tag_filters
+    /// Returns all the *rules* defined.
+    pub fn rule_filters(&self) -> &Vec<RuleFilter> {
+        &self.rule_filters
     }
 
     /// Returns the color of a log message if the logger should log it, and None other wise.
     pub fn should_log_in(&self, args: &str) -> Option<String> {
-        if self.tag_filters.is_empty() {
+        if self.rule_filters.is_empty() {
             Some(String::default())
         } else {
             let mut color = String::default();
-            for tag_filter in self.tag_filters.iter() {
-                if tag_filter.is_match(args) {
-                    if tag_filter.exclude() {
+            for rule_filter in self.rule_filters.iter() {
+                if rule_filter.is_match(args) {
+                    if rule_filter.exclude() {
                         return None;
                     } else {
-                        color = tag_filter.tag_color();
+                        color = rule_filter.get_color();
                         // Do we want to return the fist match or the last one?
-                        // return Some(tag_filter.tag_color())
+                        // return Some(rule_filter.tag_color())
                     }
                 }
             }
@@ -64,14 +64,14 @@ impl FastLogger {
 
     /// Add a tag filter to the list of existing filter. This function has to be called be
     /// registering the logger or it will do nothing because the logger becomes static.
-    pub fn add_tag_filter(&mut self, tag_filter: TagFilter) {
-        self.tag_filters.push(tag_filter);
+    pub fn add_rule_filter(&mut self, tag_filter: RuleFilter) {
+        self.rule_filters.push(tag_filter);
     }
 
     /// Flush all filter from the logger. Once a logger has been registered, it becomes static and
     /// so this function doesn't do anything.
     pub fn flush_filters(&mut self) {
-        self.tag_filters.clear();
+        self.rule_filters.clear();
     }
 }
 
@@ -114,7 +114,7 @@ impl log::Log for FastLogger {
 /// Logger Builder used to correctly set up our logging capability.
 pub struct FastLoggerBuilder {
     level: Level,
-    tag_filters: Vec<TagFilter>,
+    rule_filters: Vec<RuleFilter>,
     level_colors: ColoredLevelConfig,
     channel_size: usize,
 }
@@ -161,8 +161,7 @@ impl FastLoggerBuilder {
             "The 'logger' part might be missing in the toml."
         );
 
-        let flb: FastLoggerBuilder = logger.unwrap().into();
-        Ok(flb)
+        Ok(logger.unwrap().into())
     }
 
     /// Returns the verbosity level of logger to build. Can be one of: Trace, Debug, Info, Warn or Error.
@@ -197,9 +196,9 @@ impl FastLoggerBuilder {
         self
     }
 
-    /// Add filtering [rules (or tag filters)](tag::TagFilter) to the logging facility.
-    pub fn add_tag_filter(&mut self, tag_filter: TagFilter) -> &mut Self {
-        self.tag_filters.push(tag_filter);
+    /// Add filtering [rules](rule::RuleFilter) to the logging facility.
+    pub fn add_rule_filter(&mut self, rule_filter: RuleFilter) -> &mut Self {
+        self.rule_filters.push(rule_filter);
         self
     }
 
@@ -212,7 +211,7 @@ impl FastLoggerBuilder {
 
         let logger = FastLogger {
             level: self.level,
-            tag_filters: self.tag_filters.to_owned(),
+            rule_filters: self.rule_filters.to_owned(),
             level_colors: self.level_colors,
             sender: s,
         };
@@ -251,7 +250,7 @@ impl Default for FastLoggerBuilder {
 
         FastLoggerBuilder {
             level: Level::from_str(&level).unwrap_or(Level::Info),
-            tag_filters: Vec::new(),
+            rule_filters: Vec::new(),
             level_colors: ColoredLevelConfig::new(),
             channel_size: 512,
         }
@@ -334,7 +333,7 @@ struct Rule {
 
 impl From<Logger> for FastLoggerBuilder {
     fn from(logger: Logger) -> Self {
-        let tag_filters: Vec<TagFilter> = logger
+        let rule_filters: Vec<RuleFilter> = logger
             .rules
             .unwrap_or_else(|| vec![])
             .into_iter()
@@ -343,31 +342,31 @@ impl From<Logger> for FastLoggerBuilder {
 
         FastLoggerBuilder {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
-            tag_filters,
+            rule_filters: rule_filters,
             ..FastLoggerBuilder::default()
         }
     }
 }
 
-impl From<Rule> for TagFilter {
+impl From<Rule> for RuleFilter {
     fn from(rule: Rule) -> Self {
-        let tf = TagFilter::default();
-        TagFilter::new(
+        let tf = RuleFilter::default();
+        RuleFilter::new(
             &rule.pattern,
             rule.exclude.unwrap_or_else(|| tf.exclude()),
-            &rule.color.unwrap_or_else(|| tf.tag_color()),
+            &rule.color.unwrap_or_else(|| tf.get_color()),
         )
     }
 }
 
 #[test]
 fn should_log_test() {
-    use tag::TagFilterBuilder;
+    use tag::RuleFilterBuilder;
 
     let mut logger = FastLoggerBuilder::new()
         .set_level_from_str("Debug")
-        .add_tag_filter(
-            TagFilterBuilder::new()
+        .add_rule_filter(
+            RuleFilterBuilder::new()
                 .set_pattern("foo")
                 .set_exclusion(false)
                 .set_color("Blue")
@@ -381,9 +380,9 @@ fn should_log_test() {
     assert_eq!(logger.should_log_in("xfooy"), Some(String::from("Blue")));
 
     // rule to reject anything with baz
-    logger.add_tag_filter(TagFilter::new("baz", true, "White"));
+    logger.add_rule_filter(RuleFilter::new("baz", true, "White"));
     // rule to accept anything with b
-    logger.add_tag_filter(TagFilter::new("b", false, "Green"));
+    logger.add_rule_filter(RuleFilter::new("b", false, "Green"));
 
     assert_eq!(logger.should_log_in("baz"), None);
     assert_eq!(logger.should_log_in("xboy"), Some(String::from("Green")));
@@ -414,4 +413,19 @@ fn configure_log_level_from_env_test() {
     let flb = FastLoggerBuilder::new();
 
     assert_eq!(flb.level(), Level::Warn)
+}
+
+#[test]
+fn log_to_file_test() {
+    let toml = r#"
+        [logger]
+        level = "debug"
+        file = "logger_dump.log"
+
+            [[logger.rules]]
+            pattern = ".*"
+            color = "Yellow"
+    "#;
+
+    FastLoggerBuilder::from_toml(toml).expect("Fail to load logging conf from toml.");
 }

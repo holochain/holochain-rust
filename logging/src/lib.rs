@@ -30,10 +30,12 @@ pub struct FastLogger {
 }
 
 impl FastLogger {
+    /// Returns the current log level defined. Can be one of: Trace, Debug, Info, Warn or Error.
     pub fn level(&self) -> Level {
         self.level
     }
 
+    /// Returns all the *rules* / *tag filters* defined.
     pub fn tag_filters(&self) -> &Vec<TagFilter> {
         &self.tag_filters
     }
@@ -59,18 +61,21 @@ impl FastLogger {
         }
     }
 
-    /// Add a tag filter to the list of existing filter.
+    /// Add a tag filter to the list of existing filter. This function has to be called be
+    /// registering the logger or it will do nothing because the logger becomes static.
     pub fn add_tag_filter(&mut self, tag_filter: TagFilter) {
         self.tag_filters.push(tag_filter);
     }
 
-    /// Flush all filter from the logger.
+    /// Flush all filter from the logger. Once a logger has been registered, it becomes static and
+    /// so this function doesn't do anything.
     pub fn flush_filters(&mut self) {
         self.tag_filters.clear();
     }
 }
 
 impl log::Log for FastLogger {
+    /// Determines if a log message with the specified metadata would be logged.
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level() <= self.level()
     }
@@ -101,6 +106,7 @@ impl log::Log for FastLogger {
         }
     }
 
+    /// Flushes any buffered records.
     fn flush(&self) {}
 }
 
@@ -124,6 +130,8 @@ pub struct FastLoggerBuilder {
 /// assert!(logger.is_ok());
 /// ```
 impl FastLoggerBuilder {
+    /// It will init a [FastLogger] with the default argument (log level set to
+    /// [Info](log::Level::Info) by default).
     pub fn new() -> Self {
         FastLoggerBuilder::default()
     }
@@ -156,6 +164,7 @@ impl FastLoggerBuilder {
         Ok(flb)
     }
 
+    /// Set the
     pub fn set_level(&mut self, level: Level) -> &mut Self {
         self.level = level;
         self
@@ -163,22 +172,30 @@ impl FastLoggerBuilder {
 
     pub fn set_level_from_str(&mut self, level: &str) -> &mut Self {
         self.level = Level::from_str(level).unwrap_or_else(|_| {
-            eprintln!("Fail to parse the logging level from string: '{}'.", level);
+            eprintln!(
+                "Fail to parse the logging level from string: '{}'. Reverting to Info.",
+                level
+            );
             Level::Info
         });
         self
     }
 
+    /// Sets the capacity of our bounded message queue (i.e. there is a limit to how many messages
+    /// it can hold at a time.). By default we use a queue of 512.
     pub fn set_channel_size(&mut self, channel_size: usize) -> &mut Self {
         self.channel_size = channel_size;
         self
     }
 
+    /// Add filtering [rules (or tag filters)](tag::TagFilter) to the logging facility.
     pub fn add_tag_filter(&mut self, tag_filter: TagFilter) -> &mut Self {
         self.tag_filters.push(tag_filter);
         self
     }
 
+    /// Registers a [FastLogger] as the comsumer of [log] facade so it becomes static and any further
+    /// mutation are discarded.
     pub fn build(&self) -> Result<FastLogger, SetLoggerError> {
         // Let's create the logging thread that will be responsable for all the heavy work of
         // building and printing the log messages
@@ -190,6 +207,9 @@ impl FastLoggerBuilder {
             level_colors: self.level_colors,
             sender: s,
         };
+
+
+        // This is where I should impl the output
 
         match log::set_boxed_logger(Box::new(logger.clone()))
             .map(|_| log::set_max_level(self.level.to_level_filter()))
@@ -271,7 +291,8 @@ impl LogMessageTrait for LogMessage {
             line = self.line,
             // We might considere retrieving the timestamp once and proceed logging
             // in batch in the future, if this ends up being performance critical
-            timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.6f"),
+            // timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.6f"),
+            timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
             level = self.level,
             thread_name = self.thread_name,
         );
@@ -286,13 +307,13 @@ struct LoggerConfig {
 }
 
 /// This structure is a helper for the TOML logging configuration.
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 struct Logger {
     level: String,
     rules: Option<Vec<Rule>>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 struct Rule {
     pub pattern: String,
     pub exclude: Option<bool>,
@@ -301,10 +322,16 @@ struct Rule {
 
 impl From<Logger> for FastLoggerBuilder {
     fn from(logger: Logger) -> Self {
-        let _tag_filters: Vec<Rule> =
-            Vec::with_capacity(logger.rules.unwrap_or_else(|| vec![]).len());
+        let tag_filters: Vec<TagFilter> = logger
+            .rules
+            .unwrap_or_else(|| vec![])
+            .into_iter()
+            .map(|rule| rule.into())
+            .collect();
+
         FastLoggerBuilder {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
+            tag_filters,
             ..FastLoggerBuilder::default()
         }
     }

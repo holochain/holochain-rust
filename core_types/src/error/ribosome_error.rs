@@ -1,5 +1,7 @@
 use self::{RibosomeEncodedValue::*, RibosomeErrorCode::*};
-use crate::{error::HolochainError, json::JsonString};
+use crate::error::HolochainError;
+use holochain_json_api::{error::JsonError, json::JsonString};
+
 use bits_n_pieces::u64_split_bits;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, str::FromStr};
@@ -202,7 +204,10 @@ impl From<HolochainError> for RibosomeErrorCode {
             HolochainError::ConfigError(_) => RibosomeErrorCode::Unspecified,
             HolochainError::Timeout => RibosomeErrorCode::Unspecified,
             HolochainError::InitializationFailed(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::LifecycleError(_) => RibosomeErrorCode::Unspecified,
             HolochainError::DnaHashMismatch(_, _) => RibosomeErrorCode::Unspecified,
+            HolochainError::EntryNotFoundLocally => RibosomeErrorCode::Unspecified,
+            HolochainError::EntryIsPrivate => RibosomeErrorCode::Unspecified,
         }
     }
 }

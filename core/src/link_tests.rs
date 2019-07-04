@@ -8,10 +8,10 @@ pub mod tests {
         instance::{tests::test_context, Instance, Observer},
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         entry::{entry_type::EntryType, Entry},
         link::{link_list::LinkList, Link},
     };
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
     use std::sync::mpsc::channel;
 
@@ -64,10 +64,10 @@ pub mod tests {
         let context = instance.initialize_context(context);
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
         // Check if LinkEntry is found
-        assert_eq!(1, instance.state().history.iter().count());
+        assert_eq!(1, instance.state().history().iter().count());
         instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {
@@ -100,10 +100,10 @@ pub mod tests {
         let context = instance.initialize_context(context);
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
         // Check if LinkEntry is found
-        assert_eq!(1, instance.state().history.iter().count());
+        assert_eq!(1, instance.state().history().iter().count());
         instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {

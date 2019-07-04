@@ -7,7 +7,10 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_persistence_api::cas::content::Address;
+
+use holochain_core_types::error::HolochainError;
+
 use std::{pin::Pin, sync::Arc};
 
 /// Remove Entry Action Creator
@@ -38,6 +41,9 @@ impl Future for RemoveEntryFuture {
     type Output = Result<(), HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("RemoveEntryFuture") {
+            return Poll::Ready(Err(err));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

@@ -8,10 +8,8 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    error::HolochainError,
-};
+use holochain_core_types::error::HolochainError;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{pin::Pin, sync::Arc};
 
 pub async fn hold_entry(
@@ -33,6 +31,9 @@ impl Future for HoldEntryFuture {
     type Output = Result<Address, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("HoldEntryFuture") {
+            return Poll::Ready(Err(err));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

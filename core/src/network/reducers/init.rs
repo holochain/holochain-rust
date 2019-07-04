@@ -17,7 +17,7 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     let network_settings = unwrap_to!(action => Action::InitNetwork);
     let mut network = P2pNetwork::new(
         network_settings.handler.clone(),
-        &network_settings.p2p_config,
+        network_settings.p2p_config.clone(),
     )
     .unwrap();
 
@@ -35,7 +35,7 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
 
     let json = JsonProtocol::TrackDna(TrackDnaData {
         dna_address: network_settings.dna_address.clone(),
-        agent_id: network_settings.agent_id.clone(),
+        agent_id: network_settings.agent_id.clone().into(),
     });
 
     let _ = network.send(json.into()).and_then(|_| {
@@ -54,14 +54,12 @@ pub mod test {
         context::Context,
         logger::test_logger,
         persister::SimplePersister,
-        state::{test_store, State},
+        state::{test_store, StateWrapper},
     };
-    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::{
-        agent::AgentId,
-        cas::content::{Address, AddressableContent},
-    };
+    use holochain_core_types::agent::AgentId;
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
+    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Mutex, RwLock};
     use tempfile;
 
@@ -84,7 +82,7 @@ pub mod test {
             None,
         );
 
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }

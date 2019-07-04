@@ -4,11 +4,15 @@ use crate::{
     nucleus::actions::remove_pending_validation::remove_pending_validation,
     workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
 };
-use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    error::HolochainError,
-    json::JsonString,
+use holochain_core_types::error::HolochainError;
+
+use crate::workflows::{
+    hold_entry_remove::hold_remove_workflow, hold_entry_update::hold_update_workflow,
+    remove_link::remove_link_workflow,
 };
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use snowflake::ProcessUniqueId;
 use std::{fmt, sync::Arc, thread};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
@@ -17,6 +21,9 @@ pub type PendingValidation = Arc<PendingValidationStruct>;
 pub enum ValidatingWorkflow {
     HoldEntry,
     HoldLink,
+    RemoveLink,
+    UpdateEntry,
+    RemoveEntry,
 }
 
 impl fmt::Display for ValidatingWorkflow {
@@ -24,6 +31,9 @@ impl fmt::Display for ValidatingWorkflow {
         match self {
             ValidatingWorkflow::HoldEntry => write!(f, "HoldEntryWorkflow"),
             ValidatingWorkflow::HoldLink => write!(f, "HoldLinkWorkflow"),
+            ValidatingWorkflow::RemoveLink => write!(f, "RemoveLinkWorkflow"),
+            ValidatingWorkflow::UpdateEntry => write!(f, "UpdateEntryWorkflow"),
+            ValidatingWorkflow::RemoveEntry => write!(f, "RemoveEntryWorkflow"),
         }
     }
 }
@@ -36,25 +46,44 @@ pub struct PendingValidationStruct {
 }
 
 fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
-    thread::spawn(move || {
-        let result = match pending.workflow {
-            ValidatingWorkflow::HoldLink => {
-                context.block_on(hold_link_workflow(&pending.entry_with_header, &context))
-            }
-            ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
-                &pending.entry_with_header,
-                context.clone(),
-            )),
-        };
+    thread::Builder::new()
+        .name(format!(
+            "retry_validation/{}",
+            ProcessUniqueId::new().to_string()
+        ))
+        .spawn(move || {
+            let result = match pending.workflow {
+                ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
+                    &pending.entry_with_header,
+                    context.clone(),
+                )),
+                ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
+                    &pending.entry_with_header,
+                    context.clone(),
+                )),
+                ValidatingWorkflow::RemoveLink => context.block_on(remove_link_workflow(
+                    &pending.entry_with_header,
+                    context.clone(),
+                )),
+                ValidatingWorkflow::UpdateEntry => context.block_on(hold_update_workflow(
+                    &pending.entry_with_header,
+                    context.clone(),
+                )),
+                ValidatingWorkflow::RemoveEntry => context.block_on(hold_remove_workflow(
+                    &pending.entry_with_header,
+                    context.clone(),
+                )),
+            };
 
-        if Err(HolochainError::ValidationPending) != result {
-            remove_pending_validation(
-                pending.entry_with_header.entry.address(),
-                pending.workflow.clone(),
-                &context,
-            );
-        }
-    });
+            if Err(HolochainError::ValidationPending) != result {
+                remove_pending_validation(
+                    pending.entry_with_header.entry.address(),
+                    pending.workflow.clone(),
+                    &context,
+                );
+            }
+        })
+        .expect("Could not spawn thread for retry_validation");
 }
 
 pub fn run_pending_validations(context: Arc<Context>) {

@@ -8,16 +8,20 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     dna::{capabilities::CapabilityRequest, wasm::DnaWasm},
     entry::{
         cap_entries::{CapTokenGrant, CapabilityType},
         Entry,
     },
     error::HolochainError,
-    json::JsonString,
     signature::{Provenance, Signature},
+    ugly::lax_send_sync,
 };
+
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+
+use holochain_json_api::json::JsonString;
+
 use holochain_dpki::utils::Verify;
 
 use base64;
@@ -25,6 +29,8 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
+use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
+use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
@@ -64,7 +70,7 @@ impl ExecuteZomeFnResponse {
 /// Use Context::block_on to wait for the call result.
 pub async fn call_zome_function(
     zome_call: ZomeFnCall,
-    context: &Arc<Context>,
+    context: Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
     context.log(format!(
         "debug/actions/call_zome_fn: Validating call: {:?}",
@@ -91,25 +97,32 @@ pub async fn call_zome_function(
         )))
         .expect("action channel to be open");
 
-    let _ = thread::spawn(move || {
-        // Have Ribosome spin up DNA and call the zome function
-        let call_result = ribosome::run_dna(
-            Some(zome_call_clone.clone().parameters.to_bytes()),
-            WasmCallData::new_zome_call(context_clone.clone(), zome_call_clone.clone()),
-        );
-        context_clone.log("debug/actions/call_zome_fn: got call_result from ribosome::run_dna.");
-        // Construct response
-        let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);
-        // Send ReturnZomeFunctionResult Action
-        context_clone.log("debug/actions/call_zome_fn: sending ReturnZomeFunctionResult action.");
-        context_clone
-            .action_channel()
-            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
-                response,
-            )))
-            .expect("action channel to be open in reducer");
-        context_clone.log("debug/actions/call_zome_fn: sent ReturnZomeFunctionResult action.");
-    });
+    thread::Builder::new()
+        .name(format!(
+            "call_zome_function/{}",
+            ProcessUniqueId::new().to_string()
+        ))
+        .spawn(move || {
+            // Have Ribosome spin up DNA and call the zome function
+            let call_result = ribosome::run_dna(
+                Some(zome_call_clone.clone().parameters.to_bytes()),
+                WasmCallData::new_zome_call(context_clone.clone(), zome_call_clone.clone()),
+            );
+            context_clone
+                .log("debug/actions/call_zome_fn: got call_result from ribosome::run_dna.");
+            // Construct response
+            let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);
+            // Send ReturnZomeFunctionResult Action
+            context_clone
+                .log("debug/actions/call_zome_fn: sending ReturnZomeFunctionResult action.");
+            lax_send_sync(
+                context_clone.action_channel().clone(),
+                ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
+                "call_zome_function",
+            );
+            context_clone.log("debug/actions/call_zome_fn: sent ReturnZomeFunctionResult action.");
+        })
+        .expect("Could not spawn thread for call_zome_function");
 
     context.log(format!(
         "debug/actions/call_zome_fn: awaiting for \
@@ -192,9 +205,11 @@ fn make_call_sig<J: Into<JsonString>>(
     function: &str,
     parameters: J,
 ) -> Signature {
+    let encode_call_data = encode_call_data_for_signing(function, parameters);
     Signature::from(
         context
-            .sign(encode_call_data_for_signing(function, parameters))
+            .conductor_api
+            .execute(encode_call_data, CryptoMethod::Sign)
             .expect("signing should work"),
     )
 }
@@ -290,6 +305,9 @@ impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("CallResultFuture") {
+            return Poll::Ready(Err(err));
+        }
         // With our own executor implementation in Context::block_on we actually
         // wouldn't need the waker since this executor is attached to the redux loop
         // and re-polls after every State mutation.
@@ -319,7 +337,6 @@ pub mod tests {
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         dna::capabilities::CapabilityRequest,
         entry::{
             cap_entries::{CapFunctions, CapTokenGrant, CapabilityType},
@@ -327,6 +344,7 @@ pub mod tests {
         },
         signature::Signature,
     };
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
     #[test]
     fn test_agent_as_token() {
@@ -381,7 +399,7 @@ pub mod tests {
     #[test]
     fn test_get_grant() {
         let dna = test_dna();
-        let (_, context) =
+        let (_instance, context) =
             test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         let mut cap_functions = CapFunctions::new();

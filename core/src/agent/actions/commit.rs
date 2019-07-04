@@ -8,9 +8,9 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
+use holochain_core_types::{entry::Entry, error::HolochainError};
+use holochain_persistence_api::cas::content::Address;
 use std::{pin::Pin, sync::Arc};
-//use core::mem::PinMut;
 
 /// Commit Action Creator
 /// This is the high-level commit function that wraps the whole commit process and is what should
@@ -45,6 +45,9 @@ impl Future for CommitFuture {
     type Output = Result<Address, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("CommitFuture") {
+            return Poll::Ready(Err(err));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

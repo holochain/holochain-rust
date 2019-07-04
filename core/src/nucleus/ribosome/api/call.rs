@@ -6,7 +6,9 @@ use crate::{
         ZomeFnCall,
     },
 };
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_core_types::error::HolochainError;
+use holochain_json_api::json::JsonString;
+
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
@@ -89,7 +91,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
     })?;
     // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(context.clone(), input);
-    context.block_on(call_zome_function(zome_call, &context))
+    context.block_on(call_zome_function(zome_call, context.clone()))
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
@@ -173,7 +175,6 @@ pub mod tests {
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         dna::{
             capabilities::CapabilityRequest,
             fn_declarations::{FnDeclaration, TraitFns},
@@ -185,9 +186,10 @@ pub mod tests {
             Entry,
         },
         error::{DnaError, HolochainError},
-        json::JsonString,
         signature::Signature,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use serde_json;
     use std::{
@@ -248,9 +250,9 @@ pub mod tests {
         expected: Result<Result<JsonString, HolochainError>, RecvTimeoutError>,
     ) {
         let zome_call = ZomeFnCall::new("test_zome", cap_request, "test", "{}");
-
-        let context = &test_setup.context;
-        let result = context.block_on(call_zome_function(zome_call, context));
+        let result = test_setup
+            .context
+            .block_on(call_zome_function(zome_call, test_setup.context.clone()));
         assert_eq!(expected, Ok(result));
     }
 

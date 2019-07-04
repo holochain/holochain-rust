@@ -1,6 +1,7 @@
-use holochain_core_types::{
-    cas::content::Address, entry::Entry, error::HolochainError, json::*, signature::Provenance,
-};
+use holochain_core_types::{entry::Entry, signature::Provenance};
+
+use holochain_json_api::{error::JsonError, json::*};
+use holochain_persistence_api::cas::content::Address;
 
 /// Structure used to specify additional options to a commit_entry_result call.
 #[derive(Deserialize, Debug, Serialize, DefaultJson, PartialEq, Clone)]
@@ -34,7 +35,7 @@ pub struct CommitEntryArgs {
 
 impl CommitEntryArgs {
     pub fn new(entry: Entry, options: CommitEntryOptions) -> Self {
-        return Self { entry, options };
+        Self { entry, options }
     }
 
     pub fn entry(&self) -> Entry {

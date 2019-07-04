@@ -1,6 +1,6 @@
 use super::super::PROPERTIES;
 use error::{ZomeApiError, ZomeApiResult};
-use holochain_core_types::json::JsonString;
+use holochain_json_api::json::JsonString;
 use serde_json::Value;
 
 // Returns a DNA property, which are defined by the DNA developer.
@@ -15,7 +15,5 @@ pub fn property<S: Into<String>>(name: S) -> ZomeApiResult<JsonString> {
     properties
         .get(name.into())
         .map(|value| JsonString::from(value.clone()))
-        .ok_or(ZomeApiError::from(
-            "field does not exist in DNA properties".to_string(),
-        ))
+        .ok_or_else(|| ZomeApiError::from("field does not exist in DNA properties".to_string()))
 }

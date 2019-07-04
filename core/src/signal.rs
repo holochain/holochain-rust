@@ -1,7 +1,9 @@
 use crate::{action::ActionWrapper, consistency::ConsistencySignal};
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 use serde::{Deserialize, Deserializer};
+use snowflake::ProcessUniqueId;
 use std::thread;
 
 #[derive(Clone, Debug, Serialize, DefaultJson)]
@@ -9,7 +11,22 @@ use std::thread;
 pub enum Signal {
     Trace(ActionWrapper),
     Consistency(ConsistencySignal),
-    User(JsonString),
+    User(UserSignal),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
+pub struct UserSignal {
+    pub name: String,
+    pub arguments: JsonString,
+}
+
+impl From<EmitSignalArgs> for UserSignal {
+    fn from(args: EmitSignalArgs) -> UserSignal {
+        UserSignal {
+            name: args.name,
+            arguments: args.arguments,
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for Signal {
@@ -37,11 +54,16 @@ where
     let (master_tx, master_rx) = unbounded::<T>();
     for rx in rxs {
         let tx = master_tx.clone();
-        thread::spawn(move || {
-            while let Ok(item) = rx.recv() {
-                tx.send(item).unwrap_or(());
-            }
-        });
+        let _ = thread::Builder::new()
+            .name(format!(
+                "combine_receivers/{}",
+                ProcessUniqueId::new().to_string()
+            ))
+            .spawn(move || {
+                while let Ok(item) = rx.recv() {
+                    tx.send(item).unwrap_or(());
+                }
+            });
     }
     master_rx
 }

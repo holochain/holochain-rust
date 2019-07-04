@@ -10,19 +10,23 @@
 //! extern crate holochain_core_types;
 //! extern crate holochain_core;
 //! extern crate holochain_net;
-//! extern crate holochain_cas_implementations;
+//! extern crate holochain_json_api;
+//! extern crate holochain_persistence_api;
+//! extern crate holochain_persistence_mem;
 //! extern crate holochain_dpki;
 //! extern crate lib3h_sodium;
 //! extern crate tempfile;
 //! extern crate test_utils;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
 //! use holochain_core_types::{
-//!     cas::content::Address,
 //!     agent::AgentId,
 //!     dna::{Dna, capabilities::CapabilityRequest,},
-//!     json::JsonString,
 //!     signature::Signature,
 //! };
+//! use holochain_persistence_api::{
+//!     cas::content::Address,
+//! };
+//! use holochain_json_api::json::JsonString;
 //! use holochain_dpki::{key_bundle::KeyBundle, seed::SeedType, SEED_SIZE};
 //! use lib3h_sodium::secbuf::SecBuf;
 //! use test_utils;
@@ -95,21 +99,23 @@ use holochain_core::{
         ZomeFnCall,
     },
     persister::{Persister, SimplePersister},
-    state::State,
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, Dna},
     error::HolochainError,
-    json::JsonString,
 };
+
+use holochain_json_api::json::JsonString;
+
+use holochain_core::state::StateWrapper;
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 
 /// contains a Holochain application instance
 pub struct Holochain {
-    instance: Instance,
+    instance: Option<Instance>,
     #[allow(dead_code)]
-    context: Arc<Context>,
+    context: Option<Arc<Context>>,
     active: bool,
 }
 
@@ -148,8 +154,8 @@ impl Holochain {
             Ok(new_context) => {
                 context.log(format!("debug/conductor: {} instantiated", name));
                 let hc = Holochain {
-                    instance,
-                    context: new_context.clone(),
+                    instance: Some(instance),
+                    context: Some(new_context.clone()),
                     active: false,
                 };
                 Ok(hc)
@@ -168,26 +174,51 @@ impl Holochain {
         let mut instance = Instance::from_state(loaded_state.clone(), context.clone());
         let new_context = instance.initialize(None, context.clone())?;
         Ok(Holochain {
-            instance,
-            context: new_context.clone(),
+            instance: Some(instance),
+            context: Some(new_context.clone()),
             active: false,
         })
     }
 
+    fn check_instance(&self) -> Result<(), HolochainInstanceError> {
+        if self.instance.is_none() || self.context.is_none() {
+            Err(HolochainInstanceError::InstanceNotInitialized)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn check_active(&self) -> Result<(), HolochainInstanceError> {
+        if !self.active {
+            Err(HolochainInstanceError::InstanceNotActiveYet)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn kill(&mut self) {
+        let _ = self.stop();
+        self.instance = None;
+        self.context = None;
+    }
+
     /// activate the Holochain instance
     pub fn start(&mut self) -> Result<(), HolochainInstanceError> {
+        self.check_instance()?;
         if self.active {
-            return Err(HolochainInstanceError::InstanceAlreadyActive);
+            Err(HolochainInstanceError::InstanceAlreadyActive)
+        } else {
+            self.active = true;
+            Ok(())
         }
-        self.active = true;
-        Ok(())
     }
 
     /// deactivate the Holochain instance
     pub fn stop(&mut self) -> Result<(), HolochainInstanceError> {
-        if !self.active {
-            return Err(HolochainInstanceError::InstanceNotActiveYet);
-        }
+        self.check_instance()?;
+        self.check_active()?;
+
+        self.instance.as_ref().unwrap().stop_action_loop();
         self.active = false;
         Ok(())
     }
@@ -200,13 +231,12 @@ impl Holochain {
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
-        if !self.active {
-            return Err(HolochainInstanceError::InstanceNotActiveYet);
-        }
+        self.check_instance()?;
+        self.check_active()?;
 
         let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
-        let context = self.context();
-        Ok(context.block_on(call_zome_function(zome_call, context))?)
+        let context = self.context()?;
+        Ok(context.block_on(call_zome_function(zome_call, context.clone()))?)
     }
 
     /// checks to see if an instance is active
@@ -215,16 +245,19 @@ impl Holochain {
     }
 
     /// return
-    pub fn state(&self) -> Result<State, HolochainInstanceError> {
-        Ok(self.instance.state().clone())
+    pub fn state(&self) -> Result<StateWrapper, HolochainInstanceError> {
+        self.check_instance()?;
+        Ok(self.instance.as_ref().unwrap().state().clone())
     }
 
-    pub fn context(&self) -> &Arc<Context> {
-        &self.context
+    pub fn context(&self) -> Result<Arc<Context>, HolochainInstanceError> {
+        self.check_instance()?;
+        Ok(self.context.as_ref().unwrap().clone())
     }
 
-    pub fn set_conductor_api(&mut self, api: IoHandler) {
-        self.context.conductor_api.reset(api);
+    pub fn set_conductor_api(&mut self, api: IoHandler) -> Result<(), HolochainInstanceError> {
+        self.context()?.conductor_api.reset(api);
+        Ok(())
     }
 }
 
@@ -241,11 +274,9 @@ mod tests {
         nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
-        dna::capabilities::CapabilityRequest,
-        json::RawString,
-    };
+    use holochain_core_types::dna::capabilities::CapabilityRequest;
+    use holochain_json_api::json::RawString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
         path::PathBuf,
@@ -316,13 +347,15 @@ mod tests {
         let result = Holochain::new(dna.clone(), context.clone());
         assert!(result.is_ok());
         let hc = result.unwrap();
-        assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
+        let instance = hc.instance.as_ref().unwrap();
+        let context = hc.context.as_ref().unwrap().clone();
+        assert_eq!(instance.state().nucleus().dna(), Some(dna));
         assert!(!hc.active);
-        assert_eq!(hc.context.agent_id.nick, "bob".to_string());
-        let network_state = hc.context.state().unwrap().network().clone();
+        assert_eq!(context.agent_id.nick, "bob".to_string());
+        let network_state = context.state().unwrap().network().clone();
         assert_eq!(network_state.agent_id.is_some(), true);
         assert_eq!(network_state.dna_address.is_some(), true);
-        assert!(hc.instance.state().nucleus().has_initialized());
+        assert!(instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert!(format!("{:?}", *test_logger).contains("\"debug/conductor: TestApp instantiated\""));
     }

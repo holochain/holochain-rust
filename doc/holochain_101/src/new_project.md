@@ -10,8 +10,13 @@ Come up with a name for your application, or at least for your project folder.
 
 Copy or type the command below into your terminal, except replace `your_app_name` with the name you came up with. Press `Enter` to execute the command.
 
+Again, make sure you have followed the [quick start guide](https://developer.holochain.org/start.html).
+
 ```shell
-hc init your_app_name
+$ nix-shell https://holochain.love
+# snip
+[nix-shell:~]$ hc init your_app_name
+Created new Holochain project at: "your_app_name"
 ```
 
 `hc` specifies that you wish to use the Holochain command line tools. `init` specifies to use the command for initializing a new project folder. `your_app_name` is an argument you supply as the app, and folder name.

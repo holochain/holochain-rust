@@ -1,12 +1,12 @@
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     entry::{entry_type::EntryType, Entry, EntryWithMeta},
-    error::HolochainError,
-    json::*,
     time::Timeout,
 };
+use holochain_json_api::{error::JsonError, json::*};
+
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::collections::HashMap;
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]

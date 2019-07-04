@@ -1,12 +1,12 @@
 use crate::{context::Context, workflows::get_entry_result::get_entry_with_meta_workflow};
 use holochain_core_types::{
-    cas::content::Address,
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry, EntryWithMeta},
     error::HolochainError,
     time::Timeout,
     validation::{EntryValidationData, ValidationData},
 };
+use holochain_persistence_api::cas::content::Address;
 
 use std::sync::Arc;
 
@@ -35,7 +35,7 @@ pub enum ValidationError {
     NotImplemented,
 
     /// An error occurred that is out of the scope of validation (no state?, I/O errors..)
-    Error(String),
+    Error(HolochainError),
 }
 
 /// Result of validating an entry.
@@ -53,7 +53,7 @@ impl From<ValidationError> for HolochainError {
             ValidationError::NotImplemented => {
                 HolochainError::NotImplemented("Validation not implemented".to_string())
             }
-            ValidationError::Error(e) => HolochainError::ErrorGeneric(e),
+            ValidationError::Error(e) => e,
         }
     }
 }

@@ -7,7 +7,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{error::HolochainError, link::Link};
+use holochain_core_types::{error::HolochainError, link::link_data::LinkData};
 use std::{pin::Pin, sync::Arc};
 
 /// AddLink Action Creator
@@ -18,7 +18,7 @@ use std::{pin::Pin, sync::Arc};
 /// if that is not the case.
 ///
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
-pub fn add_link(link: &Link, context: &Arc<Context>) -> AddLinkFuture {
+pub fn add_link(link: &LinkData, context: &Arc<Context>) -> AddLinkFuture {
     let action_wrapper = ActionWrapper::new(Action::AddLink(link.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
@@ -37,6 +37,9 @@ impl Future for AddLinkFuture {
     type Output = Result<(), HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("AddLinkFuture") {
+            return Poll::Ready(Err(err));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
@@ -58,8 +61,13 @@ impl Future for AddLinkFuture {
 mod tests {
     use super::*;
     use crate::nucleus;
-
-    use holochain_core_types::{cas::content::AddressableContent, entry::Entry, link::Link};
+    use holochain_core_types::{
+        agent::test_agent_id,
+        chain_header::test_chain_header,
+        entry::Entry,
+        link::{link_data::LinkData, Link, LinkActionKind},
+    };
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry() -> Entry {
@@ -75,8 +83,13 @@ mod tests {
 
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
-
-        let result = context.block_on(add_link(&link, &context.clone()));
+        let link_data = LinkData::from_link(
+            &link,
+            LinkActionKind::ADD,
+            test_chain_header(),
+            test_agent_id(),
+        );
+        let result = context.block_on(add_link(&link_data, &context.clone()));
 
         assert!(result.is_ok(), "result = {:?}", result);
     }
@@ -88,8 +101,13 @@ mod tests {
         let base = test_entry();
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-link", "test-tag");
-
-        let result = context.block_on(add_link(&link, &context.clone()));
+        let link_data = LinkData::from_link(
+            &link,
+            LinkActionKind::ADD,
+            test_chain_header(),
+            test_agent_id(),
+        );
+        let result = context.block_on(add_link(&link_data, &context.clone()));
 
         assert!(result.is_err());
         assert_eq!(

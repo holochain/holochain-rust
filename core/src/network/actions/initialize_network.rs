@@ -8,9 +8,9 @@ use futures::{
     task::{LocalWaker, Poll},
     Future,
 };
-#[cfg(test)]
-use holochain_core_types::cas::content::Address;
 use holochain_core_types::error::HcResult;
+#[cfg(test)]
+use holochain_persistence_api::cas::content::Address;
 use std::{pin::Pin, sync::Arc};
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
@@ -64,6 +64,9 @@ impl Future for InitNetworkFuture {
     type Output = HcResult<()>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("InitializeNetworkFuture") {
+            return Poll::Ready(Err(err));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

@@ -7,9 +7,11 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{
-    cas::content::Address, entry::EntryWithMetaAndHeader, error::HcResult, time::Timeout,
-};
+
+use holochain_persistence_api::cas::content::Address;
+
+use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HcResult, time::Timeout};
+
 use std::{pin::Pin, sync::Arc, thread};
 
 /// FetchEntry Action Creator
@@ -27,16 +29,19 @@ pub async fn get_entry(
         id: snowflake::ProcessUniqueId::new().to_string(),
     };
 
-    let action_wrapper = ActionWrapper::new(Action::FetchEntry(key.clone()));
+    let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let key_inner = key.clone();
     let context_inner = context.clone();
-    let _ = thread::spawn(move || {
-        thread::sleep(timeout.into());
-        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(key_inner));
-        dispatch_action(context_inner.action_channel(), action_wrapper.clone());
-    });
+    thread::Builder::new()
+        .name(format!("get_entry_timeout/{:?}", key))
+        .spawn(move || {
+            thread::sleep(timeout.into());
+            let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(key_inner));
+            dispatch_action(context_inner.action_channel(), action_wrapper.clone());
+        })
+        .expect("Could not spawn thread for get_entry timeout");
 
     await!(GetEntryFuture {
         context: context.clone(),
@@ -55,6 +60,9 @@ impl Future for GetEntryFuture {
     type Output = HcResult<Option<EntryWithMetaAndHeader>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("GetEntryFuture") {
+            return Poll::Ready(Err(err));
+        }
         if let Err(error) = self
             .context
             .state()

@@ -4,6 +4,7 @@
 pub mod call;
 pub mod commit;
 pub mod debug;
+pub mod emit_signal;
 pub mod entry_address;
 pub mod get_entry;
 pub mod get_links;
@@ -12,6 +13,7 @@ pub mod link_entries;
 #[macro_use]
 mod macros;
 pub mod capabilities;
+pub mod crypto;
 pub mod keystore;
 pub mod query;
 pub mod remove_entry;
@@ -27,7 +29,9 @@ use crate::nucleus::ribosome::{
         call::invoke_call,
         capabilities::{invoke_commit_capability_claim, invoke_commit_capability_grant},
         commit::invoke_commit_app_entry,
+        crypto::invoke_crypto,
         debug::invoke_debug,
+        emit_signal::invoke_emit_signal,
         entry_address::invoke_entry_address,
         get_entry::invoke_get_entry,
         get_links::invoke_get_links,
@@ -42,7 +46,7 @@ use crate::nucleus::ribosome::{
         remove_entry::invoke_remove_entry,
         remove_link::invoke_remove_link,
         send::invoke_send,
-        sign::{invoke_sign, invoke_sign_one_time},
+        sign::invoke_sign_one_time,
         sleep::invoke_sleep,
         update_entry::invoke_update_entry,
         verify_signature::invoke_verify_signature,
@@ -106,10 +110,8 @@ link_zome_api! {
 
     /// Commit link deletion entry
     "hc_remove_link", RemoveLink, invoke_remove_link;
-
-    /// Sign a block of data with the Agent key
-    "hc_sign", Sign, invoke_sign;
-
+    //execute cryptographic function
+    "hc_crypto",Crypto,invoke_crypto;
     /// Sign a block of data with a one-time key that is then shredded
     "hc_sign_one_time", SignOneTime, invoke_sign_one_time;
 
@@ -139,6 +141,9 @@ link_zome_api! {
 
     /// Commit a capability grant to the source chain
     "hc_commit_capability_claim", CommitCapabilityClaim, invoke_commit_capability_claim;
+
+    /// Send a DNA defined signal to UIs and other listeners
+    "hc_emit_signal", EmitSignal, invoke_emit_signal;
 }
 
 #[cfg(test)]
@@ -153,7 +158,7 @@ pub mod tests {
             ZomeFnCall,
         },
     };
-    use holochain_core_types::json::JsonString;
+    use holochain_json_api::json::JsonString;
     use std::sync::Arc;
     use test_utils;
     use wabt;
@@ -352,7 +357,7 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
-        let (_, context) =
+        let (_instance, context) =
             test_instance_and_context(dna, None).expect("Could not create test instance");
 
         let call_result = test_zome_api_function_call(context.clone(), args_bytes);

@@ -4,13 +4,14 @@ use crate::{
     nucleus::state::{NucleusStateSnapshot, NUCLEUS_SNAPSHOT_ADDRESS},
     state::State,
 };
-use holochain_core_types::{
-    cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
-    },
-    error::HolochainError,
+use holochain_core_types::error::HolochainError;
+
+use holochain_persistence_api::cas::{
+    content::{Address, AddressableContent, Content},
+    storage::ContentAddressableStorage,
 };
+
+use crate::state::StateWrapper;
 use std::sync::{Arc, RwLock};
 
 /// trait that defines the persistence functionality that holochain_core requires
@@ -19,7 +20,7 @@ pub trait Persister: Send {
     // snowflake is only unique across a single process, not a reboot save/load round trip
     // we'd need real UUIDs for persistant uniqueness
     // @see https://github.com/holochain/holochain-rust/issues/203
-    fn save(&mut self, state: &State) -> Result<(), HolochainError>;
+    fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError>;
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError>;
 }
 
@@ -35,7 +36,7 @@ impl PartialEq for SimplePersister {
 }
 
 impl Persister for SimplePersister {
-    fn save(&mut self, state: &State) -> Result<(), HolochainError> {
+    fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();
         let mut store = lock
             .try_write()

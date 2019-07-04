@@ -8,20 +8,38 @@ use crate::{
         respond_validation_package_request::respond_validation_package_request,
     },
 };
-use holochain_core_types::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, thread};
 
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_net::connection::json_protocol::MessageData;
+use snowflake::ProcessUniqueId;
+use std::convert::TryFrom;
+
+fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
+    DirectMessage::try_from(JsonString::from_json(
+        &String::from_utf8(content)
+            .map_err(|error| JsonError::SerializationError(error.to_string()))?,
+    ))
+}
 
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called
 pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
-    let message: DirectMessage =
-        serde_json::from_str(&serde_json::to_string(&message_data.content).unwrap()).unwrap();
+    let message = match parse_direct_message(message_data.content.clone()) {
+        Ok(message) => message,
+        Err(error) => {
+            context.log(format!(
+                "error/net/handle_send_message: Could not deserialize DirectMessage: {:?}",
+                error,
+            ));
+            return;
+        }
+    };
 
     match message {
         DirectMessage::Custom(custom_direct_message) => {
-            thread::spawn(move || {
+            thread::Builder::new().name(format!("custom_direct_message/{}", ProcessUniqueId::new().to_string())).spawn(move || {
                 if let Err(error) = context.block_on(handle_custom_direct_message(
                     Address::from(message_data.from_agent_id),
                     message_data.request_id,
@@ -30,14 +48,14 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
                 )) {
                     context.log(format!("err/net: Error handling custom direct message: {:?}", error));
                 }
-            });
+            }).expect("Could not spawn thread for handling of custom direct message");
         }
         DirectMessage::RequestValidationPackage(address) => {
             // Async functions only get executed when they are polled.
             // I don't want to wait for this workflow to finish here as it would block the
             // network thread, so I use block_on to poll the async function but do that in
             // another thread:
-            thread::spawn(move || {
+            thread::Builder::new().name(format!("validation_package_request/{}", ProcessUniqueId::new().to_string())).spawn(move || {
                 context.block_on(respond_validation_package_request(
                     Address::from(message_data.from_agent_id),
                     message_data.request_id,
@@ -45,7 +63,7 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
                     context.clone(),
                     &vec![]
                 ));
-            });
+            }).expect("Could not spawn thread for handling of validation package request");
         }
         DirectMessage::ValidationPackage(_) => context.log(
             "err/net: Got DirectMessage::ValidationPackage as initial message. This should not happen.",
@@ -56,8 +74,16 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
 /// We got a JsonProtocol::HandleSendMessageResult.
 /// This means somebody has responded to our message that we called and this is the answer
 pub fn handle_send_message_result(message_data: MessageData, context: Arc<Context>) {
-    let response: DirectMessage =
-        serde_json::from_str(&serde_json::to_string(&message_data.content).unwrap()).unwrap();
+    let response = match parse_direct_message(message_data.content.clone()) {
+        Ok(message) => message,
+        Err(error) => {
+            context.log(format!(
+                "error/net/handle_send_message_result: Could not deserialize DirectMessage: {:?}",
+                error,
+            ));
+            return;
+        }
+    };
 
     let initial_message = context
         .state()

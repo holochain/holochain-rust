@@ -32,7 +32,7 @@ Examining a `.dna.json` file closely, nested within the JSON configuration for a
 "entry_types": [
     {
         "entry_type_name": "post",
-        "description": "A blog post entry which has an author",
+        "properties": "{\"description\": \"A blog post entry which has an author\"}",
         "sharing": "public",
         "links_to": []
     }
@@ -92,7 +92,7 @@ entry!(
 )
 ```
 
-This should be a human-readable explanation of the meaning or role of this entry type.
+Historically this was a human-readable explanation of the meaning or role of this entry type. Now the description field can hold a stringified JSON object to hold various properties of this entry type (Possibly including a description but also UI display hints, indexing fields, example data etc. It is totally up to you). These properties can be accessed via `hdk::entry_type_properties`.
 
 ---
 
@@ -119,7 +119,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_persistence_derive;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 struct Post {
@@ -152,7 +152,7 @@ Every struct used as a `native_type` reference should include all 4 derives, as 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 ```
 
-`Serialize` and `Deserialize` come from `serde_derive`, and `DefaultJson` comes from `holochain_core_types_derive`.
+`Serialize` and `Deserialize` come from `serde_derive`, and `DefaultJson` comes from `holochain_persistence_derive`.
 
 Then there is the struct itself. This is the real type definition, because it defines the schema. It is simply a list of property names, the 'keys', and the types of values expected, which should be set to one of the primitive types of the language. This will tell `serde` how to parse JSON string inputs into the type. Note that conversion from JSON strings into the struct type can easily fail, in particular if the proper keys are not present on the input.
 

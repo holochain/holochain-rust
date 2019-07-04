@@ -7,7 +7,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{error::HolochainError, link::Link};
+use holochain_core_types::{entry::Entry, error::HolochainError};
 use std::{pin::Pin, sync::Arc};
 
 /// RemoveLink Action Creator
@@ -18,8 +18,8 @@ use std::{pin::Pin, sync::Arc};
 /// if that is not the case.
 ///
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
-pub fn remove_link(link: &Link, context: &Arc<Context>) -> RemoveLinkFuture {
-    let action_wrapper = ActionWrapper::new(Action::RemoveLink(link.clone()));
+pub fn remove_link(entry: &Entry, context: &Arc<Context>) -> RemoveLinkFuture {
+    let action_wrapper = ActionWrapper::new(Action::RemoveLink(entry.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     RemoveLinkFuture {
@@ -39,6 +39,9 @@ impl Future for RemoveLinkFuture {
     type Output = Result<(), HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("RemoveLinkFuture") {
+            return Poll::Ready(Err(err));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

@@ -2,6 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     consistency::ConsistencyModel,
     context::Context,
+    network,
     persister::Persister,
     scheduled_jobs,
     signal::Signal,
@@ -332,10 +333,18 @@ impl Instance {
             .map_err(|_| HolochainError::new("Could not get lock on persister"))?
             .save(&self.state())
     }
+
+    pub async fn shutdown_network(&self) -> HcResult<()> {
+        await!(network::actions::shutdown::shutdown(
+            self.state.clone(),
+            self.action_channel.as_ref().unwrap().clone()
+        ))
+    }
 }
 
 impl Drop for Instance {
     fn drop(&mut self) {
+        let _ = self.shutdown_network();
         self.stop_action_loop();
         self.state.write().unwrap().drop_inner_state();
     }

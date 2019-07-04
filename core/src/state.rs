@@ -215,12 +215,6 @@ impl State {
     }
 }
 
-//impl Drop for InnerState {
-//    fn drop(&mut self) {
-//        println!("==================STATE DROPPED!=======================");
-//    }
-//}
-
 /// This type wraps (decorates) InnerState with an option and re-exports and delegates all
 /// methods of InnerState.
 /// It owns the InnerState and keeps it in a Option so that it can be dropped explicitly.

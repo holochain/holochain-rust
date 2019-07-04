@@ -865,7 +865,7 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
   );
 
   //get posts for alice from alice
-  const alice_posts_live= await alice..app.call("simple","get_my_links_count",
+  const alice_posts_live= await alice.app.call("simple","get_my_links_count",
   {
     "base" : alice.agentId,"status_request":"Live"
   })

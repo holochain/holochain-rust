@@ -1,8 +1,18 @@
 //! Log filtering facility: add the capability to filter out by regex log messages and/or colorize them.
 
 use regex::Regex;
+use serde_derive::Deserialize;
 use std::default::Default;
 
+/// This structure is a helper for toml deserialization.
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct Rule {
+    pub pattern: String,
+    pub exclude: Option<bool>,
+    pub color: Option<String>,
+}
+
+/// This is our main way to filer out or colorize log messages.
 #[derive(Clone, Debug)]
 pub struct RuleFilter {
     pub pattern: Option<String>,
@@ -57,6 +67,7 @@ impl Default for RuleFilter {
     }
 }
 
+/// [RuleFilter] builder following the builder pattern.
 pub struct RuleFilterBuilder {
     pattern: String,
     exclude: bool,

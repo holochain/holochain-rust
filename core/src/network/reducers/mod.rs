@@ -95,11 +95,11 @@ pub fn send(
 ) -> Result<(), HolochainError> {
     network_state
         .network
+        .lock()
+        .unwrap()
         .as_mut()
         .map(|network| {
             network
-                .lock()
-                .unwrap()
                 .send(json_message.into())
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })

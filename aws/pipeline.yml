@@ -26,6 +26,11 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /infra/dockerhub/DockerPass
     Description: DockerHub Password
+  Branch:
+    Type: String
+    Default: develop
+    Description: GitHub branch name.
+
 
 Resources:
   CodePipeline:
@@ -55,7 +60,7 @@ Resources:
           Configuration:
             Owner: !Ref GitHubOwner
             Repo: !Ref GitHubRepo
-            Branch: master
+            Branch: !Ref Branch
             OAuthToken: !Ref GitHubToken
           RunOrder: 1
       - Name: Build
@@ -89,11 +94,11 @@ Resources:
                 docker: 18
             pre_build:
               commands:
-                - docker build -t holochain/holonix:latest .
+                - docker build -t holochain/$GITREPO:latest .
                 - docker login -u $DOCKER_USER -p $DOCKER_PASS
-                - docker push holochain/holonix:latest
+                - docker push holochain/$GITREPO:latest
       Environment:
-         ComputeType: BUILD_GENERAL1_MEDIUM
+         ComputeType: BUILD_GENERAL1_LARGE
          Image: aws/codebuild/standard:2.0
          PrivilegedMode: true
          Type: LINUX_CONTAINER
@@ -102,6 +107,8 @@ Resources:
               Value: !Ref DockerUser
             - Name: DOCKER_PASS
               Value: !Ref DockerPass
+            - Name: GITREPO
+              Value: !Ref GitHubRepo
               
       Artifacts:
           Type: CODEPIPELINE
@@ -131,9 +138,6 @@ Resources:
                   Action:
                     - codepipeline:*
                     - codebuild:*
-                    - lambda:*
-                    - iam:ListRoles
-                    - iam:PassRole
                     - sns:*
                   Resource: '*'
           - PolicyName: ArtifactAccess

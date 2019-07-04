@@ -21,3 +21,7 @@ To have a generale view of the capability of this crate, you can run this comman
 ```bash
 cargo run --example simple-fastlog-example
 ```
+or
+```bash
+cargo run --example from-toml-fastlog-example
+```

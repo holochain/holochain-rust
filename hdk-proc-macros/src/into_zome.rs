@@ -98,7 +98,7 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
 
     FnDeclaration {
         name: func.ident.clone().to_string(),
-        inputs: inputs,
+        inputs,
         output: func.decl.output.clone(),
     }
 }
@@ -215,7 +215,7 @@ impl IntoZome for syn::ItemMod {
 		                meta_list.nested.iter().for_each(|e| {
 		                    if let syn::NestedMeta::Literal(syn::Lit::Str(lit)) = e {
 		                        let trait_name = lit.value().clone();
-		                        if let None = acc.get(&trait_name) {
+		                        if acc.get(&trait_name).is_none() {
 		                            acc.insert(trait_name.clone(), TraitFns::new());
 		                        }
 		                        acc.get_mut(&trait_name).unwrap().functions.push(func_name.clone());

@@ -91,7 +91,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
     })?;
     // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(context.clone(), input);
-    context.block_on(call_zome_function(zome_call, &context))
+    context.block_on(call_zome_function(zome_call, context.clone()))
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
@@ -250,9 +250,9 @@ pub mod tests {
         expected: Result<Result<JsonString, HolochainError>, RecvTimeoutError>,
     ) {
         let zome_call = ZomeFnCall::new("test_zome", cap_request, "test", "{}");
-
-        let context = &test_setup.context;
-        let result = context.block_on(call_zome_function(zome_call, context));
+        let result = test_setup
+            .context
+            .block_on(call_zome_function(zome_call, test_setup.context.clone()));
         assert_eq!(expected, Ok(result));
     }
 

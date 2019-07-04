@@ -1,4 +1,4 @@
-{ pkgs, release }:
+{ holonix, pkgs, release }:
 let
  github = import ./config.nix;
 in
@@ -11,6 +11,11 @@ github // {
 
  ++ (pkgs.callPackage ./merge {
   github = github;
+  release = release;
+ }).buildInputs
+
+ ++ (pkgs.callPackage ./notes {
+  holonix = holonix;
   release = release;
  }).buildInputs
  ;

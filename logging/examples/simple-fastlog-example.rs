@@ -5,6 +5,8 @@ use logging::{tag::TagFilter, FastLoggerBuilder};
 fn main() {
     FastLoggerBuilder::new()
         .set_level_from_str("Trace")
+        // Let's log everything in white
+        .add_tag_filter(TagFilter::new(".*", false, "White"))
         .add_tag_filter(TagFilter::new("Abort", false, "Red"))
         .add_tag_filter(TagFilter::new("warned", false, "Yellow"))
         .add_tag_filter(TagFilter::new("twice", true, "Yellow"))

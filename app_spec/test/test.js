@@ -352,7 +352,7 @@ scenario('my_memos_are_private', async (s, t, { alice, bob }) => {
 })
 
 
-scenario.only('delete_post', async (s, t, { alice, bob }) => {
+scenario('delete_post', async (s, t, { alice, bob }) => {
 
   //creates a simple link with alice as author with initial chain header
   await alice.app.callSync("simple", "create_link",

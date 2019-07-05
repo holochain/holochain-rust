@@ -411,12 +411,16 @@ impl Conductor {
     /// Starts dpki_happ instances
     pub fn start_dpki_instance(&mut self) -> Result<(), HolochainInstanceError> {
         let dpki_instance_id = &self.dpki_instance_id().unwrap();
-        let mut instance = self.instantiate_from_config(dpki_instance_id,None).map_err(|err|{
-            HolochainInstanceError::InternalFailure(HolochainError::ErrorGeneric(err))
-        })?;
+        let mut instance = self
+            .instantiate_from_config(dpki_instance_id, None)
+            .map_err(|err| {
+                HolochainInstanceError::InternalFailure(HolochainError::ErrorGeneric(err))
+            })?;
         instance.start()?;
-        self.instances
-            .insert(dpki_instance_id.to_string(), Arc::new(RwLock::new(instance)));
+        self.instances.insert(
+            dpki_instance_id.to_string(),
+            Arc::new(RwLock::new(instance)),
+        );
         Ok(())
     }
 

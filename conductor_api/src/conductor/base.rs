@@ -25,7 +25,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use logging::{tag::TagFilter, FastLoggerBuilder};
+use logging::{rule::RuleFilter, FastLoggerBuilder};
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -635,7 +635,7 @@ impl Conductor {
                 if config.logger.logger_type == "debug" {
                     let _logger = FastLoggerBuilder::new()
                         .set_level_from_str("Trace")
-                        .add_tag_filter(TagFilter::new("Abort", false, "Red"))
+                        .add_rule_filter(RuleFilter::new("Abort", false, "Red"))
                         .build()
                         .expect("Fail to instanciate the logging factory.");
 

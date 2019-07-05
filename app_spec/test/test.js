@@ -857,23 +857,23 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
 
   //commits an entry and creates two links for alice
   await alice.app.callSync("simple", "create_link",
-    { "base": alice.agentId ,"target": "Holo world" }
+    { "base": alice.app.agentId ,"target": "Holo world" }
   );
   
   const alice_result = await alice.app.callSync("simple", "create_link",
-  { "base": alice.agentId ,"target": "Holo world 2" }
+  { "base": alice.app.agentId ,"target": "Holo world 2" }
   );
 
   //get posts for alice from alice
   const alice_posts_live= await alice.app.call("simple","get_my_links_count",
   {
-    "base" : alice.agentId,"status_request":"Live"
+    "base" : alice.app.agentId,"status_request":"Live"
   })
 
   //get posts for alice from bob
   const bob_posts_live= await bob.app.call("simple","get_my_links_count",
   {
-    "base" : alice.agentId,
+    "base" : alice.app.agentId,
     "status_request":"Live"
   })
 
@@ -886,21 +886,21 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
   ////delete the holo world post from the links alice created
   await alice.app.callSync("simple","delete_link",
   {
-    "base" : alice.agentId,
+    "base" : alice.app.agentId,
     "target" : "Holo world"
   });
 
   //get all bob posts
   const bob_posts_deleted = await bob.app.call("simple","get_my_links_count",
   {
-    "base" : alice.agentId,
+    "base" : alice.app.agentId,
     "status_request" : "Deleted"
   });
 
   // get all posts with a deleted status from alice
   const alice_posts_deleted = await alice.app.call("simple","get_my_links_count",
   {
-    "base" : alice.agentId,
+    "base" : alice.app.agentId,
     "status_request" : "Deleted"
   });
 
@@ -918,11 +918,11 @@ scenario('get_links_crud_count_tag', async (s, t, { alice, bob }) => {
 
   //commits an entry and creates two links for alice
   await alice.app.callSync("simple", "create_link_with_tag",
-    { "base": alice.agentId ,"target": "Holo world","tag":"tag1" }
+    { "base": alice.app.agentId ,"target": "Holo world","tag":"tag1" }
   );
   
   const alice_result = await alice.app.callSync("simple", "create_link_with_tag",
-  { "base": bob.agentId ,"target": "Holo world 2","tag":"tag1" }
+  { "base": bob.app.agentId ,"target": "Holo world 2","tag":"tag1" }
   );
 
   //get posts for alice from alice
@@ -944,7 +944,7 @@ scenario('get_links_crud_count_tag', async (s, t, { alice, bob }) => {
   //delete link
   let deleted_link =  await alice.app.callSync("simple","delete_link_with_tag",
   {
-    "base" : alice.agentId,
+    "base" : alice.app.agentId,
     "target" : "Holo world",
     "tag" : "tag1"
   });

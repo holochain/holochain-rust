@@ -12,10 +12,10 @@ use crossbeam_channel::{self, Receiver, Sender};
 use std::{
     boxed::Box,
     default::Default,
+    env,
     io::{self, Write},
     str::FromStr,
     thread,
-    env,
 };
 use tag::TagFilter;
 
@@ -181,10 +181,7 @@ impl FastLoggerBuilder {
     /// Info, Warn or Error.
     pub fn set_level_from_str(&mut self, level: &str) -> &mut Self {
         self.level = Level::from_str(level).unwrap_or_else(|_| {
-            eprintln!(
-                "Fail to parse the logging level from string: '{}'.",
-                level
-            );
+            eprintln!("Fail to parse the logging level from string: '{}'.", level);
             self.level
         });
         self
@@ -216,7 +213,6 @@ impl FastLoggerBuilder {
             level_colors: self.level_colors,
             sender: s,
         };
-
 
         // This is where I should impl the output
 

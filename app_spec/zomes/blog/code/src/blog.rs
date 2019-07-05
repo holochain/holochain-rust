@@ -131,7 +131,7 @@ pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
 }
 
 pub static BOB_AGENT_ID: &'static str =
-    "HcScj5GbxXdTq69sfnz3jcA4u5f35zftsuu5Eb3dBxHjgd9byUUW6JmN3Bvzqqr";
+    "HcSCJCqoIY3uwiw34acyvNmJMyzkk4y9groHdYKBekqp7y48mvwfVTQQkzcjnfz";
 
 fn is_my_friend(addr: Address) -> bool {
     addr == Address::from(BOB_AGENT_ID)

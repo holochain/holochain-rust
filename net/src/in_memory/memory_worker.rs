@@ -2,11 +2,14 @@
 
 use super::memory_server::*;
 use crate::connection::{
-    json_protocol::JsonProtocol,
-    net_connection::{NetHandler, NetWorker},
+   net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
     NetResult,
 };
+use lib3h_protocol::{
+    protocol_client::Lib3hClientProtocol,
+};
+
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
 use std::{
@@ -39,9 +42,9 @@ impl NetWorker for InMemoryWorker {
             .expect("InMemoryServer should have been initialized by now")
             .lock()
             .unwrap();
-        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
+        if let Ok(json_msg) = Lib3hClientProtocol::try_from(&data) {
             match json_msg {
-                JsonProtocol::TrackDna(track_msg) => {
+                Lib3hClientProtocol::JoinSpace(track_msg) => {
                     match self
                         .receiver_per_dna
                         .entry(track_msg.dna_address.to_owned())
@@ -64,9 +67,9 @@ impl NetWorker for InMemoryWorker {
         // Serve
         server.serve(data.clone())?;
         // After serve
-        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
+        if let Ok(json_msg) = Lib3hClientProtocol::try_from(&data) {
             match json_msg {
-                JsonProtocol::UntrackDna(untrack_msg) => {
+                Lib3hClientProtocol::UntrackDna(untrack_msg) => {
                     match self
                         .receiver_per_dna
                         .entry(untrack_msg.dna_address.to_owned())
@@ -166,7 +169,7 @@ impl Drop for InMemoryWorker {
 mod tests {
     use super::*;
     use crate::{
-        connection::json_protocol::{JsonProtocol, TrackDnaData},
+        connection::json_protocol::{Lib3hClientProtocol, SpaceData},
         p2p_config::P2pConfig,
     };
     use crossbeam_channel::unbounded;
@@ -204,7 +207,7 @@ mod tests {
         // First Track
         memory_worker_1
             .receive(
-                JsonProtocol::TrackDna(TrackDnaData {
+                Lib3hClientProtocol::JoinSpace(SpaceData {
                     dna_address: example_dna_address(),
                     agent_id: HashString::from(AGENT_ID_1),
                 })
@@ -214,12 +217,12 @@ mod tests {
 
         // Should receive PeerConnected
         memory_worker_1.tick().unwrap();
-        let _res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let _res = Lib3hClientProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
         // Second Track
         memory_worker_1
             .receive(
-                JsonProtocol::TrackDna(TrackDnaData {
+                Lib3hClientProtocol::JoinSpace(SpaceData {
                     dna_address: example_dna_address(),
                     agent_id: HashString::from(AGENT_ID_1),
                 })

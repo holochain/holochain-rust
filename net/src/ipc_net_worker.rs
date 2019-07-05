@@ -7,10 +7,14 @@ use crate::ipc::{
 };
 
 use crate::connection::{
-    json_protocol::{ConfigData, ConnectData, JsonProtocol, StateData},
-    net_connection::{NetHandler, NetShutdown, NetWorker},
-    protocol::{NamedBinaryData, Protocol},
-    NetResult,
+   net_connection::{NetHandler, NetShutdown, NetWorker},
+   protocol::{NamedBinaryData, Protocol},
+   NetResult,
+};
+
+use lib3h_protocol::{
+    data_types::ConnectData,
+    protocol_client::Lib3hClientProtocol
 };
 
 use std::{collections::HashMap, convert::TryFrom};
@@ -189,14 +193,14 @@ impl NetWorker for IpcNetWorker {
                     let msg: Protocol = msg.into();
 
                     // handle init/config special cases
-                    if let Ok(msg) = JsonProtocol::try_from(&msg) {
+                    if let Ok(msg) = Lib3hClientProtocol::try_from(&msg) {
                         match msg {
                             // ipc-server sent us its current state
-                            JsonProtocol::GetStateResult(state) => {
+                            Lib3hClientProtocol::GetStateResult(state) => {
                                 self.priv_handle_state(state)?;
                             }
                             // ipc-server is requesting us the default config
-                            JsonProtocol::GetDefaultConfigResult(config) => {
+                            Lib3hClientProtocol::GetDefaultConfigResult(config) => {
                                 self.priv_handle_default_config(config)?;
                             }
                             _ => (),
@@ -242,7 +246,7 @@ impl IpcNetWorker {
         let bs_nodes: Vec<String> = self.bootstrap_nodes.drain(..).collect();
         for bs_node in &bs_nodes {
             self.receive(
-                JsonProtocol::Connect(ConnectData {
+                Lib3hClientProtocol::Connect(ConnectData {
                     peer_address: bs_node.clone().into(),
                 })
                 .into(),
@@ -257,20 +261,20 @@ impl IpcNetWorker {
         let now = get_millis();
 
         if now - self.last_state_millis > 500.0 {
-            self.receive(JsonProtocol::GetState.into())?;
+            self.receive(Lib3hClientProtocol::GetState.into())?;
             self.last_state_millis = now;
         }
 
         Ok(())
     }
 
-    /// Handle State Message received from IPC server.
+ /*   /// Handle State Message received from IPC server.
     fn priv_handle_state(&mut self, state: StateData) -> NetResult<()> {
         // Keep track of IPC server's state
         self.last_known_state = state.state;
         // if the internal worker needs configuration, fetch the default config
         if &self.last_known_state == "need_config" {
-            self.receive(JsonProtocol::GetDefaultConfig.into())?;
+            self.receive(Lib3hClientProtocol::GetDefaultConfig.into())?;
         }
         Ok(())
     }
@@ -280,7 +284,7 @@ impl IpcNetWorker {
     fn priv_handle_default_config(&mut self, config_msg: ConfigData) -> NetResult<()> {
         if &self.last_known_state == "need_config" {
             self.receive(
-                JsonProtocol::SetConfig(ConfigData {
+                Lib3hClientProtocol::SetConfig(ConfigData {
                     config: config_msg.config,
                 })
                 .into(),
@@ -289,4 +293,5 @@ impl IpcNetWorker {
 
         Ok(())
     }
+    */
 }

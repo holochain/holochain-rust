@@ -2,12 +2,7 @@
 
 use holochain_net::{
     connection::{
-        json_protocol::{
-            EntryAspectData, EntryData, EntryListData, FetchEntryData, FetchEntryResultData,
-            GenericResultData, GetListData, JsonProtocol, MessageData, ProvidedEntryData,
-            QueryEntryData, QueryEntryResultData, TrackDnaData,
-        },
-        net_connection::NetSend,
+       net_connection::NetSend,
         protocol::Protocol,
         NetResult,
     },
@@ -15,6 +10,16 @@ use holochain_net::{
     p2p_network::P2pNetwork,
     tweetlog::{TweetProxy, *},
 };
+
+use lib3h_protocol::{
+    data_types::{
+            EntryAspectData, EntryData, EntryListData, FetchEntryData, FetchEntryResultData,
+            GenericResultData, GetListData, DirectMessageData, ProvidedEntryData,
+            QueryEntryData, QueryEntryResultData, JoinSpace,
+        },
+    protocol_client::Lib3hClientProtocol,
+};
+
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
 use std::{

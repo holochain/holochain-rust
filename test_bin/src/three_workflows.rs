@@ -1,12 +1,17 @@
 use constants::*;
 use holochain_net::{
     connection::{
-        json_protocol::{ConnectData, EntryData, JsonProtocol},
-        net_connection::NetSend,
+       net_connection::NetSend,
         NetResult,
     },
     tweetlog::*,
 };
+
+use lib3h_protocol::{
+    data_types::{ConnectData, EntryData},
+    protocol_client::Lib3hClientProtocol
+};
+
 use holochain_persistence_api::cas::content::Address;
 use p2p_node::test_node::TestNode;
 use std::time::SystemTime;

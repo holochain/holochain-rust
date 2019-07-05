@@ -14,13 +14,17 @@ use crate::{
     tweetlog::*,
 };
 
+use std::convert::TryInto;
+
 use lib3h_protocol::{
     data_types::{
             EntryListData, FetchEntryData, FetchEntryResultData, GenericResultData, GetListData,
-            DirectMessageData, PeerData, ProvidedEntryData, QueryEntryData,
+            DirectMessageData, ProvidedEntryData, QueryEntryData,
             QueryEntryResultData, StoreEntryAspectData,
         },
-    protocol_client::Lib3hClientProtocol
+    protocol_client::Lib3hClientProtocol,
+    protocol_server::Lib3hServerProtocol,
+
 };
 
 use holochain_persistence_api::cas::content::Address;
@@ -109,10 +113,10 @@ impl InMemoryServer {
         self.priv_send_one(
             dna_address,
             agent_id,
-            JsonProtocol::HandleGetAuthoringEntryList(GetListData {
+            Lib3hServerProtocol::HandleGetAuthoringEntryList(GetListData {
                 request_id,
-                provider_agent_id: agent_id.clone(),
-                dna_address: dna_address.clone(),
+                provider_agent_id: agent_id.clone().try_into().unwrap(),
+                space_address: dna_address.clone().try_into().unwrap(),
             })
             .into(),
         )
@@ -122,10 +126,10 @@ impl InMemoryServer {
         self.priv_send_one(
             dna_address,
             agent_id,
-            JsonProtocol::HandleGetGossipingEntryList(GetListData {
+            Lib3hServerProtocol::HandleGetGossipingEntryList(GetListData {
                 request_id,
-                provider_agent_id: agent_id.clone(),
-                dna_address: dna_address.clone(),
+                provider_agent_id: agent_id.clone().try_into().unwrap(),
+                space_address: dna_address.clone().try_into().unwrap(),
             })
             .into(),
         )
@@ -216,31 +220,38 @@ impl InMemoryServer {
     pub fn serve(&mut self, data: Protocol) -> NetResult<()> {
         self.log
             .d(&format!(">>>> '{}' recv: {:?}", self.name.clone(), data));
-        // serve only JsonProtocol
-        let maybe_json_msg = JsonProtocol::try_from(&data);
+        // serve only Lib3hClientProtocol
+        let maybe_json_msg = Lib3hClientProtocol::try_from(&data);
         if maybe_json_msg.is_err() {
             return Ok(());
         };
         // Note: use same order as the enum
         match maybe_json_msg.as_ref().unwrap() {
-            JsonProtocol::SuccessResult(msg) => {
+            Lib3hClientProtocol::SuccessResult(msg) => {
+
+                let dna_address = msg.space_address.try_into().unwrap();
+                let to_agent_id = msg.to_agent_id.try_into().unwrap();
+
                 // Check if agent is tracking the dna
                 let is_tracked =
-                    self.priv_check_or_fail(&msg.dna_address, &msg.to_agent_id, None)?;
+                    self.priv_check_or_fail(&dna_address, &to_agent_id, None)?;
                 if !is_tracked {
                     return Ok(());
                 }
                 // Relay directly the SuccessResult message
                 self.priv_send_one(
-                    &msg.dna_address,
-                    &msg.to_agent_id,
-                    JsonProtocol::SuccessResult(msg.clone()).into(),
+                    &dna_address,
+                    &to_agent_id,
+                    Lib3hClientProtocol::SuccessResult(msg.clone()).into(),
                 )?;
             }
-            JsonProtocol::FailureResult(msg) => {
+            Lib3hClientProtocol::FailureResult(msg) => {
+                let dna_address = msg.space_address.try_into().unwrap();
+                let to_agent_id = msg.to_agent_id.try_into().unwrap();
+
                 // Check if agent is tracking the dna
                 let is_tracked =
-                    self.priv_check_or_fail(&msg.dna_address, &msg.to_agent_id, None)?;
+                    self.priv_check_or_fail(&dna_address, &to_agent_id, None)?;
                 if !is_tracked {
                     return Ok(());
                 }
@@ -258,14 +269,17 @@ impl InMemoryServer {
                 }
                 // If not, relay the FailureResult message to receipient
                 self.priv_send_one(
-                    &msg.dna_address,
-                    &msg.to_agent_id,
-                    JsonProtocol::FailureResult(msg.clone()).into(),
+                    &dna_address,
+                    &to_agent_id,
+                    Lib3hClientProtocol::FailureResult(msg.clone()).into(),
                 )?;
             }
-            JsonProtocol::TrackDna(msg) => {
+            Lib3hClientProtocol::JoinSpace(msg) => {
+                let dna_address = msg.space_address.try_into().unwrap();
+                let agent_id = msg.agent_id.try_into().unwrap();
+
                 // Check if we are already tracking this dna for this agent
-                let chain_id = into_chain_id(&msg.dna_address, &msg.agent_id);
+                let chain_id = into_chain_id(&dna_address, &agent_id);
                 if self.trackdna_book.contains(&chain_id) {
                     self.log.e(&format!(
                         "({}) ##### DNA already tracked: {}",
@@ -277,19 +291,19 @@ impl InMemoryServer {
                 self.trackdna_book.insert(chain_id);
                 // Notify all Peers connected to this DNA of a new Peer connection.
                 self.priv_send_all(
-                    &msg.dna_address.clone(),
-                    JsonProtocol::PeerConnected(PeerData {
-                        agent_id: msg.agent_id.clone(),
-                    })
-                    .into(),
+                    &msg.space_address.into(),
+                    Lib3hClientProtocol::JoinSpace(msg.clone()).into()
                 )?;
                 // Request all data lists from this agent
-                self.priv_request_all_lists(&msg.dna_address, &msg.agent_id);
+                self.priv_request_all_lists(&dna_address, &agent_id);
             }
 
-            JsonProtocol::UntrackDna(msg) => {
+            Lib3hClientProtocol::LeaveSpace(msg) => {
+                let dna_address = msg.space_address.try_into().unwrap();
+                let agent_id = msg.agent_id.try_into().unwrap();
+
                 // Make sure we are already tracking this dna for this agent
-                let chain_id = into_chain_id(&msg.dna_address, &msg.agent_id);
+                let chain_id = into_chain_id(&dna_address, &agent_id);
                 if !self.trackdna_book.contains(&chain_id) {
                     self.log.w(&format!(
                         "Trying to untrack an already untracked DNA: {}",
@@ -300,33 +314,33 @@ impl InMemoryServer {
                 self.trackdna_book.remove(&chain_id);
             }
 
-            JsonProtocol::SendMessage(msg) => {
+            Lib3hClientProtocol::SendDirectMessage(msg) => {
                 self.priv_serve_SendMessage(&msg)?;
             }
-            JsonProtocol::HandleSendMessageResult(msg) => {
+            Lib3hClientProtocol::HandleSendDirectMessageResult(msg) => {
                 self.priv_serve_HandleSendMessageResult(&msg)?;
             }
 
-            JsonProtocol::PublishEntry(msg) => {
+            Lib3hClientProtocol::PublishEntry(msg) => {
                 self.priv_serve_PublishEntry(&msg)?;
             }
-            JsonProtocol::HandleFetchEntryResult(msg) => {
+            Lib3hClientProtocol::HandleFetchEntryResult(msg) => {
                 self.priv_serve_HandleFetchEntryResult(&msg)?;
             }
-            JsonProtocol::QueryEntry(msg) => {
+            Lib3hClientProtocol::QueryEntry(msg) => {
                 self.priv_serve_QueryEntry(&msg)?;
             }
-            JsonProtocol::HandleQueryEntryResult(msg) => {
+            Lib3hClientProtocol::HandleQueryEntryResult(msg) => {
                 self.priv_serve_HandleQueryEntryResult(&msg)?;
             }
 
             // Our request for the publish_list has returned
-            JsonProtocol::HandleGetAuthoringEntryListResult(msg) => {
+            Lib3hClientProtocol::HandleGetAuthoringEntryListResult(msg) => {
                 self.priv_serve_HandleGetAuthoringEntryListResult(&msg)?;
             }
 
             // Our request for the hold_list has returned
-            JsonProtocol::HandleGetGossipingEntryListResult(msg) => {
+            Lib3hClientProtocol::HandleGetGossipingEntryListResult(msg) => {
                 self.priv_serve_HandleGetGossipingEntryListResult(&msg);
             }
 
@@ -373,9 +387,9 @@ impl InMemoryServer {
         let sender_agent_id = sender_info.0;
         let sender_request_id = sender_info.1.unwrap_or_default();
         let fail_msg = GenericResultData {
-            dna_address: dna_address.clone(),
+            space_address: dna_address.clone().try_into().unwrap(),
             request_id: sender_request_id,
-            to_agent_id: sender_agent_id.clone(),
+            to_agent_id: sender_agent_id.clone().try_into().unwrap(),
             result_info: "DNA not tracked by agent".into(),
         };
         self.log.e(&format!(
@@ -387,7 +401,7 @@ impl InMemoryServer {
         self.priv_send_one(
             dna_address,
             &sender_agent_id,
-            JsonProtocol::FailureResult(fail_msg).into(),
+            Lib3hClientProtocol::FailureResult(fail_msg).into(),
         )?;
         Ok(false)
     }
@@ -449,25 +463,30 @@ impl InMemoryServer {
     /// normally this would travel over the network, then
     /// show up as a HandleSend message on the receiving agent
     /// Fabricate that message and deliver it to the receiving agent
-    fn priv_serve_SendMessage(&mut self, msg: &MessageData) -> NetResult<()> {
+    fn priv_serve_SendMessage(&mut self, msg: &DirectMessageData) -> NetResult<()> {
+        let dna_address = msg.space_address.try_into().unwrap();
+        let from_agent_id : Address = msg.from_agent_id.try_into().unwrap();
+        let to_agent_id : Address = msg.to_agent_id.try_into().unwrap();
+
         // Sender must be tracking
-        let sender_info = Some((msg.from_agent_id.clone(), Some(msg.request_id.clone())));
+        let sender_info = Some((from_agent_id.clone(), Some(msg.request_id.clone())));
         let is_tracking =
-            self.priv_check_or_fail(&msg.dna_address, &msg.from_agent_id, sender_info.clone())?;
+            self.priv_check_or_fail(&dna_address, &from_agent_id,
+                                    sender_info.clone())?;
         if !is_tracking {
             return Ok(());
         }
         // Receiver must be tracking
         let is_tracking =
-            self.priv_check_or_fail(&msg.dna_address, &msg.to_agent_id, sender_info)?;
+            self.priv_check_or_fail(&dna_address, &to_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
         // All good, relay message
         self.priv_send_one(
-            &msg.dna_address,
-            &msg.to_agent_id,
-            JsonProtocol::HandleSendMessage(msg.clone()).into(),
+            &msg.space_address.into(),
+            &msg.to_agent_id.into(),
+            Lib3hClientProtocol::HandleSendDirectMessageResult(msg.clone()).into(),
         )?;
         // Done
         Ok(())
@@ -477,25 +496,29 @@ impl InMemoryServer {
     /// normally this would travel over the network, then
     /// show up as a SendMessageResult message to the initial sender.
     /// Fabricate that message and deliver it to the initial sender.
-    fn priv_serve_HandleSendMessageResult(&mut self, msg: &MessageData) -> NetResult<()> {
+    fn priv_serve_HandleSendMessageResult(&mut self, msg: &DirectMessageData) -> NetResult<()> {
+        let dna_address = msg.space_address.try_into().unwrap();
+        let from_agent_id : Address = msg.from_agent_id.try_into().unwrap();
+        let to_agent_id : Address = msg.to_agent_id.try_into().unwrap();
+
         // Sender must be tracking
-        let sender_info = Some((msg.from_agent_id.clone(), Some(msg.request_id.clone())));
+        let sender_info = Some((from_agent_id.clone(), Some(msg.request_id.clone())));
         let is_tracking =
-            self.priv_check_or_fail(&msg.dna_address, &msg.from_agent_id, sender_info.clone())?;
+            self.priv_check_or_fail(&dna_address, &from_agent_id, sender_info.clone())?;
         if !is_tracking {
             return Ok(());
         }
         // Receiver must be tracking
         let is_tracking =
-            self.priv_check_or_fail(&msg.dna_address, &msg.to_agent_id, sender_info)?;
+            self.priv_check_or_fail(&dna_address, &to_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
         // All good, relay message
         self.priv_send_one(
-            &msg.dna_address,
-            &msg.to_agent_id,
-            JsonProtocol::SendMessageResult(msg.clone()).into(),
+            &dna_address,
+            &to_agent_id,
+            Lib3hClientProtocol::HandleSendDirectMessageResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -504,11 +527,15 @@ impl InMemoryServer {
 
     /// on publish, we send store requests to all nodes connected on this dna
     fn priv_serve_PublishEntry(&mut self, msg: &ProvidedEntryData) -> NetResult<()> {
+        let dna_address = msg.space_address.try_into().unwrap();
+        let provider_agent_id : Address = msg.provider_agent_id.try_into().unwrap();
+        let entry_address = msg.entry.entry_address.try_into().unwrap();
+
         // Provider must be tracking
-        let sender_info = Some((msg.provider_agent_id.clone(), None));
+        let sender_info = Some((provider_agent_id.clone(), None));
         let is_tracking = self.priv_check_or_fail(
-            &msg.dna_address,
-            &msg.provider_agent_id.clone(),
+            &dna_address,
+            &provider_agent_id.clone(),
             sender_info,
         )?;
         if !is_tracking {
@@ -517,25 +544,26 @@ impl InMemoryServer {
 
         // Store every aspect
         for aspect in msg.entry.aspect_list.clone() {
-            let chain_id = into_chain_id(&msg.dna_address, &msg.provider_agent_id);
-            // Publish is authoring unless its broadcasting an aspect we are storing
+            let chain_id = into_chain_id(&dna_address, &provider_agent_id);
+            let aspect_address = aspect.aspect_address.try_into().unwrap();
+             // Publish is authoring unless its broadcasting an aspect we are storing
             if !book_has_aspect(
                 &self.stored_book,
                 chain_id,
-                &msg.entry.entry_address,
-                &aspect.aspect_address,
+                &entry_address,
+                &aspect_address
             ) {
                 bookkeep(
                     &mut self.authored_book,
-                    &msg.dna_address,
-                    &msg.provider_agent_id,
-                    &msg.entry.entry_address,
-                    &aspect.aspect_address,
+                    &dna_address,
+                    &provider_agent_id,
+                    &entry_address,
+                    &aspect_address,
                 );
             }
             let store_msg = StoreEntryAspectData {
                 request_id: self.priv_generate_request_id(),
-                dna_address: msg.dna_address.clone(),
+                space_address: msg.space_address,
                 provider_agent_id: msg.provider_agent_id.clone(),
                 entry_address: msg.entry.entry_address.clone(),
                 entry_aspect: aspect,
@@ -543,8 +571,9 @@ impl InMemoryServer {
             // #fullsync
             // Broadcast: have everyone store it (including self)
             self.priv_send_all(
-                &msg.dna_address,
-                JsonProtocol::HandleStoreEntryAspect(store_msg).into(),
+                &dna_address,
+                // TODO what to make this?
+                Lib3hClientProtocol::HandleStoreEntryAspect(store_msg).into(),
             )?;
         }
         Ok(())
@@ -601,7 +630,7 @@ impl InMemoryServer {
                     for (k, r) in e.get_mut().iter() {
                         if k == &msg.requester_agent_id {
                             self.log.i(&format!("---- HandleQueryEntry {}", k));
-                            r.send(JsonProtocol::HandleQueryEntry(msg.clone()).into())?;
+                            r.send(Lib3hClientProtocol::HandleQueryEntry(msg.clone()).into())?;
                             return Ok(());
                         }
                     }
@@ -612,7 +641,7 @@ impl InMemoryServer {
 
         // No node found, send an empty FetchEntryResultData
         // TODO: should send a FailureResult instead?
-        let response = JsonProtocol::QueryEntryResult(QueryEntryResultData {
+        let response = Lib3hClientProtocol::QueryEntryResult(QueryEntryResultData {
             dna_address: msg.dna_address.clone(),
             entry_address: msg.entry_address.clone(),
             request_id: msg.request_id.clone(),
@@ -646,7 +675,7 @@ impl InMemoryServer {
         self.priv_send_one(
             &msg.dna_address,
             &msg.requester_agent_id,
-            JsonProtocol::QueryEntryResult(msg.clone()).into(),
+            Lib3hClientProtocol::QueryEntryResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -682,7 +711,7 @@ impl InMemoryServer {
                 let request_id = self.priv_create_request_with_chain_id(&chain_id);
                 self.priv_send_one_with_chain_id(
                     &chain_id,
-                    JsonProtocol::HandleFetchEntry(FetchEntryData {
+                    Lib3hClientProtocol::HandleFetchEntry(FetchEntryData {
                         dna_address: msg.dna_address.clone(),
                         provider_agent_id: undo_chain_id(&chain_id).1,
                         request_id,
@@ -728,9 +757,9 @@ impl InMemoryServer {
                 let request_id = self.priv_create_request_with_chain_id(&chain_id);
                 let _ = self.priv_send_one_with_chain_id(
                     &chain_id,
-                    JsonProtocol::HandleFetchEntry(FetchEntryData {
-                        dna_address: msg.dna_address.clone(),
-                        provider_agent_id: undo_chain_id(&chain_id).1,
+                    Lib3hClientProtocol::FetchEntry(FetchEntryData {
+                        space_address: msg.space_address.clone(),
+                        provider_agent_id: undo_chain_id(&chain_id).1.try_into().expect("provider agent id as a vector of u8"),
                         request_id,
                         entry_address: entry_address.clone(),
                         aspect_address_list: Some(vec![aspect_address]),

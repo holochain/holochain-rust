@@ -9,15 +9,15 @@ pub mod rule;
 
 use color::{pick_color, ColoredLevelConfig};
 use crossbeam_channel::{self, Receiver, Sender};
+use rule::{Rule, RuleFilter};
 use std::{
     boxed::Box,
     default::Default,
+    env,
     io::{self, Write},
     str::FromStr,
     thread,
-    env,
 };
-use rule::{Rule, RuleFilter};
 
 /// Helper type pointing to a trait object in order to send around a log message.
 type MsgT = Box<dyn LogMessageTrait>;
@@ -187,10 +187,7 @@ impl<'a> FastLoggerBuilder {
     /// Info, Warn or Error.
     pub fn set_level_from_str(&mut self, level: &str) -> &mut Self {
         self.level = Level::from_str(level).unwrap_or_else(|_| {
-            eprintln!(
-                "Fail to parse the logging level from string: '{}'.",
-                level
-            );
+            eprintln!("Fail to parse the logging level from string: '{}'.", level);
             self.level
         });
         self
@@ -267,7 +264,8 @@ impl<'a> FastLoggerBuilder {
                         while let Ok(msg) = r.recv() {
                             // Here we use `writeln!` instead of println! in order to avoid
                             // unnecessary flush.
-                            writeln!(&mut file_stream, "{}", msg.build()).expect("Fail to log to file.")
+                            writeln!(&mut file_stream, "{}", msg.build())
+                                .expect("Fail to log to file.")
                         }
                     });
                 } else {
@@ -277,7 +275,8 @@ impl<'a> FastLoggerBuilder {
                             // unnecessary flush.
                             // Currently we use `BufWriter` which has a sized buffer of about
                             // 8kb by default
-                            writeln!(&mut io::BufWriter::new(io::stderr()), "{}", msg.build()).expect("Fail to log to file.")
+                            writeln!(&mut io::BufWriter::new(io::stderr()), "{}", msg.build())
+                                .expect("Fail to log to file.")
                         }
                     });
                 }
@@ -387,7 +386,6 @@ struct Logger {
     rules: Option<Vec<Rule>>,
 }
 
-
 impl From<Logger> for FastLoggerBuilder {
     fn from(logger: Logger) -> Self {
         let rule_filters: Vec<RuleFilter> = logger
@@ -446,7 +444,6 @@ fn should_log_test() {
     assert_eq!(logger.should_log_in("xboy"), Some(String::from("Green")));
 }
 
-
 #[test]
 fn logger_conf_deserialization_test() {
     let toml = r#"
@@ -485,8 +482,8 @@ fn fastloggerbuilder_conf_deserialization_test() {
             color = "red"
     "#;
 
-    let flb = FastLoggerBuilder::from_toml(&toml)
-        .expect("Fail to init `FastLoggerBuilder` from toml.");
+    let flb =
+        FastLoggerBuilder::from_toml(&toml).expect("Fail to init `FastLoggerBuilder` from toml.");
 
     // Log verbosity check
     assert_eq!(flb.level(), Level::Debug);

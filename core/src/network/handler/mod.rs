@@ -7,16 +7,12 @@ pub mod store;
 use crate::{
     context::Context,
     entry::CanPublish,
-    network::{
-        actions::publish::publish,
-        handler::{fetch::*, query::*, send::*, store::*},
-    },
+    network::handler::{fetch::*, query::*, send::*, store::*},
     nucleus,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use boolinator::*;
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
-use holochain_persistence_api::hash::HashString;
 
 use crate::network::{
     direct_message::DirectMessage, entry_aspect::EntryAspect,
@@ -213,17 +209,6 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_send_message_result(message_data, context.clone())
             }
-            JsonProtocol::PeerConnected(peer_data) => {
-                // ignore peer connection of myself
-                if is_my_id(&context, &peer_data.agent_id.to_string()) {
-                    return Ok(());
-                }
-
-                context.log(format!("debug/net/handle: PeerConnected: {:?}", peer_data));
-                // Total hack in lieu of a world-model.
-                // Just republish everything when a new person comes on-line!!
-                republish_all_public_chain_entries(&context);
-            }
             JsonProtocol::HandleGetAuthoringEntryList(get_list_data) => {
                 if !is_my_dna(&my_dna_address, &get_list_data.dna_address.to_string()) {
                     return Ok(());
@@ -239,24 +224,6 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
         }
         Ok(())
     }))
-}
-
-pub fn republish_all_public_chain_entries(context: &Arc<Context>) {
-    let chain = context.state().unwrap().agent().chain_store();
-    let top_header = context.state().unwrap().agent().top_chain_header();
-    chain
-        .iter(&top_header)
-        .filter(|ref chain_header| chain_header.entry_type().can_publish(context))
-        .for_each(|chain_header| {
-            let hash = HashString::from(chain_header.entry_address().to_string());
-            match context.block_on(publish(hash.clone(), context)) {
-                Err(e) => context.log(format!(
-                    "err/net/handle: unable to publish {:?}, got error: {:?}",
-                    hash, e
-                )),
-                _ => {}
-            }
-        });
 }
 
 fn get_content_aspect(

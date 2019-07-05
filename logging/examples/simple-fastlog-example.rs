@@ -15,7 +15,7 @@ fn main() {
 
     trace!("Track me if you can.");
     debug!("What's bugging you today?");
-    info!("Some interesting info here");
+    info!(target: "Simple_example_instance_id", "Some interesting info here");
     warn!("You've been warned Sir!");
     // This next one will not be logged according to our defined rule
     warn!("Let's not warn twice about the same stuff.");

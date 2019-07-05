@@ -94,12 +94,15 @@ impl DebugLogger {
         let (tx, rx) = ChannelLogger::setup();
         let logger = DebugLogger { sender: tx.clone() };
 
-        thread::spawn(move || loop {
-            match rx.recv() {
-                Ok((id, msg)) => run(&rules, id, msg),
-                Err(_) => break,
-            }
-        });
+        thread::Builder::new()
+            .name("debug_logger".to_string())
+            .spawn(move || loop {
+                match rx.recv() {
+                    Ok((id, msg)) => run(&rules, id, msg),
+                    Err(_) => break,
+                }
+            })
+            .expect("Could not spawn thread for DebugLogger");
         logger
     }
     pub fn get_sender(&self) -> Sender {

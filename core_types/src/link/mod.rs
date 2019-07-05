@@ -74,6 +74,7 @@ pub enum LinkMatch<S: Into<String>> {
 }
 
 impl<S: Into<String>> LinkMatch<S> {
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_regex_string(self) -> Result<String, String> {
         let re_string: String = match self {
             LinkMatch::Any => ".*".into(),

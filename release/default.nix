@@ -10,12 +10,6 @@ let
    release = release;
   };
 
-  pulse = pkgs.callPackage ./pulse {
-   holonix = holonix;
-   release = release;
-   github = github;
-  };
-
   docs = pkgs.callPackage ./docs {
    release = release;
   };
@@ -25,7 +19,6 @@ release // {
 
  ++ (pkgs.callPackage ./audit {
   release = release;
-  pulse = pulse;
  }).buildInputs
 
  ++ (pkgs.callPackage ./branch {
@@ -39,7 +32,6 @@ release // {
  }).buildInputs
 
  ++ (pkgs.callPackage ./prepare { }).buildInputs
- ++ pulse.buildInputs
  ++ rust.buildInputs
  ++ docs.buildInputs
  ++ github.buildInputs

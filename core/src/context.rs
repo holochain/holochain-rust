@@ -50,6 +50,7 @@ use test_utils::mock_signing::mock_conductor_api;
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {
+    pub(crate) instance_id: Option<String>,
     pub agent_id: AgentId,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<StateWrapper>>>,
@@ -104,6 +105,7 @@ impl Context {
         signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
+            instance_id: None,
             agent_id: agent_id.clone(),
             persister,
             state: None,
@@ -133,6 +135,7 @@ impl Context {
         p2p_config: P2pConfig,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
+            instance_id: None,
             agent_id: agent_id.clone(),
             persister,
             state: None,
@@ -150,9 +153,12 @@ impl Context {
 
     // helper function to make it easier to call the logger
     pub fn log<T: Into<String>>(&self, msg: T) {
-        let msg_str = msg.into();
-        //println!("{}",msg_str.clone());
-        info!("{}", msg_str);
+        info!(target: &self.instance_id.to_owned().unwrap_or_default(), "{}", msg.into())
+    }
+
+    pub fn log_debug<T>(&self, msg: T)
+    where T: Into<String>{
+        debug!(target: &self.instance_id.to_owned().unwrap_or_default(), "{}", msg.into())
     }
 
     pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {

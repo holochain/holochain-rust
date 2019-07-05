@@ -61,7 +61,9 @@ pub fn reduce_get_links_count(
         Err(err) => Some(Err(err)),
     };
 
-    network_state.get_links_results_count.insert(key.clone(), result);
+    network_state
+        .get_links_results_count
+        .insert(key.clone(), result);
 }
 
 pub fn reduce_get_links_count_by_tag(

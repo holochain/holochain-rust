@@ -96,7 +96,6 @@ impl log::Log for FastLogger {
                 level: self.level_colors.color(record.level()).to_string(),
                 thread_name: std::thread::current()
                     .name()
-                    // .unwrap_or("Thread-name")
                     .unwrap_or("Anonymous thread")
                     .to_string(),
                 color: should_log,
@@ -346,8 +345,8 @@ impl LogMessageTrait for LogMessage {
     fn build(&self) -> String {
         let module_name = self.target.to_owned().unwrap_or(self.module.to_owned());
         let base_color_on = format!("{}", &module_name).to_owned();
-
         // let base_color_on = format!("{}{}", &self.thread_name, &self.module).to_owned();
+
         // Let's colorize our logging messages
         let msg_color = match &self.color {
             Some(color) => {

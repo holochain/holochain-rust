@@ -343,9 +343,12 @@ trait LogMessageTrait: Send {
 impl LogMessageTrait for LogMessage {
     /// Build the log message as a string. Applying custom color if needed.
     fn build(&self) -> String {
-        let module_name = self.target.to_owned().unwrap_or(self.module.to_owned());
-        let base_color_on = format!("{}", &module_name).to_owned();
-        // let base_color_on = format!("{}{}", &self.thread_name, &self.module).to_owned();
+        // Prioritizing `target` as a tag name and falling back to the module name if missing.
+        let tag_name = self
+            .target
+            .to_owned()
+            .unwrap_or(format!("{}{}", &self.thread_name, &self.module).to_owned());
+        let base_color_on = format!("{}", &tag_name).to_owned();
 
         // Let's colorize our logging messages
         let msg_color = match &self.color {
@@ -360,9 +363,9 @@ impl LogMessageTrait for LogMessage {
         };
 
         let msg = format!(
-            "{timestamp} | {thread_name}: {module} @ l.{line} - {level} - {args}",
+            "{timestamp} | {thread_name}: {tag} @ l.{line} - {level} - {args}",
             args = self.args.color(msg_color),
-            module = module_name,
+            tag = tag_name,
             line = self.line,
             // We might consider retrieving the timestamp once and proceed logging
             // in batch in the future, if this ends up being performance critical

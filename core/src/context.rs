@@ -50,7 +50,7 @@ use test_utils::mock_signing::mock_conductor_api;
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {
-    pub(crate) instance_id: Option<String>,
+    pub(crate) instance_name: String,
     pub agent_id: AgentId,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<StateWrapper>>>,
@@ -95,6 +95,7 @@ impl Context {
     }
 
     pub fn new(
+        instance_name: &str,
         agent_id: AgentId,
         persister: Arc<Mutex<Persister>>,
         chain_storage: Arc<RwLock<ContentAddressableStorage>>,
@@ -105,7 +106,7 @@ impl Context {
         signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
-            instance_id: None,
+            instance_name: instance_name.to_string(),
             agent_id: agent_id.clone(),
             persister,
             state: None,
@@ -125,6 +126,7 @@ impl Context {
     }
 
     pub fn new_with_channels(
+        instance_name: &str,
         agent_id: AgentId,
         persister: Arc<Mutex<Persister>>,
         action_channel: Option<SyncSender<ActionWrapper>>,
@@ -135,7 +137,7 @@ impl Context {
         p2p_config: P2pConfig,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
-            instance_id: None,
+            instance_name: instance_name.to_string(),
             agent_id: agent_id.clone(),
             persister,
             state: None,
@@ -153,12 +155,14 @@ impl Context {
 
     // helper function to make it easier to call the logger
     pub fn log<T: Into<String>>(&self, msg: T) {
-        info!(target: &self.instance_id.to_owned().unwrap_or_default(), "{}", msg.into())
+        info!(target: &self.instance_name.to_owned(), "{}", msg.into())
     }
 
     pub fn log_debug<T>(&self, msg: T)
-    where T: Into<String>{
-        debug!(target: &self.instance_id.to_owned().unwrap_or_default(), "{}", msg.into())
+    where
+        T: Into<String>,
+    {
+        debug!(target: &self.instance_name.to_owned(), "{}", msg.into())
     }
 
     pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
@@ -368,6 +372,7 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut maybe_context = Context::new(
+            "state_test_instance",
             AgentId::generate_fake("Terence"),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
@@ -402,6 +407,7 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
+            "test_deadlock_instance",
             AgentId::generate_fake("Terence"),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),

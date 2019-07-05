@@ -652,12 +652,13 @@ impl Conductor {
                     )));*/
                 }
 
+                let instance_name = instance_config.id.clone();
                 // Conductor API
                 let api = self.build_conductor_api(instance_config.id, config)?;
                 context_builder = context_builder.with_conductor_api(api);
 
                 // Spawn context
-                let context = context_builder.spawn();
+                let context = context_builder.with_instance_name(&instance_name).spawn();
 
                 // Get DNA
                 let dna_config = config.dna_by_id(&instance_config.dna).unwrap();

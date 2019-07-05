@@ -67,6 +67,7 @@ pub mod test {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
+            "Test-context-instance",
             AgentId::generate_fake("Terence"),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),

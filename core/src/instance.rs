@@ -424,6 +424,7 @@ pub mod tests {
         let logger = test_logger();
         (
             Arc::new(Context::new(
+                "Test-context-and-logger-instance",
                 agent,
                 Arc::new(Mutex::new(SimplePersister::new(content_storage.clone()))),
                 content_storage.clone(),
@@ -458,6 +459,7 @@ pub mod tests {
         ));
         Arc::new(
             Context::new_with_channels(
+                "Test-context-with-channels-instance",
                 agent,
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 Some(action_channel.clone()),
@@ -480,6 +482,7 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
+            "test-context-with-state-instance",
             registered_test_agent("Florence"),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
@@ -503,6 +506,7 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
         let mut context = Context::new(
+            "test-context-with-agent-state-instance",
             registered_test_agent("Florence"),
             Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
             cas.clone(),

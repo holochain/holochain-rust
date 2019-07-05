@@ -27,6 +27,7 @@ use std::{
 /// Use any combination of `with_*` functions to configure the context and finally call
 /// `spawn()` to retrieve the context.
 pub struct ContextBuilder {
+    instance_name: Option<String>,
     agent_id: Option<AgentId>,
     // Persister is currently set to a reasonable default in spawn().
     // TODO: add with_persister() function to ContextBuilder.
@@ -42,6 +43,7 @@ pub struct ContextBuilder {
 impl ContextBuilder {
     pub fn new() -> Self {
         ContextBuilder {
+            instance_name: None,
             agent_id: None,
             chain_storage: None,
             dht_storage: None,
@@ -123,6 +125,11 @@ impl ContextBuilder {
         self
     }
 
+    pub fn with_instance_name(mut self, instance_name: &str) -> Self {
+        self.instance_name = Some(String::from(instance_name));
+        self
+    }
+
     /// Actually creates the context.
     /// Defaults to memory storages, an in-memory network config and a fake agent called "alice".
     /// The persister gets set to SimplePersister based on the chain storage.
@@ -136,7 +143,11 @@ impl ContextBuilder {
         let eav_storage = self
             .eav_storage
             .unwrap_or(Arc::new(RwLock::new(EavMemoryStorage::new())));
+
         Context::new(
+            &self
+                .instance_name
+                .unwrap_or("Anonymous_instance".to_string()),
             self.agent_id.unwrap_or(AgentId::generate_fake("alice")),
             Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),
             chain_storage,

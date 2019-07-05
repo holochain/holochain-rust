@@ -71,14 +71,17 @@ pub fn definition() -> ValidatingEntryType {
 mod tests {
 
     use crate::memo::{definition, Memo};
-    use hdk::holochain_core_types::{
-        chain_header::test_chain_header,
-        dna::entry_types::{EntryTypeDef, Sharing},
-        entry::{
-            entry_type::{AppEntryType, EntryType},
-            Entry,
+    use hdk::{
+        holochain_core_types::{
+            chain_header::test_chain_header,
+            dna::entry_types::{EntryTypeDef, Sharing},
+            entry::{
+                entry_type::{AppEntryType, EntryType},
+                Entry,
+            },
+            validation::{EntryLifecycle, EntryValidationData, ValidationData, ValidationPackage},
         },
-        validation::{EntryLifecycle, EntryValidationData, ValidationData, ValidationPackage},
+        holochain_json_api::json::JsonString,
     };
 
     #[test]
@@ -101,7 +104,7 @@ mod tests {
         assert_eq!(expected_name, memo_definition.name.clone());
 
         let expected_definition = EntryTypeDef {
-            description: "A private memo entry type.".to_string(),
+            properties: JsonString::from("A private memo entry type."),
             linked_from: vec![],
             links_to: Vec::new(),
             sharing: Sharing::Private,

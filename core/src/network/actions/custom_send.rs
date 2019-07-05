@@ -34,11 +34,14 @@ pub async fn custom_send(
     dispatch_action(context.action_channel(), action_wrapper);
     let context_inner = context.clone();
     let id_inner = id.clone();
-    let _ = thread::spawn(move || {
-        thread::sleep(timeout.into());
-        let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(id_inner));
-        dispatch_action(context_inner.action_channel(), action_wrapper.clone());
-    });
+    thread::Builder::new()
+        .name(format!("custom_send_timeout/{}", id))
+        .spawn(move || {
+            thread::sleep(timeout.into());
+            let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(id_inner));
+            dispatch_action(context_inner.action_channel(), action_wrapper.clone());
+        })
+        .expect("Could not spawn thread for custom_send timeout");
 
     await!(SendResponseFuture {
         context: context.clone(),
@@ -56,6 +59,9 @@ impl Future for SendResponseFuture {
     type Output = Result<String, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("SendResponseFuture") {
+            return Poll::Ready(Err(err));
+        }
         let state = self.context.state().unwrap().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(HolochainError::ErrorGeneric(error.to_string())));

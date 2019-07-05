@@ -5,6 +5,7 @@ use crate::{
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 
+use crate::state::StateWrapper;
 use holochain_core_types::{
     agent::AgentId,
     chain_header::ChainHeader,
@@ -136,8 +137,8 @@ impl AgentStateSnapshot {
     }
 }
 
-impl From<&State> for AgentStateSnapshot {
-    fn from(state: &State) -> Self {
+impl From<&StateWrapper> for AgentStateSnapshot {
+    fn from(state: &StateWrapper) -> Self {
         let agent = &*(state.agent());
         let top_chain = agent.top_chain_header();
         AgentStateSnapshot::new(top_chain)
@@ -175,14 +176,14 @@ pub enum ActionResponse {
 pub fn create_new_chain_header(
     entry: &Entry,
     agent_state: &AgentState,
-    root_state: &State,
+    root_state: &StateWrapper,
     crud_link: &Option<Address>,
     provenances: &Vec<Provenance>,
 ) -> Result<ChainHeader, HolochainError> {
     let agent_address = agent_state.get_agent_address()?;
     let signature = Signature::from(
         root_state
-            .conductor_api
+            .conductor_api()
             .execute(entry.address().to_string(), CryptoMethod::Sign)?,
         // Temporarily replaced by error handling for Holo hack signing.
         // TODO: pull in the expect below after removing the Holo signing hack again
@@ -228,7 +229,7 @@ fn reduce_commit_entry(
     let result = create_new_chain_header(
         &entry,
         agent_state,
-        root_state,
+        &StateWrapper::from(root_state.clone()),
         &maybe_link_update_delete,
         provenances,
     )
@@ -419,8 +420,14 @@ pub mod tests {
         let agent_state = test_agent_state(Some(context.agent_id.address()));
         let state = State::new_with_agent(context.clone(), agent_state.clone());
 
-        let header =
-            create_new_chain_header(&test_entry(), &agent_state, &state, &None, &vec![]).unwrap();
+        let header = create_new_chain_header(
+            &test_entry(),
+            &agent_state,
+            &StateWrapper::from(state.clone()),
+            &None,
+            &vec![],
+        )
+        .unwrap();
         let agent_id = context.agent_id.clone();
         assert_eq!(
             header,

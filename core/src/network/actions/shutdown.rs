@@ -42,7 +42,7 @@ impl Future for ShutdownFuture {
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         let state = self.state.read().unwrap().network();
-        if state.initialized().is_ok() {
+        if state.network.lock().unwrap().is_some() {
             //
             // TODO: connect the waker to state updates for performance reasons
             // See: https://github.com/holochain/holochain-rust/issues/314

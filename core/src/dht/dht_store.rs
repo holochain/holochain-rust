@@ -21,12 +21,16 @@ use std::{
 };
 
 /// The state-slice for the DHT.
-/// Holds the agent's local shard and interacts with the network module
+/// Holds the CAS and EAVi that's used for the agent's local shard
+/// as well as the holding list, i.e. list of all entries held for the DHT.
 #[derive(Clone, Debug)]
 pub struct DhtStore {
     // Storages holding local shard data
     content_storage: Arc<RwLock<ContentAddressableStorage>>,
     meta_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+
+    /// All the entries that the network has told us to hold
+    holding_list: Vec<Address>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -81,6 +85,7 @@ impl DhtStore {
         DhtStore {
             content_storage,
             meta_storage,
+            holding_list: Vec::new(),
             actions: HashMap::new(),
         }
     }
@@ -173,6 +178,14 @@ impl DhtStore {
         self.content_storage().write().unwrap().add(header)?;
         self.meta_storage().write().unwrap().add_eavi(&eavi)?;
         Ok(())
+    }
+
+    pub fn mark_entry_as_held(&mut self, entry: &Entry) {
+        self.holding_list.push(entry.address());
+    }
+
+    pub fn get_all_held_entry_addresses(&self) -> &Vec<Address> {
+        &self.holding_list
     }
 
     // Getters (for reducers)

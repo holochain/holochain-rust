@@ -168,7 +168,7 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [create_link, delete_link, get_my_links, test_emit_signal]
+        hc_public [create_link, delete_link, get_my_links, test_emit_signal, encrypt, decrypt]
     }
 }
 

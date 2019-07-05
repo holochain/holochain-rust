@@ -26,7 +26,7 @@ use holochain_core_types::{
 };
 use holochain_net::{
     connection::{
-        json_protocol::{FetchEntryData, QueryEntryData},
+        json_protocol::{EntryListData, FetchEntryData, QueryEntryData},
         net_connection::NetHandler,
     },
     p2p_config::P2pConfig,
@@ -187,8 +187,11 @@ pub enum Action {
 
     /// Updates the state to hold the response that we got for
     /// our previous custom direct message.
-    /// /// Triggered from the network handler when we get the response.
+    /// Triggered from the network handler when we get the response.
     HandleCustomSendResponse((String, Result<String, String>)),
+
+    /// Sends the given data as JsonProtocol::HandleGetAuthoringEntryListResult
+    RespondAuthoringList(EntryListData),
 
     // ----------------
     // Nucleus actions:

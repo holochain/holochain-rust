@@ -8,6 +8,7 @@ pub mod handle_get_validation_package;
 pub mod init;
 pub mod publish;
 pub mod resolve_direct_connection;
+pub mod respond_authoring_list;
 pub mod respond_fetch;
 pub mod respond_get;
 pub mod respond_get_links;
@@ -29,6 +30,7 @@ use crate::{
             init::reduce_init,
             publish::reduce_publish,
             resolve_direct_connection::reduce_resolve_direct_connection,
+            respond_authoring_list::reduce_respond_authoring_list,
             respond_fetch::reduce_respond_fetch_data,
             respond_get::reduce_respond_get,
             respond_get_links::reduce_respond_get_links,
@@ -64,6 +66,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),
         Action::ResolveDirectConnection(_) => Some(reduce_resolve_direct_connection),
+        Action::RespondAuthoringList(_) => Some(reduce_respond_authoring_list),
         Action::RespondFetch(_) => Some(reduce_respond_fetch_data),
         Action::RespondGet(_) => Some(reduce_respond_get),
         Action::RespondGetLinks(_) => Some(reduce_respond_get_links),

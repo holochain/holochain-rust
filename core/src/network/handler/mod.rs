@@ -1,4 +1,5 @@
 pub mod fetch;
+pub mod lists;
 pub mod query;
 pub mod send;
 pub mod store;
@@ -222,6 +223,17 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 // Total hack in lieu of a world-model.
                 // Just republish everything when a new person comes on-line!!
                 republish_all_public_chain_entries(&context);
+            }
+            JsonProtocol::HandleGetAuthoringEntryList(get_list_data) => {
+                if !is_my_dna(&my_dna_address, &get_list_data.dna_address.to_string()) {
+                    return Ok(());
+                }
+                // ignore if it's not addressed to me
+                if !is_my_id(&context, &get_list_data.provider_agent_id.to_string()) {
+                    return Ok(());
+                }
+
+                handle_get_authoring_list(get_list_data, context.clone());
             }
             _ => {}
         }

@@ -23,7 +23,7 @@ use crate::{
         reducers::{
             get_entry::{reduce_get_entry, reduce_get_entry_timeout},
             get_links::{reduce_get_links, reduce_get_links_timeout},
-            get_links_count::{
+            get_links_count::reduce_get_links_count,
                 reduce_get_links_count, reduce_get_links_count_by_tag,
                 reduce_get_links_timeout_by_tag,
             },
@@ -67,7 +67,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::GetEntryTimeout(_) => Some(reduce_get_entry_timeout),
         Action::GetLinks(_) => Some(reduce_get_links),
         Action::GetLinksCount(_) => Some(reduce_get_links_count),
-        Action::GetLinksCountByTag(_) => Some(reduce_get_links_count_by_tag),
         Action::GetLinksTimeout(_) => Some(reduce_get_links_timeout),
         Action::GetLinksTimeoutByTag(_) => Some(reduce_get_links_timeout_by_tag),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),

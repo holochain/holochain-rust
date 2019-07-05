@@ -100,6 +100,7 @@ impl log::Log for FastLogger {
                     .unwrap_or("Anonymous thread")
                     .to_string(),
                 color: should_log,
+                target: Some(String::from(record.target())),
             };
 
             self.sender
@@ -319,6 +320,9 @@ struct LogMessage {
     args: String,
     /// The module name of the caller log message.
     module: String,
+    /// Additional information provided by the log caller. In HC Core it correspond to the instance
+    /// id of the Conductor.
+    target: Option<String>,
     /// Line number of the issued log message.
     line: u32,
     /// Log verbosity level.
@@ -340,7 +344,10 @@ trait LogMessageTrait: Send {
 impl LogMessageTrait for LogMessage {
     /// Build the log message as a string. Applying custom color if needed.
     fn build(&self) -> String {
-        let base_color_on = format!("{}{}", &self.thread_name, &self.module).to_owned();
+        let module_name = self.target.to_owned().unwrap_or(self.module.to_owned());
+        let base_color_on = format!("{}", &module_name).to_owned();
+
+        // let base_color_on = format!("{}{}", &self.thread_name, &self.module).to_owned();
         // Let's colorize our logging messages
         let msg_color = match &self.color {
             Some(color) => {
@@ -356,7 +363,7 @@ impl LogMessageTrait for LogMessage {
         let msg = format!(
             "{timestamp} | {thread_name}: {module} @ l.{line} - {level} - {args}",
             args = self.args.color(msg_color),
-            module = self.module,
+            module = module_name,
             line = self.line,
             // We might consider retrieving the timestamp once and proceed logging
             // in batch in the future, if this ends up being performance critical

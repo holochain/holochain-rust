@@ -59,7 +59,7 @@ pub mod test {
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use std::sync::{Mutex, RwLock};
+    use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 
     fn test_context() -> Arc<Context> {

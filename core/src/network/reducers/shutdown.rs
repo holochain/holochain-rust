@@ -47,22 +47,20 @@ pub fn reduce_shutdown(
         println!("Network thread successfully stopped");
     }
 }
-
+/*
 #[cfg(test)]
 pub mod test {
     use self::tempfile::tempdir;
-    use super::*;
     use crate::{
         context::Context,
         logger::test_logger,
         persister::SimplePersister,
-        state::{test_store, StateWrapper},
+        state::StateWrapper,
     };
     use holochain_core_types::agent::AgentId;
-    use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
-    use holochain_persistence_api::cas::content::{Address, AddressableContent};
+    use holochain_net::p2p_config::P2pConfig;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use std::sync::{Mutex, RwLock};
+    use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 
     fn test_context() -> Arc<Context> {
@@ -90,3 +88,4 @@ pub mod test {
     }
 
 }
+*/

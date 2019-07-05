@@ -5,7 +5,7 @@ use serde_derive::Deserialize;
 use std::default::Default;
 
 /// This structure is a helper for toml deserialization.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub(crate) struct Rule {
     pub pattern: String,
     pub exclude: Option<bool>,
@@ -63,6 +63,27 @@ impl Default for RuleFilter {
             exclude: false,
             color: Some(String::from("white")),
             re: Regex::new(&String::default()).expect("Fail to init RuleFilter's regex."),
+        }
+    }
+}
+
+impl From<Rule> for RuleFilter {
+    fn from(rule: Rule) -> Self {
+        let tf = RuleFilter::default();
+        RuleFilter::new(
+            &rule.pattern,
+            rule.exclude.unwrap_or_else(|| tf.exclude()),
+            &rule.color.unwrap_or_else(|| tf.get_color()),
+        )
+    }
+}
+
+impl From<RuleFilter> for Rule {
+    fn from(rule_filter: RuleFilter) -> Self {
+        Rule {
+            pattern: rule_filter.pattern.unwrap_or_default(),
+            exclude: Some(rule_filter.exclude),
+            color: Some(rule_filter.color.unwrap_or_default()),
         }
     }
 }

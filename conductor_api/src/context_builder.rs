@@ -147,7 +147,7 @@ impl ContextBuilder {
         Context::new(
             &self
                 .instance_name
-                .unwrap_or("Anonymous_instance".to_string()),
+                .unwrap_or("Anonymous-instance".to_string()),
             self.agent_id.unwrap_or(AgentId::generate_fake("alice")),
             Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),
             chain_storage,

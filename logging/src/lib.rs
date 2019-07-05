@@ -96,7 +96,7 @@ impl log::Log for FastLogger {
                 level: self.level_colors.color(record.level()).to_string(),
                 thread_name: std::thread::current()
                     .name()
-                    .unwrap_or("Anonymous thread")
+                    .unwrap_or("Anonymous-thread")
                     .to_string(),
                 color: should_log,
                 target: Some(String::from(record.target())),

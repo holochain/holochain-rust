@@ -411,17 +411,13 @@ impl Conductor {
     /// Starts dpki_happ instances
     pub fn start_dpki_instance(&mut self) -> Result<(), HolochainInstanceError> {
         let dpki_instance_id = &self.dpki_instance_id().unwrap();
+        let mut instance = self.instantiate_from_config(dpki_instance_id,None).map_err(|err|{
+            HolochainInstanceError::InternalFailure(HolochainError::ErrorGeneric(err))
+        })?;
+        instance.start()?;
         self.instances
-            .iter_mut()
-            .map(|(id, hc)| {
-                if id == dpki_instance_id {
-                    notify(format!("Starting \"{}\" as DPKI instance ...", id));
-                    return hc.write().unwrap().start();
-                }
-                Ok(())
-            })
-            .collect::<Result<Vec<()>, _>>()
-            .map(|_| ())
+            .insert(dpki_instance_id.to_string(), Arc::new(RwLock::new(instance)));
+        Ok(())
     }
 
     /// Stops all instances

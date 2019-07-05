@@ -8,12 +8,9 @@ use crate::{
 use holochain_core_types::error::HolochainError;
 
 use lib3h_protocol::{
-    data_types::{
-    EntryData, FetchEntryData, FetchEntryResultData,
-    },
-    protocol_client::Lib3hClientProtocol
+    data_types::{EntryData, FetchEntryData, FetchEntryResultData},
+    protocol_client::Lib3hClientProtocol,
 };
-
 
 /// Send back to network a HandleFetchEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.

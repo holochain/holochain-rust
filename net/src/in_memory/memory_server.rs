@@ -6,10 +6,7 @@
 
 use super::memory_book::*;
 use crate::{
-    connection::{
-       protocol::Protocol,
-        NetResult,
-    },
+    connection::{protocol::Protocol, NetResult},
     error::NetworkError,
     tweetlog::*,
 };
@@ -18,13 +15,11 @@ use std::convert::TryInto;
 
 use lib3h_protocol::{
     data_types::{
-            EntryListData, FetchEntryData, FetchEntryResultData, GenericResultData, GetListData,
-            DirectMessageData, ProvidedEntryData, QueryEntryData,
-            QueryEntryResultData, StoreEntryAspectData,
-        },
+        DirectMessageData, EntryListData, FetchEntryData, FetchEntryResultData, GenericResultData,
+        GetListData, ProvidedEntryData, QueryEntryData, QueryEntryResultData, StoreEntryAspectData,
+    },
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
-
 };
 
 use holochain_persistence_api::cas::content::Address;
@@ -228,13 +223,11 @@ impl InMemoryServer {
         // Note: use same order as the enum
         match maybe_json_msg.as_ref().unwrap() {
             Lib3hClientProtocol::SuccessResult(msg) => {
-
                 let dna_address = msg.space_address.try_into().unwrap();
                 let to_agent_id = msg.to_agent_id.try_into().unwrap();
 
                 // Check if agent is tracking the dna
-                let is_tracked =
-                    self.priv_check_or_fail(&dna_address, &to_agent_id, None)?;
+                let is_tracked = self.priv_check_or_fail(&dna_address, &to_agent_id, None)?;
                 if !is_tracked {
                     return Ok(());
                 }
@@ -250,8 +243,7 @@ impl InMemoryServer {
                 let to_agent_id = msg.to_agent_id.try_into().unwrap();
 
                 // Check if agent is tracking the dna
-                let is_tracked =
-                    self.priv_check_or_fail(&dna_address, &to_agent_id, None)?;
+                let is_tracked = self.priv_check_or_fail(&dna_address, &to_agent_id, None)?;
                 if !is_tracked {
                     return Ok(());
                 }
@@ -292,7 +284,7 @@ impl InMemoryServer {
                 // Notify all Peers connected to this DNA of a new Peer connection.
                 self.priv_send_all(
                     &msg.space_address.into(),
-                    Lib3hClientProtocol::JoinSpace(msg.clone()).into()
+                    Lib3hClientProtocol::JoinSpace(msg.clone()).into(),
                 )?;
                 // Request all data lists from this agent
                 self.priv_request_all_lists(&dna_address, &agent_id);
@@ -465,20 +457,18 @@ impl InMemoryServer {
     /// Fabricate that message and deliver it to the receiving agent
     fn priv_serve_SendMessage(&mut self, msg: &DirectMessageData) -> NetResult<()> {
         let dna_address = msg.space_address.try_into().unwrap();
-        let from_agent_id : Address = msg.from_agent_id.try_into().unwrap();
-        let to_agent_id : Address = msg.to_agent_id.try_into().unwrap();
+        let from_agent_id: Address = msg.from_agent_id.try_into().unwrap();
+        let to_agent_id: Address = msg.to_agent_id.try_into().unwrap();
 
         // Sender must be tracking
         let sender_info = Some((from_agent_id.clone(), Some(msg.request_id.clone())));
         let is_tracking =
-            self.priv_check_or_fail(&dna_address, &from_agent_id,
-                                    sender_info.clone())?;
+            self.priv_check_or_fail(&dna_address, &from_agent_id, sender_info.clone())?;
         if !is_tracking {
             return Ok(());
         }
         // Receiver must be tracking
-        let is_tracking =
-            self.priv_check_or_fail(&dna_address, &to_agent_id, sender_info)?;
+        let is_tracking = self.priv_check_or_fail(&dna_address, &to_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -498,8 +488,8 @@ impl InMemoryServer {
     /// Fabricate that message and deliver it to the initial sender.
     fn priv_serve_HandleSendMessageResult(&mut self, msg: &DirectMessageData) -> NetResult<()> {
         let dna_address = msg.space_address.try_into().unwrap();
-        let from_agent_id : Address = msg.from_agent_id.try_into().unwrap();
-        let to_agent_id : Address = msg.to_agent_id.try_into().unwrap();
+        let from_agent_id: Address = msg.from_agent_id.try_into().unwrap();
+        let to_agent_id: Address = msg.to_agent_id.try_into().unwrap();
 
         // Sender must be tracking
         let sender_info = Some((from_agent_id.clone(), Some(msg.request_id.clone())));
@@ -509,8 +499,7 @@ impl InMemoryServer {
             return Ok(());
         }
         // Receiver must be tracking
-        let is_tracking =
-            self.priv_check_or_fail(&dna_address, &to_agent_id, sender_info)?;
+        let is_tracking = self.priv_check_or_fail(&dna_address, &to_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -528,16 +517,13 @@ impl InMemoryServer {
     /// on publish, we send store requests to all nodes connected on this dna
     fn priv_serve_PublishEntry(&mut self, msg: &ProvidedEntryData) -> NetResult<()> {
         let dna_address = msg.space_address.try_into().unwrap();
-        let provider_agent_id : Address = msg.provider_agent_id.try_into().unwrap();
+        let provider_agent_id: Address = msg.provider_agent_id.try_into().unwrap();
         let entry_address = msg.entry.entry_address.try_into().unwrap();
 
         // Provider must be tracking
         let sender_info = Some((provider_agent_id.clone(), None));
-        let is_tracking = self.priv_check_or_fail(
-            &dna_address,
-            &provider_agent_id.clone(),
-            sender_info,
-        )?;
+        let is_tracking =
+            self.priv_check_or_fail(&dna_address, &provider_agent_id.clone(), sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -546,13 +532,8 @@ impl InMemoryServer {
         for aspect in msg.entry.aspect_list.clone() {
             let chain_id = into_chain_id(&dna_address, &provider_agent_id);
             let aspect_address = aspect.aspect_address.try_into().unwrap();
-             // Publish is authoring unless its broadcasting an aspect we are storing
-            if !book_has_aspect(
-                &self.stored_book,
-                chain_id,
-                &entry_address,
-                &aspect_address
-            ) {
+            // Publish is authoring unless its broadcasting an aspect we are storing
+            if !book_has_aspect(&self.stored_book, chain_id, &entry_address, &aspect_address) {
                 bookkeep(
                     &mut self.authored_book,
                     &dna_address,
@@ -759,7 +740,10 @@ impl InMemoryServer {
                     &chain_id,
                     Lib3hClientProtocol::FetchEntry(FetchEntryData {
                         space_address: msg.space_address.clone(),
-                        provider_agent_id: undo_chain_id(&chain_id).1.try_into().expect("provider agent id as a vector of u8"),
+                        provider_agent_id: undo_chain_id(&chain_id)
+                            .1
+                            .try_into()
+                            .expect("provider agent id as a vector of u8"),
                         request_id,
                         entry_address: entry_address.clone(),
                         aspect_address_list: Some(vec![aspect_address]),

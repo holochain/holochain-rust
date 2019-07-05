@@ -128,8 +128,7 @@ impl HolochainError {
 }
 
 impl From<rust_base58::base58::FromBase58Error> for HolochainError {
-
-    fn from(e:rust_base58::base58::FromBase58Error) -> Self {
+    fn from(e: rust_base58::base58::FromBase58Error) -> Self {
         HolochainError::SerializationError(format!("{}", e))
     }
 }

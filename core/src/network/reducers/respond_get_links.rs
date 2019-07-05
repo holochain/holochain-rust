@@ -12,7 +12,6 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
 };
 
-
 use holochain_persistence_api::cas::content::Address;
 
 /// Send back to network a HandleQueryEntryResult, no matter what.

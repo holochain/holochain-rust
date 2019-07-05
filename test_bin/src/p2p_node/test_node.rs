@@ -1,11 +1,7 @@
 #![allow(non_snake_case)]
 
 use holochain_net::{
-    connection::{
-       net_connection::NetSend,
-        protocol::Protocol,
-        NetResult,
-    },
+    connection::{net_connection::NetSend, protocol::Protocol, NetResult},
     p2p_config::*,
     p2p_network::P2pNetwork,
     tweetlog::{TweetProxy, *},
@@ -13,10 +9,10 @@ use holochain_net::{
 
 use lib3h_protocol::{
     data_types::{
-            EntryAspectData, EntryData, EntryListData, FetchEntryData, FetchEntryResultData,
-            GenericResultData, GetListData, DirectMessageData, ProvidedEntryData,
-            QueryEntryData, QueryEntryResultData, JoinSpace,
-        },
+        DirectMessageData, EntryAspectData, EntryData, EntryListData, FetchEntryData,
+        FetchEntryResultData, GenericResultData, GetListData, JoinSpace, ProvidedEntryData,
+        QueryEntryData, QueryEntryResultData,
+    },
     protocol_client::Lib3hClientProtocol,
 };
 

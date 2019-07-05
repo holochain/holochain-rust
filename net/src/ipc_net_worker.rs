@@ -7,15 +7,12 @@ use crate::ipc::{
 };
 
 use crate::connection::{
-   net_connection::{NetHandler, NetShutdown, NetWorker},
-   protocol::{NamedBinaryData, Protocol},
-   NetResult,
+    net_connection::{NetHandler, NetShutdown, NetWorker},
+    protocol::{NamedBinaryData, Protocol},
+    NetResult,
 };
 
-use lib3h_protocol::{
-    data_types::ConnectData,
-    protocol_client::Lib3hClientProtocol
-};
+use lib3h_protocol::{data_types::ConnectData, protocol_client::Lib3hClientProtocol};
 
 use std::{collections::HashMap, convert::TryFrom};
 
@@ -268,7 +265,7 @@ impl IpcNetWorker {
         Ok(())
     }
 
- /*   /// Handle State Message received from IPC server.
+    /*   /// Handle State Message received from IPC server.
     fn priv_handle_state(&mut self, state: StateData) -> NetResult<()> {
         // Keep track of IPC server's state
         self.last_known_state = state.state;

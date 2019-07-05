@@ -1,15 +1,12 @@
 use constants::*;
 use holochain_net::{
-    connection::{
-       net_connection::NetSend,
-        NetResult,
-    },
+    connection::{net_connection::NetSend, NetResult},
     tweetlog::*,
 };
 
 use lib3h_protocol::{
     data_types::{ConnectData, EntryData},
-    protocol_client::Lib3hClientProtocol
+    protocol_client::Lib3hClientProtocol,
 };
 
 use holochain_persistence_api::cas::content::Address;

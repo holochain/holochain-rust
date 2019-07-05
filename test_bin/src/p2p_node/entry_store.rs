@@ -1,14 +1,9 @@
-use holochain_net::{
-    tweetlog::*,
-};
+use holochain_net::tweetlog::*;
 
-use lib3h_protocol::data_types::{
-    {EntryAspectData, EntryData},
-};
+use lib3h_protocol::data_types::{EntryAspectData, EntryData};
 
 use holochain_persistence_api::cas::content::Address;
-use std::collections::HashMap;
-use std::convert::TryInto;
+use std::{collections::HashMap, convert::TryInto};
 
 pub struct EntryStore {
     // TODO: Changed once meta is only Addresses
@@ -99,7 +94,9 @@ impl EntryStore {
         if maybe_entry.is_none() {
             return None;
         }
-        return maybe_entry.unwrap().get(&aspect_address.clone().try_into().unwrap())
+        return maybe_entry
+            .unwrap()
+            .get(&aspect_address.clone().try_into().unwrap());
     }
 
     //    /// Get all values stored

@@ -11,9 +11,9 @@ use crate::{
         handler::{fetch::*, query::*, send::*, store::*},
     },
 };
-use holochain_net::connection::{net_connection::NetHandler};
-use lib3h_protocol::protocol_client::Lib3hClientProtocol;
+use holochain_net::connection::net_connection::NetHandler;
 use holochain_persistence_api::hash::HashString;
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 use crate::network::{direct_message::DirectMessage, entry_aspect::EntryAspect};
 use holochain_json_api::json::JsonString;

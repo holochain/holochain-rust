@@ -3,18 +3,12 @@ use crate::{
     network::state::NetworkState,
     state::State,
 };
-use holochain_net::{
-    connection::{
-       net_connection::NetSend,
-    },
-    p2p_network::P2pNetwork,
+use holochain_net::{connection::net_connection::NetSend, p2p_network::P2pNetwork};
+use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol};
+use std::{
+    convert::TryInto,
+    sync::{Arc, Mutex},
 };
-use std::sync::{Arc, Mutex};
-use lib3h_protocol::{
-    data_types::SpaceData,
-    protocol_client::Lib3hClientProtocol,
-};
-use std::convert::TryInto;
 
 pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
@@ -38,7 +32,11 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     //    }
 
     let json = Lib3hClientProtocol::JoinSpace(SpaceData {
-        space_address: network_settings.dna_address.clone().try_into().expect("space address"),
+        space_address: network_settings
+            .dna_address
+            .clone()
+            .try_into()
+            .expect("space address"),
         agent_id: network_settings.agent_id.clone().into(),
     });
 

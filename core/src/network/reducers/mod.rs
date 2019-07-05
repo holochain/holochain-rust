@@ -39,14 +39,9 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::{
-   net_connection::NetSend,
-};
+use holochain_net::connection::net_connection::NetSend;
 
-use lib3h_protocol::{
-    protocol_client::Lib3hClientProtocol,
-    data_types::DirectMessageData
-};
+use lib3h_protocol::{data_types::DirectMessageData, protocol_client::Lib3hClientProtocol};
 
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
@@ -114,7 +109,7 @@ pub fn send(
 }
 
 fn address_to_vec(address: &Address) -> Vec<&u8> {
-    let address_string : String = address.clone().unwrap().into();
+    let address_string: String = address.clone().unwrap().into();
     address_string.as_bytes().into()
 }
 

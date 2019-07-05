@@ -24,12 +24,7 @@ use holochain_core_types::{
     signature::Provenance,
     validation::ValidationPackage,
 };
-use holochain_net::{
-    connection::{
-       net_connection::NetHandler,
-    },
-    p2p_config::P2pConfig,
-};
+use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
 use lib3h_protocol::data_types::{FetchEntryData, QueryEntryData};
 
 use holochain_persistence_api::cas::content::Address;

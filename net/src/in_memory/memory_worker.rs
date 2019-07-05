@@ -2,13 +2,11 @@
 
 use super::memory_server::*;
 use crate::connection::{
-   net_connection::{NetHandler, NetWorker},
+    net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
     NetResult,
 };
-use lib3h_protocol::{
-    protocol_client::Lib3hClientProtocol,
-};
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;

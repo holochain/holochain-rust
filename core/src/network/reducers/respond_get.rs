@@ -12,13 +12,12 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
 };
 
-
 /// Send back to network a HandleQueryEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
 fn reduce_respond_get_inner(
     network_state: &mut NetworkState,
     query_data: &QueryEntryData,
-     maybe_entry: &Option<EntryWithMetaAndHeader>,
+    maybe_entry: &Option<EntryWithMetaAndHeader>,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
     let query_result_json: JsonString = NetworkQueryResult::Entry(maybe_entry.clone()).into();

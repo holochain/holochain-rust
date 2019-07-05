@@ -9,8 +9,8 @@ use crate::{
 };
 use holochain_core_types::entry::{deletion_entry::DeletionEntry, Entry};
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::data_types::StoreEntryAspectData;
 use holochain_persistence_api::cas::content::AddressableContent;
+use lib3h_protocol::data_types::StoreEntryAspectData;
 use std::{convert::TryInto, sync::Arc, thread};
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.

@@ -17,8 +17,9 @@ use std::{
     thread,
     env,
 };
-use rule::RuleFilter;
+use rule::{Rule, RuleFilter};
 
+/// Helper type pointing to a trait object in order to send around a log message.
 type MsgT = Box<dyn LogMessageTrait>;
 
 /// The logging struct where we store everything we need in order to correctly log stuff.
@@ -113,10 +114,16 @@ impl log::Log for FastLogger {
 
 /// Logger Builder used to correctly set up our logging capability.
 pub struct FastLoggerBuilder {
+    /// Verbosity level of the logger.
     level: Level,
+    /// List of filtering [rules](RuleFilter).
     rule_filters: Vec<RuleFilter>,
+    /// Color of the verbosity levels.
     level_colors: ColoredLevelConfig,
+    /// Size of the channel used to send log message. Currently defaulting to 512.
     channel_size: usize,
+    /// The path of the file where the log will be dump in the optional case we redirect logs to a file.
+    file_path: Option<String>,
 }
 
 ///
@@ -130,7 +137,7 @@ pub struct FastLoggerBuilder {
 ///
 /// assert!(logger.is_ok());
 /// ```
-impl FastLoggerBuilder {
+impl<'a> FastLoggerBuilder {
     /// It will init a [FastLogger] with the default argument (log level set to
     /// [Info](log::Level::Info) by default).
     pub fn new() -> Self {
@@ -202,8 +209,25 @@ impl FastLoggerBuilder {
         self
     }
 
+    /// Returns all the [rules](Rule) that will be applied to the logger.
+    pub fn rule_filters(&self) -> &[RuleFilter] {
+        &self.rule_filters
+    }
+
+    /// Redirect log message to the provided file path.
+    pub fn redirect_to_file(&mut self, file_path: &str) -> &mut Self {
+        self.file_path = Some(String::from(file_path));
+        self
+    }
+
+    /// Returns the file path of the logs in the case we want to redirect them to a file.
+    pub fn file_path(&self) -> Option<String> {
+        self.file_path.clone()
+    }
+
     /// Registers a [FastLogger] as the comsumer of [log] facade so it becomes static and any further
     /// mutation are discarded.
+    #[allow(clippy::let_and_return)]
     pub fn build(&self) -> Result<FastLogger, SetLoggerError> {
         // Let's create the logging thread that will be responsable for all the heavy work of
         // building and printing the log messages
@@ -216,23 +240,47 @@ impl FastLoggerBuilder {
             sender: s,
         };
 
-
-        // This is where I should impl the output
-
         match log::set_boxed_logger(Box::new(logger.clone()))
             .map(|_| log::set_max_level(self.level.to_level_filter()))
         {
             Ok(_v) => {
-                thread::spawn(move || {
-                    while let Ok(msg) = r.recv() {
-                        // Here we use `writeln!` instead of println! in order to avoid
-                        // unnecessary flush.
-                        // Currently we use `BufWriter` which has a sized buffer of about
-                        // 8kb by default
-                        writeln!(&mut io::BufWriter::new(io::stderr()), "{}", msg.build())
-                            .expect("Fail to write to output.");
-                    }
-                });
+                // This is a hacky way to do it, because it cannot work using the Write trait object:
+                // `dyn std::io::Write` cannot be sent between threads safely
+                if self.file_path.is_some() {
+                    let mut file_stream = {
+                        let fp = match &self.file_path {
+                            Some(fp) => fp.to_string(),
+                            None => String::from("dummy.log"),
+                        };
+                        let file_path = std::path::PathBuf::from(&fp);
+                        let file_stream = std::fs::OpenOptions::new()
+                            .create(true)
+                            .append(true)
+                            .open(&file_path)
+                            .unwrap_or_else(|_| panic!("Fail to log to {:?}.", &file_path));
+                        // We have some strange behavior with BufWriter and file writing: The file
+                        // ends up empty most of the time, so we don't use a buffer at all
+                        // io::BufWriter::new(file_stream)
+                        file_stream
+                    };
+                    thread::spawn(move || {
+                        while let Ok(msg) = r.recv() {
+                            // Here we use `writeln!` instead of println! in order to avoid
+                            // unnecessary flush.
+                            writeln!(&mut file_stream, "{}", msg.build()).expect("Fail to log to file.")
+                        }
+                    });
+                } else {
+                    thread::spawn(move || {
+                        while let Ok(msg) = r.recv() {
+                            // Here we use `writeln!` instead of println! in order to avoid
+                            // unnecessary flush.
+                            // Currently we use `BufWriter` which has a sized buffer of about
+                            // 8kb by default
+                            writeln!(&mut io::BufWriter::new(io::stderr()), "{}", msg.build()).expect("Fail to log to file.")
+                        }
+                    });
+                }
             }
             Err(e) => {
                 eprintln!("Attempt to initialize the Logger more than once. '{}'.", e);
@@ -246,18 +294,20 @@ impl FastLoggerBuilder {
 impl Default for FastLoggerBuilder {
     fn default() -> Self {
         // Get the log verbosity from the command line
-        let level = env::var("RUST_LOG").unwrap_or("Info".to_string());
+        let level = env::var("RUST_LOG").unwrap_or_else(|_| "Info".to_string());
 
         FastLoggerBuilder {
             level: Level::from_str(&level).unwrap_or(Level::Info),
             rule_filters: Vec::new(),
             level_colors: ColoredLevelConfig::new(),
             channel_size: 512,
+            file_path: None,
         }
     }
 }
 
-/// Initialize a simple logging instance with Debug level and no rule filtering.
+/// Initialize a simple logging instance with [Info](Level::Info) log level verbosity or retrieve
+/// the level from the *RUST_LOG* environment variable and no rule filtering.
 pub fn init_simple() -> Result<(), SetLoggerError> {
     FastLoggerBuilder::new().build()?;
     Ok(())
@@ -266,33 +316,42 @@ pub fn init_simple() -> Result<(), SetLoggerError> {
 /// This is our log message data structure. Useful especially for performance reasons.
 #[derive(Clone, Debug)]
 struct LogMessage {
+    /// The actual log message.
     args: String,
+    /// The module name of the caller log message.
     module: String,
+    /// Line number of the issued log message.
     line: u32,
+    /// Log verbosity level.
     level: String,
+    /// Thread name of the log message issuer. Default to `Anonymous Thread`.
     thread_name: String,
+    /// The color of the log message defined by the user using [RuleFilter]. Default to color based
+    /// on the thread name and the module name if not present.
     color: Option<String>,
-}
-
-trait LogMessageTrait: Send {
-    fn build(&self) -> String;
 }
 
 /// For performance purpose, we build the logging message in the logging thread instead of the
 /// calling one. It's primarily to deal with the potential slowness of retrieving the timestamp
 /// from the OS.
+trait LogMessageTrait: Send {
+    fn build(&self) -> String;
+}
+
 impl LogMessageTrait for LogMessage {
+    /// Build the log message as a string. Applying custom color if needed.
     fn build(&self) -> String {
+        let base_color_on = format!("{}{}", &self.thread_name, &self.module).to_owned();
         // Let's colorize our logging messages
         let msg_color = match &self.color {
             Some(color) => {
                 if color.is_empty() {
-                    pick_color(&self.module)
+                    pick_color(&base_color_on)
                 } else {
                     color
                 }
             }
-            None => pick_color(&self.module),
+            None => pick_color(&base_color_on),
         };
 
         let msg = format!(
@@ -311,7 +370,7 @@ impl LogMessageTrait for LogMessage {
     }
 }
 
-/// This is a helper for [TOML](toml) deserialization.
+/// This is a helper for [TOML](toml) deserialization into [Logger].
 #[derive(Debug, Deserialize)]
 struct LoggerConfig {
     pub logger: Option<Logger>,
@@ -320,16 +379,14 @@ struct LoggerConfig {
 /// This structure is a helper for the [TOML](toml) logging configuration.
 #[derive(Clone, Debug, Deserialize)]
 struct Logger {
+    /// Verbosity level of the logger.
     level: String,
+    /// The path to the file in the case where we want to redirect our log to a file.
+    file: Option<String>,
+    /// List of filtering [rules](RuleFilter).
     rules: Option<Vec<Rule>>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
-struct Rule {
-    pub pattern: String,
-    pub exclude: Option<bool>,
-    pub color: Option<String>,
-}
 
 impl From<Logger> for FastLoggerBuilder {
     fn from(logger: Logger) -> Self {
@@ -343,21 +400,22 @@ impl From<Logger> for FastLoggerBuilder {
         FastLoggerBuilder {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
             rule_filters,
+            file_path: logger.file,
             ..FastLoggerBuilder::default()
         }
     }
 }
 
-impl From<Rule> for RuleFilter {
-    fn from(rule: Rule) -> Self {
-        let tf = RuleFilter::default();
-        RuleFilter::new(
-            &rule.pattern,
-            rule.exclude.unwrap_or_else(|| tf.exclude()),
-            &rule.color.unwrap_or_else(|| tf.get_color()),
-        )
-    }
-}
+// impl From<Rule> for RuleFilter {
+//     fn from(rule: Rule) -> Self {
+//         let tf = RuleFilter::default();
+//         RuleFilter::new(
+//             &rule.pattern,
+//             rule.exclude.unwrap_or_else(|| tf.exclude()),
+//             &rule.color.unwrap_or_else(|| tf.get_color()),
+//         )
+//     }
+// }
 
 #[test]
 fn should_log_test() {
@@ -388,11 +446,14 @@ fn should_log_test() {
     assert_eq!(logger.should_log_in("xboy"), Some(String::from("Green")));
 }
 
+
 #[test]
-fn test_rules_deserialization() {
+fn logger_conf_deserialization_test() {
     let toml = r#"
         [logger]
         level = "debug"
+        file = "humpty_dumpty.log"
+
             [[logger.rules]]
             pattern = ".*"
             color = "red"
@@ -403,8 +464,77 @@ fn test_rules_deserialization() {
     let logger: Option<Logger> = logger_conf.logger;
     assert!(logger.is_some());
 
-    let _flb: FastLoggerBuilder = logger.unwrap().into();
-    assert!(_flb.build().is_ok());
+    let flb: FastLoggerBuilder = logger.unwrap().into();
+
+    // Log verbosity check
+    assert_eq!(flb.level(), Level::Debug);
+
+    // File dump check
+    assert_eq!(flb.file_path(), Some(String::from("humpty_dumpty.log")));
+}
+
+#[test]
+fn fastloggerbuilder_conf_deserialization_test() {
+    let toml = r#"
+        [logger]
+        level = "debug"
+        file = "humpty_dumpty.log"
+
+            [[logger.rules]]
+            pattern = ".*"
+            color = "red"
+    "#;
+
+    let flb = FastLoggerBuilder::from_toml(&toml)
+        .expect("Fail to init `FastLoggerBuilder` from toml.");
+
+    // Log verbosity check
+    assert_eq!(flb.level(), Level::Debug);
+
+    // File dump check
+    assert_eq!(flb.file_path(), Some(String::from("humpty_dumpty.log")));
+}
+
+#[test]
+fn log_rules_deserialization_test() {
+    use rule;
+
+    let toml = r#"
+        [logger]
+        level = "debug"
+
+            [[logger.rules]]
+            pattern = ".*"
+            color = "red"
+            [[logger.rules]]
+            pattern = "twice"
+            exclude = true
+            color = "magenta"
+    "#;
+
+    let logger_conf: LoggerConfig =
+        toml::from_str(toml).expect("Fail to deserialize logger from toml.");
+    let logger: Option<Logger> = logger_conf.logger;
+    assert!(logger.is_some());
+
+    let rule0 = rule::Rule {
+        pattern: String::from(".*"),
+        exclude: Some(false),
+        color: Some(String::from("red")),
+    };
+    let rule1 = rule::Rule {
+        pattern: String::from("twice"),
+        exclude: Some(true),
+        color: Some(String::from("magenta")),
+    };
+
+    let flb: FastLoggerBuilder = logger.unwrap().into();
+
+    let rule0_from_toml: Rule = flb.rule_filters()[0].clone().into();
+    let rule1_from_toml: Rule = flb.rule_filters()[1].clone().into();
+    // File dump check
+    assert_eq!(rule0_from_toml, rule0);
+    assert_eq!(rule1_from_toml, rule1);
 }
 
 #[test]

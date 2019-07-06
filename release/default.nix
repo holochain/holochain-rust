@@ -3,6 +3,7 @@ let
   release = import ./config.nix;
 
   github = pkgs.callPackage ./github {
+   holonix = holonix;
    release = release;
   };
 

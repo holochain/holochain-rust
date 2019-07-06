@@ -143,16 +143,6 @@ pub mod simple {
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_my_links_count_by_tag(tag : String,status_request:Option<LinksStatusRequestKind>) ->ZomeApiResult<GetLinksResultCount>
-    {
-    let options = GetLinksOptions{
-        status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
-        ..GetLinksOptions::default()
-    };
-    hdk::get_links_count_by_tag(LinkMatch::Exactly(&tag),options)
-    }
-
-    #[zome_fn("hc_public")]
     pub fn test_emit_signal(message: String) -> ZomeApiResult<()> {
         #[derive(Debug, Serialize, Deserialize, DefaultJson)]
         struct SignalPayload {

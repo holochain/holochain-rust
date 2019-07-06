@@ -5,7 +5,7 @@ use holochain_core_types::{entry::Entry, link::LinkMatch};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultItem, GetEntryResultType},
-    get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult, GetLinksResultCount,GetLinksBy},
+    get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult, GetLinksResultCount},
 };
 
 /// Consumes four values; the address of an entry get get links from (the base), the type of the links
@@ -81,14 +81,12 @@ pub fn get_links_count_with_options(
 ) -> ZomeApiResult<GetLinksResultCount> {
     let type_re = link_type.to_regex_string()?;
     let tag_re = tag.to_regex_string()?;
-
-    let get_links_args = GetLinksBy::GetLinksArgs(GetLinksArgs {
+    Dispatch::GetLinksCount.with_input(GetLinksArgs {
         entry_address: base.clone(),
         link_type: type_re,
         tag: tag_re,
         options,
-    });
-    Dispatch::GetLinksCount.with_input(get_links_args)
+    })
 }
 
 pub fn get_links_count(
@@ -98,16 +96,6 @@ pub fn get_links_count(
 ) -> ZomeApiResult<GetLinksResultCount> {
     get_links_count_with_options(base, link_type, tag, GetLinksOptions::default())
 }
-
-pub fn get_links_by_tag(
-    tag: LinkMatch<&str>,
-    options : GetLinksOptions
-) -> ZomeApiResult<GetLinksResultCount> {
-    let tag_re = tag.to_regex_string()?;
-    let get_links_args = GetLinksBy::Tag(tag_re,options);
-    Dispatch::GetLinksCount.with_input(get_links_args)
-}
-
 
 /// Helper function for get_links. Returns a vector with the default return results.
 pub fn get_links(

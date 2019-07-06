@@ -100,11 +100,6 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 link_type.clone(),
                 tag.clone(),
             )))
-                &context,
-                tag.clone(),
-                crud.clone(),
-            )
-            .len();
         }
         Ok(NetworkQuery::GetEntry) => {
             let maybe_entry = get_entry(&context, query_data.entry_address.clone());

@@ -51,13 +51,6 @@ pub struct GetLinksResult {
     links: Vec<LinksResult>,
 }
 
-#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Hash, Eq)]
-pub enum GetLinksBy
-{
-    GetLinksArgs(GetLinksArgs),
-    Tag(String,GetLinksOptions)
-}
-
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]
 pub struct GetLinksResultCount {
     pub count: usize,

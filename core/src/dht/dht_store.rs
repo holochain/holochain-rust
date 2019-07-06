@@ -71,7 +71,6 @@ pub fn create_get_links_eavi_query<'a>(
     ))
 }
 
-
 impl DhtStore {
     // LifeCycle
     // =========

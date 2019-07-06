@@ -44,27 +44,4 @@ pub fn reduce_get_links_count(
     network_state
         .get_links_results_count
         .insert(key.clone(), result);
-        .get_links_result_count_by_tag
-        .insert(key.clone(), result);
 }
-
-pub fn reduce_get_links_timeout(
-    network_state: &mut NetworkState,
-    _root_state: &State,
-    action_wrapper: &ActionWrapper,
-) {
-    let action = action_wrapper.action();
-    let key = unwrap_to!(action => crate::action::Action::GetLinksTimeout);
-
-    if network_state.get_links_results.get(key).is_none() {
-        return;
-    }
-
-    if network_state.get_links_results.get(key).unwrap().is_none() {
-        network_state
-            .get_links_results
-            .insert(key.clone(), Some(Err(HolochainError::Timeout)));
-    }
-}
-
-

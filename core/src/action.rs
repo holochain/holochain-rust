@@ -157,11 +157,9 @@ pub enum Action {
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
-    GetLinksTimeoutByTag(GetLinksKeyByTag),
     GetLinksCount((GetLinksKey, Option<CrudStatus>)),
     RespondGetLinks((QueryEntryData, Vec<(Address, CrudStatus)>, String, String)),
     RespondGetLinksCount((QueryEntryData, usize, String, String)),
-    RespondGetLinksCountByTag((QueryEntryData, usize, String)),
     HandleGetLinksResult((Vec<(Address, CrudStatus)>, GetLinksKey)),
     HandleGetLinksResultCount((usize, GetLinksKey)),
 
@@ -261,7 +259,6 @@ pub struct GetLinksKey {
     /// A unique ID that is used to pair the eventual result to this request
     pub id: String,
 }
-
 
 /// The unique key that represents a Get request, used to associate the eventual
 /// response with this Get request

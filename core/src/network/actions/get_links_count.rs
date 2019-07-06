@@ -53,8 +53,6 @@ pub async fn get_links_count(
     })
 }
 
-
-
 /// GetLinksFuture resolves to a HcResult<Vec<Address>>.
 /// Tracks the state of the network module
 pub struct GetLinksCountFuture {

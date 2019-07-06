@@ -7,9 +7,8 @@ import { adminInterfaceId, dnaInterfaceId } from './config'
 const holochainBin = process.env.EMULATION_HOLOCHAIN_BIN_PATH
 
 interface ConductorConfig {
-  config: string
+  configPath: string
   adminPort: number
-  instancePort: number
 }
 
 interface ConductorDetails {
@@ -18,10 +17,14 @@ interface ConductorDetails {
   handle: any
 }
 
-const genConfig = (index: number, debugging: boolean, tmpPath: string, n3hPath: string): ConductorConfig => {
+export const genConfig = async (debug: boolean, index: number): Promise<ConductorConfig> => {
+
+  const tmpPath = fs.mkdtempSync(path.join(os.tmpdir(), 'n3h-test-conductors-'))
+  const n3hPath = path.join(tmpPath, 'n3h-storage')
+  fs.mkdirSync(n3hPath)
+  const configPath = path.join(tmpPath, `empty-conductor-${index}.toml`)
 
   const adminPort = 3000 + index
-  const instancePort = 4000 + index
 
   const config = `
 persistence_dir = "${tmpPath}"
@@ -42,49 +45,35 @@ instances = []
     type = "websocket"
     port = ${adminPort}
 
-[[interfaces]]
-admin = true
-id = "${dnaInterfaceId}"
-instances = []
-    [interfaces.driver]
-    type = "websocket"
-    port = ${instancePort}
-
 [logger]
 type = "debug"
-${debugging ? '' : '[[logger.rules.rules]]'}
-${debugging ? '' : 'exclude = true'}
-${debugging ? '': 'pattern = "^debug"'}
+${debug ? '' : '[[logger.rules.rules]]'}
+${debug ? '' : 'exclude = true'}
+${debug ? '': 'pattern = "^debug"'}
 
 [network]
 type = "n3h"
-n3h_log_level = "${debugging ? 'i' : 'e'}"
+n3h_log_level = "${debug ? 'i' : 'e'}"
 bootstrap_nodes = []
 n3h_mode = "REAL"
 n3h_persistence_path = "${n3hPath}"
     `
 
-  return { config, adminPort, instancePort }
+  fs.writeFileSync(configPath, config)
+  return { configPath, adminPort }
 }
 
-const spawnConductor = (i: number, debugging: boolean): Promise<ConductorDetails> => {
-  const tmpPath = fs.mkdtempSync(path.join(os.tmpdir(), 'n3h-test-conductors-'))
-  const n3hPath = path.join(tmpPath, 'n3h-storage')
-  fs.mkdirSync(n3hPath)
-  const configPath = path.join(tmpPath, `empty-conductor-${i}.toml`)
+export const spawnConductor = (name: string, configPath: string): Promise<ConductorDetails> => {
 
-  const { config, adminPort, instancePort } = genConfig(i, debugging, tmpPath, n3hPath)
 
-  fs.writeFileSync(configPath, config)
-
-  console.info(`Spawning conductor${i} process...`)
+  console.info(`Spawning process for conductor ${name}...`)
   const handle = child_process.spawn(holochainBin, ['-c', configPath])
 
-  handle.stdout.on('data', data => console.log(`[C${i}]`, data.toString('utf8')))
-  handle.stderr.on('data', data => console.error(`!C${i}!`, data.toString('utf8')))
-  handle.on('close', code => console.log(`conductor ${i} exited with code`, code))
+  handle.stdout.on('data', data => console.log(`[C ${name}]`, data.toString('utf8')))
+  handle.stderr.on('data', data => console.error(`!C ${name}!`, data.toString('utf8')))
+  handle.on('close', code => console.log(`conductor '${name}' exited with code`, code))
 
-  console.info(`Conductor${i} process spawning successful`)
+  console.info(`Conductor '${name}' process spawning successful`)
 
   return new Promise((resolve) => {
     handle.stdout.on('data', data => {
@@ -93,27 +82,8 @@ const spawnConductor = (i: number, debugging: boolean): Promise<ConductorDetails
       // to be started so that it can initiate, and form,
       // the websocket connections
       if (data.toString('utf8').indexOf('Starting interfaces...') >= 0) {
-        resolve({
-          adminPort,
-          instancePort,
-          handle
-        })
+        resolve(handle)
       }
     })
   })
 }
-
-const spawnConductors = async (numberOfConductors: number, debugging: boolean): Promise<Array<ConductorDetails>> => {
-  const promises = []
-
-  // start the first conductor and
-  // wait for it, because it sets up n3h
-  const firstConductor = await spawnConductor(0, debugging)
-  promises.push(firstConductor)
-
-  for (let i = 1; i < numberOfConductors; i++) {
-    promises.push(spawnConductor(i, debugging))
-  }
-  return Promise.all(promises)
-}
-export default spawnConductors

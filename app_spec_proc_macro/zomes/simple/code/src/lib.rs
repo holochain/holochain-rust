@@ -123,13 +123,6 @@ pub mod simple {
     }
 
     #[zome_fn("hc_public")]
-    pub fn delete_link_with_tag(base: Address,target : String,tag:String) -> ZomeApiResult<()> {
-        let address = hdk::entry_address(&simple_entry(target))?;
-        hdk::remove_link(&base, &address, "authored_simple_posts", &tag)?;
-        Ok(())
-    }
-
-    #[zome_fn("hc_public")]
     pub fn get_my_links(base: Address,status_request : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResult>
     {
         let options = GetLinksOptions{

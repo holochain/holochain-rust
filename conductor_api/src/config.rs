@@ -23,6 +23,7 @@ use holochain_core_types::{
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
+use lib3h::engine::RealEngineConfig;
 
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
@@ -70,7 +71,7 @@ pub struct Configuration {
     /// Configures how logging should behave. Optional.
     #[serde(default)]
     pub logger: LoggerConfiguration,
-    /// Configuration options for the network module n3h. Optional.
+    /// Configuration options for the network module. Optional.
     #[serde(default)]
     pub network: Option<NetworkConfig>,
     /// where to persist the config file and DNAs. Optional.
@@ -82,6 +83,18 @@ pub struct Configuration {
     /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures
     /// over this websocket.
     pub signing_service_uri: Option<String>,
+
+    /// Optional URI for a websocket connection to an outsourced encryption service.
+    /// Bootstrapping step for Holo closed-alpha.
+    /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures
+    /// over this websocket.
+    pub encryption_service_uri: Option<String>,
+
+    /// Optional URI for a websocket connection to an outsourced decryption service.
+    /// Bootstrapping step for Holo closed-alpha.
+    /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures
+    /// over this websocket.
+    pub decryption_service_uri: Option<String>,
 
     /// Optional DPKI configuration if conductor is using a DPKI app to initalize and manage
     /// keys for new instances
@@ -683,7 +696,15 @@ pub struct UiInterfaceConfiguration {
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
-pub struct NetworkConfig {
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type")]
+pub enum NetworkConfig {
+    N3h(N3hConfig),
+    Lib3h(RealEngineConfig),
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct N3hConfig {
     /// List of URIs that point to other nodes to bootstrap p2p connections.
     #[serde(default)]
     pub bootstrap_nodes: Vec<String>,
@@ -736,14 +757,17 @@ where
     T: Deserialize<'a>,
 {
     toml::from_str::<T>(toml).map_err(|e| {
-        HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+        HolochainError::IoError(format!("Error loading configuration: {}", e.to_string()))
     })
 }
 
 pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
     // see https://github.com/alexcrichton/toml-rs/issues/142
     let config_toml = toml::Value::try_from(config).map_err(|e| {
-        HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+        HolochainError::IoError(format!(
+            "Could not serialize configuration: {}",
+            e.to_string()
+        ))
     })?;
     toml::to_string_pretty(&config_toml).map_err(|e| {
         HolochainError::IoError(format!(
@@ -883,6 +907,7 @@ pub mod tests {
         id = "app spec instance"
 
     [network]
+    type = "n3h"
     bootstrap_nodes = ["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"]
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     networking_config_file = "/Users/cnorris/.holochain/network_config.json"
@@ -906,7 +931,7 @@ pub mod tests {
         assert_eq!(config.logger.logger_type, "debug");
         assert_eq!(
             config.network.unwrap(),
-            NetworkConfig {
+            NetworkConfig::N3h(N3hConfig {
                 bootstrap_nodes: vec![String::from(
                     "wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"
                 )],
@@ -917,7 +942,7 @@ pub mod tests {
                 networking_config_file: Some(String::from(
                     "/Users/cnorris/.holochain/network_config.json"
                 )),
-            }
+            })
         );
     }
 
@@ -1003,6 +1028,57 @@ pub mod tests {
         assert_eq!(config.logger.rules.rules.len(), 1);
 
         assert_eq!(config.network, None);
+    }
+
+    #[test]
+    fn test_load_bad_network_config() {
+        let base_toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    keystore_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app_spec.dna.json"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
+
+    [[interfaces]]
+    id = "app spec websocket interface"
+        [interfaces.driver]
+        type = "websocket"
+        port = 8888
+        [[interfaces.instances]]
+        id = "app spec instance"
+    "#;
+
+        let toml = format!(
+            "{}{}",
+            base_toml,
+            r#"
+    [network]
+    type = "lib3h"
+    "#
+        );
+        if let Err(e) = load_configuration::<Configuration>(toml.as_str()) {
+            assert!(
+                true,
+                e.to_string().contains(
+                    "Error loading configuration: missing field `socket_type` for key `network`"
+                )
+            )
+        } else {
+            panic!("Should have failed!")
+        }
     }
 
     #[test]

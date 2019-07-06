@@ -17,7 +17,7 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     let network_settings = unwrap_to!(action => Action::InitNetwork);
     let mut network = P2pNetwork::new(
         network_settings.handler.clone(),
-        &network_settings.p2p_config,
+        network_settings.p2p_config.clone(),
     )
     .unwrap();
 
@@ -54,7 +54,7 @@ pub mod test {
         context::Context,
         logger::test_logger,
         persister::SimplePersister,
-        state::{test_store, State},
+        state::{test_store, StateWrapper},
     };
     use holochain_core_types::agent::AgentId;
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
@@ -82,7 +82,7 @@ pub mod test {
             None,
         );
 
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }

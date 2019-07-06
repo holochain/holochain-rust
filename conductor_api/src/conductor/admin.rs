@@ -240,7 +240,9 @@ impl ConductorAdmin for Conductor {
                 result.err().unwrap()
             ));
         }
-        self.instances.remove(id);
+        self.instances.remove(id).map(|instance| {
+            instance.write().unwrap().kill();
+        });
         let _ = self.start_signal_multiplexer();
 
         notify(format!("Removed instance \"{}\".", id));
@@ -530,7 +532,7 @@ impl ConductorAdmin for Conductor {
         let id = &new_bridge.caller_id;
         let new_conductor_api = self.build_conductor_api(id.clone(), &new_config)?;
         let mut instance = self.instances.get(id)?.write()?;
-        instance.set_conductor_api(new_conductor_api);
+        instance.set_conductor_api(new_conductor_api)?;
 
         notify(format!(
             "Added bridge from '{}' to '{}' as '{}'",
@@ -821,7 +823,7 @@ pattern = '.*'"#
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
+hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
 id = 'new-dna'"#,
             ),
         );
@@ -1120,7 +1122,7 @@ id = 'new-dna'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
+hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
 id = 'new-dna'"#,
             ),
         );
@@ -1407,7 +1409,7 @@ type = 'http'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.dna.json'
-hash = 'QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J'
+hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
 id = 'new-dna'"#,
             ),
         );

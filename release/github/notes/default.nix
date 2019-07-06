@@ -1,4 +1,4 @@
-{ holonix, pkgs, release }:
+{ holonix, pkgs, github, release }:
 let
   name = "hc-release-github-notes";
 
@@ -76,5 +76,12 @@ let
   '';
 in
 {
- buildInputs = [ script ];
+ buildInputs = [
+  script
+ ]
+ ++ (pkgs.callPackage ./sync {
+  release = release;
+  github = github;
+ }).buildInputs
+ ;
 }

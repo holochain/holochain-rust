@@ -17,6 +17,7 @@ github // {
  ++ (pkgs.callPackage ./notes {
   holonix = holonix;
   release = release;
+  github = github;
  }).buildInputs
  ;
 }

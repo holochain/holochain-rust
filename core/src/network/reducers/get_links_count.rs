@@ -29,6 +29,7 @@ fn reduce_get_links_inner(
     )
 }
 
+        NetworkQuery::GetLinksByTag(key.tag.clone(), crud_status).into();
 pub fn reduce_get_links_count(
     network_state: &mut NetworkState,
     _root_state: &State,

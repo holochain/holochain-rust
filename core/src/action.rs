@@ -164,7 +164,6 @@ pub enum Action {
     RespondGetLinksCountByTag((QueryEntryData, usize, String)),
     HandleGetLinksResult((Vec<(Address, CrudStatus)>, GetLinksKey)),
     HandleGetLinksResultCount((usize, GetLinksKey)),
-    HandleGetLinksResultCountByTag((usize, GetLinksKeyByTag)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -262,6 +261,7 @@ pub struct GetLinksKey {
     /// A unique ID that is used to pair the eventual result to this request
     pub id: String,
 }
+
 
 /// The unique key that represents a Get request, used to associate the eventual
 /// response with this Get request

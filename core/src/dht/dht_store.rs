@@ -71,9 +71,7 @@ pub fn create_get_links_eavi_query<'a>(
     ))
 }
 
-    let tag_regex =
-        Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
-    let tombstone_tag_regex = tag_regex.clone();
+
 impl DhtStore {
     // LifeCycle
     // =========

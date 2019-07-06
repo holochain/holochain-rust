@@ -4,22 +4,24 @@ use crate::{
 };
 
 use holochain_core_types::error::HolochainError;
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksBy, GetLinksResultCount};
+use holochain_wasm_utils::api_serialization::get_links::{ GetLinksResultCount,GetLinksBy};
 use std::sync::Arc;
 
 pub async fn get_link_result_count_workflow<'a>(
     context: Arc<Context>,
     link_args: &'a GetLinksBy,
 ) -> Result<GetLinksResultCount, HolochainError> {
-    let links_count = match link_args {
-        GetLinksBy::GetLinksArgs(link_args) => await!(get_links_count(
-            context,
+    let links_count = match link_args
+    {
+        GetLinksBy::GetLinksArgs(link_args)=>
+        {
+            await!(get_links_count(context,
             link_args.entry_address.clone(),
             link_args.link_type.clone(),
             link_args.tag.clone(),
             link_args.options.timeout.clone(),
-            link_args.options.status_request.clone()
-        ))?,
+            link_args.options.status_request.clone()))?
+        },
         GetLinksBy::Tag(tag, options) => await!(get_links_count_by_tag(
             context,
             tag.to_string(),

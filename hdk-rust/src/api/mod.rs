@@ -53,8 +53,8 @@ pub use self::{
     entry_type_properties::entry_type_properties,
     get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
     get_links::{
-        get_links, get_links_and_load, get_links_count, get_links_count_by_tag,
-        get_links_count_with_options, get_links_result, get_links_with_options,
+        get_links, get_links_and_load, get_links_count, get_links_count_with_options,
+        get_links_result, get_links_with_options,
     },
     keystore::{
         keystore_derive_key, keystore_derive_seed, keystore_get_public_key, keystore_list,

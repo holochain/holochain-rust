@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, ActionWrapper, GetEntryKey, GetLinksKey, GetLinksKeyByTag},
+    action::{Action, ActionWrapper, GetEntryKey, GetLinksKey},
     context::Context,
     entry::CanPublish,
     instance::dispatch_action,
@@ -100,6 +100,11 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 link_type.clone(),
                 tag.clone(),
             )))
+                &context,
+                tag.clone(),
+                crud.clone(),
+            )
+            .len();
         }
         Ok(NetworkQuery::GetEntry) => {
             let maybe_entry = get_entry(&context, query_data.entry_address.clone());
@@ -148,15 +153,6 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
                 GetLinksKey {
                     base_address: query_result_data.entry_address.clone(),
                     link_type: link_type.clone(),
-                    tag: tag.clone(),
-                    id: query_result_data.request_id.clone(),
-                },
-            )))
-        }
-        Ok(NetworkQueryResult::LinksCountByTag(links_count, tag)) => {
-            ActionWrapper::new(Action::HandleGetLinksResultCountByTag((
-                links_count,
-                GetLinksKeyByTag {
                     tag: tag.clone(),
                     id: query_result_data.request_id.clone(),
                 },

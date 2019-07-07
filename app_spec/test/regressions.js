@@ -2,13 +2,20 @@ module.exports = scenario => {
 
 scenario.only('calling get_links before link_entries makes no difference', async (s, t, {alice}) => {
 
-  const get1 = await alice.app.call("blog", "my_posts", {})
+  await s.spawn(alice)
+
+  const get1 = await alice.conductor.instanceMap.app.call("blog", "my_posts", {})
   t.ok(get1.Ok)
 
-  const create1 = await alice.app.callSync("blog","create_post", {content: 'hi'})
+  // await s.kill(alice)
+  // console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+  // await s.spawn(alice)
+
+  const create1 = await alice.conductor.instanceMap.app.call("blog","create_post", {content: 'hi'})
+  await s.consistent()
   t.ok(create1.Ok)
 
-  const get2 = await alice.app.call("blog", "my_posts", {})
+  const get2 = await alice.conductor.instanceMap.app.call("blog", "my_posts", {})
   t.ok(get2.Ok)
   t.equal(get2.Ok.links.length,1)
 })
@@ -52,14 +59,14 @@ scenario('alice create & publish post -> recommend own post to self', async (s, 
 
   let linked = await alice.app.callSync('blog', 'recommend_post', {
     post_address: postAddr,
-    agent_address: alice.app.agentId
+    agent_address: alice.app.agentAddress
   })
   console.log("linked: ", linked)
   t.ok(linked.Ok);
 
   const recommendedPosts = await alice.app.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
-  console.log('agent addresses: ', alice.app.agentId, alice.app.agentId)
+  console.log('agent addresses: ', alice.app.agentAddress, alice.app.agentAddress)
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
@@ -75,14 +82,14 @@ scenario('alice create & publish post -> bob recommend to self', async (s, t, {a
 
   let linked = await bob.app.callSync('blog', 'recommend_post', {
     post_address: postAddr,
-    agent_address: bob.app.agentId
+    agent_address: bob.app.agentAddress
   })
   console.log("linked: ", linked)
   t.ok(linked.Ok);
 
   const recommendedPosts = await bob.app.call("blog", "my_recommended_posts", {})
   console.log("recommendedPosts", recommendedPosts)
-  console.log('agent addresses: ', alice.app.agentId, bob.app.agentId)
+  console.log('agent addresses: ', alice.app.agentAddress, bob.app.agentAddress)
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
@@ -98,14 +105,14 @@ scenario('create & publish post -> recommend to other agent', async (s, t, {alic
 
   let linked = await alice.app.callSync('blog', 'recommend_post', {
     post_address: postAddr,
-    agent_address: bob.app.agentId
+    agent_address: bob.app.agentAddress
   })
   console.log("linked: ", linked)
   t.ok(linked.Ok);
 
   const recommendedPosts = await bob.app.call('blog', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
-  console.log('agent addresses: ', alice.app.agentId, bob.app.agentId)
+  console.log('agent addresses: ', alice.app.agentAddress, bob.app.agentAddress)
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
 

@@ -29,7 +29,7 @@ const orchestratorSimple = new Orchestrator({
   spawnConductor,
   debugLog: false,
   executor: tapeExecutor(require('tape')),
-  middleware: backwardCompatibilityMiddleware,
+  // middleware: backwardCompatibilityMiddleware,
 })
 
 const orchestratorMultiDna = new Orchestrator({
@@ -48,7 +48,7 @@ const orchestratorMultiDna = new Orchestrator({
   spawnConductor,
   debugLog: false,
   executor: tapeExecutor(require('tape')),
-  middleware: backwardCompatibilityMiddleware,
+  // middleware: backwardCompatibilityMiddleware,
   callbacksPort: 8888,
 })
 
@@ -58,15 +58,7 @@ require('./multi-dna')(orchestratorMultiDna.registerScenario)
 
 const run = async () => {
 
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
-  console.log("Waiting for conductors to settle...")
-  await delay(5000)
-  console.log("Ok, starting tests!")
-
   await orchestratorSimple.run()
-  alice.kill()
-  bob.kill()
-  carol.kill()
 
   // Multi instance tests where n3h is the network connecting them currently fails with the 2nd instance
   // waiting for and not receiving the agent entry of the first one.

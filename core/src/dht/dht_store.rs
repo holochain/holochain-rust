@@ -17,13 +17,13 @@ use holochain_persistence_api::{
 use regex::Regex;
 
 use crate::state::StateWrapper;
+use holochain_json_api::error::JsonResult;
+use holochain_persistence_api::cas::content::Content;
 use std::{
     collections::{BTreeSet, HashMap},
-    sync::{Arc, RwLock},
     convert::TryFrom,
+    sync::{Arc, RwLock},
 };
-use holochain_persistence_api::cas::content::Content;
-use holochain_json_api::error::JsonResult;
 
 /// The state-slice for the DHT.
 /// Holds the CAS and EAVi that's used for the agent's local shard

@@ -26,12 +26,12 @@ use holochain_persistence_api::{
     eav::IndexFilter,
 };
 
+use crate::dht::dht_store::DhtStoreSnapshot;
 use std::{
     collections::HashSet,
     convert::TryInto,
     sync::{Arc, RwLock},
 };
-use crate::dht::dht_store::DhtStoreSnapshot;
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
@@ -180,13 +180,13 @@ impl State {
         let dht_store = DhtStore::new_with_holding_list(
             context.dht_storage.clone(),
             context.eav_storage.clone(),
-            dht_store_snapshot.holding_list
+            dht_store_snapshot.holding_list,
         );
         Ok(State::new_with_agent_nucleus_dht(
             context.clone(),
             agent_state,
             nucleus_state,
-            dht_store
+            dht_store,
         ))
     }
 

@@ -11,9 +11,11 @@ use holochain_persistence_api::cas::{
     storage::ContentAddressableStorage,
 };
 
-use crate::state::StateWrapper;
+use crate::{
+    dht::dht_store::{DhtStoreSnapshot, DHT_STORE_SNAPSHOT_ADDRESS},
+    state::StateWrapper,
+};
 use std::sync::{Arc, RwLock};
-use crate::dht::dht_store::{DhtStoreSnapshot, DHT_STORE_SNAPSHOT_ADDRESS};
 
 /// trait that defines the persistence functionality that holochain_core requires
 pub trait Persister: Send {
@@ -79,15 +81,13 @@ impl Persister for SimplePersister {
             return Ok(None);
         }
 
-        Ok(
-            State::try_from_snapshots(
-                context,
-                agent_snapshot.unwrap(),
-                nucleus_snapshot.unwrap(),
+        Ok(State::try_from_snapshots(
+            context,
+            agent_snapshot.unwrap(),
+            nucleus_snapshot.unwrap(),
             dht_store_snapshot.unwrap(),
-            )
-                .ok(),
         )
+        .ok())
     }
 }
 

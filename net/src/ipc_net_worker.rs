@@ -10,7 +10,10 @@ use crate::connection::{
     NetResult,
 };
 
-use lib3h_protocol::{data_types::ConnectData, protocol_client::Lib3hClientProtocol};
+use lib3h_protocol::{
+    data_types::ConnectedData,
+    protocol_server::Lib3hServerProtocol,
+};
 
 use std::collections::HashMap;
 
@@ -225,10 +228,9 @@ impl IpcNetWorker {
         for bs_node in &bs_nodes {
             self.receive(
                 // TODO BLOCKER: what should this actually be changed to?
-                Lib3hClientProtocol::Connect(ConnectData {
+                Lib3hServerProtocol::Connected(ConnectedData {
                     request_id: "abc".into(),
-                    peer_transport: bs_node.clone().into(),
-                    network_id: "def".into(),
+                    uri: url::Url::parse(bs_node.as_str()).expect("well formed uri"),
                 })
                 .into(),
             )?;

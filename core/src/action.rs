@@ -193,6 +193,9 @@ pub enum Action {
     /// Sends the given data as JsonProtocol::HandleGetAuthoringEntryListResult
     RespondAuthoringList(EntryListData),
 
+    /// Sends the given data as JsonProtocol::HandleGetGossipEntryListResult
+    RespondGossipList(EntryListData),
+
     // ----------------
     // Nucleus actions:
     // ----------------

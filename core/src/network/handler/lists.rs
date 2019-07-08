@@ -56,3 +56,33 @@ fn get_all_aspect_addresses(entry: &Address, context: Arc<Context>) -> HcResult<
     address_list.push(get_content_aspect(entry, context.clone())?.address());
     Ok(address_list)
 }
+
+
+pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
+    thread::Builder::new()
+        .name(format!(
+            "handle_gossip_list/{}",
+            ProcessUniqueId::new().to_string()
+        ))
+        .spawn(move || {
+            let mut address_map = HashMap::new();
+            let state = context.state().expect("No state present when trying to respond with gossip list");
+
+            for entry in state.dht().get_all_held_entry_addresses() {
+                address_map.insert(
+                    entry.clone(),
+                    get_all_aspect_addresses(&entry, context.clone())
+                        .expect("Error getting entry aspects of authoring list"),
+                );
+            }
+
+            let action = Action::RespondGossipList(EntryListData {
+                dna_address: get_list_data.dna_address,
+                provider_agent_id: get_list_data.provider_agent_id,
+                request_id: get_list_data.request_id,
+                address_map,
+            });
+            dispatch_action(context.action_channel(), ActionWrapper::new(action));
+        })
+        .expect("Could not spawn thread for creating of gossip list");
+}

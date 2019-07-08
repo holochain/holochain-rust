@@ -23,6 +23,7 @@ use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{MessageData, StoreEntryAspectData};
 use holochain_persistence_api::cas::content::Address;
 use std::{convert::TryFrom, sync::Arc};
+use crate::network::handler::lists::handle_get_gossip_list;
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -219,6 +220,17 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 }
 
                 handle_get_authoring_list(get_list_data, context.clone());
+            }
+            JsonProtocol::HandleGetGossipingEntryList(get_list_data) => {
+                if !is_my_dna(&my_dna_address, &get_list_data.dna_address.to_string()) {
+                    return Ok(());
+                }
+                // ignore if it's not addressed to me
+                if !is_my_id(&context, &get_list_data.provider_agent_id.to_string()) {
+                    return Ok(());
+                }
+
+                handle_get_gossip_list(get_list_data, context.clone());
             }
             _ => {}
         }

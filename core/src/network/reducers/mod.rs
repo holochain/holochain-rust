@@ -9,6 +9,7 @@ pub mod init;
 pub mod publish;
 pub mod resolve_direct_connection;
 pub mod respond_authoring_list;
+pub mod respond_gossip_list;
 pub mod respond_fetch;
 pub mod respond_get;
 pub mod respond_get_links;
@@ -50,6 +51,7 @@ use holochain_net::connection::{
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
+use crate::network::reducers::respond_gossip_list::reduce_respond_gossip_list;
 
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
@@ -67,6 +69,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::Publish(_) => Some(reduce_publish),
         Action::ResolveDirectConnection(_) => Some(reduce_resolve_direct_connection),
         Action::RespondAuthoringList(_) => Some(reduce_respond_authoring_list),
+        Action::RespondGossipList(_) => Some(reduce_respond_gossip_list),
         Action::RespondFetch(_) => Some(reduce_respond_fetch_data),
         Action::RespondGet(_) => Some(reduce_respond_get),
         Action::RespondGetLinks(_) => Some(reduce_respond_get_links),

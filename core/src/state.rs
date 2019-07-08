@@ -172,7 +172,7 @@ impl State {
         dht_store_snapshot: DhtStoreSnapshot,
     ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
-            ChainStore::new(context.dht_storage.clone()),
+            ChainStore::new(context.chain_storage.clone()),
             agent_snapshot.top_chain_header().map(|h| h.to_owned()),
             context.agent_id.address(),
         );

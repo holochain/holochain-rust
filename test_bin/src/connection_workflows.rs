@@ -76,7 +76,7 @@ pub(crate) fn two_nodes_disconnect_test(
         Lib3hClientProtocol::Connect(ConnectData {
             request_id: "alex_connect_billy_request_id".into(),
             peer_transport: billy.p2p_binding.clone().into(),
-            network_id : "alex_connect_billy_network_id".into()
+            network_id: "alex_connect_billy_network_id".into(),
         })
         .into(),
     )?;
@@ -197,9 +197,10 @@ pub(crate) fn three_nodes_disconnect_test(
     let req_id = query_entry.request_id.clone();
     let mut result = alex.find_recv_json_msg(
         0,
-        Box::new(one_is_where!(Lib3hServerProtocol::QueryEntryResult(entry_data), {
-            entry_data.request_id == req_id
-        })),
+        Box::new(one_is_where!(
+            Lib3hServerProtocol::QueryEntryResult(entry_data),
+            { entry_data.request_id == req_id }
+        )),
     );
     if result.is_none() {
         result = alex.wait_lib3h(Box::new(one_is_where!(

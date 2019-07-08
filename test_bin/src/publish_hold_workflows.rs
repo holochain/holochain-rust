@@ -67,8 +67,10 @@ pub fn publish_entry_list_test(
     // let has_received = billy.wait_HandleQueryEntry_and_reply();
     assert!(res.is_ok());
     // Billy should receive the entry data
-    let mut result =
-        billy.find_recv_json_msg(0, Box::new(one_is!(Lib3hClientProtocol::QueryEntryResult(_))));
+    let mut result = billy.find_recv_json_msg(
+        0,
+        Box::new(one_is!(Lib3hClientProtocol::QueryEntryResult(_))),
+    );
     if result.is_none() {
         result = billy.wait_json(Box::new(one_is!(Lib3hClientProtocol::QueryEntryResult(_))))
     }
@@ -103,8 +105,10 @@ pub fn double_publish_entry_list_test(
     // Billy receives and replies to its own query
     //let _ = billy.wait_HandleQueryEntry_and_reply();
     // Billy should receive the entry data back
-    let mut result =
-        billy.find_recv_json_msg(0, Box::new(one_is!(Lib3hClientProtocol::QueryEntryResult(_))));
+    let mut result = billy.find_recv_json_msg(
+        0,
+        Box::new(one_is!(Lib3hClientProtocol::QueryEntryResult(_))),
+    );
     if result.is_none() {
         result = billy.wait_json(Box::new(one_is!(Lib3hClientProtocol::QueryEntryResult(_))))
     }
@@ -143,8 +147,10 @@ pub fn hold_list_test(
     // billy replies to own query
     // let _ = billy.wait_HandleQueryEntry_and_reply();
     // Billy should receive the entry data
-    let mut result =
-        billy.find_recv_json_msg(0, Box::new(one_is!(Lib3hClientProtocol::QueryEntryResult(_))));
+    let mut result = billy.find_recv_json_msg(
+        0,
+        Box::new(one_is!(Lib3hClientProtocol::QueryEntryResult(_))),
+    );
     if result.is_none() {
         result = billy.wait_json(Box::new(one_is!(Lib3hClientProtocol::QueryEntryResult(_))))
     }

@@ -10,8 +10,8 @@ use holochain_net::{
 use lib3h_protocol::{
     data_types::{
         DirectMessageData, EntryAspectData, EntryData, EntryListData, FetchEntryData,
-        FetchEntryResultData, GenericResultData, GetListData, ProvidedEntryData,
-        QueryEntryData, QueryEntryResultData, SpaceData,
+        FetchEntryResultData, GenericResultData, GetListData, ProvidedEntryData, QueryEntryData,
+        QueryEntryResultData, SpaceData,
     },
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
@@ -21,7 +21,7 @@ use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
 use std::{
     collections::{HashMap, HashSet},
-    convert::{TryFrom, TryInto}
+    convert::{TryFrom, TryInto},
 };
 
 use super::{
@@ -119,7 +119,7 @@ impl TestNode {
         let protocol_msg: Protocol = if self.is_json {
             let track_dna_msg = SpaceData {
                 // TODO BLOCKER create request id generator
-                request_id : "abc".into(),
+                request_id: "abc".into(),
                 space_address: dna_address.clone().try_into().unwrap(),
                 agent_id,
             };
@@ -164,7 +164,7 @@ impl TestNode {
         let agent_id = self.agent_id.clone();
         let protocol_msg: Protocol = if self.is_json {
             let track_dna_msg = SpaceData {
-                request_id : "untrack_dna_req".into(),
+                request_id: "untrack_dna_req".into(),
                 space_address: dna_address.clone().try_into().unwrap(),
                 agent_id: agent_id.clone().try_into().unwrap(),
             };
@@ -472,11 +472,7 @@ impl TestNode {
     }
 
     /// Node sends Message on the network.
-    pub fn send_response_lib3h(
-        &mut self,
-        msg: DirectMessageData,
-        response_content: Vec<u8>,
-    ) {
+    pub fn send_response_lib3h(&mut self, msg: DirectMessageData, response_content: Vec<u8>) {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
         assert_eq!(
@@ -492,7 +488,7 @@ impl TestNode {
             request_id: msg.request_id,
             to_agent_id: msg.from_agent_id.clone(),
             from_agent_id: self.agent_id.to_string().into_bytes(),
-            content: response_content
+            content: response_content,
         };
         self.send(Lib3hClientProtocol::HandleSendDirectMessageResult(response.clone()).into())
             .expect("Sending HandleSendMessageResult failed");
@@ -539,7 +535,8 @@ impl TestNode {
                 Box::new(one_is!(Lib3hClientProtocol::HandleGetAuthoringEntryList(_))),
             )
             .expect("Did not receive any HandleGetAuthoringEntryList request");
-        let get_entry_list_data = unwrap_to!(request => Lib3hClientProtocol::HandleGetAuthoringEntryList);
+        let get_entry_list_data =
+            unwrap_to!(request => Lib3hClientProtocol::HandleGetAuthoringEntryList);
         self.reply_to_HandleGetAuthoringEntryList(&get_entry_list_data)
             .expect("Reply to HandleGetAuthoringEntryList failed.");
     }
@@ -838,7 +835,8 @@ impl TestNode {
     /// wait to receive a HandleFetchEntry request and automatically reply
     /// return true if a HandleFetchEntry has been received
     pub fn wait_HandleFetchEntry_and_reply(&mut self) -> bool {
-        let maybe_request = self.wait_lib3h(Box::new(one_is!(Lib3hClientProtocol::HandleFetchEntry(_))));
+        let maybe_request =
+            self.wait_lib3h(Box::new(one_is!(Lib3hClientProtocol::HandleFetchEntry(_))));
         if maybe_request.is_none() {
             return false;
         }
@@ -854,7 +852,8 @@ impl TestNode {
     /// wait to receive a HandleFetchEntry request and automatically reply
     /// return true if a HandleFetchEntry has been received
     pub fn wait_HandleQueryEntry_and_reply(&mut self) -> bool {
-        let maybe_request = self.wait_json(Box::new(one_is!(Lib3hClientProtocol::HandleQueryEntry(_))));
+        let maybe_request =
+            self.wait_json(Box::new(one_is!(Lib3hClientProtocol::HandleQueryEntry(_))));
         if maybe_request.is_none() {
             return false;
         }

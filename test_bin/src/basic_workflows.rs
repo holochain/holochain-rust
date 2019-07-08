@@ -3,7 +3,7 @@ use holochain_net::{
     connection::{net_connection::NetSend, protocol::Protocol, NetResult},
     tweetlog::TWEETLOG,
 };
-use holochain_persistence_api::{hash::HashString, cas::content::Address};
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use lib3h_protocol::{
     data_types::{ConnectData, EntryData},
     protocol_client::Lib3hClientProtocol,
@@ -33,7 +33,7 @@ pub fn setup_one_node(
     // get ipcServer IDs for each node from the IpcServer's state
     if can_connect {
         let mut _node1_binding = String::new();
-/*
+        /*
         alex.send(Lib3hServerProtocol::GetState.into())
             .expect("Failed sending RequestState on alex");
         let alex_state = alex
@@ -94,35 +94,35 @@ pub fn setup_two_nodes(
     if can_connect {
         let mut _node1_id = String::new();
         let mut node2_binding = String::new();
-/*
-        alex.send(Lib3hServerProtocol::GetState.into())
-            .expect("Failed sending RequestState on alex");
-        let alex_state = alex
-            .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::GetStateResult(_))))
-            .unwrap();
-        billy
-            .send(Lib3hServerProtocol::GetState.into())
-            .expect("Failed sending RequestState on billy");
-        let billy_state = billy
-            .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::GetStateResult(_))))
-            .unwrap();
+        /*
+                alex.send(Lib3hServerProtocol::GetState.into())
+                    .expect("Failed sending RequestState on alex");
+                let alex_state = alex
+                    .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::GetStateResult(_))))
+                    .unwrap();
+                billy
+                    .send(Lib3hServerProtocol::GetState.into())
+                    .expect("Failed sending RequestState on billy");
+                let billy_state = billy
+                    .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::GetStateResult(_))))
+                    .unwrap();
 
-        one_let!(Lib3hServerProtocol::GetStateResult(state) = alex_state {
-            _node1_id = state.id
-        });
-        one_let!(Lib3hServerProtocol::GetStateResult(state) = billy_state {
-            if !state.bindings.is_empty() {
-                node2_binding = state.bindings[0].clone();
-            }
-        });
-*/
+                one_let!(Lib3hServerProtocol::GetStateResult(state) = alex_state {
+                    _node1_id = state.id
+                });
+                one_let!(Lib3hServerProtocol::GetStateResult(state) = billy_state {
+                    if !state.bindings.is_empty() {
+                        node2_binding = state.bindings[0].clone();
+                    }
+                });
+        */
         // Connect nodes between them
         log_i!("connect: node2_binding = {}", node2_binding);
         alex.send(
             Lib3hClientProtocol::Connect(ConnectData {
                 request_id: "alex_send_connect".into(),
                 peer_transport: node2_binding.into(),
-                network_id: "alex_to_node2".into()
+                network_id: "alex_to_node2".into(),
             })
             .into(),
         )?;
@@ -133,17 +133,17 @@ pub fn setup_two_nodes(
             .unwrap();
         log_i!("got connect result A: {:?}", result_a);
         one_let!(Lib3hServerProtocol::Connected(d) = result_a {
-            assert_eq!(d.request_id, "alex_send_connect");
-            assert_eq!(d.network_transport, node2_binding);
-         });
+           assert_eq!(d.request_id, "alex_send_connect");
+           assert_eq!(d.network_transport, node2_binding);
+        });
         let result_b = billy
             .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
             .unwrap();
         log_i!("got connect result B: {:?}", result_b);
         one_let!(Lib3hServerProtocol::Connected(d) = result_b {
-            assert_eq!(d.request_id, "alex_send_connect");
-            assert_eq!(d.network_transport, node2_binding);
-         });
+           assert_eq!(d.request_id, "alex_send_connect");
+           assert_eq!(d.network_transport, node2_binding);
+        });
     }
 
     // Make sure we received everything we needed from network module
@@ -174,7 +174,9 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
 
     // Check if billy received it
     let res = billy
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))))
+        .wait_lib3h(Box::new(one_is!(
+            Lib3hServerProtocol::HandleSendDirectMessage(_)
+        )))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -192,7 +194,9 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     );
     // Check if alex received it
     let res = alex
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::SendDirectMessageResult(_))))
+        .wait_lib3h(Box::new(one_is!(
+            Lib3hServerProtocol::SendDirectMessageResult(_)
+        )))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -219,18 +223,23 @@ pub fn dht_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) ->
 
     // #fullsync
     // Alex should receive the data
-    let result_a = alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))));
+    let result_a = alex.wait_lib3h(Box::new(one_is!(
+        Lib3hServerProtocol::HandleStoreEntryAspect(_)
+    )));
     assert!(result_a.is_some());
     log_i!("got HandleStoreEntryAspect on node A: {:?}", result_a);
     // Gossip should ask Alex for the data
-    let maybe_fetch_a = alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleFetchEntry(_))));
+    let maybe_fetch_a =
+        alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleFetchEntry(_))));
     if let Some(fetch_a) = maybe_fetch_a {
         let fetch = unwrap_to!(fetch_a => Lib3hServerProtocol::HandleFetchEntry);
         let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
     }
     // #fullsync
     // Billy should receive the data
-    let result_b = billy.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))));
+    let result_b = billy.wait_lib3h(Box::new(one_is!(
+        Lib3hServerProtocol::HandleStoreEntryAspect(_)
+    )));
     assert!(result_b.is_some());
     log_i!("got HandleStoreEntryAspect on node B: {:?}", result_b);
 
@@ -287,26 +296,27 @@ pub fn dht_two_aspects_test(
     )?;
 
     // Check if both nodes are asked to store it
-    let result_a = alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))));
+    let result_a = alex.wait_lib3h(Box::new(one_is!(
+        Lib3hServerProtocol::HandleStoreEntryAspect(_)
+    )));
     // #fullsync
     assert!(result_a.is_some());
     let json = result_a.unwrap();
     log_i!("got HandleStoreEntryAspect on node A: {:?}", json);
     let store_data_1 = unwrap_to!(json => Lib3hServerProtocol::HandleStoreEntryAspect);
-    let entry_address_1 : Vec<u8> = ENTRY_ADDRESS_1.clone().try_into().unwrap();
-    let aspect_address : HashString = store_data_1.entry_aspect.aspect_address.clone().into();
+    let entry_address_1: Vec<u8> = ENTRY_ADDRESS_1.clone().try_into().unwrap();
+    let aspect_address: HashString = store_data_1.entry_aspect.aspect_address.clone().into();
 
     assert_eq!(store_data_1.entry_address, entry_address_1);
+    assert!(aspect_address == *ASPECT_ADDRESS_1 || aspect_address == *ASPECT_ADDRESS_2);
     assert!(
-        aspect_address == *ASPECT_ADDRESS_1
-            || aspect_address == *ASPECT_ADDRESS_2
-    );
-    assert!(
-        store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_CONTENT_1 ||
-            store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_CONTENT_2
+        store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_CONTENT_1
+            || store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_CONTENT_2
     );
     // 2nd store
-    let result_a = alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))));
+    let result_a = alex.wait_lib3h(Box::new(one_is!(
+        Lib3hServerProtocol::HandleStoreEntryAspect(_)
+    )));
     assert!(result_a.is_some());
     let json = result_a.unwrap();
     log_i!("got 2nd HandleStoreEntryAspect on node A: {:?}", json);
@@ -314,29 +324,30 @@ pub fn dht_two_aspects_test(
     assert_ne!(store_data_1, store_data_2);
     assert_eq!(store_data_2.entry_address, entry_address_1);
 
-    let aspect_address_2 : HashString = store_data_2.entry_aspect.aspect_address.clone().into();
+    let aspect_address_2: HashString = store_data_2.entry_aspect.aspect_address.clone().into();
 
-
-    assert!(
-        aspect_address_2 == *ASPECT_ADDRESS_1
-            || aspect_address_2 == *ASPECT_ADDRESS_2
-    );
+    assert!(aspect_address_2 == *ASPECT_ADDRESS_1 || aspect_address_2 == *ASPECT_ADDRESS_2);
     assert!(
         store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1
             || store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
     );
     // Gossip might ask us for the data
-    let maybe_fetch_a = alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleFetchEntry(_))));
+    let maybe_fetch_a =
+        alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleFetchEntry(_))));
     if let Some(fetch_a) = maybe_fetch_a {
         let fetch = unwrap_to!(fetch_a => Lib3hServerProtocol::HandleFetchEntry);
         let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
     }
     // #fullsync
     // also check aspects on billy?
-    let result_b = billy.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))));
+    let result_b = billy.wait_lib3h(Box::new(one_is!(
+        Lib3hServerProtocol::HandleStoreEntryAspect(_)
+    )));
     assert!(result_b.is_some());
     log_i!("got HandleStoreEntryAspect on node B: {:?}", result_b);
-    let result_b = billy.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))));
+    let result_b = billy.wait_lib3h(Box::new(one_is!(
+        Lib3hServerProtocol::HandleStoreEntryAspect(_)
+    )));
     assert!(result_b.is_some());
     log_i!("got 2nd HandleStoreEntryAspect on node B: {:?}", result_b);
 
@@ -358,7 +369,7 @@ pub fn dht_two_aspects_test(
     assert_eq!(query_data.entry_address, entry_address_1);
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 2);
-    let query_result_aspect_address : HashString =
+    let query_result_aspect_address: HashString =
         query_result.aspect_list[0].aspect_address.clone().into();
 
     assert!(
@@ -382,13 +393,18 @@ pub fn no_setup_test(alex: &mut TestNode, billy: &mut TestNode, _connect: bool) 
     alex.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_1.clone());
 
     // Alex should receive a FailureResult
-    let _res = alex.wait_lib3h_with_timeout(Box::new(one_is!(Lib3hServerProtocol::FailureResult(_))), 500);
+    let _res = alex.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::FailureResult(_))),
+        500,
+    );
     // in-memory can't send a failure result back
     // assert!(_res.is_some());
 
     // Billy should not receive anything
-    let res =
-        billy.wait_lib3h_with_timeout(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))), 2000);
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))),
+        2000,
+    );
     assert!(res.is_none());
     Ok(())
 }
@@ -412,8 +428,10 @@ pub fn untrack_alex_test(
     alex.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_1.clone());
 
     // Billy should not receive it.
-    let res =
-        billy.wait_lib3h_with_timeout(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))), 2000);
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))),
+        2000,
+    );
     assert!(res.is_none());
     // Alex should also not receive anything back
     assert_eq!(before_count, alex.count_recv_json_messages());
@@ -453,8 +471,10 @@ pub fn untrack_billy_test(
     log_i!("got FailureResult: {:?}", result);
 
     // Billy should not receive it.
-    let res =
-        billy.wait_lib3h_with_timeout(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))), 2000);
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))),
+        2000,
+    );
     assert!(res.is_none());
 
     // Done
@@ -500,7 +520,9 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
 
     // Check if billy received it
     let res = billy
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))))
+        .wait_lib3h(Box::new(one_is!(
+            Lib3hServerProtocol::HandleSendDirectMessage(_)
+        )))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -521,7 +543,9 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
     );
     // Check if alex received it
     let res = alex
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::SendDirectMessageResult(_))))
+        .wait_lib3h(Box::new(one_is!(
+            Lib3hServerProtocol::SendDirectMessageResult(_)
+        )))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -604,32 +628,42 @@ pub fn two_authors_test(
     // Alex publishs data & meta on the network
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
     // #fullsync
-    let _ = alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))));
+    let _ = alex.wait_lib3h(Box::new(one_is!(
+        Lib3hServerProtocol::HandleStoreEntryAspect(_)
+    )));
     // wait for broadcast
     // Gossip might ask us for the data
-    let maybe_fetch_a = alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleFetchEntry(_))));
+    let maybe_fetch_a =
+        alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleFetchEntry(_))));
     if let Some(fetch_a) = maybe_fetch_a {
         let fetch = unwrap_to!(fetch_a => Lib3hServerProtocol::HandleFetchEntry);
         let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
     }
     // Check if billy is asked to store it
-    let result = billy.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))));
+    let result = billy.wait_lib3h(Box::new(one_is!(
+        Lib3hServerProtocol::HandleStoreEntryAspect(_)
+    )));
     assert!(result.is_some());
     log_i!("Billy got HandleStoreEntryAspect: {:?}", result.unwrap());
 
     // Billy authors second aspect
     billy.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_2.clone()], true)?;
     // #fullsync
-    let _ = billy.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))));
+    let _ = billy.wait_lib3h(Box::new(one_is!(
+        Lib3hServerProtocol::HandleStoreEntryAspect(_)
+    )));
     // Gossip might ask us for the data
-    let maybe_fetch_b = billy.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleFetchEntry(_))));
+    let maybe_fetch_b =
+        billy.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleFetchEntry(_))));
     if let Some(fetch_b) = maybe_fetch_b {
         let fetch = unwrap_to!(fetch_b => Lib3hServerProtocol::HandleFetchEntry);
         let _ = billy.reply_to_HandleFetchEntry(&fetch).unwrap();
     }
     // wait for gossip / broadcast
     // Check if billy is asked to store it
-    let result = alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))));
+    let result = alex.wait_lib3h(Box::new(one_is!(
+        Lib3hServerProtocol::HandleStoreEntryAspect(_)
+    )));
     // #fullsync
     assert!(result.is_some());
     log_i!("Alex got HandleStoreEntryAspect: {:?}", result.unwrap());
@@ -649,17 +683,14 @@ pub fn two_authors_test(
     let query_data = unwrap_to!(result => Lib3hServerProtocol::QueryEntryResult);
     let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
     log_i!("got query_result: {:?}", query_result);
-    let entry_address_1 : Vec<u8> = ENTRY_ADDRESS_1.clone().try_into().unwrap();
+    let entry_address_1: Vec<u8> = ENTRY_ADDRESS_1.clone().try_into().unwrap();
 
     assert_eq!(query_data.entry_address, entry_address_1);
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 2);
-    let aspect_address_1 : HashString = query_result.aspect_list[0].aspect_address.clone().into();
+    let aspect_address_1: HashString = query_result.aspect_list[0].aspect_address.clone().into();
 
-    assert!(
-        aspect_address_1 == *ASPECT_ADDRESS_1
-            || aspect_address_1 == *ASPECT_ADDRESS_2
-    );
+    assert!(aspect_address_1 == *ASPECT_ADDRESS_1 || aspect_address_1 == *ASPECT_ADDRESS_2);
     // Done
     Ok(())
 }

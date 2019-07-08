@@ -22,7 +22,7 @@ use lib3h_protocol::{
     protocol_server::Lib3hServerProtocol,
 };
 
-use holochain_persistence_api::{hash::HashString, cas::content::Address};
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     convert::TryFrom,
@@ -565,14 +565,13 @@ impl InMemoryServer {
         let dna_address = msg.space_address.clone().try_into().unwrap();
         let provider_agent_id: Address = msg.provider_agent_id.clone().try_into().unwrap();
 
-
         // Provider must be tracking
-        let sender_info = Some((msg.provider_agent_id.clone().try_into().unwrap(), Some(msg.request_id.clone())));
-        let is_tracking = self.priv_check_or_fail(
-            &dna_address,
-            &provider_agent_id,
-            sender_info.clone(),
-        )?;
+        let sender_info = Some((
+            msg.provider_agent_id.clone().try_into().unwrap(),
+            Some(msg.request_id.clone()),
+        ));
+        let is_tracking =
+            self.priv_check_or_fail(&dna_address, &provider_agent_id, sender_info.clone())?;
         if !is_tracking {
             return Ok(());
         }
@@ -603,11 +602,15 @@ impl InMemoryServer {
         let dna_address = msg.space_address.clone().try_into().unwrap();
 
         // Provider must be tracking
-        let sender_info = Some((msg.requester_agent_id.clone().try_into().unwrap(),
-                                Some(msg.request_id.clone())));
-        let is_tracking =
-            self.priv_check_or_fail(&dna_address,
-                                    &msg.requester_agent_id.clone().try_into().unwrap(), sender_info)?;
+        let sender_info = Some((
+            msg.requester_agent_id.clone().try_into().unwrap(),
+            Some(msg.request_id.clone()),
+        ));
+        let is_tracking = self.priv_check_or_fail(
+            &dna_address,
+            &msg.requester_agent_id.clone().try_into().unwrap(),
+            sender_info,
+        )?;
         if !is_tracking {
             return Ok(());
         }
@@ -617,7 +620,7 @@ impl InMemoryServer {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     for (k, r) in e.get_mut().iter() {
-                        let k_address : &Vec<u8> = &k.try_into().unwrap();
+                        let k_address: &Vec<u8> = &k.try_into().unwrap();
                         if k_address == &msg.requester_agent_id {
                             self.log.i(&format!("---- HandleQueryEntry {}", k));
                             r.send(Lib3hServerProtocol::HandleQueryEntry(msg.clone()).into())?;
@@ -639,16 +642,19 @@ impl InMemoryServer {
             responder_agent_id: msg.requester_agent_id.clone(),
             query_result: vec![],
         });
-        self.priv_send_one(&dna_address, &msg.requester_agent_id.clone().try_into().unwrap(), response.into())?;
+        self.priv_send_one(
+            &dna_address,
+            &msg.requester_agent_id.clone().try_into().unwrap(),
+            response.into(),
+        )?;
         // Done
         Ok(())
     }
 
     fn priv_serve_HandleQueryEntryResult(&mut self, msg: &QueryEntryResultData) -> NetResult<()> {
         let dna_address = msg.space_address.clone().try_into().unwrap();
-        let responder_agent_id : Address = msg.responder_agent_id.clone().try_into().unwrap();
-        let requester_agent_id : Address = msg.requester_agent_id.clone().try_into().unwrap();
-
+        let responder_agent_id: Address = msg.responder_agent_id.clone().try_into().unwrap();
+        let requester_agent_id: Address = msg.requester_agent_id.clone().try_into().unwrap();
 
         // Provider/Responder must be tracking
         let sender_info = Some((responder_agent_id.clone(), Some(msg.request_id.clone())));
@@ -734,9 +740,9 @@ impl InMemoryServer {
         // For each data not already holding, add it to stored_data_book?
         for (entry_address, aspect_address_list) in msg.address_map.clone() {
             for aspect_address in aspect_address_list {
-                let entry_address_vec : HashString = entry_address.clone().try_into().unwrap();
-                let aspect_address_vec : HashString = aspect_address.clone().try_into().unwrap();
-                 if book_has_aspect(
+                let entry_address_vec: HashString = entry_address.clone().try_into().unwrap();
+                let aspect_address_vec: HashString = aspect_address.clone().try_into().unwrap();
+                if book_has_aspect(
                     &self.stored_book,
                     chain_id.clone(),
                     &entry_address_vec,

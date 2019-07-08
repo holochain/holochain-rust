@@ -240,9 +240,10 @@ pub fn hold_and_publish_test(
     let req_id = query_entry.request_id.clone();
     let mut result = camille.find_recv_json_msg(
         0,
-        Box::new(one_is_where!(Lib3hClientProtocol::QueryEntryResult(entry_data), {
-            entry_data.request_id == req_id
-        })),
+        Box::new(one_is_where!(
+            Lib3hClientProtocol::QueryEntryResult(entry_data),
+            { entry_data.request_id == req_id }
+        )),
     );
     if result.is_none() {
         result = camille.wait_json(Box::new(one_is_where!(
@@ -269,9 +270,10 @@ pub fn hold_and_publish_test(
     let req_id = query_data.request_id.clone();
     let mut result = camille.find_recv_json_msg(
         0,
-        Box::new(one_is_where!(Lib3hClientProtocol::QueryEntryResult(entry_data), {
-            entry_data.request_id == req_id
-        })),
+        Box::new(one_is_where!(
+            Lib3hClientProtocol::QueryEntryResult(entry_data),
+            { entry_data.request_id == req_id }
+        )),
     );
     if result.is_none() {
         result = camille.wait_json(Box::new(one_is_where!(
@@ -363,15 +365,17 @@ pub fn publish_entry_stress_test(
 
     let mut result = camille.find_recv_json_msg(
         0,
-        Box::new(one_is_where!(Lib3hClientProtocol::QueryEntryResult(entry_data), {
-            entry_data.request_id == req_id
-        })),
+        Box::new(one_is_where!(
+            Lib3hClientProtocol::QueryEntryResult(entry_data),
+            { entry_data.request_id == req_id }
+        )),
     );
     if result.is_none() {
         result = camille.wait_json_with_timeout(
-            Box::new(one_is_where!(Lib3hClientProtocol::QueryEntryResult(entry_data), {
-                entry_data.request_id == query_entry.request_id
-            })),
+            Box::new(one_is_where!(
+                Lib3hClientProtocol::QueryEntryResult(entry_data),
+                { entry_data.request_id == query_entry.request_id }
+            )),
             10000,
         )
     }

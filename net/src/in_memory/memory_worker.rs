@@ -9,10 +9,10 @@ use crate::connection::{
 use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 use holochain_json_api::json::JsonString;
-use holochain_persistence_api::{hash::HashString, cas::content::Address};
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use std::{
     collections::{hash_map::Entry, HashMap},
-    convert::{TryInto, TryFrom},
+    convert::{TryFrom, TryInto},
     sync::{mpsc, Mutex},
 };
 
@@ -43,11 +43,8 @@ impl NetWorker for InMemoryWorker {
         if let Ok(json_msg) = Lib3hClientProtocol::try_from(&data) {
             match json_msg {
                 Lib3hClientProtocol::JoinSpace(track_msg) => {
-                    let dna_address : HashString = track_msg.space_address.try_into().unwrap();
-                    match self
-                        .receiver_per_dna
-                        .entry(dna_address.clone())
-                    {
+                    let dna_address: HashString = track_msg.space_address.try_into().unwrap();
+                    match self.receiver_per_dna.entry(dna_address.clone()) {
                         Entry::Occupied(_) => (),
                         Entry::Vacant(e) => {
                             let (tx, rx) = mpsc::channel();
@@ -69,15 +66,14 @@ impl NetWorker for InMemoryWorker {
         if let Ok(json_msg) = Lib3hClientProtocol::try_from(&data) {
             match json_msg {
                 Lib3hClientProtocol::LeaveSpace(untrack_msg) => {
-                    let dna_address : HashString = untrack_msg.space_address.try_into().unwrap();
-                    match self
-                        .receiver_per_dna
-                        .entry(dna_address.clone())
-                    {
+                    let dna_address: HashString = untrack_msg.space_address.try_into().unwrap();
+                    match self.receiver_per_dna.entry(dna_address.clone()) {
                         Entry::Vacant(_) => (),
                         Entry::Occupied(e) => {
-                            server
-                                .unregister_chain(&dna_address, &untrack_msg.agent_id.try_into().unwrap());
+                            server.unregister_chain(
+                                &dna_address,
+                                &untrack_msg.agent_id.try_into().unwrap(),
+                            );
                             e.remove();
                         }
                     };

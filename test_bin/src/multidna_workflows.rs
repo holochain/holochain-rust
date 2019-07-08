@@ -53,7 +53,9 @@ pub fn send_test(
     // Camille should receive it
     alex.send_direct_message(&CAMILLE_AGENT_ID, ASPECT_CONTENT_1.clone());
     let res = camille
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))))
+        .wait_lib3h(Box::new(one_is!(
+            Lib3hServerProtocol::HandleSendDirectMessage(_)
+        )))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -80,7 +82,9 @@ pub fn send_test(
     // Billy should receive it
     alex.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_2.clone());
     let res = billy
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))))
+        .wait_lib3h(Box::new(one_is!(
+            Lib3hServerProtocol::HandleSendDirectMessage(_)
+        )))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -107,7 +111,9 @@ pub fn send_test(
     // Camille should receive it
     camille.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_3.clone());
     let res = billy
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))))
+        .wait_lib3h(Box::new(one_is!(
+            Lib3hServerProtocol::HandleSendDirectMessage(_)
+        )))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
@@ -150,7 +156,8 @@ pub fn dht_test(
     // Alex publish data on the network
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
     // Gossip might ask us for the data
-    let maybe_fetch_a = alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleFetchEntry(_))));
+    let maybe_fetch_a =
+        alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleFetchEntry(_))));
     if let Some(fetch_a) = maybe_fetch_a {
         let fetch = unwrap_to!(fetch_a => Lib3hServerProtocol::HandleFetchEntry);
         let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();

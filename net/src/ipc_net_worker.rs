@@ -2,9 +2,7 @@
 
 use holochain_json_api::json::JsonString;
 
-use crate::ipc::{
-    spawn, transport::TransportId, Transport, TransportEvent, TransportWss,
-};
+use crate::ipc::{spawn, transport::TransportId, Transport, TransportEvent, TransportWss};
 
 use crate::connection::{
     net_connection::{NetHandler, NetShutdown, NetWorker},
@@ -14,7 +12,7 @@ use crate::connection::{
 
 use lib3h_protocol::{data_types::ConnectData, protocol_client::Lib3hClientProtocol};
 
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use crate::tweetlog::TweetProxy;
 

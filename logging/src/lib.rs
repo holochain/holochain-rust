@@ -363,16 +363,16 @@ impl LogMessageTrait for LogMessage {
         };
 
         let msg = format!(
-            "{timestamp} | {thread_name}: {tag} @ l.{line} - {level} - {args}",
+            "{timestamp} | {thread_name}: {tag} {line} - {level} - {args}",
             args = self.args.color(msg_color),
-            tag = tag_name.bold().color("brightwhite"),
-            line = self.line,
+            tag = tag_name.bold(),
+            line = format!("l.{}", self.line).italic(),
             // We might consider retrieving the timestamp once and proceed logging
             // in batch in the future, if this ends up being performance critical
             // timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.6f"),
             timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
             level = self.level,
-            thread_name = self.thread_name,
+            thread_name = self.thread_name.underline(),
         );
         msg.to_string()
     }

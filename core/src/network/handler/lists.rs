@@ -57,7 +57,6 @@ fn get_all_aspect_addresses(entry: &Address, context: Arc<Context>) -> HcResult<
     Ok(address_list)
 }
 
-
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
     thread::Builder::new()
         .name(format!(
@@ -66,7 +65,9 @@ pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>)
         ))
         .spawn(move || {
             let mut address_map = HashMap::new();
-            let state = context.state().expect("No state present when trying to respond with gossip list");
+            let state = context
+                .state()
+                .expect("No state present when trying to respond with gossip list");
 
             for entry in state.dht().get_all_held_entry_addresses() {
                 address_map.insert(

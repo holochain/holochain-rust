@@ -9,10 +9,10 @@ pub mod init;
 pub mod publish;
 pub mod resolve_direct_connection;
 pub mod respond_authoring_list;
-pub mod respond_gossip_list;
 pub mod respond_fetch;
 pub mod respond_get;
 pub mod respond_get_links;
+pub mod respond_gossip_list;
 pub mod send_direct_message;
 pub mod shutdown;
 
@@ -35,6 +35,7 @@ use crate::{
             respond_fetch::reduce_respond_fetch_data,
             respond_get::reduce_respond_get,
             respond_get_links::reduce_respond_get_links,
+            respond_gossip_list::reduce_respond_gossip_list,
             send_direct_message::{reduce_send_direct_message, reduce_send_direct_message_timeout},
             shutdown::reduce_shutdown,
         },
@@ -51,7 +52,6 @@ use holochain_net::connection::{
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
-use crate::network::reducers::respond_gossip_list::reduce_respond_gossip_list;
 
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {

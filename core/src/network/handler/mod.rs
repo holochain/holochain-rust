@@ -15,15 +15,15 @@ use boolinator::*;
 use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 
 use crate::network::{
-    direct_message::DirectMessage, entry_aspect::EntryAspect,
-    handler::lists::handle_get_authoring_list,
+    direct_message::DirectMessage,
+    entry_aspect::EntryAspect,
+    handler::lists::{handle_get_authoring_list, handle_get_gossip_list},
 };
 use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{MessageData, StoreEntryAspectData};
 use holochain_persistence_api::cas::content::Address;
 use std::{convert::TryFrom, sync::Arc};
-use crate::network::handler::lists::handle_get_gossip_list;
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us

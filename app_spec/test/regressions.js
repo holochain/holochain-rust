@@ -1,5 +1,7 @@
 module.exports = scenario => {
 
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+
 scenario.only('calling get_links before link_entries makes no difference', async (s, t, {alice}) => {
 
   await s.spawn(alice)
@@ -7,9 +9,10 @@ scenario.only('calling get_links before link_entries makes no difference', async
   const get1 = await alice.conductor.instanceMap.app.call("blog", "my_posts", {})
   t.ok(get1.Ok)
 
-  // await s.kill(alice)
-  // console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-  // await s.spawn(alice)
+  await s.kill(alice)
+  console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+  await delay(10000)  // since we don't yet know how to wait for the conductor killing to be complete
+  await s.spawn(alice)
 
   const create1 = await alice.conductor.instanceMap.app.call("blog","create_post", {content: 'hi'})
   await s.consistent()

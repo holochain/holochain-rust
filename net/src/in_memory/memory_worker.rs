@@ -9,10 +9,10 @@ use crate::connection::{
 use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 use holochain_json_api::json::JsonString;
-use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::{hash::HashString, cas::content::Address};
 use std::{
     collections::{hash_map::Entry, HashMap},
-    convert::TryFrom,
+    convert::{TryInto, TryFrom},
     sync::{mpsc, Mutex},
 };
 
@@ -43,16 +43,17 @@ impl NetWorker for InMemoryWorker {
         if let Ok(json_msg) = Lib3hClientProtocol::try_from(&data) {
             match json_msg {
                 Lib3hClientProtocol::JoinSpace(track_msg) => {
+                    let dna_address : HashString = track_msg.space_address.try_into().unwrap();
                     match self
                         .receiver_per_dna
-                        .entry(track_msg.dna_address.to_owned())
+                        .entry(dna_address.clone())
                     {
                         Entry::Occupied(_) => (),
                         Entry::Vacant(e) => {
                             let (tx, rx) = mpsc::channel();
                             server.register_chain(
-                                &track_msg.dna_address,
-                                &track_msg.agent_id,
+                                &dna_address,
+                                &track_msg.agent_id.try_into().unwrap(),
                                 tx,
                             )?;
                             e.insert(rx);
@@ -67,15 +68,16 @@ impl NetWorker for InMemoryWorker {
         // After serve
         if let Ok(json_msg) = Lib3hClientProtocol::try_from(&data) {
             match json_msg {
-                Lib3hClientProtocol::UntrackDna(untrack_msg) => {
+                Lib3hClientProtocol::LeaveSpace(untrack_msg) => {
+                    let dna_address : HashString = untrack_msg.space_address.try_into().unwrap();
                     match self
                         .receiver_per_dna
-                        .entry(untrack_msg.dna_address.to_owned())
+                        .entry(dna_address.clone())
                     {
                         Entry::Vacant(_) => (),
                         Entry::Occupied(e) => {
                             server
-                                .unregister_chain(&untrack_msg.dna_address, &untrack_msg.agent_id);
+                                .unregister_chain(&dna_address, &untrack_msg.agent_id.try_into().unwrap());
                             e.remove();
                         }
                     };

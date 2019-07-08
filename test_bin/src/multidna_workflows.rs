@@ -2,7 +2,7 @@ use crate::three_workflows::setup_three_nodes;
 use constants::*;
 use holochain_net::{connection::NetResult, tweetlog::TWEETLOG};
 use holochain_persistence_api::cas::content::Address;
-use lib3h_protocol::protocol_client::Lib3hClientProtocol;
+use lib3h_protocol::protocol_server::Lib3hServerProtocol;
 use p2p_node::test_node::TestNode;
 
 /// Have multiple nodes track multiple dnas
@@ -53,11 +53,11 @@ pub fn send_test(
     // Camille should receive it
     alex.send_direct_message(&CAMILLE_AGENT_ID, ASPECT_CONTENT_1.clone());
     let res = camille
-        .wait_json(Box::new(one_is!(Lib3hClientProtocol::HandleSendMessage(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
-        Lib3hClientProtocol::HandleSendMessage(msg) => msg,
+        Lib3hServerProtocol::HandleSendDirectMessage(msg) => msg,
         _ => unreachable!(),
     };
     assert_eq!(*ASPECT_CONTENT_1, msg.content);
@@ -65,8 +65,8 @@ pub fn send_test(
 
     // Billy should not receive it
     alex.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_1.clone());
-    let res = billy.wait_json_with_timeout(
-        Box::new(one_is!(Lib3hClientProtocol::HandleSendMessage(_))),
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))),
         1000,
     );
     assert!(res.is_none());
@@ -80,19 +80,19 @@ pub fn send_test(
     // Billy should receive it
     alex.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_2.clone());
     let res = billy
-        .wait_json(Box::new(one_is!(Lib3hClientProtocol::HandleSendMessage(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
-        Lib3hClientProtocol::HandleSendMessage(msg) => msg,
+        Lib3hServerProtocol::HandleSendDirectMessage(msg) => msg,
         _ => unreachable!(),
     };
     assert_eq!(*ASPECT_CONTENT_2, msg.content);
 
     // Camille should not receive it
     alex.send_direct_message(&CAMILLE_AGENT_ID, ASPECT_CONTENT_2.clone());
-    let res = camille.wait_json_with_timeout(
-        Box::new(one_is!(Lib3hClientProtocol::HandleSendMessage(_))),
+    let res = camille.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))),
         1000,
     );
     assert!(res.is_none());
@@ -107,19 +107,19 @@ pub fn send_test(
     // Camille should receive it
     camille.send_direct_message(&BILLY_AGENT_ID, ASPECT_CONTENT_3.clone());
     let res = billy
-        .wait_json(Box::new(one_is!(Lib3hClientProtocol::HandleSendMessage(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
     let msg = match res {
-        Lib3hClientProtocol::HandleSendMessage(msg) => msg,
+        Lib3hServerProtocol::HandleSendDirectMessage(msg) => msg,
         _ => unreachable!(),
     };
     assert_eq!(*ASPECT_CONTENT_3, msg.content);
 
     // Alex should not receive it
     camille.send_direct_message(&ALEX_AGENT_ID, ASPECT_CONTENT_3.clone());
-    let res = alex.wait_json_with_timeout(
-        Box::new(one_is!(Lib3hClientProtocol::HandleSendMessage(_))),
+    let res = alex.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleSendDirectMessage(_))),
         1000,
     );
     assert!(res.is_none());
@@ -150,14 +150,14 @@ pub fn dht_test(
     // Alex publish data on the network
     alex.author_entry(&ENTRY_ADDRESS_1, vec![ASPECT_CONTENT_1.clone()], true)?;
     // Gossip might ask us for the data
-    let maybe_fetch_a = alex.wait_json(Box::new(one_is!(Lib3hClientProtocol::HandleFetchEntry(_))));
+    let maybe_fetch_a = alex.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::HandleFetchEntry(_))));
     if let Some(fetch_a) = maybe_fetch_a {
-        let fetch = unwrap_to!(fetch_a => Lib3hClientProtocol::HandleFetchEntry);
+        let fetch = unwrap_to!(fetch_a => Lib3hServerProtocol::HandleFetchEntry);
         let _ = alex.reply_to_HandleFetchEntry(&fetch).unwrap();
     }
     // Check if both nodes are asked to store it
-    let _ = camille.wait_json(Box::new(one_is!(
-        Lib3hClientProtocol::HandleStoreEntryAspect(_)
+    let _ = camille.wait_lib3h(Box::new(one_is!(
+        Lib3hServerProtocol::HandleStoreEntryAspect(_)
     )));
 
     // Camille asks for that data
@@ -169,7 +169,7 @@ pub fn dht_test(
 
     // Camille should receive requested data
     let result = camille
-        .wait_json(Box::new(one_is!(Lib3hClientProtocol::QueryEntryResult(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))))
         .unwrap();
     log_i!("got QueryEntryResult: {:?}", result);
 
@@ -181,8 +181,8 @@ pub fn dht_test(
     let _ = billy.reply_to_HandleQueryEntry(&query_data);
 
     // Billy might receive FailureResult
-    let result = billy.wait_json_with_timeout(
-        Box::new(one_is!(Lib3hClientProtocol::FailureResult(_))),
+    let result = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::FailureResult(_))),
         1000,
     );
     log_i!("got FailureResult: {:?}", result);

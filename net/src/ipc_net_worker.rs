@@ -3,7 +3,7 @@
 use holochain_json_api::json::JsonString;
 
 use crate::ipc::{
-    spawn, transport::TransportId, util::get_millis, Transport, TransportEvent, TransportWss,
+    spawn, transport::TransportId, Transport, TransportEvent, TransportWss,
 };
 
 use crate::connection::{
@@ -14,7 +14,7 @@ use crate::connection::{
 
 use lib3h_protocol::{data_types::ConnectData, protocol_client::Lib3hClientProtocol};
 
-use std::{collections::HashMap, convert::TryFrom};
+use std::{collections::HashMap};
 
 use crate::tweetlog::TweetProxy;
 
@@ -31,7 +31,6 @@ pub struct IpcNetWorker {
 
     is_network_ready: bool,
     last_known_state: String,
-    last_state_millis: f64,
 
     bootstrap_nodes: Vec<String>,
 
@@ -125,7 +124,6 @@ impl IpcNetWorker {
             done,
             is_network_ready: false,
             last_known_state: "undefined".to_string(),
-            last_state_millis: 0.0_f64,
             bootstrap_nodes,
             log,
         })
@@ -189,21 +187,6 @@ impl NetWorker for IpcNetWorker {
                     let msg: NamedBinaryData = rmp_serde::from_slice(&msg)?;
                     let msg: Protocol = msg.into();
 
-                    // handle init/config special cases
-                    if let Ok(msg) = Lib3hClientProtocol::try_from(&msg) {
-                        match msg {
-                            // ipc-server sent us its current state
-                            Lib3hClientProtocol::GetStateResult(state) => {
-                                self.priv_handle_state(state)?;
-                            }
-                            // ipc-server is requesting us the default config
-                            Lib3hClientProtocol::GetDefaultConfigResult(config) => {
-                                self.priv_handle_default_config(config)?;
-                            }
-                            _ => (),
-                        };
-                    }
-                    // Send data back to handler
                     self.handler.handle(Ok(msg.clone()))?;
 
                     // on shutdown, close all connections
@@ -243,8 +226,11 @@ impl IpcNetWorker {
         let bs_nodes: Vec<String> = self.bootstrap_nodes.drain(..).collect();
         for bs_node in &bs_nodes {
             self.receive(
+                // TODO BLOCKER: what should this actually be changed to?
                 Lib3hClientProtocol::Connect(ConnectData {
-                    peer_address: bs_node.clone().into(),
+                    request_id: "abc".into(),
+                    peer_transport: bs_node.clone().into(),
+                    network_id: "def".into(),
                 })
                 .into(),
             )?;
@@ -255,13 +241,14 @@ impl IpcNetWorker {
 
     /// send a ping and/or? StateRequest twice per second
     fn priv_request_state(&mut self) -> NetResult<()> {
-        let now = get_millis();
+        /*
+          let now = get_millis();
 
         if now - self.last_state_millis > 500.0 {
             self.receive(Lib3hClientProtocol::GetState.into())?;
             self.last_state_millis = now;
         }
-
+        */
         Ok(())
     }
 

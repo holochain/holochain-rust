@@ -108,7 +108,7 @@ scenario('show_env', async (s, t, { alice }) => {
   t.equal(result.Ok.agent_id, '{"nick":"alice::app","pub_sign_key":"' + alice.app.agentId + '"}')
   t.equal(result.Ok.properties, '{"test_property":"test-property-value"}')
 
-  // don't compare the public token because it changes every time we change the dna
+  // don't compare the public token because it changes every time we change the dna.
   t.deepEqual(result.Ok.cap_request.provenance, [ alice.app.agentId, 'HFQkrDmnSOcmGQnYNtaYZWj89rlIQVFg0PpEoeFyx/Qw6Oizy5PI+tcsO8wYrllkuVPPzF5P3pvbCctKkfyGBg==' ]
 );
 

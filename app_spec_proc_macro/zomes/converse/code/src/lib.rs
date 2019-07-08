@@ -22,7 +22,10 @@ pub mod converse {
     #[genesis]
     pub fn genesis() {
         hdk::keystore_new_random("app_root_seed", 32)
-            .map_err(|err| format!("new seed generation failed: {}",err) )
+            .map_err(|err|
+                hdk::debug(format!("ignoring new seed generation because of error: {}",err))
+            ).unwrap_or(());
+        Ok(())
     }
 
     #[zome_fn("hc_public")]

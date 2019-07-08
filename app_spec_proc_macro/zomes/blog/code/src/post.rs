@@ -127,6 +127,7 @@ mod tests {
             },
             validation::{EntryLifecycle, EntryValidationData, ValidationData, ValidationPackage},
         },
+        holochain_json_api::json::JsonString,
         holochain_wasm_utils::api_serialization::validation::LinkDirection,
     };
     use std::convert::TryInto;
@@ -151,7 +152,7 @@ mod tests {
         assert_eq!(expected_name, post_definition.name.clone());
 
         let expected_definition = EntryTypeDef {
-            description: "blog entry post".to_string(),
+            properties: JsonString::from("blog entry post"),
             linked_from: vec![
                 LinkedFrom {
                     base_type: "%agent_id".to_string(),

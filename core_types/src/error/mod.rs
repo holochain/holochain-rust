@@ -114,6 +114,7 @@ pub enum HolochainError {
     ConfigError(String),
     Timeout,
     InitializationFailed(String),
+    LifecycleError(String),
     DnaHashMismatch(HashString, HashString),
     EntryNotFoundLocally,
     EntryIsPrivate,
@@ -155,6 +156,7 @@ impl fmt::Display for HolochainError {
             ConfigError(err_msg) => write!(f, "{}", err_msg),
             Timeout => write!(f, "timeout"),
             InitializationFailed(err_msg) => write!(f, "{}", err_msg),
+            LifecycleError(err_msg) => write!(f, "{}", err_msg),
             DnaHashMismatch(hash1, hash2) => write!(
                 f,
                 "Provided DNA hash does not match actual DNA hash! {} != {}",

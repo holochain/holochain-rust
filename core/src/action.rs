@@ -223,6 +223,9 @@ pub enum Action {
 
     /// Clear an entry from the pending validation list
     RemovePendingValidation((Address, ValidatingWorkflow)),
+
+    /// No-op, used to check if an action channel is still open
+    Ping,
 }
 
 /// function signature for action handler functions

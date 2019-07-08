@@ -1,6 +1,6 @@
 let
- holonix-release-tag = "0.0.3";
- holonix-release-sha256 = "0da3kam3sxri73rfanlr8mkl95q74cqvn02y3fa0c021144qxgxv";
+ holonix-release-tag = "0.0.3-wasm-opt";
+ holonix-release-sha256 = "0dg71qd233iar17x4f1vnvvcd1z9qq7yc7qrvvp083vkl98prig9";
 
  holonix = import (fetchTarball {
   url = "https://github.com/holochain/holonix/tarball/${holonix-release-tag}";

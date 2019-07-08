@@ -41,7 +41,11 @@ impl Build {
     pub fn run(&self, base_path: &PathBuf) -> DefaultResult<String> {
         for build_step in &self.steps {
             let slice_vec: Vec<_> = build_step.arguments.iter().map(|e| e.as_str()).collect();
-            util::run_cmd(base_path.to_path_buf(), build_step.command.clone(), &slice_vec[..])?;
+            util::run_cmd(
+                base_path.to_path_buf(),
+                build_step.command.clone(),
+                &slice_vec[..],
+            )?;
         }
 
         let artifact_path = base_path.join(&self.artifact);
@@ -76,7 +80,10 @@ impl Build {
             .map(|raw_arg| raw_arg.to_string())
             .collect();
 
-        self.steps.push(BuildStep{ command: cmd, arguments: args});
+        self.steps.push(BuildStep {
+            command: cmd,
+            arguments: args,
+        });
         self
     }
 }

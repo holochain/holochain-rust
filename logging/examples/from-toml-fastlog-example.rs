@@ -8,12 +8,8 @@ fn main() {
     level = "debug"
 
         [[logger.rules]]
-        pattern = "Abort"
-        color = "red"
-
-        [[logger.rules]]
-        pattern = "warned"
-        color = "yellow"
+        pattern = "info"
+        color = "blue"
 
         [[logger.rules]]
         pattern = "twice"

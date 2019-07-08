@@ -93,7 +93,8 @@ impl log::Log for FastLogger {
                 args,
                 module: record.module_path().unwrap_or("module-name").to_string(),
                 line: record.line().unwrap_or(000),
-                level: self.level_colors.color(record.level()).to_string(),
+                level: record.level(),
+                level_to_print: self.level_colors.color(record.level()).to_string(),
                 thread_name: std::thread::current()
                     .name()
                     .unwrap_or("Anonymous-thread")
@@ -325,7 +326,9 @@ struct LogMessage {
     /// Line number of the issued log message.
     line: u32,
     /// Log verbosity level.
-    level: String,
+    level: Level,
+    /// Log verbosity level to print with color.
+    level_to_print: String,
     /// Thread name of the log message issuer. Default to `Anonymous Thread`.
     thread_name: String,
     /// The color of the log message defined by the user using [RuleFilter]. Default to color based
@@ -354,7 +357,11 @@ impl LogMessageTrait for LogMessage {
         let msg_color = match &self.color {
             Some(color) => {
                 if color.is_empty() {
-                    pick_color(&base_color_on)
+                    match self.level {
+                        Level::Error => "Red",
+                        Level::Warn => "Yellow",
+                        _ => "White",
+                    }
                 } else {
                     color
                 }
@@ -371,7 +378,7 @@ impl LogMessageTrait for LogMessage {
             // in batch in the future, if this ends up being performance critical
             // timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.6f"),
             timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-            level = self.level,
+            level = self.level_to_print.bold(),
             thread_name = self.thread_name.underline(),
         );
         msg.to_string()

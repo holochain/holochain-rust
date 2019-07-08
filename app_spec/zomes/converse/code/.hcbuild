@@ -5,6 +5,12 @@
       "--release",
       "--target=wasm32-unknown-unknown",
       "--target-dir=/tmp/holochain/target"
+    ],
+    "wasm-gc": ["/tmp/holochain/target/wasm32-unknown-unknown/release/converse.wasm"],
+    "wasm-opt": [
+      "/tmp/holochain/target/wasm32-unknown-unknown/release/converse.wasm",
+      "-s",
+      "-o /tmp/holochain/target/wasm32-unknown-unknown/release/converse.wasm"
     ]
   },
   "artifact": "/tmp/holochain/target/wasm32-unknown-unknown/release/converse.wasm"

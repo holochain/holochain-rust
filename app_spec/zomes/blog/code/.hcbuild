@@ -5,7 +5,13 @@
       "--release",
       "--target=wasm32-unknown-unknown",
       "--target-dir=/tmp/holochain/target"
+    ],
+    "wasm-gc": ["/tmp/holochain/target/wasm32-unknown-unknown/release/blog.wasm"],
+    "wasm-opt": [
+        "/tmp/holochain/target/wasm32-unknown-unknown/release/blog.wasm",
+        "-s",
+        "-o /tmp/holochain/target/wasm32-unknown-unknown/release/blog.wasm"
     ]
   },
-  "artifact": "/tmp/holochain/target/wasm32-unknown-unknown/release/code.wasm"
+  "artifact": "/tmp/holochain/target/wasm32-unknown-unknown/release/blog.wasm"
 }

@@ -5,6 +5,12 @@
       "--release",
       "--target=wasm32-unknown-unknown",
       "--target-dir=/tmp/holochain/target"
+    ],
+    "wasm-gc": ["/tmp/holochain/target/wasm32-unknown-unknown/release/simple.wasm"],
+    "wasm-opt": [
+      "/tmp/holochain/target/wasm32-unknown-unknown/release/simple.wasm",
+      "-s",
+      "-o /tmp/holochain/target/wasm32-unknown-unknown/release/simple.wasm"
     ]
   },
   "artifact": "/tmp/holochain/target/wasm32-unknown-unknown/release/simple.wasm"

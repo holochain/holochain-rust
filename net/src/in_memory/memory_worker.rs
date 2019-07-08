@@ -164,18 +164,19 @@ impl Drop for InMemoryWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        connection::json_protocol::{Lib3hClientProtocol, SpaceData},
-        p2p_config::P2pConfig,
-    };
+    use lib3h_protocol::data_types::SpaceData;
+    use crate::p2p_config::P2pConfig;
     use crossbeam_channel::unbounded;
     use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
     fn example_dna_address() -> Address {
-        "blabladnaAddress".into()
+        "QmYsFu7QGaVeUUac1E4BWST7BR38cYvzRaaTc3YS9WqsTu".into()
     }
 
-    static AGENT_ID_1: &'static str = "agent-hash-test-1";
+    static AGENT_ID_1: &'static str = "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk";
+    // TODO - AgentIds need to be HcSyada base32 format
+    //        currently HashString try_into Vec<u8> is doing only base58
+    //static AGENT_ID_1: &'static str = "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
@@ -204,8 +205,9 @@ mod tests {
         memory_worker_1
             .receive(
                 Lib3hClientProtocol::JoinSpace(SpaceData {
-                    dna_address: example_dna_address(),
-                    agent_id: HashString::from(AGENT_ID_1),
+                    request_id: "test_req1".to_string(),
+                    space_address: example_dna_address().try_into().unwrap(),
+                    agent_id: HashString::from(AGENT_ID_1).try_into().unwrap(),
                 })
                 .into(),
             )
@@ -219,8 +221,9 @@ mod tests {
         memory_worker_1
             .receive(
                 Lib3hClientProtocol::JoinSpace(SpaceData {
-                    dna_address: example_dna_address(),
-                    agent_id: HashString::from(AGENT_ID_1),
+                    request_id: "test_req2".to_string(),
+                    space_address: example_dna_address().try_into().unwrap(),
+                    agent_id: HashString::from(AGENT_ID_1).try_into().unwrap(),
                 })
                 .into(),
             )

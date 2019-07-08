@@ -6,6 +6,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
 };
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
@@ -15,10 +16,14 @@ use holochain_persistence_api::{
 };
 use regex::Regex;
 
+use crate::state::StateWrapper;
 use std::{
     collections::{BTreeSet, HashMap},
     sync::{Arc, RwLock},
+    convert::TryFrom,
 };
+use holochain_persistence_api::cas::content::Content;
+use holochain_json_api::error::JsonResult;
 
 /// The state-slice for the DHT.
 /// Holds the CAS and EAVi that's used for the agent's local shard
@@ -45,6 +50,34 @@ impl PartialEq for DhtStore {
         self.actions == other.actions
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
+pub struct DhtStoreSnapshot {
+    pub holding_list: Vec<Address>,
+}
+
+impl From<&StateWrapper> for DhtStoreSnapshot {
+    fn from(state: &StateWrapper) -> Self {
+        DhtStoreSnapshot {
+            holding_list: state.dht().holding_list.clone(),
+        }
+    }
+}
+
+pub static DHT_STORE_SNAPSHOT_ADDRESS: &'static str = "DhtStore";
+impl AddressableContent for DhtStoreSnapshot {
+    fn content(&self) -> Content {
+        self.to_owned().into()
+    }
+
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
+        Self::try_from(content.to_owned())
+    }
+
+    fn address(&self) -> Address {
+        DHT_STORE_SNAPSHOT_ADDRESS.into()
     }
 }
 
@@ -89,6 +122,17 @@ impl DhtStore {
             actions: HashMap::new(),
         }
     }
+
+    pub fn new_with_holding_list(
+        content_storage: Arc<RwLock<ContentAddressableStorage>>,
+        meta_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+        holding_list: Vec<Address>,
+    ) -> Self {
+        let mut new_dht_store = Self::new(content_storage, meta_storage);
+        new_dht_store.holding_list = holding_list;
+        new_dht_store
+    }
+
     ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.

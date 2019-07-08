@@ -13,6 +13,7 @@ use holochain_persistence_api::cas::{
 
 use crate::state::StateWrapper;
 use std::sync::{Arc, RwLock};
+use crate::dht::dht_store::{DhtStoreSnapshot, DHT_STORE_SNAPSHOT_ADDRESS};
 
 /// trait that defines the persistence functionality that holochain_core requires
 pub trait Persister: Send {
@@ -43,8 +44,10 @@ impl Persister for SimplePersister {
             .map_err(|_| HolochainError::new("Could not get write lock on storage"))?;
         let agent_snapshot = AgentStateSnapshot::from(state);
         let nucleus_snapshot = NucleusStateSnapshot::from(state);
+        let dht_store_snapshot = DhtStoreSnapshot::from(state);
         store.add(&agent_snapshot)?;
         store.add(&nucleus_snapshot)?;
+        store.add(&dht_store_snapshot)?;
         Ok(())
     }
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
@@ -65,12 +68,24 @@ impl Persister for SimplePersister {
                     .expect("could not load NucleusStateSnapshot from content")
             });
 
-        if agent_snapshot.is_none() || nucleus_snapshot.is_none() {
+        let dht_store_snapshot: Option<DhtStoreSnapshot> = store
+            .fetch(&Address::from(DHT_STORE_SNAPSHOT_ADDRESS))?
+            .map(|s: Content| {
+                DhtStoreSnapshot::try_from_content(&s)
+                    .expect("could not load DhtStoreSnapshot from content")
+            });
+
+        if agent_snapshot.is_none() || nucleus_snapshot.is_none() || dht_store_snapshot.is_none() {
             return Ok(None);
         }
 
         Ok(
-            State::try_from_snapshots(context, agent_snapshot.unwrap(), nucleus_snapshot.unwrap())
+            State::try_from_snapshots(
+                context,
+                agent_snapshot.unwrap(),
+                nucleus_snapshot.unwrap(),
+            dht_store_snapshot.unwrap(),
+            )
                 .ok(),
         )
     }

@@ -97,7 +97,7 @@ pub fn handle_send_message_result(message_data: MessageData, context: Arc<Contex
     match response {
         DirectMessage::Custom(custom_direct_message) => {
             if initial_message.is_none() {
-                context.log("err/net: Received a custom direct message response but could not find message ID in history. Not able to process.");
+                context.log_error("net: Received a custom direct message response but could not find message ID in history. Not able to process.");
                 return;
             }
 
@@ -116,7 +116,7 @@ pub fn handle_send_message_result(message_data: MessageData, context: Arc<Contex
         ),
         DirectMessage::ValidationPackage(maybe_validation_package) => {
             if initial_message.is_none() {
-                context.log("err/net: Received a validation package but could not find message ID in history. Not able to process.");
+                context.log_error("net: Received a validation package but could not find message ID in history. Not able to process.");
                 return;
             }
 

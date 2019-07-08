@@ -23,7 +23,7 @@ pub async fn initialize(
             err
         ));
         let dna = dna.ok_or(HolochainError::DnaMissing)?;
-        context.log("dna/initialize: Initializing new chain from given DNA...");
+        context.log("initialize: Initializing new chain from given DNA...");
         await!(initialize_chain(dna, &instance_context))?;
     }
     await!(initialize_network::initialize_network(&instance_context))?;

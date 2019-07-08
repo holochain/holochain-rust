@@ -29,7 +29,7 @@ fn is_my_dna(my_dna_address: &String, dna_address: &String) -> bool {
 // module that aren't really meant for us
 fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
     if agent_id != "" && context.agent_id.pub_sign_key != agent_id {
-        context.log("debug/net/handle: ignoring, same id");
+        context.log_debug("net/handle: ignoring, same id");
         return false;
     }
     true

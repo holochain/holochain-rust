@@ -30,8 +30,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_remove_link failed to deserialize LinkEntriesArgs: {:?}",
+            context.log_error(format!(
+                "zome: invoke_remove_link failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
             ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
@@ -66,7 +66,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         GetLinksOptions::default().timeout.clone(),
     ));
     if links_result.is_err() {
-        context.log("err/zome : Could not get links for remove_link method");
+        context.log_error("zome : Could not get links for remove_link method");
         ribosome_error_code!(WorkflowFailed)
     } else {
         let links = links_result.expect("This is supposed to not fail");

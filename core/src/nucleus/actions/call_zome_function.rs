@@ -271,7 +271,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
         &fn_call.fn_name,
         fn_call.parameters.clone(),
     ) {
-        context.log("debug/actions/verify_grant: call signature did not match");
+        context.log_debug("actions/verify_grant: call signature did not match");
         return false;
     }
 
@@ -286,7 +286,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
                 .unwrap()
                 .contains(&fn_call.cap.provenance.source())
             {
-                context.log("debug/actions/verify_grant: caller not one of the assignees");
+                context.log_debug("actions/verify_grant: caller not one of the assignees");
                 return false;
             }
             true

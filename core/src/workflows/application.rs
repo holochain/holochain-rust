@@ -18,7 +18,7 @@ pub async fn initialize(
 ) -> HcResult<Arc<Context>> {
     let instance_context = instance.initialize_context(context.clone());
     if let Err(err) = await!(get_dna_and_agent(&instance_context)) {
-        context.log(format!(
+        context.log_warn(format!(
             "dna/initialize: Couldn't get DNA and agent from chain: {:?}",
             err
         ));

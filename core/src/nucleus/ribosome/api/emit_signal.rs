@@ -18,8 +18,8 @@ pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         Ok(args) => args,
         // Exit on error
         Err(error) => {
-            context.log(format!(
-                "err/zome: invoke_emit_signal failed to \
+            context.log_error(format!(
+                "zome: invoke_emit_signal failed to \
                  deserialize arguments: {:?} with error {:?}",
                 args_str, error
             ));
@@ -30,14 +30,13 @@ pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     if let Some(sender) = context.signal_tx() {
         let signal = Signal::User(UserSignal::from(emit_signal_args));
         let _ = sender.send(signal).map_err(|err| {
-            context.log(format!(
-                "err/zome: invoke_emit_signal() could not send signal: {:?}",
+            context.log_error(format!(
+                "zome: invoke_emit_signal() could not send signal: {:?}",
                 err,
             ));
         });
     } else {
-        context.log(format!(
-            "err/zome: invoke_emit_signal() could not send signal because signal channel is not set up!",
+        context.log_error(format!("zome: invoke_emit_signal() could not send signal because signal channel is not set up!",
         ));
     }
 

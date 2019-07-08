@@ -246,13 +246,13 @@ impl Instance {
         }
 
         if let Err(e) = self.save() {
-            context.log(format!(
-                "err/instance/process_action: could not save state: {:?}",
+            context.log_error(format!(
+                "instance/process_action: could not save state: {:?}",
                 e
             ));
         } else {
-            context.log(format!(
-                "trace/reduce/process_actions: reducing {:?}",
+            context.log_trace(format!(
+                "reduce/process_actions: reducing {:?}",
                 action_wrapper
             ));
         }
@@ -272,8 +272,8 @@ impl Instance {
             // to prevent emitting too many unneeded signals
             let trace_signal = Signal::Trace(action_wrapper.clone());
             tx.send(trace_signal).unwrap_or_else(|e| {
-                context.log(format!(
-                    "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                context.log_warn(format!(
+                    "reduce: Signal channel is closed! No signals can be sent ({:?}).",
                     e
                 ));
             });
@@ -282,8 +282,8 @@ impl Instance {
                 .process_action(action_wrapper.action())
                 .map(|signal| {
                     tx.send(Signal::Consistency(signal)).unwrap_or_else(|e| {
-                        context.log(format!(
-                            "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                        context.log_warn(format!(
+                            "reduce: Signal channel is closed! No signals can be sent ({:?}).",
                             e
                         ));
                     });

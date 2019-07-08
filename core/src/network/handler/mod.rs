@@ -96,8 +96,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
     NetHandler::new(Box::new(move |message| {
         let message = message.unwrap();
-        // context.log(format!(
-        //   "trace/net/handle:({}): {:?}",
+        // context.log_trace(format!("net/handle:({}): {:?}",
         //   context.agent_id.nick, message
         // ));
 
@@ -110,18 +109,15 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &failure_data.dna_address.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "warning/net/handle: FailureResult: {:?}",
-                    failure_data
-                ));
+                context.log_warn(format!("net/handle: FailureResult: {:?}", failure_data));
                 // TODO: Handle the reception of a FailureResult
             }
             JsonProtocol::HandleStoreEntryAspect(dht_entry_data) => {
                 if !is_my_dna(&my_dna_address, &dht_entry_data.dna_address.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: HandleStoreEntryAspect: {}",
+                context.log_debug(format!(
+                    "net/handle: HandleStoreEntryAspect: {}",
                     format_store_data(&dht_entry_data)
                 ));
                 handle_store(dht_entry_data, context.clone())
@@ -130,8 +126,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &fetch_entry_data.dna_address.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: HandleFetchEntry: {:?}",
+                context.log_debug(format!(
+                    "net/handle: HandleFetchEntry: {:?}",
                     fetch_entry_data
                 ));
                 handle_fetch_entry(fetch_entry_data, context.clone())
@@ -141,8 +137,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
 
-                context.log(format!(
-                    "err/net/handle: unexpected HandleFetchEntryResult: {:?}",
+                context.log_error(format!(
+                    "net/handle: unexpected HandleFetchEntryResult: {:?}",
                     fetch_result_data
                 ));
             }
@@ -150,8 +146,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &query_entry_data.dna_address.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: HandleQueryEntry: {:?}",
+                context.log_debug(format!(
+                    "net/handle: HandleQueryEntry: {:?}",
                     query_entry_data
                 ));
                 handle_query_entry_data(query_entry_data, context.clone())
@@ -170,8 +166,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: HandleQueryEntryResult: {:?}",
+                context.log_debug(format!(
+                    "net/handle: HandleQueryEntryResult: {:?}",
                     query_entry_result_data
                 ));
                 handle_query_entry_result(query_entry_result_data, context.clone())
@@ -184,8 +180,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: HandleSendMessage: {}",
+                context.log_debug(format!(
+                    "net/handle: HandleSendMessage: {}",
                     format_message_data(&message_data)
                 ));
                 handle_send_message(message_data, context.clone())
@@ -198,8 +194,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: SendMessageResult: {}",
+                context.log_debug(format!(
+                    "net/handle: SendMessageResult: {}",
                     format_message_data(&message_data)
                 ));
                 handle_send_message_result(message_data, context.clone())
@@ -210,7 +206,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
 
-                context.log(format!("debug/net/handle: PeerConnected: {:?}", peer_data));
+                context.log_debug(format!("net/handle: PeerConnected: {:?}", peer_data));
                 // Total hack in lieu of a world-model.
                 // Just republish everything when a new person comes on-line!!
                 republish_all_public_chain_entries(&context);
@@ -230,8 +226,8 @@ pub fn republish_all_public_chain_entries(context: &Arc<Context>) {
         .for_each(|chain_header| {
             let hash = HashString::from(chain_header.entry_address().to_string());
             match context.block_on(publish(hash.clone(), context)) {
-                Err(e) => context.log(format!(
-                    "err/net/handle: unable to publish {:?}, got error: {:?}",
+                Err(e) => context.log_error(format!(
+                    "net/handle: unable to publish {:?}, got error: {:?}",
                     hash, e
                 )),
                 _ => {}

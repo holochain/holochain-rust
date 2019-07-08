@@ -174,6 +174,11 @@ impl Context {
         error!(target: &self.instance_name.to_owned(), "{}", msg.into())
     }
 
+    /// Helper function to log with [Trace](log::Level::Trace) verbosity.
+    pub fn log_trace<T: Into<String>>(&self, msg: T) {
+        trace!(target: &self.instance_name.to_owned(), "{}", msg.into())
+    }
+
     pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
         self.state = Some(state);
     }

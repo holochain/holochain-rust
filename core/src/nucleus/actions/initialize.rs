@@ -160,10 +160,7 @@ pub async fn initialize_chain(
                 ));
             }
             Ok(addr) => {
-                context.log(format!(
-                    "debug/initialize: created public token: {:?}",
-                    addr
-                ));
+                context.log_debug(format!("initialize: created public token: {:?}", addr));
                 Some(addr)
             }
         }

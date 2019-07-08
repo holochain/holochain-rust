@@ -43,8 +43,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     let top_chain_header = match top_chain_header_option {
         Some(top_chain) => top_chain,
         None => {
-            context.log(format!(
-                "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+            context.log_error(format!(
+                "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
             ));
             return ribosome_error_code!(ArgumentDeserializationFailed);

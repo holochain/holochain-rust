@@ -72,16 +72,16 @@ pub async fn call_zome_function(
     zome_call: ZomeFnCall,
     context: Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
-    context.log(format!(
-        "debug/actions/call_zome_fn: Validating call: {:?}",
+    context.log_debug(format!(
+        "actions/call_zome_fn: Validating call: {:?}",
         zome_call
     ));
 
     // 1. Validate the call (a number of things could go wrong)
     validate_call(context.clone(), &zome_call)?;
 
-    context.log(format!(
-        "debug/actions/call_zome_fn: executing call: {:?}",
+    context.log_debug(format!(
+        "actions/call_zome_fn: executing call: {:?}",
         zome_call
     ));
 
@@ -124,8 +124,8 @@ pub async fn call_zome_function(
         })
         .expect("Could not spawn thread for call_zome_function");
 
-    context.log(format!(
-        "debug/actions/call_zome_fn: awaiting for \
+    context.log_debug(format!(
+        "actions/call_zome_fn: awaiting for \
          future call result of {:?}",
         zome_call
     ));
@@ -243,23 +243,23 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
     let cap_functions = grant.functions();
     let maybe_zome_grants = cap_functions.get(&fn_call.zome_name);
     if maybe_zome_grants.is_none() {
-        context.log(format!(
-            "debug/actions/verify_grant: no grant for zome {:?} in grant {:?}",
+        context.log_debug(format!(
+            "actions/verify_grant: no grant for zome {:?} in grant {:?}",
             fn_call.zome_name, cap_functions
         ));
         return false;
     }
     if !maybe_zome_grants.unwrap().contains(&fn_call.fn_name) {
-        context.log(format!(
-            "debug/actions/verify_grant: no grant for function {:?} in grant {:?}",
+        context.log_debug(format!(
+            "actions/verify_grant: no grant for function {:?} in grant {:?}",
             fn_call.fn_name, maybe_zome_grants
         ));
         return false;
     }
 
     if grant.token() != fn_call.cap_token() {
-        context.log(format!(
-            "debug/actions/verify_grant: grant token doesn't match: expecting {:?} got {:?}",
+        context.log_debug(format!(
+            "actions/verify_grant: grant token doesn't match: expecting {:?} got {:?}",
             grant.token(),
             fn_call.cap_token()
         ));

@@ -29,8 +29,8 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
     let message = match parse_direct_message(message_data.content.clone()) {
         Ok(message) => message,
         Err(error) => {
-            context.log(format!(
-                "error/net/handle_send_message: Could not deserialize DirectMessage: {:?}",
+            context.log_error(format!(
+                "net/handle_send_message: Could not deserialize DirectMessage: {:?}",
                 error,
             ));
             return;
@@ -39,34 +39,49 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
 
     match message {
         DirectMessage::Custom(custom_direct_message) => {
-            thread::Builder::new().name(format!("custom_direct_message/{}", ProcessUniqueId::new().to_string())).spawn(move || {
-                if let Err(error) = context.block_on(handle_custom_direct_message(
-                    Address::from(message_data.from_agent_id),
-                    message_data.request_id,
-                    custom_direct_message,
-                    context.clone(),
-                )) {
-                    context.log(format!("err/net: Error handling custom direct message: {:?}", error));
-                }
-            }).expect("Could not spawn thread for handling of custom direct message");
+            thread::Builder::new()
+                .name(format!(
+                    "custom_direct_message/{}",
+                    ProcessUniqueId::new().to_string()
+                ))
+                .spawn(move || {
+                    if let Err(error) = context.block_on(handle_custom_direct_message(
+                        Address::from(message_data.from_agent_id),
+                        message_data.request_id,
+                        custom_direct_message,
+                        context.clone(),
+                    )) {
+                        context.log_error(format!(
+                            "net: Error handling custom direct message: {:?}",
+                            error
+                        ));
+                    }
+                })
+                .expect("Could not spawn thread for handling of custom direct message");
         }
         DirectMessage::RequestValidationPackage(address) => {
             // Async functions only get executed when they are polled.
             // I don't want to wait for this workflow to finish here as it would block the
             // network thread, so I use block_on to poll the async function but do that in
             // another thread:
-            thread::Builder::new().name(format!("validation_package_request/{}", ProcessUniqueId::new().to_string())).spawn(move || {
-                context.block_on(respond_validation_package_request(
-                    Address::from(message_data.from_agent_id),
-                    message_data.request_id,
-                    address,
-                    context.clone(),
-                    &vec![]
-                ));
-            }).expect("Could not spawn thread for handling of validation package request");
+            thread::Builder::new()
+                .name(format!(
+                    "validation_package_request/{}",
+                    ProcessUniqueId::new().to_string()
+                ))
+                .spawn(move || {
+                    context.block_on(respond_validation_package_request(
+                        Address::from(message_data.from_agent_id),
+                        message_data.request_id,
+                        address,
+                        context.clone(),
+                        &vec![],
+                    ));
+                })
+                .expect("Could not spawn thread for handling of validation package request");
         }
-        DirectMessage::ValidationPackage(_) => context.log(
-            "err/net: Got DirectMessage::ValidationPackage as initial message. This should not happen.",
+        DirectMessage::ValidationPackage(_) => context.log_error(
+            "net: Got DirectMessage::ValidationPackage as initial message. This should not happen.",
         ),
     };
 }
@@ -77,8 +92,8 @@ pub fn handle_send_message_result(message_data: MessageData, context: Arc<Contex
     let response = match parse_direct_message(message_data.content.clone()) {
         Ok(message) => message,
         Err(error) => {
-            context.log(format!(
-                "error/net/handle_send_message_result: Could not deserialize DirectMessage: {:?}",
+            context.log_error(format!(
+                "net/handle_send_message_result: Could not deserialize DirectMessage: {:?}",
                 error,
             ));
             return;
@@ -111,8 +126,8 @@ pub fn handle_send_message_result(message_data: MessageData, context: Arc<Contex
                 ActionWrapper::new(Action::ResolveDirectConnection(message_data.request_id));
             dispatch_action(context.action_channel(), action_wrapper.clone());
         }
-        DirectMessage::RequestValidationPackage(_) => context.log(
-            "err/net: Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
+        DirectMessage::RequestValidationPackage(_) => context.log_error(
+            "net: Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
         ),
         DirectMessage::ValidationPackage(maybe_validation_package) => {
             if initial_message.is_none() {

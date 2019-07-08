@@ -185,8 +185,7 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
     // Log & done
     // @TODO make this more sophisticated (truncation or something)
     // right now we have tests that return multiple wasm pages (64k+ bytes) so this is very spammy
-    // runtime.context.log(format!(
-    //     "debug/zome: Zome Function '{}' returned: {}",
+    // runtime.context.log_debug(format!("zome: Zome Function '{}' returned: {}",
     //     zome_call.fn_name, return_log_msg,
     // ));
     let _ = return_log_msg;

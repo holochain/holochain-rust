@@ -18,8 +18,8 @@ pub fn invoke_crypto(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_crypto failed to deserialize SignArgs: {:?}",
+            context.log_error(format!(
+                "zome: invoke_crypto failed to deserialize SignArgs: {:?}",
                 args_str
             ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
@@ -31,8 +31,8 @@ pub fn invoke_crypto(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult
         .execute(crypto_args.payload.clone(), crypto_args.method.clone())
         .map(|sig| JsonString::from_json(&sig));
 
-    context.log(format!(
-        "debug/zome: crypto method {:?} of data:{:?} by:{:?} is:{:?}",
+    context.log_debug(format!(
+        "zome: crypto method {:?} of data:{:?} by:{:?} is:{:?}",
         crypto_args.method, crypto_args.payload, context.agent_id, message
     ));
 

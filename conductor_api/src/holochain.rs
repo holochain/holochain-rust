@@ -152,7 +152,7 @@ impl Holochain {
 
         match result {
             Ok(new_context) => {
-                context.log(format!("debug/conductor: {} instantiated", name));
+                context.log_debug(format!("conductor: {} instantiated", name));
                 let hc = Holochain {
                     instance: Some(instance),
                     context: Some(new_context.clone()),

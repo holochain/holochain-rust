@@ -21,8 +21,8 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         Ok(commit_entry_arg_input) => commit_entry_arg_input,
         // Exit on error
         Err(error) => {
-            context.log(format!(
-                "err/zome: invoke_commit_app_commit_entry_arg failed to \
+            context.log_error(format!(
+                "zome: invoke_commit_app_commit_entry_arg failed to \
                  deserialize Entry: {:?} with error {:?}",
                 args_str, error
             ));

@@ -127,8 +127,8 @@ impl TestNode {
         } else {
             let track_dna_msg = lib3h_protocol::data_types::SpaceData {
                 request_id: "leave_space_req".to_string(),
-                space_address: dna_address.clone().to_string().into_bytes(),
-                agent_id: agent_id.to_string().into_bytes(),
+                space_address: dna_address.clone().into(),
+                agent_id: agent_id.to_string().into(),
             };
             Lib3hClientProtocol::JoinSpace(track_dna_msg).into()
         };
@@ -171,8 +171,8 @@ impl TestNode {
         } else {
             let leave_space_msg = lib3h_protocol::data_types::SpaceData {
                 request_id: "leave_space_req".to_string(),
-                space_address: dna_address.clone().to_string().into_bytes(),
-                agent_id: agent_id.to_string().into_bytes(),
+                space_address: dna_address.clone().into(),
+                agent_id: agent_id.to_string().into(),
             };
             Lib3hClientProtocol::LeaveSpace(leave_space_msg).into()
         };
@@ -437,10 +437,10 @@ impl TestNode {
             JsonProtocol::SendMessage(msg_data.clone()).into()
         } else {
             let msg_data = DirectMessageData {
-                space_address: dna_address.to_string().into_bytes(),
+                space_address: dna_address.to_string().into(),
                 request_id: request_id.clone(),
-                to_agent_id: to_agent_id.to_string().into_bytes(),
-                from_agent_id: from_agent_id.to_string().into_bytes(),
+                to_agent_id: to_agent_id.to_string().into(),
+                from_agent_id: from_agent_id.to_string().into(),
                 content,
             };
             Lib3hClientProtocol::SendDirectMessage(msg_data.clone()).into()
@@ -475,19 +475,19 @@ impl TestNode {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
         assert_eq!(
-            msg.space_address,
-            current_dna.clone().to_string().into_bytes()
+            String::from(msg.space_address),
+            current_dna.clone().to_string()
         );
         assert_eq!(
-            msg.to_agent_id,
-            self.agent_id.clone().to_string().into_bytes()
+            String::from(msg.to_agent_id),
+            self.agent_id.clone().to_string()
         );
         let response = DirectMessageData {
-            space_address: current_dna.clone().to_string().into_bytes(),
+            space_address: current_dna.clone().to_string().into(),
             request_id: msg.request_id,
             to_agent_id: msg.from_agent_id.clone(),
-            from_agent_id: self.agent_id.to_string().into_bytes(),
-            content: response_content.to_string().into_bytes(),
+            from_agent_id: self.agent_id.to_string().into(),
+            content: response_content.to_string().into(),
         };
         self.send(Lib3hClientProtocol::HandleSendDirectMessageResult(response.clone()).into())
             .expect("Sending HandleSendMessageResult failed");

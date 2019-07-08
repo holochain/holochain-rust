@@ -669,26 +669,8 @@ impl Conductor {
                 // the hash provided in the TOML Conductor config file with the computed hash of
                 // the loaded dna.
                 {
-                    // let dna_hash_from_conductor_config = HashString::from({
-                    //     match dna_config.hash {
-                    //         Some(v) => v,
-                    //         None => {
-                    //             // Let's warn the user that we encountered an empty DNA hash in the Conductor
-                    //             // config that is meant to be skipped by the consistency checking mechanisim
-                    //             context.log("warn/Conductor: Invalid DNA hash encountered in the Conductor configuration.");
-                    //             String::from("")
-                    //         }
-                    //     }
-                    // }).to_owned();
-                    let dna_hash_from_conductor_config = HashString::from({
-                        dna_config.hash.unwrap_or_else(|| {
-                            context.log("warn/Conductor: Invalid DNA hash encountered in the Conductor configuration.");
-                            String::default()
-                        })
-                    });
-
+                    let dna_hash_from_conductor_config = HashString::from(dna_config.hash);
                     let dna_hash_computed = &dna.address();
-
 
                     match Arc::get_mut(&mut self.dna_loader)
                         .expect("Fail to get a mutable reference to 'dna loader'.")(&dna_file) {
@@ -1359,7 +1341,7 @@ pub mod tests {
     [[dnas]]
     id = "test-dna"
     file = "app_spec.dna.json"
-    hash = "QmVkG2fB8phQ2RYEX4meYKhHe9VQDFg14nkmawzdqyJK8J"
+    hash = "QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"
 
     [[dnas]]
     id = "bridge-callee"
@@ -1651,8 +1633,7 @@ pub mod tests {
                 .expect(&format!("Fail to load DNA from raw string: {}", fixture))
                 .address(),
         );
-        // let dna_hash_computed = HashString::from("Qmf3ksiaUzihtXrSVPQbwhnn6gszLMiah8e4bcKeaTKAih");
-        let dna_hash_computed = HashString::from("QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a");
+        let dna_hash_computed = HashString::from("QmNPCDBhr6BDBBVWG4mBEVFfhyjsScURYdZoV3fDpzjzgb");
 
         assert_eq!(
             Conductor::check_dna_consistency(&dna_hash_from_file, &dna_hash_computed),

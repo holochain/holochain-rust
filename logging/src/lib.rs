@@ -365,7 +365,7 @@ impl LogMessageTrait for LogMessage {
         let msg = format!(
             "{timestamp} | {thread_name}: {tag} @ l.{line} - {level} - {args}",
             args = self.args.color(msg_color),
-            tag = tag_name,
+            tag = tag_name.bold().color("brightwhite"),
             line = self.line,
             // We might consider retrieving the timestamp once and proceed logging
             // in batch in the future, if this ends up being performance critical

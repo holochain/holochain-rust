@@ -25,3 +25,11 @@ or
 ```bash
 cargo run --example from-toml-fastlog-example
 ```
+
+## CLI Support ##
+
+This logging factory handles the environnement variable **RUST_LOG** as well so it can be use like this (the logger has to be registered):
+
+```bash
+RUST_LOG="debug" path/to/exec
+```

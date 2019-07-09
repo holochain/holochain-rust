@@ -224,8 +224,9 @@ impl IpcNetWorker {
             self.receive(
                 // TODO BLOCKER: what should this actually be changed to?
                 Lib3hServerProtocol::Connected(ConnectedData {
-                    request_id: "abc".into(),
-                    uri: url::Url::parse(bs_node.as_str()).expect("well formed uri"),
+                    request_id: snowflake::ProcessUniqueId::new().to_string(),
+                    uri: url::Url::parse(bs_node.as_str())
+                        .expect("well formed uri for bootstrap node"),
                 })
                 .into(),
             )?;

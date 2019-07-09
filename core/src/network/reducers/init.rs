@@ -28,8 +28,7 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     //    }
 
     let json = Lib3hClientProtocol::JoinSpace(SpaceData {
-        // TODO BLOCKER generate a real request id
-        request_id: "join-space-req-id-fixme".into(),
+        request_id: snowflake::ProcessUniqueId::new().to_string(),
         space_address: network_settings.dna_address.clone(),
         agent_id: network_settings.agent_id.clone().into(),
     });

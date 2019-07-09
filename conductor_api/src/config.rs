@@ -159,7 +159,10 @@ impl Configuration {
     pub fn check_consistency(&self, mut dna_loader: &mut DnaLoader) -> Result<(), String> {
         detect_dupes("agent", self.agents.iter().map(|c| &c.id))?;
         detect_dupes("dna", self.dnas.iter().map(|c| &c.id))?;
+
         detect_dupes("instance", self.instances.iter().map(|c| &c.id))?;
+        self.check_instances_storage()?;
+
         detect_dupes("interface", self.interfaces.iter().map(|c| &c.id))?;
 
         for ref instance in self.instances.iter() {
@@ -512,6 +515,37 @@ impl Configuration {
 
         self
     }
+
+    /// This function checks if there is duplicated file storage from the instances section of a provided
+    /// TOML configuration file. For efficiency purposes, we short-circuit on the first encounter of a
+    /// duplicated values.
+    fn check_instances_storage(&self) -> Result<(), String> {
+        let storage_paths: Vec<&str> = self
+            .instances
+            .iter()
+            .filter_map(|stg_config| match stg_config.storage {
+                StorageConfiguration::File { ref path }
+                | StorageConfiguration::Pickle { ref path } => Some(path.as_str()),
+                _ => None,
+            })
+            .collect();
+
+        // Here we don't use the already implemented 'detect_dupes' function because we don't need
+        // to keep track of all the duplicated values of storage instances. But instead we use the
+        // return value of 'HashSet.insert()' conbined with the short-circuiting propriety of
+        // 'iter().all()' so we don't iterate on all the possible value once we found a duplicated
+        // storage entry.
+        let mut path_set: HashSet<&str> = HashSet::new();
+        let has_uniq_values = storage_paths.iter().all(|&x| path_set.insert(x));
+
+        if !has_uniq_values {
+            Err(String::from(
+                "Forbidden duplicated file storage value encountered.",
+            ))
+        } else {
+            Ok(())
+        }
+    }
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file
@@ -540,7 +574,7 @@ pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
     #[serde(default)]
-    pub hash: Option<String>,
+    pub hash: String,
 }
 
 impl TryFrom<DnaConfiguration> for Dna {
@@ -823,7 +857,7 @@ pub mod tests {
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.dna.json");
-        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
+        assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
     }
 
     #[test]
@@ -887,7 +921,7 @@ pub mod tests {
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.dna.json");
-        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
+        assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();
@@ -983,7 +1017,7 @@ pub mod tests {
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.dna.json");
-        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
+        assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();
@@ -1182,7 +1216,7 @@ pub mod tests {
     agent = "test agent"
         [instances.storage]
         type = "file"
-        path = "app_spec_storage"
+        path = "app1_spec_storage"
 
     [[instances]]
     id = "app2"
@@ -1190,7 +1224,7 @@ pub mod tests {
     agent = "test agent"
         [instances.storage]
         type = "file"
-        path = "app_spec_storage"
+        path = "app2_spec_storage"
 
     [[instances]]
     id = "app3"
@@ -1198,7 +1232,7 @@ pub mod tests {
     agent = "test agent"
         [instances.storage]
         type = "file"
-        path = "app_spec_storage"
+        path = "app3_spec_storage"
 
     {}
     "#, bridges)
@@ -1433,5 +1467,87 @@ pub mod tests {
                     .to_string()
             )
         );
+    }
+
+    #[test]
+    fn test_check_instances_storage() -> Result<(), String> {
+        let toml = r#"
+        [[agents]]
+        id = "test agent 1"
+        keystore_file = "holo_tester.key"
+        name = "Holo Tester 1"
+        public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+        [[agents]]
+        id = "test agent 2"
+        keystore_file = "holo_tester.key"
+        name = "Holo Tester 2"
+        public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+
+        [[instances]]
+        agent = "test agent 1"
+        dna = "app spec rust"
+        id = "app spec instance 1"
+
+            [instances.storage]
+            path = "example-config/tmp-storage-1"
+            type = "file"
+
+        [[instances]]
+        agent = "test agent 2"
+        dna = "app spec rust"
+        id = "app spec instance 2"
+
+            [instances.storage]
+            path = "example-config/tmp-storage-2"
+            type = "file"
+        "#;
+
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+
+        assert_eq!(config.check_instances_storage(), Ok(()));
+        Ok(())
+    }
+
+    #[test]
+    fn test_check_instances_storage_err() -> Result<(), String> {
+        // Here we have a forbidden duplicated 'instances.storage'
+        let toml = r#"
+        [[agents]]
+        id = "test agent 1"
+        keystore_file = "holo_tester.key"
+        name = "Holo Tester 1"
+        public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+        [[instances]]
+        agent = "test agent 1"
+        dna = "app spec rust"
+        id = "app spec instance 1"
+
+            [instances.storage]
+            path = "forbidden-duplicated-storage-file-path"
+            type = "file"
+
+        [[instances]]
+        agent = "test agent 2"
+        dna = "app spec rust"
+        id = "app spec instance 2"
+
+            [instances.storage]
+            path = "forbidden-duplicated-storage-file-path"
+            type = "file"
+        "#;
+
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+
+        assert_eq!(
+            config.check_instances_storage(),
+            Err(String::from(
+                "Forbidden duplicated file storage value encountered."
+            ))
+        );
+        Ok(())
     }
 }

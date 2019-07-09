@@ -31,7 +31,7 @@ ${debugging ? '': 'pattern = "^debug"'}
 
 [network]
 type="n3h"
-n3h_log_level = "${debugging ? 'i' : 'e'}"
+n3h_log_level = "t"
 bootstrap_nodes = []
 n3h_mode = "REAL"
 n3h_persistence_path = "${n3hPath}"
@@ -53,7 +53,7 @@ module.exports = (name, port) => {
     fs.mkdirSync(n3hPath)
     const configPath = path.join(tmpPath, `empty-conductor-${name}.toml`)
 
-    const config = genConfig(port, true, tmpPath, n3hPath)
+    const config = genConfig(port, false, tmpPath, n3hPath)
 
     fs.writeFileSync(configPath, config)
 

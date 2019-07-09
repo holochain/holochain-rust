@@ -13,7 +13,9 @@ use crate::{
 };
 use holochain_net::connection::net_connection::NetHandler;
 use holochain_persistence_api::hash::HashString;
-use lib3h_protocol::protocol_client::Lib3hClientProtocol;
+use lib3h_protocol::{
+    protocol_server::Lib3hServerProtocol
+};
 
 use crate::network::{direct_message::DirectMessage, entry_aspect::EntryAspect};
 use holochain_json_api::json::JsonString;
@@ -60,10 +62,10 @@ StoreEntryAspectData {{
     }}
 }}"#,
         req_id = data.request_id,
-        dna_adr = data.space_address.into(),
-        provider_agent_id = data.provider_agent_id.into(),
-        entry_address = data.entry_address.into(),
-        aspect_address = data.entry_aspect.aspect_address.into(),
+        dna_adr = data.space_address,
+        provider_agent_id = data.provider_agent_id,
+        entry_address = data.entry_address,
+        aspect_address = data.entry_aspect.aspect_address,
         type_hint = data.entry_aspect.type_hint,
         aspect = aspect
     )
@@ -83,7 +85,7 @@ MessageData {{
     content: {content:?},
 }}"#,
         req_id = data.request_id,
-        dna_adr = data.dna_address,
+        dna_adr = data.space_address,
         to = data.to_agent_id,
         from = data.from_agent_id,
         content = message,
@@ -102,13 +104,13 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
         //   context.agent_id.nick, message
         // ));
 
-        let maybe_json_msg = Lib3hClientProtocol::try_from(message);
+        let maybe_json_msg = Lib3hServerProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {
             return Ok(());
         }
         match maybe_json_msg.unwrap() {
-            Lib3hClientProtocol::FailureResult(failure_data) => {
-                if !is_my_dna(&my_dna_address, &failure_data.dna_address.to_string()) {
+            Lib3hServerProtocol::FailureResult(failure_data) => {
+                if !is_my_dna(&my_dna_address, &failure_data.space_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -117,8 +119,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 // TODO: Handle the reception of a FailureResult
             }
-            Lib3hClientProtocol::HandleStoreEntryAspect(dht_entry_data) => {
-                if !is_my_dna(&my_dna_address, &dht_entry_data.dna_address.to_string()) {
+            Lib3hServerProtocol::HandleStoreEntryAspect(dht_entry_data) => {
+                if !is_my_dna(&my_dna_address, &dht_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -127,8 +129,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_store(dht_entry_data, context.clone())
             }
-            Lib3hClientProtocol::HandleFetchEntry(fetch_entry_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_entry_data.dna_address.to_string()) {
+            Lib3hServerProtocol::HandleFetchEntry(fetch_entry_data) => {
+                if !is_my_dna(&my_dna_address, &fetch_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -137,8 +139,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_fetch_entry(fetch_entry_data, context.clone())
             }
-            Lib3hClientProtocol::HandleFetchEntryResult(fetch_result_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_result_data.dna_address.to_string()) {
+            Lib3hServerProtocol::FetchEntryResult(fetch_result_data) => {
+                if !is_my_dna(&my_dna_address, &fetch_result_data.space_address.to_string()) {
                     return Ok(());
                 }
 
@@ -147,8 +149,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     fetch_result_data
                 ));
             }
-            Lib3hClientProtocol::HandleQueryEntry(query_entry_data) => {
-                if !is_my_dna(&my_dna_address, &query_entry_data.dna_address.to_string()) {
+            Lib3hServerProtocol::HandleQueryEntry(query_entry_data) => {
+                if !is_my_dna(&my_dna_address, &query_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -157,10 +159,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_query_entry_data(query_entry_data, context.clone())
             }
-            Lib3hClientProtocol::QueryEntryResult(query_entry_result_data) => {
+            Lib3hServerProtocol::QueryEntryResult(query_entry_result_data) => {
                 if !is_my_dna(
                     &my_dna_address,
-                    &query_entry_result_data.dna_address.to_string(),
+                    &query_entry_result_data.space_address.to_string(),
                 ) {
                     return Ok(());
                 }
@@ -177,8 +179,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_query_entry_result(query_entry_result_data, context.clone())
             }
-            Lib3hClientProtocol::HandleSendMessage(message_data) => {
-                if !is_my_dna(&my_dna_address, &message_data.dna_address.to_string()) {
+            Lib3hServerProtocol::HandleSendDirectMessage(message_data) => {
+                if !is_my_dna(&my_dna_address, &message_data.space_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
@@ -191,8 +193,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_send_message(message_data, context.clone())
             }
-            Lib3hClientProtocol::SendMessageResult(message_data) => {
-                if !is_my_dna(&my_dna_address, &message_data.dna_address.to_string()) {
+            Lib3hServerProtocol::SendDirectMessageResult(message_data) => {
+                if !is_my_dna(&my_dna_address, &message_data.space_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
@@ -205,16 +207,18 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_send_message_result(message_data, context.clone())
             }
-            Lib3hClientProtocol::PeerConnected(peer_data) => {
-                // ignore peer connection of myself
-                if is_my_id(&context, &peer_data.agent_id.to_string()) {
-                    return Ok(());
-                }
+            Lib3hServerProtocol::Connected(peer_data) => {
 
-                context.log(format!("debug/net/handle: PeerConnected: {:?}", peer_data));
+                context.log(format!("debug/net/handle: Connected: {:?}", peer_data));
+
+                // ignore peer connection of myself
+                // TODO BLOCKER could use request id to determine this, if necessary
+//                if is_my_id(&context, &peer_data.agent_id.to_string()) {
+                    return Ok(());
+  //              }
                 // Total hack in lieu of a world-model.
                 // Just republish everything when a new person comes on-line!!
-                republish_all_public_chain_entries(&context);
+               //republish_all_public_chain_entries(&context);
             }
             _ => {}
         }

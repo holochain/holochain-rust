@@ -6,7 +6,6 @@ use crate::{
 use holochain_net::{connection::net_connection::NetSend, p2p_network::P2pNetwork};
 use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol};
 use std::{
-    convert::TryInto,
     sync::{Arc, Mutex},
 };
 
@@ -32,11 +31,11 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     //    }
 
     let json = Lib3hClientProtocol::JoinSpace(SpaceData {
+        // TODO BLOCKER generate a real request id
+        request_id: "join-space-req-id-fixme".into(),
         space_address: network_settings
             .dna_address
-            .clone()
-            .try_into()
-            .expect("space address"),
+            .clone(),
         agent_id: network_settings.agent_id.clone().into(),
     });
 

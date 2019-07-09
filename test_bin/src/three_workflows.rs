@@ -7,6 +7,7 @@ use holochain_net::{
 use lib3h_protocol::{
     data_types::{ConnectData, EntryData},
     protocol_client::Lib3hClientProtocol,
+    protocol_server::Lib3hServerProtocol,
 };
 
 use holochain_persistence_api::cas::content::Address;
@@ -14,7 +15,7 @@ use p2p_node::test_node::TestNode;
 use std::time::SystemTime;
 
 /// Do normal setup: 'TrackDna' & 'Connect',
-/// and check that we received 'PeerConnected'
+/// and check that we received 'Connected'
 #[cfg_attr(tarpaulin, skip)]
 pub fn setup_three_nodes(
     alex: &mut TestNode,
@@ -28,7 +29,7 @@ pub fn setup_three_nodes(
     alex.track_dna(dna_address, true)
         .expect("Failed sending TrackDna on alex");
     let connect_result_1 = alex
-        .wait_json(Box::new(one_is!(Lib3hClientProtocol::PeerConnected(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
         .unwrap();
     println!("self connected result 1: {:?}", connect_result_1);
     // billy
@@ -36,7 +37,7 @@ pub fn setup_three_nodes(
         .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
-        .wait_json(Box::new(one_is!(Lib3hClientProtocol::PeerConnected(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
         .unwrap();
     println!("self connected result 2: {:?}", connect_result_2);
     // camille
@@ -44,102 +45,80 @@ pub fn setup_three_nodes(
         .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on camille");
     let connect_result_3 = camille
-        .wait_json(Box::new(one_is!(Lib3hClientProtocol::PeerConnected(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
         .unwrap();
     println!("self connected result 2: {:?}", connect_result_3);
 
     // get ipcServer IDs for each node from the IpcServer's state
     if can_connect {
         let mut _node1_id = String::new();
-        let mut node2_binding = String::new();
-
-        alex.send(Lib3hClientProtocol::GetState.into())
-            .expect("Failed sending RequestState on alex");
-        let alex_state = alex
-            .wait_json(Box::new(one_is!(Lib3hClientProtocol::GetStateResult(_))))
-            .unwrap();
-        billy
-            .send(Lib3hClientProtocol::GetState.into())
-            .expect("Failed sending RequestState on billy");
-        let billy_state = billy
-            .wait_json(Box::new(one_is!(Lib3hClientProtocol::GetStateResult(_))))
-            .unwrap();
-        camille
-            .send(Lib3hClientProtocol::GetState.into())
-            .expect("Failed sending RequestState on camille");
-        let camille_state = camille
-            .wait_json(Box::new(one_is!(Lib3hClientProtocol::GetStateResult(_))))
-            .unwrap();
-
-        one_let!(Lib3hClientProtocol::GetStateResult(state) = alex_state {
-            _node1_id = state.id
-        });
-        one_let!(Lib3hClientProtocol::GetStateResult(state) = billy_state {
-            if !state.bindings.is_empty() {
-                node2_binding = state.bindings[0].clone();
-            }
-        });
-        one_let!(
-            Lib3hClientProtocol::GetStateResult(_state) = camille_state {
-            // n/a
-        }
-        );
+        let node2_binding = String::new();
 
         // Connect nodes between them
         println!("Connect Alex to Billy ({})", node2_binding);
         alex.send(
             Lib3hClientProtocol::Connect(ConnectData {
-                peer_address: node2_binding.clone().into(),
+                request_id: "alex_to_billy_request_id".into(),
+                peer_uri: url::Url::parse(node2_binding.clone().as_str())
+                    .expect("well formed node 2 uri (billy)"),
+                network_id: "".into()
             })
             .into(),
         )?;
         // Make sure Peers are connected
         let result_a = alex
-            .wait_json(Box::new(one_is!(Lib3hClientProtocol::PeerConnected(_))))
+            .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
             .unwrap();
         println!("got connect result A: {:?}", result_a);
-        one_let!(Lib3hClientProtocol::PeerConnected(d) = result_a {
-            assert_eq!(d.agent_id, *BILLY_AGENT_ID);
+        one_let!(Lib3hServerProtocol::Connected(d) = result_a {
+            assert_eq!(d.request_id, "alex_to_billy_request_id");
+            assert_eq!(d.uri.to_string(), node2_binding.clone());
         });
         let result_b = billy
-            .wait_json(Box::new(one_is!(Lib3hClientProtocol::PeerConnected(_))))
+            .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
             .unwrap();
         println!("got connect result B: {:?}", result_b);
-        one_let!(Lib3hClientProtocol::PeerConnected(d) = result_b {
-            assert_eq!(d.agent_id, *ALEX_AGENT_ID);
-        });
+        one_let!(Lib3hServerProtocol::Connected(d) = result_b {
+            assert_eq!(d.request_id, "alex_to_billy_request_id");
+            assert_eq!(d.uri.to_string(), node2_binding.clone());
+         });
 
         // Connect nodes between them
         println!("Connect  Camille to Billy ({})", node2_binding);
         camille.send(
             Lib3hClientProtocol::Connect(ConnectData {
-                peer_address: node2_binding.into(),
-            })
+                request_id: "camille_to_billy_request_id".into(),
+                peer_uri: url::Url::parse(node2_binding.clone().as_str())
+                    .expect("well formed billy (node2) ur"),
+                network_id: "".into()
+             })
             .into(),
         )?;
 
         // Make sure Peers are connected
 
         let result_b = billy
-            .wait_json(Box::new(one_is_where!(
-                Lib3hClientProtocol::PeerConnected(data),
-                { data.agent_id == *CAMILLE_AGENT_ID }
+            .wait_lib3h(Box::new(one_is_where!(
+                Lib3hServerProtocol::Connected(data),
+                { data.request_id == String::from("camille_to_billy_request_id") }
             )))
             .unwrap();
         println!("got connect result on Billy: {:?}", result_b);
 
+        // TODO BLOCKER used to be PeerConnected
         let result_c = camille
-            .wait_json(Box::new(one_is_where!(
-                Lib3hClientProtocol::PeerConnected(data),
-                { data.agent_id == *BILLY_AGENT_ID }
+            .wait_lib3h(Box::new(one_is_where!(
+                Lib3hServerProtocol::Connected(data),
+                { data.request_id == String::from("fixme") }
             )))
             .unwrap();
         println!("got connect result on Camille: {:?}", result_c);
 
+        // TODO BLOCKER used to be PeerConnected
         let result_a = alex
-            .wait_json(Box::new(one_is_where!(
-                Lib3hClientProtocol::PeerConnected(data),
-                { data.agent_id == *CAMILLE_AGENT_ID }
+            .wait_lib3h(Box::new(one_is_where!(
+                Lib3hServerProtocol::Connected(data),
+                { data.request_id == String::from("fixme") }
             )))
             .unwrap();
         println!("got connect result on Alex: {:?}", result_a);
@@ -193,14 +172,14 @@ pub fn hold_and_publish_test(
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     log_d!("Alex has_received 3: {}", has_received);
     // billy might receive HandleStoreEntryAspect
-    let res = billy.wait_json_with_timeout(
-        Box::new(one_is!(Lib3hClientProtocol::HandleStoreEntryAspect(_))),
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
     log_i!("Billy got res 1: {:?}", res);
     // Camille might receive HandleStoreEntryAspect
-    let res = camille.wait_json_with_timeout(
-        Box::new(one_is!(Lib3hClientProtocol::HandleStoreEntryAspect(_))),
+    let res = camille.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
     log_i!("Camille got res 1: {:?}", res);
@@ -216,14 +195,14 @@ pub fn hold_and_publish_test(
     let has_received = billy.wait_HandleFetchEntry_and_reply();
     log_d!("Billy has_received 2: {}", has_received);
     // billy might receive HandleStoreEntryAspect
-    let res = alex.wait_json_with_timeout(
-        Box::new(one_is!(Lib3hClientProtocol::HandleStoreEntryAspect(_))),
+    let res = alex.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
     log_i!("Alex got res 2: {:?}", res);
     // Camille might receive HandleStoreEntryAspect
-    let res = camille.wait_json_with_timeout(
-        Box::new(one_is!(Lib3hClientProtocol::HandleStoreEntryAspect(_))),
+    let res = camille.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
     log_i!("Camille got res 2: {:?}", res);
@@ -241,19 +220,19 @@ pub fn hold_and_publish_test(
     let mut result = camille.find_recv_json_msg(
         0,
         Box::new(one_is_where!(
-            Lib3hClientProtocol::QueryEntryResult(entry_data),
+            Lib3hServerProtocol::QueryEntryResult(entry_data),
             { entry_data.request_id == req_id }
         )),
     );
     if result.is_none() {
-        result = camille.wait_json(Box::new(one_is_where!(
-            Lib3hClientProtocol::QueryEntryResult(entry_data),
+        result = camille.wait_lib3h(Box::new(one_is_where!(
+            Lib3hServerProtocol::QueryEntryResult(entry_data),
             { entry_data.request_id == query_entry.request_id }
         )))
     }
     let json = result.unwrap();
     log_i!("got result 1: {:?}", json);
-    let query_data = unwrap_to!(json => Lib3hClientProtocol::QueryEntryResult);
+    let query_data = unwrap_to!(json => Lib3hServerProtocol::QueryEntryResult);
     let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
@@ -271,19 +250,19 @@ pub fn hold_and_publish_test(
     let mut result = camille.find_recv_json_msg(
         0,
         Box::new(one_is_where!(
-            Lib3hClientProtocol::QueryEntryResult(entry_data),
+            Lib3hServerProtocol::QueryEntryResult(entry_data),
             { entry_data.request_id == req_id }
         )),
     );
     if result.is_none() {
-        result = camille.wait_json(Box::new(one_is_where!(
-            Lib3hClientProtocol::QueryEntryResult(entry_data),
+        result = camille.wait_lib3h(Box::new(one_is_where!(
+            Lib3hServerProtocol::QueryEntryResult(entry_data),
             { entry_data.request_id == query_data.request_id }
         )))
     }
     let json = result.unwrap();
     log_i!("got result 2: {:?}", json);
-    let query_data = unwrap_to!(json => Lib3hClientProtocol::QueryEntryResult);
+    let query_data = unwrap_to!(json => Lib3hServerProtocol::QueryEntryResult);
     let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_2.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
@@ -334,9 +313,9 @@ pub fn publish_entry_stress_test(
     let address_42_clone = address_42.clone();
     // #fullsync
     // wait for store entry request
-    let result = camille.wait_json_with_timeout(
+    let result = camille.wait_lib3h_with_timeout(
         Box::new(one_is_where!(
-            Lib3hClientProtocol::HandleStoreEntryAspect(entry_data),
+            Lib3hServerProtocol::HandleStoreEntryAspect(entry_data),
             { entry_data.entry_address == address_42_clone }
         )),
         10000,
@@ -366,14 +345,14 @@ pub fn publish_entry_stress_test(
     let mut result = camille.find_recv_json_msg(
         0,
         Box::new(one_is_where!(
-            Lib3hClientProtocol::QueryEntryResult(entry_data),
+            Lib3hServerProtocol::QueryEntryResult(entry_data),
             { entry_data.request_id == req_id }
         )),
     );
     if result.is_none() {
-        result = camille.wait_json_with_timeout(
+        result = camille.wait_lib3h_with_timeout(
             Box::new(one_is_where!(
-                Lib3hClientProtocol::QueryEntryResult(entry_data),
+                Lib3hServerProtocol::QueryEntryResult(entry_data),
                 { entry_data.request_id == query_entry.request_id }
             )),
             10000,
@@ -381,7 +360,7 @@ pub fn publish_entry_stress_test(
     }
     let json = result.unwrap();
     log_i!("got result 1: {:?}", json);
-    let query_data = unwrap_to!(json => Lib3hClientProtocol::QueryEntryResult);
+    let query_data = unwrap_to!(json => Lib3hServerProtocol::QueryEntryResult);
     let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
     assert_eq!(query_data.entry_address, address_42.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);

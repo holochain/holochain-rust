@@ -11,7 +11,6 @@ use lib3h::{
     transport_wss::TransportWss,
 };
 
-use lib3h_crypto_api::{FakeCryptoSystem, InsecureBuffer};
 use lib3h_protocol::network_engine::NetworkEngine;
 
 /// A worker that makes use of lib3h / NetworkEngine.
@@ -23,8 +22,7 @@ use lib3h_protocol::network_engine::NetworkEngine;
 pub struct Lib3hWorker {
     handler: NetHandler,
     can_send_P2pReady: bool,
-    net_engine:
-        RealEngine<TransportWss<std::net::TcpStream>, MirrorDht, InsecureBuffer, FakeCryptoSystem>,
+    net_engine: RealEngine<TransportWss<std::net::TcpStream>, MirrorDht>,
 }
 
 /// Constructors
@@ -34,7 +32,12 @@ impl Lib3hWorker {
         Ok(Lib3hWorker {
             handler,
             can_send_P2pReady: true,
-            net_engine: RealEngine::new(real_config, "FIXME", MirrorDht::new_with_config)?,
+            net_engine: RealEngine::new(
+                Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
+                real_config,
+                "FIXME",
+                MirrorDht::new_with_config,
+            )?,
         })
     }
 }

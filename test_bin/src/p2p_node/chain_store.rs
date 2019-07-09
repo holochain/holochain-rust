@@ -44,7 +44,7 @@ impl ChainStore {
 
     /// Return Err if Entry is already known
     pub fn author_entry(&mut self, entry: &EntryData) -> Result<(), ()> {
-        if self.has(&entry.entry_address.into()) {
+        if self.has(&entry.entry_address) {
             return Err(());
         }
         self.authored_entry_store.insert_entry(entry);
@@ -53,7 +53,7 @@ impl ChainStore {
 
     /// Return Err if Entry is already known
     pub fn hold_entry(&mut self, entry: &EntryData) -> Result<(), ()> {
-        if self.has(&entry.entry_address.into()) {
+        if self.has(&entry.entry_address) {
             return Err(());
         }
         self.stored_entry_store.insert_entry(entry);
@@ -67,7 +67,7 @@ impl ChainStore {
         aspect: &EntryAspectData,
     ) -> Result<(), ()> {
         if self
-            .get_aspect(entry_address, &aspect.aspect_address.into())
+            .get_aspect(entry_address, &aspect.aspect_address)
             .is_some()
         {
             return Err(());
@@ -84,7 +84,7 @@ impl ChainStore {
         aspect: &EntryAspectData,
     ) -> Result<(), ()> {
         if self
-            .get_aspect(entry_address, &aspect.aspect_address.into())
+            .get_aspect(entry_address, &aspect.aspect_address)
             .is_some()
         {
             return Err(());

@@ -29,7 +29,7 @@ objekt= "=0.1.2"
 holochain_persistence_api = "=0.0.4-alpha1"
 holochain_json_derive = "=0.0.1-alpha2"
 holochain_json_api = "=0.0.1-alpha2"
-lib3h_crypto_api = "=0.0.3-alpha1"
+lib3h_crypto_api = "=0.0.4-alpha1"
 uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
 shrinkwraprs = "=0.2.1"

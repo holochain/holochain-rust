@@ -34,18 +34,18 @@ impl EntryStore {
             "EntryStore: adding content for '{:?}'",
             entry.entry_address
         );
-        if self.store.get(&entry.entry_address.into()).is_none() {
+        if self.store.get(&entry.entry_address).is_none() {
             let mut map = HashMap::new();
             log_tt!("entrystore", "  -> first content!");
             for aspect in entry.aspect_list.clone() {
-                map.insert(aspect.aspect_address.into(), aspect.clone().into());
+                map.insert(aspect.aspect_address.clone(), aspect.clone());
             }
-            self.store.insert(entry.entry_address.into(), map);
+            self.store.insert(entry.entry_address.clone(), map);
             return;
         }
-        if let Some(map) = self.store.get_mut(&entry.entry_address.into()) {
+        if let Some(map) = self.store.get_mut(&entry.entry_address) {
             for aspect in entry.aspect_list.clone() {
-                map.insert(aspect.aspect_address.into(), aspect.clone());
+                map.insert(aspect.aspect_address.clone(), aspect.clone());
             }
         }
     }
@@ -61,12 +61,12 @@ impl EntryStore {
         if self.store.get(&entry_address).is_none() {
             let mut map = HashMap::new();
             log_tt!("entrystore", "  -> first content!");
-            map.insert(aspect.aspect_address.into(), aspect.clone());
+            map.insert(aspect.aspect_address.clone(), aspect.clone());
             self.store.insert(entry_address.clone(), map);
             return;
         }
         if let Some(map) = self.store.get_mut(&entry_address) {
-            map.insert(aspect.aspect_address.into(), aspect.clone());
+            map.insert(aspect.aspect_address.clone(), aspect.clone());
         }
     }
 

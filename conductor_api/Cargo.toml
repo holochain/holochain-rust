@@ -11,11 +11,11 @@ holochain_json_api = "=0.0.1-alpha2"
 holochain_persistence_api = "=0.0.4-alpha1"
 holochain_persistence_mem = "=0.0.4-alpha1"
 holochain_persistence_file = "=0.0.4-alpha1"
-holochain_persistence_pickle = "=0.0.1-alpha6"
+holochain_persistence_pickle = "=0.0.4-alpha1"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
-lib3h ="=0.0.3-alpha1"
-lib3h_sodium = "=0.0.3-alpha1"
+lib3h = "=0.0.4-alpha1"
+lib3h_sodium = "=0.0.4-alpha1"
 holochain_common = { path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"

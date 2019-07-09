@@ -620,8 +620,7 @@ impl InMemoryServer {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     for (k, r) in e.get_mut().iter() {
-                        let k_address: &Vec<u8> = &k.try_into().unwrap();
-                        if k_address == &msg.requester_agent_id {
+                        if k == &msg.requester_agent_id {
                             self.log.i(&format!("---- HandleQueryEntry {}", k));
                             r.send(Lib3hServerProtocol::HandleQueryEntry(msg.clone()).into())?;
                             return Ok(());

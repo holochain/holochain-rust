@@ -18,7 +18,7 @@ fn reduce_get_entry_inner(
         Lib3hClientProtocol::QueryEntry(QueryEntryData {
             requester_agent_id: network_state.agent_id.clone().unwrap().into(),
             request_id: key.id.clone(),
-            dna_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap(),
             entry_address: key.address.clone(),
             query: query_json.to_string().into_bytes(),
         }),

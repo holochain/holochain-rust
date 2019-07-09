@@ -1,4 +1,5 @@
 use constants::*;
+
 use holochain_net::{
     connection::{net_connection::NetSend, protocol::Protocol, NetResult},
     tweetlog::TWEETLOG,
@@ -10,7 +11,6 @@ use lib3h_protocol::{
     protocol_server::Lib3hServerProtocol,
 };
 use p2p_node::test_node::TestNode;
-use std::convert::TryInto;
 
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
@@ -93,7 +93,7 @@ pub fn setup_two_nodes(
     // get ipcServer IDs for each node from the IpcServer's state
     if can_connect {
         let mut _node1_id = String::new();
-        let mut node2_binding = String::new();
+        let node2_binding = String::new();
         /*
                 alex.send(Lib3hServerProtocol::GetState.into())
                     .expect("Failed sending RequestState on alex");
@@ -121,7 +121,8 @@ pub fn setup_two_nodes(
         alex.send(
             Lib3hClientProtocol::Connect(ConnectData {
                 request_id: "alex_send_connect".into(),
-                peer_transport: node2_binding.into(),
+                peer_uri: url::Url::parse(node2_binding.as_str())
+                    .expect("malformed node2 url"),
                 network_id: "alex_to_node2".into(),
             })
             .into(),
@@ -134,7 +135,7 @@ pub fn setup_two_nodes(
         log_i!("got connect result A: {:?}", result_a);
         one_let!(Lib3hServerProtocol::Connected(d) = result_a {
            assert_eq!(d.request_id, "alex_send_connect");
-           assert_eq!(d.network_transport, node2_binding);
+           assert_eq!(d.uri.to_string(), node2_binding);
         });
         let result_b = billy
             .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
@@ -142,7 +143,7 @@ pub fn setup_two_nodes(
         log_i!("got connect result B: {:?}", result_b);
         one_let!(Lib3hServerProtocol::Connected(d) = result_b {
            assert_eq!(d.request_id, "alex_send_connect");
-           assert_eq!(d.network_transport, node2_binding);
+           assert_eq!(d.uri.to_string(), node2_binding);
         });
     }
 
@@ -304,14 +305,14 @@ pub fn dht_two_aspects_test(
     let json = result_a.unwrap();
     log_i!("got HandleStoreEntryAspect on node A: {:?}", json);
     let store_data_1 = unwrap_to!(json => Lib3hServerProtocol::HandleStoreEntryAspect);
-    let entry_address_1: Vec<u8> = ENTRY_ADDRESS_1.clone().try_into().unwrap();
+    let entry_address_1 = ENTRY_ADDRESS_1.clone();
     let aspect_address: HashString = store_data_1.entry_aspect.aspect_address.clone().into();
 
     assert_eq!(store_data_1.entry_address, entry_address_1);
     assert!(aspect_address == *ASPECT_ADDRESS_1 || aspect_address == *ASPECT_ADDRESS_2);
     assert!(
-        store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_CONTENT_1
-            || store_data_1.entry_aspect.aspect_address.clone() == *ASPECT_CONTENT_2
+        store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1
+            || store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
     );
     // 2nd store
     let result_a = alex.wait_lib3h(Box::new(one_is!(
@@ -683,7 +684,7 @@ pub fn two_authors_test(
     let query_data = unwrap_to!(result => Lib3hServerProtocol::QueryEntryResult);
     let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
     log_i!("got query_result: {:?}", query_result);
-    let entry_address_1: Vec<u8> = ENTRY_ADDRESS_1.clone().try_into().unwrap();
+    let entry_address_1 = ENTRY_ADDRESS_1.clone();
 
     assert_eq!(query_data.entry_address, entry_address_1);
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);

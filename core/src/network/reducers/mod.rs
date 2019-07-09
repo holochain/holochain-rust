@@ -108,11 +108,6 @@ pub fn send(
         ))?
 }
 
-fn address_to_vec(address: &Address) -> Vec<&u8> {
-    let address_string: String = address.clone().unwrap().into();
-    address_string.as_bytes().into()
-}
-
 /// Sends the given DirectMessage to the node given by to_agent_id.
 /// This creates a transient connection as every node-to-node communication follows a
 /// request-response pattern. This function therefore logs the open connection
@@ -126,11 +121,11 @@ pub fn send_message(
 
     let content_json_string: JsonString = message.to_owned().into();
     let content = content_json_string.to_bytes();
-    let space_address = address_to_vec(network_state.dna_address.clone().unwrap());
+    let space_address = network_state.dna_address.clone().unwrap();
     let data = DirectMessageData {
         request_id: id.clone(),
         space_address,
-        to_agent_id: address_to_vec(to_agent_id.clone()),
+        to_agent_id: to_agent_id.clone(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
         content,
     };

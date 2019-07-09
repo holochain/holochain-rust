@@ -31,7 +31,7 @@ fn reduce_respond_get_links_inner(
         Lib3hClientProtocol::HandleQueryEntryResult(QueryEntryResultData {
             request_id: query_data.request_id.clone(),
             requester_agent_id: query_data.requester_agent_id.clone(),
-            dna_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap(),
             responder_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry_address: query_data.entry_address.clone().into(),
             query_result: query_result_json.to_string().into_bytes(),

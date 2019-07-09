@@ -1,12 +1,11 @@
 use crate::{
-    action::ActionWrapper,
+    action::{Action, ActionWrapper},
     conductor_api::ConductorApi,
     instance::Observer,
     logger::Logger,
     nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
-    state::State,
 };
 use futures::{
     task::{noop_local_waker_ref, Poll},
@@ -21,6 +20,7 @@ use holochain_persistence_api::{
     eav::EntityAttributeValueStorage,
 };
 
+use crate::state::StateWrapper;
 use holochain_core_types::{
     agent::AgentId,
     dna::{wasm::DnaWasm, Dna},
@@ -54,7 +54,7 @@ pub struct Context {
     pub agent_id: AgentId,
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
-    state: Option<Arc<RwLock<State>>>,
+    state: Option<Arc<RwLock<StateWrapper>>>,
     pub action_channel: Option<SyncSender<ActionWrapper>>,
     pub observer_channel: Option<SyncSender<Observer>>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
@@ -63,6 +63,7 @@ pub struct Context {
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
     pub(crate) signal_tx: Option<crossbeam_channel::Sender<Signal>>,
+    pub(crate) instance_is_alive: Arc<Mutex<bool>>,
 }
 
 impl Context {
@@ -121,6 +122,7 @@ impl Context {
                 conductor_api,
                 agent_id,
             )),
+            instance_is_alive: Arc::new(Mutex::new(true)),
         }
     }
 
@@ -148,6 +150,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
+            instance_is_alive: Arc::new(Mutex::new(true)),
         })
     }
 
@@ -161,11 +164,11 @@ impl Context {
         logger.log(msg.into());
     }
 
-    pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
+    pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
         self.state = Some(state);
     }
 
-    pub fn state(&self) -> Option<RwLockReadGuard<State>> {
+    pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         self.state.as_ref().map(|s| s.read().unwrap())
     }
 
@@ -218,6 +221,23 @@ impl Context {
             .expect("Action channel not initialized")
     }
 
+    pub fn is_action_channel_open(&self) -> bool {
+        self.action_channel
+            .clone()
+            .map(|tx| tx.send(ActionWrapper::new(Action::Ping)).is_ok())
+            .unwrap_or(false)
+    }
+
+    pub fn action_channel_error(&self, msg: &str) -> Option<HolochainError> {
+        match &self.action_channel {
+            Some(tx) => match tx.send(ActionWrapper::new(Action::Ping)) {
+                Ok(()) => None,
+                Err(_) => Some(HolochainError::LifecycleError(msg.into())),
+            },
+            None => Some(HolochainError::InitializationFailed(msg.into())),
+        }
+    }
+
     pub fn signal_tx(&self) -> Option<&crossbeam_channel::Sender<Signal>> {
         self.signal_tx.as_ref()
     }
@@ -226,6 +246,10 @@ impl Context {
         self.observer_channel
             .as_ref()
             .expect("Observer channel not initialized")
+    }
+
+    pub fn instance_still_alive(&self) -> bool {
+        *self.instance_is_alive.lock().unwrap()
     }
 
     /// This creates an observer for the instance's redux loop and installs it.
@@ -252,6 +276,12 @@ impl Context {
                 Poll::Ready(result) => return result,
                 _ => tick_rx.recv_timeout(Duration::from_millis(10)),
             };
+            if !self.instance_still_alive() {
+                panic!("Context::block_on() waiting for future but instance is not alive anymore => we gotta let this thread panic!")
+            }
+            if let Some(err) = self.action_channel_error("Context::block_on") {
+                panic!("Context::block_on() waiting for future but Redux loop got stopped => we gotta let this thread panic!\nError was: {:?}", err)
+            }
         }
     }
 
@@ -324,7 +354,7 @@ pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
 pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
-    use crate::{logger::test_logger, persister::SimplePersister, state::State};
+    use crate::{logger::test_logger, persister::SimplePersister};
     use holochain_core_types::agent::AgentId;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Arc, Mutex, RwLock};
@@ -357,7 +387,9 @@ pub mod tests {
 
         assert!(maybe_context.state().is_none());
 
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(maybe_context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(
+            maybe_context.clone(),
+        ))));
         maybe_context.set_state(global_state.clone());
 
         {
@@ -388,7 +420,7 @@ pub mod tests {
             None,
         );
 
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
 
         {

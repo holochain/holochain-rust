@@ -41,9 +41,9 @@ pub mod tests {
         let netname = Some("get_entry_roundtrip");
         let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
-        let (_, context1) =
+        let (_instance1, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
-        let (_, context2) =
+        let (_instance2, context2) =
             test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
 
         // Create Entry & metadata
@@ -95,9 +95,9 @@ pub mod tests {
         let netname = Some("get_entry_results_roundtrip");
         let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
-        let (_, context1) =
+        let (_instance1, context1) =
             test_instance_and_context_by_name(dna.clone(), "alex", netname).unwrap();
-        let (_, context2) =
+        let (_instance2, context2) =
             test_instance_and_context_by_name(dna.clone(), "billy", netname).unwrap();
 
         // Create Entry & crud-status metadata, and store it.
@@ -138,8 +138,9 @@ pub mod tests {
         let netname = Some("get_non_existant_entry");
         let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
-        let (_, _) = test_instance_and_context_by_name(dna.clone(), "alice2", netname).unwrap();
-        let (_, context2) =
+        let (_instance1, _) =
+            test_instance_and_context_by_name(dna.clone(), "alice2", netname).unwrap();
+        let (_instance2, context2) =
             test_instance_and_context_by_name(dna.clone(), "bob2", netname).unwrap();
 
         let entry = test_entry();
@@ -163,7 +164,7 @@ pub mod tests {
         let netname = Some("get_when_alone");
         let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
-        let (_, context1) =
+        let (_instance1, context1) =
             test_instance_and_context_by_name(dna.clone(), "bob3", netname).unwrap();
 
         // Create Entry
@@ -191,6 +192,7 @@ pub mod tests {
             CrudStatus::Live
         );
     }
+
     #[test]
     fn get_validation_package_roundtrip() {
         let netname = Some("get_validation_package_roundtrip");
@@ -198,7 +200,7 @@ pub mod tests {
         let mut dna = create_test_dna_with_wat("test_zome", Some(wat));
         dna.uuid = netname.unwrap().to_string();
 
-        let (_, context1) =
+        let (_instance1, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
 
         let entry = test_entry();
@@ -211,11 +213,11 @@ pub mod tests {
             .get_most_recent_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
 
-        let (_, context2) =
+        let (_instance2, context2) =
             test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
         let result = context2.block_on(get_validation_package(header.clone(), &context2));
 
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "actual result: {:?}", result);
         let maybe_validation_package = result.unwrap();
         assert!(maybe_validation_package.is_some());
         let validation_package = maybe_validation_package.unwrap();
@@ -230,9 +232,9 @@ pub mod tests {
         let wat = &test_wat_always_valid();
         let mut dna = create_test_dna_with_wat("test_zome", Some(wat));
         dna.uuid = netname.unwrap().to_string();
-        let (_, context1) =
+        let (_instance1, context1) =
             test_instance_and_context_by_name(dna.clone(), "alex2", netname).unwrap();
-        let (_, context2) =
+        let (_instance2, context2) =
             test_instance_and_context_by_name(dna.clone(), "billy2", netname).unwrap();
 
         let mut entry_addresses: Vec<Address> = Vec::new();

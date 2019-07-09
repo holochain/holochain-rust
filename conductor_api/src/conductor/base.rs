@@ -21,7 +21,7 @@ use holochain_core_types::{
 };
 
 use holochain_json_api::json::JsonString;
-use holochain_persistence_api::cas::content::AddressableContent;
+use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -670,6 +670,50 @@ impl Conductor {
                     ))
                 })?;
 
+                // This is where we are checking the consistency between DNAs: for now we compare
+                // the hash provided in the TOML Conductor config file with the computed hash of
+                // the loaded dna.
+                {
+                    let dna_hash_from_conductor_config = HashString::from(dna_config.hash);
+                    let dna_hash_computed = &dna.address();
+
+                    match Arc::get_mut(&mut self.dna_loader)
+                        .expect("Fail to get a mutable reference to 'dna loader'.")(&dna_file) {
+                        // If the file is correctly loaded, meaning it exists in the file system,
+                        // we can operate on its computed DNA hash
+                        Ok(dna) => {
+                            let dna_hash_computed_from_file = HashString::from(dna.address());
+                            Conductor::check_dna_consistency_from_all_sources(
+                                &context,
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed,
+                                &dna_hash_computed_from_file, &dna_file)?;
+                        },
+                        Err(_) => {
+                            let msg = format!("err/Conductor: Could not load DNA file {:?}.", &dna_file);
+                            context.log(msg);
+
+                            // If something is wrong with the DNA file, we only
+                            // check the 2 primary sources of DNA's hashes
+                            match Conductor::check_dna_consistency(
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed) {
+                                Ok(_) => (),
+                                Err(e) => {
+                                    let msg = format!("\
+                                    err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
+                                    '{}' != '{}'",
+                                    &dna_hash_from_conductor_config,
+                                    &dna_hash_computed);
+                                    context.log(msg);
+
+                                    return Err(e.to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+
                 let context = Arc::new(context);
                 Holochain::load(context.clone())
                     .and_then(|hc| {
@@ -806,6 +850,84 @@ impl Conductor {
         }
         self.get_keystore_for_agent(agent_id)?;
         Ok(())
+    }
+
+    /// Checks DNA's hashes from all sources:
+    /// - dna_hash_from_conductor_config: from the Conductor configuration
+    /// - dna_hash_computed: from the hash computed based on the loaded DNA
+    /// and
+    /// - dna_hash_computed_from_file: from the hash computed from the loaded DNA of the file.dna
+    fn check_dna_consistency_from_all_sources(
+        ctx: &holochain_core::context::Context,
+        dna_hash_from_conductor_config: &HashString,
+        dna_hash_computed: &HashString,
+        dna_hash_computed_from_file: &HashString,
+        dna_file: &PathBuf,
+    ) -> Result<(), HolochainError> {
+        match Conductor::check_dna_consistency(&dna_hash_from_conductor_config, &dna_hash_computed)
+        {
+            Ok(_) => (),
+            Err(e) => {
+                let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
+                                '{}' != '{}'",
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed);
+                ctx.log(msg);
+
+                return Err(e);
+            }
+        }
+
+        match Conductor::check_dna_consistency(
+            &dna_hash_from_conductor_config,
+            &dna_hash_computed_from_file,
+        ) {
+            Ok(_) => (),
+            Err(e) => {
+                let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Hash computed from the file {:?}': \
+                                '{}' != '{}'",
+                                &dna_file,
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed_from_file);
+                ctx.log(msg);
+
+                return Err(e);
+            }
+        }
+
+        match Conductor::check_dna_consistency(&dna_hash_computed, &dna_hash_computed_from_file) {
+            Ok(_) => (),
+            Err(e) => {
+                let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'Conductor instance' != 'Hash computed from the file {:?}': \
+                                '{}' != '{}'",
+                                &dna_file,
+                                &dna_hash_computed,
+                                &dna_hash_computed_from_file);
+                ctx.log(msg);
+
+                return Err(e);
+            }
+        }
+        Ok(())
+    }
+
+    /// This is where we check for DNA's hashes consistency.
+    /// Only a simple equality check between DNA hashes is currently performed.
+    fn check_dna_consistency(
+        dna_hash_a: &HashString,
+        dna_hash_b: &HashString,
+    ) -> Result<(), HolochainError> {
+        if *dna_hash_a == *dna_hash_b {
+            Ok(())
+        } else {
+            Err(HolochainError::DnaHashMismatch(
+                dna_hash_a.clone(),
+                dna_hash_b.clone(),
+            ))
+        }
     }
 
     /// Get reference to keystore for given agent ID.
@@ -1206,77 +1328,77 @@ pub mod tests {
     [[agents]]
     id = "test-agent-1"
     name = "Holo Tester 1"
-    public_address = "{}"
+    public_address = "{tkb1}"
     keystore_file = "holo_tester1.key"
 
     [[agents]]
     id = "test-agent-2"
     name = "Holo Tester 2"
-    public_address = "{}"
+    public_address = "{tkb2}"
     keystore_file = "holo_tester2.key"
 
     [[agents]]
     id = "test-agent-3"
     name = "Holo Tester 3"
-    public_address = "{}"
+    public_address = "{tkb3}"
     keystore_file = "holo_tester3.key"
 
     [[dnas]]
     id = "test-dna"
     file = "app_spec.dna.json"
-    hash = "Qm328wyq38924y"
+    hash = "QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"
 
     [[dnas]]
     id = "bridge-callee"
     file = "bridge/callee.dna"
-    hash = "Qm328wyq38924y"
+    hash = "{bridge_callee_hash}"
 
     [[dnas]]
     id = "bridge-caller"
     file = "bridge/caller.dna"
-    hash = "Qm328wyq38924y"
+    hash = "{bridge_caller_hash}"
 
     [[instances]]
     id = "test-instance-1"
     dna = "bridge-callee"
     agent = "test-agent-1"
-    [instances.storage]
-    type = "memory"
+        [instances.storage]
+        type = "memory"
 
     [[instances]]
     id = "test-instance-2"
     dna = "test-dna"
     agent = "test-agent-2"
-    [instances.storage]
-    type = "memory"
+        [instances.storage]
+        type = "memory"
 
     [[instances]]
     id = "bridge-caller"
     dna = "bridge-caller"
     agent = "test-agent-3"
-    [instances.storage]
-    type = "memory"
+        [instances.storage]
+        type = "memory"
 
     [[interfaces]]
     id = "test-interface-1"
     admin = true
-    [interfaces.driver]
-    type = "websocket"
-    port = {}
-    [[interfaces.instances]]
-    id = "test-instance-1"
-    [[interfaces.instances]]
-    id = "test-instance-2"
+        [interfaces.driver]
+        type = "websocket"
+        port = {ws_port}
+        [[interfaces.instances]]
+        id = "test-instance-1"
+        [[interfaces.instances]]
+        id = "test-instance-2"
 
     [[interfaces]]
     id = "test-interface-2"
     [interfaces.driver]
     type = "http"
-    port = {}
-    [[interfaces.instances]]
-    id = "test-instance-1"
-    [[interfaces.instances]]
-    id = "test-instance-2"
+    port = {http_port}
+        [[interfaces.instances]]
+        id = "test-instance-1"
+        [[interfaces.instances]]
+        id = "test-instance-2"
 
     [[bridges]]
     caller_id = "bridge-caller"
@@ -1293,11 +1415,13 @@ pub mod tests {
     callee_id = "test-instance-1"
     handle = "test-callee"
     "#,
-            test_keybundle(1).get_id(),
-            test_keybundle(2).get_id(),
-            test_keybundle(3).get_id(),
-            websocket_port,
-            http_port,
+            tkb1 = test_keybundle(1).get_id(),
+            tkb2 = test_keybundle(2).get_id(),
+            tkb3 = test_keybundle(3).get_id(),
+            ws_port = websocket_port,
+            http_port = http_port,
+            bridge_callee_hash = callee_dna().address(),
+            bridge_caller_hash = caller_dna().address(),
         )
     }
 
@@ -1400,6 +1524,127 @@ pub mod tests {
         conductor.start_all_instances().unwrap();
         conductor.start_all_interfaces();
         conductor.stop_all_instances().unwrap();
+    }
+
+    #[test]
+    /// Here we test if we correctly check for consistency in DNA hashes: possible sources are:
+    /// - DNA hash from Conductor configuration
+    /// - computed DNA hash from loaded instance
+    fn test_check_dna_consistency() {
+        let toml = test_toml(10041, 10042);
+
+        let config = load_configuration::<Configuration>(&toml).unwrap();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        assert_eq!(
+            conductor.boot_from_config(),
+            Ok(()),
+            "Conductor failed to boot from config"
+        );
+
+        // Tests equality
+        let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        let b = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        assert_eq!(
+            Conductor::check_dna_consistency(&a, &b),
+            Ok(()),
+            "DNA consistency check Fail."
+        );
+
+        // Tests INequality
+        let b = HashString::from("QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a");
+        assert_ne!(
+            Conductor::check_dna_consistency(&a, &b),
+            Ok(()),
+            "DNA consistency check Fail."
+        );
+    }
+
+    #[test]
+    /// This is supposed to fail to show if we are properly bailing when there is
+    /// a decrepency btween DNA hashes.
+    fn test_check_dna_consistency_err() {
+        let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        let b = HashString::from("QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR");
+
+        assert_eq!(
+            Conductor::check_dna_consistency(&a, &b),
+            Err(HolochainError::DnaHashMismatch(a, b)),
+            "DNA consistency check Fail."
+        );
+
+        let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        let b = HashString::from(String::default());
+
+        assert_eq!(
+            Conductor::check_dna_consistency(&a, &b),
+            Err(HolochainError::DnaHashMismatch(a, b)),
+            "DNA consistency check Fail."
+        )
+    }
+
+    #[test]
+    fn test_check_dna_consistency_from_dna_file() {
+        let fixture = String::from(
+            r#"{
+                "name": "my dna",
+                "description": "",
+                "version": "",
+                "uuid": "00000000-0000-0000-0000-000000000001",
+                "dna_spec_version": "2.0",
+                "properties": {},
+                "zomes": {
+                    "": {
+                        "description": "",
+                        "config": {},
+                        "entry_types": {
+                            "": {
+                                "description": "",
+                                "sharing": "public"
+                            }
+                        },
+                        "traits": {
+                            "test": {
+                                "functions": ["test"]
+                             }
+                        },
+                        "fn_declarations": [
+                            {
+                                "name": "test",
+                                "inputs": [
+                                    {
+                                        "name": "post",
+                                        "type": "string"
+                                    }
+                                ],
+                                "outputs" : [
+                                    {
+                                        "name": "hash",
+                                        "type": "string"
+                                    }
+                                ]
+                            }
+                        ],
+                        "code": {
+                            "code": "AAECAw=="
+                        }
+                    }
+                }
+            }"#,
+        );
+        let dna_hash_from_file = HashString::from(
+            Dna::try_from(JsonString::from_json(&fixture))
+                .expect(&format!("Fail to load DNA from raw string: {}", fixture))
+                .address(),
+        );
+        let dna_hash_computed = HashString::from("QmNPCDBhr6BDBBVWG4mBEVFfhyjsScURYdZoV3fDpzjzgb");
+
+        assert_eq!(
+            Conductor::check_dna_consistency(&dna_hash_from_file, &dna_hash_computed),
+            Ok(()),
+            "DNA consistency from DNA file check Fail."
+        );
     }
 
     //#[test]
@@ -1878,14 +2123,14 @@ pub mod tests {
                 [[dnas]]
                 id = "test-dna"
                 file = "app_spec.dna.json"
-                hash = "Qm328wyq38924y"
+                hash = "QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR"
 
                 [[instances]]
                 id = "test-instance-1"
                 dna = "test-dna"
                 agent = "test-agent-1"
-                [instances.storage]
-                type = "memory"
+                    [instances.storage]
+                    type = "memory"
                 "#
         ).unwrap();
         let mut conductor = Conductor::from_config(config.clone());

@@ -7,22 +7,29 @@ pub mod store;
 use crate::{
     context::Context,
     entry::CanPublish,
-    network::handler::{fetch::*, query::*, send::*, store::*},
+    network::{
+        direct_message::DirectMessage,
+        entry_aspect::EntryAspect,
+        handler::{
+            fetch::*,
+            lists::{handle_get_authoring_list, handle_get_gossip_list},
+            query::*,
+            send::*,
+            store::*,
+        },
+    },
     nucleus,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
-use holochain_net::connection::net_connection::NetHandler;
-use holochain_persistence_api::cas::content::Address;
-use lib3h_protocol::protocol_server::Lib3hServerProtocol;
 use boolinator::*;
-use crate::network::{
-    direct_message::DirectMessage,
-    entry_aspect::EntryAspect,
-    handler::lists::{handle_get_authoring_list, handle_get_gossip_list},
-};
 use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::data_types::{DirectMessageData, StoreEntryAspectData};
+use holochain_net::connection::net_connection::NetHandler;
+use holochain_persistence_api::cas::content::Address;
+use lib3h_protocol::{
+    data_types::{DirectMessageData, StoreEntryAspectData},
+    protocol_server::Lib3hServerProtocol,
+};
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking

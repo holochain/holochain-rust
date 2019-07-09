@@ -4,9 +4,7 @@ use crate::{
     state::State,
 };
 
-use holochain_net::connection::{
-   net_connection::NetSend,
-};
+use holochain_net::connection::net_connection::NetSend;
 
 use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol};
 

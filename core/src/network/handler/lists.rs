@@ -6,8 +6,8 @@ use crate::{
     network::handler::{get_content_aspect, get_meta_aspects},
 };
 use holochain_core_types::error::HcResult;
-use lib3h_protocol::data_types::{EntryListData, GetListData};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use lib3h_protocol::data_types::{EntryListData, GetListData};
 use snowflake::ProcessUniqueId;
 use std::{collections::HashMap, sync::Arc, thread};
 

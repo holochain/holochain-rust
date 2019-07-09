@@ -25,8 +25,8 @@ use holochain_core_types::{
     validation::ValidationPackage,
 };
 use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
-use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
 use holochain_persistence_api::cas::content::Address;
+use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},

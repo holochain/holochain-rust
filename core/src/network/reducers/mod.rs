@@ -8,10 +8,13 @@ pub mod handle_get_validation_package;
 pub mod init;
 pub mod publish;
 pub mod resolve_direct_connection;
+pub mod respond_authoring_list;
 pub mod respond_fetch;
 pub mod respond_get;
 pub mod respond_get_links;
+pub mod respond_gossip_list;
 pub mod send_direct_message;
+pub mod shutdown;
 
 use crate::{
     action::{Action, ActionWrapper, NetworkReduceFn},
@@ -28,10 +31,13 @@ use crate::{
             init::reduce_init,
             publish::reduce_publish,
             resolve_direct_connection::reduce_resolve_direct_connection,
+            respond_authoring_list::reduce_respond_authoring_list,
             respond_fetch::reduce_respond_fetch_data,
             respond_get::reduce_respond_get,
             respond_get_links::reduce_respond_get_links,
+            respond_gossip_list::reduce_respond_gossip_list,
             send_direct_message::{reduce_send_direct_message, reduce_send_direct_message_timeout},
+            shutdown::reduce_shutdown,
         },
         state::NetworkState,
     },
@@ -62,11 +68,14 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),
         Action::ResolveDirectConnection(_) => Some(reduce_resolve_direct_connection),
+        Action::RespondAuthoringList(_) => Some(reduce_respond_authoring_list),
+        Action::RespondGossipList(_) => Some(reduce_respond_gossip_list),
         Action::RespondFetch(_) => Some(reduce_respond_fetch_data),
         Action::RespondGet(_) => Some(reduce_respond_get),
         Action::RespondGetLinks(_) => Some(reduce_respond_get_links),
         Action::SendDirectMessage(_) => Some(reduce_send_direct_message),
         Action::SendDirectMessageTimeout(_) => Some(reduce_send_direct_message_timeout),
+        Action::ShutdownNetwork => Some(reduce_shutdown),
         _ => None,
     }
 }
@@ -95,11 +104,11 @@ pub fn send(
 ) -> Result<(), HolochainError> {
     network_state
         .network
+        .lock()
+        .unwrap()
         .as_mut()
         .map(|network| {
             network
-                .lock()
-                .unwrap()
                 .send(json_message.into())
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })

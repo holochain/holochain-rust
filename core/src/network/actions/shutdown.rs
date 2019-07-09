@@ -1,0 +1,56 @@
+use crate::{
+    action::{Action, ActionWrapper},
+    instance::dispatch_action,
+};
+use futures::{
+    future::Future,
+    task::{LocalWaker, Poll},
+};
+
+use holochain_core_types::error::{HcResult, HolochainError};
+
+use crate::state::StateWrapper;
+use std::{
+    pin::Pin,
+    sync::{mpsc::SyncSender, Arc, RwLock},
+};
+
+/// Shutdown the network
+/// This tells the network to untrack this instance and then stops the network thread
+/// and sets the P2pNetwork instance in the state to None.
+pub async fn shutdown(
+    state: Arc<RwLock<StateWrapper>>,
+    action_channel: SyncSender<ActionWrapper>,
+) -> HcResult<()> {
+    if state.read().unwrap().network().initialized().is_ok() {
+        let action_wrapper = ActionWrapper::new(Action::ShutdownNetwork);
+        dispatch_action(&action_channel, action_wrapper.clone());
+        await!(ShutdownFuture { state })
+    } else {
+        Err(HolochainError::ErrorGeneric(
+            "Tried to shutdown network that was never initialized".to_string(),
+        ))
+    }
+}
+
+pub struct ShutdownFuture {
+    state: Arc<RwLock<StateWrapper>>,
+}
+
+impl Future for ShutdownFuture {
+    type Output = HcResult<()>;
+
+    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        let state = self.state.read().unwrap().network();
+        if state.network.lock().unwrap().is_some() {
+            //
+            // TODO: connect the waker to state updates for performance reasons
+            // See: https://github.com/holochain/holochain-rust/issues/314
+            //
+            lw.wake();
+            Poll::Pending
+        } else {
+            Poll::Ready(Ok(()))
+        }
+    }
+}

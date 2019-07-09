@@ -164,10 +164,10 @@ impl Drop for InMemoryWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lib3h_protocol::data_types::SpaceData;
     use crate::p2p_config::P2pConfig;
     use crossbeam_channel::unbounded;
     use holochain_persistence_api::{cas::content::Address, hash::HashString};
+    use lib3h_protocol::data_types::SpaceData;
 
     fn example_dna_address() -> Address {
         "QmYsFu7QGaVeUUac1E4BWST7BR38cYvzRaaTc3YS9WqsTu".into()

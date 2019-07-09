@@ -13,9 +13,7 @@ use crate::{
 };
 use holochain_net::connection::net_connection::NetHandler;
 use holochain_persistence_api::hash::HashString;
-use lib3h_protocol::{
-    protocol_server::Lib3hServerProtocol
-};
+use lib3h_protocol::protocol_server::Lib3hServerProtocol;
 
 use crate::network::{direct_message::DirectMessage, entry_aspect::EntryAspect};
 use holochain_json_api::json::JsonString;
@@ -140,7 +138,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 handle_fetch_entry(fetch_entry_data, context.clone())
             }
             Lib3hServerProtocol::FetchEntryResult(fetch_result_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_result_data.space_address.to_string()) {
+                if !is_my_dna(
+                    &my_dna_address,
+                    &fetch_result_data.space_address.to_string(),
+                ) {
                     return Ok(());
                 }
 
@@ -208,17 +209,16 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 handle_send_message_result(message_data, context.clone())
             }
             Lib3hServerProtocol::Connected(peer_data) => {
-
                 context.log(format!("debug/net/handle: Connected: {:?}", peer_data));
 
                 // ignore peer connection of myself
                 // TODO BLOCKER could use request id to determine this, if necessary
-//                if is_my_id(&context, &peer_data.agent_id.to_string()) {
-                    return Ok(());
-  //              }
+                //                if is_my_id(&context, &peer_data.agent_id.to_string()) {
+                return Ok(());
+                //              }
                 // Total hack in lieu of a world-model.
                 // Just republish everything when a new person comes on-line!!
-               //republish_all_public_chain_entries(&context);
+                //republish_all_public_chain_entries(&context);
             }
             _ => {}
         }

@@ -108,10 +108,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     // Send a message back from billy to alex
     billy.send_response_lib3h(
         msg.clone(),
-        format!(
-            "echo: {}",
-            str::from_utf8(msg.content.as_slice()).unwrap()
-        ).into_bytes(),
+        format!("echo: {}", str::from_utf8(msg.content.as_slice()).unwrap()).into_bytes(),
     );
     // Check if alex received it
     let res = alex

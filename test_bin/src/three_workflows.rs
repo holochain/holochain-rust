@@ -61,7 +61,7 @@ pub fn setup_three_nodes(
                 request_id: "alex_to_billy_request_id".into(),
                 peer_uri: url::Url::parse(node2_binding.clone().as_str())
                     .expect("well formed node 2 uri (billy)"),
-                network_id: "".into()
+                network_id: "".into(),
             })
             .into(),
         )?;
@@ -79,9 +79,9 @@ pub fn setup_three_nodes(
             .unwrap();
         println!("got connect result B: {:?}", result_b);
         one_let!(Lib3hServerProtocol::Connected(d) = result_b {
-            assert_eq!(d.request_id, "alex_to_billy_request_id");
-            assert_eq!(d.uri.to_string(), node2_binding.clone());
-         });
+           assert_eq!(d.request_id, "alex_to_billy_request_id");
+           assert_eq!(d.uri.to_string(), node2_binding.clone());
+        });
 
         // Connect nodes between them
         println!("Connect  Camille to Billy ({})", node2_binding);
@@ -90,8 +90,8 @@ pub fn setup_three_nodes(
                 request_id: "camille_to_billy_request_id".into(),
                 peer_uri: url::Url::parse(node2_binding.clone().as_str())
                     .expect("well formed billy (node2) ur"),
-                network_id: "".into()
-             })
+                network_id: "".into(),
+            })
             .into(),
         )?;
 

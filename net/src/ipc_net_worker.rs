@@ -10,10 +10,7 @@ use crate::connection::{
     NetResult,
 };
 
-use lib3h_protocol::{
-    data_types::ConnectedData,
-    protocol_server::Lib3hServerProtocol,
-};
+use lib3h_protocol::{data_types::ConnectedData, protocol_server::Lib3hServerProtocol};
 
 use std::collections::HashMap;
 

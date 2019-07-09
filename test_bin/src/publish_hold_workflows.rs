@@ -3,8 +3,7 @@ use constants::*;
 use holochain_net::{connection::NetResult, tweetlog::*};
 use p2p_node::test_node::TestNode;
 
-use lib3h_protocol::{data_types::EntryData,
-    protocol_server::Lib3hServerProtocol};
+use lib3h_protocol::{data_types::EntryData, protocol_server::Lib3hServerProtocol};
 
 ///
 #[cfg_attr(tarpaulin, skip)]

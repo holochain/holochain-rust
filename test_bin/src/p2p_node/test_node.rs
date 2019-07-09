@@ -1068,7 +1068,9 @@ impl TestNode {
             Lib3hServerProtocol::HandleGetGossipingEntryList(_) => {
                 // n/a
             }
-            msg => self.logger.d(&format!("unhandled protocol message: {:?}", msg))
+            msg => self
+                .logger
+                .d(&format!("unhandled protocol message: {:?}", msg)),
         }
     }
 }

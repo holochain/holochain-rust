@@ -121,8 +121,7 @@ pub fn setup_two_nodes(
         alex.send(
             Lib3hClientProtocol::Connect(ConnectData {
                 request_id: "alex_send_connect".into(),
-                peer_uri: url::Url::parse(node2_binding.as_str())
-                    .expect("malformed node2 url"),
+                peer_uri: url::Url::parse(node2_binding.as_str()).expect("malformed node2 url"),
                 network_id: "alex_to_node2".into(),
             })
             .into(),

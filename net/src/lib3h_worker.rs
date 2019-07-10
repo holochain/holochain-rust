@@ -10,9 +10,7 @@ use lib3h::{
     transport_wss::TransportWss,
 };
 
-use lib3h_protocol::{
-    network_engine::NetworkEngine, protocol_client::Lib3hClientProtocol,
-};
+use lib3h_protocol::{network_engine::NetworkEngine, protocol_client::Lib3hClientProtocol};
 
 /// A worker that makes use of lib3h / NetworkEngine.
 /// It adapts the Worker interface with Lib3h's NetworkEngine's interface.

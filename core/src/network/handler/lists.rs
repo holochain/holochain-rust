@@ -65,11 +65,14 @@ pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>)
         ))
         .spawn(move || {
             let mut address_map = HashMap::new();
-            let state = context
-                .state()
-                .expect("No state present when trying to respond with gossip list");
+            let holding_list = {
+                let state = context
+                    .state()
+                    .expect("No state present when trying to respond with gossip list");
+                state.dht().get_all_held_entry_addresses().clone()
+            };
 
-            for entry in state.dht().get_all_held_entry_addresses() {
+            for entry in holding_list {
                 address_map.insert(
                     entry.clone(),
                     get_all_aspect_addresses(&entry, context.clone())

@@ -10,7 +10,10 @@ use crate::connection::{
     NetResult,
 };
 
-use lib3h_protocol::{data_types::ConnectedData, protocol_server::Lib3hServerProtocol};
+use lib3h_protocol::{
+    data_types::ConnectedData, protocol_client::Lib3hClientProtocol,
+    protocol_server::Lib3hServerProtocol,
+};
 
 use std::collections::HashMap;
 
@@ -147,7 +150,7 @@ impl NetWorker for IpcNetWorker {
 
     /// we got a message from holochain core
     /// (just forwards to the internal worker relay)
-    fn receive(&mut self, data: Protocol) -> NetResult<()> {
+    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         let data: NamedBinaryData = data.into();
         let data = rmp_serde::to_vec_named(&data)?;
         self.wss_socket.send_all(&data)?;

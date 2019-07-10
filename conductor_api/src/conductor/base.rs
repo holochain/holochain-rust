@@ -118,6 +118,14 @@ impl Drop for Conductor {
             }
         }
         self.shutdown();
+        if let Some(network) = self.n3h_keepalive_network.take() {
+            if let Err(err) = network.stop() {
+                println!("ERROR stopping network thread: {:?}", err);
+            } else {
+                println!("Network thread successfully stopped");
+            }
+            self.n3h_keepalive_network = None;
+        };
     }
 }
 
@@ -448,14 +456,6 @@ impl Conductor {
             .as_ref()
             .map(|sender| sender.send(()));
         self.instances = HashMap::new();
-        if let Some(network) = self.n3h_keepalive_network.take() {
-            if let Err(err) = network.stop() {
-                println!("ERROR stopping network thread: {:?}", err);
-            } else {
-                println!("Network thread successfully stopped");
-            }
-            self.n3h_keepalive_network = None;
-        };
     }
 
     pub fn spawn_network(&mut self) -> Result<SpawnResult, HolochainError> {

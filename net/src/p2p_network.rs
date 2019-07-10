@@ -112,7 +112,9 @@ impl P2pNetwork {
     fn wait_p2p_ready(rx: &crossbeam_channel::Receiver<Lib3hServerProtocol>) {
         let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
         match maybe_message {
-            Ok(Lib3hServerProtocol::Connected(_)) => log_d!("net/p2p_network: received P2pReady event"),
+            Ok(Lib3hServerProtocol::Connected(_)) => {
+                log_d!("net/p2p_network: received P2pReady event")
+            }
             Ok(_protocol_message) => {}
             Err(e) => {
                 log_e!("net/p2p_network: did not receive P2pReady: {:?}", e);

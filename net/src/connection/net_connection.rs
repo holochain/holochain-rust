@@ -1,7 +1,7 @@
 use super::NetResult;
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 use parking_lot::RwLock;
 use std::{fmt, sync::Arc};
-use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 
 /// closure for processing a Protocol message received from the network
 #[derive(Clone, Serialize)]
@@ -11,7 +11,9 @@ pub struct NetHandler {
 }
 
 impl NetHandler {
-    pub fn new(c: Box<FnMut(NetResult<Lib3hServerProtocol>) -> NetResult<()> + Send + Sync>) -> NetHandler {
+    pub fn new(
+        c: Box<FnMut(NetResult<Lib3hServerProtocol>) -> NetResult<()> + Send + Sync>,
+    ) -> NetHandler {
         NetHandler {
             closure: Arc::new(RwLock::new(c)),
         }

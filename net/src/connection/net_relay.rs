@@ -1,4 +1,6 @@
-use super::{net_connection::*, protocol::Protocol, NetResult};
+use super::{net_connection::*, NetResult};
+
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 /// a simple pass-through NetSend instance
 /// this struct can be use to compose one type of NetWorker into another
@@ -9,7 +11,7 @@ pub struct NetConnectionRelay {
 
 impl NetSend for NetConnectionRelay {
     /// send a message to the worker within this NetConnectionRelay instance
-    fn send(&mut self, data: Protocol) -> NetResult<()> {
+    fn send(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         self.worker.receive(data)?;
         Ok(())
     }

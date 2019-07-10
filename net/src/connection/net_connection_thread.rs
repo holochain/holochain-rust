@@ -1,6 +1,5 @@
 use super::{
     net_connection::{NetHandler, NetSend, NetShutdown, NetWorkerFactory},
-    protocol::Protocol,
     NetResult,
 };
 use snowflake::ProcessUniqueId;
@@ -12,11 +11,13 @@ use std::{
     thread, time,
 };
 
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
+
 /// Struct for holding a network connection running on a separate thread.
 /// It is itself a NetSend, and spawns a NetWorker.
 pub struct NetConnectionThread {
     can_keep_running: Arc<AtomicBool>,
-    send_channel: mpsc::Sender<Protocol>,
+    send_channel: mpsc::Sender<Lib3hClientProtocol>,
     thread: thread::JoinHandle<()>,
     done: NetShutdown,
     pub endpoint: String,
@@ -24,7 +25,7 @@ pub struct NetConnectionThread {
 
 impl NetSend for NetConnectionThread {
     /// send a message to the worker within NetConnectionThread's child thread.
-    fn send(&mut self, data: Protocol) -> NetResult<()> {
+    fn send(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         self.send_channel.send(data)?;
         Ok(())
     }

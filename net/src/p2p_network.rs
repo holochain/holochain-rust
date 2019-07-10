@@ -6,7 +6,6 @@ use crate::{
     connection::{
         net_connection::{NetHandler, NetSend, NetWorker, NetWorkerFactory},
         net_connection_thread::NetConnectionThread,
-        protocol::Protocol,
         NetResult,
     },
     in_memory::memory_worker::InMemoryWorker,
@@ -15,6 +14,8 @@ use crate::{
     p2p_config::*,
     tweetlog::*,
 };
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
+
 use crossbeam_channel;
 use holochain_json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
@@ -31,8 +32,7 @@ pub struct P2pNetwork {
 
 impl P2pNetwork {
     /// Constructor
-    /// `config` is the configuration of the p2p module
-    /// `handler` is the closure for handling Protocol messages received from the network module.
+    /// `config` is the configuration of the p2p module `handler` is the closure for handling Protocol messages received from the network module.
     pub fn new(mut handler: NetHandler, p2p_config: P2pConfig) -> NetResult<Self> {
         // Create Config struct
         let backend_config_str = match &p2p_config.backend_config {
@@ -79,9 +79,9 @@ impl P2pNetwork {
         let wrapped_handler = NetHandler::new(Box::new(move |message| {
             let unwrapped = message.unwrap();
             let message = unwrapped.clone();
-            match Protocol::try_from(unwrapped.clone()) {
-                Ok(Protocol::P2pReady) => {
-                    tx.send(Protocol::P2pReady).unwrap();
+            match Lib3hServerProtocol::try_from(unwrapped.clone()) {
+                Ok(Lib3hServerProtocol::Connected(d)) => {
+                    tx.send(Lib3hServerProtocol::Connected(d)).unwrap();
                     log_d!("net/p2p_network: sent P2pReady event")
                 }
                 Ok(_protocol_message) => {}
@@ -109,10 +109,10 @@ impl P2pNetwork {
         Ok(P2pNetwork { connection })
     }
 
-    fn wait_p2p_ready(rx: &crossbeam_channel::Receiver<Protocol>) {
+    fn wait_p2p_ready(rx: &crossbeam_channel::Receiver<Lib3hServerProtocol>) {
         let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
         match maybe_message {
-            Ok(Protocol::P2pReady) => log_d!("net/p2p_network: received P2pReady event"),
+            Ok(Lib3hServerProtocol::Connected(_)) => log_d!("net/p2p_network: received P2pReady event"),
             Ok(_protocol_message) => {}
             Err(e) => {
                 log_e!("net/p2p_network: did not receive P2pReady: {:?}", e);
@@ -143,7 +143,7 @@ impl std::fmt::Debug for P2pNetwork {
 
 impl NetSend for P2pNetwork {
     /// send a Protocol message to the p2p network instance
-    fn send(&mut self, data: Protocol) -> NetResult<()> {
+    fn send(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         self.connection.send(data)
     }
 }

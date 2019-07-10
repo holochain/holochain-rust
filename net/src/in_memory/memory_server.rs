@@ -6,7 +6,7 @@
 
 use super::memory_book::*;
 use crate::{
-    connection::{protocol::Protocol, NetResult},
+    connection::NetResult,
     error::NetworkError,
     tweetlog::*,
 };
@@ -22,10 +22,9 @@ use lib3h_protocol::{
     protocol_server::Lib3hServerProtocol,
 };
 
-use holochain_persistence_api::{cas::content::Address, hash::HashString};
+use holochain_persistence_api::cas::content::Address;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
-    convert::TryFrom,
     sync::{mpsc, Mutex, RwLock},
 };
 
@@ -43,9 +42,9 @@ lazy_static! {
 /// a global server for routing messages between nodes in-memory
 pub(crate) struct InMemoryServer {
     // keep track of senders by ChainId (dna_address::agent_id)
-    senders: HashMap<ChainId, mpsc::Sender<Protocol>>,
+    senders: HashMap<ChainId, mpsc::Sender<Lib3hServerProtocol>>,
     // keep track of agents by dna_address
-    senders_by_dna: HashMap<Address, HashMap<Address, mpsc::Sender<Protocol>>>,
+    senders_by_dna: HashMap<Address, HashMap<Address, mpsc::Sender<Lib3hServerProtocol>>>,
     // Unique identifier
     name: String,
     // Keep track of connected clients
@@ -113,7 +112,6 @@ impl InMemoryServer {
                 provider_agent_id: agent_id.clone().try_into().unwrap(),
                 space_address: dna_address.clone().try_into().unwrap(),
             })
-            .into(),
         )
         .expect("Sending HandleGetAuthoringEntryList failed");
         // Request this agent's holding entries
@@ -126,7 +124,6 @@ impl InMemoryServer {
                 provider_agent_id: agent_id.clone().try_into().unwrap(),
                 space_address: dna_address.clone().try_into().unwrap(),
             })
-            .into(),
         )
         .expect("Sending HandleGetHoldingEntryList failed");
     }
@@ -177,7 +174,7 @@ impl InMemoryServer {
         &mut self,
         dna_address: &Address,
         agent_id: &Address,
-        sender: mpsc::Sender<Protocol>,
+        sender: mpsc::Sender<Lib3hServerProtocol>,
     ) -> NetResult<()> {
         self.senders
             .insert(into_chain_id(dna_address, agent_id), sender.clone());
@@ -212,16 +209,11 @@ impl InMemoryServer {
     }
 
     /// process a message sent by a node to the "network"
-    pub fn serve(&mut self, data: Protocol) -> NetResult<()> {
+    pub fn serve(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         self.log
             .d(&format!(">>>> '{}' recv: {:?}", self.name.clone(), data));
         // serve only Lib3hClientProtocol
-        let maybe_json_msg = Lib3hClientProtocol::try_from(&data);
-        if maybe_json_msg.is_err() {
-            return Ok(());
-        };
-        // Note: use same order as the enum
-        match maybe_json_msg.as_ref().unwrap() {
+        match data {
             Lib3hClientProtocol::SuccessResult(msg) => {
                 let dna_address = msg.space_address.clone().try_into().unwrap();
                 let to_agent_id = msg.to_agent_id.clone().try_into().unwrap();
@@ -235,7 +227,7 @@ impl InMemoryServer {
                 self.priv_send_one(
                     &dna_address,
                     &to_agent_id,
-                    Lib3hClientProtocol::SuccessResult(msg.clone()).into(),
+                    Lib3hServerProtocol::SuccessResult(msg.clone()),
                 )?;
             }
             Lib3hClientProtocol::FailureResult(msg) => {
@@ -263,7 +255,7 @@ impl InMemoryServer {
                 self.priv_send_one(
                     &dna_address,
                     &to_agent_id,
-                    Lib3hClientProtocol::FailureResult(msg.clone()).into(),
+                    Lib3hServerProtocol::FailureResult(msg.clone()).into(),
                 )?;
             }
             Lib3hClientProtocol::JoinSpace(msg) => {
@@ -282,10 +274,15 @@ impl InMemoryServer {
                 }
                 self.trackdna_book.insert(chain_id);
                 // Notify all Peers connected to this DNA of a new Peer connection.
-                self.priv_send_all(
-                    &msg.space_address.clone().into(),
-                    Lib3hClientProtocol::JoinSpace(msg.clone()).into(),
-                )?;
+//                self.priv_send_all(
+//                  &msg.space_address.clone().into(),
+                    // TODO BLOCKER what is correct message type?
+                    // TODO or is this deprecated?
+//                    JsonProtocol::PeerConnected(PeerData {
+//                      agent_id: msg.agent_id.clone(),
+//                    })
+
+//                )?;
                 // Request all data lists from this agent
                 self.priv_request_all_lists(&dna_address, &agent_id);
             }
@@ -336,8 +333,8 @@ impl InMemoryServer {
                 self.priv_serve_HandleGetGossipingEntryListResult(&msg);
             }
 
-            _ => {
-                self.log.w(&format!("unexpected {:?}", &maybe_json_msg));
+            msg => {
+                self.log.w(&format!("unexpected {:?}", &msg));
             }
         }
         Ok(())
@@ -393,14 +390,14 @@ impl InMemoryServer {
         self.priv_send_one(
             dna_address,
             &sender_agent_id,
-            Lib3hClientProtocol::FailureResult(fail_msg).into(),
+            Lib3hServerProtocol::FailureResult(fail_msg),
         )?;
         Ok(false)
     }
 
     /// send a message to the appropriate channel based on dna_address::to_agent_id
     /// If chain_id is unknown, send back FailureResult to `maybe_sender_info`
-    fn priv_send_one_with_chain_id(&mut self, chain_id: &str, data: Protocol) -> NetResult<()> {
+    fn priv_send_one_with_chain_id(&mut self, chain_id: &str, data: Lib3hServerProtocol) -> NetResult<()> {
         let maybe_sender = self.senders.get_mut(chain_id);
         if maybe_sender.is_none() {
             self.log.e(&format!(
@@ -426,14 +423,14 @@ impl InMemoryServer {
         &mut self,
         dna_address: &Address,
         to_agent_id: &Address,
-        data: Protocol,
+        data: Lib3hServerProtocol,
     ) -> NetResult<()> {
         let chain_id = into_chain_id(dna_address, to_agent_id);
         self.priv_send_one_with_chain_id(&chain_id, data)
     }
 
     /// send a message to all nodes connected with this dna address
-    fn priv_send_all(&mut self, dna_address: &Address, data: Protocol) -> NetResult<()> {
+    fn priv_send_all(&mut self, dna_address: &Address, data: Lib3hServerProtocol) -> NetResult<()> {
         if let Some(arr) = self.senders_by_dna.get_mut(dna_address) {
             self.log.d(&format!(
                 "<<<< '{}' send all: {:?} ({})",
@@ -476,7 +473,7 @@ impl InMemoryServer {
         self.priv_send_one(
             &msg.space_address.clone().into(),
             &msg.to_agent_id.clone().into(),
-            Lib3hClientProtocol::HandleSendDirectMessageResult(msg.clone()).into(),
+            Lib3hServerProtocol::HandleSendDirectMessage(msg.clone()),
         )?;
         // Done
         Ok(())
@@ -507,7 +504,7 @@ impl InMemoryServer {
         self.priv_send_one(
             &dna_address,
             &to_agent_id,
-            Lib3hClientProtocol::HandleSendDirectMessageResult(msg.clone()).into(),
+            Lib3hServerProtocol::SendDirectMessageResult(msg.clone()),
         )?;
         Ok(())
     }
@@ -554,7 +551,7 @@ impl InMemoryServer {
             self.priv_send_all(
                 &dna_address,
                 // TODO what to make this?
-                Lib3hServerProtocol::HandleStoreEntryAspect(store_msg).into(),
+                Lib3hServerProtocol::HandleStoreEntryAspect(store_msg),
             )?;
         }
         Ok(())
@@ -739,27 +736,25 @@ impl InMemoryServer {
         // For each data not already holding, add it to stored_data_book?
         for (entry_address, aspect_address_list) in msg.address_map.clone() {
             for aspect_address in aspect_address_list {
-                let entry_address_vec: HashString = entry_address.clone().try_into().unwrap();
-                let aspect_address_vec: HashString = aspect_address.clone().try_into().unwrap();
                 if book_has_aspect(
                     &self.stored_book,
                     chain_id.clone(),
-                    &entry_address_vec,
-                    &aspect_address_vec,
+                    &entry_address,
+                    &aspect_address,
                 ) {
                     continue;
                 }
                 bookkeep_with_chain_id(
                     &mut self.stored_book,
                     chain_id.clone(),
-                    &entry_address_vec,
-                    &aspect_address_vec,
+                    &entry_address,
+                    &aspect_address,
                 );
                 // Ask for the new aspect since in-memory mode doesnt gossip
                 let request_id = self.priv_create_request_with_chain_id(&chain_id);
                 let _ = self.priv_send_one_with_chain_id(
                     &chain_id,
-                    Lib3hClientProtocol::FetchEntry(FetchEntryData {
+                    Lib3hServerProtocol::HandleFetchEntry(FetchEntryData {
                         space_address: msg.space_address.clone(),
                         provider_agent_id: undo_chain_id(&chain_id)
                             .1
@@ -769,7 +764,6 @@ impl InMemoryServer {
                         entry_address: entry_address.clone(),
                         aspect_address_list: Some(vec![aspect_address]),
                     })
-                    .into(),
                 );
             }
         }

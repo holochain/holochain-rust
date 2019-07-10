@@ -3,16 +3,20 @@
 use super::memory_server::*;
 use crate::connection::{
     net_connection::{NetHandler, NetWorker},
-    protocol::Protocol,
     NetResult,
 };
-use lib3h_protocol::protocol_client::Lib3hClientProtocol;
+
+use lib3h_protocol::{
+    protocol_server::Lib3hServerProtocol,
+    protocol_client::Lib3hClientProtocol,
+    data_types::ConnectedData,
+};
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use std::{
     collections::{hash_map::Entry, HashMap},
-    convert::{TryFrom, TryInto},
+    convert::{TryInto},
     sync::{mpsc, Mutex},
 };
 
@@ -20,7 +24,7 @@ use std::{
 #[allow(non_snake_case)]
 pub struct InMemoryWorker {
     handler: NetHandler,
-    receiver_per_dna: HashMap<Address, mpsc::Receiver<Protocol>>,
+    receiver_per_dna: HashMap<Address, mpsc::Receiver<Lib3hServerProtocol>>,
     server_name: String,
     can_send_P2pReady: bool,
 }
@@ -28,20 +32,20 @@ pub struct InMemoryWorker {
 impl NetWorker for InMemoryWorker {
     /// we got a message from holochain core
     /// forward to our in-memory server
-    fn receive(&mut self, data: Protocol) -> NetResult<()> {
+    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         // InMemoryWorker doesn't have to do anything on shutdown
-        if data == Protocol::Shutdown {
+        // TODO BLOCKER how are shutdowns triggered without Protocol invovled?
+        /* if data == Protocol::Shutdown {
             self.handler.handle(Ok(Protocol::Terminated))?;
             return Ok(());
-        }
+        }*/
         let server_map = MEMORY_SERVER_MAP.read().unwrap();
         let mut server = server_map
             .get(&self.server_name)
             .expect("InMemoryServer should have been initialized by now")
             .lock()
             .unwrap();
-        if let Ok(json_msg) = Lib3hClientProtocol::try_from(&data) {
-            match json_msg {
+        match &data {
                 Lib3hClientProtocol::JoinSpace(track_msg) => {
                     let dna_address: HashString = track_msg.space_address.try_into().unwrap();
                     match self.receiver_per_dna.entry(dna_address.clone()) {
@@ -58,13 +62,11 @@ impl NetWorker for InMemoryWorker {
                     };
                 }
                 _ => (),
-            }
-        }
+        };
         // Serve
         server.serve(data.clone())?;
         // After serve
-        if let Ok(json_msg) = Lib3hClientProtocol::try_from(&data) {
-            match json_msg {
+        match &data {
                 Lib3hClientProtocol::LeaveSpace(untrack_msg) => {
                     let dna_address: HashString = untrack_msg.space_address.try_into().unwrap();
                     match self.receiver_per_dna.entry(dna_address.clone()) {
@@ -79,8 +81,7 @@ impl NetWorker for InMemoryWorker {
                     };
                 }
                 _ => (),
-            }
-        }
+        };
         // Done
         Ok(())
     }
@@ -90,7 +91,12 @@ impl NetWorker for InMemoryWorker {
         // Send p2pready on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
-            self.handler.handle(Ok(Protocol::P2pReady))?;
+            let d = ConnectedData {
+                request_id: snowflake::ProcessUniqueId::new().to_string(),
+                uri: url::Url::parse(self.server_name.as_str())
+                    .expect("in memory server name as url"),
+            };
+            self.handler.handle(Ok(Lib3hServerProtocol::Connected(d)))?;
         }
         // check for messages from our InMemoryServer
         let mut did_something = false;

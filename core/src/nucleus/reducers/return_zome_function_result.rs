@@ -18,6 +18,20 @@ pub fn reduce_return_zome_function_result(
     state.zome_calls.insert(fr.call(), Some(fr.result()));
 }
 
+/// Reduce SignalZomeFunctionCall Action.
+/// Adds the call with a None result so we represent in the state that
+/// a zome call is running
+pub fn reduce_signal_zome_function(
+    state: &mut NucleusState,
+    _root_state: &State,
+    action_wrapper: &ActionWrapper,
+) {
+    let action = action_wrapper.action();
+    let call = unwrap_to!(action => Action::SignalZomeFunctionCall);
+    state.zome_calls.insert(call.clone(), None);
+    println!("debug/reduce_signal_zome_function: zome call started: {:?}", call);
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;

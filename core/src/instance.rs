@@ -407,7 +407,7 @@ pub mod tests {
     use crate::persister::SimplePersister;
 
     use std::{
-        sync::{mpsc::channel, Arc, Mutex},
+        sync::{Arc, Mutex},
         thread::sleep,
         time::Duration,
     };
@@ -454,8 +454,8 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_channels(
         agent_name: &str,
-        action_channel: &SyncSender<ActionWrapper>,
-        observer_channel: &SyncSender<Observer>,
+        action_channel: &Sender<ActionWrapper>,
+        observer_channel: &Sender<Observer>,
         network_name: Option<&str>,
     ) -> Arc<Context> {
         let agent = AgentId::generate_fake(agent_name);
@@ -536,11 +536,6 @@ pub mod tests {
         let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());
         Arc::new(context)
-    }
-
-    #[test]
-    fn default_buffer_size_test() {
-        assert_eq!(Context::DEFAULT_CHANNEL_BUF_SIZE, 100);
     }
 
     #[cfg_attr(tarpaulin, skip)]
@@ -664,13 +659,13 @@ pub mod tests {
         assert!(new_observers.is_empty());
 
         let rx_action_is_empty = match rx_action.try_recv() {
-            Err(::std::sync::mpsc::TryRecvError::Empty) => true,
+            Err(crossbeam_channel::TryRecvError::Empty) => true,
             _ => false,
         };
         assert!(rx_action_is_empty);
 
         let rx_observer_is_empty = match rx_observer.try_recv() {
-            Err(::std::sync::mpsc::TryRecvError::Empty) => true,
+            Err(crossbeam_channel::TryRecvError::Empty) => true,
             _ => false,
         };
         assert!(rx_observer_is_empty);
@@ -804,7 +799,7 @@ pub mod tests {
         let instance = Instance::new(test_context("jason", netname));
         let context = instance.initialize_context(context);
         let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = channel::<Observer>();
+        let (_, rx_observer) = unbounded::<Observer>();
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
@@ -836,7 +831,7 @@ pub mod tests {
         // Set up instance and process the action
         let instance = Instance::new(context.clone());
         let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = channel::<Observer>();
+        let (_, rx_observer) = unbounded::<Observer>();
         let context = instance.initialize_context(context);
         instance.process_action(
             &commit_agent_action,

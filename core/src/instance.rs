@@ -14,6 +14,7 @@ use crate::{
     network::actions::initialize_network::initialize_network_with_spoofed_dna,
     nucleus::actions::initialize::initialize_chain,
 };
+use crossbeam_channel::{unbounded, Sender, Receiver};
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 use holochain_core_types::{
     dna::Dna,
@@ -24,10 +25,7 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::{
-    sync::{
-        mpsc::{sync_channel, Receiver, Sender, SyncSender},
-        Arc, Mutex, RwLock, RwLockReadGuard,
-    },
+    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
     thread,
     time::Duration,
 };
@@ -40,12 +38,12 @@ pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<StateWrapper>>,
-    action_channel: Option<SyncSender<ActionWrapper>>,
-    observer_channel: Option<SyncSender<Observer>>,
+    action_channel: Option<Sender<ActionWrapper>>,
+    observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
     persister: Option<Arc<Mutex<Persister>>>,
     consistency_model: ConsistencyModel,
-    kill_switch: Option<crossbeam_channel::Sender<()>>,
+    kill_switch: Option<Sender<()>>,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -56,8 +54,6 @@ pub struct Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
-    pub const DEFAULT_CHANNEL_BUF_SIZE: usize = 100;
-
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
     pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
@@ -126,13 +122,13 @@ impl Instance {
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+    fn action_channel(&self) -> &Sender<ActionWrapper> {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
     }
 
-    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+    pub fn observer_channel(&self) -> &Sender<Observer> {
         self.observer_channel
             .as_ref()
             .expect("Observer channel not initialized")
@@ -149,8 +145,8 @@ impl Instance {
 
     /// Returns recievers for actions and observers that get added to this instance
     fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
-        let (tx_action, rx_action) = sync_channel::<ActionWrapper>(Self::DEFAULT_CHANNEL_BUF_SIZE);
-        let (tx_observer, rx_observer) = sync_channel::<Observer>(Self::DEFAULT_CHANNEL_BUF_SIZE);
+        let (tx_action, rx_action) = unbounded::<ActionWrapper>();
+        let (tx_observer, rx_observer) = unbounded::<Observer>();
         self.action_channel = Some(tx_action.clone());
         self.observer_channel = Some(tx_observer.clone());
 
@@ -379,7 +375,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrapper: ActionWrapper) {
+pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: ActionWrapper) {
     lax_send_sync(action_channel.clone(), action_wrapper, "dispatch_action");
 }
 

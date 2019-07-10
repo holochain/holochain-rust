@@ -5,12 +5,7 @@
 #![allow(non_snake_case)]
 
 use super::memory_book::*;
-use crate::{
-    connection::NetResult,
-    error::NetworkError,
-    tweetlog::*,
-};
-
+use crate::{connection::NetResult, error::NetworkError, tweetlog::*};
 
 use lib3h_protocol::{
     data_types::{
@@ -109,8 +104,8 @@ impl InMemoryServer {
             Lib3hServerProtocol::HandleGetAuthoringEntryList(GetListData {
                 request_id,
                 provider_agent_id: agent_id.clone(),
-                space_address: dna_address.clone()
-            })
+                space_address: dna_address.clone(),
+            }),
         )
         .expect("Sending HandleGetAuthoringEntryList failed");
         // Request this agent's holding entries
@@ -122,7 +117,7 @@ impl InMemoryServer {
                 request_id,
                 provider_agent_id: agent_id.clone(),
                 space_address: dna_address.clone(),
-            })
+            }),
         )
         .expect("Sending HandleGetHoldingEntryList failed");
     }
@@ -273,15 +268,15 @@ impl InMemoryServer {
                 }
                 self.trackdna_book.insert(chain_id);
                 // Notify all Peers connected to this DNA of a new Peer connection.
-//                self.priv_send_all(
-//                  &msg.space_address.clone().into(),
-                    // TODO BLOCKER what is correct message type?
-                    // TODO or is this deprecated?
-//                    JsonProtocol::PeerConnected(PeerData {
-//                      agent_id: msg.agent_id.clone(),
-//                    })
+                //                self.priv_send_all(
+                //                  &msg.space_address.clone().into(),
+                // TODO BLOCKER what is correct message type?
+                // TODO or is this deprecated?
+                //                    JsonProtocol::PeerConnected(PeerData {
+                //                      agent_id: msg.agent_id.clone(),
+                //                    })
 
-//                )?;
+                //                )?;
                 // Request all data lists from this agent
                 self.priv_request_all_lists(&dna_address, &agent_id);
             }
@@ -396,7 +391,11 @@ impl InMemoryServer {
 
     /// send a message to the appropriate channel based on dna_address::to_agent_id
     /// If chain_id is unknown, send back FailureResult to `maybe_sender_info`
-    fn priv_send_one_with_chain_id(&mut self, chain_id: &str, data: Lib3hServerProtocol) -> NetResult<()> {
+    fn priv_send_one_with_chain_id(
+        &mut self,
+        chain_id: &str,
+        data: Lib3hServerProtocol,
+    ) -> NetResult<()> {
         let maybe_sender = self.senders.get_mut(chain_id);
         if maybe_sender.is_none() {
             self.log.e(&format!(
@@ -562,10 +561,7 @@ impl InMemoryServer {
         let provider_agent_id: Address = msg.provider_agent_id.clone();
 
         // Provider must be tracking
-        let sender_info = Some((
-            msg.provider_agent_id.clone(),
-            Some(msg.request_id.clone()),
-        ));
+        let sender_info = Some((msg.provider_agent_id.clone(), Some(msg.request_id.clone())));
         let is_tracking =
             self.priv_check_or_fail(&dna_address, &provider_agent_id, sender_info.clone())?;
         if !is_tracking {
@@ -598,15 +594,9 @@ impl InMemoryServer {
         let dna_address = msg.space_address.clone();
 
         // Provider must be tracking
-        let sender_info = Some((
-            msg.requester_agent_id.clone(),
-            Some(msg.request_id.clone()),
-        ));
-        let is_tracking = self.priv_check_or_fail(
-            &dna_address,
-            &msg.requester_agent_id.clone(),
-            sender_info,
-        )?;
+        let sender_info = Some((msg.requester_agent_id.clone(), Some(msg.request_id.clone())));
+        let is_tracking =
+            self.priv_check_or_fail(&dna_address, &msg.requester_agent_id.clone(), sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -755,12 +745,11 @@ impl InMemoryServer {
                     &chain_id,
                     Lib3hServerProtocol::HandleFetchEntry(FetchEntryData {
                         space_address: msg.space_address.clone(),
-                        provider_agent_id: undo_chain_id(&chain_id)
-                            .1,
+                        provider_agent_id: undo_chain_id(&chain_id).1,
                         request_id,
                         entry_address: entry_address.clone(),
                         aspect_address_list: Some(vec![aspect_address]),
-                    })
+                    }),
                 );
             }
         }

@@ -124,7 +124,7 @@ fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
             .to_str()
             .expect("Expected DNA path to be valid unicode")
             .to_string(),
-        hash: None,
+        hash: String::from("DNA Hash"),
     }
 }
 
@@ -291,7 +291,7 @@ mod tests {
             DnaConfiguration {
                 id: "hc-run-dna".to_string(),
                 file: "/test/path".to_string(),
-                hash: None,
+                hash: String::from("DNA Hash"),
             }
         )
     }

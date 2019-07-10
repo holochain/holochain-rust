@@ -18,6 +18,7 @@
 extern crate holochain_conductor_api;
 extern crate holochain_core_types;
 extern crate lib3h_sodium;
+extern crate signal_hook;
 extern crate structopt;
 
 use holochain_conductor_api::{
@@ -25,7 +26,8 @@ use holochain_conductor_api::{
     config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::error::HolochainError;
-use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc, thread::sleep, time::Duration};
+use signal_hook::{iterator::Signals, SIGINT};
+use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -44,6 +46,7 @@ fn main() {
         .config
         .unwrap_or(config::default_persistence_dir().join("conductor-config.toml"));
     let config_path_str = config_path.to_str().unwrap();
+    let signals = Signals::new(&[SIGINT]).expect("Couldn't create signals list");
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
         Ok(()) => {
@@ -68,8 +71,8 @@ fn main() {
             }
 
             // TODO wait for a SIGKILL or SIGINT instead here.
-            loop {
-                sleep(Duration::from_secs(1))
+            for sig in signals.forever() {
+                println!("Received signal {:?}", sig);
             }
         }
         Err(error) => println!("Error while trying to boot from config: {:?}", error),

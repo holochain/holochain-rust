@@ -9,7 +9,7 @@ serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 hdk = { path = "../../../../hdk-rust" }
 hdk-proc-macros = { path = "../../../../hdk-proc-macros" }
 
-holochain_json_derive = { git = "https://github.com/holochain/holochain-serialization", branch = "2019-06-27-bump-nightly" }
+holochain_json_derive = w
 serde_derive = "=1.0.89"
 boolinator = "=2.4.0"
 

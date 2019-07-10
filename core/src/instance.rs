@@ -14,8 +14,8 @@ use crate::{
     network::actions::initialize_network::initialize_network_with_spoofed_dna,
     nucleus::actions::initialize::initialize_chain,
 };
-use crossbeam_channel::{unbounded, Sender, Receiver};
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},

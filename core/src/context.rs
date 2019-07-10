@@ -7,7 +7,7 @@ use crate::{
     persister::Persister,
     signal::{Signal, SignalSender},
 };
-use crossbeam_channel::{Sender, Receiver, unbounded};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{
     task::{noop_local_waker_ref, Poll},
     Future,

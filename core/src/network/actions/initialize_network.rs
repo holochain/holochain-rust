@@ -66,14 +66,15 @@ impl Future for InitNetworkFuture {
             return Poll::Ready(Err(err));
         }
         //
+
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
         if let Some(state) = self.context.state() {
             if state.network().network.lock().unwrap().is_some()
-                || state.network().dna_address.is_some()
-                || state.network().agent_id.is_some()
+                && state.network().dna_address.is_some()
+                && state.network().agent_id.is_some()
             {
                 Poll::Ready(Ok(()))
             } else {

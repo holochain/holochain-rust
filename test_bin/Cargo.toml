@@ -1,14 +1,14 @@
 [package]
 name = "holochain_test_bin"
-version = "0.0.21-alpha1"
+version = "0.0.22-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_core_types = { path = "../core_types" }
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "2019-06-27-rust-nightly" }
 holochain_net = { path = "../net" }
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "2019-06-27-rust-nightly" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "2019-06-27-rust-nightly" }
+lib3h = "=0.0.3-alpha1"
+lib3h_protocol = "=0.0.3-alpha1"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 tempfile = "=3.0.7"
 failure = "=0.1.5"
@@ -18,7 +18,7 @@ backtrace = "=0.3.14"
 multihash = "=0.8.0"
 crossbeam-channel = "=0.3.8"
 bincode = "=1.1.4"
-
+url = "=1.7.2"
 [[bin]]
 name = "holochain_test_bin"
 path = "src/main.rs"

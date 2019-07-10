@@ -1,6 +1,6 @@
 let
- holonix-release-tag = "2019-06-27-rust-nightly";
- holonix-release-sha256 = "1n26n9q4i2k11n1m7disjs7s5s11lq29icqyk8qngqs5gf7kq4pi";
+ holonix-release-tag = "0.0.3";
+ holonix-release-sha256 = "0da3kam3sxri73rfanlr8mkl95q74cqvn02y3fa0c021144qxgxv";
 
  hxolonix = import (fetchTarball {
   url = "https://github.com/holochain/holonix/tarball/${holonix-release-tag}";

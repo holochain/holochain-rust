@@ -35,7 +35,7 @@ pub struct CommitEntryArgs {
 
 impl CommitEntryArgs {
     pub fn new(entry: Entry, options: CommitEntryOptions) -> Self {
-        return Self { entry, options };
+        Self { entry, options }
     }
 
     pub fn entry(&self) -> Entry {

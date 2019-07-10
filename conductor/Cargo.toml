@@ -1,12 +1,12 @@
 [package]
 name = "holochain"
-version = "0.0.21-alpha1"
+version = "0.0.22-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_core_types = { path = "../core_types" }
 holochain_conductor_api = { path = "../conductor_api" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "2019-06-27-rust-nightly" }
+lib3h_sodium = "=0.0.3-alpha1"
 holochain_common = { path = "../common" }
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"

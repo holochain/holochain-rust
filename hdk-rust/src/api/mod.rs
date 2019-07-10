@@ -23,8 +23,11 @@ mod call;
 mod capability;
 mod commit_entry;
 mod debug;
+mod decrypt;
 mod emit_signal;
+mod encrypt;
 mod entry_address;
+mod entry_type_properties;
 mod get_entry;
 mod get_links;
 mod keystore;
@@ -43,8 +46,11 @@ pub use self::{
     capability::{commit_capability_claim, commit_capability_grant},
     commit_entry::{commit_entry, commit_entry_result},
     debug::debug,
+    decrypt::decrypt,
     emit_signal::emit_signal,
+    encrypt::encrypt,
     entry_address::entry_address,
+    entry_type_properties::entry_type_properties,
     get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
     get_links::{get_links, get_links_and_load, get_links_result, get_links_with_options},
     keystore::{
@@ -166,7 +172,7 @@ def_api_fns! {
     hc_send, Send;
     hc_debug, Debug;
     hc_call, Call;
-    hc_sign, Sign;
+    hc_crypto,Crypto;
     hc_sign_one_time, SignOneTime;
     hc_verify_signature, VerifySignature;
     hc_link_entries, LinkEntries;

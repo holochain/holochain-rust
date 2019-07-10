@@ -1,6 +1,12 @@
 use crate::{
-    action::ActionWrapper, consistency::ConsistencyModel, context::Context, persister::Persister,
-    scheduled_jobs, signal::Signal, state::State, workflows::application,
+    action::{Action, ActionWrapper},
+    consistency::ConsistencyModel,
+    context::Context,
+    persister::Persister,
+    scheduled_jobs,
+    signal::Signal,
+    state::{State, StateWrapper},
+    workflows::application,
 };
 #[cfg(test)]
 use crate::{
@@ -11,9 +17,11 @@ use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
+    ugly::lax_send_sync,
 };
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
+use snowflake::ProcessUniqueId;
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, Sender, SyncSender},
@@ -30,12 +38,13 @@ pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 #[derive(Clone)]
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
-    state: Arc<RwLock<State>>,
+    state: Arc<RwLock<StateWrapper>>,
     action_channel: Option<SyncSender<ActionWrapper>>,
     observer_channel: Option<SyncSender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
     persister: Option<Arc<Mutex<Persister>>>,
     consistency_model: ConsistencyModel,
+    kill_switch: Option<crossbeam_channel::Sender<()>>,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -160,21 +169,44 @@ impl Instance {
         rx_action: Receiver<ActionWrapper>,
         rx_observer: Receiver<Observer>,
     ) {
+        self.stop_action_loop();
+
         let mut sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
-        thread::spawn(move || {
-            let mut state_observers: Vec<Observer> = Vec::new();
-            for action_wrapper in rx_action {
-                state_observers = sync_self.process_action(
-                    &action_wrapper,
-                    state_observers,
-                    &rx_observer,
-                    &sub_context,
-                );
-                sync_self.emit_signals(&sub_context, &action_wrapper);
-            }
-        });
+        let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
+        self.kill_switch = Some(kill_sender);
+        let instance_is_alive = sub_context.instance_is_alive.clone();
+
+        let _ = thread::Builder::new()
+            .name(format!(
+                "action_loop/{}",
+                ProcessUniqueId::new().to_string()
+            ))
+            .spawn(move || {
+                let mut state_observers: Vec<Observer> = Vec::new();
+                while !kill_receiver.try_recv().is_ok() {
+                    if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
+                        // Ping can happen often, and should be as lightweight as possible
+                        if *action_wrapper.action() != Action::Ping {
+                            state_observers = sync_self.process_action(
+                                &action_wrapper,
+                                state_observers,
+                                &rx_observer,
+                                &sub_context,
+                            );
+                            sync_self.emit_signals(&sub_context, &action_wrapper);
+                        }
+                    }
+                }
+                (*instance_is_alive.lock().unwrap()) = false;
+            });
+    }
+
+    pub fn stop_action_loop(&self) {
+        if let Some(ref kill_switch) = self.kill_switch {
+            let _ = kill_switch.send(());
+        }
     }
 
     /// Calls the reducers for an action and calls the observers with the new state
@@ -188,7 +220,7 @@ impl Instance {
     ) -> Vec<Observer> {
         // Mutate state
         {
-            let new_state: State;
+            let new_state: StateWrapper;
 
             {
                 // Only get a read lock first so code in reducers can read state as well
@@ -260,27 +292,29 @@ impl Instance {
     /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(State::new(context.clone()))),
+            state: Arc::new(RwLock::new(StateWrapper::new(context.clone()))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
+            kill_switch: None,
         }
     }
 
     pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(state)),
+            state: Arc::new(RwLock::new(StateWrapper::from(state))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
+            kill_switch: None,
         }
     }
 
-    pub fn state(&self) -> RwLockReadGuard<State> {
+    pub fn state(&self) -> RwLockReadGuard<StateWrapper> {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
@@ -295,6 +329,13 @@ impl Instance {
             .try_lock()
             .map_err(|_| HolochainError::new("Could not get lock on persister"))?
             .save(&self.state())
+    }
+}
+
+impl Drop for Instance {
+    fn drop(&mut self) {
+        self.stop_action_loop();
+        self.state.write().unwrap().drop_inner_state();
     }
 }
 
@@ -314,7 +355,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     loop {
-        if context.state().unwrap().history.contains(&action_wrapper) {
+        if context.state().unwrap().history().contains(&action_wrapper) {
             return;
         } else {
             let _ = tick_rx.recv_timeout(Duration::from_millis(10));
@@ -328,9 +369,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrapper: ActionWrapper) {
-    action_channel
-        .send(action_wrapper)
-        .expect(DISPATCH_WITHOUT_CHANNELS);
+    lax_send_sync(action_channel.clone(), action_wrapper, "dispatch_action");
 }
 
 #[cfg(test)]
@@ -358,7 +397,7 @@ pub mod tests {
     use tempfile;
     use test_utils;
 
-    use crate::{persister::SimplePersister, state::State};
+    use crate::persister::SimplePersister;
 
     use std::{
         sync::{mpsc::channel, Arc, Mutex},
@@ -455,7 +494,7 @@ pub mod tests {
             None,
             None,
         );
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }
@@ -486,7 +525,7 @@ pub mod tests {
             Some(chain_header),
             context.agent_id.address(),
         );
-        let state = State::new_with_agent(Arc::new(context.clone()), agent_state);
+        let state = StateWrapper::new_with_agent(Arc::new(context.clone()), agent_state);
         let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -536,7 +575,7 @@ pub mod tests {
         // @see https://github.com/holochain/holochain-rust/issues/195
         while instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::InitializeChain(_) => true,
@@ -550,7 +589,7 @@ pub mod tests {
 
         while instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {
@@ -571,7 +610,7 @@ pub mod tests {
 
         while instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::ReturnInitializationResult(_) => true,
@@ -762,10 +801,10 @@ pub mod tests {
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history.iter().count());
+        assert_eq!(1, instance.state().history().iter().count());
         instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {
@@ -800,10 +839,10 @@ pub mod tests {
         );
 
         // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history.iter().count());
+        assert_eq!(1, instance.state().history().iter().count());
         instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {

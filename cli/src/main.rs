@@ -100,6 +100,12 @@ enum Cli {
             help = "Automatically package project before running"
         )]
         package: bool,
+        #[structopt(
+            long = "dna",
+            short = "d",
+            help = "Absolute path to the .dna.json file to run. [default: ./dist/<dna-name>.dna.json]"
+        )]
+        dna_path: Option<PathBuf>,
         #[structopt(long, help = "Produce logging output")]
         logging: bool,
         #[structopt(long, help = "Save generated data to file system")]
@@ -169,6 +175,18 @@ enum Cli {
         #[structopt(long, short, help = "List available instances")]
         list: bool,
     },
+    #[structopt(
+        name = "hash",
+        about = "Parse and hash a DNA file to determine its unique network hash"
+    )]
+    HashDna {
+        #[structopt(
+            long,
+            short,
+            help = "Path to .dna.json file [default: dist/<dna-name>.dna.json]"
+        )]
+        path: Option<PathBuf>,
+    },
 }
 
 fn main() {
@@ -206,13 +224,14 @@ fn run() -> HolochainResult<()> {
         Cli::Run {
             package,
             port,
+            dna_path,
             persist,
             networked,
             interface,
             logging,
         } => {
-            let dna_path =
-                util::std_package_path(&project_path).map_err(HolochainError::Default)?;
+            let dna_path = dna_path
+                .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
             let interface_type = cli::get_interface_type_string(interface);
             let conductor_config = cli::hc_run_configuration(
                 &dna_path,
@@ -268,6 +287,14 @@ fn run() -> HolochainResult<()> {
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             }
         },
+        Cli::HashDna { path } => {
+            let dna_path = path
+                .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
+
+            let dna_hash = cli::hash_dna(&dna_path)
+                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
+            println!("DNA Hash: {}", dna_hash);
+        }
     }
 
     Ok(())

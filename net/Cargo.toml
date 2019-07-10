@@ -1,6 +1,6 @@
 [package]
 name = "holochain_net"
-version = "0.0.21-alpha1"
+version = "0.0.22-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -9,8 +9,9 @@ tempfile = "=3.0.7"
 
 [dependencies]
 failure = "=0.1.5"
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "2019-06-27-rust-nightly" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "2019-06-27-rust-nightly" }
+lib3h = "=0.0.3-alpha1"
+lib3h_protocol = "=0.0.3-alpha1"
+lib3h_crypto_api = "=0.0.3-alpha1"
 holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }
 holochain_json_derive = { git = "https://github.com/holochain/holochain-serialization", branch = "2019-06-27-bump-nightly" }

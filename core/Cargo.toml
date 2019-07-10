@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core"
-version = "0.0.21-alpha1"
+version = "0.0.22-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -36,7 +36,7 @@ holochain_persistence_file = { git = "https://github.com/holochain/holochain-per
 holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "2019-06-27-rust-nightly" }
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "2019-06-27-rust-nightly" }
+lib3h_sodium = "=0.0.3-alpha1"
 boolinator = "=2.4.0"
 jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 jsonrpc-lite = "=0.5.0"
@@ -51,4 +51,3 @@ regex = "=1.1.2"
 wabt = "=0.7.4"
 test_utils = { path = "../test_utils"}
 tempfile = "=3.0.7"
-

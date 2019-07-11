@@ -47,13 +47,6 @@ impl NetWorker for Lib3hWorker {
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         println!("Lib3hWorker.receive(): {:?}", data);
 
-        // TODO BLOCKER add Lib3hClientProtocol::Shutdown
-        // Handle 'Shutdown' directly
-        //        if data == Protocol::Shutdown {
-        //            self.net_engine.terminate()?;
-        //            self.handler.handle(Ok(Protocol::Terminated))?;
-        //            return Ok(());
-        //        }
         // Post Lib3hClient messages only
         self.net_engine.post(data.clone())?;
         // Done
@@ -66,9 +59,6 @@ impl NetWorker for Lib3hWorker {
         // Send p2pReady on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
-
-            // TODO BLOCKER send connected here or that will happen naturally?
-            //self.handler.handle(Ok(Protocol::P2pReady))?;
         }
         // Tick the NetworkEngine and check for incoming protocol messages.
         let (did_something, output) = self.net_engine.process()?;

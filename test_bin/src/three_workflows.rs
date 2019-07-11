@@ -17,6 +17,8 @@ use std::time::SystemTime;
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'Connected'
 #[cfg_attr(tarpaulin, skip)]
+// TODO consider that synchronization from peer connected is no longer reliable mechanism
+// might want to mark as broken test
 pub fn setup_three_nodes(
     alex: &mut TestNode,
     billy: &mut TestNode,

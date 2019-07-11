@@ -173,7 +173,7 @@ mod tests {
             Ok(true)
         }
 
-        fn receive(&mut self, data: Protocol) -> NetResult<()> {
+        fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
             self.handler.handle(Ok(data))
         }
     }

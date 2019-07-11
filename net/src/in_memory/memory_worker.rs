@@ -32,8 +32,9 @@ impl NetWorker for InMemoryWorker {
     /// forward to our in-memory server
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         // InMemoryWorker doesn't have to do anything on shutdown
-        // TODO BLOCKER how are shutdowns triggered without Protocol invovled?
+        // TODO BLOCKER add shutdown to lib3h protocol client
         /* if data == Protocol::Shutdown {
+                                // TODO add Terminated to lib3h protocol server
             self.handler.handle(Ok(Protocol::Terminated))?;
             return Ok(());
         }*/
@@ -180,7 +181,7 @@ mod tests {
     fn can_memory_worker_double_track() {
         // setup client 1
         let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_json());
-        let (handler_send_1, handler_recv_1) = unbounded::<Protocol>();
+        let (handler_send_1, handler_recv_1) = unbounded::<Lib3hServerProtocol>();
 
         let mut memory_worker_1 = Box::new(
             InMemoryWorker::new(
@@ -196,8 +197,7 @@ mod tests {
         // Should receive p2pready on first tick
         memory_worker_1.tick().unwrap();
         let message = handler_recv_1.recv().unwrap();
-        //        assert_eq!(message, Protocol::P2pReady);
-
+        assert!(match message { Lib3hServerProtocol::Connected(_) => true, _ => false } );
         // First Track
         memory_worker_1
             .receive(
@@ -212,7 +212,7 @@ mod tests {
 
         // Should receive PeerConnected
         memory_worker_1.tick().unwrap();
-        let _res = Lib3hClientProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let _res : Lib3hServerProtocol = handler_recv_1.recv().unwrap();
 
         // Second Track
         memory_worker_1

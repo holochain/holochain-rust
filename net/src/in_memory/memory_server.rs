@@ -267,17 +267,7 @@ impl InMemoryServer {
                     return Ok(());
                 }
                 self.trackdna_book.insert(chain_id);
-                // Notify all Peers connected to this DNA of a new Peer connection.
-                //                self.priv_send_all(
-                //                  &msg.space_address.clone().into(),
-                // TODO BLOCKER what is correct message type?
-                // TODO or is this deprecated?
-                //                    JsonProtocol::PeerConnected(PeerData {
-                //                      agent_id: msg.agent_id.clone(),
-                //                    })
-
-                //                )?;
-                // Request all data lists from this agent
+                // TODO return a success response to join space
                 self.priv_request_all_lists(&dna_address, &agent_id);
             }
 

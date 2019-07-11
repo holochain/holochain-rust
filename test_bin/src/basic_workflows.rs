@@ -562,6 +562,7 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
 }
 
 /// Send Protocol::Shutdown
+// TODO @neonphog make sure passes in context of IPC net worker
 pub fn shutdown_test(
     alex: &mut TestNode,
     billy: &mut TestNode,

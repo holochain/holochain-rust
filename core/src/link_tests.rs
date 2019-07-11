@@ -13,7 +13,7 @@ pub mod tests {
     };
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
-    use std::sync::mpsc::channel;
+    use crossbeam_channel::unbounded;
 
     pub fn create_example_link() -> Link {
         Link::new(
@@ -60,7 +60,7 @@ pub mod tests {
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
         let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = channel::<Observer>();
+        let (_, rx_observer) = unbounded::<Observer>();
         let context = instance.initialize_context(context);
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
         // Check if LinkEntry is found
@@ -96,7 +96,7 @@ pub mod tests {
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
         let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = channel::<Observer>();
+        let (_, rx_observer) = unbounded::<Observer>();
         let context = instance.initialize_context(context);
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
         // Check if LinkEntry is found

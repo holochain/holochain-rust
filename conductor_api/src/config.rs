@@ -20,6 +20,7 @@ use holochain_core_types::{
     },
     error::{HcResult, HolochainError},
 };
+//use logging::rule::Rule;
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;

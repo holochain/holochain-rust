@@ -73,6 +73,13 @@ jobs:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test
 
+ app-spec-proc-tests:
+  docker:
+   - image: holochain/holonix:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+
    - run:
        name: proc macro app spec tests
        command: nix-shell --run hc-app-spec-test-proc
@@ -209,6 +216,7 @@ workflows:
    - build
    - fmt
    - app-spec-tests
+   - app-spec-proc-tests
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests

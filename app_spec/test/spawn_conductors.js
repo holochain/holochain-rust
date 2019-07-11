@@ -12,7 +12,7 @@ const genConfig = async (debug, index) => {
   const tmpPath = fs.mkdtempSync(path.join(os.tmpdir(), 'n3h-test-conductors-'))
   const n3hPath = path.join(tmpPath, 'n3h-storage')
   fs.mkdirSync(n3hPath)
-  const configPath = path.join(tmpPath, `empty-conductor-${index}.toml`)
+  const configPath = path.join(tmpPath, `conductor-config.toml`)
 
   const adminPort = 3000 + index
 

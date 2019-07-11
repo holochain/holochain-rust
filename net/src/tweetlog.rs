@@ -84,7 +84,7 @@ macro_rules! log_ee {
 // LOGLEVEL
 //--------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub enum LogLevel {
     Trace = 1,
     Debug,
@@ -127,7 +127,6 @@ impl LogLevel {
 
 /// TweetLog has a TweetLogger per Tag
 /// which has its own loglevel and callbacks
-#[derive(Debug)]
 struct TweetLogger {
     pub level: LogLevel,
     pub callbacks: HashSet<listenerCallback>,

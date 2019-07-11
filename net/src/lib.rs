@@ -17,6 +17,7 @@ extern crate holochain_persistence_api;
 
 #[macro_use]
 extern crate lazy_static;
+extern crate lib3h_sodium;
 extern crate libc;
 extern crate reqwest;
 extern crate sha2;

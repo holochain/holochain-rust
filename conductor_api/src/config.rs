@@ -573,7 +573,6 @@ impl From<AgentConfiguration> for AgentId {
 pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
-    #[serde(default)]
     pub hash: String,
 }
 

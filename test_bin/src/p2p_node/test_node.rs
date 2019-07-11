@@ -21,7 +21,7 @@ use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
 use std::{
     collections::{HashMap, HashSet},
-    convert::{TryInto},
+    convert::TryInto,
 };
 
 use super::{
@@ -743,7 +743,7 @@ impl TestNode {
         self.recv_msg_log.push(data.clone());
 
         // logging depending on received type
-/*        match data {
+        /*        match data {
             Protocol::NamedBinary(_) => {
                 let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
                 self.logger.d(&dbg_msg);
@@ -774,14 +774,14 @@ impl TestNode {
         Ok(data)
     }
 
-/// recv messages until timeout is reached
-/// returns the number of messages it received during listening period
-/// timeout is reset after a message is received
-#[cfg_attr(tarpaulin, skip)]
-pub fn listen(&mut self, timeout_ms: usize) -> usize {
-    let mut count: usize = 0;
-    let mut time_ms: usize = 0;
-    loop {
+    /// recv messages until timeout is reached
+    /// returns the number of messages it received during listening period
+    /// timeout is reset after a message is received
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn listen(&mut self, timeout_ms: usize) -> usize {
+        let mut count: usize = 0;
+        let mut time_ms: usize = 0;
+        loop {
             let mut has_recved = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
@@ -896,19 +896,19 @@ pub fn listen(&mut self, timeout_ms: usize) -> usize {
             let mut did_something = false;
 
             if let Ok(lib3h_msg) = self.try_recv() {
-                    self.logger.i(&format!(
-                        "({})::wait_lib3h() - received: {:?}",
-                        self.agent_id, lib3h_msg
-                    ));
-                    did_something = true;
-                    if predicate(&lib3h_msg) {
-                        self.logger
-                            .i(&format!("({})::wait_lib3h() - match", self.agent_id));
-                        return Some(lib3h_msg);
-                    } else {
-                        self.logger
-                            .i(&format!("({})::wait_lib3h() - NO match", self.agent_id));
-                    }
+                self.logger.i(&format!(
+                    "({})::wait_lib3h() - received: {:?}",
+                    self.agent_id, lib3h_msg
+                ));
+                did_something = true;
+                if predicate(&lib3h_msg) {
+                    self.logger
+                        .i(&format!("({})::wait_lib3h() - match", self.agent_id));
+                    return Some(lib3h_msg);
+                } else {
+                    self.logger
+                        .i(&format!("({})::wait_lib3h() - NO match", self.agent_id));
+                }
             }
 
             if !did_something {

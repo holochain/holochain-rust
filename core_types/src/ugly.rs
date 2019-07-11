@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use std::sync::mpsc::{Sender, SyncSender};
+use std::sync::mpsc::Sender;
 
 pub fn lax_send<T: Clone + Debug>(tx: Sender<T>, val: T, _failure_reason: &str) -> bool {
     match tx.send(val.clone()) {
@@ -12,7 +12,11 @@ pub fn lax_send<T: Clone + Debug>(tx: Sender<T>, val: T, _failure_reason: &str) 
     }
 }
 
-pub fn lax_send_sync<T: Clone + Debug>(tx: SyncSender<T>, val: T, _failure_reason: &str) -> bool {
+pub fn lax_send_sync<T: Clone + Debug>(
+    tx: crossbeam_channel::Sender<T>,
+    val: T,
+    _failure_reason: &str,
+) -> bool {
     match tx.send(val.clone()) {
         Ok(()) => true,
         Err(_) => {

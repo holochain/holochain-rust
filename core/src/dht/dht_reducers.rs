@@ -71,6 +71,7 @@ pub(crate) fn reduce_hold_entry(
     let mut new_store = (*old_store).clone();
     match reduce_store_entry_inner(&mut new_store, &entry) {
         Ok(()) => {
+            new_store.mark_entry_as_held(&entry);
             new_store.add_header_for_entry(&entry, &header).ok()?;
             Some(new_store)
         }

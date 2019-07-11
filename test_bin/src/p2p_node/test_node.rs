@@ -39,7 +39,7 @@ pub struct TestNode {
     // Need to hold the tempdir to keep it alive, otherwise we will get a dir error.
     _maybe_temp_dir: Option<tempfile::TempDir>,
     p2p_connection: P2pNetwork,
-    receiver: Receiver<Protocol>,
+    receiver: Receiver<Lib3hServerProtocol>,
     pub config: P2pConfig,
 
     pub agent_id: Address,
@@ -49,7 +49,7 @@ pub struct TestNode {
     request_count: usize,
 
     // logging
-    recv_msg_log: Vec<Protocol>,
+    recv_msg_log: Vec<Lib3hServerProtocol>,
 
     // datastores per dna
     chain_store_list: HashMap<Address, ChainStore>,
@@ -70,9 +70,7 @@ impl TestNode {
     pub fn count_recv_json_messages(&self) -> usize {
         let mut count = 0;
         for msg in self.recv_msg_log.clone() {
-            if Lib3hServerProtocol::try_from(&msg).is_ok() {
-                count += 1;
-            };
+            count += 1;
         }
         count
     }
@@ -116,18 +114,17 @@ impl TestNode {
             return Ok(());
         }
         let agent_id = self.agent_id.clone();
-        let protocol_msg: Protocol = if self.is_json {
+        let protocol_msg: Lib3hClientProtocol = if self.is_json {
             let track_dna_msg = SpaceData {
-                // TODO BLOCKER create request id generator
-                request_id: "abc".into(),
-                space_address: dna_address.clone().try_into().unwrap(),
+                request_id: snowflake::ProcessUniqueId::new().to_string(),
+                space_address: dna_address.clone(),
                 agent_id,
             };
             Lib3hClientProtocol::JoinSpace(track_dna_msg).into()
         } else {
             let track_dna_msg = lib3h_protocol::data_types::SpaceData {
-                request_id: "leave_space_req".to_string(),
-                space_address: dna_address.clone().into(),
+                request_id: snowflake::ProcessUniqueId::new().to_string(),
+                space_address: dna_address.clone(),
                 agent_id: agent_id.to_string().into(),
             };
             Lib3hClientProtocol::JoinSpace(track_dna_msg).into()
@@ -162,7 +159,7 @@ impl TestNode {
             return Ok(());
         }
         let agent_id = self.agent_id.clone();
-        let protocol_msg: Protocol = if self.is_json {
+        let protocol_msg: Lib3hClientProtocol = if self.is_json {
             let track_dna_msg = SpaceData {
                 request_id: "untrack_dna_req".into(),
                 space_address: dna_address.clone().try_into().unwrap(),
@@ -330,7 +327,7 @@ impl TestNode {
                 to_agent_id: query.requester_agent_id.clone(),
                 result_info: "Unknown query request".as_bytes().to_vec(),
             };
-            self.send(Lib3hServerProtocol::FailureResult(msg_data.clone()).into())
+            self.send(Lib3hClientProtocol::FailureResult(msg_data.clone()).into())
                 .expect("Sending FailureResult failed");
             return Err(msg_data);
         }
@@ -345,7 +342,7 @@ impl TestNode {
         // HandleFetchEntry
         let fetch_res = self.reply_to_HandleFetchEntry_inner(&fetch);
         if let Err(res) = fetch_res {
-            self.send(Lib3hServerProtocol::FailureResult(res.clone()).into())
+            self.send(Lib3hClientProtocol::FailureResult(res.clone()).into())
                 .expect("Sending FailureResult failed");
             return Err(res);
         }
@@ -598,7 +595,7 @@ impl TestNode {
         );
 
         // use a mpsc channel for messaging between p2p connection and main thread
-        let (sender, receiver) = unbounded::<Protocol>();
+        let (sender, receiver) = unbounded::<Lib3hServerProtocol>();
         // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
         let agent_id = agent_id_arg.clone();
         let p2p_connection = P2pNetwork::new(
@@ -686,7 +683,7 @@ impl TestNode {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn try_recv(&mut self) -> NetResult<Protocol> {
+    pub fn try_recv(&mut self) -> NetResult<Lib3hServerProtocol> {
         let data = self.receiver.try_recv()?;
 
         self.recv_msg_log.push(data.clone());
@@ -700,7 +697,7 @@ impl TestNode {
         let data = self.try_recv()?;
 
         // logging depending on received type
-        match data {
+        /*        match data {
             Protocol::NamedBinary(_) => {
                 let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
                 self.logger.d(&dbg_msg);
@@ -725,12 +722,11 @@ impl TestNode {
                 let dbg_msg = format!("<< ({}) recv <other>", self.agent_id);
                 self.logger.t(&dbg_msg);
             }
-        };
+        };*/
 
-        match Lib3hServerProtocol::try_from(&data) {
-            Ok(r) => {
-                self.handle_json(r.clone());
-                Ok(r)
+        //        match Lib3hServerProtocol::try_from(&data) {
+        self.handle_lib3h(data.clone());
+        /*Ok(r)
             }
             Err(e) => {
                 let s = format!("{:?}", e);
@@ -742,7 +738,7 @@ impl TestNode {
                 }
                 Err(e)
             }
-        }
+        }*/
     }
 
     /// See if there is a message to receive, and log it
@@ -966,55 +962,7 @@ impl TestNode {
 
     /// handle all types of json message
     #[cfg_attr(tarpaulin, skip)]
-    fn handle_lib3h(&mut self, lib3h_msg: Lib3hServerProtocol) {
-        match lib3h_msg {
-            Lib3hServerProtocol::SuccessResult(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::FailureResult(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::Connected(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::Disconnected(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::SendDirectMessageResult(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::HandleSendDirectMessage(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::FetchEntryResult(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::HandleFetchEntry(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::HandleStoreEntryAspect(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::HandleDropEntry(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::HandleQueryEntry(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::QueryEntryResult(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::HandleGetAuthoringEntryList(_msg) => {
-                // FIXME
-            }
-            Lib3hServerProtocol::HandleGetGossipingEntryList(_msg) => {
-                // FIXME
-            }
-        }
-    }
-    /// handle all types of json message
-    #[cfg_attr(tarpaulin, skip)]
-    fn handle_json(&mut self, json_msg: Lib3hServerProtocol) {
+    fn handle_lib3h(&mut self, json_msg: Lib3hServerProtocol) {
         match json_msg {
             Lib3hServerProtocol::SuccessResult(_msg) => {
                 // n/a
@@ -1077,7 +1025,7 @@ impl TestNode {
 
 impl NetSend for TestNode {
     /// send a Protocol message to the p2p network instance
-    fn send(&mut self, data: Protocol) -> NetResult<()> {
+    fn send(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         self.logger
             .d(&format!(">> ({}) send: {:?}", self.agent_id, data));
         self.p2p_connection.send(data)

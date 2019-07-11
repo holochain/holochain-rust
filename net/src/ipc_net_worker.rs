@@ -10,9 +10,7 @@ use crate::connection::{
     NetResult,
 };
 
-use lib3h_protocol::{
-    protocol_client::Lib3hClientProtocol,
-};
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 use std::collections::HashMap;
 
@@ -151,10 +149,10 @@ impl NetWorker for IpcNetWorker {
     /// we got a message from holochain core
     /// (just forwards to the internal worker relay)
     fn receive(&mut self, _data: Lib3hClientProtocol) -> NetResult<()> {
-     // TODO BLOCKER fix this code for n3h
-     //   let data: NamedBinaryData = panic!("unimplemented"); //data.into();
-//        let data = rmp_serde::to_vec_named(&data)?;
-  //      self.wss_socket.send_all(&data)?;
+        // TODO BLOCKER fix this code for n3h
+        //   let data: NamedBinaryData = panic!("unimplemented"); //data.into();
+        //        let data = rmp_serde::to_vec_named(&data)?;
+        //      self.wss_socket.send_all(&data)?;
 
         Ok(())
     }
@@ -205,7 +203,7 @@ impl NetWorker for IpcNetWorker {
                     if !self.is_network_ready && &self.last_known_state == "ready" {
                         self.is_network_ready = true;
                         // TODO BLOCKER
-//                        self.handler.handle(Ok(Protocol::P2pReady))?;
+                        //                        self.handler.handle(Ok(Protocol::P2pReady))?;
                         self.priv_send_connects()?;
                     }
                 }
@@ -227,7 +225,7 @@ impl IpcNetWorker {
     fn priv_send_connects(&mut self) -> NetResult<()> {
         let bs_nodes: Vec<String> = self.bootstrap_nodes.drain(..).collect();
         for _bs_node in &bs_nodes {
- /*           self.receive(
+            /*           self.receive(
                 // TODO BLOCKER: what should this actually be changed to?
                 Lib3hServerProtocol::Connected(ConnectedData {
                     request_id: snowflake::ProcessUniqueId::new().to_string(),

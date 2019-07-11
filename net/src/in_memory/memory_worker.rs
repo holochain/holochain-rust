@@ -50,11 +50,7 @@ impl NetWorker for InMemoryWorker {
                     Entry::Occupied(_) => (),
                     Entry::Vacant(e) => {
                         let (tx, rx) = mpsc::channel();
-                        server.register_chain(
-                            &dna_address,
-                            &track_msg.agent_id,
-                            tx,
-                        )?;
+                        server.register_chain(&dna_address, &track_msg.agent_id, tx)?;
                         e.insert(rx);
                     }
                 };
@@ -70,10 +66,7 @@ impl NetWorker for InMemoryWorker {
                 match self.receiver_per_dna.entry(dna_address.clone()) {
                     Entry::Vacant(_) => (),
                     Entry::Occupied(e) => {
-                        server.unregister_chain(
-                            &dna_address,
-                            &untrack_msg.agent_id
-                        );
+                        server.unregister_chain(&dna_address, &untrack_msg.agent_id);
                         e.remove();
                     }
                 };
@@ -203,7 +196,7 @@ mod tests {
         // Should receive p2pready on first tick
         memory_worker_1.tick().unwrap();
         let message = handler_recv_1.recv().unwrap();
-//        assert_eq!(message, Protocol::P2pReady);
+        //        assert_eq!(message, Protocol::P2pReady);
 
         // First Track
         memory_worker_1

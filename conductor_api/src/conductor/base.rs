@@ -113,7 +113,8 @@ impl Drop for Conductor {
                 kill();
             }
         }
-        self.shutdown();
+        self.shutdown()
+            .unwrap_or_else(|err| println!("Error during shutdown, continuing anyway: {:?}", err));
     }
 }
 
@@ -434,15 +435,14 @@ impl Conductor {
 
     /// Stop and clear all instances
     /// @QUESTION: why don't we care about errors on shutdown?
-    pub fn shutdown(&mut self) {
-        let _ = self
-            .stop_all_instances()
-            .map_err(|error| notify(format!("Error during shutdown: {}", error)));
+    pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
+        let _ = self.stop_all_instances()?;
         self.stop_all_interfaces();
         self.signal_multiplexer_kill_switch
             .as_ref()
             .map(|sender| sender.send(()));
         self.instances = HashMap::new();
+        Ok(())
     }
 
     pub fn spawn_network(&mut self) -> Result<SpawnResult, HolochainError> {
@@ -540,7 +540,7 @@ impl Conductor {
         }
 
         let config = self.config.clone();
-        self.shutdown();
+        self.shutdown().map_err(|e| e.to_string())?;
 
         self.start_signal_multiplexer();
 

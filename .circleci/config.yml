@@ -73,9 +73,9 @@ jobs:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test
 
-   - run:
-       name: proc macro app spec tests
-       command: nix-shell --run hc-app-spec-test-proc
+#   - run:
+#       name: proc macro app spec tests
+#       command: nix-shell --run hc-app-spec-test-proc
 
  cluster-tests:
   docker:

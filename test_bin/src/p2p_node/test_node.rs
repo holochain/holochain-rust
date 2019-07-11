@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use holochain_net::{
-    connection::{net_connection::NetSend, protocol::Protocol, NetResult},
+    connection::{net_connection::NetSend, NetResult},
     p2p_config::*,
     p2p_network::P2pNetwork,
     tweetlog::{TweetProxy, *},
@@ -21,7 +21,7 @@ use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
 use std::{
     collections::{HashMap, HashSet},
-    convert::{TryFrom, TryInto},
+    convert::{TryInto},
 };
 
 use super::{
@@ -68,11 +68,7 @@ pub struct TestNode {
 impl TestNode {
     /// Return number of Lib3hServerProtocol message this node has received
     pub fn count_recv_json_messages(&self) -> usize {
-        let mut count = 0;
-        for msg in self.recv_msg_log.clone() {
-            count += 1;
-        }
-        count
+        self.recv_msg_log.len()
     }
 
     /// Return the ith JSON message that this node has received and fullfills predicate
@@ -83,13 +79,9 @@ impl TestNode {
     ) -> Option<Lib3hServerProtocol> {
         let mut count = 0;
         for msg in self.recv_msg_log.clone() {
-            let json_msg = match Lib3hServerProtocol::try_from(&msg) {
-                Ok(r) => r,
-                Err(_) => continue,
-            };
-            if predicate(&json_msg) {
+            if predicate(&msg) {
                 if count == ith {
-                    return Some(json_msg);
+                    return Some(msg);
                 }
                 count += 1;
             }
@@ -726,8 +718,9 @@ impl TestNode {
 
         //        match Lib3hServerProtocol::try_from(&data) {
         self.handle_lib3h(data.clone());
+        Ok(data)
         /*Ok(r)
-            }
+            };
             Err(e) => {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
@@ -750,7 +743,7 @@ impl TestNode {
         self.recv_msg_log.push(data.clone());
 
         // logging depending on received type
-        match data {
+/*        match data {
             Protocol::NamedBinary(_) => {
                 let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
                 self.logger.d(&dbg_msg);
@@ -775,34 +768,20 @@ impl TestNode {
                 let dbg_msg = format!("<< ({}) recv <other>", self.agent_id);
                 self.logger.t(&dbg_msg);
             }
-        };
+        };*/
 
-        match Lib3hServerProtocol::try_from(&data) {
-            Ok(r) => {
-                self.handle_lib3h(r.clone());
-                Ok(r)
-            }
-            Err(e) => {
-                let s = format!("{:?}", e);
-                if !s.contains("Empty") && !s.contains("Pong(PongData") {
-                    self.logger.e(&format!(
-                        "({}) ###### Received parse error: {} | data = {:?}",
-                        self.agent_id, s, data,
-                    ));
-                }
-                Err(e)
-            }
-        }
+        self.handle_lib3h(data.clone());
+        Ok(data)
     }
 
-    /// recv messages until timeout is reached
-    /// returns the number of messages it received during listening period
-    /// timeout is reset after a message is received
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn listen(&mut self, timeout_ms: usize) -> usize {
-        let mut count: usize = 0;
-        let mut time_ms: usize = 0;
-        loop {
+/// recv messages until timeout is reached
+/// returns the number of messages it received during listening period
+/// timeout is reset after a message is received
+#[cfg_attr(tarpaulin, skip)]
+pub fn listen(&mut self, timeout_ms: usize) -> usize {
+    let mut count: usize = 0;
+    let mut time_ms: usize = 0;
+    loop {
             let mut has_recved = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
@@ -916,8 +895,7 @@ impl TestNode {
         loop {
             let mut did_something = false;
 
-            if let Ok(p2p_msg) = self.try_recv() {
-                if let Protocol::Lib3hServer(lib3h_msg) = p2p_msg {
+            if let Ok(lib3h_msg) = self.try_recv() {
                     self.logger.i(&format!(
                         "({})::wait_lib3h() - received: {:?}",
                         self.agent_id, lib3h_msg
@@ -931,7 +909,6 @@ impl TestNode {
                         self.logger
                             .i(&format!("({})::wait_lib3h() - NO match", self.agent_id));
                     }
-                }
             }
 
             if !did_something {

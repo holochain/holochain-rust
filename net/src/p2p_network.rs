@@ -163,9 +163,10 @@ mod tests {
         let connect_data = ConnectData {
             request_id: "memory_network_req_id".into(),
             peer_uri: url::Url::parse("mem://test".into()).expect("well formed memory network url"),
-            network_id: "test_net_id".into()
+            network_id: "test_net_id".into(),
         };
-        res.send(Lib3hClientProtocol::Connect(connect_data)).unwrap();
+        res.send(Lib3hClientProtocol::Connect(connect_data))
+            .unwrap();
         res.stop().unwrap();
     }
 }

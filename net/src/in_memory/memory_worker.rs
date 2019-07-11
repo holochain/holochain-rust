@@ -197,7 +197,10 @@ mod tests {
         // Should receive p2pready on first tick
         memory_worker_1.tick().unwrap();
         let message = handler_recv_1.recv().unwrap();
-        assert!(match message { Lib3hServerProtocol::Connected(_) => true, _ => false } );
+        assert!(match message {
+            Lib3hServerProtocol::Connected(_) => true,
+            _ => false,
+        });
         // First Track
         memory_worker_1
             .receive(
@@ -212,7 +215,7 @@ mod tests {
 
         // Should receive PeerConnected
         memory_worker_1.tick().unwrap();
-        let _res : Lib3hServerProtocol = handler_recv_1.recv().unwrap();
+        let _res: Lib3hServerProtocol = handler_recv_1.recv().unwrap();
 
         // Second Track
         memory_worker_1

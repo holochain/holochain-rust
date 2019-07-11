@@ -49,18 +49,14 @@ mod tests {
     use super::*;
     use crossbeam_channel::unbounded;
 
-    use lib3h_protocol::{
-        protocol_server::Lib3hServerProtocol,
-        data_types::GenericResultData
-    };
     use holochain_persistence_api::hash::HashString;
-
+    use lib3h_protocol::{data_types::GenericResultData, protocol_server::Lib3hServerProtocol};
 
     struct DefWorker;
 
     impl NetWorker for DefWorker {}
 
-  //  #[test]
+    //  #[test]
     fn it_can_defaults() {
         let mut con = NetConnectionRelay::new(
             NetHandler::new(Box::new(move |_r| Ok(()))),
@@ -73,7 +69,7 @@ mod tests {
             request_id: "test_req_id".into(),
             space_address: HashString::from("test_space"),
             to_agent_id: HashString::from("test-agent"),
-            result_info: vec![]
+            result_info: vec![],
         }));
         con.tick().unwrap();
         con.stop().unwrap();
@@ -88,7 +84,7 @@ mod tests {
             request_id: "test_req_id".into(),
             space_address: HashString::from("test_space"),
             to_agent_id: HashString::from("test-agent"),
-            result_info: "tick".to_string().into_bytes()
+            result_info: "tick".to_string().into_bytes(),
         })
     }
 
@@ -97,14 +93,14 @@ mod tests {
             request_id: "test_req_id".into(),
             space_address: HashString::from("test_space"),
             to_agent_id: HashString::from("test-agent"),
-            result_info: "tick".to_string().into_bytes()
+            result_info: "tick".to_string().into_bytes(),
         })
     }
 
     impl NetWorker for SimpleWorker {
         fn tick(&mut self) -> NetResult<bool> {
-        self.handler.handle(Ok(success_server_result()));
-        Ok(true)
+            self.handler.handle(Ok(success_server_result()));
+            Ok(true)
         }
 
         fn receive(&mut self, _data: Lib3hClientProtocol) -> NetResult<()> {

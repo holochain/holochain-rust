@@ -26,6 +26,7 @@ use holochain_persistence_api::{
     eav::IndexFilter,
 };
 
+use crate::dht::dht_store::DhtStoreSnapshot;
 use std::{
     collections::HashSet,
     convert::TryInto,
@@ -75,17 +76,30 @@ impl State {
     pub fn new_with_agent_and_nucleus(
         context: Arc<Context>,
         agent_state: AgentState,
-        mut nucleus_state: NucleusState,
+        nucleus_state: NucleusState,
     ) -> Self {
         let cas = context.dht_storage.clone();
         let eav = context.eav_storage.clone();
+
+        let dht_store = DhtStore::new(cas.clone(), eav.clone());
+        Self::new_with_agent_nucleus_dht(context, agent_state, nucleus_state, dht_store)
+    }
+
+    pub fn new_with_agent_nucleus_dht(
+        context: Arc<Context>,
+        agent_state: AgentState,
+        mut nucleus_state: NucleusState,
+        dht_store: DhtStore,
+    ) -> Self {
+        let cas = context.dht_storage.clone();
+        //let eav = context.eav_storage.clone();
 
         nucleus_state.dna = Self::get_dna(&agent_state, cas.clone()).ok();
 
         State {
             nucleus: Arc::new(nucleus_state),
             agent: Arc::new(agent_state),
-            dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
+            dht: Arc::new(dht_store),
             network: Arc::new(NetworkState::new()),
             history: HashSet::new(),
             conductor_api: context.conductor_api.clone(),
@@ -155,17 +169,24 @@ impl State {
         context: Arc<Context>,
         agent_snapshot: AgentStateSnapshot,
         nucleus_snapshot: NucleusStateSnapshot,
+        dht_store_snapshot: DhtStoreSnapshot,
     ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
-            ChainStore::new(context.dht_storage.clone()),
+            ChainStore::new(context.chain_storage.clone()),
             agent_snapshot.top_chain_header().map(|h| h.to_owned()),
             context.agent_id.address(),
         );
         let nucleus_state = NucleusState::from(nucleus_snapshot);
-        Ok(State::new_with_agent_and_nucleus(
+        let dht_store = DhtStore::new_with_holding_list(
+            context.dht_storage.clone(),
+            context.eav_storage.clone(),
+            dht_store_snapshot.holding_list,
+        );
+        Ok(State::new_with_agent_nucleus_dht(
             context.clone(),
             agent_state,
             nucleus_state,
+            dht_store,
         ))
     }
 
@@ -299,20 +320,6 @@ impl StateWrapper {
                 .expect("Tried to use dropped state")
                 .network,
         )
-    }
-
-    pub fn try_from_snapshots(
-        context: Arc<Context>,
-        agent_snapshot: AgentStateSnapshot,
-        nucleus_snapshot: NucleusStateSnapshot,
-    ) -> HcResult<StateWrapper> {
-        Ok(StateWrapper {
-            state: Some(State::try_from_snapshots(
-                context,
-                agent_snapshot,
-                nucleus_snapshot,
-            )?),
-        })
     }
 
     pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {

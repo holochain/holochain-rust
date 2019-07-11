@@ -5,6 +5,7 @@ pub mod get_links_count;
 pub mod get_validation_package;
 pub mod initialize_network;
 pub mod publish;
+pub mod shutdown;
 
 use holochain_core_types::error::HcResult;
 use holochain_persistence_api::cas::content::Address;

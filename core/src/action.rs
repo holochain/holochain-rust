@@ -26,7 +26,7 @@ use holochain_core_types::{
 };
 use holochain_net::{
     connection::{
-        json_protocol::{FetchEntryData, QueryEntryData},
+        json_protocol::{EntryListData, FetchEntryData, QueryEntryData},
         net_connection::NetHandler,
     },
     p2p_config::P2pConfig,
@@ -123,6 +123,9 @@ pub enum Action {
     /// Create a network proxy instance from the given [NetworkSettings](struct.NetworkSettings.html)
     InitNetwork(NetworkSettings),
 
+    /// Shut down network by sending JsonProtocoll::UntrackDna, stopping network thread and dropping P2pNetwork instance
+    ShutdownNetwork,
+
     /// Makes the network PUT the given entry to the DHT.
     /// Distinguishes between different entry types and does
     /// the right thing respectively.
@@ -187,8 +190,14 @@ pub enum Action {
 
     /// Updates the state to hold the response that we got for
     /// our previous custom direct message.
-    /// /// Triggered from the network handler when we get the response.
+    /// Triggered from the network handler when we get the response.
     HandleCustomSendResponse((String, Result<String, String>)),
+
+    /// Sends the given data as JsonProtocol::HandleGetAuthoringEntryListResult
+    RespondAuthoringList(EntryListData),
+
+    /// Sends the given data as JsonProtocol::HandleGetGossipEntryListResult
+    RespondGossipList(EntryListData),
 
     // ----------------
     // Nucleus actions:

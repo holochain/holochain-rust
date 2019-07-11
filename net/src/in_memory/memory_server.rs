@@ -548,7 +548,6 @@ impl InMemoryServer {
             // Broadcast: have everyone store it (including self)
             self.priv_send_all(
                 &dna_address,
-                // TODO what to make this?
                 Lib3hServerProtocol::HandleStoreEntryAspect(store_msg),
             )?;
         }

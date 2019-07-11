@@ -549,9 +549,46 @@ impl Configuration {
     }
 }
 
+pub enum AgentConfiguration {
+    Agent(AgentConfig),
+    TestAgent(TestAgentConfig),
+}
+
+impl AgentConfiguration {
+    pub fn id(&self) -> String {
+        match self {
+            AgentConfiguration::Agent(c) => c.id,
+            AgentConfiguration::TestAgent(c) => c.name,
+        }
+    }
+
+    pub fn name(&self) -> String {
+        match self {
+            AgentConfiguration::Agent(c) => c.name,
+            AgentConfiguration::TestAgent(c) => c.name,
+        }
+    }
+
+    pub fn public_address(&self) -> String {
+        match self {
+            AgentConfiguration::Agent(c) => c.public_address,
+            AgentConfiguration::TestAgent(c) => c.public_address,
+        }
+    }
+
+    pub fn holo_remote_key(&self) -> bool {
+        match self {
+            AgentConfiguration::Agent(agent_config) => {
+                agent_config.holo_remote_key.unwrap_or(false)
+            }
+            _ => false,
+        }
+    }
+}
+
 /// An agent has a name/ID and is defined by a private key that resides in a file
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
-pub struct AgentConfiguration {
+pub struct AgentConfig {
     pub id: String,
     pub name: String,
     pub public_address: Base32,
@@ -561,9 +598,16 @@ pub struct AgentConfiguration {
     pub holo_remote_key: Option<bool>,
 }
 
+/// An agent has a name/ID and is defined by a private key that resides in a file
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub struct TestAgentConfig {
+    pub name: String,
+    pub public_address: Base32,
+}
+
 impl From<AgentConfiguration> for AgentId {
     fn from(config: AgentConfiguration) -> Self {
-        AgentId::try_from(JsonString::from_json(&config.id)).expect("bad agent json")
+        AgentId::try_from(JsonString::from_json(&config.id())).expect("bad agent json")
     }
 }
 

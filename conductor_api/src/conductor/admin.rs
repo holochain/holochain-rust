@@ -1,7 +1,7 @@
 use crate::{
     conductor::{base::notify, Conductor},
     config::{
-        AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration,
+        AgentConfig, AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration,
         InstanceReferenceConfiguration, InterfaceConfiguration, StorageConfiguration,
     },
     dpki_instance::DpkiInstance,
@@ -402,7 +402,7 @@ impl ConductorAdmin for Conductor {
         holo_remote_key: Option<&str>,
     ) -> Result<String, HolochainError> {
         let mut new_config = self.config.clone();
-        if new_config.agents.iter().any(|i| i.id == id) {
+        if new_config.agents.iter().any(|i| i.id() == id) {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Agent with ID '{}' already exists",
                 id
@@ -446,13 +446,13 @@ impl ConductorAdmin for Conductor {
             (keystore_file.to_string_lossy().into_owned(), public_address)
         };
 
-        let new_agent = AgentConfiguration {
+        let new_agent = AgentConfiguration::Agent(AgentConfig {
             id: id.clone(),
             name,
             public_address: public_address.clone(),
             keystore_file: keystore_file,
             holo_remote_key: holo_remote_key.map(|_| true),
-        };
+        });
 
         new_config.agents.push(new_agent);
         new_config.check_consistency(&mut self.dna_loader)?;
@@ -466,7 +466,7 @@ impl ConductorAdmin for Conductor {
 
     fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
-        if !new_config.agents.iter().any(|i| i.id == *id) {
+        if !new_config.agents.iter().any(|i| i.id() == *id) {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Agent with ID '{}' does not exist",
                 id
@@ -476,7 +476,7 @@ impl ConductorAdmin for Conductor {
         new_config.agents = new_config
             .agents
             .into_iter()
-            .filter(|agent| agent.id != *id)
+            .filter(|agent| agent.id() != *id)
             .collect();
 
         let instance_ids: Vec<String> = new_config

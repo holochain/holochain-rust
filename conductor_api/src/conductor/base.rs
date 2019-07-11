@@ -770,7 +770,7 @@ impl Conductor {
         let agent_config = config.agent_by_id(&agent_id)?;
         let mut api_builder = ConductorApiBuilder::new();
         // Signing callback:
-        if let Some(true) = agent_config.holo_remote_key {
+        if agent_config.holo_remote_key() {
             // !!!!!!!!!!!!!!!!!!!!!!!
             // Holo closed-alpha hack:
             // !!!!!!!!!!!!!!!!!!!!!!!
@@ -839,15 +839,15 @@ impl Conductor {
         &mut self,
         agent_config: &AgentConfiguration,
     ) -> Result<AgentId, HolochainError> {
-        Ok(if let Some(true) = agent_config.holo_remote_key {
+        Ok(if agent_config.holo_remote_key() {
             // !!!!!!!!!!!!!!!!!!!!!!!
             // Holo closed-alpha hack:
             // !!!!!!!!!!!!!!!!!!!!!!!
-            AgentId::new(&agent_config.name, agent_config.public_address.clone())
+            AgentId::new(&agent_config.name(), agent_config.public_address().clone())
         } else {
-            let keybundle_arc = self.get_keybundle_for_agent(&agent_config.id)?;
+            let keybundle_arc = self.get_keybundle_for_agent(&agent_config.id())?;
             let keybundle = keybundle_arc.lock().unwrap();
-            AgentId::new(&agent_config.name, keybundle.get_id())
+            AgentId::new(&agent_config.name(), keybundle.get_id())
         })
     }
 
@@ -860,7 +860,7 @@ impl Conductor {
         if let Some(true) = self
             .config
             .agent_by_id(agent_id)
-            .and_then(|a| a.holo_remote_key)
+            .map(|a| a.holo_remote_key())
         {
             // !!!!!!!!!!!!!!!!!!!!!!!
             // Holo closed-alpha hack:

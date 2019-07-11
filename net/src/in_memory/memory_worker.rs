@@ -203,8 +203,8 @@ mod tests {
             .receive(
                 Lib3hClientProtocol::JoinSpace(SpaceData {
                     request_id: "test_req1".to_string(),
-                    space_address: example_dna_address().try_into().unwrap(),
-                    agent_id: HashString::from(AGENT_ID_1).try_into().unwrap(),
+                    space_address: example_dna_address(),
+                    agent_id: HashString::from(AGENT_ID_1),
                 })
                 .into(),
             )
@@ -219,8 +219,8 @@ mod tests {
             .receive(
                 Lib3hClientProtocol::JoinSpace(SpaceData {
                     request_id: "test_req2".to_string(),
-                    space_address: example_dna_address().try_into().unwrap(),
-                    agent_id: HashString::from(AGENT_ID_1).try_into().unwrap(),
+                    space_address: example_dna_address(),
+                    agent_id: HashString::from(AGENT_ID_1),
                 })
                 .into(),
             )

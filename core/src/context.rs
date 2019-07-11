@@ -7,6 +7,7 @@ use crate::{
     persister::Persister,
     signal::{Signal, SignalSender},
 };
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{
     task::{noop_local_waker_ref, Poll},
     Future,
@@ -35,10 +36,7 @@ use holochain_core_types::{
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::{self, IoHandler};
 use std::{
-    sync::{
-        mpsc::{channel, Receiver, SyncSender},
-        Arc, Mutex, RwLock, RwLockReadGuard,
-    },
+    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
     time::Duration,
 };
@@ -55,20 +53,18 @@ pub struct Context {
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<StateWrapper>>>,
-    pub action_channel: Option<SyncSender<ActionWrapper>>,
-    pub observer_channel: Option<SyncSender<Observer>>,
+    pub action_channel: Option<Sender<ActionWrapper>>,
+    pub observer_channel: Option<Sender<Observer>>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
-    pub(crate) signal_tx: Option<crossbeam_channel::Sender<Signal>>,
+    pub(crate) signal_tx: Option<Sender<Signal>>,
     pub(crate) instance_is_alive: Arc<Mutex<bool>>,
 }
 
 impl Context {
-    pub const DEFAULT_CHANNEL_BUF_SIZE: usize = 100;
-
     // test_check_conductor_api() is used to inject a conductor_api with a working
     // mock of agent/sign to be used in tests.
     // There are two different implementations of this function below which get pulled
@@ -130,9 +126,9 @@ impl Context {
         agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        action_channel: Option<SyncSender<ActionWrapper>>,
-        signal_tx: Option<crossbeam_channel::Sender<Signal>>,
-        observer_channel: Option<SyncSender<Observer>>,
+        action_channel: Option<Sender<ActionWrapper>>,
+        signal_tx: Option<Sender<Signal>>,
+        observer_channel: Option<Sender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
@@ -215,7 +211,7 @@ impl Context {
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+    pub fn action_channel(&self) -> &Sender<ActionWrapper> {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
@@ -238,11 +234,11 @@ impl Context {
         }
     }
 
-    pub fn signal_tx(&self) -> Option<&crossbeam_channel::Sender<Signal>> {
+    pub fn signal_tx(&self) -> Option<&Sender<Signal>> {
         self.signal_tx.as_ref()
     }
 
-    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+    pub fn observer_channel(&self) -> &Sender<Observer> {
         self.observer_channel
             .as_ref()
             .expect("Observer channel not initialized")
@@ -257,7 +253,7 @@ impl Context {
     /// got mutated.
     /// This enables blocking/parking the calling thread until the application state got changed.
     pub fn create_observer(&self) -> Receiver<()> {
-        let (tick_tx, tick_rx) = channel();
+        let (tick_tx, tick_rx) = unbounded();
         self.observer_channel()
             .send(Observer { ticker: tick_tx })
             .expect("Observer channel not initialized");
@@ -359,11 +355,6 @@ pub mod tests {
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
-
-    #[test]
-    fn default_buffer_size_test() {
-        assert_eq!(Context::DEFAULT_CHANNEL_BUF_SIZE, 100);
-    }
 
     #[test]
     fn state_test() {

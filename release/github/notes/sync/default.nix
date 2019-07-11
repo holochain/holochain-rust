@@ -1,6 +1,6 @@
 { pkgs, release, github }:
 let
-  name = "hc-release-pulse-sync";
+  name = "hc-release-github-notes-sync";
 
   script = pkgs.writeShellScriptBin name
   ''
@@ -10,7 +10,7 @@ let
   echo
   echo 'Injecting medium summary/highlights into github release notes'
   echo
-  github-release -v edit --tag ${release.tag} --name ${release.tag} --description "$( hc-release-pulse-notes )" --pre-release
+  github-release -v edit --tag ${release.tag} --name ${release.tag} --description "$( hc-release-github-notes )" --pre-release
   '';
 in
 {

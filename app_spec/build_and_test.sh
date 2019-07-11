@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 mkdir -p dist
 echo "===================================================================================="
 echo "RUNNING cargo test for zomes"

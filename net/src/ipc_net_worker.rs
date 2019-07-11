@@ -11,8 +11,7 @@ use crate::connection::{
 };
 
 use lib3h_protocol::{
-    data_types::ConnectedData, protocol_client::Lib3hClientProtocol,
-    protocol_server::Lib3hServerProtocol,
+    protocol_client::Lib3hClientProtocol,
 };
 
 use std::collections::HashMap;
@@ -22,6 +21,7 @@ use crate::tweetlog::TweetProxy;
 use serde_json;
 
 /// a NetWorker talking to the network via another process through an IPC connection.
+#[allow(dead_code)] // for handler which is temporarily disabled
 pub struct IpcNetWorker {
     /// Function that will forwarded the incoming network messages
     handler: NetHandler,
@@ -150,10 +150,11 @@ impl NetWorker for IpcNetWorker {
 
     /// we got a message from holochain core
     /// (just forwards to the internal worker relay)
-    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
-        let data: NamedBinaryData = data.into();
-        let data = rmp_serde::to_vec_named(&data)?;
-        self.wss_socket.send_all(&data)?;
+    fn receive(&mut self, _data: Lib3hClientProtocol) -> NetResult<()> {
+     // TODO BLOCKER fix this code for n3h
+     //   let data: NamedBinaryData = panic!("unimplemented"); //data.into();
+//        let data = rmp_serde::to_vec_named(&data)?;
+  //      self.wss_socket.send_all(&data)?;
 
         Ok(())
     }
@@ -186,7 +187,8 @@ impl NetWorker for IpcNetWorker {
                     let msg: NamedBinaryData = rmp_serde::from_slice(&msg)?;
                     let msg: Protocol = msg.into();
 
-                    self.handler.handle(Ok(msg.clone()))?;
+                    // TODO BLOCKER doesn't compile
+                    // self.handler.handle(Ok(msg.clone()))?;
 
                     // on shutdown, close all connections
                     if msg == Protocol::Terminated {
@@ -202,7 +204,8 @@ impl NetWorker for IpcNetWorker {
                     // - Try connecting to boostrap nodes
                     if !self.is_network_ready && &self.last_known_state == "ready" {
                         self.is_network_ready = true;
-                        self.handler.handle(Ok(Protocol::P2pReady))?;
+                        // TODO BLOCKER
+//                        self.handler.handle(Ok(Protocol::P2pReady))?;
                         self.priv_send_connects()?;
                     }
                 }
@@ -223,8 +226,8 @@ impl IpcNetWorker {
     // Send 'Connect to bootstrap nodes' request to Ipc server
     fn priv_send_connects(&mut self) -> NetResult<()> {
         let bs_nodes: Vec<String> = self.bootstrap_nodes.drain(..).collect();
-        for bs_node in &bs_nodes {
-            self.receive(
+        for _bs_node in &bs_nodes {
+ /*           self.receive(
                 // TODO BLOCKER: what should this actually be changed to?
                 Lib3hServerProtocol::Connected(ConnectedData {
                     request_id: snowflake::ProcessUniqueId::new().to_string(),
@@ -233,6 +236,7 @@ impl IpcNetWorker {
                 })
                 .into(),
             )?;
+            */
         }
 
         Ok(())

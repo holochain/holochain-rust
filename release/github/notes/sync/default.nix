@@ -10,7 +10,7 @@ let
   echo
   echo 'Injecting medium summary/highlights into github release notes'
   echo
-  github-release -v edit --tag ${release.tag} --name ${release.tag} --description "$( hc-release-github-notes )" --pre-release
+  github-release -v release --tag ${release.tag} --name ${release.tag} --description "$( hc-release-github-notes )" --pre-release
   '';
 in
 {

@@ -4,10 +4,7 @@ use crate::{
     instance::dispatch_action,
     network::{actions::publish::publish, handler::create_handler},
 };
-use futures::{
-    task::Poll,
-    Future,
-};
+use futures::{task::Poll, Future};
 use holochain_core_types::error::HcResult;
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;

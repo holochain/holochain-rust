@@ -7,10 +7,7 @@ use crate::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
 };
-use futures::{
-    future::Future,
-    task::Poll,
-};
+use futures::{future::Future, task::Poll};
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},

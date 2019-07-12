@@ -3,10 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
 };
-use futures::{
-    future::Future,
-    task::Poll,
-};
+use futures::{future::Future, task::Poll};
 
 use holochain_persistence_api::cas::content::Address;
 

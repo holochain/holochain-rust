@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    string::*,
-    sync::RwLock,
-};
+use std::{collections::HashMap, string::*, sync::RwLock};
 
 //--------------------------------------------------------------------------------------------------
 // MACROS

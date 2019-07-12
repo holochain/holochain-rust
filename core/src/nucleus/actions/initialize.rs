@@ -8,10 +8,7 @@ use crate::{
         state::NucleusStatus,
     },
 };
-use futures::{
-    future::Future,
-    task::Poll,
-};
+use futures::{future::Future, task::Poll};
 use holochain_core_types::{
     dna::{traits::ReservedTraitNames, Dna},
     entry::{

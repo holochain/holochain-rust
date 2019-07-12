@@ -4,10 +4,7 @@ use crate::{
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
 };
-use futures::{
-    future::Future,
-    task::Poll,
-};
+use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, time::Timeout};
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;

@@ -25,10 +25,7 @@ use holochain_json_api::json::JsonString;
 use holochain_dpki::utils::Verify;
 
 use base64;
-use futures::{
-    future::Future,
-    task::Poll,
-};
+use futures::{future::Future, task::Poll};
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};

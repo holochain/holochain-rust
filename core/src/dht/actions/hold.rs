@@ -4,10 +4,7 @@ use crate::{
     instance::dispatch_action,
     network::entry_with_header::EntryWithHeader,
 };
-use futures::{
-    future::Future,
-    task::Poll,
-};
+use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HolochainError;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{pin::Pin, sync::Arc};

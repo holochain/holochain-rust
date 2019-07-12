@@ -41,7 +41,8 @@ pub fn get_dist_path(path: &PathBuf) -> DefaultResult<PathBuf> {
     let dist_path = path.join(&DIST_DIR_NAME);
 
     if !dist_path.exists() {
-        fs::create_dir(dist_path.as_path())?;
+        fs::create_dir(dist_path.as_path())
+            .map_err(|e| format_err!("Couldn't create path {:?}; {}", dist_path, e))?;
     }
     Ok(dist_path)
 }

@@ -5,7 +5,7 @@ use crate::{
 };
 use futures::{
     future::Future,
-    task::{LocalWaker, Poll},
+    task::Poll,
 };
 use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeout};
 use holochain_persistence_api::cas::content::Address;
@@ -58,7 +58,7 @@ pub struct GetLinksFuture {
 impl Future for GetLinksFuture {
     type Output = HcResult<Vec<(Address, CrudStatus)>>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("GetLinksFuture") {
             return Poll::Ready(Err(err));
         }
@@ -70,7 +70,7 @@ impl Future for GetLinksFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        lw.waker().to_owned().wake();
         match state.get_links_results.get(&self.key) {
             Some(Some(result)) => Poll::Ready(result.clone()),
             _ => Poll::Pending,

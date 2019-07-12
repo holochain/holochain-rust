@@ -9,7 +9,7 @@ use crate::{
 };
 use futures::{
     future::Future,
-    task::{LocalWaker, Poll},
+    task::Poll,
 };
 use holochain_core_types::{error::HolochainError, ugly::lax_send_sync};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
@@ -81,7 +81,7 @@ pub struct ValidationCallbackFuture {
 impl Future for ValidationCallbackFuture {
     type Output = ValidationResult;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &mut std::task::Context) -> Poll<Self::Output> {
         if !self.context.is_action_channel_open() {
             return Poll::Ready(Err(ValidationError::Error(HolochainError::LifecycleError(
                 "ValidationCallbackFuture".to_string(),
@@ -91,7 +91,7 @@ impl Future for ValidationCallbackFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        lw.waker().to_owned().wake();
         if let Some(state) = self.context.state() {
             match state.nucleus().validation_results.get(&self.key) {
                 Some(result) => Poll::Ready(result.clone()),

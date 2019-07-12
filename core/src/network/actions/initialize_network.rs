@@ -5,7 +5,7 @@ use crate::{
     network::{actions::publish::publish, handler::create_handler},
 };
 use futures::{
-    task::{LocalWaker, Poll},
+    task::Poll,
     Future,
 };
 use holochain_core_types::error::HcResult;
@@ -63,7 +63,7 @@ pub struct InitNetworkFuture {
 impl Future for InitNetworkFuture {
     type Output = HcResult<()>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("InitializeNetworkFuture") {
             return Poll::Ready(Err(err));
         }
@@ -71,7 +71,7 @@ impl Future for InitNetworkFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        lw.waker().to_owned().wake();
         if let Some(state) = self.context.state() {
             if state.network().network.is_some()
                 || state.network().dna_address.is_some()

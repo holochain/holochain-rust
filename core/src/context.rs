@@ -8,7 +8,7 @@ use crate::{
     signal::{Signal, SignalSender},
 };
 use futures::{
-    task::{noop_local_waker_ref, Poll},
+    task::{noop_waker_ref, Poll},
     Future,
 };
 
@@ -271,8 +271,10 @@ impl Context {
         let tick_rx = self.create_observer();
         pin_utils::pin_mut!(future);
 
+        let mut context = std::task::Context::from_waker(noop_waker_ref());
+
         loop {
-            let _ = match future.as_mut().poll(noop_local_waker_ref()) {
+            let _ = match future.as_mut().poll(&mut context) {
                 Poll::Ready(result) => return result,
                 _ => tick_rx.recv_timeout(Duration::from_millis(10)),
             };

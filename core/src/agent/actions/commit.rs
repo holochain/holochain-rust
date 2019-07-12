@@ -6,7 +6,7 @@ use crate::{
 };
 use futures::{
     future::Future,
-    task::{LocalWaker, Poll},
+    task::Poll,
 };
 use holochain_core_types::{entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::Address;
@@ -44,7 +44,7 @@ pub struct CommitFuture {
 impl Future for CommitFuture {
     type Output = Result<Address, HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("CommitFuture") {
             return Poll::Ready(Err(err));
         }
@@ -52,7 +52,7 @@ impl Future for CommitFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        lw.waker().to_owned().wake();
         match self
             .context
             .state()

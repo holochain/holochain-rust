@@ -52,14 +52,14 @@ use test_utils::mock_signing::mock_conductor_api;
 #[derive(Clone)]
 pub struct Context {
     pub agent_id: AgentId,
-    pub logger: Arc<Mutex<Logger>>,
-    pub persister: Arc<Mutex<Persister>>,
+    pub logger: Arc<Mutex<dyn Logger>>,
+    pub persister: Arc<Mutex<dyn Persister>>,
     state: Option<Arc<RwLock<StateWrapper>>>,
     pub action_channel: Option<SyncSender<ActionWrapper>>,
     pub observer_channel: Option<SyncSender<Observer>>,
-    pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
-    pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
-    pub eav_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+    pub chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    pub dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    pub eav_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
     pub(crate) signal_tx: Option<crossbeam_channel::Sender<Signal>>,
@@ -97,11 +97,11 @@ impl Context {
 
     pub fn new(
         agent_id: AgentId,
-        logger: Arc<Mutex<Logger>>,
-        persister: Arc<Mutex<Persister>>,
-        chain_storage: Arc<RwLock<ContentAddressableStorage>>,
-        dht_storage: Arc<RwLock<ContentAddressableStorage>>,
-        eav: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+        logger: Arc<Mutex<dyn Logger>>,
+        persister: Arc<Mutex<dyn Persister>>,
+        chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
@@ -128,13 +128,13 @@ impl Context {
 
     pub fn new_with_channels(
         agent_id: AgentId,
-        logger: Arc<Mutex<Logger>>,
-        persister: Arc<Mutex<Persister>>,
+        logger: Arc<Mutex<dyn Logger>>,
+        persister: Arc<Mutex<dyn Persister>>,
         action_channel: Option<SyncSender<ActionWrapper>>,
         signal_tx: Option<crossbeam_channel::Sender<Signal>>,
         observer_channel: Option<SyncSender<Observer>>,
-        cas: Arc<RwLock<ContentAddressableStorage>>,
-        eav: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+        cas: Arc<RwLock<dyn ContentAddressableStorage>>,
+        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
     ) -> Result<Context, HolochainError> {
         Ok(Context {

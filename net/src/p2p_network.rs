@@ -52,7 +52,7 @@ impl P2pNetwork {
                     .to_string();
                 Box::new(move |h| {
                     Ok(
-                        Box::new(IpcNetWorker::new(h, &backend_config_str, enduser_config)?)
+                        Box::new(IpcNetWorker::new(h, &backend_config_str, enduser_config.clone())?)
                             as Box<dyn NetWorker>,
                     )
                 })

@@ -1089,7 +1089,7 @@ impl TestNode {
             JsonProtocol::HandleStoreEntryAspect(msg) => {
                 if self.is_tracking(&msg.dna_address) {
                     // Store data in local datastore
-                    let mut chain_store = self
+                    let chain_store = self
                         .chain_store_list
                         .get_mut(&msg.dna_address)
                         .expect("No dna_store for this DNA");

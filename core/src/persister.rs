@@ -26,7 +26,7 @@ pub trait Persister: Send {
 
 #[derive(Clone)]
 pub struct SimplePersister {
-    storage: Arc<RwLock<ContentAddressableStorage>>,
+    storage: Arc<RwLock<dyn ContentAddressableStorage>>,
 }
 
 impl PartialEq for SimplePersister {
@@ -77,7 +77,7 @@ impl Persister for SimplePersister {
 }
 
 impl SimplePersister {
-    pub fn new(storage: Arc<RwLock<ContentAddressableStorage>>) -> Self {
+    pub fn new(storage: Arc<RwLock<dyn ContentAddressableStorage>>) -> Self {
         SimplePersister { storage }
     }
 }

@@ -25,8 +25,8 @@ use std::{
 #[derive(Clone, Debug)]
 pub struct DhtStore {
     // Storages holding local shard data
-    content_storage: Arc<RwLock<ContentAddressableStorage>>,
-    meta_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -75,8 +75,8 @@ impl DhtStore {
     // LifeCycle
     // =========
     pub fn new(
-        content_storage: Arc<RwLock<ContentAddressableStorage>>,
-        meta_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
     ) -> Self {
         DhtStore {
             content_storage,
@@ -177,10 +177,10 @@ impl DhtStore {
 
     // Getters (for reducers)
     // =======
-    pub(crate) fn content_storage(&self) -> Arc<RwLock<ContentAddressableStorage>> {
+    pub(crate) fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
         self.content_storage.clone()
     }
-    pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage<Attribute>>> {
+    pub(crate) fn meta_storage(&self) -> Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>> {
         self.meta_storage.clone()
     }
     pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {

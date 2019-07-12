@@ -143,7 +143,7 @@ impl NetWorker for IpcNetWorker {
         let _ = self.tick();
         // Close connection and kill process
         self.wss_socket.close_all()?;
-        if let Some(done) = self.done {
+        if let Some(mut done) = self.done {
             done();
         }
         // Done

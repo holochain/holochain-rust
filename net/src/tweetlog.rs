@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     string::*,
     sync::RwLock,
 };
@@ -84,7 +84,7 @@ macro_rules! log_ee {
 // LOGLEVEL
 //--------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LogLevel {
     Trace = 1,
     Debug,
@@ -93,6 +93,7 @@ pub enum LogLevel {
     Error,
 }
 
+impl Eq for LogLevel {}
 impl From<char> for LogLevel {
     fn from(l: char) -> Self {
         match l {
@@ -129,7 +130,7 @@ impl LogLevel {
 /// which has its own loglevel and callbacks
 struct TweetLogger {
     pub level: LogLevel,
-    pub callbacks: HashSet<listenerCallback>,
+    pub callbacks: Vec<listenerCallback>,
 }
 
 impl TweetLogger {
@@ -140,7 +141,7 @@ impl TweetLogger {
     pub fn with_level(level: LogLevel) -> Self {
         TweetLogger {
             level,
-            callbacks: HashSet::new(),
+            callbacks: Vec::new(),
         }
     }
 }
@@ -216,7 +217,7 @@ impl Tweetlog {
             .log_by_tag
             .get_mut(tag)
             .expect("TweetLogger for Tag does not exist");
-        logger.callbacks.insert(cb);
+        logger.callbacks.push(cb);
     }
 
     /// Clear any registered listener

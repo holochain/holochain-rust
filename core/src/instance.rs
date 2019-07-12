@@ -42,7 +42,7 @@ pub struct Instance {
     action_channel: Option<SyncSender<ActionWrapper>>,
     observer_channel: Option<SyncSender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
-    persister: Option<Arc<Mutex<Persister>>>,
+    persister: Option<Arc<Mutex<dyn Persister>>>,
     consistency_model: ConsistencyModel,
     kill_switch: Option<crossbeam_channel::Sender<()>>,
 }
@@ -565,7 +565,7 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());
 
-        /// fair warning... use test_instance_blank() if you want a minimal instance
+        // fair warning... use test_instance_blank() if you want a minimal instance
         assert!(
             !dna.zomes.clone().is_empty(),
             "Empty zomes = No genesis = infinite loops below!"

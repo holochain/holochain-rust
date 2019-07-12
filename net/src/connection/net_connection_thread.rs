@@ -145,10 +145,30 @@ impl NetConnectionThread {
 mod tests {
     use super::{super::net_connection::NetWorker, *};
     use crossbeam_channel::unbounded;
+    use holochain_persistence_api::hash::HashString;
+    use lib3h_protocol::{data_types::GenericResultData, protocol_server::Lib3hServerProtocol};
 
     struct DefWorker;
 
     impl NetWorker for DefWorker {}
+
+    fn success_server_result(result_info: Vec<u8>) -> Lib3hServerProtocol {
+        Lib3hServerProtocol::SuccessResult(GenericResultData {
+            request_id: "test_req_id".into(),
+            space_address: HashString::from("test_space"),
+            to_agent_id: HashString::from("test-agent"),
+            result_info,
+        })
+    }
+
+    fn success_client_result(result_info: Vec<u8>) -> Lib3hClientProtocol {
+        Lib3hClientProtocol::SuccessResult(GenericResultData {
+            request_id: "test_req_id".into(),
+            space_address: HashString::from("test_space"),
+            to_agent_id: HashString::from("test-agent"),
+            result_info,
+        })
+    }
 
     #[test]
     fn it_can_defaults() {
@@ -159,7 +179,8 @@ mod tests {
         )
         .unwrap();
 
-        con.send("test".into()).unwrap();
+        con.send(success_client_result("tick".to_string().into_bytes()))
+            .unwrap();
         con.stop().unwrap();
     }
 
@@ -169,12 +190,18 @@ mod tests {
 
     impl NetWorker for SimpleWorker {
         fn tick(&mut self) -> NetResult<bool> {
-            self.handler.handle(Ok("tick".into()))?;
+            self.handler
+                .handle(Ok(success_server_result("tick".to_string().into_bytes())))?;
             Ok(true)
         }
 
         fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
-            self.handler.handle(Ok(data))
+            match data {
+                Lib3hClientProtocol::SuccessResult(data) => self
+                    .handler
+                    .handle(Ok(success_server_result(data.result_info))),
+                msg => panic!("unexpected client protocol message in receive: {:?}", msg),
+            }
         }
     }
 
@@ -192,21 +219,28 @@ mod tests {
         )
         .unwrap();
 
-        con.send("test".into()).unwrap();
+        con.send(success_client_result("test".to_string().into_bytes()))
+            .unwrap();
 
         let res;
+
         loop {
             let tmp = receiver.recv().unwrap();
 
-            if &(String::from(tmp.as_json_string())) == "tick" {
-                continue;
-            } else {
-                res = tmp;
-                break;
+            match tmp {
+                Lib3hServerProtocol::SuccessResult(generic_data) => {
+                    if generic_data.result_info == "tick".to_string().into_bytes() {
+                        continue;
+                    } else {
+                        res = generic_data.result_info;
+                        break;
+                    }
+                }
+                msg => panic!("unexpected message received: {:?}", msg),
             }
         }
 
-        assert_eq!("test".to_string(), String::from(res.as_json_string()));
+        assert_eq!("test".to_string().into_bytes(), res);
 
         con.stop().unwrap();
     }
@@ -227,8 +261,12 @@ mod tests {
 
         let res = receiver.recv().unwrap();
 
-        assert_eq!("tick".to_string(), String::from(res.as_json_string()));
-
+        match res {
+            Lib3hServerProtocol::SuccessResult(generic_data) => {
+                assert_eq!("tick".to_string().into_bytes(), generic_data.result_info)
+            }
+            msg => panic!("unexpected message received: {:?}", msg),
+        }
         con.stop().unwrap();
     }
 }

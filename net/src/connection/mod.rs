@@ -9,5 +9,4 @@ pub type NetResult<T> = Result<T, Error>;
 
 pub mod net_connection;
 pub mod net_connection_thread;
-pub mod net_relay;
 pub mod protocol;

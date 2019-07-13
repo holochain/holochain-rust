@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core_types"
-version = "0.0.22-alpha1"
+version = "0.0.23-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 build = "build.rs"
 
@@ -33,6 +33,7 @@ lib3h_crypto_api = "=0.0.5"
 uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
 shrinkwraprs = "=0.2.1"
+crossbeam-channel = "=0.3.8"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

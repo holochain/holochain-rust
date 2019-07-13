@@ -43,7 +43,7 @@ impl Future for UpdateEntryFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        cx.waker().clone().wake();
         if let Some(state) = self.context.state() {
             match state.dht().actions().get(&self.action) {
                 Some(Ok(address)) => Poll::Ready(Ok(address.clone())),

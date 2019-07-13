@@ -49,7 +49,7 @@ impl Future for CommitFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        cx.waker().clone().wake();
         match self
             .context
             .state()

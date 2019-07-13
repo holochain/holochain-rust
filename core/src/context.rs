@@ -11,7 +11,7 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{task::Poll, Future};
 
 use crate::state::StateWrapper;
-use futures::task::noop_waker;
+use futures::task::noop_waker_ref;
 use holochain_core_types::{
     agent::AgentId,
     dna::{wasm::DnaWasm, Dna},
@@ -264,8 +264,10 @@ impl Context {
         let tick_rx = self.create_observer();
         pin_utils::pin_mut!(future);
 
+        let mut cx = std::task::Context::from_waker(noop_waker_ref());
+
         loop {
-            let _ = match future.as_mut().poll(noop_waker()) {
+            let _ = match future.as_mut().poll(&mut cx) {
                 Poll::Ready(result) => return result,
                 _ => tick_rx.recv_timeout(Duration::from_millis(10)),
             };

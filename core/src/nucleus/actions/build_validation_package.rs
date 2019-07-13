@@ -238,7 +238,7 @@ impl Future for ValidationPackageFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        cx.waker().clone().wake();
         if let Some(state) = self.context.state() {
             match state.nucleus().validation_packages.get(&self.key) {
                 Some(Ok(validation_package)) => Poll::Ready(Ok(validation_package.clone())),

@@ -309,7 +309,7 @@ impl Future for CallResultFuture {
         // wouldn't need the waker since this executor is attached to the redux loop
         // and re-polls after every State mutation.
         // Leaving this in to be safe against running this future in another executor.
-        cx.waker().wake();
+        cx.waker().clone().wake();
 
         if let Some(state) = self.context.state() {
             match state.nucleus().zome_call_result(&self.zome_call) {

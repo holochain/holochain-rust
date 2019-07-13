@@ -67,7 +67,7 @@ impl Future for SendResponseFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        cx.waker().clone().wake();
         match state.custom_direct_message_replys.get(&self.id) {
             Some(result) => Poll::Ready(result.clone()),
             _ => Poll::Pending,

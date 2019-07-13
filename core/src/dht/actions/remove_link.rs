@@ -3,10 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
 };
-use futures::{
-    future::Future,
-    task::{LocalWaker, Poll},
-};
+use futures::{future::Future, task::Poll};
 use holochain_core_types::{entry::Entry, error::HolochainError};
 use std::{pin::Pin, sync::Arc};
 
@@ -38,7 +35,7 @@ impl Unpin for RemoveLinkFuture {}
 impl Future for RemoveLinkFuture {
     type Output = Result<(), HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("RemoveLinkFuture") {
             return Poll::Ready(Err(err));
         }
@@ -46,7 +43,7 @@ impl Future for RemoveLinkFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        cx.waker().wake();
         if let Some(state) = self.context.state() {
             match state.dht().actions().get(&self.action) {
                 Some(Ok(_)) => Poll::Ready(Ok(())),

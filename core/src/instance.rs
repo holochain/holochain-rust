@@ -41,7 +41,7 @@ pub struct Instance {
     action_channel: Option<Sender<ActionWrapper>>,
     observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
-    persister: Option<Arc<Mutex<Persister>>>,
+    persister: Option<Arc<Mutex<dyn Persister>>>,
     consistency_model: ConsistencyModel,
     kill_switch: Option<Sender<()>>,
 }

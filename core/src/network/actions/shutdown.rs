@@ -3,10 +3,7 @@ use crate::{
     instance::dispatch_action,
 };
 use crossbeam_channel::Sender;
-use futures::{
-    future::Future,
-    task::{LocalWaker, Poll},
-};
+use futures::{future::Future, task::Poll};
 
 use holochain_core_types::error::{HcResult, HolochainError};
 
@@ -41,14 +38,14 @@ pub struct ShutdownFuture {
 impl Future for ShutdownFuture {
     type Output = HcResult<()>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         let state = self.state.read().unwrap().network();
         if state.network.lock().unwrap().is_some() {
             //
             // TODO: connect the waker to state updates for performance reasons
             // See: https://github.com/holochain/holochain-rust/issues/314
             //
-            lw.wake();
+            cx.waker().wake();
             Poll::Pending
         } else {
             Poll::Ready(Ok(()))

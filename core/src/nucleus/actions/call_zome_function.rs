@@ -25,10 +25,7 @@ use holochain_json_api::json::JsonString;
 use holochain_dpki::utils::Verify;
 
 use base64;
-use futures::{
-    future::Future,
-    task::{LocalWaker, Poll},
-};
+use futures::{future::Future, task::Poll};
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};
@@ -304,7 +301,7 @@ pub struct CallResultFuture {
 impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("CallResultFuture") {
             return Poll::Ready(Err(err));
         }
@@ -312,7 +309,7 @@ impl Future for CallResultFuture {
         // wouldn't need the waker since this executor is attached to the redux loop
         // and re-polls after every State mutation.
         // Leaving this in to be safe against running this future in another executor.
-        lw.wake();
+        cx.waker().wake();
 
         if let Some(state) = self.context.state() {
             match state.nucleus().zome_call_result(&self.zome_call) {

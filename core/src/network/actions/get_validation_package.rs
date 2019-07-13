@@ -3,10 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
 };
-use futures::{
-    future::Future,
-    task::{LocalWaker, Poll},
-};
+use futures::{future::Future, task::Poll};
 
 use holochain_persistence_api::cas::content::Address;
 
@@ -46,7 +43,7 @@ pub struct GetValidationPackageFuture {
 impl Future for GetValidationPackageFuture {
     type Output = HcResult<Option<ValidationPackage>>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self
             .context
             .action_channel_error("GetValidationPackageFuture")
@@ -61,7 +58,7 @@ impl Future for GetValidationPackageFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        cx.waker().wake();
         match state.get_validation_package_results.get(&self.address) {
             Some(Some(result)) => Poll::Ready(result.clone()),
             _ => Poll::Pending,

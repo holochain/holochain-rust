@@ -41,7 +41,7 @@ pub async fn get_links(
 
     await!(GetLinksFuture {
         context: context.clone(),
-        key
+        key,
     })
 }
 

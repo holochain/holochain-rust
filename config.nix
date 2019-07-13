@@ -5,7 +5,7 @@
 
   # true = use a github repository as the holonix base (recommended)
   # false = use a local copy of holonix (useful for debugging)
-  use-github = true;
+  use-github = false;
 
   # configure the remote holonix github when use-github = true
   github = {

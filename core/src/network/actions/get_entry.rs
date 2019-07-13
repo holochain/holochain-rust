@@ -42,7 +42,7 @@ pub async fn get_entry(
 
     await!(GetEntryFuture {
         context: context.clone(),
-        key
+        key,
     })
 }
 

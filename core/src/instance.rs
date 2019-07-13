@@ -99,11 +99,10 @@ impl Instance {
     ) -> HcResult<Arc<Context>> {
         let context = self.inner_setup(context);
         context.block_on(async {
-            await!(initialize_chain(dna.clone(), &context))?;
-            await!(initialize_network_with_spoofed_dna(
-                spoofed_dna_address,
-                &context
-            ))
+            if let Err(e) = await!(initialize_chain(dna.clone(), &context)) {
+                return Err(e);
+            }
+            await!(initialize_network_with_spoofed_dna(spoofed_dna_address, &context))
         })?;
         Ok(context)
     }
@@ -331,7 +330,7 @@ impl Instance {
     pub async fn shutdown_network(&self) -> HcResult<()> {
         await!(network::actions::shutdown::shutdown(
             self.state.clone(),
-            self.action_channel.as_ref().unwrap().clone()
+            self.action_channel.as_ref().unwrap().clone(),
         ))
     }
 }

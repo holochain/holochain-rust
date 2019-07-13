@@ -142,11 +142,8 @@ pub async fn initialize_chain(
         }
 
         let grant = maybe_public_cap_grant_entry.ok().unwrap();
-        let public_cap_grant_commit = await!(commit_entry(
-            Entry::CapTokenGrant(grant.clone()),
-            None,
-            &context_clone
-        ));
+        let public_cap_grant_commit =
+            await!(commit_entry(Entry::CapTokenGrant(grant.clone()), None, &context_clone));
 
         // Let initialization fail if Public Grant could not be committed.
         match public_cap_grant_commit {

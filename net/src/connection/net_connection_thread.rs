@@ -133,7 +133,7 @@ impl NetConnectionThread {
             bail!("NetConnectionThread failed to join on stop() call");
         }
         // Call shutdown closure if any
-        if let Some(done) = self.done {
+        if let Some(mut done) = self.done {
             done();
         }
         Ok(())

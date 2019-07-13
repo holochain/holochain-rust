@@ -565,7 +565,7 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());
 
-        /// fair warning... use test_instance_blank() if you want a minimal instance
+        // fair warning... use test_instance_blank() if you want a minimal instance
         assert!(
             !dna.zomes.clone().is_empty(),
             "Empty zomes = No genesis = infinite loops below!"

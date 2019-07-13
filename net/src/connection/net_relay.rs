@@ -19,7 +19,7 @@ impl NetConnectionRelay {
     ///
     pub fn stop(self) -> NetResult<()> {
         self.worker.stop()?;
-        if let Some(done) = self.done {
+        if let Some(mut done) = self.done {
             done();
         }
         Ok(())

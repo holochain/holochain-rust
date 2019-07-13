@@ -81,7 +81,7 @@ enum Cli {
         )]
         zome: PathBuf,
         #[structopt(
-            help = "Either the name of a build in template (rust, rust-proc) or the url to a git repo containing a zome template.",
+            help = "Either the name of a built-in template (rust, rust-proc) or the url to a git repo containing a Zome template.",
             default_value = "rust"
         )]
         template: String,

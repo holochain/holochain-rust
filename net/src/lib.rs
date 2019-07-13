@@ -1,4 +1,3 @@
-#![feature(fnbox)]
 #![feature(vec_remove_item)]
 #![allow(clippy::all)] // As per the request of the networking team
 

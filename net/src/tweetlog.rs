@@ -1,8 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    string::*,
-    sync::RwLock,
-};
+use std::{collections::HashMap, string::*, sync::RwLock};
 
 //--------------------------------------------------------------------------------------------------
 // MACROS
@@ -129,7 +125,7 @@ impl LogLevel {
 /// which has its own loglevel and callbacks
 struct TweetLogger {
     pub level: LogLevel,
-    pub callbacks: HashSet<listenerCallback>,
+    pub callbacks: Vec<listenerCallback>,
 }
 
 impl TweetLogger {
@@ -140,7 +136,7 @@ impl TweetLogger {
     pub fn with_level(level: LogLevel) -> Self {
         TweetLogger {
             level,
-            callbacks: HashSet::new(),
+            callbacks: Vec::new(),
         }
     }
 }
@@ -216,7 +212,7 @@ impl Tweetlog {
             .log_by_tag
             .get_mut(tag)
             .expect("TweetLogger for Tag does not exist");
-        logger.callbacks.insert(cb);
+        logger.callbacks.append(&mut vec![cb]);
     }
 
     /// Clear any registered listener

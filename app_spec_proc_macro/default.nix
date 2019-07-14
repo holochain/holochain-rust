@@ -2,6 +2,8 @@
 let
   name = "hc-app-spec-test-proc";
 
+  # the test subdirectory gets blown away every run
+  # thats why this is here
   script = pkgs.writeShellScriptBin name ''
   hc-cli-install \
   && hc-conductor-rust-install \

@@ -37,6 +37,10 @@ with holonix.pkgs;
     pkgs = holonix.pkgs;
    }).buildInputs
 
+   ++ (holonix.pkgs.callPackage ./app_spec_proc_macro {
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
    ++ (holonix.pkgs.callPackage ./conductor_wasm {
     pkgs = holonix.pkgs;
    }).buildInputs

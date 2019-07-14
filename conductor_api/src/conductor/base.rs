@@ -46,8 +46,10 @@ use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
 use config::AgentConfiguration;
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
+    connection::net_connection::NetHandler,
     ipc::spawn::{ipc_spawn, SpawnResult},
     p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
+    p2p_network::P2pNetwork,
 };
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
 use signal_wrapper::SignalWrapper;
@@ -104,6 +106,8 @@ pub struct Conductor {
     network_spawn: Option<SpawnResult>,
     pub passphrase_manager: Arc<PassphraseManager>,
     pub hash_config: Option<PwHashConfig>, // currently this has to be pub for testing.  would like to remove
+    // TODO: remove this when n3h gets deprecated
+    n3h_keepalive_network: Option<P2pNetwork>, // hack needed so that n3h process stays alive even if all instances get shutdown.
 }
 
 impl Drop for Conductor {
@@ -114,6 +118,14 @@ impl Drop for Conductor {
             }
         }
         self.shutdown();
+        if let Some(network) = self.n3h_keepalive_network.take() {
+            if let Err(err) = network.stop() {
+                println!("ERROR stopping network thread: {:?}", err);
+            } else {
+                println!("Network thread successfully stopped");
+            }
+            self.n3h_keepalive_network = None;
+        };
     }
 }
 
@@ -163,6 +175,7 @@ impl Conductor {
                 PassphraseServiceCmd {},
             )))),
             hash_config: None,
+            n3h_keepalive_network: None,
         }
     }
 
@@ -518,7 +531,18 @@ impl Conductor {
                             .as_ref()
                             .map(|spawn| spawn.ipc_binding.clone())
                     });
-                P2pConfig::new_ipc_uri(uri, &config.bootstrap_nodes, config.networking_config_file)
+                let config = P2pConfig::new_ipc_uri(
+                    uri,
+                    &config.bootstrap_nodes,
+                    config.networking_config_file,
+                );
+                // create an empty network with this config just so the n3h process doesn't
+                // kill itself in the case that all instances are closed down (as happens in app-spec)
+                let network =
+                    P2pNetwork::new(NetHandler::new(Box::new(|_r| Ok(()))), config.clone())
+                        .expect("unable to create conductor keepalive P2pNetwork");
+                self.n3h_keepalive_network = Some(network);
+                config
             }
             NetworkConfig::Lib3h(config) => P2pConfig {
                 backend_kind: P2pBackendKind::LIB3H,

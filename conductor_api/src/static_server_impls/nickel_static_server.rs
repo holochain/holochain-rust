@@ -52,7 +52,7 @@ impl ConductorStaticFileServer for NickelStaticServer {
         server.utilize(StaticFilesHandler::new(self.bundle_config.root_dir.to_owned()));
 
         notify(format!(
-            "About to serve path \"{}\" at http://{}",
+            "About to serve path using Nickel \"{}\" at http://{}",
             &self.bundle_config.root_dir, &addr
         ));
 
@@ -60,6 +60,8 @@ impl ConductorStaticFileServer for NickelStaticServer {
             .map_err(|e| HolochainError::ErrorGeneric(format!("server error: {}", e)))?;
 
         self.running = true;
+
+        notify(format!("Listening on http://{}", addr));
 
         Ok(())
     }

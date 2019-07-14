@@ -54,7 +54,7 @@ use holochain_net::{
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
 use signal_wrapper::SignalWrapper;
 use static_file_server::{ConductorStaticFileServer};
-use static_server_impls::HyperStaticServer as StaticServer;
+use static_server_impls::NickelStaticServer as StaticServer;
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.

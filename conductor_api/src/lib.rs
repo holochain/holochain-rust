@@ -129,14 +129,13 @@ extern crate lazy_static;
 extern crate hyper;
 extern crate hyper_staticfile;
 extern crate json_patch;
-// #[cfg(test)]
-// extern crate reqwest;
 extern crate tokio;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
 extern crate base64;
 extern crate lib3h;
+extern crate nickel;
 
 pub mod conductor;
 pub mod config;

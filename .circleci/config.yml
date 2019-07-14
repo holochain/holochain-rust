@@ -16,7 +16,7 @@ jobs:
    - image: holochain/holochain-rust:latest
   steps:
    - checkout
-   - run: nix-shell --run hn-rust-fmt-check
+   - run: nix-shell --run hc-test-fmt
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps

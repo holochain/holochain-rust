@@ -2,8 +2,9 @@
 setlocal enabledelayedexpansion
 
 rem KEEP IN SYNC WITH HOLONIX
-rustup toolchain install --no-self-update nightly-2019-07-01
-rustup default nightly-2019-07-01
+set nightly-date=nightly-2019-07-14
+rustup toolchain install --no-self-update !nightly-date!
+rustup default !nightly-date!
 
 IF NOT "!wasm_path!" == "" (
  set manifest-path=!test_path!\!wasm_path!\Cargo.toml

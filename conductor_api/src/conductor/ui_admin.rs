@@ -328,6 +328,8 @@ id = 'test-bundle-id'"#,
                 port: 4000,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
+                reroute_to_root: true,
+                bind_address: "127.0.0.1".to_string()
             }),
             Err(HolochainError::ErrorGeneric(
                 "UI bundle configuration test-bundle-id not found, mentioned in UI interface test-ui-interface-id".into()
@@ -350,6 +352,8 @@ id = 'test-bundle-id'"#,
                 port: 4000,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
+                reroute_to_root: true,
+                bind_address: "127.0.0.1".to_string()
             }),
             Ok(())
         );
@@ -415,6 +419,8 @@ port = 4000"#,
                 port: 4000,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
+                reroute_to_root: true,
+                bind_address: "127.0.0.1".to_string()
             }),
             Ok(())
         );
@@ -475,6 +481,8 @@ root_dir = '.'"#,
                 port: 4000,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
+                reroute_to_root: true,
+                bind_address: "127.0.0.1".to_string()
             }),
             Ok(())
         );
@@ -506,6 +514,8 @@ root_dir = '.'"#,
                 port: 4001,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
+                reroute_to_root: true,
+                bind_address: "127.0.0.1".to_string()
             }),
             Ok(())
         );

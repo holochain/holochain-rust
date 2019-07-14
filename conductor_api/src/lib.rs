@@ -135,6 +135,7 @@ extern crate tokio;
 extern crate pretty_assertions;
 extern crate base64;
 extern crate lib3h;
+#[macro_use]
 extern crate nickel;
 
 pub mod conductor;

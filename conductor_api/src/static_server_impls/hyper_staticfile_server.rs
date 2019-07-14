@@ -12,6 +12,7 @@ use hyper::{
     rt::Future,
     server::Server,
     Body, Request, Response,
+    http::response::Builder,
 };
 use hyper_staticfile::{Static, StaticFuture};
 use std::{
@@ -35,7 +36,12 @@ impl Future for MainFuture {
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         match *self {
-            MainFuture::Config(ref config) => Ok(Async::Ready(dna_connections_response(config))),
+            MainFuture::Config(ref config) => {
+                let response = Builder::new()
+                    .body(dna_connections_response(config).to_string().into())
+                    .expect("unable to build response");
+                Ok(Async::Ready(response))
+            },
             MainFuture::Static(ref mut future) => future.poll(),
         }
     }

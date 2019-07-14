@@ -1,8 +1,8 @@
 use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
 use error::HolochainResult;
 use hyper::{
-    http::{response::Builder, uri},
-    Body, Request, Response,
+    http::uri,
+    Request,
 };
 
 pub const DNA_CONFIG_ROUTE: &str = "/_dna_connections.json";
@@ -13,14 +13,12 @@ pub fn redirect_request_to_root<T>(req: &mut Request<T>) {
     *req.uri_mut() = uri::Uri::from_parts(original_parts).unwrap();
 }
 
-pub fn dna_connections_response(config: &Option<InterfaceConfiguration>) -> Response<Body> {
+pub fn dna_connections_response(config: &Option<InterfaceConfiguration>) -> serde_json::Value {
     let interface = match config {
         Some(config) => json!(config),
         None => serde_json::Value::Null,
     };
-    Builder::new()
-        .body(json!({ "dna_interface": interface }).to_string().into())
-        .expect("unable to build response")
+    json!({ "dna_interface": interface })
 }
 
 pub trait ConductorStaticFileServer {

@@ -1,8 +1,8 @@
 use static_file_server::{
-    // dna_connections_response,
+    dna_connections_response,
     // redirect_request_to_root,
     ConductorStaticFileServer,
-    // DNA_CONFIG_ROUTE,
+    DNA_CONFIG_ROUTE,
 };
 use conductor::base::notify;
 use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
@@ -17,13 +17,14 @@ use std::{
 use nickel::{
     Nickel,
     StaticFilesHandler,
+    HttpRouter,
 };
 
 pub struct NickelStaticServer {
     shutdown_signal: Option<Sender<()>>,
     config: UiInterfaceConfiguration,
     bundle_config: UiBundleConfiguration,
-    // connected_dna_interface: Option<InterfaceConfiguration>,
+    connected_dna_interface: Option<InterfaceConfiguration>,
     running: bool,
 }
 
@@ -32,13 +33,13 @@ impl ConductorStaticFileServer for NickelStaticServer {
     fn from_configs(
         config: UiInterfaceConfiguration,
         bundle_config: UiBundleConfiguration,
-        _connected_dna_interface: Option<InterfaceConfiguration>,
+        connected_dna_interface: Option<InterfaceConfiguration>,
     ) -> Self {
         Self {
             shutdown_signal: None,
             config,
             bundle_config,
-            // connected_dna_interface,
+            connected_dna_interface,
             running: false,
         }
     }
@@ -51,8 +52,15 @@ impl ConductorStaticFileServer for NickelStaticServer {
 
         server.utilize(StaticFilesHandler::new(self.bundle_config.root_dir.to_owned()));
 
+        // provide a virtual route for inspecting the configed DNA interfaces for this UI
+        // let connected_dna_interface = ;\
+        let connected_dna_interface = self.connected_dna_interface.clone();
+        server.get(DNA_CONFIG_ROUTE, middleware! { |_|
+            dna_connections_response(&connected_dna_interface)
+        });
+
         notify(format!(
-            "About to serve path using Nickel \"{}\" at http://{}",
+            "About to serve path \"{}\" at http://{}",
             &self.bundle_config.root_dir, &addr
         ));
 

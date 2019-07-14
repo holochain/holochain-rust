@@ -276,8 +276,7 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
                             let base64_content = entry[&meta_entry].to_string();
                             let content = base64::decode(&base64_content)?;
 
-                            let file_path =
-                                to.join(meta_entry).with_extension(WASM_FILE_EXTENSION);
+                            let file_path = to.join(meta_entry).with_extension(WASM_FILE_EXTENSION);
 
                             File::create(file_path)?.write_all(&content[..])?;
                         }

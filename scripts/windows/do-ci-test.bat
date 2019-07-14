@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-# KEEP IN SYNC WITH HOLONIX
+rem KEEP IN SYNC WITH HOLONIX
 rustup toolchain install nightly-2019-07-01
 
 IF NOT "!wasm_path!" == "" (

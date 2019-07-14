@@ -1,6 +1,9 @@
 @echo off
 setlocal enabledelayedexpansion
 
+# KEEP IN SYNC WITH HOLONIX
+rustup toolchain install nightly-2019-07-01
+
 IF NOT "!wasm_path!" == "" (
  set manifest-path=!test_path!\!wasm_path!\Cargo.toml
  set target-dir=!test_path!\!wasm_path!\target

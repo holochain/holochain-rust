@@ -10,7 +10,8 @@ use error::HolochainResult;
 use holochain_core_types::error::HolochainError;
 
 use std::{
-    sync::mpsc::{Sender},
+    sync::mpsc::{self, Sender},
+    thread,
     net::SocketAddr,
 };
 
@@ -46,38 +47,49 @@ impl ConductorStaticFileServer for NickelStaticServer {
 
     fn start(&mut self) -> HolochainResult<()> {
 
-        let addr = SocketAddr::from(([127, 0, 0, 1], self.config.port));
+        let (tx, rx) = mpsc::channel();
 
-        let mut server = Nickel::new();
-
-        server.utilize(StaticFilesHandler::new(self.bundle_config.root_dir.to_owned()));
-
-        // provide a virtual route for inspecting the configed DNA interfaces for this UI
-        // let connected_dna_interface = ;\
-        let connected_dna_interface = self.connected_dna_interface.clone();
-        server.get(DNA_CONFIG_ROUTE, middleware! { |_|
-            dna_connections_response(&connected_dna_interface)
-        });
-
-        notify(format!(
-            "About to serve path \"{}\" at http://{}",
-            &self.bundle_config.root_dir, &addr
-        ));
-
-        server.listen(addr)
-            .map_err(|e| HolochainError::ErrorGeneric(format!("server error: {}", e)))?;
-
+        self.shutdown_signal = Some(tx);
         self.running = true;
 
-        notify(format!("Listening on http://{}", addr));
+        {
+
+            let mut server = Nickel::new();
+
+            server.utilize(StaticFilesHandler::new(self.bundle_config.root_dir.to_owned()));
+
+            // provide a virtual route for inspecting the configed DNA interfaces for this UI
+            // let connected_dna_interface = ;
+            let connected_dna_interface = self.connected_dna_interface.clone();
+            server.get(DNA_CONFIG_ROUTE, middleware! { |_|
+                dna_connections_response(&connected_dna_interface)
+            });
+
+            let addr = SocketAddr::from(([127, 0, 0, 1], self.config.port));
+
+            notify(format!(
+                "About to serve path \"{}\" at http://{}",
+                &self.bundle_config.root_dir, &addr
+            ));
+
+            server.listen(addr)
+            .map_err(|e| {
+                notify(format!("server error: {}", e))
+            }).expect("Could not start static file server");
+
+            notify(format!("Listening on http://{}", addr));
+            // block waiting for a shutdown signal after which the server goes out of scope
+            rx.recv().unwrap();
+        };
 
         Ok(())
     }
 
     fn stop(&mut self) -> HolochainResult<()> {
         match self.shutdown_signal.clone() {
-            Some(_shutdown_signal) => {
-                Err(HolochainError::ErrorGeneric("Not Implemented".into()).into())
+            Some(shutdown_signal) => {
+                shutdown_signal.send(()).unwrap();
+                Ok(())
             }
             None => Err(HolochainError::ErrorGeneric("server is already stopped".into()).into()),
         }

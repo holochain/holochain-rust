@@ -52,7 +52,9 @@ impl ConductorStaticFileServer for NickelStaticServer {
 
             // if required, reroute failed routes to index.html
             // This is required for SPAs with virtual routing
-            server.mount("/", FallbackFileRouteHandler::new(static_file_handler));
+            if self.config.reroute_to_root {
+                server.mount("/", FallbackFileRouteHandler::new(static_file_handler));
+            }
 
             // provide a virtual route for inspecting the configed DNA interfaces for this UI
             // let connected_dna_interface = ;
@@ -64,7 +66,9 @@ impl ConductorStaticFileServer for NickelStaticServer {
                 },
             );
 
-            let addr = SocketAddr::from(([127, 0, 0, 1], self.config.port));
+            let addr: SocketAddr = format!("{}:{}", self.config.bind_address, self.config.port)
+                .parse()
+                .expect("invalid address or port");
 
             notify(format!(
                 "About to serve path \"{}\" at http://{}",

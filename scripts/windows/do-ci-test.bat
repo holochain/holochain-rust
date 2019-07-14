@@ -5,6 +5,7 @@ rem KEEP IN SYNC WITH HOLONIX
 set nightly-date=nightly-2019-07-14
 rustup toolchain install --no-self-update !nightly-date!
 rustup default !nightly-date!
+rustup target add wasm32-unknown-unknown
 
 IF NOT "!wasm_path!" == "" (
  set manifest-path=!test_path!\!wasm_path!\Cargo.toml

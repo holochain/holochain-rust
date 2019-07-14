@@ -64,7 +64,7 @@ pub async fn author_entry<'a>(
         validation_data,
         &context,
     )) {
-        return Err(e);
+        return Err(e.into());
     }
     context.log(format!("Authoring entry {}: is valid!", address));
 

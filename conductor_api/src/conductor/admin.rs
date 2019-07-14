@@ -604,7 +604,7 @@ pub mod tests {
         let loader = Box::new(|_: &PathBuf| {
             Ok(Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap())
         })
-            as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
+            as Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 

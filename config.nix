@@ -5,21 +5,21 @@
 
   # true = use a github repository as the holonix base (recommended)
   # false = use a local copy of holonix (useful for debugging)
-  use-github = false;
+  use-github = true;
 
   # configure the remote holonix github when use-github = true
   github = {
 
    # can be any github ref
    # branch, tag, commit, etc.
-   ref = "0.0.18";
+   ref = "develop";
 
    # the sha of what is downloaded from the above ref
    # note: even if you change the above ref it will not be redownloaded until
    #       the sha here changes (the sha is the cache key for downloads)
    # note: to get a new sha, get nix to try and download a bad sha
    #       it will complain and tell you the right sha
-   sha256 = "0sdsz5xnn7rc170kxqdz98rglp82qjggil67lv0sbbzxdx0rwjgy";
+   # sha256 = "0sdsz5xnn7rc170kxqdz98rglp82qjggil67lv0sbbzxdx0rwjgy";
 
    # the github owner of the holonix repo
    owner = "holochain";

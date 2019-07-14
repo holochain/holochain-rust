@@ -1,9 +1,6 @@
 use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
 use error::HolochainResult;
-use hyper::{
-    http::uri,
-    Request,
-};
+use hyper::{http::uri, Request};
 
 pub const DNA_CONFIG_ROUTE: &str = "/_dna_connections.json";
 

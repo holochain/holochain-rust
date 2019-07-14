@@ -1,20 +1,12 @@
-use static_file_server::{
-    dna_connections_response,
-    redirect_request_to_root,
-    ConductorStaticFileServer,
-    DNA_CONFIG_ROUTE,
-};
 use conductor::base::notify;
 use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
 use error::HolochainResult;
 use holochain_core_types::error::HolochainError;
-use hyper::{
-    rt::Future,
-    server::Server,
-    Body, Request, Response,
-    http::response::Builder,
-};
+use hyper::{http::response::Builder, rt::Future, server::Server, Body, Request, Response};
 use hyper_staticfile::{Static, StaticFuture};
+use static_file_server::{
+    dna_connections_response, redirect_request_to_root, ConductorStaticFileServer, DNA_CONFIG_ROUTE,
+};
 use std::{
     io::Error,
     sync::mpsc::{channel, Sender},
@@ -41,7 +33,7 @@ impl Future for MainFuture {
                     .body(dna_connections_response(config).to_string().into())
                     .expect("unable to build response");
                 Ok(Async::Ready(response))
-            },
+            }
             MainFuture::Static(ref mut future) => future.poll(),
         }
     }
@@ -102,7 +94,6 @@ pub struct HyperStaticServer {
 }
 
 impl ConductorStaticFileServer for HyperStaticServer {
-
     fn from_configs(
         config: UiInterfaceConfiguration,
         bundle_config: UiBundleConfiguration,

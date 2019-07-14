@@ -1,7 +1,8 @@
 use crate::{
     conductor::{base::notify, Conductor},
     config::{UiBundleConfiguration, UiInterfaceConfiguration},
-    static_file_server::StaticServer,
+    static_file_server::{ConductorStaticFileServer},
+    static_server_impls::HyperStaticServer as StaticServer,
 };
 use error::HolochainInstanceError;
 use holochain_core_types::error::HolochainError;

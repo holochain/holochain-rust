@@ -152,5 +152,6 @@ pub mod keystore;
 pub mod logger;
 pub mod signal_wrapper;
 pub mod static_file_server;
+pub mod static_server_impls;
 
 pub use crate::holochain::Holochain;

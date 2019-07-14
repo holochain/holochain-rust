@@ -33,6 +33,10 @@ with holonix.pkgs;
     config = config;
    }).buildInputs */
 
+   ++ (holonix.pkgs.callPackage ./conductor_wasm {
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
    # qt specific testing
    ++ (holonix.pkgs.callPackage ./qt {
     pkgs = holonix.pkgs;

@@ -19,7 +19,7 @@
    #       the sha here changes (the sha is the cache key for downloads)
    # note: to get a new sha, get nix to try and download a bad sha
    #       it will complain and tell you the right sha
-   sha256 = "0xg54znk9d610i0iiawmvflf5c81b8k0nxpgfrx42h0h4famr6z5";
+   sha256 = "0c4lgcr5hhk7b157yjcqjac6jlvkc43f2xln083rqwxbg2fig0cv";
 
    # the github owner of the holonix repo
    owner = "holochain";

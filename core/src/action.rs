@@ -159,9 +159,8 @@ pub enum Action {
 
     /// get links from entry address and link_type name
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
-    GetLinks((GetLinksKey,GetLinksNetworkQuery)),
+    GetLinks((GetLinksKey,Option<CrudStatus>,GetLinksNetworkQuery)),
     GetLinksTimeout(GetLinksKey),
-    GetLinksCount((GetLinksKey, Option<CrudStatus>)),
     RespondGetLinks((QueryEntryData, GetLinksNetworkResult, String, String)),
     HandleGetLinksResult((GetLinksNetworkResult, GetLinksKey)),
  

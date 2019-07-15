@@ -4,7 +4,7 @@ use crate::{
     state::State,
 };
 
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError,crud_status::CrudStatus};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{JsonProtocol, QueryEntryData};
 use holochain_persistence_api::hash::HashString;
@@ -12,11 +12,12 @@ use holochain_persistence_api::hash::HashString;
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
     key: &GetLinksKey,
-    get_links_query : &GetLinksNetworkQuery
+    get_links_query : &GetLinksNetworkQuery,
+    crud_status : &Option<CrudStatus>
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
     let query_json: JsonString =
-        NetworkQuery::GetLinks(key.link_type.clone(), key.tag.clone(),None,get_links_query.clone()).into();
+        NetworkQuery::GetLinks(key.link_type.clone(), key.tag.clone(),crud_status.clone(),get_links_query.clone()).into();
     send(
         network_state,
         JsonProtocol::QueryEntry(QueryEntryData {
@@ -35,9 +36,9 @@ pub fn reduce_get_links(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (key,query) = unwrap_to!(action => crate::action::Action::GetLinks);
+    let (key,crud_status,query) = unwrap_to!(action => crate::action::Action::GetLinks);
 
-    let result = match reduce_get_links_inner(network_state, &key,&query) {
+    let result = match reduce_get_links_inner(network_state, &key,&query,crud_status) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };
@@ -71,6 +72,7 @@ mod tests {
         action::{Action, ActionWrapper, GetLinksKey},
         instance::tests::test_context,
         state::test_store,
+        network::query::GetLinksNetworkQuery
     };
     use holochain_core_types::error::HolochainError;
     //use std::sync::{Arc, RwLock};
@@ -88,7 +90,7 @@ mod tests {
             tag: "link-tag".to_string(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
+        let action_wrapper = ActionWrapper::new(Action::GetLinks((key.clone(),None,GetLinksNetworkQuery::Links)));
 
         let store = store.reduce(action_wrapper);
         let maybe_get_links_result = store

@@ -70,13 +70,13 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
     let query_json = JsonString::from_json(&String::from_utf8(query_data.query.clone()).unwrap());
     let action_wrapper = match query_json.clone().try_into() {
-        Ok(NetworkQuery::GetLinks(link_type, tag,_options,query)) => {
+        Ok(NetworkQuery::GetLinks(link_type, tag,options,query)) => {
             let links = get_links(
                 &context,
                 query_data.entry_address.clone(),
                 link_type.clone(),
                 tag.clone(),
-                None,
+                options,
             );
             let links_result = match query
             {

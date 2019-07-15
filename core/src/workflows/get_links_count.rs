@@ -1,4 +1,4 @@
-use crate::{context::Context, network::actions::get_links_count::get_links_count};
+use crate::{context::Context, network::{actions::get_links::get_links,query::{GetLinksNetworkQuery,GetLinksNetworkResult}}};
 
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResultCount};
@@ -8,14 +8,17 @@ pub async fn get_link_result_count_workflow<'a>(
     context: Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResultCount, HolochainError> {
-    let links_count = await!(get_links_count(
+    let links_result = await!(get_links(
         context,
-        link_args.entry_address.clone(),
-        link_args.link_type.clone(),
-        link_args.tag.clone(),
-        link_args.options.timeout.clone(),
-        link_args.options.status_request.clone()
+        link_args,
+        GetLinksNetworkQuery::Count
     ))?;
+
+    let links_count = match links_result
+    {
+        GetLinksNetworkResult::Count(count) => Ok(count),
+        _ => Err(HolochainError::ErrorGeneric("Getting wrong type of GetLinks".to_string()))
+    }?;
 
     Ok(GetLinksResultCount { count: links_count })
 }

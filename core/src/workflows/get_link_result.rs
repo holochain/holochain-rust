@@ -1,5 +1,5 @@
 use crate::{
-    context::Context, network::{actions::get_links::get_links,query::GetLinksNetworkResult},
+    context::Context, network::{actions::get_links::get_links,query::{GetLinksNetworkQuery,GetLinksNetworkResult}},
     workflows::get_entry_result::get_entry_result_workflow,
 };
 
@@ -9,7 +9,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResultType::Single},
-    get_links::{GetLinksArgs, GetLinksResult, LinksResult, LinksStatusRequestKind},
+    get_links::{GetLinksArgs, GetLinksResult, LinksResult},
 };
 use std::sync::Arc;
 
@@ -21,11 +21,6 @@ pub async fn get_link_result_workflow<'a>(
     //get links based on status request, all for everything, deleted for deleted links and live for active links
     let link_results = links
         .into_iter()
-        .filter(|link_entry_crud| match link_args.options.status_request {
-            LinksStatusRequestKind::All => true,
-            LinksStatusRequestKind::Live => link_entry_crud.2 == CrudStatus::Live,
-            _ => link_entry_crud.2 == CrudStatus::Deleted,
-        })
         .map(|link_entry_crud| LinksResult {
             address: link_entry_crud.0.link().target().clone(),
             headers: link_entry_crud.1.clone(),
@@ -44,10 +39,8 @@ pub async fn get_link_add_entries<'a>(
     //get link add entries
     let links_result = await!(get_links(
         context.clone(),
-        link_args.entry_address.clone(),
-        link_args.link_type.clone(),
-        link_args.tag.clone(),
-        link_args.options.timeout.clone()
+        link_args,
+        GetLinksNetworkQuery::Links
     ))?;
 
     //iterate over link add entries

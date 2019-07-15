@@ -1,5 +1,5 @@
 let
- release-commit = "9f0a75115ba67aba2ec7187b87be40bee0463ba0";
+ release-commit = "eab01dd393662d5f8fa838f592490f771274a849";
  current = "0.0.24-alpha2";
  previous = "0.0.24-alpha1";
  # tag will ultimately be current version when it hits holonix

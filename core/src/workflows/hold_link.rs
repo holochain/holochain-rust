@@ -35,17 +35,17 @@ pub async fn hold_link_workflow(
     ));
     // 1. Get hold of validation package
     let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
-         .map_err(|err| {
-             let message = "Could not get validation package from source! -> Add to pending...";
-             context.log(format!("debug/workflow/hold_link: {}", message));
-             context.log(format!("debug/workflow/hold_link: Error was: {:?}", err));
-             add_pending_validation(
-                 entry_with_header.to_owned(),
-                 Vec::new(),
-                 ValidatingWorkflow::HoldLink,
-                 context.clone(),
-             );
-             HolochainError::ValidationPending
+        .map_err(|err| {
+         let message = "Could not get validation package from source! -> Add to pending...";
+         context.log(format!("debug/workflow/hold_link: {}", message));
+         context.log(format!("debug/workflow/hold_link: Error was: {:?}", err));
+         add_pending_validation(
+             entry_with_header.to_owned(),
+             Vec::new(),
+             ValidatingWorkflow::HoldLink,
+             context.clone(),
+         );
+         HolochainError::ValidationPending
         })?;
     let validation_package = maybe_validation_package.ok_or_else(|| {
         let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";

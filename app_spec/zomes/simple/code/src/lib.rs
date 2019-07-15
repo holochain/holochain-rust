@@ -54,13 +54,19 @@ fn simple_entry(content: String) -> Entry {
 
 pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::commit_entry(&simple_entry(target))?;
-    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", "")?;
+    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", "tag")?;
+    Ok(())
+}
+
+pub fn handle_create_my_link_with_tag(base: Address,target : String, tag : String) -> ZomeApiResult<()> {
+    let address = hdk::commit_entry(&simple_entry(target))?;
+    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", tag)?;
     Ok(())
 }
 
 pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::entry_address(&simple_entry(target))?;
-    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts", "")?;
+    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts", "tag")?;
     Ok(())
 }
 
@@ -148,6 +154,11 @@ define_zome! {
             inputs: |base : Address,target:String|,
             outputs: |result: ZomeApiResult<()>|,
             handler: handle_create_my_link
+        }
+        create_link_with_tag: {
+            inputs: |base : Address,target:String,tag:String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_create_my_link_with_tag
         }
         delete_link: {
             inputs: |base : Address,target:String|,

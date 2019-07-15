@@ -43,11 +43,11 @@ pub async fn author_entry<'a>(
     }
 
     // 1. Build the context needed for validation of the entry
-    let validation_package =
-        match await!(build_validation_package(&entry, context.clone(), provenances)) {
-            Ok(o) => o,
-            Err(e) => return Err(e),
-        };
+    let validation_package = await!(build_validation_package(
+        &entry,
+        context.clone(),
+        provenances
+    ))?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
@@ -58,14 +58,12 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: validating...",
         address
     ));
-    if let Err(e) = await!(validate_entry(
+    await!(validate_entry(
         entry.clone(),
         maybe_link_update_delete.clone(),
         validation_data,
-        &context,
-    )) {
-        return Err(e.into());
-    }
+        &context
+    ))?;
     context.log(format!("Authoring entry {}: is valid!", address));
 
     // 3. Commit the entry
@@ -73,10 +71,11 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: committing...",
         address
     ));
-    let addr = match await!(commit_entry(entry.clone(), maybe_link_update_delete, &context)) {
-        Ok(o) => o,
-        Err(e) => return Err(e),
-    };
+    let addr = await!(commit_entry(
+        entry.clone(),
+        maybe_link_update_delete,
+        &context
+    ))?;
     context.log(format!(
         "debug/workflow/authoring_entry/{}: committed",
         address
@@ -88,9 +87,7 @@ pub async fn author_entry<'a>(
             "debug/workflow/authoring_entry/{}: publishing...",
             address
         ));
-        if let Err(e) = await!(publish(entry.address(), &context)) {
-            return Err(e);
-        }
+        await!(publish(entry.address(), &context))?;
         context.log(format!(
             "debug/workflow/authoring_entry/{}: published!",
             address

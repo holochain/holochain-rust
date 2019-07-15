@@ -17,10 +17,7 @@ pub async fn get_link_result_workflow<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResult, HolochainError> {
-    let links = match await!(get_link_add_entries(context, link_args)) {
-        Ok(o) => o,
-        Err(e) => return Err(e),
-    };
+    let links = await!(get_link_add_entries(context, link_args))?;
     //get links based on status request, all for everything, deleted for deleted links and live for active links
     let link_results = links
         .into_iter()
@@ -45,16 +42,13 @@ pub async fn get_link_add_entries<'a>(
     link_args: &'a GetLinksArgs,
 ) -> Result<Vec<(LinkData, Vec<ChainHeader>, CrudStatus)>, HolochainError> {
     //get link add entries
-    let links_caches = match await!(get_links(
+    let links_caches = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
         link_args.link_type.clone(),
         link_args.tag.clone(),
-        link_args.options.timeout.clone(),
-    )) {
-        Ok(o) => o,
-        Err(e) => return Err(e),
-    };
+        link_args.options.timeout.clone()
+    ))?;
 
     //iterate over link add entries
     let (links_result, get_links_error): (Vec<_>, Vec<_>) = links_caches

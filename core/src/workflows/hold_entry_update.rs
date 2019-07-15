@@ -24,19 +24,19 @@ pub async fn hold_update_workflow(
     let EntryWithHeader { entry, header } = entry_with_header;
 
     // 1. Get hold of validation package
-    let await_validation_package = await!(validation_package(&entry_with_header, context.clone()));
-    let maybe_validation_package = await_validation_package.map_err(|err| {
-        let message = "Could not get validation package from source! -> Add to pending...";
-        context.log(format!("debug/workflow/hold_update: {}", message));
-        context.log(format!("debug/workflow/hold_update: Error was: {:?}", err));
-        add_pending_validation(
-            entry_with_header.to_owned(),
-            Vec::new(),
-            ValidatingWorkflow::UpdateEntry,
-            context.clone(),
-        );
-        HolochainError::ValidationPending
-    })?;
+    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
+        .map_err(|err| {
+            let message = "Could not get validation package from source! -> Add to pending...";
+            context.log(format!("debug/workflow/hold_update: {}", message));
+            context.log(format!("debug/workflow/hold_update: Error was: {:?}", err));
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                Vec::new(),
+                ValidatingWorkflow::UpdateEntry,
+                context.clone(),
+            );
+            HolochainError::ValidationPending
+        })?;
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
 
@@ -52,9 +52,12 @@ pub async fn hold_update_workflow(
     };
 
     // 3. Validate the entry
-    let await_validate_entry =
-        await!(validate_entry(entry.clone(), Some(link.clone()), validation_data, &context));
-    await_validate_entry
+    await!(validate_entry(
+        entry.clone(),
+        Some(link.clone()),
+        validation_data,
+        &context
+    ))
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             context.log(format!("debug/workflow/hold_update: Entry update could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies));
@@ -77,8 +80,11 @@ pub async fn hold_update_workflow(
     })?;
 
     // 3. If valid store the entry in the local DHT shard
-    match await!(update_entry(&context.clone(), link, entry.address().clone())) {
-        Ok(_) => Ok(()),
-        Err(e) => Err(e),
-    }
+    await!(update_entry(
+        &context.clone(),
+        link,
+        entry.address().clone()
+    ))?;
+
+    Ok(())
 }

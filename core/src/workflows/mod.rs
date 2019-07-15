@@ -90,12 +90,16 @@ async fn validation_package(
     context: Arc<Context>,
 ) -> Result<Option<ValidationPackage>, HolochainError> {
     // 1. Try to construct it locally:
-    if let Ok(package) =
-        await!(try_make_local_validation_package(&entry_with_header, context.clone()))
-    {
+    if let Ok(package) = await!(try_make_local_validation_package(
+        &entry_with_header,
+        context.clone()
+    )) {
         Ok(Some(package))
     } else {
         // If that is not possible, get the validation package from source
-        await!(get_validation_package(entry_with_header.header.clone(), &context))
+        await!(get_validation_package(
+            entry_with_header.header.clone(),
+            &context
+        ))
     }
 }

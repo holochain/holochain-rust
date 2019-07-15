@@ -98,13 +98,16 @@ impl Instance {
         context: Arc<Context>,
     ) -> HcResult<Arc<Context>> {
         let context = self.inner_setup(context);
-        context.block_on(async {
-            if let Err(e) = await!(initialize_chain(dna.clone(), &context)) {
-                return Err(e);
-            }
-            await!(initialize_network_with_spoofed_dna(spoofed_dna_address, &context))
-        })?;
-        Ok(context)
+        context.block_on(
+            async {
+              await!(initialize_chain(dna.clone(), &context))?;
+              await!(initialize_network_with_spoofed_dna(
+                  spoofed_dna_address,
+                  &context
+              ))
+            },
+        )?;
+      Ok(context)
     }
 
     /// Only needed in tests to check that the initialization (and other workflows) fail

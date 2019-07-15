@@ -27,12 +27,6 @@ with holonix.pkgs;
   buildInputs = [ ]
    ++ holonix.shell.buildInputs
 
-   # release hooks
-   /* ++ (holonix.pkgs.callPackage ./release {
-    pkgs = holonix.pkgs;
-    config = config;
-   }).buildInputs */
-
    ++ (holonix.pkgs.callPackage ./app_spec {
     pkgs = holonix.pkgs;
    }).buildInputs
@@ -47,11 +41,18 @@ with holonix.pkgs;
 
    ++ (holonix.pkgs.callPackage ./cli {
     pkgs = holonix.pkgs;
+    config = config;
    }).buildInputs
 
    # qt specific testing
    ++ (holonix.pkgs.callPackage ./qt {
     pkgs = holonix.pkgs;
+   }).buildInputs
+
+   # release hooks
+   ++ (holonix.pkgs.callPackage ./release {
+    pkgs = holonix.pkgs;
+    config = config;
    }).buildInputs
 
    ++ (holonix.pkgs.callPackage ./rust {

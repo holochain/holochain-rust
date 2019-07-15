@@ -1,4 +1,12 @@
-{
+let
+ current = "0.0.24-alpha1";
+ previous = "0.0.23-alpha1";
+ # tag will ultimately be current version when it hits holonix
+ # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
+ tag = current;
+ holonix-version = "0.0.20";
+in
+rec {
 
  # configure holonix itself
  holonix = {
@@ -12,7 +20,7 @@
 
    # can be any github ref
    # branch, tag, commit, etc.
-   ref = "0.0.20";
+   ref = holonix-version;
 
    # the sha of what is downloaded from the above ref
    # note: even if you change the above ref it will not be redownloaded until
@@ -42,13 +50,15 @@
    # to stop the release
    # exit 1
    preflight = ''
+hc-release-audit
 hn-release-hook-preflight-manual
 '';
 
    # bump versions in the repo
    version = ''
 hn-release-hook-version-rust
-hcp-release-hook-version
+hn-release-hook-version-readme
+hc-cli-release-hook-version
 '';
 
    # publish artifacts to the world
@@ -66,9 +76,9 @@ hcp-release-hook-publish
   # the previous version will be scanned/bumped by release scripts
   # the current version is what the release scripts bump *to*
   version = {
-   current = "0.0.5";
+   current = current;
    # not used by version hooks in this repo
-   previous = "_._._";
+   previous = previous;
   };
 
   github = {
@@ -76,26 +86,74 @@ hcp-release-hook-publish
    # there is some basic string substitution {{ xxx }}
    # - {{ changelog }} will inject the changelog as at the target commit
    template = ''
-{{ changelog }}
+   {{ changelog }}
 
-# Installation
+   # Installation
 
-Use Holonix to work with this repository.
+   This release includes binaries of:
 
-See:
+   - the [`hc` development command-line tool](https://github.com/holochain/holochain-rust/blob/${tag}/cli/README.md)
+   - [`holochain` deployment conductor](https://github.com/holochain/holochain-rust/blob/${tag}/conductor/README.md) for different platforms.
 
-- https://github.com/holochain/holonix
-- https://nixos.org/
+   ## Very much recommended install
+
+   The recommended installation process is to follow the [developer quick-start guide](https://developer.holochain.org/start.html).
+
+   The approach in the quick start guide:
+
+   - provides additional supporting tools like rust & node
+   - shows you how to keep up to date with the latest versions of everything
+   - makes minimal changes to your machine overall
+   - is relatively difficult to screw up
+
+   ## Bothersome manual install
+
+   **IMPORTANT:** Manual holochain installations can conflict with the installer.
+
+   Either binary is installed by being placed anywhere on your `$PATH`.
+   This is different for everyone and depends how your machine is configured.
+
+   For `hc` to build and test DNA Rust and NodeJS are both needed.
+
+   ### Which Rust?
+
+   The binaries for this release were built with rust from holonix version ${holonix-version}.
+   WASM needs the `wasm32-unknown-unknown` rust target on your toolchain.
+
+   ### Which NodeJS?
+
+   Node is used to run end to end tests as a client of the holochain.
+   Holochain exposes websockets for node to interact with.
+
+   We recommend nodejs 10+.
+
+   ### Which Binary?
+
+   Download the binaries for your operating system.
+
+   - MacOS: `cli-${tag}-x86_64-apple-darwin.tar.gz`
+   - Linux: `cli-${tag}-x86_64-generic-linux-gnu.tar.gz`
+   - Windows:
+     - Visual Studio build system (default): `cli-${tag}-x86_64-pc-windows-msvc.tar.gz`
+     - mingw build system: `cli-${tag}-x86_64-pc-windows-gnu.tar.gz`
+
+   All binaries are for 64-bit operating systems.
+   32-bit systems are NOT supported.
 '';
 
    # owner of the github repository that release are deployed to
    owner = "holochain";
 
    # repository name on github that release are deployed to
-   repo = "holochain-persistence";
+   repo = "holochain-rust";
 
    # canonical local upstream name as per `git remote -v`
    upstream = "origin";
+
   };
+
+  # non-standard, overridden by holonix internally anyway
+  # used by check artifacts
+  tag = tag;
  };
 }

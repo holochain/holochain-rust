@@ -1,4 +1,5 @@
 let
+ release-commit = "9f0a75115ba67aba2ec7187b87be40bee0463ba0";
  current = "0.0.24-alpha1";
  previous = "0.0.23-alpha1";
  # tag will ultimately be current version when it hits holonix
@@ -63,14 +64,14 @@ hc-cli-release-hook-version
 
    # publish artifacts to the world
    publish = ''
-hcp-release-hook-publish
+echo "go look at travis for binary building!"
 '';
   };
 
   # the commit hash that the release process should target
   # this will always be behind what ends up being deployed
   # the release process needs to add some commits for changelog etc.
-  commit = "88289ef3190f85e3dd327f957f6e94379f1a73e1";
+  commit = release-commit;
 
   # the semver for prev and current releases
   # the previous version will be scanned/bumped by release scripts

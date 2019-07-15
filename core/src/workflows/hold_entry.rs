@@ -20,7 +20,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 
 use std::sync::Arc;
 
-pub async fn hold_entry_workflow<'a>(
+pub async fn hold_entry_workflow(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {

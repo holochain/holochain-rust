@@ -3,7 +3,6 @@
 //! The reason for having this crate is to have a minimal but
 //! complete set of types that are used in most other Holochain
 //! crates, but that don't include Holochain itself.
-#![feature(try_from)]
 #![feature(try_trait)]
 #![feature(never_type)]
 #![warn(unused_extern_crates)]

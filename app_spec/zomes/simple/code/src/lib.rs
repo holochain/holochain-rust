@@ -65,7 +65,7 @@ pub fn handle_create_my_link_with_tag(base: Address,target : String, tag : Strin
 
 pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::entry_address(&simple_entry(target))?;
-    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts", "tag")?;
+    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts","tag")?;
     Ok(())
 }
 

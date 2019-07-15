@@ -117,7 +117,6 @@ You might notice that the `List` struct does not contain a field that holds a co
 Also be sure to add the following to the list of imports:
 
 ```rust
-#![feature(try_from)]
 #[macro_use]
 extern crate hdk;
 #[macro_use]
@@ -282,7 +281,6 @@ define_zome! {
 and there we have it! If you are coding along the full lib.rs should now look like this:
 
 ```rust
-#![feature(try_from)]
 #[macro_use]
 extern crate hdk;
 #[macro_use]

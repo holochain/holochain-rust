@@ -44,7 +44,7 @@ pub struct CoreError {
 
 // Error trait by using the inner Error
 impl Error for CoreError {
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         self.kind.source()
     }
 }

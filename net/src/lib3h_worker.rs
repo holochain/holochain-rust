@@ -10,7 +10,7 @@ use lib3h::{
     transport_wss::TransportWss,
 };
 
-use lib3h_protocol::{network_engine::NetworkEngine, protocol_client::Lib3hClientProtocol};
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, network_engine::NetworkEngine};
 
 /// A worker that makes use of lib3h / NetworkEngine.
 /// It adapts the Worker interface with Lib3h's NetworkEngine's interface.
@@ -46,7 +46,6 @@ impl NetWorker for Lib3hWorker {
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         println!("Lib3hWorker.receive(): {:?}", data);
-
         // Post Lib3hClient messages only
         self.net_engine.post(data.clone())?;
         // Done
@@ -70,21 +69,9 @@ impl NetWorker for Lib3hWorker {
         Ok(did_something)
     }
 
-    /// Stop the NetworkEngine
-    fn stop(self: Box<Self>) -> NetResult<()> {
-        self.net_engine.stop()
-    }
-
     /// Set the advertise as worker's endpoint
     fn endpoint(&self) -> Option<String> {
         Some(self.net_engine.advertise().to_string())
-    }
-}
-
-/// Terminate on Drop
-impl Drop for Lib3hWorker {
-    fn drop(&mut self) {
-        self.net_engine.terminate().ok();
     }
 }
 

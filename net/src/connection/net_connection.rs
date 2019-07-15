@@ -7,12 +7,13 @@ use std::{fmt, sync::Arc};
 #[derive(Clone, Serialize)]
 pub struct NetHandler {
     #[serde(skip)]
-    closure: Arc<RwLock<Box<FnMut(NetResult<Lib3hServerProtocol>) -> NetResult<()> + Send + Sync>>>,
+    closure: Arc<RwLock<Box<dyn FnMut(NetResult<Lib3hServerProtocol>) ->
+        NetResult<()> + Send + Sync>>>,
 }
 
 impl NetHandler {
     pub fn new(
-        c: Box<FnMut(NetResult<Lib3hServerProtocol>) -> NetResult<()> + Send + Sync>,
+        c: Box<dyn FnMut(NetResult<Lib3hServerProtocol>) -> NetResult<()> + Send + Sync>,
     ) -> NetHandler {
         NetHandler {
             closure: Arc::new(RwLock::new(c)),
@@ -38,7 +39,7 @@ impl fmt::Debug for NetHandler {
 }
 
 /// closure for doing any clean up at shutdown of a NetWorker
-pub type NetShutdown = Option<Box<::std::boxed::FnBox() + Send>>;
+pub type NetShutdown = Option<Box<dyn FnMut() + Send>>;
 
 ///  Trait for sending a Protocol message to the network
 pub trait NetSend {
@@ -74,5 +75,4 @@ pub trait NetWorker {
 }
 
 /// closure for instantiating a NetWorker from a NetHandler
-pub type NetWorkerFactory =
-    Box<::std::boxed::FnBox(NetHandler) -> NetResult<Box<NetWorker>> + Send>;
+pub type NetWorkerFactory = Box<dyn Fn(NetHandler) -> NetResult<Box<dyn NetWorker>> + Send>;

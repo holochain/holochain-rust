@@ -937,10 +937,16 @@ impl TestNode {
         self.p2p_connection.endpoint()
     }
 
-    /// handle all types of json message
+    /// handle all types of lib3h server messages
     #[cfg_attr(tarpaulin, skip)]
-    fn handle_lib3h(&mut self, json_msg: Lib3hServerProtocol) {
-        match json_msg {
+    fn handle_lib3h(&mut self, msg: Lib3hServerProtocol) {
+        match msg {
+            Lib3hServerProtocol::Terminated => {
+                // FIXME
+            }
+            Lib3hServerProtocol::P2pReady => {
+                // FIXME
+            }
             Lib3hServerProtocol::SuccessResult(_msg) => {
                 // n/a
             }
@@ -957,7 +963,6 @@ impl TestNode {
                 // log the direct message sent to us
                 // FIXME
             }
-
             Lib3hServerProtocol::HandleFetchEntry(_) => {
                 // n/a
             }
@@ -965,7 +970,7 @@ impl TestNode {
             Lib3hServerProtocol::HandleStoreEntryAspect(msg) => {
                 if self.is_tracking(&msg.space_address) {
                     // Store data in local datastore
-                    let mut chain_store = self
+                    let chain_store = self
                         .chain_store_list
                         .get_mut(&msg.space_address)
                         .expect("No dna_store for this DNA");

@@ -17,7 +17,7 @@ pub enum HolochainInstanceError {
 impl Error for HolochainInstanceError {
     // not sure how to test this because dyn reference to the Error is not implementing PartialEq
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         match self {
             HolochainInstanceError::InternalFailure(ref err)  => Some(err),
             HolochainInstanceError::InstanceNotActiveYet => None,

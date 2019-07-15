@@ -16,7 +16,7 @@ jobs:
    - image: holochain/holochain-rust:latest
   steps:
    - checkout
-   - run: nix-shell --run hc-rust-fmt-check
+   - run: nix-shell --run hc-test-fmt
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
@@ -173,7 +173,9 @@ workflows:
    - build
    - fmt
    - app-spec-tests
-   - app-spec-proc-tests
+   # @todo reimplement proc tests properly
+   # i.e. don't copy and paste app spec and expec it to work with stale state
+   # - app-spec-proc-tests
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests

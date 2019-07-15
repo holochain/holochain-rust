@@ -9,7 +9,7 @@ use p2p_node::test_node::TestNode;
 #[cfg_attr(tarpaulin, skip)]
 pub fn multi_track(mut nodes: Vec<&mut TestNode>, dnas: &[&Address]) -> NetResult<()> {
     for dna in dnas {
-        for mut node in &mut nodes {
+        for node in &mut nodes {
             node.track_dna(dna, false)?;
         }
     }
@@ -19,7 +19,7 @@ pub fn multi_track(mut nodes: Vec<&mut TestNode>, dnas: &[&Address]) -> NetResul
 /// Have multiple nodes untrack multiple dnas
 #[cfg_attr(tarpaulin, skip)]
 pub fn multi_untrack(mut nodes: Vec<&mut TestNode>, dnas: &[&Address]) -> NetResult<()> {
-    for mut node in &mut nodes {
+    for node in &mut nodes {
         for dna in dnas {
             node.untrack_dna(dna)?;
         }

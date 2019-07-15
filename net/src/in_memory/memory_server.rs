@@ -27,7 +27,7 @@ type RequestId = String;
 /// Type for holding a map of 'network_name -> InMemoryServer'
 type InMemoryServerMap = HashMap<String, Mutex<InMemoryServer>>;
 
-/// this is the actual memory space for our in-memory servers
+// this is the actual memory space for our in-memory servers
 lazy_static! {
     pub(crate) static ref MEMORY_SERVER_MAP: RwLock<InMemoryServerMap> =
         RwLock::new(HashMap::new());

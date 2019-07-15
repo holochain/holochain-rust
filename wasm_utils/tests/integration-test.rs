@@ -1,4 +1,3 @@
-#![feature(try_from)]
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;

@@ -13,7 +13,6 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// This first zome is the "callee"; i.e., the zome that receives the call, and is named `summer`.
 /// because the call sums two numbers.
 /// ```rust
-/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate serde;
@@ -115,7 +114,6 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///
 /// This second zome is the "caller" that makes the call into the `summer` Zome.
 /// ```rust
-/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate serde;

@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 #[macro_use]
 extern crate hdk;
@@ -197,4 +196,3 @@ define_zome! {
 
     }
 }
-

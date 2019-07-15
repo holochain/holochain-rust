@@ -42,11 +42,13 @@ pub async fn get_entry_with_meta_workflow<'a>(
                 entry_with_meta: entry.clone(),
                 headers,
             })),
-            Err(_) => await!(network::actions::get_entry::get_entry(
-                context.clone(),
-                address.clone(),
-                timeout.clone()
-            )),
+            Err(_) => {
+                await!(network::actions::get_entry::get_entry(
+                    context.clone(),
+                    address.clone(),
+                    timeout.clone(),
+                ))
+            }
         }
     }
 }

@@ -1,5 +1,9 @@
 use crate::{
-    context::Context, network::{actions::get_links::get_links,query::{GetLinksNetworkQuery,GetLinksNetworkResult}},
+    context::Context,
+    network::{
+        actions::get_links::get_links,
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult},
+    },
     workflows::get_entry_result::get_entry_result_workflow,
 };
 
@@ -44,10 +48,11 @@ pub async fn get_link_add_entries<'a>(
     ))?;
 
     //iterate over link add entries
-    let links_caches = match links_result
-    {
+    let links_caches = match links_result {
         GetLinksNetworkResult::Links(links_caches) => Ok(links_caches),
-        _ => Err(HolochainError::ErrorGeneric("Should only get link caches".to_string()))
+        _ => Err(HolochainError::ErrorGeneric(
+            "Should only get link caches".to_string(),
+        )),
     }?;
     let (links_result, get_links_error): (Vec<_>, Vec<_>) = links_caches
         .iter()

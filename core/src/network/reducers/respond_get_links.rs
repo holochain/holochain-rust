@@ -1,11 +1,14 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::ActionResponse, query::{NetworkQueryResult,GetLinksNetworkResult}, reducers::send, state::NetworkState,
+        actions::ActionResponse,
+        query::{GetLinksNetworkResult, NetworkQueryResult},
+        reducers::send,
+        state::NetworkState,
     },
     state::State,
 };
-use holochain_core_types::{ error::HolochainError};
+use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{
     JsonProtocol, QueryEntryData, QueryEntryResultData,

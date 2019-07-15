@@ -2,18 +2,17 @@ use crate::{
     action::{Action, ActionWrapper, GetLinksKey},
     context::Context,
     instance::dispatch_action,
-    network::query::{GetLinksNetworkQuery,GetLinksNetworkResult}
+    network::query::{GetLinksNetworkQuery, GetLinksNetworkResult},
 };
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{error::HcResult,crud_status::CrudStatus};
+use holochain_core_types::{crud_status::CrudStatus, error::HcResult};
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};
 
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs,LinksStatusRequestKind};
-
+use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, LinksStatusRequestKind};
 
 /// GetLinks Action Creator
 /// This is the network version of get_links that makes the network module start
@@ -21,7 +20,7 @@ use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs,LinksStatu
 pub async fn get_links(
     context: Arc<Context>,
     link_args: &GetLinksArgs,
-    query : GetLinksNetworkQuery
+    query: GetLinksNetworkQuery,
 ) -> HcResult<GetLinksNetworkResult> {
     let key = GetLinksKey {
         base_address: link_args.entry_address.clone(),
@@ -29,13 +28,12 @@ pub async fn get_links(
         tag: link_args.tag.clone(),
         id: ProcessUniqueId::new().to_string(),
     };
-    let crud_status = match link_args.options.status_request
-    {
+    let crud_status = match link_args.options.status_request {
         LinksStatusRequestKind::All => None,
         LinksStatusRequestKind::Deleted => Some(CrudStatus::Deleted),
-        LinksStatusRequestKind::Live => Some(CrudStatus::Live)
+        LinksStatusRequestKind::Live => Some(CrudStatus::Live),
     };
-    let action_wrapper = ActionWrapper::new(Action::GetLinks((key.clone(),crud_status,query)));
+    let action_wrapper = ActionWrapper::new(Action::GetLinks((key.clone(), crud_status, query)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let key_inner = key.clone();

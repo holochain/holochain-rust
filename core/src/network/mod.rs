@@ -19,8 +19,8 @@ pub mod tests {
                 get_entry::get_entry, get_links::get_links,
                 get_validation_package::get_validation_package, publish::publish,
             },
+            query::{GetLinksNetworkQuery, GetLinksNetworkResult},
             test_utils::test_wat_always_valid,
-            query::{GetLinksNetworkQuery,GetLinksNetworkResult}
         },
         workflows::author_entry::author_entry,
     };
@@ -33,8 +33,8 @@ pub mod tests {
     };
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
-    use test_utils::*;
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
+    use test_utils::*;
 
     // TODO: Should wait for a success or saturation response from the network module after Publish
     #[test]
@@ -291,17 +291,16 @@ pub mod tests {
         // std::thread::sleep(std::time::Duration::from_millis(1000));
 
         println!("\n get_links() ...");
-        let get_links_args = GetLinksArgs
-        {
-            entry_address : entry_addresses[0].clone(),
-            link_type : "test-link".into(),
-            tag : "test-tag".into(),
-            options : Default::default()
+        let get_links_args = GetLinksArgs {
+            entry_address: entry_addresses[0].clone(),
+            link_type: "test-link".into(),
+            tag: "test-tag".into(),
+            options: Default::default(),
         };
         let maybe_links = context2.block_on(get_links(
             context2.clone(),
             &get_links_args,
-            GetLinksNetworkQuery::Links
+            GetLinksNetworkQuery::Links,
         ));
 
         assert!(maybe_links.is_ok());

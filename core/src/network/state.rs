@@ -1,11 +1,12 @@
 use crate::{
     action::{ActionWrapper, GetEntryKey, GetLinksKey},
-    network::{actions::ActionResponse, direct_message::DirectMessage,query::GetLinksNetworkResult},
+    network::{
+        actions::ActionResponse, direct_message::DirectMessage, query::GetLinksNetworkResult,
+    },
 };
 use boolinator::*;
 use holochain_core_types::{
-     entry::EntryWithMetaAndHeader, error::HolochainError,
-    validation::ValidationPackage,
+    entry::EntryWithMetaAndHeader, error::HolochainError, validation::ValidationPackage,
 };
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;

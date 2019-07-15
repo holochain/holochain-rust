@@ -1,5 +1,8 @@
 use crate::{
-    network::{actions::get_links::get_links,query::{GetLinksNetworkResult,GetLinksNetworkQuery}},
+    network::{
+        actions::get_links::get_links,
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult},
+    },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
@@ -12,7 +15,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResultType},
-    get_links::{GetLinksOptions,GetLinksArgs},
+    get_links::{GetLinksArgs, GetLinksOptions},
     link_entries::LinkEntriesArgs,
 };
 use std::convert::TryFrom;
@@ -58,28 +61,25 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         top_chain_header,
         context.agent_id.clone(),
     );
-    let get_links_args = GetLinksArgs
-    {
-        entry_address : link.base().clone(),
-        link_type : link.link_type().clone(),
-        tag : link.tag().clone(),
-        options: GetLinksOptions::default()
-
+    let get_links_args = GetLinksArgs {
+        entry_address: link.base().clone(),
+        link_type: link.link_type().clone(),
+        tag: link.tag().clone(),
+        options: GetLinksOptions::default(),
     };
     let links_result = context.block_on(get_links(
         context.clone(),
         &get_links_args,
-        GetLinksNetworkQuery::Links
+        GetLinksNetworkQuery::Links,
     ));
     if links_result.is_err() {
         context.log("err/zome : Could not get links for remove_link method");
         ribosome_error_code!(WorkflowFailed)
     } else {
         let links = links_result.expect("This is supposed to not fail");
-        let links = match links
-        {
+        let links = match links {
             GetLinksNetworkResult::Links(links) => links,
-            _ => return ribosome_error_code!(WorkflowFailed)
+            _ => return ribosome_error_code!(WorkflowFailed),
         };
         let filtered_links = links
             .into_iter()

@@ -1,9 +1,11 @@
 use crate::{
     agent::state::AgentState,
     network::{
-        direct_message::DirectMessage, entry_aspect::EntryAspect,
-        entry_with_header::EntryWithHeader, state::NetworkState,
-        query::{GetLinksNetworkQuery,GetLinksNetworkResult}
+        direct_message::DirectMessage,
+        entry_aspect::EntryAspect,
+        entry_with_header::EntryWithHeader,
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult},
+        state::NetworkState,
     },
     nucleus::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
@@ -159,11 +161,11 @@ pub enum Action {
 
     /// get links from entry address and link_type name
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
-    GetLinks((GetLinksKey,Option<CrudStatus>,GetLinksNetworkQuery)),
+    GetLinks((GetLinksKey, Option<CrudStatus>, GetLinksNetworkQuery)),
     GetLinksTimeout(GetLinksKey),
     RespondGetLinks((QueryEntryData, GetLinksNetworkResult, String, String)),
     HandleGetLinksResult((GetLinksNetworkResult, GetLinksKey)),
- 
+
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
     SendDirectMessage(DirectMessageData),

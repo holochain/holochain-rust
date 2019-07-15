@@ -3,7 +3,9 @@ use crate::{
     context::Context,
     entry::CanPublish,
     instance::dispatch_action,
-    network::query::{NetworkQuery, NetworkQueryResult,GetLinksNetworkQuery,GetLinksNetworkResult},
+    network::query::{
+        GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
+    },
     nucleus,
 };
 use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader};
@@ -70,7 +72,7 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
     let query_json = JsonString::from_json(&String::from_utf8(query_data.query.clone()).unwrap());
     let action_wrapper = match query_json.clone().try_into() {
-        Ok(NetworkQuery::GetLinks(link_type, tag,options,query)) => {
+        Ok(NetworkQuery::GetLinks(link_type, tag, options, query)) => {
             let links = get_links(
                 &context,
                 query_data.entry_address.clone(),
@@ -78,25 +80,17 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 tag.clone(),
                 options,
             );
-            let links_result = match query
-            {
-                GetLinksNetworkQuery::Links =>
-                {
-                    GetLinksNetworkResult::Links(links)
-                },
-                GetLinksNetworkQuery::Count =>
-                {
-                    GetLinksNetworkResult::Count(links.len())
-                }
+            let links_result = match query {
+                GetLinksNetworkQuery::Links => GetLinksNetworkResult::Links(links),
+                GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
             };
 
             ActionWrapper::new(Action::RespondGetLinks((
-                    query_data,
-                    links_result,
-                    link_type.clone(),
-                    tag.clone(),
-                    )))
-           
+                query_data,
+                links_result,
+                link_type.clone(),
+                tag.clone(),
+            )))
         }
         Ok(NetworkQuery::GetEntry) => {
             let maybe_entry = get_entry(&context, query_data.entry_address.clone());
@@ -129,17 +123,15 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
             )))
         }
         Ok(NetworkQueryResult::Links(links_result, link_type, tag)) => {
-
             ActionWrapper::new(Action::HandleGetLinksResult((
-                    links_result,
-                    GetLinksKey {
+                links_result,
+                GetLinksKey {
                     base_address: query_result_data.entry_address.clone(),
                     link_type: link_type.clone(),
                     tag: tag.clone(),
                     id: query_result_data.request_id.clone(),
-                    },
-                    )))
-            
+                },
+            )))
         }
         err => {
             context.log(format!(

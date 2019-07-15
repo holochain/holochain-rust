@@ -80,6 +80,6 @@ pub async fn hold_remove_workflow(
     await!(remove_entry(
         &context.clone(),
         deleted_entry_address,
-        entry_with_header.entry.address().clone()
+        entry_with_header.entry.address().clone(),
     ))
 }

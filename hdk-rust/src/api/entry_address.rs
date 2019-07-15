@@ -8,7 +8,6 @@ use holochain_persistence_api::cas::content::Address;
 /// This is often used to reconstruct an address of a `base` argument when calling [get_links](fn.get_links.html).
 /// # Examples
 /// ```rust
-/// # #![feature(try_from)]
 /// # extern crate hdk;
 /// # extern crate serde_json;
 /// # #[macro_use]

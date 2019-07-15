@@ -114,7 +114,7 @@ pub struct Conductor {
 impl Drop for Conductor {
     fn drop(&mut self) {
         if let Some(ref mut network_spawn) = self.network_spawn {
-            if let Some(kill) = network_spawn.kill.take() {
+            if let Some(mut kill) = network_spawn.kill.take() {
                 kill();
             }
         }
@@ -133,7 +133,7 @@ impl Drop for Conductor {
 type SignalSender = Sender<Signal>;
 pub type KeyLoader = Arc<
     Box<
-        FnMut(
+        dyn FnMut(
                 &PathBuf,
                 Arc<PassphraseManager>,
                 Option<PwHashConfig>,
@@ -142,9 +142,9 @@ pub type KeyLoader = Arc<
             + Sync,
     >,
 >;
-pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
+pub type DnaLoader = Arc<Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
-    Arc<Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
+    Arc<Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
 
 // preparing for having conductor notifiers go to one of the log streams
 pub fn notify(msg: String) {
@@ -1221,7 +1221,7 @@ impl Conductor {
 }
 
 /// This can eventually be dependency injected for third party Interface definitions
-fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
+fn make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interface> {
     use interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
     match interface_config.driver {
         InterfaceDriver::Websocket { port } => Box::new(WebsocketInterface::new(port)),
@@ -1284,7 +1284,7 @@ pub mod tests {
                 _ => Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap(),
             })
         })
-            as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
+            as Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
@@ -1303,7 +1303,7 @@ pub mod tests {
             },
         )
             as Box<
-                FnMut(
+                dyn FnMut(
                         &PathBuf,
                         Arc<PassphraseManager>,
                         Option<PwHashConfig>,

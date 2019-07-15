@@ -7,6 +7,7 @@ let
  # of fmt
  # @todo rip this out when fmt catches up with nightly
  # @see https://github.com/rust-lang/rustfmt/issues/3666
+ # @see https://github.com/rust-lang/rustfmt/issues/3685
  script = pkgs.writeShellScriptBin name
  ''
  echo "checking rust formatting"

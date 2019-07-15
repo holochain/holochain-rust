@@ -1020,6 +1020,12 @@ impl TestNode {
             Lib3hServerProtocol::HandleGetGossipingEntryList(_msg) => {
                 // FIXME
             }
+            Lib3hServerProtocol::Terminated => {
+                // FIXME
+            }
+            Lib3hServerProtocol::P2pReady => {
+                // FIXME
+            }
         }
     }
     /// handle all types of json message

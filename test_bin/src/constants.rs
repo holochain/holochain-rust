@@ -1,7 +1,7 @@
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use multihash::Hash;
 
-/// CONSTS
+// CONSTS
 lazy_static! {
     /// Agents
     pub static ref ALEX_AGENT_ID: Address = HashString::from("alex");

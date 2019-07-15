@@ -41,7 +41,7 @@ pub struct Instance {
     action_channel: Option<Sender<ActionWrapper>>,
     observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
-    persister: Option<Arc<Mutex<Persister>>>,
+    persister: Option<Arc<Mutex<dyn Persister>>>,
     consistency_model: ConsistencyModel,
     kill_switch: Option<Sender<()>>,
 }
@@ -100,14 +100,14 @@ impl Instance {
         let context = self.inner_setup(context);
         context.block_on(
             async {
-                await!(initialize_chain(dna.clone(), &context))?;
-                await!(initialize_network_with_spoofed_dna(
-                    spoofed_dna_address,
-                    &context
-                ))
+              await!(initialize_chain(dna.clone(), &context))?;
+              await!(initialize_network_with_spoofed_dna(
+                  spoofed_dna_address,
+                  &context
+              ))
             },
         )?;
-        Ok(context)
+      Ok(context)
     }
 
     /// Only needed in tests to check that the initialization (and other workflows) fail
@@ -333,7 +333,7 @@ impl Instance {
     pub async fn shutdown_network(&self) -> HcResult<()> {
         await!(network::actions::shutdown::shutdown(
             self.state.clone(),
-            self.action_channel.as_ref().unwrap().clone()
+            self.action_channel.as_ref().unwrap().clone(),
         ))
     }
 }
@@ -567,7 +567,7 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());
 
-        /// fair warning... use test_instance_blank() if you want a minimal instance
+        // fair warning... use test_instance_blank() if you want a minimal instance
         assert!(
             !dna.zomes.clone().is_empty(),
             "Empty zomes = No genesis = infinite loops below!"

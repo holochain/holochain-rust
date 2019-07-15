@@ -1,5 +1,5 @@
 #![recursion_limit = "256"]
-#![feature(try_from, proc_macro_diagnostic)]
+#![feature(proc_macro_diagnostic)]
 
 extern crate hdk;
 extern crate proc_macro;

@@ -53,7 +53,6 @@ macro_rules! load_string {
 /// # Examples
 ///
 /// ```rust
-/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate serde;

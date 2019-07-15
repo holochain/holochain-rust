@@ -69,8 +69,8 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     }
 }
 
-impl PartialEq for EntityAttributeValueStorage {
-    fn eq(&self, other: &EntityAttributeValueStorage) -> bool {
+impl PartialEq for dyn EntityAttributeValueStorage {
+    fn eq(&self, other: &dyn EntityAttributeValueStorage) -> bool {
         let query = EaviQuery::default();
         self.fetch_eavi(&query) == other.fetch_eavi(&query)
     }

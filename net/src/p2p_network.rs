@@ -82,8 +82,8 @@ impl P2pNetwork {
             let unwrapped = message.unwrap();
             let message = unwrapped.clone();
             match Lib3hServerProtocol::try_from(unwrapped.clone()) {
-                Ok(Lib3hServerProtocol::Connected(d)) => {
-                    tx.send(Lib3hServerProtocol::Connected(d)).unwrap();
+                Ok(Lib3hServerProtocol::P2pReady) => {
+                    tx.send(Lib3hServerProtocol::P2pReady).unwrap();
                     log_d!("net/p2p_network: sent P2pReady event")
                 }
                 Ok(_protocol_message) => {}
@@ -114,10 +114,11 @@ impl P2pNetwork {
     fn wait_p2p_ready(rx: &crossbeam_channel::Receiver<Lib3hServerProtocol>) {
         let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
         match maybe_message {
-            Ok(Lib3hServerProtocol::Connected(_)) => {
+            Ok(Lib3hServerProtocol::P2pReady) => {
                 log_d!("net/p2p_network: received P2pReady event")
             }
-            Ok(_protocol_message) => {}
+            Ok(_protocol_message) => {
+            }
             Err(e) => {
                 log_e!("net/p2p_network: did not receive P2pReady: {:?}", e);
                 panic!(

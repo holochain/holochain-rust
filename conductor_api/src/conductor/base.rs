@@ -11,6 +11,7 @@ use crate::{
     logger::DebugLogger,
     Holochain,
 };
+use key_loaders::test_keystore;
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;
 use holochain_core::{
@@ -964,31 +965,40 @@ impl Conductor {
             if let Some(true) = agent_config.holo_remote_key {
                 return Err("agent is holo_remote, no keystore".to_string());
             }
-            let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
-            let mut keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
-                &keystore_file_path,
-                self.passphrase_manager.clone(),
-                self.hash_config.clone(),
-            )
-            .map_err(|_| {
-                HolochainError::ConfigError(format!(
-                    "Could not load keystore \"{}\"",
-                    agent_config.keystore_file,
-                ))
-            })?;
+
+            let mut keystore = match agent_config.test_agent {
+                true => {
+                    test_keystore(&agent_config.name)
+                },
+                false => {
+                    let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
+                    let keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
+                        &keystore_file_path,
+                        self.passphrase_manager.clone(),
+                        self.hash_config.clone(),
+                    )
+                    .map_err(|_| {
+                        HolochainError::ConfigError(format!(
+                            "Could not load keystore \"{}\"",
+                            agent_config.keystore_file,
+                        ))
+                    })?;
+                    keystore
+                }
+            };
+
             let keybundle = keystore
                 .get_keybundle(PRIMARY_KEYBUNDLE_ID)
                 .map_err(|err| format!("{}", err,))?;
 
             if agent_config.public_address != keybundle.get_id() {
                 return Err(format!(
-                    "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
-                    keystore_file_path.to_str().unwrap(),
+                    "Keystore ('{}') does not match public address {} mentioned in config!",
                     keybundle.get_id(),
                     agent_config.public_address,
                 ));
             }
-
+            
             self.agent_keys
                 .insert(agent_id.clone(), Arc::new(Mutex::new(keystore)));
         }

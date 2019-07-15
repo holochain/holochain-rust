@@ -10,7 +10,7 @@ use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeade
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{QueryEntryData, QueryEntryResultData};
 use holochain_persistence_api::cas::content::Address;
-use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
+use std::{convert::TryInto, sync::Arc};
 
 fn get_links(
     context: &Arc<Context>,
@@ -23,7 +23,7 @@ fn get_links(
         .unwrap()
         .dht()
         .get_links(base, link_type, tag)
-        .unwrap_or(BTreeSet::new())
+        .unwrap_or_default()
         .into_iter()
         .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
         .collect::<Vec<_>>()

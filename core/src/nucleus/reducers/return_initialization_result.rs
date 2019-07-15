@@ -8,7 +8,7 @@ use crate::{
 /// On initialization success, set Initialized status
 /// otherwise set the failed message
 #[allow(unknown_lints)]
-#[allow(needless_pass_by_value)]
+#[allow(clippy::needless_pass_by_value)]
 pub fn reduce_return_initialization_result(
     state: &mut NucleusState,
     _root_state: &State,

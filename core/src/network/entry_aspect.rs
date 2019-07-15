@@ -19,6 +19,7 @@ impl AddressableContent for EntryAspect {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum EntryAspect {
     // Basic case: entry content is communicated
     // with its header.

@@ -5,13 +5,12 @@ use crate::{
     network::handler::{get_content_aspect, get_meta_aspects},
 };
 use holochain_net::connection::json_protocol::FetchEntryData;
-use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
-    let address = Address::from(get_dht_data.entry_address.clone());
+    let address = get_dht_data.entry_address.clone();
     let mut aspects = vec![];
 
     match get_content_aspect(&address, context.clone()) {

@@ -9,7 +9,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 /// Inserts boxed EntryWithHeader and dependencies into state, referenced with
 /// the entry's address.
 #[allow(unknown_lints)]
-#[allow(needless_pass_by_value)]
+#[allow(clippy::needless_pass_by_value)]
 pub fn reduce_add_pending_validation(
     state: &mut NucleusState,
     _root_state: &State,

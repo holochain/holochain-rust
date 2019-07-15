@@ -19,6 +19,7 @@ pub struct CustomDirectMessage {
 /// These are the different kinds of (low-level, i.e. non-app)
 /// node-to-node messages that can be send between Holochain nodes.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, DefaultJson)]
+#[allow(clippy::large_enum_variant)]
 pub enum DirectMessage {
     /// A custom direct message is something that gets triggered
     /// from zome code, i.e. from the app.

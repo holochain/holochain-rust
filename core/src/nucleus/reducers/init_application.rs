@@ -8,7 +8,7 @@ use crate::{
 /// Switch status to failed if an initialization is tried for an
 /// already initialized, or initializing instance.
 #[allow(unknown_lints)]
-#[allow(needless_pass_by_value)]
+#[allow(clippy::needless_pass_by_value)]
 pub fn reduce_initialize_chain(
     state: &mut NucleusState,
     _root_state: &State,

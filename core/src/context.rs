@@ -39,6 +39,8 @@ use std::{
 };
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering::Relaxed;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -58,7 +60,7 @@ pub struct Context {
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
     pub(crate) signal_tx: Option<Sender<Signal>>,
-    pub(crate) instance_is_alive: Arc<Mutex<bool>>,
+    pub(crate) instance_is_alive: Arc<AtomicBool>,
 }
 
 impl Context {
@@ -88,6 +90,7 @@ impl Context {
         conductor_api.unwrap_or_else(|| Arc::new(RwLock::new(mock_conductor_api(agent_id))))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         agent_id: AgentId,
         logger: Arc<Mutex<dyn Logger>>,
@@ -115,10 +118,11 @@ impl Context {
                 conductor_api,
                 agent_id,
             )),
-            instance_is_alive: Arc::new(Mutex::new(true)),
+            instance_is_alive: Arc::new(AtomicBool::new(true)),
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new_with_channels(
         agent_id: AgentId,
         logger: Arc<Mutex<dyn Logger>>,
@@ -143,7 +147,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
-            instance_is_alive: Arc::new(Mutex::new(true)),
+            instance_is_alive: Arc::new(AtomicBool::new(true)),
         })
     }
 
@@ -242,7 +246,7 @@ impl Context {
     }
 
     pub fn instance_still_alive(&self) -> bool {
-        *self.instance_is_alive.lock().unwrap()
+        self.instance_is_alive.load(Relaxed)
     }
 
     /// This creates an observer for the instance's redux loop and installs it.
@@ -286,7 +290,7 @@ impl Context {
         let top = state
             .agent()
             .top_chain_header()
-            .ok_or::<HolochainError>("No top chain header".into())?;
+            .ok_or_else(|| HolochainError::from("No top chain header"))?;
 
         // Get address of first Token Grant entry (return early if none)
         let grants = state
@@ -300,7 +304,7 @@ impl Context {
         for grant in grants {
             let addr = grant.entry_address().to_owned();
             let entry = get_entry_from_cas(&cas, &addr)?
-                .ok_or::<HolochainError>("Can't get CapTokenGrant entry from CAS".into())?;
+                .ok_or_else(|| HolochainError::from("Can't get CapTokenGrant entry from CAS"))?;
             // if entry is the public grant return it
             if let Entry::CapTokenGrant(grant) = entry {
                 if grant.cap_type() == CapabilityType::Public
@@ -320,7 +324,7 @@ impl Context {
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
     let state = context
         .state()
-        .ok_or("Network::start() could not get application state".to_string())?;
+        .ok_or_else( || "Network::start() could not get application state".to_string())?;
     let agent_state = state.agent();
     let agent = agent_state.get_agent()?;
     let agent_id = agent.pub_sign_key;
@@ -328,7 +332,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
     let dna = state
         .nucleus()
         .dna()
-        .ok_or("Network::start() called without DNA".to_string())?;
+        .ok_or_else( || "Network::start() called without DNA".to_string())?;
     Ok((dna.address(), agent_id))
 }
 
@@ -342,7 +346,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
     network_name
         .map(|name| P2pConfig::new_with_memory_backend(name))
-        .unwrap_or(P2pConfig::new_with_unique_memory_backend())
+        .unwrap_or_else(||P2pConfig::new_with_unique_memory_backend())
 }
 
 #[cfg(test)]

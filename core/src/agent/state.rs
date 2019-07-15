@@ -88,7 +88,7 @@ impl AgentState {
             .nth(0)
             .and_then(|chain_header| Some(chain_header.entry_address().clone()))
             .or_else(|| Some(self.initial_agent_address.clone()))
-            .ok_or(HolochainError::ErrorGeneric(
+            .ok_or_else(|| HolochainError::ErrorGeneric(
                 "Agent entry not found".to_string(),
             ))
     }
@@ -100,7 +100,7 @@ impl AgentState {
             .content_storage()
             .read()?
             .fetch(&agent_entry_address)?;
-        let agent_entry_json = maybe_agent_entry_json.ok_or(HolochainError::ErrorGeneric(
+        let agent_entry_json = maybe_agent_entry_json.ok_or_else( || HolochainError::ErrorGeneric(
             "Agent entry not found".to_string(),
         ))?;
 
@@ -166,6 +166,7 @@ impl AddressableContent for AgentStateSnapshot {
 /// poll and retrieve
 // @TODO abstract this to a standard trait
 // @see https://github.com/holochain/holochain-rust/issues/196
+#[allow(clippy::large_enum_variant)]
 pub enum ActionResponse {
     Commit(Result<Address, HolochainError>),
     FetchEntry(Option<Entry>),

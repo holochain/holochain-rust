@@ -1,6 +1,6 @@
 use crate::{
     action::{ActionWrapper, GetLinksKey},
-    network::{query::NetworkQuery, reducers::send, state::NetworkState},
+    network::{query::{NetworkQuery,GetLinksNetworkQuery}, reducers::send, state::NetworkState},
     state::State,
 };
 
@@ -12,10 +12,11 @@ use holochain_persistence_api::hash::HashString;
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
     key: &GetLinksKey,
+    get_links_query : &GetLinksNetworkQuery
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
     let query_json: JsonString =
-        NetworkQuery::GetLinks(key.link_type.clone(), key.tag.clone()).into();
+        NetworkQuery::GetLinks(key.link_type.clone(), key.tag.clone(),None,get_links_query.clone()).into();
     send(
         network_state,
         JsonProtocol::QueryEntry(QueryEntryData {
@@ -34,9 +35,9 @@ pub fn reduce_get_links(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let key = unwrap_to!(action => crate::action::Action::GetLinks);
+    let (key,query) = unwrap_to!(action => crate::action::Action::GetLinks);
 
-    let result = match reduce_get_links_inner(network_state, &key) {
+    let result = match reduce_get_links_inner(network_state, &key,&query) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };

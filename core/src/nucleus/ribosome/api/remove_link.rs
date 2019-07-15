@@ -1,5 +1,5 @@
 use crate::{
-    network::actions::get_links::get_links,
+    network::{actions::get_links::get_links,query::GetLinksNetworkResult},
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
@@ -70,6 +70,11 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         ribosome_error_code!(WorkflowFailed)
     } else {
         let links = links_result.expect("This is supposed to not fail");
+        let links = match links
+        {
+            GetLinksNetworkResult::Links(links) => links,
+            _ => return ribosome_error_code!(WorkflowFailed)
+        };
         let filtered_links = links
             .into_iter()
             .filter(|link_crud| link_crud.1 == CrudStatus::Live)

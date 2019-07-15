@@ -2,15 +2,17 @@ use crate::{
     action::{Action, ActionWrapper, GetLinksKey},
     context::Context,
     instance::dispatch_action,
+    network::query::{GetLinksNetworkQuery,GetLinksNetworkResult}
 };
 use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeout};
+use holochain_core_types::{ error::HcResult, time::Timeout};
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};
+
 
 /// GetLinks Action Creator
 /// This is the network version of get_links that makes the network module start
@@ -21,14 +23,14 @@ pub async fn get_links(
     link_type: String,
     tag: String,
     timeout: Timeout,
-) -> HcResult<Vec<(Address, CrudStatus)>> {
+) -> HcResult<GetLinksNetworkResult> {
     let key = GetLinksKey {
         base_address: address.clone(),
         link_type: link_type.clone(),
         tag: tag.clone(),
         id: ProcessUniqueId::new().to_string(),
     };
-    let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
+    let action_wrapper = ActionWrapper::new(Action::GetLinks((key.clone(),GetLinksNetworkQuery::Links)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let key_inner = key.clone();
@@ -56,7 +58,7 @@ pub struct GetLinksFuture {
 }
 
 impl Future for GetLinksFuture {
-    type Output = HcResult<Vec<(Address, CrudStatus)>>;
+    type Output = HcResult<GetLinksNetworkResult>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("GetLinksFuture") {

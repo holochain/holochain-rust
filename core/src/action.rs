@@ -3,6 +3,7 @@ use crate::{
     network::{
         direct_message::DirectMessage, entry_aspect::EntryAspect,
         entry_with_header::EntryWithHeader, state::NetworkState,
+        query::{GetLinksNetworkQuery,GetLinksNetworkResult}
     },
     nucleus::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
@@ -158,14 +159,12 @@ pub enum Action {
 
     /// get links from entry address and link_type name
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
-    GetLinks(GetLinksKey),
+    GetLinks((GetLinksKey,GetLinksNetworkQuery)),
     GetLinksTimeout(GetLinksKey),
     GetLinksCount((GetLinksKey, Option<CrudStatus>)),
-    RespondGetLinks((QueryEntryData, Vec<(Address, CrudStatus)>, String, String)),
-    RespondGetLinksCount((QueryEntryData, usize, String, String)),
-    HandleGetLinksResult((Vec<(Address, CrudStatus)>, GetLinksKey)),
-    HandleGetLinksResultCount((usize, GetLinksKey)),
-
+    RespondGetLinks((QueryEntryData, GetLinksNetworkResult, String, String)),
+    HandleGetLinksResult((GetLinksNetworkResult, GetLinksKey)),
+ 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
     SendDirectMessage(DirectMessageData),

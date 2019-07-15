@@ -1,10 +1,10 @@
 use crate::{
     action::{ActionWrapper, GetEntryKey, GetLinksKey},
-    network::{actions::ActionResponse, direct_message::DirectMessage},
+    network::{actions::ActionResponse, direct_message::DirectMessage,query::GetLinksNetworkResult},
 };
 use boolinator::*;
 use holochain_core_types::{
-    crud_status::CrudStatus, entry::EntryWithMetaAndHeader, error::HolochainError,
+     entry::EntryWithMetaAndHeader, error::HolochainError,
     validation::ValidationPackage,
 };
 use holochain_net::p2p_network::P2pNetwork;
@@ -28,7 +28,7 @@ type GetEntryWithMetaResult = Option<Result<Option<EntryWithMetaAndHeader>, Holo
 /// None: process started, but no response yet from the network
 /// Some(Err(_)): there was a problem at some point
 /// Some(Ok(_)): we got the list of links
-type GetLinksResult = Option<Result<Vec<(Address, CrudStatus)>, HolochainError>>;
+type GetLinksResult = Option<Result<GetLinksNetworkResult, HolochainError>>;
 
 type GetLinksResultCount = Option<Result<usize, HolochainError>>;
 

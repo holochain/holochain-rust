@@ -1,5 +1,5 @@
 use crate::{
-    context::Context, network::actions::get_links::get_links,
+    context::Context, network::{actions::get_links::get_links,query::GetLinksNetworkResult},
     workflows::get_entry_result::get_entry_result_workflow,
 };
 
@@ -42,7 +42,7 @@ pub async fn get_link_add_entries<'a>(
     link_args: &'a GetLinksArgs,
 ) -> Result<Vec<(LinkData, Vec<ChainHeader>, CrudStatus)>, HolochainError> {
     //get link add entries
-    let links_caches = await!(get_links(
+    let links_result = await!(get_links(
         context.clone(),
         link_args.entry_address.clone(),
         link_args.link_type.clone(),
@@ -51,6 +51,11 @@ pub async fn get_link_add_entries<'a>(
     ))?;
 
     //iterate over link add entries
+    let links_caches = match links_result
+    {
+        GetLinksNetworkResult::Links(links_caches) => Ok(links_caches),
+        _ => Err(HolochainError::ErrorGeneric("Should only get link caches".to_string()))
+    }?;
     let (links_result, get_links_error): (Vec<_>, Vec<_>) = links_caches
         .iter()
         .map(|s| {

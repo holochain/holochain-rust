@@ -6,11 +6,12 @@ use crate::ipc::{spawn, transport::TransportId, Transport, TransportEvent, Trans
 
 use crate::connection::{
     net_connection::{NetHandler, NetShutdown, NetWorker},
-    protocol::{NamedBinaryData, Protocol},
     NetResult,
 };
 
+use lib3h_protocol::data_types::ConnectData;
 use lib3h_protocol::protocol_client::Lib3hClientProtocol;
+use lib3h_protocol::protocol_server::Lib3hServerProtocol;
 
 use std::collections::HashMap;
 
@@ -148,24 +149,19 @@ impl NetWorker for IpcNetWorker {
 
     /// we got a message from holochain core
     /// (just forwards to the internal worker relay)
-    fn receive(&mut self, _data: Lib3hClientProtocol) -> NetResult<()> {
-        // TODO BLOCKER fix this code for n3h
-        //   let data: NamedBinaryData = panic!("unimplemented"); //data.into();
-        //        let data = rmp_serde::to_vec_named(&data)?;
-        //      self.wss_socket.send_all(&data)?;
-
+    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+        let data = serde_json::to_string_pretty(&data)?;
+        self.wss_socket.send_all(data.as_bytes())?;
         Ok(())
     }
 
     /// do some upkeep on the internal worker
     /// IPC server state handling / magic
     fn tick(&mut self) -> NetResult<bool> {
-        // Request p2p module's state if its not ready yet
-        if &self.last_known_state != "ready" {
-            self.priv_request_state()?;
-        }
-
         let (did_work, evt_lst) = self.wss_socket.poll()?;
+        if evt_lst.len() > 0 {
+            self.last_known_state = "ready".to_string();
+        }
         for evt in evt_lst {
             match evt {
                 TransportEvent::TransportError(_id, e) => {
@@ -182,14 +178,11 @@ impl NetWorker for IpcNetWorker {
                     self.transport_id = self.wss_socket.wait_connect(&self.ipc_uri)?;
                 }
                 TransportEvent::Message(_id, msg) => {
-                    let msg: NamedBinaryData = rmp_serde::from_slice(&msg)?;
-                    let msg: Protocol = msg.into();
-
-                    // TODO BLOCKER doesn't compile
-                    // self.handler.handle(Ok(msg.clone()))?;
+                    let msg: Lib3hServerProtocol = serde_json::from_slice(&msg)?;
+                    self.handler.handle(Ok(msg.clone()))?;
 
                     // on shutdown, close all connections
-                    if msg == Protocol::Terminated {
+                    if msg == Lib3hServerProtocol::Terminated {
                         self.is_network_ready = false;
                         self.last_known_state = "terminated".to_string();
                         let res = self.wss_socket.close_all();
@@ -202,8 +195,7 @@ impl NetWorker for IpcNetWorker {
                     // - Try connecting to boostrap nodes
                     if !self.is_network_ready && &self.last_known_state == "ready" {
                         self.is_network_ready = true;
-                        // TODO BLOCKER
-                        //                        self.handler.handle(Ok(Protocol::P2pReady))?;
+                        self.handler.handle(Ok(Lib3hServerProtocol::P2pReady))?;
                         self.priv_send_connects()?;
                     }
                 }
@@ -224,59 +216,17 @@ impl IpcNetWorker {
     // Send 'Connect to bootstrap nodes' request to Ipc server
     fn priv_send_connects(&mut self) -> NetResult<()> {
         let bs_nodes: Vec<String> = self.bootstrap_nodes.drain(..).collect();
-        for _bs_node in &bs_nodes {
-            /*           self.receive(
-                // TODO BLOCKER: what should this actually be changed to?
-                Lib3hServerProtocol::Connected(ConnectedData {
-                    request_id: snowflake::ProcessUniqueId::new().to_string(),
-                    uri: url::Url::parse(bs_node.as_str())
-                        .expect("well formed uri for bootstrap node"),
-                })
-                .into(),
-            )?;
-            */
-        }
-
-        Ok(())
-    }
-
-    /// send a ping and/or? StateRequest twice per second
-    fn priv_request_state(&mut self) -> NetResult<()> {
-        /*
-          let now = get_millis();
-
-        if now - self.last_state_millis > 500.0 {
-            self.receive(Lib3hClientProtocol::GetState.into())?;
-            self.last_state_millis = now;
-        }
-        */
-        Ok(())
-    }
-
-    /*   /// Handle State Message received from IPC server.
-    fn priv_handle_state(&mut self, state: StateData) -> NetResult<()> {
-        // Keep track of IPC server's state
-        self.last_known_state = state.state;
-        // if the internal worker needs configuration, fetch the default config
-        if &self.last_known_state == "need_config" {
-            self.receive(Lib3hClientProtocol::GetDefaultConfig.into())?;
-        }
-        Ok(())
-    }
-
-    /// Handle DefaultConfig Message received from ipc-server.
-    /// Pass it back the default config only if it needs configurating
-    fn priv_handle_default_config(&mut self, config_msg: ConfigData) -> NetResult<()> {
-        if &self.last_known_state == "need_config" {
+        for bs_node in &bs_nodes {
             self.receive(
-                Lib3hClientProtocol::SetConfig(ConfigData {
-                    config: config_msg.config,
+                Lib3hClientProtocol::Connect(ConnectData {
+                    request_id: snowflake::ProcessUniqueId::new().to_string(),
+                    peer_uri: url::Url::parse(bs_node.as_str())
+                        .expect("well formed uri for bootstrap node"),
+                    network_id: "".to_string(),
                 })
-                .into(),
-            )?;
+            )?
         }
 
         Ok(())
     }
-    */
 }

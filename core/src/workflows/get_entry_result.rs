@@ -67,11 +67,11 @@ pub async fn get_entry_result_workflow<'a>(
         let address = maybe_address.unwrap();
         maybe_address = None;
         // Try to get entry
-        let maybe_entry_with_meta_and_headers =
-            match await!(get_entry_with_meta_workflow(context, &address, &args.options.timeout)) {
-                Ok(o) => o,
-                Err(e) => return Err(e),
-            };
+        let maybe_entry_with_meta_and_headers = await!(get_entry_with_meta_workflow(
+            context,
+            &address,
+            &args.options.timeout
+        ))?;
 
         // Entry found
         if let Some(entry_with_meta_and_headers) = maybe_entry_with_meta_and_headers {

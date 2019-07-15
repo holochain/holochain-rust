@@ -85,15 +85,13 @@ pub async fn validate_entry(
         // TODO: Specify when DNA can be commited as an update and how to implement validation of DNA entries then.
         EntryType::Dna => Ok(()),
 
-        EntryType::App(app_entry_type) => {
-            await!(app_entry::validate_app_entry(
-                entry.clone(),
-                app_entry_type.clone(),
-                context,
-                link,
-                validation_data,
-            ))
-        }
+        EntryType::App(app_entry_type) => await!(app_entry::validate_app_entry(
+            entry.clone(),
+            app_entry_type.clone(),
+            context,
+            link,
+            validation_data
+        )),
 
         EntryType::LinkAdd => {
             await!(link_entry::validate_link_entry(entry.clone(), validation_data, context))

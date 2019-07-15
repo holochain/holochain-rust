@@ -25,19 +25,19 @@ pub async fn hold_entry_workflow(
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     // 1. Get hold of validation package
-    let await_validation_package = await!(validation_package(&entry_with_header, context.clone()));
-    let maybe_validation_package = await_validation_package.map_err(|err| {
-        let message = "Could not get validation package from source! -> Add to pending...";
-        context.log(format!("debug/workflow/hold_entry: {}", message));
-        context.log(format!("debug/workflow/hold_entry: Error was: {:?}", err));
-        add_pending_validation(
-            entry_with_header.to_owned(),
-            Vec::new(),
-            ValidatingWorkflow::HoldEntry,
-            context.clone(),
-        );
-        HolochainError::ValidationPending
-    })?;
+    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
+        .map_err(|err| {
+            let message = "Could not get validation package from source! -> Add to pending...";
+            context.log(format!("debug/workflow/hold_entry: {}", message));
+            context.log(format!("debug/workflow/hold_entry: Error was: {:?}", err));
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                Vec::new(),
+                ValidatingWorkflow::HoldEntry,
+                context.clone(),
+            );
+            HolochainError::ValidationPending
+        })?;
 
     let validation_package = maybe_validation_package.ok_or_else(|| {
         let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
@@ -59,13 +59,12 @@ pub async fn hold_entry_workflow(
     };
 
     // 3. Validate the entry
-    let await_validate_entry = await!(validate_entry(
+    await!(validate_entry(
         entry_with_header.entry.clone(),
         None,
         validation_data,
-        &context,
-    ));
-    await_validate_entry
+        &context
+    ))
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             context.log(format!(
@@ -96,9 +95,7 @@ pub async fn hold_entry_workflow(
     ));
 
     // 3. If valid store the entry in the local DHT shard
-    if let Err(e) = await!(hold_entry(entry_with_header, context.clone())) {
-        return Err(e);
-    }
+    await!(hold_entry(entry_with_header, context.clone()))?;
 
     context.log(format!(
         "debug/workflow/hold_entry: HOLDING: {}",

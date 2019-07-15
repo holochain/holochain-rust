@@ -12,10 +12,7 @@ use std::{pin::Pin, sync::Arc};
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
 pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
-    let (dna_address, agent_id) = match await!(get_dna_and_agent(context)) {
-        Ok(o) => o,
-        Err(e) => return Err(e),
-    };
+    let (dna_address, agent_id) = await!(get_dna_and_agent(context))?;
     let handler = create_handler(&context, dna_address.to_string());
     let network_settings = NetworkSettings {
         p2p_config: context.p2p_config.clone(),
@@ -26,12 +23,11 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
-    match await!(InitNetworkFuture {
+    await!(InitNetworkFuture {
         context: context.clone(),
-    }) {
-        Ok(_) => Ok(()),
-        Err(e) => Err(e),
-    }
+    })?;
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -39,10 +35,7 @@ pub async fn initialize_network_with_spoofed_dna(
     dna_address: Address,
     context: &Arc<Context>,
 ) -> HcResult<()> {
-    let (_, agent_id) = match await!(get_dna_and_agent(context)) {
-        Ok(o) => o,
-        Err(e) => return Err(e),
-    };
+    let (_, agent_id) = await!(get_dna_and_agent(context))?;
     let handler = create_handler(&context, dna_address.to_string());
     let network_settings = NetworkSettings {
         p2p_config: context.p2p_config.clone(),

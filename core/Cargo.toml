@@ -31,12 +31,12 @@ holochain_wasm_utils = { path = "../wasm_utils"}
 holochain_common = { path = "../common" }
 holochain_json_derive = "=0.0.14"
 holochain_json_api = "=0.0.14"
-holochain_persistence_api = "=0.0.5"
-holochain_persistence_file = "=0.0.5"
-holochain_persistence_mem = "=0.0.5"
+holochain_persistence_api = "=0.0.6"
+holochain_persistence_file = "=0.0.6"
+holochain_persistence_mem = "=0.0.6"
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
-lib3h_sodium = "=0.0.5"
+lib3h_sodium = "=0.0.7"
 boolinator = "=2.4.0"
 jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 jsonrpc-lite = "=0.5.0"

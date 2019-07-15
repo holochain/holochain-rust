@@ -5,10 +5,10 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_core_types = { path = "../core_types" }
-holochain_persistence_api = "=0.0.5"
+holochain_persistence_api = "=0.0.6"
 holochain_net = { path = "../net" }
-lib3h = "=0.0.5"
-lib3h_protocol = "=0.0.5"
+lib3h = "=0.0.7"
+lib3h_protocol = "=0.0.7"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 tempfile = "=3.0.7"
 failure = "=0.1.5"

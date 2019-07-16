@@ -83,10 +83,12 @@ impl NetWorker for InMemoryWorker {
         // Send p2pready on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
+            // TODO BLOCKER use P2pReady or ConnectedData?
             let d = ConnectedData {
                 request_id: snowflake::ProcessUniqueId::new().to_string(),
-                uri: url::Url::parse(self.server_name.as_str())
-                    .expect("in memory server name as url"),
+                uri: url::Url::parse(
+                    format!("mem://{}", self.server_name).as_str())
+                    .expect(format!("in memory server name as url: {:?}", self.server_name).as_str()),
             };
             self.handler.handle(Ok(Lib3hServerProtocol::Connected(d)))?;
         }

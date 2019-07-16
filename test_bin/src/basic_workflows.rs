@@ -93,7 +93,7 @@ pub fn setup_two_nodes(
     // get ipcServer IDs for each node from the IpcServer's state
     if can_connect {
         let mut _node1_id = String::new();
-        let node2_binding = String::new();
+        let node2_binding = billy.p2p_binding.clone();
         /*
                 alex.send(Lib3hServerProtocol::GetState.into())
                     .expect("Failed sending RequestState on alex");

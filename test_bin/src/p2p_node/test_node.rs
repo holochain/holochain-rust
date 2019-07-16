@@ -600,6 +600,7 @@ impl TestNode {
         )
         .expect("Failed to create P2pNetwork");
 
+        let p2p_binding = p2p_connection.p2p_endpoint();
         TestNode {
             _maybe_temp_dir,
             p2p_connection,
@@ -614,7 +615,7 @@ impl TestNode {
             current_dna: None,
             logger: TweetProxy::new("p2pnode"),
             is_network_ready: false,
-            p2p_binding: String::new(),
+            p2p_binding,
             is_json: config.backend_kind != P2pBackendKind::LIB3H,
         }
     }

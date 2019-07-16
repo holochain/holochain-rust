@@ -26,6 +26,7 @@ pub struct IpcNetWorker {
     handler: NetHandler,
     wss_socket: TransportWss<std::net::TcpStream>,
     ipc_uri: String,
+    p2p_uri: String,
     transport_id: TransportId,
     done: NetShutdown,
 
@@ -56,7 +57,7 @@ impl IpcNetWorker {
             .collect();
         // Create a new IpcNetWorker that connects to the ptovided 'ipcUri'
         if let Some(uri) = config["ipcUri"].as_str() {
-            return IpcNetWorker::priv_new(handler, uri.to_string(), None, bootstrap_nodes);
+            return IpcNetWorker::priv_new(handler, uri.to_string(), None, None, bootstrap_nodes);
         }
         // No 'ipcUri' provided in config so use 'spawn' config instead
         // Check 'spawn' config
@@ -98,13 +99,14 @@ impl IpcNetWorker {
         let ipc_binding = spawn_result.ipc_binding;
         let kill = spawn_result.kill;
         // Done
-        IpcNetWorker::priv_new(handler, ipc_binding, kill, bootstrap_nodes)
+        IpcNetWorker::priv_new(handler, ipc_binding, Some(spawn_result.p2p_bindings[0].clone()), kill, bootstrap_nodes)
     }
 
     /// Constructor without config
     fn priv_new(
         handler: NetHandler,
         ipc_uri: String,
+        p2p_uri: Option<String>,
         done: NetShutdown,
         bootstrap_nodes: Vec<String>,
     ) -> NetResult<Self> {
@@ -120,6 +122,10 @@ impl IpcNetWorker {
             handler,
             wss_socket,
             ipc_uri,
+            p2p_uri: match p2p_uri {
+                Some(p2p_uri) => p2p_uri,
+                None => String::new(),
+            },
             transport_id,
             done,
             is_network_ready: false,
@@ -209,6 +215,10 @@ impl NetWorker for IpcNetWorker {
     /// Getter
     fn endpoint(&self) -> Option<String> {
         Some(self.ipc_uri.clone())
+    }
+
+    fn p2p_endpoint(&self) -> Option<String> {
+        Some(self.p2p_uri.clone())
     }
 }
 

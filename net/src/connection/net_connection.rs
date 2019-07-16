@@ -72,6 +72,11 @@ pub trait NetWorker {
     fn endpoint(&self) -> Option<String> {
         Some(String::new())
     }
+
+    /// Attempt to retreive the p2p endpoint
+    fn p2p_endpoint(&self) -> Option<String> {
+        Some(String::new())
+    }
 }
 
 /// closure for instantiating a NetWorker from a NetHandler

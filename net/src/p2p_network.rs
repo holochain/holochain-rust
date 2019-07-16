@@ -147,6 +147,10 @@ impl P2pNetwork {
     pub fn endpoint(&self) -> String {
         self.connection.endpoint.clone()
     }
+
+    pub fn p2p_endpoint(&self) -> String {
+        self.connection.p2p_endpoint.clone()
+    }
 }
 
 impl std::fmt::Debug for P2pNetwork {

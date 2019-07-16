@@ -21,6 +21,7 @@ pub struct NetConnectionThread {
     thread: thread::JoinHandle<()>,
     done: NetShutdown,
     pub endpoint: String,
+    pub p2p_endpoint: String,
 }
 
 impl NetSend for NetConnectionThread {
@@ -54,9 +55,8 @@ impl NetConnectionThread {
                 panic!("Failure while attempting to create network worker with provided P2pConfig. Error: {:?}", e)
             });
             // Get endpoint and send it to owner (NetConnectionThread)
-            let endpoint = worker.endpoint();
             send_endpoint
-                .send(endpoint)
+                .send((worker.endpoint(), worker.p2p_endpoint()))
                 .expect("Sending endpoint address should work.");
             drop(send_endpoint);
             // Loop as long owner wants to
@@ -109,11 +109,14 @@ impl NetConnectionThread {
         }).expect("Could not spawn net connection thread");
 
         // Retrieve endpoint from spawned thread.
-        let endpoint = recv_endpoint.recv().map_err(|e| {
+        let (endpoint, p2p_endpoint) = recv_endpoint.recv().map_err(|e| {
             format_err!("Failed to receive endpoint address from net worker: {}", e)
         })?;
         let endpoint = endpoint
             .expect("Should have an endpoint address")
+            .to_string();
+        let p2p_endpoint = p2p_endpoint
+            .expect("Should hav a p2p_endpoint address")
             .to_string();
 
         // Done
@@ -123,6 +126,7 @@ impl NetConnectionThread {
             thread,
             done,
             endpoint,
+            p2p_endpoint,
         })
     }
 

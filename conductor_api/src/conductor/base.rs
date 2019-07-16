@@ -449,7 +449,6 @@ impl Conductor {
     }
 
     /// Stop and clear all instances
-    /// @QUESTION: why don't we care about errors on shutdown?
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
         let _ = self.stop_all_instances()?;
         self.stop_all_interfaces();

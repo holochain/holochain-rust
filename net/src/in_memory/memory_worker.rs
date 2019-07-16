@@ -87,7 +87,7 @@ impl NetWorker for InMemoryWorker {
             let d = ConnectedData {
                 request_id: snowflake::ProcessUniqueId::new().to_string(),
                 uri: url::Url::parse(
-                    format!("mem://{}", self.server_name).as_str())
+                    format!("mem://{}", self.server_name.replace(":", "_")).replace(" ", "_").as_str())
                     .expect(format!("in memory server name as url: {:?}", self.server_name).as_str()),
             };
             self.handler.handle(Ok(Lib3hServerProtocol::Connected(d)))?;

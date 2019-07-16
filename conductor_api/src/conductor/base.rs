@@ -22,6 +22,7 @@ use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
 };
+use key_loaders::test_keystore;
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
@@ -966,18 +967,26 @@ impl Conductor {
             if let Some(true) = agent_config.holo_remote_key {
                 return Err("agent is holo_remote, no keystore".to_string());
             }
-            let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
-            let mut keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
-                &keystore_file_path,
-                self.passphrase_manager.clone(),
-                self.hash_config.clone(),
-            )
-            .map_err(|_| {
-                HolochainError::ConfigError(format!(
-                    "Could not load keystore \"{}\"",
-                    agent_config.keystore_file,
-                ))
-            })?;
+
+            let mut keystore = match agent_config.test_agent {
+                Some(true) => test_keystore(&agent_config.name),
+                _ => {
+                    let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
+                    let keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
+                        &keystore_file_path,
+                        self.passphrase_manager.clone(),
+                        self.hash_config.clone(),
+                    )
+                    .map_err(|_| {
+                        HolochainError::ConfigError(format!(
+                            "Could not load keystore \"{}\"",
+                            agent_config.keystore_file,
+                        ))
+                    })?;
+                    keystore
+                }
+            };
+
             let keybundle = keystore
                 .get_keybundle(PRIMARY_KEYBUNDLE_ID)
                 .map_err(|err| format!("{}", err,))?;
@@ -985,7 +994,7 @@ impl Conductor {
             if agent_config.public_address != keybundle.get_id() {
                 return Err(format!(
                     "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
-                    keystore_file_path.to_str().unwrap(),
+                    agent_config.keystore_file,
                     keybundle.get_id(),
                     agent_config.public_address,
                 ));
@@ -1241,7 +1250,7 @@ impl Logger for NullLogger {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use conductor::passphrase_manager::PassphraseManager;
+    use conductor::{passphrase_manager::PassphraseManager, test_admin::ConductorTestAdmin};
     use key_loaders::mock_passphrase_manager;
     use keystore::{test_hash_config, Keystore, Secret, PRIMARY_KEYBUNDLE_ID};
     extern crate tempfile;
@@ -1603,6 +1612,37 @@ pub mod tests {
             Err(HolochainError::DnaHashMismatch(a, b)),
             "DNA consistency check Fail."
         )
+    }
+
+    #[test]
+    fn test_serialize_and_load_with_test_agents() {
+        let mut conductor = test_conductor(10091, 10092);
+
+        conductor
+            .add_test_agent("test-agent-id".into(), "test-agent-name".into())
+            .expect("could not add test agent");
+
+        let config_toml_string =
+            serialize_configuration(&conductor.config()).expect("Could not serialize config");
+        let serialized_config = load_configuration::<Configuration>(&config_toml_string)
+            .expect("Could not deserialize toml");
+
+        let mut reanimated_conductor = Conductor::from_config(serialized_config);
+        reanimated_conductor.dna_loader = test_dna_loader();
+        reanimated_conductor.key_loader = test_key_loader();
+
+        assert_eq!(
+            reanimated_conductor
+                .config()
+                .agents
+                .iter()
+                .filter_map(|agent| agent.test_agent)
+                .count(),
+            1
+        );
+        reanimated_conductor
+            .boot_from_config()
+            .expect("Could not boot the conductor with test agent")
     }
 
     #[test]

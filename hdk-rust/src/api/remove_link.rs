@@ -9,7 +9,6 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 /// type and its tag. Both must match exactly to remove a link.
 /// # Examples
 /// ```rust
-/// # #![feature(try_from)]
 /// # extern crate hdk;
 /// # extern crate serde_json;
 /// # #[macro_use]

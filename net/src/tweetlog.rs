@@ -1,8 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    string::*,
-    sync::RwLock,
-};
+use std::{collections::HashMap, string::*, sync::RwLock};
 
 //--------------------------------------------------------------------------------------------------
 // MACROS
@@ -127,10 +123,9 @@ impl LogLevel {
 
 /// TweetLog has a TweetLogger per Tag
 /// which has its own loglevel and callbacks
-#[derive(Debug)]
 struct TweetLogger {
     pub level: LogLevel,
-    pub callbacks: HashSet<listenerCallback>,
+    pub callbacks: Vec<listenerCallback>,
 }
 
 impl TweetLogger {
@@ -141,7 +136,7 @@ impl TweetLogger {
     pub fn with_level(level: LogLevel) -> Self {
         TweetLogger {
             level,
-            callbacks: HashSet::new(),
+            callbacks: Vec::new(),
         }
     }
 }
@@ -153,7 +148,7 @@ impl TweetLogger {
 #[allow(non_camel_case_types)]
 type listenerCallback = fn(LogLevel, Option<&str>, &str);
 
-/// this is the actual memory space for our Tweetlog singleton
+// this is the actual memory space for our Tweetlog singleton
 lazy_static! {
     pub static ref TWEETLOG: RwLock<Tweetlog> = RwLock::new(Tweetlog::new());
 }
@@ -217,7 +212,7 @@ impl Tweetlog {
             .log_by_tag
             .get_mut(tag)
             .expect("TweetLogger for Tag does not exist");
-        logger.callbacks.insert(cb);
+        logger.callbacks.append(&mut vec![cb]);
     }
 
     /// Clear any registered listener

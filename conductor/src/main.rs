@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 /// Holochain Conductor executable
 ///
@@ -49,7 +48,7 @@ fn main() {
         Ok(()) => {
             {
                 let mut conductor_guard = CONDUCTOR.lock().unwrap();
-                let mut conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
+                let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
                 println!(
                     "Successfully loaded {} instance configurations",
                     conductor.instances().len()

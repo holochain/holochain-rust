@@ -86,7 +86,11 @@ impl P2pNetwork {
                     tx.send(Lib3hServerProtocol::Connected(d)).unwrap();
                     log_d!("net/p2p_network: sent P2pReady event")
                 }
-                Ok(_protocol_message) => {}
+                Ok(Lib3hServerProtocol::P2pReady) => {
+                    tx.send(Lib3hServerProtocol::P2pReady).unwrap();
+                    log_d!("net/p2p_network: sent P2pReady event")
+                }
+                Ok(_msg) => {}
                 Err(_protocol_error) => {
                     // TODO why can't I use the above variable?
                     // Generates compiler error.
@@ -115,9 +119,14 @@ impl P2pNetwork {
         let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
         match maybe_message {
             Ok(Lib3hServerProtocol::Connected(_)) => {
+                log_d!("net/p2p_network: received Connected event")
+            }
+            Ok(Lib3hServerProtocol::P2pReady) => {
                 log_d!("net/p2p_network: received P2pReady event")
             }
-            Ok(_protocol_message) => {}
+            Ok(msg) => {
+                log_d!("net/p2p_network: received unexpected event: {:?}", msg);
+            },
             Err(e) => {
                 log_e!("net/p2p_network: did not receive P2pReady: {:?}", e);
                 panic!(

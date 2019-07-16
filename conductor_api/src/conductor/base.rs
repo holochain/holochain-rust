@@ -1629,8 +1629,8 @@ pub mod tests {
             .expect("Could not deserialize toml");
 
         let mut reanimated_conductor = Conductor::from_config(serialized_config);
-        conductor.dna_loader = test_dna_loader();
-        conductor.key_loader = test_key_loader();
+        reanimated_conductor.dna_loader = test_dna_loader();
+        reanimated_conductor.key_loader = test_key_loader();
         
         assert_eq!(
             reanimated_conductor.config().agents.iter()

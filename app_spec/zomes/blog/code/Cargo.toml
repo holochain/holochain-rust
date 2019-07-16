@@ -1,13 +1,13 @@
 [package]
 name = "blog"
-version = "0.0.22-alpha1"
+version = "0.0.24-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 hdk = { path = "../../../../hdk-rust" }
-holochain_json_derive = "=0.0.1-alpha2"
+holochain_json_derive = "=0.0.15"
 serde_derive = "=1.0.89"
 boolinator = "=2.4.0"
 [lib]

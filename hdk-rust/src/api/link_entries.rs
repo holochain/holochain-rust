@@ -17,7 +17,6 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 
 /// # Examples
 /// ```rust
-/// # #![feature(try_from)]
 /// # extern crate hdk;
 /// # extern crate serde_json;
 /// # #[macro_use]

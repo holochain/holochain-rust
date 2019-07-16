@@ -162,6 +162,7 @@ impl NetWorker for IpcNetWorker {
         if evt_lst.len() > 0 {
             self.last_known_state = "ready".to_string();
         }
+        //println!("@@@tick");
         for evt in evt_lst {
             match evt {
                 TransportEvent::TransportError(_id, e) => {
@@ -217,11 +218,17 @@ impl IpcNetWorker {
     fn priv_send_connects(&mut self) -> NetResult<()> {
         let bs_nodes: Vec<String> = self.bootstrap_nodes.drain(..).collect();
         for bs_node in &bs_nodes {
+            let uri = match url::Url::parse(bs_node.as_str()) {
+                Ok(uri) => uri,
+                Err(e) => {
+                    self.log.w(&format!("{:?}: {:?}", e, bs_node.as_str()));
+                    continue
+                }
+            };
             self.receive(
                 Lib3hClientProtocol::Connect(ConnectData {
                     request_id: snowflake::ProcessUniqueId::new().to_string(),
-                    peer_uri: url::Url::parse(bs_node.as_str())
-                        .expect("well formed uri for bootstrap node"),
+                    peer_uri: uri,
                     network_id: "".to_string(),
                 })
             )?

@@ -79,14 +79,14 @@ pub fn setup_two_nodes(
         .expect("Failed sending TrackDna on alex");
     // Check if PeerConnected is received
     let connect_result_1 = alex
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::P2pReady)))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
     billy
         .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::P2pReady)))
         .unwrap();
     log_i!("self connected result 2: {:?}", connect_result_2);
 

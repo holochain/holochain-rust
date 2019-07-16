@@ -88,7 +88,7 @@ impl P2pNetwork {
                     log_d!("net/p2p_network: sent Connected event")
                 }
                 Ok(Lib3hServerProtocol::P2pReady) => {
-                    tx.send(Lib3hServerProtocol::P2pReady).unwrap();
+                    tx.send(Lib3hServerProtocol::P2pReady).ok();
                     log_d!("net/p2p_network: sent P2pReady event")
                 }
                 Ok(_msg) => {}

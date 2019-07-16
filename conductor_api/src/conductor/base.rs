@@ -967,10 +967,10 @@ impl Conductor {
             }
 
             let mut keystore = match agent_config.test_agent {
-                true => {
+                Some(true) => {
                     test_keystore(&agent_config.name)
                 },
-                false => {
+                _ => {
                     let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
                     let keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
                         &keystore_file_path,
@@ -993,7 +993,8 @@ impl Conductor {
 
             if agent_config.public_address != keybundle.get_id() {
                 return Err(format!(
-                    "Keystore ('{}') does not match public address {} mentioned in config!",
+                    "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
+                    agent_config.keystore_file,
                     keybundle.get_id(),
                     agent_config.public_address,
                 ));
@@ -1250,6 +1251,7 @@ impl Logger for NullLogger {
 pub mod tests {
     use super::*;
     use conductor::passphrase_manager::PassphraseManager;
+    use conductor::test_admin::ConductorTestAdmin;
     use key_loaders::mock_passphrase_manager;
     use keystore::{test_hash_config, Keystore, Secret, PRIMARY_KEYBUNDLE_ID};
     extern crate tempfile;
@@ -1611,6 +1613,30 @@ pub mod tests {
             Err(HolochainError::DnaHashMismatch(a, b)),
             "DNA consistency check Fail."
         )
+    }
+
+    #[test]
+    fn test_serialize_and_load_with_test_agents() {
+        let mut conductor = test_conductor(10091, 10092);
+
+        conductor.add_test_agent("test-agent-id".into(), "test-agent-name".into())
+        .expect("could not add test agent");
+
+        let config_toml_string = serialize_configuration(&conductor.config())
+            .expect("Could not serialize config");
+        let serialized_config =
+            load_configuration::<Configuration>(&config_toml_string)
+            .expect("Could not deserialize toml");
+
+        let mut reanimated_conductor = Conductor::from_config(serialized_config);
+
+        assert_eq!(
+            reanimated_conductor.config().agents.iter()
+            .filter(|agent| { match agent.test_agent {Some(true) => true, _ => false} })
+            .count(),
+            1
+        );
+        reanimated_conductor.boot_from_config().expect("Could not boot the conductor with test agent")
     }
 
     #[test]

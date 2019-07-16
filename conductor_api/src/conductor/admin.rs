@@ -452,7 +452,7 @@ impl ConductorAdmin for Conductor {
             public_address: public_address.clone(),
             keystore_file: keystore_file,
             holo_remote_key: holo_remote_key.map(|_| true),
-            test_agent: false,
+            test_agent: None,
         };
 
         new_config.agents.push(new_agent);

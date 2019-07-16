@@ -560,7 +560,7 @@ pub struct AgentConfiguration {
     /// accessible through signing_service_uri to request signatures.
     pub holo_remote_key: Option<bool>,
     /// If true this agent will use dummy keys rather than a keystore file
-    pub test_agent: bool,
+    pub test_agent: Option<bool>,
 }
 
 impl From<AgentConfiguration> for AgentId {

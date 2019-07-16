@@ -30,7 +30,7 @@ impl ConductorTestAdmin for Conductor {
             public_address: public_address.clone(),
             keystore_file: name.clone(),
             holo_remote_key: None,
-            test_agent: true,
+            test_agent: Some(true),
         };
         new_config.agents.push(new_agent);
         new_config.check_consistency(&mut self.dna_loader)?;

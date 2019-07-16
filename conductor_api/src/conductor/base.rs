@@ -1619,10 +1619,12 @@ pub mod tests {
     fn test_serialize_and_load_with_test_agents() {
         let mut conductor = test_conductor(10091, 10092);
 
-        conductor.add_test_agent("test-agent-id".into(), "test-agent-name".into())
-        .expect("could not add test agent");
+        conductor.
+            add_test_agent("test-agent-id".into(), "test-agent-name".into())
+            .expect("could not add test agent");
 
-        let config_toml_string = serialize_configuration(&conductor.config())
+        let config_toml_string = 
+            serialize_configuration(&conductor.config())
             .expect("Could not serialize config");
         let serialized_config =
             load_configuration::<Configuration>(&config_toml_string)
@@ -1631,11 +1633,14 @@ pub mod tests {
         let mut reanimated_conductor = Conductor::from_config(serialized_config);
         reanimated_conductor.dna_loader = test_dna_loader();
         reanimated_conductor.key_loader = test_key_loader();
-        
+
         assert_eq!(
-            reanimated_conductor.config().agents.iter()
-            .filter(|agent| { match agent.test_agent {Some(true) => true, _ => false} })
-            .count(),
+            reanimated_conductor
+                .config()
+                .agents
+                .iter()
+                .filter_map(|agent| agent.test_agent)
+                .count(),
             1
         );
         reanimated_conductor.boot_from_config().expect("Could not boot the conductor with test agent")

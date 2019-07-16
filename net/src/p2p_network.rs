@@ -82,9 +82,10 @@ impl P2pNetwork {
             let unwrapped = message.unwrap();
             let message = unwrapped.clone();
             match Lib3hServerProtocol::try_from(unwrapped.clone()) {
-                Ok(Lib3hServerProtocol::P2pReady) => {
-                    tx.send(Lib3hServerProtocol::P2pReady).unwrap();
-                    log_d!("net/p2p_network: sent P2pReady event")
+                // TODO discuss with @neonphog
+                Ok(Lib3hServerProtocol::Connected(d)) => {
+                    tx.send(Lib3hServerProtocol::Connected(d)).unwrap();
+                    log_d!("net/p2p_network: sent Connected event")
                 }
                 Ok(Lib3hServerProtocol::P2pReady) => {
                     tx.send(Lib3hServerProtocol::P2pReady).unwrap();

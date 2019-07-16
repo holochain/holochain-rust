@@ -87,7 +87,7 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::EmitSignal.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
-        let (_, context) =
+        let (_instance, context) =
             test_instance_and_context(dna, None).expect("Could not create test instance");
 
         let (tx, rx) = unbounded::<Signal>();

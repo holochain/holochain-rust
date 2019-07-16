@@ -22,7 +22,7 @@ pub fn test_keystore_loader() -> KeyLoader {
         },
     )
         as Box<
-            FnMut(
+            dyn FnMut(
                     &PathBuf,
                     Arc<PassphraseManager>,
                     Option<PwHashConfig>,

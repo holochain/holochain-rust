@@ -3,10 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
 };
-use futures::{
-    future::Future,
-    task::{LocalWaker, Poll},
-};
+use futures::{future::Future, task::Poll};
 use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeout};
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
@@ -33,15 +30,18 @@ pub async fn get_links(
 
     let key_inner = key.clone();
     let context_inner = context.clone();
-    let _ = thread::spawn(move || {
-        thread::sleep(timeout.into());
-        let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout(key_inner));
-        dispatch_action(context_inner.action_channel(), action_wrapper.clone());
-    });
+    thread::Builder::new()
+        .name(format!("get_links/{:?}", key))
+        .spawn(move || {
+            thread::sleep(timeout.into());
+            let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout(key_inner));
+            dispatch_action(context_inner.action_channel(), action_wrapper.clone());
+        })
+        .expect("Could not spawn thread for get_links timeout");
 
     await!(GetLinksFuture {
         context: context.clone(),
-        key
+        key,
     })
 }
 
@@ -55,7 +55,10 @@ pub struct GetLinksFuture {
 impl Future for GetLinksFuture {
     type Output = HcResult<Vec<(Address, CrudStatus)>>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("GetLinksFuture") {
+            return Poll::Ready(Err(err));
+        }
         let state = self.context.state().unwrap().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(error));
@@ -64,7 +67,7 @@ impl Future for GetLinksFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        cx.waker().clone().wake();
         match state.get_links_results.get(&self.key) {
             Some(Some(result)) => Poll::Ready(result.clone()),
             _ => Poll::Pending,

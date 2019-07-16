@@ -1,17 +1,10 @@
-{ pkgs, release }:
-let
- github = import ./config.nix;
-in
-github // {
+{ pkgs, config }:
+{
  buildInputs = []
 
  ++ (pkgs.callPackage ./check-artifacts {
-  release = release;
- }).buildInputs
-
- ++ (pkgs.callPackage ./merge {
-  github = github;
-  release = release;
+  pkgs = pkgs;
+  config = config;
  }).buildInputs
  ;
 }

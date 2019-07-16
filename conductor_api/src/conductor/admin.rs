@@ -130,7 +130,7 @@ impl ConductorAdmin for Conductor {
         let new_dna = DnaConfiguration {
             id: id.clone(),
             file: config_path_str.into(),
-            hash: Some(dna.address().to_string()),
+            hash: dna.address().to_string(),
         };
 
         let mut new_config = self.config.clone();
@@ -240,7 +240,9 @@ impl ConductorAdmin for Conductor {
                 result.err().unwrap()
             ));
         }
-        self.instances.remove(id);
+        self.instances.remove(id).map(|instance| {
+            instance.write().unwrap().kill();
+        });
         let _ = self.start_signal_multiplexer();
 
         notify(format!("Removed instance \"{}\".", id));
@@ -530,7 +532,7 @@ impl ConductorAdmin for Conductor {
         let id = &new_bridge.caller_id;
         let new_conductor_api = self.build_conductor_api(id.clone(), &new_config)?;
         let mut instance = self.instances.get(id)?.write()?;
-        instance.set_conductor_api(new_conductor_api);
+        instance.set_conductor_api(new_conductor_api)?;
 
         notify(format!(
             "Added bridge from '{}' to '{}' as '{}'",
@@ -602,7 +604,7 @@ pub mod tests {
         let loader = Box::new(|_: &PathBuf| {
             Ok(Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap())
         })
-            as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
+            as Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
@@ -659,7 +661,7 @@ public_address = '{}'"#,
     pub fn dna() -> String {
         r#"[[dnas]]
 file = 'app_spec.dna.json'
-hash = 'Qm328wyq38924y'
+hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
 id = 'test-dna'"#
             .to_string()
     }
@@ -794,12 +796,12 @@ pattern = '.*'"#
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
                     file: String::from("new-dna.dna.json"),
-                    hash: Some(String::from(new_dna.address())),
+                    hash: String::from(new_dna.address()),
                 },
             ]
         );
@@ -873,12 +875,12 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
                     file: output_dna_file.to_str().unwrap().to_string(),
-                    hash: Some(String::from(new_dna.address())),
+                    hash: String::from(new_dna.address()),
                 },
             ]
         );
@@ -978,12 +980,12 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-props"),
                     file: output_dna_file.to_str().unwrap().to_string(),
-                    hash: Some(String::from(new_dna.address())),
+                    hash: String::from(new_dna.address()),
                 },
             ]
         );
@@ -1044,17 +1046,17 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-1"),
                     file: new_dna_path.to_string_lossy().to_string(),
-                    hash: Some(String::from(new_dna.address())),
+                    hash: String::from(new_dna.address()),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-2"),
                     file: output_dna_file.to_str().unwrap().to_string(),
-                    hash: Some(String::from(new_dna.address())),
+                    hash: String::from(new_dna.address()),
                 },
             ]
         );

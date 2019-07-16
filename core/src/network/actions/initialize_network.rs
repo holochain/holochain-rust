@@ -2,12 +2,9 @@ use crate::{
     action::{Action, ActionWrapper, NetworkSettings},
     context::{get_dna_and_agent, Context},
     instance::dispatch_action,
-    network::{actions::publish::publish, handler::create_handler},
+    network::handler::create_handler,
 };
-use futures::{
-    task::{LocalWaker, Poll},
-    Future,
-};
+use futures::{task::Poll, Future};
 use holochain_core_types::error::HcResult;
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
@@ -29,8 +26,6 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     await!(InitNetworkFuture {
         context: context.clone(),
     })?;
-
-    await!(publish(agent_id.clone().into(), context))?;
 
     Ok(())
 }
@@ -63,16 +58,20 @@ pub struct InitNetworkFuture {
 impl Future for InitNetworkFuture {
     type Output = HcResult<()>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("InitializeNetworkFuture") {
+            return Poll::Ready(Err(err));
+        }
         //
+
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        cx.waker().clone().wake();
         if let Some(state) = self.context.state() {
-            if state.network().network.is_some()
-                || state.network().dna_address.is_some()
-                || state.network().agent_id.is_some()
+            if state.network().network.lock().unwrap().is_some()
+                && state.network().dna_address.is_some()
+                && state.network().agent_id.is_some()
             {
                 Poll::Ready(Ok(()))
             } else {

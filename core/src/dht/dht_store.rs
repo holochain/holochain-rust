@@ -6,6 +6,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
 };
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
@@ -15,18 +16,26 @@ use holochain_persistence_api::{
 };
 use regex::Regex;
 
+use crate::state::StateWrapper;
+use holochain_json_api::error::JsonResult;
+use holochain_persistence_api::cas::content::Content;
 use std::{
     collections::{BTreeSet, HashMap},
+    convert::TryFrom,
     sync::{Arc, RwLock},
 };
 
 /// The state-slice for the DHT.
-/// Holds the agent's local shard and interacts with the network module
+/// Holds the CAS and EAVi that's used for the agent's local shard
+/// as well as the holding list, i.e. list of all entries held for the DHT.
 #[derive(Clone, Debug)]
 pub struct DhtStore {
     // Storages holding local shard data
-    content_storage: Arc<RwLock<ContentAddressableStorage>>,
-    meta_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+
+    /// All the entries that the network has told us to hold
+    holding_list: Vec<Address>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -41,6 +50,34 @@ impl PartialEq for DhtStore {
         self.actions == other.actions
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
+pub struct DhtStoreSnapshot {
+    pub holding_list: Vec<Address>,
+}
+
+impl From<&StateWrapper> for DhtStoreSnapshot {
+    fn from(state: &StateWrapper) -> Self {
+        DhtStoreSnapshot {
+            holding_list: state.dht().holding_list.clone(),
+        }
+    }
+}
+
+pub static DHT_STORE_SNAPSHOT_ADDRESS: &'static str = "DhtStore";
+impl AddressableContent for DhtStoreSnapshot {
+    fn content(&self) -> Content {
+        self.to_owned().into()
+    }
+
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
+        Self::try_from(content.to_owned())
+    }
+
+    fn address(&self) -> Address {
+        DHT_STORE_SNAPSHOT_ADDRESS.into()
     }
 }
 
@@ -75,15 +112,27 @@ impl DhtStore {
     // LifeCycle
     // =========
     pub fn new(
-        content_storage: Arc<RwLock<ContentAddressableStorage>>,
-        meta_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
     ) -> Self {
         DhtStore {
             content_storage,
             meta_storage,
+            holding_list: Vec::new(),
             actions: HashMap::new(),
         }
     }
+
+    pub fn new_with_holding_list(
+        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+        holding_list: Vec<Address>,
+    ) -> Self {
+        let mut new_dht_store = Self::new(content_storage, meta_storage);
+        new_dht_store.holding_list = holding_list;
+        new_dht_store
+    }
+
     ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
@@ -175,12 +224,20 @@ impl DhtStore {
         Ok(())
     }
 
+    pub fn mark_entry_as_held(&mut self, entry: &Entry) {
+        self.holding_list.push(entry.address());
+    }
+
+    pub fn get_all_held_entry_addresses(&self) -> &Vec<Address> {
+        &self.holding_list
+    }
+
     // Getters (for reducers)
     // =======
-    pub(crate) fn content_storage(&self) -> Arc<RwLock<ContentAddressableStorage>> {
+    pub(crate) fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
         self.content_storage.clone()
     }
-    pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage<Attribute>>> {
+    pub(crate) fn meta_storage(&self) -> Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>> {
         self.meta_storage.clone()
     }
     pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {

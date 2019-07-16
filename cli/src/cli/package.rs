@@ -53,7 +53,7 @@ impl Packager {
             Some(vec![
                 "Compiling to WASM also requires adding WASM as a compile target.",
                 "For this, also run:",
-                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-01-24",
+                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-07-14",
             ]),
         )?;
         if !should_continue {
@@ -268,7 +268,7 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
                             let base64_content = entry.as_str().unwrap().to_string();
                             let content = base64::decode(&base64_content)?;
 
-                            let mut file_path = to.join(meta_entry);
+                            let file_path = to.join(meta_entry);
 
                             File::create(file_path)?.write_all(&content[..])?;
                         }
@@ -276,8 +276,7 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
                             let base64_content = entry[&meta_entry].to_string();
                             let content = base64::decode(&base64_content)?;
 
-                            let mut file_path =
-                                to.join(meta_entry).with_extension(WASM_FILE_EXTENSION);
+                            let file_path = to.join(meta_entry).with_extension(WASM_FILE_EXTENSION);
 
                             File::create(file_path)?.write_all(&content[..])?;
                         }

@@ -3,6 +3,7 @@ use super::{
     protocol::Protocol,
     NetResult,
 };
+use snowflake::ProcessUniqueId;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -46,7 +47,7 @@ impl NetConnectionThread {
         let (send_endpoint, recv_endpoint) = mpsc::channel();
 
         // Spawn worker thread
-        let thread = thread::spawn(move || {
+        let thread = thread::Builder::new().name(format!("net_worker_thread/{}", ProcessUniqueId::new().to_string())).spawn(move || {
             // Create worker
             let mut worker = worker_factory(handler).unwrap_or_else(|e| {
                 panic!("Failure while attempting to create network worker with provided P2pConfig. Error: {:?}", e)
@@ -104,7 +105,7 @@ impl NetConnectionThread {
             worker.stop().unwrap_or_else(|e| {
                 eprintln!("Error occured in p2p network module on stop: {:?}", e)
             });
-        });
+        }).expect("Could not spawn net connection thread");
 
         // Retrieve endpoint from spawned thread.
         let endpoint = recv_endpoint.recv().map_err(|e| {
@@ -132,7 +133,7 @@ impl NetConnectionThread {
             bail!("NetConnectionThread failed to join on stop() call");
         }
         // Call shutdown closure if any
-        if let Some(done) = self.done {
+        if let Some(mut done) = self.done {
             done();
         }
         Ok(())
@@ -152,7 +153,7 @@ mod tests {
     fn it_can_defaults() {
         let mut con = NetConnectionThread::new(
             NetHandler::new(Box::new(move |_r| Ok(()))),
-            Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
+            Box::new(|_h| Ok(Box::new(DefWorker) as Box<dyn NetWorker>)),
             None,
         )
         .unwrap();
@@ -185,7 +186,7 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             })),
-            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<dyn NetWorker>)),
             None,
         )
         .unwrap();
@@ -218,7 +219,7 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             })),
-            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<dyn NetWorker>)),
             None,
         )
         .unwrap();

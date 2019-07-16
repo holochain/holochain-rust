@@ -19,6 +19,7 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
         fs::create_dir_all(&zome_name)?;
     }
 
+
     ensure!(
         zome_name.is_dir(),
         "argument \"zome_name\" doesn't point to a directory"

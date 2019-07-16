@@ -52,7 +52,7 @@ pub fn test(
             "Packaging".green().bold(),
             &file_path
         );
-        package(true, PathBuf::from(file_path))?;
+        package(true, file_path)?;
     }
 
     // build tests

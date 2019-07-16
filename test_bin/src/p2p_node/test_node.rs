@@ -127,7 +127,7 @@ impl TestNode {
         } else {
             let track_dna_msg = lib3h_protocol::data_types::SpaceData {
                 request_id: "leave_space_req".to_string(),
-                space_address: dna_address.clone().into(),
+                space_address: dna_address.clone(),
                 agent_id: agent_id.to_string().into(),
             };
             Lib3hClientProtocol::JoinSpace(track_dna_msg).into()
@@ -171,7 +171,7 @@ impl TestNode {
         } else {
             let leave_space_msg = lib3h_protocol::data_types::SpaceData {
                 request_id: "leave_space_req".to_string(),
-                space_address: dna_address.clone().into(),
+                space_address: dna_address.clone(),
                 agent_id: agent_id.to_string().into(),
             };
             Lib3hClientProtocol::LeaveSpace(leave_space_msg).into()

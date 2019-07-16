@@ -118,7 +118,7 @@ pub fn setup_two_nodes(
         log_i!("connect: node2_binding = {}", node2_binding);
         alex.send(
             JsonProtocol::Connect(ConnectData {
-                peer_address: node2_binding.into(),
+                peer_address: node2_binding,
             })
             .into(),
         )?;
@@ -537,7 +537,7 @@ pub fn shutdown_test(
     let _ = alex.listen(200);
 
     // kill alex manually
-    alex.send(Protocol::Shutdown.into())?;
+    alex.send(Protocol::Shutdown)?;
 
     // alex should receive 'Terminated' which should set `is_network_ready` to false
     let _ = alex.wait_json_with_timeout(Box::new(|_| true), 200);

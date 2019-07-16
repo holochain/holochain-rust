@@ -1,3 +1,4 @@
+
 use failure::Error;
 
 #[derive(Debug, Fail)]
@@ -7,4 +8,5 @@ pub enum HolochainError {
 }
 
 pub type DefaultResult<T> = Result<T, Error>;
+
 pub type HolochainResult<T> = Result<T, HolochainError>;

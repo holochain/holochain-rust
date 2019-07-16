@@ -41,7 +41,7 @@ fn main() {
     let opt = Opt::from_args();
     let config_path = opt
         .config
-        .unwrap_or(config::default_persistence_dir().join("conductor-config.toml"));
+        .unwrap_or_else(|| config::default_persistence_dir().join("conductor-config.toml"));
     let config_path_str = config_path.to_str().unwrap();
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {

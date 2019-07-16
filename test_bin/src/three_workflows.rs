@@ -87,7 +87,7 @@ pub fn setup_three_nodes(
         println!("Connect Alex to Billy ({})", node2_binding);
         alex.send(
             JsonProtocol::Connect(ConnectData {
-                peer_address: node2_binding.clone().into(),
+                peer_address: node2_binding.clone(),
             })
             .into(),
         )?;
@@ -111,7 +111,7 @@ pub fn setup_three_nodes(
         println!("Connect  Camille to Billy ({})", node2_binding);
         camille.send(
             JsonProtocol::Connect(ConnectData {
-                peer_address: node2_binding.into(),
+                peer_address: node2_binding,
             })
             .into(),
         )?;

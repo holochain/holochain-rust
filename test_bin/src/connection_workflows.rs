@@ -70,7 +70,7 @@ pub(crate) fn two_nodes_disconnect_test(
     log_i!("connect: billy.p2p_binding = {}", billy.p2p_binding);
     alex.send(
         JsonProtocol::Connect(ConnectData {
-            peer_address: billy.p2p_binding.clone().into(),
+            peer_address: billy.p2p_binding.clone(),
         })
         .into(),
     )?;

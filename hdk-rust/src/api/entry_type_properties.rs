@@ -19,7 +19,7 @@ pub fn entry_type_properties(name: &EntryType) -> ZomeApiResult<JsonString> {
 
     entry_def
         .map(|entry_def| entry_def.entry_type_definition.properties.clone())
-        .ok_or(ZomeApiError::Internal(
+        .ok_or_else(|| ZomeApiError::Internal(
             "No matching entry type in this zome".into(),
         ))
 }

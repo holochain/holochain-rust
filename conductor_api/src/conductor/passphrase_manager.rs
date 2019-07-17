@@ -18,13 +18,13 @@ pub trait PassphraseService {
 #[derive(Clone)]
 pub struct PassphraseManager {
     passphrase_cache: Arc<Mutex<Option<SecBuf>>>,
-    passphrase_service: Arc<Mutex<PassphraseService + Send>>,
+    passphrase_service: Arc<Mutex<dyn PassphraseService + Send>>,
     last_read: Arc<Mutex<Instant>>,
     timeout_kill_switch: Sender<()>,
 }
 
 impl PassphraseManager {
-    pub fn new(passphrase_service: Arc<Mutex<PassphraseService + Send>>) -> Self {
+    pub fn new(passphrase_service: Arc<Mutex<dyn PassphraseService + Send>>) -> Self {
         let (kill_switch_tx, kill_switch_rx) = unbounded::<()>();
         let pm = PassphraseManager {
             passphrase_cache: Arc::new(Mutex::new(None)),

@@ -51,10 +51,11 @@ impl P2pNetwork {
                     .expect("P2pConfig for N3H networking is missing an end-user config")
                     .to_string();
                 Box::new(move |h| {
-                    Ok(
-                        Box::new(IpcNetWorker::new(h, &backend_config_str, enduser_config)?)
-                            as Box<NetWorker>,
-                    )
+                    Ok(Box::new(IpcNetWorker::new(
+                        h,
+                        &backend_config_str,
+                        enduser_config.clone(),
+                    )?) as Box<dyn NetWorker>)
                 })
             }
             // Create a Lib3hWorker
@@ -65,12 +66,13 @@ impl P2pNetwork {
                 };
 
                 Box::new(move |h| {
-                    Ok(Box::new(Lib3hWorker::new(h, backend_config.clone())?) as Box<NetWorker>)
+                    Ok(Box::new(Lib3hWorker::new(h, backend_config.clone())?)
+                        as Box<dyn NetWorker>)
                 })
             }
             // Create an InMemoryWorker
             P2pBackendKind::MEMORY => Box::new(move |h| {
-                Ok(Box::new(InMemoryWorker::new(h, &backend_config_str)?) as Box<NetWorker>)
+                Ok(Box::new(InMemoryWorker::new(h, &backend_config_str)?) as Box<dyn NetWorker>)
             }),
         };
 

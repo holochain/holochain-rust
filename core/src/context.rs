@@ -132,7 +132,7 @@ impl Context {
         cas: Arc<RwLock<dyn ContentAddressableStorage>>,
         eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
-        state_dump_logging: bool
+        state_dump_logging: bool,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id: agent_id.clone(),

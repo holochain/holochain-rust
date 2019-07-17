@@ -856,65 +856,86 @@ scenario('get_links_crud', async (s, t, { alice, bob }) => {
 scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
 
   //commits an entry and creates two links for alice
-  await alice.app.callSync("simple", "create_link",
-    { "base": alice.app.agentId ,"target": "Holo world" }
+  await alice.app.callSync("simple", "create_link_with_tag",
+    { "base": alice.app.agentId ,"target": "Holo world","tag":"tag" }
   );
 
   //commit an entry with other tag
   await alice.app.callSync("simple", "create_link_with_tag",
-  { "base": alice.app.agentId ,"target": "Holo world", "tag":"different tag" }
-);
+  { "base": alice.app.agentId ,"target": "Holo world", "tag":"differen" }
+   );
   
-  const alice_result = await alice.app.callSync("simple", "create_link",
-  { "base": alice.app.agentId ,"target": "Holo world 2" }
-  );
+  await alice.app.callSync("simple", "create_link_with_tag",
+  { "base": alice.app.agentId ,"target": "Holo world 2","tag":"tag" });
 
   //get posts for alice from alice
   const alice_posts_live= await alice.app.call("simple","get_my_links_count",
   {
-    "base" : alice.app.agentId,"status_request":"Live"
+    "base" : alice.app.agentId,
+    "status_request":"Live",
+    "tag":"tag"
   })
 
   //get posts for alice from bob
   const bob_posts_live= await bob.app.call("simple","get_my_links_count",
   {
     "base" : alice.app.agentId,
-    "status_request":"Live"
+    "status_request":"Live",
+    "tag":"tag"
   })
 
-
+ 
+  
   //make sure count equals to 2
   t.equal(2,alice_posts_live.Ok.count);
   t.equal(2,bob_posts_live.Ok.count);
 
-
-  ////delete the holo world post from the links alice created
-  await alice.app.callSync("simple","delete_link",
+  const bob_posts_live_diff_tag= await bob.app.call("simple","get_my_links_count",
   {
     "base" : alice.app.agentId,
-    "target" : "Holo world"
+    "status_request":"Live",
+    "tag":"differen"
+  })
+
+  t.equal(1,bob_posts_live_diff_tag.Ok.count);
+
+
+  ////delete the holo world post from the links alice created
+  await alice.app.callSync("simple","delete_link_with_tag",
+  {
+    "base" : alice.app.agentId,
+    "target" : "Holo world",
+    "tag":"tag"
   });
 
   //get all bob posts
   const bob_posts_deleted = await bob.app.call("simple","get_my_links_count",
   {
     "base" : alice.app.agentId,
-    "status_request" : "Deleted"
+    "status_request" : "Deleted",
+    "tag":"tag"
   });
 
   // get all posts with a deleted status from alice
   const alice_posts_deleted = await alice.app.call("simple","get_my_links_count",
   {
     "base" : alice.app.agentId,
-    "status_request" : "Deleted"
+    "status_request" : "Deleted",
+    "tag":"tag"
   });
 
   //make sure  it is equal to 1
   t.equal(1,alice_posts_deleted.Ok.count);
   t.equal(1,bob_posts_deleted.Ok.count);
 
+  const bob_posts_deleted_diff_tag= await bob.app.call("simple","get_my_links_count",
+  {
+    "base" : alice.app.agentId,
+    "status_request":"Live",
+    "tag":"differen"
+  })
 
-
+  t.equal(1,bob_posts_deleted_diff_tag.Ok.count);
 
 })
 

@@ -8,7 +8,6 @@ use crate::{
 };
 
 use holochain_core_types::{
-    crud_status::CrudStatus,
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
@@ -83,7 +82,6 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         };
         let filtered_links = links
             .into_iter()
-            .filter(|link_crud| link_crud.1 == CrudStatus::Live)
             .map(|link_crud| link_crud.0)
             .filter(|link_address| {
                 context
@@ -99,7 +97,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
                             .entry
                             .map(|entry| match entry {
                                 Entry::LinkAdd(link_data) => {
-                                    link_data.link().target() == link.target()
+                                    link_data.link().target() == link.target() 
                                 }
                                 _ => false,
                             })

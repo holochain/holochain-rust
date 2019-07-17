@@ -99,6 +99,11 @@ pub mod simple {
         Ok(())
     }
 
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
+        Ok(())
+    }
+
     #[zome_fn("hc_public")]
     pub fn create_link(base: Address,target : String) -> ZomeApiResult<()>
     {

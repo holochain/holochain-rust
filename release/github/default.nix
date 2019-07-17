@@ -1,23 +1,10 @@
-{ holonix, pkgs, release }:
-let
- github = import ./config.nix;
-in
-github // {
+{ pkgs, config }:
+{
  buildInputs = []
 
  ++ (pkgs.callPackage ./check-artifacts {
-  release = release;
- }).buildInputs
-
- ++ (pkgs.callPackage ./merge {
-  github = github;
-  release = release;
- }).buildInputs
-
- ++ (pkgs.callPackage ./notes {
-  holonix = holonix;
-  release = release;
-  github = github;
+  pkgs = pkgs;
+  config = config;
  }).buildInputs
  ;
 }

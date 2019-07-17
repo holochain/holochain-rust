@@ -2,17 +2,15 @@ use crate::{
     action::{Action, ActionWrapper},
     instance::dispatch_action,
 };
-use futures::{
-    future::Future,
-    task::{LocalWaker, Poll},
-};
+use crossbeam_channel::Sender;
+use futures::{future::Future, task::Poll};
 
 use holochain_core_types::error::{HcResult, HolochainError};
 
 use crate::state::StateWrapper;
 use std::{
     pin::Pin,
-    sync::{mpsc::SyncSender, Arc, RwLock},
+    sync::{Arc, RwLock},
 };
 
 /// Shutdown the network
@@ -20,7 +18,7 @@ use std::{
 /// and sets the P2pNetwork instance in the state to None.
 pub async fn shutdown(
     state: Arc<RwLock<StateWrapper>>,
-    action_channel: SyncSender<ActionWrapper>,
+    action_channel: Sender<ActionWrapper>,
 ) -> HcResult<()> {
     if state.read().unwrap().network().initialized().is_ok() {
         let action_wrapper = ActionWrapper::new(Action::ShutdownNetwork);
@@ -40,14 +38,14 @@ pub struct ShutdownFuture {
 impl Future for ShutdownFuture {
     type Output = HcResult<()>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         let state = self.state.read().unwrap().network();
         if state.network.lock().unwrap().is_some() {
             //
             // TODO: connect the waker to state updates for performance reasons
             // See: https://github.com/holochain/holochain-rust/issues/314
             //
-            lw.wake();
+            cx.waker().clone().wake();
             Poll::Pending
         } else {
             Poll::Ready(Ok(()))

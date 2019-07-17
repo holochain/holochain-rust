@@ -12,7 +12,6 @@ use holochain_wasm_utils::api_serialization::commit_entry::{
 /// Returns either an address of the committed entry, or an error.
 /// # Examples
 /// ```rust
-/// # #![feature(try_from)]
 /// # extern crate hdk;
 /// # extern crate serde_json;
 /// # #[macro_use]

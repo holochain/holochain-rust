@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 #![feature(proc_macro_hygiene)]
 
@@ -147,4 +146,3 @@ pub mod simple {
     }
 
 }
-

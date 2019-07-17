@@ -8,6 +8,7 @@ pub mod emit_signal;
 pub mod entry_address;
 pub mod get_entry;
 pub mod get_links;
+pub mod get_links_count;
 pub mod init_globals;
 pub mod link_entries;
 #[macro_use]
@@ -35,6 +36,7 @@ use crate::nucleus::ribosome::{
         entry_address::invoke_entry_address,
         get_entry::invoke_get_entry,
         get_links::invoke_get_links,
+        get_links_count::invoke_get_links_count,
         init_globals::invoke_init_globals,
         keystore::{
             invoke_keystore_derive_key, invoke_keystore_derive_seed,
@@ -93,6 +95,9 @@ link_zome_api! {
 
     /// Retrieve links from the DHT
     "hc_get_links", GetLinks, invoke_get_links;
+
+    //Retrieve link count from DHT
+    "hc_get_links_count", GetLinksCount, invoke_get_links_count;
 
     /// Query the local chain for entries
     "hc_query", Query, invoke_query;

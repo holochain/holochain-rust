@@ -1,11 +1,12 @@
 use crate::{
     action::{ActionWrapper, GetEntryKey, GetLinksKey},
-    network::{actions::ActionResponse, direct_message::DirectMessage},
+    network::{
+        actions::ActionResponse, direct_message::DirectMessage, query::GetLinksNetworkResult,
+    },
 };
 use boolinator::*;
 use holochain_core_types::{
-    crud_status::CrudStatus, entry::EntryWithMetaAndHeader, error::HolochainError,
-    validation::ValidationPackage,
+    entry::EntryWithMetaAndHeader, error::HolochainError, validation::ValidationPackage,
 };
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
@@ -28,7 +29,9 @@ type GetEntryWithMetaResult = Option<Result<Option<EntryWithMetaAndHeader>, Holo
 /// None: process started, but no response yet from the network
 /// Some(Err(_)): there was a problem at some point
 /// Some(Ok(_)): we got the list of links
-type GetLinksResult = Option<Result<Vec<(Address, CrudStatus)>, HolochainError>>;
+type GetLinksResult = Option<Result<GetLinksNetworkResult, HolochainError>>;
+
+type GetLinksResultCount = Option<Result<usize, HolochainError>>;
 
 /// This represents the state of a get_validation_package network process:
 /// None: process started, but no response yet from the network
@@ -59,6 +62,8 @@ pub struct NetworkState {
     /// None means that we are still waiting for a result from the network.
     pub get_links_results: HashMap<GetLinksKey, GetLinksResult>,
 
+    pub get_links_results_count: HashMap<GetLinksKey, GetLinksResultCount>,
+
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
     pub get_validation_package_results: HashMap<Address, GetValidationPackageResult>,
@@ -88,6 +93,7 @@ impl NetworkState {
 
             get_entry_with_meta_results: HashMap::new(),
             get_links_results: HashMap::new(),
+            get_links_results_count: HashMap::new(),
             get_validation_package_results: HashMap::new(),
             direct_message_connections: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),

@@ -2,34 +2,40 @@ use crate::{
     action::{Action, ActionWrapper, GetLinksKey},
     context::Context,
     instance::dispatch_action,
+    network::query::{GetLinksNetworkQuery, GetLinksNetworkResult},
 };
 use futures::{future::Future, task::Poll};
-use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeout};
-use holochain_persistence_api::cas::content::Address;
+use holochain_core_types::{crud_status::CrudStatus, error::HcResult};
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};
+
+use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, LinksStatusRequestKind};
 
 /// GetLinks Action Creator
 /// This is the network version of get_links that makes the network module start
 /// a look-up process.
 pub async fn get_links(
     context: Arc<Context>,
-    address: Address,
-    link_type: String,
-    tag: String,
-    timeout: Timeout,
-) -> HcResult<Vec<(Address, CrudStatus)>> {
+    link_args: &GetLinksArgs,
+    query: GetLinksNetworkQuery,
+) -> HcResult<GetLinksNetworkResult> {
     let key = GetLinksKey {
-        base_address: address.clone(),
-        link_type: link_type.clone(),
-        tag: tag.clone(),
+        base_address: link_args.entry_address.clone(),
+        link_type: link_args.link_type.clone(),
+        tag: link_args.tag.clone(),
         id: ProcessUniqueId::new().to_string(),
     };
-    let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
+    let crud_status = match link_args.options.status_request {
+        LinksStatusRequestKind::All => None,
+        LinksStatusRequestKind::Deleted => Some(CrudStatus::Deleted),
+        LinksStatusRequestKind::Live => Some(CrudStatus::Live),
+    };
+    let action_wrapper = ActionWrapper::new(Action::GetLinks((key.clone(), crud_status, query)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let key_inner = key.clone();
     let context_inner = context.clone();
+    let timeout = link_args.options.timeout.clone();
     thread::Builder::new()
         .name(format!("get_links/{:?}", key))
         .spawn(move || {
@@ -53,7 +59,7 @@ pub struct GetLinksFuture {
 }
 
 impl Future for GetLinksFuture {
-    type Output = HcResult<Vec<(Address, CrudStatus)>>;
+    type Output = HcResult<GetLinksNetworkResult>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("GetLinksFuture") {

@@ -51,6 +51,11 @@ pub struct GetLinksResult {
     links: Vec<LinksResult>,
 }
 
+#[derive(Deserialize, Serialize, Debug, DefaultJson)]
+pub struct GetLinksResultCount {
+    pub count: usize,
+}
+
 impl GetLinksResult {
     pub fn new(links: Vec<LinksResult>) -> GetLinksResult {
         GetLinksResult { links }

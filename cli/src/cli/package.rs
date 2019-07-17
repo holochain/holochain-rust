@@ -70,7 +70,8 @@ impl Packager {
         let dna_json = JsonString::from_json(&dir_obj_bundle.to_string());
         let dna = Dna::try_from(dna_json)?;
 
-        let out_file = File::create(&output)?;
+        let out_file = File::create(&output)
+            .map_err(|e| format_err!("Couldn't create DNA output file {:?}; {}", output, e))?;
 
         serde_json::to_writer_pretty(&out_file, &(dir_obj_bundle))?;
 

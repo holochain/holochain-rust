@@ -94,8 +94,8 @@ pub mod simple {
     }
 
 
-    #[genesis]
-    pub fn genesis() {
+    #[init]
+    pub fn init() {
         Ok(())
     }
 

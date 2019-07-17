@@ -1,14 +1,14 @@
 extern crate proc_macro2;
 
 use crate::zome_code_def::{
-    EntryDefCallbacks, FnDeclaration, FnParameter, GenesisCallback, ReceiveCallback, ZomeCodeDef,
+    EntryDefCallbacks, FnDeclaration, FnParameter, InitCallback, ReceiveCallback, ZomeCodeDef,
     ZomeFunction, ZomeFunctions,
 };
 
 use hdk::holochain_core_types::dna::{fn_declarations::TraitFns, zome::ZomeTraits};
 use std::collections::BTreeMap;
 
-static GENESIS_ATTRIBUTE: &str = "genesis";
+static INIT_ATTRIBUTE: &str = "init";
 static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
 static ENTRY_DEF_ATTRIBUTE: &str = "entry_def";
 static RECEIVE_CALLBACK_ATTRIBUTE: &str = "receive";
@@ -16,7 +16,7 @@ static RECEIVE_CALLBACK_ATTRIBUTE: &str = "receive";
 pub trait IntoZome {
     fn extract_zome_fns(&self) -> ZomeFunctions;
     fn extract_entry_defs(&self) -> EntryDefCallbacks;
-    fn extract_genesis(&self) -> GenesisCallback;
+    fn extract_genesis(&self) -> InitCallback;
     fn extract_traits(&self) -> ZomeTraits;
     fn extract_receive_callback(&self) -> Option<ReceiveCallback>;
     fn extract_extra(&self) -> Vec<syn::Item>;
@@ -25,7 +25,7 @@ pub trait IntoZome {
         ZomeCodeDef {
             traits: self.extract_traits(),
             entry_def_fns: self.extract_entry_defs(),
-            genesis: self.extract_genesis(),
+            init: self.extract_genesis(),
             receive_callback: self.extract_receive_callback(),
             zome_fns: self.extract_zome_fns(),
             extra: self.extract_extra(),
@@ -101,10 +101,10 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
 }
 
 impl IntoZome for syn::ItemMod {
-    fn extract_genesis(&self) -> GenesisCallback {
+    fn extract_genesis(&self) -> InitCallback {
         // find all the functions tagged as the genesis callback
         let geneses: Vec<Box<syn::Block>> = funcs_iter(self)
-            .filter(is_tagged_with(GENESIS_ATTRIBUTE))
+            .filter(is_tagged_with(INIT_ATTRIBUTE))
             .fold(Vec::new(), |mut acc, func| {
                 acc.push(func.block);
                 acc
@@ -193,7 +193,7 @@ impl IntoZome for syn::ItemMod {
                         if let syn::Item::Fn(func) = item {
                             // any functions not tagged with a hdk attribute
                             !is_tagged_with(ZOME_FN_ATTRIBUTE)(func)
-                                && !is_tagged_with(GENESIS_ATTRIBUTE)(func)
+                                && !is_tagged_with(INIT_ATTRIBUTE)(func)
                                 && !is_tagged_with(ENTRY_DEF_ATTRIBUTE)(func)
                                 && !is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE)(func)
                         } else {

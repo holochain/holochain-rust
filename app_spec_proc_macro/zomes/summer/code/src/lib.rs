@@ -12,8 +12,8 @@ use hdk_proc_macros::zome;
 
 #[zome]
 pub mod summer {
-    #[genesis]
-    fn genesis() {
+    #[init]
+    fn init() {
         Ok(())
     }
 

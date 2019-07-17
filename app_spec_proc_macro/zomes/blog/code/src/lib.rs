@@ -48,8 +48,8 @@ pub mod blog {
         memo::definition()
     }
 
-    #[genesis]
-    pub fn genesis() {
+    #[init]
+    pub fn init() {
         Ok(())
     }
 

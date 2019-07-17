@@ -120,6 +120,8 @@ pub struct LoggerConfiguration {
     #[serde(default)]
     pub rules: LogRules,
     //    pub file: Option<String>,
+    #[serde(default)]
+    pub state_dump: bool,
 }
 
 impl Default for LoggerConfiguration {
@@ -127,6 +129,7 @@ impl Default for LoggerConfiguration {
         LoggerConfiguration {
             logger_type: "debug".into(),
             rules: Default::default(),
+            state_dump: false,
         }
     }
 }

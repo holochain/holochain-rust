@@ -177,7 +177,7 @@ pub mod tests {
 
     pub fn test_ui_copier() -> UiDirCopier {
         let copier = Box::new(|_source: &PathBuf, _dest: &PathBuf| Ok(()))
-            as Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>;
+            as Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>;
         Arc::new(copier)
     }
 

@@ -410,7 +410,7 @@ npm install --global --production windows-build-tools
 
 Invoke-WebRequest -Uri "https://win.rustup.rs/" -OutFile "C:\Users\master\Downloads\rustup-init.exe"
 
-C:\Users\master\Downloads\rustup-init.exe -y --default-host x86_64-pc-windows-msvc --default-toolchain nightly-2019-01-24
+C:\Users\master\Downloads\rustup-init.exe -y --default-host x86_64-pc-windows-msvc --default-toolchain nightly-2019-07-14
 
 # Add Cargo to Path
 
@@ -421,7 +421,7 @@ $env:Path += ";C:\Program Files\CMake\bin"
 
 rustup target add wasm32-unknown-unknown
 
-rustup default nightly-2019-01-24
+rustup default nightly-2019-07-14
 
 [Environment]::SetEnvironmentVariable("Path", $env:Path, "Machine")
 [Environment]::SetEnvironmentVariable("RUSTFLAGS", "-D warnings -Z external-macro-backtrace -Z thinlto -C codegen-units=16 -C opt-level=z", "Machine")

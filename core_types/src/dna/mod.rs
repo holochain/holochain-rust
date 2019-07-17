@@ -6,7 +6,6 @@
 //! # Examples
 //!
 //! ```
-//! #![feature(try_from)]
 //! extern crate holochain_core_types;
 //! extern crate holochain_persistence_api;
 //! extern crate holochain_json_api;

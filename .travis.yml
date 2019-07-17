@@ -2,8 +2,8 @@
 _cli_deploy_template: &_cli_deploy_template
   dist: bionic
   language: rust
-  rust: nightly-2019-01-24
-  if: tag =~ /^v\d+\.\d+\.\d+-alpha\d+/
+  rust: nightly-2019-07-14
+  if: tag =~ /^\d+\.\d+\.\d+-alpha\d+/
   before_script:
     - ./scripts/install/auto.sh
   script:
@@ -26,8 +26,8 @@ _cli_deploy_template: &_cli_deploy_template
 _conductor_deploy_template: &_conductor_deploy_template
   dist: bionic
   language: rust
-  rust: nightly-2019-01-24
-  if: tag =~ /^v\d+\.\d+\.\d+-alpha\d+/
+  rust: nightly-2019-07-14
+  if: tag =~ /^\d+\.\d+\.\d+-alpha\d+/
   before_script:
     - ./scripts/install/auto.sh
   script:
@@ -69,7 +69,7 @@ jobs:
     - name: "CLI DEPLOY - 64 bit Windows MSVC"
       <<: *_cli_deploy_template
       os: windows
-      rust: nightly-2019-01-24-x86_64-pc-windows-msvc
+      rust: nightly-2019-07-14-x86_64-pc-windows-msvc
       env:
         - TARGET=x86_64-pc-windows-msvc
         - CRATE_NAME=hc
@@ -77,7 +77,7 @@ jobs:
     - name: "CLI DEPLOY - 64 bit Windows GNU"
       <<: *_cli_deploy_template
       os: windows
-      rust: nightly-2019-01-24-x86_64-pc-windows-gnu
+      rust: nightly-2019-07-14-x86_64-pc-windows-gnu
       env:
         - TARGET=x86_64-pc-windows-gnu
         - CRATE_NAME=hc
@@ -100,7 +100,7 @@ jobs:
     - name: "CONDUCTOR DEPLOY - 64 bit Windows MSVC"
       <<: *_conductor_deploy_template
       os: windows
-      rust: nightly-2019-01-24-x86_64-pc-windows-msvc
+      rust: nightly-2019-07-14-x86_64-pc-windows-msvc
       env:
         - TARGET=x86_64-pc-windows-msvc
         - CRATE_NAME=conductor
@@ -108,7 +108,7 @@ jobs:
     - name: "CONDUCTOR DEPLOY - 64 bit Windows GNU"
       <<: *_conductor_deploy_template
       os: windows
-      rust: nightly-2019-01-24-x86_64-pc-windows-gnu
+      rust: nightly-2019-07-14-x86_64-pc-windows-gnu
       env:
         - TARGET=x86_64-pc-windows-gnu
         - CRATE_NAME=conductor

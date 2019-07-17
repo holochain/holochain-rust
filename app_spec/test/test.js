@@ -924,7 +924,7 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
     "tag":"tag"
   });
 
-  //make sure  it is equal to 1
+  //make sure count is equal to 1
   t.equal(1,alice_posts_deleted.Ok.count);
   t.equal(1,bob_posts_deleted.Ok.count);
 

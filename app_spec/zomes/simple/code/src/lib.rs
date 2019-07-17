@@ -79,13 +79,13 @@ pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequ
     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
 }
 
-pub fn handle_get_my_links_count(agent : Address,status_request:Option<LinksStatusRequestKind>,tag:Option<String>) ->ZomeApiResult<GetLinksResultCount>
+pub fn handle_get_my_links_count(agent : Address,status_request:Option<LinksStatusRequestKind>,tag:String) ->ZomeApiResult<GetLinksResultCount>
 {
     let options = GetLinksOptions{
         status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
         ..GetLinksOptions::default()
     };
-    hdk::get_links_count_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"),tag.unwrap_or(LinkMatch::Exactly(tag)),options)
+    hdk::get_links_count_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"),LinkMatch::Exactly(&*tag),options)
 }
 
 pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
@@ -170,7 +170,7 @@ define_zome! {
             handler: handle_get_my_links
         }
         get_my_links_count: {
-            inputs: |base: Address,status_request:Option<LinksStatusRequestKind>,tag:Option<String>|,
+            inputs: |base: Address,status_request:Option<LinksStatusRequestKind>,tag:String|,
             outputs: |result: ZomeApiResult<GetLinksResultCount>|,
             handler: handle_get_my_links_count
         }

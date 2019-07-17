@@ -802,7 +802,7 @@ scenario('get_links_crud', async (s, t, { alice, bob }) => {
   t.equal("live",bob_posts_live.Ok.links[0].status);
   t.equal("live",bob_posts_live.Ok.links[1].status);
 
-  ////delete the holo world post from the links alice created.
+  ////delete the holo world post from the links alice created
   await alice.app.callSync("simple","delete_link",
   {
     "base" : alice.app.agentId,

@@ -13,7 +13,6 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// by the `receive` callback of the other node.
 /// # Examples
 /// ```rust
-/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;

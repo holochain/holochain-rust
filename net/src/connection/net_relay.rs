@@ -3,7 +3,7 @@ use super::{net_connection::*, protocol::Protocol, NetResult};
 /// a simple pass-through NetSend instance
 /// this struct can be use to compose one type of NetWorker into another
 pub struct NetConnectionRelay {
-    worker: Box<NetWorker>,
+    worker: Box<dyn NetWorker>,
     done: NetShutdown,
 }
 
@@ -19,7 +19,7 @@ impl NetConnectionRelay {
     ///
     pub fn stop(self) -> NetResult<()> {
         self.worker.stop()?;
-        if let Some(done) = self.done {
+        if let Some(mut done) = self.done {
             done();
         }
         Ok(())
@@ -56,7 +56,7 @@ mod tests {
     fn it_can_defaults() {
         let mut con = NetConnectionRelay::new(
             NetHandler::new(Box::new(move |_r| Ok(()))),
-            Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
+            Box::new(|_h| Ok(Box::new(DefWorker) as Box<dyn NetWorker>)),
             None,
         )
         .unwrap();
@@ -90,7 +90,7 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             })),
-            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<dyn NetWorker>)),
             None,
         )
         .unwrap();
@@ -113,7 +113,7 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             })),
-            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<dyn NetWorker>)),
             None,
         )
         .unwrap();

@@ -862,7 +862,7 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
 
   //commit an entry with other tag
   await alice.app.callSync("simple", "create_link_with_tag",
-  { "base": alice.app.agentId ,"target": "Holo world", tag:"different tag" }
+  { "base": alice.app.agentId ,"target": "Holo world", "tag":"different tag" }
 );
   
   const alice_result = await alice.app.callSync("simple", "create_link",

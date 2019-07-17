@@ -20,7 +20,7 @@ impl std::error::Error for TransportError {
     fn description(&self) -> &str {
         &self.0
     }
-    fn cause(&self) -> Option<&std::error::Error> {
+    fn cause(&self) -> Option<&dyn std::error::Error> {
         None
     }
 }

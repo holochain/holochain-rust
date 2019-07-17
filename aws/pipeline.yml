@@ -1,0 +1,191 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: Holochain docker build
+Parameters:
+  CodePipelineBucket:
+    Type: String
+    Default: holochain-shared-builds
+    Description: Stack Name of the S3 bucket where Codepipeline saves its artifacts.
+  GitHubRepo:
+    Type: String
+    Default: holonix
+    Description: GitHub repository name.
+  GitHubOwner:
+    Type: String
+    Default: holochain
+    Description: GitHub repository name.
+  GitHubToken:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /infra/github/GitHubToken
+    Description: GitHub repository OAuth token
+  DockerUser:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /infra/dockerhub/DockerUser
+    Description: DockerHub User
+  DockerPass:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /infra/dockerhub/DockerPass
+    Description: DockerHub Password
+  Branch:
+    Type: String
+    Default: develop
+    Description: GitHub branch name.
+
+
+Resources:
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      DisableInboundStageTransitions:
+        -
+          Reason: New Deployment.
+          StageName: Build
+      RoleArn: !GetAtt [CodePipelineRole, Arn]
+      ArtifactStore: 
+        Type: S3
+        Location:
+          Fn::ImportValue:
+            !Sub "${CodePipelineBucket}-S3Bucket"
+      Stages:
+      - Name: Source
+        Actions:
+        - Name: Source
+          ActionTypeId:
+            Category: Source
+            Owner: ThirdParty
+            Version: 1
+            Provider: GitHub
+          OutputArtifacts:
+              -  Name: Build
+          Configuration:
+            Owner: !Ref GitHubOwner
+            Repo: !Ref GitHubRepo
+            Branch: !Ref Branch
+            OAuthToken: !Ref GitHubToken
+          RunOrder: 1
+      - Name: Build
+        Actions:
+        - Name: Build
+          InputArtifacts:
+            - Name: Build
+          ActionTypeId:
+            Category: Build
+            Owner: AWS
+            Version: 1
+            Provider: CodeBuild
+          OutputArtifacts:
+            - Name: QA
+          Configuration:
+            ProjectName: !Ref CodeBuild
+
+  CodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Ref AWS::StackName
+      Description: !Ref AWS::StackName
+      ServiceRole: !Ref CodeBuildRole
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                docker: 18
+            pre_build:
+              commands:
+                - docker build -t holochain/$GITREPO:latest .
+                - docker login -u $DOCKER_USER -p $DOCKER_PASS
+                - docker push holochain/$GITREPO:latest
+      Environment:
+         ComputeType: BUILD_GENERAL1_SMALL
+         Image: aws/codebuild/standard:2.0
+         PrivilegedMode: true
+         Type: LINUX_CONTAINER
+         EnvironmentVariables:
+            - Name: DOCKER_USER
+              Value: !Ref DockerUser
+            - Name: DOCKER_PASS
+              Value: !Ref DockerPass
+            - Name: GITREPO
+              Value: !Ref GitHubRepo
+              
+      Artifacts:
+          Type: CODEPIPELINE
+      Tags:
+        - Key: Name
+          Value: !Ref GitHubRepo
+
+  CodePipelineRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - 'codepipeline.amazonaws.com'
+              - 'codebuild.amazonaws.com'
+            Action:
+            - 'sts:AssumeRole'
+        Policies:
+          - PolicyName: ServicesAccess
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - codepipeline:*
+                    - codebuild:*
+                    - sns:*
+                  Resource: '*'
+          - PolicyName: ArtifactAccess
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - s3:*
+                  Resource:
+                    !Sub
+                      - arn:aws:s3:::${Bucket}/*
+                      - Bucket:
+                          Fn::ImportValue:
+                            !Sub "${CodePipelineBucket}-S3Bucket"
+      
+  CodeBuildRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - 'codebuild.amazonaws.com'
+          Action:
+          - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: ServicesAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                  - codecommit:*
+                Resource: '*'
+        - PolicyName: ArtifactAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                - !Sub
+                    - arn:aws:s3:::${Bucket}/*
+                    - Bucket:
+                        Fn::ImportValue:
+                          !Sub "${CodePipelineBucket}-S3Bucket"

@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 #[macro_use]
 extern crate hdk;
@@ -60,13 +59,13 @@ pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()>
 
 pub fn handle_create_my_link_with_tag(base: Address,target : String, tag : String) -> ZomeApiResult<()> {
     let address = hdk::commit_entry(&simple_entry(target))?;
-    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", tag)?;
+    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", &tag)?;
     Ok(())
 }
 
 pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::entry_address(&simple_entry(target))?;
-    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts", "tag")?;
+    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts","tag")?;
     Ok(())
 }
 
@@ -197,4 +196,3 @@ define_zome! {
 
     }
 }
-

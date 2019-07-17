@@ -379,9 +379,11 @@ id = 'test-bundle-id'
 root_dir = '.'
 
 [[ui_interfaces]]
+bind_address = '127.0.0.1'
 bundle = 'test-bundle-id'
 id = 'test-ui-interface-id'
-port = 4000"#,
+port = 4000
+reroute_to_root = true"#,
             ),
         );
         toml = add_block(toml, logger());
